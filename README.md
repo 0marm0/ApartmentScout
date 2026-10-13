@@ -176,12 +176,12 @@ Static versions for reports, written by `apartmentscout site --charts`:
 ## More from the original search
 
 The [gallery](docs/GALLERY.md) collects the one-off tools built during the search this repo came
-from: the Chrysler Radius dashboard, two other light-and-view models, three 3D floor-plan and
+from: the first search-dashboard prototype, two other light-and-view models, three 3D floor-plan and
 furniture-fit studios, and the due-diligence reports. They are the design reference for where the
 dashboard is heading.
 
 <table><tr>
-<td width="33%"><img src="docs/gallery/chrysler--chrysler-radius-dark.jpg" alt="Chrysler Radius dashboard"><br><sub>Chrysler Radius search dashboard</sub></td>
+<td width="33%"><img src="docs/gallery/prototype--search-dark.jpg" alt="First search dashboard prototype"><br><sub>First search-dashboard prototype</sub></td>
 <td width="33%"><img src="docs/gallery/layout--layout-3d-overview.jpg" alt="Apartment layout studio"><br><sub>Apartment layout studio</sub></td>
 <td width="33%"><img src="docs/gallery/fitcheck--fitcheck-paramount-angle.jpg" alt="Floor-plan fit check"><br><sub>Floor-plan fit check</sub></td>
 </tr><tr>

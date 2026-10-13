@@ -1,29 +1,28 @@
 # Gallery
 
-Everything built during the Manhattan search that seeded ApartmentScout: the search dashboards, maps and heatmaps, 3D light and view models, 3D floor plans with furniture, and due-diligence reports. Claude artifacts are linked; Codex tools live in the original research folder and are listed for reference. Screenshots of listing photos and videos are left out of the repo.
+Everything built during the Manhattan search that seeded ApartmentScout: the search dashboards, maps and heatmaps, 3D light and view models, 3D floor plans with furniture, and due-diligence reports. Screenshots of listing photos and videos are left out of the repo.
 
 > The ApartmentScout dashboard in this repo is the open-source rebuild. The other items are the earlier one-off tools it grew out of, kept here as design references and examples of what an agent can produce with this workflow.
 
 ## Search dashboards and maps
 
-### Chrysler Radius
+### First search dashboard (prototype)
 
-The main search dashboard: every unit inside the commute radius on a styled Manhattan map with subway lines, filters, budget tiers, weights, watchlist, gone-fast, compare and tour plan. Light and dark. *Built by: Claude artifact.*
+The main search dashboard: every unit inside the commute radius on a styled Manhattan map with subway lines, filters, budget tiers, weights, watchlist, gone-fast, compare and tour plan. Light and dark. *Prototype built by an agent during the search.*
 
-[Open artifact](https://claude.ai/artifact/GqDucbM7ymuiTaeAfHFjee) (private Claude artifact; ask the owner for access)
 
 <table>
-<tr><td width="50%"><img src="gallery/chrysler--chrysler-radius-dark.jpg" alt="Dark mode, ranked by nicest and biggest"><br><sub>Dark mode, ranked by nicest and biggest</sub></td><td width="50%"><img src="gallery/chrysler--chrysler-radius-home.jpg" alt="Light mode home"><br><sub>Light mode home</sub></td></tr>
-<tr><td width="50%"><img src="gallery/chrysler--chrysler-radius-units.jpg" alt="All units table"><br><sub>All units table</sub></td><td width="50%"><img src="gallery/chrysler--chrysler-radius-new.jpg" alt="New and changed listings"><br><sub>New and changed listings</sub></td></tr>
-<tr><td width="50%"><img src="gallery/chrysler--chrysler-radius-gone-fast.jpg" alt="Gone fast: what rented and how quickly"><br><sub>Gone fast: what rented and how quickly</sub></td><td width="50%"><img src="gallery/chrysler--chrysler-radius-my-list.jpg" alt="My list"><br><sub>My list</sub></td></tr>
-<tr><td width="50%"><img src="gallery/chrysler--chrysler-radius-compare.jpg" alt="Compare"><br><sub>Compare</sub></td><td width="50%"><img src="gallery/chrysler--chrysler-radius-dark-compare.jpg" alt="Compare, dark"><br><sub>Compare, dark</sub></td></tr>
-<tr><td width="50%"><img src="gallery/chrysler--chrysler-radius-tour-plan.jpg" alt="Tour plan"><br><sub>Tour plan</sub></td><td width="50%"><img src="gallery/chrysler--chrysler-radius-dark-tour.jpg" alt="Tour plan, dark"><br><sub>Tour plan, dark</sub></td></tr>
-<tr><td width="50%"><img src="gallery/chrysler--chrysler-radius-playbook.jpg" alt="Playbook"><br><sub>Playbook</sub></td></tr>
+<tr><td width="50%"><img src="gallery/prototype--search-dark.jpg" alt="Dark mode, ranked by nicest and biggest"><br><sub>Dark mode, ranked by nicest and biggest</sub></td><td width="50%"><img src="gallery/prototype--search-home.jpg" alt="Light mode home"><br><sub>Light mode home</sub></td></tr>
+<tr><td width="50%"><img src="gallery/prototype--search-units.jpg" alt="All units table"><br><sub>All units table</sub></td><td width="50%"><img src="gallery/prototype--search-new.jpg" alt="New and changed listings"><br><sub>New and changed listings</sub></td></tr>
+<tr><td width="50%"><img src="gallery/prototype--search-gone-fast.jpg" alt="Gone fast: what rented and how quickly"><br><sub>Gone fast: what rented and how quickly</sub></td><td width="50%"><img src="gallery/prototype--search-my-list.jpg" alt="My list"><br><sub>My list</sub></td></tr>
+<tr><td width="50%"><img src="gallery/prototype--search-compare.jpg" alt="Compare"><br><sub>Compare</sub></td><td width="50%"><img src="gallery/prototype--search-dark-compare.jpg" alt="Compare, dark"><br><sub>Compare, dark</sub></td></tr>
+<tr><td width="50%"><img src="gallery/prototype--search-tour-plan.jpg" alt="Tour plan"><br><sub>Tour plan</sub></td><td width="50%"><img src="gallery/prototype--search-dark-tour.jpg" alt="Tour plan, dark"><br><sub>Tour plan, dark</sub></td></tr>
+<tr><td width="50%"><img src="gallery/prototype--search-playbook.jpg" alt="Playbook"><br><sub>Playbook</sub></td></tr>
 </table>
 
 ### Codex research site
 
-Codex's multi-page research site: unit sheet, building rankings, space research, shortlist and tours, personal picks, dated research reports. *Built by: Codex.*
+Codex's multi-page research site: unit sheet, building rankings, space research, shortlist and tours, personal picks, dated research reports. *Prototype built by an agent during the search.*
 
 <table>
 <tr><td width="50%"><img src="gallery/codexsite--site-space-research.jpg" alt="Find the biggest, nicest options"><br><sub>Find the biggest, nicest options</sub></td><td width="50%"><img src="gallery/codexsite--site-units-sheet.jpg" alt="Every unit on one sheet"><br><sub>Every unit on one sheet</sub></td></tr>
@@ -33,7 +32,7 @@ Codex's multi-page research site: unit sheet, building rankings, space research,
 
 ### Commute heat (Codex)
 
-First commute heatmap to 425 Lexington. *Built by: Codex.*
+First commute heatmap to 425 Lexington. *Prototype built by an agent during the search.*
 
 <table>
 <tr><td width="50%"><img src="gallery/commuteheat--commute_heat.jpg" alt="Commute heat map"><br><sub>Commute heat map</sub></td></tr>
@@ -41,7 +40,7 @@ First commute heatmap to 425 Lexington. *Built by: Codex.*
 
 ### ApartmentScout dashboard (new repo)
 
-The open-source dashboard in the new repo: commute, noise, rent and score heatmaps, shortlist, compare, Unit 3D, floor plan and records. *Built by: Claude, this session.*
+The open-source dashboard in the new repo: commute, noise, rent and score heatmaps, shortlist, compare, Unit 3D, floor plan and records. *This repo.*
 
 <table>
 <tr><td width="50%"><img src="images/map-commute.png" alt="Subway commute heatmap, dark"><br><sub>Subway commute heatmap, dark</sub></td><td width="50%"><img src="images/map-commute-light.png" alt="Light mode"><br><sub>Light mode</sub></td></tr>
@@ -55,9 +54,8 @@ The open-source dashboard in the new repo: commute, noise, rent and score heatma
 
 ### Emerald Green 1211 light and view model
 
-Real NYC footprints and roof heights, live sun for any date and time, the view from the window, sun path against the skyline, landmark visibility and direct sun by floor and month. *Built by: Claude artifact.*
+Real NYC footprints and roof heights, live sun for any date and time, the view from the window, sun path against the skyline, landmark visibility and direct sun by floor and month. *Prototype built by an agent during the search.*
 
-[Open artifact](https://claude.ai/artifact/ENmgfhZHb5ZHWqJ5jtiydu) (private Claude artifact; ask the owner for access)
 
 <table>
 <tr><td width="50%"><img src="gallery/eg1211art--eg1211-stage-orbit.jpg" alt="Oct 15, 1 pm: orbit view with the sun ray"><br><sub>Oct 15, 1 pm: orbit view with the sun ray</sub></td><td width="50%"><img src="gallery/eg1211art--eg1211-stage-window-floor12.jpg" alt="From the 12th-floor window"><br><sub>From the 12th-floor window</sub></td></tr>
@@ -69,7 +67,7 @@ Real NYC footprints and roof heights, live sun for any date and time, the view f
 
 ### Emerald Green #1211 view and sunlight (Codex)
 
-Codex's reconstruction: official footprints, street centerlines, two candidate window edges, apartment 3D, window views, GLB exports. *Built by: Codex.*
+Codex's reconstruction: official footprints, street centerlines, two candidate window edges, apartment 3D, window views, GLB exports. *Prototype built by an agent during the search.*
 
 <table>
 <tr><td width="50%"><img src="gallery/codexeg--codex-eg1211-neighborhood.jpg" alt="Neighbourhood context with height prisms"><br><sub>Neighbourhood context with height prisms</sub></td><td width="50%"><img src="gallery/codexeg--codex-eg1211-street-plan.jpg" alt="Street and footprint plan"><br><sub>Street and footprint plan</sub></td></tr>
@@ -83,7 +81,7 @@ Codex's reconstruction: official footprints, street centerlines, two candidate w
 
 ### Knox: what the windows can see
 
-Evidence-labelled view and light model for six Knox one-bedrooms, with obstruction scenarios. *Built by: Codex.*
+Evidence-labelled view and light model for six Knox one-bedrooms, with obstruction scenarios. *Prototype built by an agent during the search.*
 
 <table>
 <tr><td width="50%"><img src="gallery/knox--knox-light-view-13c.jpg" alt="#13C"><br><sub>#13C</sub></td><td width="50%"><img src="gallery/knox--knox-light-view-31ab.jpg" alt="#31AB"><br><sub>#31AB</sub></td></tr>
@@ -94,7 +92,7 @@ Evidence-labelled view and light model for six Knox one-bedrooms, with obstructi
 
 ### ApartmentScout Unit 3D (new repo)
 
-The same light and view model generalised to any listing with a site model. *Built by: Claude, this session.*
+The same light and view model generalised to any listing with a site model. *This repo.*
 
 <table>
 <tr><td width="50%"><img src="images/unit-orbit.png" alt="Unit 3D panel"><br><sub>Unit 3D panel</sub></td><td width="50%"><img src="images/unit-window-12.png" alt="Floor 12 window"><br><sub>Floor 12 window</sub></td></tr>
@@ -107,9 +105,8 @@ The same light and view model generalised to any listing with a site model. *Bui
 
 ### Apartment layout studio (Emerald Green #1211)
 
-2D plan and 3D model side by side, drag furniture in either, layout presets, clearances, door swings and bed-to-TV sightlines. *Built by: Claude artifact.*
+2D plan and 3D model side by side, drag furniture in either, layout presets, clearances, door swings and bed-to-TV sightlines. *Prototype built by an agent during the search.*
 
-[Open artifact](https://claude.ai/artifact/VMQBrxYyNxoSWDPJdgxiX1) (private Claude artifact; ask the owner for access)
 
 <table>
 <tr><td width="50%"><img src="gallery/layout--layout-split.jpg" alt="Plan and 3D together"><br><sub>Plan and 3D together</sub></td><td width="50%"><img src="gallery/layout--layout-3d-overview.jpg" alt="3D overview"><br><sub>3D overview</sub></td></tr>
@@ -121,9 +118,8 @@ The same light and view model generalised to any listing with a site model. *Bui
 
 ### Floor-plan fit check: three apartments
 
-Three real plans in 3D (Emerald Green 620, Paramount, 49th St) with a furniture kit, AC units and space checks. *Built by: Claude artifact.*
+Three real plans in 3D (Emerald Green 620, Paramount, 49th St) with a furniture kit, AC units and space checks. *Prototype built by an agent during the search.*
 
-[Open artifact](https://claude.ai/artifact/73TkzbdAWUmh3EL4F4DzM5) (private Claude artifact; ask the owner for access)
 
 <table>
 <tr><td width="50%"><img src="gallery/fitcheck--fitcheck-eg620-angle.jpg" alt="Emerald Green 620, angle"><br><sub>Emerald Green 620, angle</sub></td><td width="50%"><img src="gallery/fitcheck--fitcheck-eg620-top.jpg" alt="Emerald Green 620, top"><br><sub>Emerald Green 620, top</sub></td></tr>
@@ -134,7 +130,7 @@ Three real plans in 3D (Emerald Green 620, Paramount, 49th St) with a furniture 
 
 ### Room to live (Codex floor-plan 3D)
 
-Two supplied plans with one furniture kit, drag in 3D or overhead, export GLB. *Built by: Codex.*
+Two supplied plans with one furniture kit, drag in 3D or overhead, export GLB. *Prototype built by an agent during the search.*
 
 <table>
 <tr><td width="50%"><img src="gallery/roomtolive--codex-floorplan3d-plan1.jpg" alt="Plan 1 in 3D"><br><sub>Plan 1 in 3D</sub></td><td width="50%"><img src="gallery/roomtolive--codex-floorplan3d-plan1-overhead.jpg" alt="Plan 1 overhead"><br><sub>Plan 1 overhead</sub></td></tr>
@@ -145,7 +141,7 @@ Two supplied plans with one furniture kit, drag in 3D or overhead, export GLB. *
 
 ### The Greywood 4B
 
-3D floor plan render. *Built by: Codex.*
+3D floor plan render. *Prototype built by an agent during the search.*
 
 <table>
 <tr><td width="50%"><img src="gallery/greywood--floor_plan_3d.jpg" alt="3D floor plan"><br><sub>3D floor plan</sub></td></tr>
@@ -153,7 +149,7 @@ Two supplied plans with one furniture kit, drag in 3D or overhead, export GLB. *
 
 ### ApartmentScout floor plan (new repo)
 
-Plan JSON rendered in 3D with sun patches gated by the neighbouring buildings. *Built by: Claude, this session.*
+Plan JSON rendered in 3D with sun patches gated by the neighbouring buildings. *This repo.*
 
 <table>
 <tr><td width="50%"><img src="images/plan-bird.png" alt="Sun through the windows"><br><sub>Sun through the windows</sub></td><td width="50%"><img src="images/plan-top.png" alt="Top down, June evening"><br><sub>Top down, June evening</sub></td></tr>
@@ -163,7 +159,7 @@ Plan JSON rendered in 3D with sun patches gated by the neighbouring buildings. *
 
 ### Henry Hall 23J
 
-Due diligence, unit and neighbourhood, 311 and enforcement. *Built by: Codex.*
+Due diligence, unit and neighbourhood, 311 and enforcement. *Prototype built by an agent during the search.*
 
 <table>
 <tr><td width="50%"><img src="gallery/henry--henry-hall-due-diligence.jpg" alt="Due diligence"><br><sub>Due diligence</sub></td><td width="50%"><img src="gallery/henry--henry-hall-unit-neighborhood.jpg" alt="Unit and neighbourhood"><br><sub>Unit and neighbourhood</sub></td></tr>
@@ -172,7 +168,7 @@ Due diligence, unit and neighbourhood, 311 and enforcement. *Built by: Codex.*
 
 ### Paramount and alternatives
 
-Ranked exact-unit comparison of stronger alternatives. *Built by: Codex.*
+Ranked exact-unit comparison of stronger alternatives. *Prototype built by an agent during the search.*
 
 <table>
 <tr><td width="50%"><img src="gallery/paramount--paramount-comparison.jpg" alt="Comparison"><br><sub>Comparison</sub></td></tr>
@@ -180,7 +176,7 @@ Ranked exact-unit comparison of stronger alternatives. *Built by: Codex.*
 
 ### Poker rooms
 
-Buildings with poker rooms and an eight-player shortlist. *Built by: Codex.*
+Buildings with poker rooms and an eight-player shortlist. *Prototype built by an agent during the search.*
 
 <table>
 <tr><td width="50%"><img src="gallery/poker--poker-amenities.jpg" alt="Poker tables hiding behind amenity names"><br><sub>Poker tables hiding behind amenity names</sub></td></tr>
