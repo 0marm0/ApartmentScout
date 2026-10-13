@@ -263,6 +263,32 @@ def cmd_build(args):
     out = Path(args.out).resolve() if args.out else DASH / "data"
     _export(ws, out)
     log(f"Dashboard data -> {out}")
+    if args.standalone:
+        p = standalone(out, Path(args.standalone))
+        log(f"Standalone dashboard -> {p}  (open it directly; no server needed)")
+
+
+def standalone(data_dir: Path, dest: Path) -> Path:
+    """One self-contained HTML file: the dashboard, its CSS and JS bundle, and every data file.
+
+    Works when opened as a file, in app previews and on any static host. Leaflet, three.js and
+    fonts still load from public CDNs, and map tiles need an internet connection."""
+    bundle = DASH / "dist" / "app.bundle.js"
+    if not bundle.exists():
+        sys.exit("dashboard/dist/app.bundle.js is missing. Run scripts/bundle.sh (needs Node and esbuild).")
+    html = (DASH / "index.html").read_text()
+    css = (DASH / "css" / "app.css").read_text()
+    data = {}
+    for f in sorted(data_dir.rglob("*.json")):
+        data["data/" + f.relative_to(data_dir).as_posix()] = json.loads(f.read_text())
+    blob = json.dumps(data, separators=(",", ":"), default=str).replace("</", "<\\/")
+    js = bundle.read_text().replace("</script", "<\\/script")
+    html = html.replace('<link rel="stylesheet" href="css/app.css">', f"<style>\n{css}\n</style>")
+    html = html.replace('<script type="module" src="js/app.js"></script>',
+                        f"<script>window.__AS_DATA__={blob};</script>\n<script type=\"module\">\n{js}\n</script>")
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    dest.write_text(html)
+    return dest.resolve()
 
 
 def _export(ws: Workspace, out: Path):
@@ -372,6 +398,7 @@ def main(argv=None):
     s.add_argument("--top", type=int, default=15)
     s = add("build", cmd_build, "export data for the dashboard")
     s.add_argument("--out")
+    s.add_argument("--standalone", metavar="FILE", help="also write a single self-contained HTML dashboard")
     s = add("serve", cmd_serve, "serve the dashboard locally")
     s.add_argument("--port", type=int, default=8765)
     s.add_argument("--no-open", action="store_true")
@@ -382,6 +409,7 @@ def main(argv=None):
     s.add_argument("--months", type=int, default=12)
     s.add_argument("--top", type=int, default=20)
     s.add_argument("--out")
+    s.add_argument("--standalone", metavar="FILE")
     args = p.parse_args(argv)
     args.fn(args)
 

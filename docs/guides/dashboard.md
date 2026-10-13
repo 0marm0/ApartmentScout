@@ -39,3 +39,14 @@ Colours and fonts are CSS variables at the top of `dashboard/css/app.css` (light
 Each view is one module in `dashboard/js/` and talks to the shared state in `app.js`
 (`S.listings`, `S.crit`, `filtered()`, `openDrawer(id)`), so adding a view means one new module and
 one tab link.
+
+## Standalone file and dark mode
+
+`apartmentscout build --standalone my-search.html` writes one self-contained HTML file with the
+dashboard, its code and all data embedded. It opens with a double-click, in app preview panes and on
+any host. The dashboard opens in dark mode; the button at the top right switches to light. Opening
+`dashboard/index.html` directly as a file does **not** work (browsers block ES modules on file://), so
+use `apartmentscout serve` or the standalone file.
+
+After editing `dashboard/js/*.js`, run `scripts/bundle.sh` (Node + esbuild) to refresh
+`dashboard/dist/app.bundle.js`, which the standalone build embeds.

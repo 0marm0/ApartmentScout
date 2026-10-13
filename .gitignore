@@ -9,3 +9,9 @@ __pycache__/
 .venv/
 .pytest_cache/
 .DS_Store
+
+# private design references and source material (see HANDOFF.md)
+_reference/
+
+# private Claude Code handoff (names, local paths, private links)
+HANDOFF.md

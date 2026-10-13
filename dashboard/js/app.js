@@ -49,6 +49,9 @@ export function toggleCompare(id) {
 }
 
 async function getJSON(p, fallback) {
+  // standalone builds embed every data file so the page also works when opened as a file
+  const emb = window.__AS_DATA__;
+  if (emb) return p in emb ? emb[p] : fallback;
   try { const r = await fetch(p, { cache: 'no-cache' }); if (!r.ok) throw new Error(r.status); return await r.json(); } catch { return fallback; }
 }
 export const loadJSON = getJSON;
@@ -124,7 +127,9 @@ export function openDrawer(id) {
   const rec = L.records || {}, rv = L.reviews || {};
   const links = Object.entries(L.links || {}).map(([k, u]) => `<a class="btn" href="${esc(u)}" target="_blank" rel="noopener">${esc(k)} ↗</a>`).join('');
   const hasSite = (S.manifest.sites || []).includes(L.id), hasPlan = (S.manifest.plans || []).includes(L.id), hasDos = (S.manifest.dossiers || []).includes(L.id);
+  const photos = (L.photos || []).filter((u) => /^https?:/.test(u));
   $('drawerBody').innerHTML = `
+    ${photos.length ? `<div class="photos">${photos.map((u, i) => `<a href="${esc(u)}" target="_blank" rel="noopener"><img src="${esc(u)}" alt="Photo ${i + 1} of ${esc(label(L))}" loading="lazy" referrerpolicy="no-referrer"></a>`).join('')}</div>` : ''}
     <div class="d-title">${esc(label(L))}</div>
     <div class="d-sub">${esc(L.address || '')}${L.neighborhood ? ' · ' + esc(L.neighborhood) : ''}</div>
     <div>${L.favorite ? `<span class="pill fav">Favourite ${esc(L.favorite)}</span> ` : ''}<span class="pill">${esc(L.status || 'new')}</span> ${s.budget_tier ? `<span class="pill ${s.budget_tier === 'Over budget' ? 'bad' : 'good'}">${esc(s.budget_tier)}</span>` : ''} ${gates}</div>
@@ -175,10 +180,10 @@ function route() {
 }
 
 function setupTheme() {
-  const saved = store.get('theme', null);
-  if (saved) document.documentElement.dataset.theme = saved;
+  // dark is the native look; light is an option the viewer can pick
+  document.documentElement.dataset.theme = new URLSearchParams(location.search).get('theme') || store.get('theme', null) || 'dark';
   $('themeBtn').addEventListener('click', () => {
-    const dark = document.documentElement.dataset.theme ? document.documentElement.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+    const dark = document.documentElement.dataset.theme === 'dark';
     document.documentElement.dataset.theme = dark ? 'light' : 'dark';
     store.set('theme', document.documentElement.dataset.theme);
     emit('theme');

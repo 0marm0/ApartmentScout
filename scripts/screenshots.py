@@ -22,7 +22,7 @@ OUT = ROOT / "docs" / "images"
 # name, url query/hash, viewport, actions, wait ms, element (None = full viewport)
 SHOTS = [
     ("map-commute", "?layer=commute-office#map", (1600, 1000), [], 3500, None),
-    ("map-commute-dark", "?layer=commute-office&theme=dark#map", (1600, 1000), [], 3500, None),
+    ("map-commute-light", "?layer=commute-office&theme=light#map", (1600, 1000), [], 3500, None),
     ("map-noise", "?layer=noise#map", (1600, 1000), [], 3500, None),
     ("map-rent", "?layer=rent#map", (1600, 1000), [], 3500, None),
     ("map-score", "?layer=score#map", (1600, 1000), [], 3500, None),

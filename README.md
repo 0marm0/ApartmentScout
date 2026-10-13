@@ -10,7 +10,8 @@ Rank every listing on your own criteria, map door-to-door commutes, pull buildin
 <a href="#what-you-get">Features</a> ·
 <a href="#gallery">Gallery</a> ·
 <a href="docs/guides/methodology.md">Methodology</a> ·
-<a href="docs/guides/new-city.md">Other cities</a>
+<a href="docs/guides/new-city.md">Other cities</a> ·
+<a href="docs/GALLERY.md">Full gallery</a>
 </p>
 
 ![Commute heatmap, listing pins and filters for a Manhattan search](docs/images/map-commute.png)
@@ -32,7 +33,7 @@ that process into a toolkit anyone can run in any city, with that search include
 | **Noise maps** | A city-wide 311 noise density layer, plus hour-of-day profiles for each building. |
 | **3D sun and view** | Real building footprints and heights around the unit, live sun and shadows for any date and time, the view from the window, a sun-path chart against the skyline, and direct-sun hours for every floor and month. |
 | **3D floor plans** | A simple JSON plan becomes a 3D apartment with sun patches through the windows, blocked by the neighbouring buildings. |
-| **A dashboard you own** | A static web app with map, shortlist, compare, Unit 3D, floor plan and records views. Run it locally or host it on GitHub Pages. No server, no account, no build step. |
+| **A dashboard you own** | A dark-first static web app with map, shortlist, compare, Unit 3D, floor plan and records views. Serve it locally, host it on GitHub Pages, or build one self-contained HTML file that opens anywhere. No server, account or API key. |
 
 ## Quick start
 
@@ -53,6 +54,7 @@ apartmentscout all                                     # geocode, commute, layer
 apartmentscout dossier                                 # building records for your shortlist
 apartmentscout site <listing-id> --floor 12 --charts   # 3D site model, sun and view
 apartmentscout serve                                   # open the dashboard
+apartmentscout build --standalone my-search.html       # or one self-contained file you can double-click
 ```
 
 Requires Python 3.10+. Everything built in uses free public data: NYC Open Data, the US Census
@@ -119,7 +121,7 @@ a commute to an office near Grand Central.
 </tr>
 <tr>
 <td><img src="docs/images/map-drawer.png" alt="Listing detail panel"><br><sub>Listing panel: cost, score breakdown, commute route, records flags, reviews</sub></td>
-<td><img src="docs/images/map-commute-dark.png" alt="Dark mode commute heatmap"><br><sub>Dark mode, commute heatmap with pins coloured by score</sub></td>
+<td><img src="docs/images/map-commute-light.png" alt="Light mode commute heatmap"><br><sub>Light mode is one click away</sub></td>
 </tr>
 <tr>
 <td><img src="docs/images/map-score.png" alt="Score surface"><br><sub>Where the best-scoring listings cluster</sub></td>
@@ -170,6 +172,23 @@ Static versions for reports, written by `apartmentscout site --charts`:
 ### Building records
 
 ![Records dossier](docs/images/records.png)
+
+## More from the original search
+
+The [gallery](docs/GALLERY.md) collects the one-off tools built during the search this repo came
+from: the Chrysler Radius dashboard, two other light-and-view models, three 3D floor-plan and
+furniture-fit studios, and the due-diligence reports. They are the design reference for where the
+dashboard is heading.
+
+<table><tr>
+<td width="33%"><img src="docs/gallery/chrysler--chrysler-radius-dark.jpg" alt="Chrysler Radius dashboard"><br><sub>Chrysler Radius search dashboard</sub></td>
+<td width="33%"><img src="docs/gallery/layout--layout-3d-overview.jpg" alt="Apartment layout studio"><br><sub>Apartment layout studio</sub></td>
+<td width="33%"><img src="docs/gallery/fitcheck--fitcheck-paramount-angle.jpg" alt="Floor-plan fit check"><br><sub>Floor-plan fit check</sub></td>
+</tr><tr>
+<td><img src="docs/gallery/codexeg--codex-eg1211-neighborhood.jpg" alt="Neighbourhood height model"><br><sub>Neighbourhood height model</sub></td>
+<td><img src="docs/gallery/knox--knox-light-view-13c.jpg" alt="Knox light and view"><br><sub>Knox: what the windows can see</sub></td>
+<td><img src="docs/gallery/roomtolive--codex-floorplan3d-plan2-fullwalls.jpg" alt="Room to live"><br><sub>Room to live: furniture in 3D</sub></td>
+</tr></table>
 
 ## The example search
 

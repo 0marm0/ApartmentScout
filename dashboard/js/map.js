@@ -2,7 +2,7 @@
 import { S, on, filtered, openDrawer, label, cost, commuteOf, loadJSON, dests } from './app.js';
 import { $, esc, money, mins, RAMPS, rgb, gridImage, gridValueAt, idwGrid, legendHTML, scoreColor, debounce } from './util.js';
 
-let map, tiles, pinLayer, heatOverlay, destLayer;
+let map, tiles, pinLayer, heatOverlay, destLayer, pinRenderer;
 const layers = {};          // name -> grid json
 let heatKey = 'none', pinMode = 'score', opacity = 0.62, inited = false;
 
@@ -12,14 +12,23 @@ export function init() {
   on('select', (id) => highlight(id));
 }
 
+// Basemap. Default: Esri's keyless "Canvas" basemaps (dark or light gray, with a separate label layer)
+// so the dashboard works from a file, a preview pane or any host without an API key.
+// Override with search.tiles (and search.tiles_attribution) in criteria.yaml.
+let labels;
 function setTiles() {
-  const dark = document.documentElement.dataset.theme ? document.documentElement.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
-  // Default: OpenStreetMap standard tiles, toned down with a CSS filter so heatmaps stay readable.
-  // Set search.tiles in criteria.yaml to use another provider (for example one that needs your own key).
-  const url = S.crit.search?.tiles || 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
-  const attribution = S.crit.search?.tiles_attribution || '© OpenStreetMap contributors';
-  if (tiles) map.removeLayer(tiles);
-  tiles = L.tileLayer(url, { maxZoom: 19, attribution, className: dark ? 'tiles-dark' : 'tiles-light' }).addTo(map);
+  const dark = document.documentElement.dataset.theme !== 'light';
+  [tiles, labels].forEach((t) => t && map.removeLayer(t));
+  labels = null;
+  if (S.crit.search?.tiles) {
+    tiles = L.tileLayer(S.crit.search.tiles, { maxZoom: 19, attribution: S.crit.search.tiles_attribution || '' }).addTo(map);
+  } else {
+    const v = dark ? 'Dark' : 'Light';
+    const base = 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_' + v + '_Gray_';
+    const attribution = 'Tiles © Esri — Esri, HERE, Garmin, © OpenStreetMap contributors, and the GIS user community';
+    tiles = L.tileLayer(base + 'Base/MapServer/tile/{z}/{y}/{x}', { maxZoom: 16, attribution }).addTo(map);
+    labels = L.tileLayer(base + 'Reference/MapServer/tile/{z}/{y}/{x}', { maxZoom: 16, pane: 'labels', opacity: 0.9 }).addTo(map);
+  }
   tiles.bringToBack();
 }
 
@@ -28,7 +37,9 @@ export async function show() {
     inited = true;
     const c = S.crit.search?.map_center;
     const pts = S.listings.filter((x) => x.lat != null);
-    map = L.map('map', { zoomControl: true, preferCanvas: true }).setView(c || (pts[0] ? [pts[0].lat, pts[0].lon] : [40.75, -73.98]), S.crit.search?.map_zoom || 13);
+    map = L.map('map', { zoomControl: true, preferCanvas: true, maxZoom: 18 }).setView(c || (pts[0] ? [pts[0].lat, pts[0].lon] : [40.75, -73.98]), S.crit.search?.map_zoom || 13);
+    map.createPane('labels'); map.getPane('labels').style.zIndex = 450; map.getPane('labels').style.pointerEvents = 'none';
+    pinRenderer = L.canvas({ pane: 'markerPane', padding: 0.3 });
     setTiles();
     pinLayer = L.layerGroup().addTo(map);
     destLayer = L.layerGroup().addTo(map);
@@ -105,7 +116,7 @@ function setHeat(k) {
   if (img && activeGrid) {
     const [lo0, la0, lo1, la1] = activeGrid.bbox;
     heatOverlay = L.imageOverlay(img, [[la0, lo0], [la1, lo1]], { opacity: 1, interactive: false, className: 'heat-img' }).addTo(map);
-    heatOverlay.getElement()?.style.setProperty('image-rendering', 'pixelated');
+
   }
   $('legend').innerHTML = leg + pinLegend();
   $('legend').hidden = false;
@@ -136,6 +147,7 @@ function draw() {
   for (const Lx of F) {
     const fav = Lx.favorite || ['shortlist', 'touring', 'applied'].includes(Lx.status);
     const m = L.circleMarker([Lx.lat, Lx.lon], {
+      renderer: pinRenderer,
       radius: fav ? 9 : 6, weight: fav ? 3 : 1.2, color: fav ? getComputedStyle(document.documentElement).getPropertyValue('--fav').trim() : '#ffffff',
       fillColor: pinColor(Lx), fillOpacity: Lx.status === 'gone' ? 0.35 : 0.95,
     });
@@ -165,7 +177,8 @@ function renderSideList(F) {
   }).slice(0, 300);
   $('sideList').innerHTML = rows.map((x) => `
     <div class="li" data-id="${esc(x.id)}">
-      <div class="ring" style="background:${scoreColor(x.score?.overall)}">${x.score?.overall != null ? Math.round(x.score.overall) : '?'}</div>
+      ${x.photos?.length ? `<div class="thumb"><img src="${esc(x.photos[0])}" alt="" loading="lazy" referrerpolicy="no-referrer"><span class="ring sm" style="background:${scoreColor(x.score?.overall)}">${x.score?.overall != null ? Math.round(x.score.overall) : '?'}</span></div>`
+        : `<div class="ring" style="background:${scoreColor(x.score?.overall)}">${x.score?.overall != null ? Math.round(x.score.overall) : '?'}</div>`}
       <div style="min-width:0"><div class="t">${x.favorite ? '<span style="color:var(--fav)">★</span> ' : ''}${esc(label(x))}</div>
         <div class="s">${esc(x.neighborhood || '')}${x.sqft ? ' · ' + Math.round(x.sqft) + ' ft²' : ''}${commuteOf(x) != null ? ' · ' + mins(commuteOf(x)) : ''}</div></div>
       <div class="p">${money(cost(x))}<div class="s">${esc(x.score?.budget_tier || '')}</div></div>
