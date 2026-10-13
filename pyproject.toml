@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "apartmentscout"
+version = "0.1.0"
+description = "Agent-ready apartment research: rank listings on your criteria, map commutes, pull building records, and model light and view from the exact unit."
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+dependencies = ["requests>=2.28", "PyYAML>=6", "numpy>=1.24", "matplotlib>=3.7"]
+keywords = ["apartment", "rental", "real-estate", "gtfs", "commute", "sunlight", "nyc", "open-data", "agents"]
+
+[project.optional-dependencies]
+dev = ["pytest>=7", "playwright>=1.40"]
+
+[project.scripts]
+apartmentscout = "apartmentscout.cli:main"
+scout = "apartmentscout.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["apartmentscout*"]

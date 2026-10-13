@@ -1,0 +1,11 @@
+# your searches stay private by default
+searches/*
+!searches/.gitkeep
+search/
+# caches and builds
+**/cache/
+__pycache__/
+*.egg-info/
+.venv/
+.pytest_cache/
+.DS_Store

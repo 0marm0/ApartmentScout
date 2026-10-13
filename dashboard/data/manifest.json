@@ -1,0 +1,47 @@
+{
+ "generated": "2026-10-13T21:49:44",
+ "version": "0.1.0",
+ "search": "Manhattan 1BR, fall 2026",
+ "layers": [
+  "commute-office.json",
+  "noise.json"
+ ],
+ "sites": [
+  "atlas-38d",
+  "emerald-green-1211",
+  "henry-hall-23j",
+  "lana-condominium-11l",
+  "orion-condominium-43e",
+  "the-knox-13c",
+  "the-maybury-2204",
+  "townsend-14c"
+ ],
+ "plans": [
+  "emerald-green-1211"
+ ],
+ "dossiers": [
+  "416-west-52nd-street-507",
+  "atlas-38d",
+  "emerald-green-1211",
+  "exhibit-downtown-15e",
+  "gramercy-starck-10l",
+  "henry-hall-11l",
+  "henry-hall-23j",
+  "lana-condominium-11l",
+  "mercedes-house-1807",
+  "orion-condominium-43e",
+  "the-adele-phf",
+  "the-atelier-19b",
+  "the-aurora-704",
+  "the-corinthian-9i",
+  "the-greywood-4b",
+  "the-highpoint-condo-31f",
+  "the-horizon-35d",
+  "the-knox-13c",
+  "the-knox-6b",
+  "the-knox-7ba",
+  "the-maybury-2204",
+  "the-oskar-10f",
+  "townsend-14c"
+ ]
+}

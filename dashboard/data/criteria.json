@@ -1,0 +1,88 @@
+{
+ "search": {
+  "name": "Manhattan 1BR, fall 2026",
+  "city": "nyc",
+  "move_in": {
+   "earliest": "2026-10-15",
+   "latest": "2026-11-01"
+  },
+  "map_center": [
+   40.753,
+   -73.979
+  ],
+  "map_zoom": 13
+ },
+ "budget": {
+  "basis": "monthly_cost",
+  "tiers": [
+   {
+    "name": "Target",
+    "max": 5000
+   },
+   {
+    "name": "Stretch",
+    "max": 5200
+   },
+   {
+    "name": "Slightly over",
+    "max": 5450
+   }
+  ],
+  "hard_max": 5450
+ },
+ "unit": {
+  "min_beds": 1,
+  "sqft_floor": 450,
+  "sqft_good": 750,
+  "sqft_great": 1050
+ },
+ "must_have": [
+  "in_unit_wd",
+  "elevator"
+ ],
+ "strongly_prefer": [
+  "doorman",
+  "gym"
+ ],
+ "nice_to_have": [
+  "roof_deck",
+  "pool",
+  "lounge",
+  "game_room",
+  "dishwasher"
+ ],
+ "commute": {
+  "destinations": [
+   {
+    "name": "Office",
+    "address": "425 Lexington Ave, New York, NY",
+    "lat": 40.752269,
+    "lon": -73.974947,
+    "arrive_by": "09:00",
+    "max_minutes": 30,
+    "weight": 1.0
+   }
+  ],
+  "transit": {
+   "feeds": [
+    {
+     "name": "NYC Subway",
+     "url": "https://rrgtfsfeeds.s3.amazonaws.com/gtfs_subway.zip"
+    }
+   ],
+   "walk_speed_kmh": 4.8,
+   "max_walk_to_station_m": 1200,
+   "service_date": "2026-10-14"
+  }
+ },
+ "weights": {
+  "cost": 20,
+  "space": 25,
+  "commute": 15,
+  "amenities": 15,
+  "light_view": 10,
+  "building": 10,
+  "quiet": 5
+ },
+ "favorites_first": true
+}

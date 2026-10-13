@@ -1,0 +1,1504 @@
+{
+ "id": "the-corinthian-9i",
+ "building": "The Corinthian",
+ "address": "330 East 38th Street, New York, NY",
+ "bbl": "1009437501",
+ "bin": "1076166",
+ "lat": 40.74644,
+ "lon": -73.972964,
+ "generated": "2026-10-13",
+ "window_years": 3,
+ "sources": {
+  "pluto": "https://data.cityofnewyork.us/d/64uk-42ks",
+  "hpd_violations": "https://data.cityofnewyork.us/d/wvxf-dwi5",
+  "hpd_complaints": "https://data.cityofnewyork.us/d/ygpa-z7cr",
+  "dob_complaints": "https://data.cityofnewyork.us/d/eabe-havv",
+  "ecb_violations": "https://data.cityofnewyork.us/d/6bgk-3dad",
+  "dob_now_filings": "https://data.cityofnewyork.us/d/w9ak-ipjd",
+  "bedbugs": "https://data.cityofnewyork.us/d/wz6d-d3jb",
+  "sr311": "https://data.cityofnewyork.us/d/erm2-nwe9",
+  "nypd_complaints": "https://data.cityofnewyork.us/d/5uac-w243",
+  "footprints": "https://data.cityofnewyork.us/d/5zhs-2jue"
+ },
+ "building_info": {
+  "address": "330 EAST 38 STREET",
+  "yearbuilt": 1989,
+  "yearalter1": 0,
+  "numfloors": 57,
+  "unitsres": 830,
+  "unitstotal": 863,
+  "bldgclass": "RM",
+  "ownername": "THE CORINTHIAN CONDOMINIUM",
+  "zonedist1": "C1-9",
+  "lotarea": 81173,
+  "bldgarea": 923029,
+  "landuse": "4",
+  "histdist": null,
+  "landmark": null
+ },
+ "hpd_violations": {
+  "total": 5,
+  "open": 5,
+  "by_class": {
+   "C": 3,
+   "A": 2
+  },
+  "open_by_class": {
+   "C": 3,
+   "A": 2
+  },
+  "by_year": {
+   "2026": 5
+  },
+  "top": [
+   [
+    "\u00a7 27-2005, 27-2007, 27-2041.1 HMC, \u00a7238, \u00a7 309; \u00a7 107 (2) ( C) MDL AND 28 RCNY \u00a725-171: REPLACE OR REPAIR THE SELF-CLOSING DOORS THAT IS MIS",
+    3
+   ],
+   [
+    "\u00a7 27-2005 ADM CODE PROPERLY REPAIR WITH SIMILAR MATERIAL THE BROKEN OR DEFECTIVE LAMINATE FLOOR IN THE FOYER LOCATED AT APT 28J, 27th STORY,",
+    1
+   ],
+   [
+    "\u00a7 27-2005 ADM CODE PROPERLY REPAIR WITH SIMILAR MATERIAL THE BROKEN OR DEFECTIVE LAMINATE FLOOR IN THE PRIVATE HALLWAY LOCATED AT APT 28J, 2",
+    1
+   ]
+  ],
+  "recent": [
+   {
+    "violationid": "19276372",
+    "class": "C",
+    "inspectiondate": "2026-10-05T00:00:00.000",
+    "novdescription": "\u00a7 27-2005, 27-2007, 27-2041.1 HMC, \u00a7238, \u00a7 309; \u00a7 107 (2) ( C) MDL AND 28 RCNY \u00a725-171: REPLACE OR REPAIR THE SELF-CLOSING DOORS THAT IS MISSING OR DEFECTIVE HINGES IN THE ENTRANCE LOCATED AT APT 8H, 8th STORY, 3rd APARTMENT FROM WEST AT NORTH",
+    "currentstatus": "NOV SENT OUT",
+    "violationstatus": "Open",
+    "apartment": "8H",
+    "story": "8",
+    "rentimpairing": "N"
+   },
+   {
+    "violationid": "19167591",
+    "class": "C",
+    "inspectiondate": "2026-08-26T00:00:00.000",
+    "novdescription": "\u00a7 27-2005, 27-2007, 27-2041.1 HMC, \u00a7238, \u00a7 309; \u00a7 107 (2) ( C) MDL AND 28 RCNY \u00a725-171: REPLACE OR REPAIR THE SELF-CLOSING DOORS THAT IS MISSING OR DEFECTIVE HINGE IN THE ENTRANCE LOCATED AT APT 28J, 27th STORY, 1st APARTMENT FROM EAST AT SOUTH",
+    "currentstatus": "NOV SENT OUT",
+    "violationstatus": "Open",
+    "apartment": "28J",
+    "story": "27",
+    "rentimpairing": "N"
+   },
+   {
+    "violationid": "19167589",
+    "class": "A",
+    "inspectiondate": "2026-08-26T00:00:00.000",
+    "novdescription": "\u00a7 27-2005 ADM CODE PROPERLY REPAIR WITH SIMILAR MATERIAL THE BROKEN OR DEFECTIVE LAMINATE FLOOR IN THE FOYER LOCATED AT APT 28J, 27th STORY, 1st APARTMENT FROM EAST AT SOUTH",
+    "currentstatus": "NOV SENT OUT",
+    "violationstatus": "Open",
+    "apartment": "28J",
+    "story": "27",
+    "rentimpairing": "N"
+   },
+   {
+    "violationid": "19167590",
+    "class": "A",
+    "inspectiondate": "2026-08-26T00:00:00.000",
+    "novdescription": "\u00a7 27-2005 ADM CODE PROPERLY REPAIR WITH SIMILAR MATERIAL THE BROKEN OR DEFECTIVE LAMINATE FLOOR IN THE PRIVATE HALLWAY LOCATED AT APT 28J, 27th STORY, 1st APARTMENT FROM EAST AT SOUTH",
+    "currentstatus": "NOV SENT OUT",
+    "violationstatus": "Open",
+    "apartment": "28J",
+    "story": "27",
+    "rentimpairing": "N"
+   },
+   {
+    "violationid": "19108330",
+    "class": "C",
+    "inspectiondate": "2026-07-31T00:00:00.000",
+    "novdescription": "\u00a7 27-2005, 27-2007, 27-2041.1 HMC, \u00a7238, \u00a7 309; \u00a7 107 (2) ( C) MDL AND 28 RCNY \u00a725-171: REPLACE OR REPAIR THE SELF-CLOSING DOORS THAT IS MISSING OR DEFECTIVE HINGES IN THE ENTRANCE LOCATED AT APT 8H, 8th STORY, 3rd APARTMENT FROM WEST AT NORTH , SECTION ''west''",
+    "currentstatus": "NOV SENT OUT",
+    "violationstatus": "Open",
+    "apartment": "8H",
+    "story": "8",
+    "rentimpairing": "N"
+   }
+  ]
+ },
+ "hpd_complaints": {
+  "total": 38,
+  "complaints": 30,
+  "by_category": {
+   "HEAT/HOT WATER": 24,
+   "UNSANITARY CONDITION": 8,
+   "DOOR/WINDOW": 2,
+   "GENERAL": 1,
+   "PAINT/PLASTER": 1,
+   "WATER LEAK": 1,
+   "ELECTRIC": 1
+  },
+  "by_year": {
+   "2023": 1,
+   "2024": 14,
+   "2025": 11,
+   "2026": 12
+  },
+  "recent": [
+   {
+    "complaint_id": "15006616",
+    "received_date": "2026-10-04T18:25:31.000",
+    "major_category": "HEAT/HOT WATER",
+    "minor_category": "APARTMENT ONLY",
+    "apartment": "8H",
+    "complaint_status": "CLOSE",
+    "status_description": "HPD responded to a complaint of no heat or hot water. Heat was not required at the time of the inspection because the outside temperature was above 55\u00b0 F; by law, violations can only be issued if the outside temperature is below 55 degrees. No violations were issued. If the temperature inside of your apartment is below 68 degrees when it is below 55 degrees outside between 6 am and 10pm OR the temperature inside of your apartment is below 62 degrees between 10 pm and 6 am, please file a new complaint with 311, using 311ONLINE or 311MOBILE."
+   },
+   {
+    "complaint_id": "14944036",
+    "received_date": "2026-08-21T15:51:40.000",
+    "major_category": "UNSANITARY CONDITION",
+    "minor_category": "MOLD",
+    "apartment": "28J",
+    "complaint_status": "CLOSE",
+    "status_description": "HPD conducted an inspection of this complaint. The conditions observed by the inspector did not violate the housing laws enforced by HPD. The complaint has been closed."
+   },
+   {
+    "complaint_id": "14944036",
+    "received_date": "2026-08-21T15:51:40.000",
+    "major_category": "PAINT/PLASTER",
+    "minor_category": "WALL",
+    "apartment": "28J",
+    "complaint_status": "CLOSE",
+    "status_description": "HPD conducted an inspection of this complaint. The conditions observed by the inspector did not violate the housing laws enforced by HPD. The complaint has been closed."
+   },
+   {
+    "complaint_id": "14944036",
+    "received_date": "2026-08-21T15:51:40.000",
+    "major_category": "DOOR/WINDOW",
+    "minor_category": "DOOR",
+    "apartment": "28J",
+    "complaint_status": "CLOSE",
+    "status_description": "HPD inspected this condition so the complaint has been closed. Violations were issued. The law provides the property owner time to correct the condition(s).  Violation descriptions and the dates for the property owner to correct any violations are available at HPDONLINE.  If the owner has not corrected the condition by the date provided, you may wish to bring a case in housing court seeking the correction of these conditions.To find out more about how to start a housing court case, visit HPD's webpage on Housing Court (https://www.nyc.gov/site/hpd/services-and-information/housing-court.page)."
+   },
+   {
+    "complaint_id": "14944036",
+    "received_date": "2026-08-21T15:51:40.000",
+    "major_category": "ELECTRIC",
+    "minor_category": "OUTLET/SWITCH",
+    "apartment": "28J",
+    "complaint_status": "CLOSE",
+    "status_description": "HPD conducted an inspection of this complaint. The conditions observed by the inspector did not violate the housing laws enforced by HPD. The complaint has been closed."
+   },
+   {
+    "complaint_id": "14935243",
+    "received_date": "2026-08-14T20:49:11.000",
+    "major_category": "WATER LEAK",
+    "minor_category": "SLOW LEAK",
+    "apartment": "28J",
+    "complaint_status": "CLOSE",
+    "status_description": "HPD conducted an inspection of this complaint. The conditions observed by the inspector did not violate the housing laws enforced by HPD. The complaint has been closed."
+   },
+   {
+    "complaint_id": "14911865",
+    "received_date": "2026-07-29T12:25:40.000",
+    "major_category": "UNSANITARY CONDITION",
+    "minor_category": "SEWAGE",
+    "apartment": "8H",
+    "complaint_status": "CLOSE",
+    "status_description": "HPD conducted an inspection of this complaint. The conditions observed by the inspector did not violate the housing laws enforced by HPD. The complaint has been closed."
+   },
+   {
+    "complaint_id": "14911865",
+    "received_date": "2026-07-29T12:25:40.000",
+    "major_category": "DOOR/WINDOW",
+    "minor_category": "DOOR",
+    "apartment": "8H",
+    "complaint_status": "CLOSE",
+    "status_description": "HPD inspected this condition so the complaint has been closed. Violations were issued. The law provides the property owner time to correct the condition(s).  Violation descriptions and the dates for the property owner to correct any violations are available at HPDONLINE.  If the owner has not corrected the condition by the date provided, you may wish to bring a case in housing court seeking the correction of these conditions.To find out more about how to start a housing court case, visit HPD's webpage on Housing Court (https://www.nyc.gov/site/hpd/services-and-information/housing-court.page)."
+   },
+   {
+    "complaint_id": "14904456",
+    "received_date": "2026-07-23T11:24:48.000",
+    "major_category": "GENERAL",
+    "minor_category": "VENTILATION SYSTEM",
+    "apartment": "36K",
+    "complaint_status": "CLOSE",
+    "status_description": "HPD called the telephone number on file for this complaint.  Someone at that number indicated that the condition was corrected. The complaint has been closed. Please submit a new service request with 311 if the condition still exists."
+   },
+   {
+    "complaint_id": "14904456",
+    "received_date": "2026-07-23T11:24:48.000",
+    "major_category": "UNSANITARY CONDITION",
+    "minor_category": "MOLD",
+    "apartment": "36K",
+    "complaint_status": "CLOSE",
+    "status_description": "HPD attempted to conduct an inspection in response to this complaint, but was unable to complete the inspection. Please submit a new service request with 311 if the condition still exists. For more information on the reason why HPD was unable to inspect, contact HPD at the Tenant Information Messaging Service at 212-863-4951."
+   },
+   {
+    "complaint_id": "14887559",
+    "received_date": "2026-07-15T13:52:38.000",
+    "major_category": "HEAT/HOT WATER",
+    "minor_category": "ENTIRE BUILDING",
+    "apartment": "15G",
+    "complaint_status": "CLOSE",
+    "status_description": "HPD attempted to conduct an inspection in response to this complaint, but was unable to complete the inspection. Please submit a new service request with 311 if the condition still exists. For more information on the reason why HPD was unable to inspect, contact HPD at the Tenant Information Messaging Service at 212-863-4951."
+   },
+   {
+    "complaint_id": "14859085",
+    "received_date": "2026-06-24T13:54:41.000",
+    "major_category": "UNSANITARY CONDITION",
+    "minor_category": "PESTS",
+    "apartment": "22H",
+    "complaint_status": "CLOSE",
+    "status_description": "An HPD Inspector was not able to gain access to inspect this complaint. The Inspector left a card at the time of the inspection and a letter was sent from HPD after the inspection attempt to encourage you to call to schedule an inspection. HPD did not receive a timely response from you and the complaint has been closed. Please submit a new service request with 311 if the condition still exists."
+   },
+   {
+    "complaint_id": "14301362",
+    "received_date": "2025-12-13T12:03:39.000",
+    "major_category": "UNSANITARY CONDITION",
+    "minor_category": "PESTS",
+    "apartment": "38F",
+    "complaint_status": "CLOSE",
+    "status_description": "HPD attempted to conduct an inspection in response to this complaint, but was unable to complete the inspection. Please submit a new service request with 311 if the condition still exists. For more information on the reason why HPD was unable to inspect, contact HPD at the Tenant Information Messaging Service at 212-863-4951."
+   },
+   {
+    "complaint_id": "14087306",
+    "received_date": "2025-10-24T19:30:10.000",
+    "major_category": "UNSANITARY CONDITION",
+    "minor_category": "GARBAGE/RECYCLING STORAGE",
+    "apartment": "BLDG",
+    "complaint_status": "CLOSE",
+    "status_description": "HPD conducted an inspection of this complaint. The conditions observed by the inspector did not violate the housing laws enforced by HPD. The complaint has been closed."
+   },
+   {
+    "complaint_id": "14077188",
+    "received_date": "2025-10-20T10:46:58.000",
+    "major_category": "HEAT/HOT WATER",
+    "minor_category": "ENTIRE BUILDING",
+    "apartment": "BLDG",
+    "complaint_status": "CLOSE",
+    "status_description": "The Department of Housing Preservation and Development contacted a tenant in the building and verified that the following conditions were corrected. The complaint has been closed. If the condition still exists, please file a new complaint."
+   },
+   {
+    "complaint_id": "14049309",
+    "received_date": "2025-10-09T07:57:49.000",
+    "major_category": "HEAT/HOT WATER",
+    "minor_category": "ENTIRE BUILDING",
+    "apartment": "BLDG",
+    "complaint_status": "CLOSE",
+    "status_description": "The Department of Housing Preservation and Development was not able to gain access to your apartment or others in the building to inspect for a lack of heat or hot water. The complaint has been closed. If the condition still exists, please file a new complaint."
+   },
+   {
+    "complaint_id": "14041186",
+    "received_date": "2025-10-02T08:36:02.000",
+    "major_category": "HEAT/HOT WATER",
+    "minor_category": "ENTIRE BUILDING",
+    "apartment": "BLDG",
+    "complaint_status": "CLOSE",
+    "status_description": "The Department of Housing Preservation and Development was not able to gain access to your apartment or others in the building to inspect for a lack of heat or hot water. The complaint has been closed. If the condition still exists, please file a new complaint."
+   },
+   {
+    "complaint_id": "14041186",
+    "received_date": "2025-10-02T08:36:02.000",
+    "major_category": "UNSANITARY CONDITION",
+    "minor_category": "GARBAGE/RECYCLING STORAGE",
+    "apartment": "BLDG",
+    "complaint_status": "CLOSE",
+    "status_description": "An HPD Inspector was not able to gain access to inspect this complaint. The Inspector left a card at the time of the inspection and a letter was sent from HPD after the inspection attempt to encourage you to call to schedule an inspection. HPD did not receive a timely response from you and the complaint has been closed. Please submit a new service request with 311 if the condition still exists."
+   },
+   {
+    "complaint_id": "14041186",
+    "received_date": "2025-10-02T08:36:02.000",
+    "major_category": "HEAT/HOT WATER",
+    "minor_category": "ENTIRE BUILDING",
+    "apartment": "BLDG",
+    "complaint_status": "CLOSE",
+    "status_description": "The Department of Housing Preservation and Development was not able to gain access to your apartment or others in the building to inspect for a lack of heat or hot water. The complaint has been closed. If the condition still exists, please file a new complaint."
+   },
+   {
+    "complaint_id": "13803497",
+    "received_date": "2025-05-23T11:46:44.000",
+    "major_category": "HEAT/HOT WATER",
+    "minor_category": "ENTIRE BUILDING",
+    "apartment": "20J",
+    "complaint_status": "CLOSE",
+    "status_description": "More than one complaint was received for this building-wide condition. This complaint status is for the initial complaint.HPD called the telephone number on file for this complaint.  Someone at that number indicated that the condition was corrected. The complaint has been closed. Please submit a new service request with 311 if the condition still exists."
+   },
+   {
+    "complaint_id": "13801318",
+    "received_date": "2025-05-23T09:11:29.000",
+    "major_category": "HEAT/HOT WATER",
+    "minor_category": "ENTIRE BUILDING",
+    "apartment": "BLDG",
+    "complaint_status": "CLOSE",
+    "status_description": "The Department of Housing Preservation and Development was not able to gain access to your apartment or others in the building to inspect for a lack of heat or hot water. The complaint has been closed. If the condition still exists, please file a new complaint."
+   },
+   {
+    "complaint_id": "13799679",
+    "received_date": "2025-05-22T10:01:18.000",
+    "major_category": "HEAT/HOT WATER",
+    "minor_category": "ENTIRE BUILDING",
+    "apartment": "20J",
+    "complaint_status": "CLOSE",
+    "status_description": "More than one complaint was received for this building-wide condition. This complaint status is for the initial complaint.HPD called the telephone number on file for this complaint.  Someone at that number indicated that the condition was corrected. The complaint has been closed. Please submit a new service request with 311 if the condition still exists."
+   },
+   {
+    "complaint_id": "13798261",
+    "received_date": "2025-05-21T18:12:45.000",
+    "major_category": "HEAT/HOT WATER",
+    "minor_category": "ENTIRE BUILDING",
+    "apartment": "BLDG",
+    "complaint_status": "CLOSE",
+    "status_description": "HPD responded to a complaint of no heat or hot water in the building. An occupant of the building confirmed heat and hot water had been restored when the Inspector attempted to conduct the inspection or contacted you at the phone number associated with the complaint. The complaint has been closed. Please submit a new service request with 311 if the condition still exists."
+   },
+   {
+    "complaint_id": "13244927",
+    "received_date": "2024-11-08T07:59:50.000",
+    "major_category": "HEAT/HOT WATER",
+    "minor_category": "ENTIRE BUILDING",
+    "apartment": "BLDG",
+    "complaint_status": "CLOSE",
+    "status_description": "More than one complaint was received for this building-wide condition. This complaint status is for the initial complaint.The Department of Housing Preservation and Development contacted a tenant in the building and verified that the following conditions were corrected. The complaint has been closed. If the condition still exists, please file a new complaint."
+   },
+   {
+    "complaint_id": "13244911",
+    "received_date": "2024-11-08T07:37:34.000",
+    "major_category": "HEAT/HOT WATER",
+    "minor_category": "ENTIRE BUILDING",
+    "apartment": "BLDG",
+    "complaint_status": "CLOSE",
+    "status_description": "The Department of Housing Preservation and Development was not able to gain access to your apartment or others in the building to inspect for a lack of heat or hot water. The complaint has been closed. If the condition still exists, please file a new complaint."
+   }
+  ]
+ },
+ "dob_complaints": {
+  "total": 23,
+  "by_category": {
+   "7J": 4,
+   "30": 4,
+   "6M": 3,
+   "6V": 3,
+   "04": 1,
+   "7K": 1,
+   "78": 1,
+   "45": 1,
+   "2P": 2,
+   "1X": 1,
+   "53": 1,
+   "37": 1
+  },
+  "recent": [
+   {
+    "complaint_number": "1682329",
+    "status": "CLOSED",
+    "date_entered": "11/20/2024",
+    "house_number": "330",
+    "house_street": "EAST 38 STREET",
+    "zip_code": "10016",
+    "bin": "1076166",
+    "community_board": "106",
+    "complaint_category": "7J",
+    "unit": "RTEU",
+    "disposition_date": "11/21/2024",
+    "disposition_code": "C4",
+    "inspection_date": "11/21/2024",
+    "dobrundate": "20261013000000"
+   },
+   {
+    "complaint_number": "1720334",
+    "status": "CLOSED",
+    "date_entered": "03/23/2026",
+    "house_number": "330",
+    "house_street": "EAST 38 STREET",
+    "zip_code": "10016",
+    "bin": "1076166",
+    "community_board": "106",
+    "complaint_category": "30",
+    "unit": "ERT",
+    "disposition_date": "03/24/2026",
+    "disposition_code": "A8",
+    "inspection_date": "03/24/2026",
+    "dobrundate": "20261013000000"
+   },
+   {
+    "complaint_number": "1655288",
+    "status": "CLOSED",
+    "date_entered": "12/11/2023",
+    "house_number": "330",
+    "house_street": "EAST 38 STREET",
+    "zip_code": "10016",
+    "bin": "1076166",
+    "community_board": "106",
+    "complaint_category": "6M",
+    "unit": "ELEVR",
+    "disposition_date": "12/28/2023",
+    "disposition_code": "I2",
+    "inspection_date": "12/27/2023",
+    "dobrundate": "20261013000000"
+   },
+   {
+    "complaint_number": "1672606",
+    "status": "CLOSED",
+    "date_entered": "07/16/2024",
+    "house_number": "330",
+    "house_street": "EAST 38 STREET",
+    "zip_code": "10016",
+    "bin": "1076166",
+    "community_board": "106",
+    "complaint_category": "6V",
+    "unit": "OBM",
+    "disposition_date": "07/16/2024",
+    "disposition_code": "I2",
+    "inspection_date": "07/16/2024",
+    "dobrundate": "20261013000000"
+   },
+   {
+    "complaint_number": "1680149",
+    "status": "CLOSED",
+    "date_entered": "10/20/2024",
+    "house_number": "330",
+    "house_street": "EAST 38 STREET",
+    "zip_code": "10016",
+    "bin": "1076166",
+    "community_board": "106",
+    "complaint_category": "04",
+    "unit": "ERT",
+    "disposition_date": "11/10/2024",
+    "disposition_code": "I2",
+    "inspection_date": "11/09/2024",
+    "dobrundate": "20261013000000"
+   },
+   {
+    "complaint_number": "1656700",
+    "status": "CLOSED",
+    "date_entered": "12/28/2023",
+    "house_number": "330",
+    "house_street": "EAST 38 STREET",
+    "zip_code": "10016",
+    "bin": "1076166",
+    "community_board": "106",
+    "complaint_category": "7K",
+    "unit": "RTEU",
+    "disposition_date": "03/08/2024",
+    "disposition_code": "I2",
+    "inspection_date": "03/08/2024",
+    "dobrundate": "20261013000000"
+   },
+   {
+    "complaint_number": "1708709",
+    "status": "CLOSED",
+    "date_entered": "10/30/2025",
+    "house_number": "330",
+    "house_street": "EAST 38 STREET",
+    "zip_code": "10016",
+    "bin": "1076166",
+    "community_board": "106",
+    "complaint_category": "78",
+    "unit": "QAU",
+    "disposition_date": "10/30/2025",
+    "disposition_code": "I3",
+    "inspection_date": "10/29/2025",
+    "dobrundate": "20261013000000"
+   },
+   {
+    "complaint_number": "1682132",
+    "status": "CLOSED",
+    "date_entered": "11/17/2024",
+    "house_number": "330",
+    "house_street": "EAST 38 STREET",
+    "zip_code": "10016",
+    "bin": "1076166",
+    "community_board": "106",
+    "complaint_category": "7J",
+    "unit": "RTEU",
+    "disposition_date": "11/18/2024",
+    "disposition_code": "I2",
+    "inspection_date": "11/18/2024",
+    "dobrundate": "20261013000000"
+   },
+   {
+    "complaint_number": "1730748",
+    "status": "CLOSED",
+    "date_entered": "07/14/2026",
+    "house_number": "330",
+    "house_street": "EAST 38 STREET",
+    "zip_code": "10016",
+    "bin": "1076166",
+    "community_board": "106",
+    "complaint_category": "6M",
+    "unit": "ELEVR",
+    "disposition_date": "07/30/2026",
+    "disposition_code": "I2",
+    "inspection_date": "07/29/2026",
+    "dobrundate": "20261013000000"
+   },
+   {
+    "complaint_number": "1732388",
+    "status": "CLOSED",
+    "date_entered": "08/03/2026",
+    "house_number": "330",
+    "house_street": "EAST 38 STREET",
+    "zip_code": "10016",
+    "bin": "1076166",
+    "community_board": "106",
+    "complaint_category": "30",
+    "unit": "ERT",
+    "disposition_date": "08/03/2026",
+    "disposition_code": "I2",
+    "inspection_date": "08/03/2026",
+    "dobrundate": "20261013000000"
+   },
+   {
+    "complaint_number": "1673986",
+    "status": "CLOSED",
+    "date_entered": "08/01/2024",
+    "house_number": "330",
+    "house_street": "EAST 38 STREET",
+    "zip_code": "10016",
+    "bin": "1076166",
+    "community_board": "106",
+    "complaint_category": "6V",
+    "unit": "OBM",
+    "disposition_date": "08/13/2024",
+    "disposition_code": "I3",
+    "inspection_date": "08/12/2024",
+    "dobrundate": "20261013000000"
+   },
+   {
+    "complaint_number": "1682024",
+    "status": "CLOSED",
+    "date_entered": "11/15/2024",
+    "house_number": "330",
+    "house_street": "EAST 38 STREET",
+    "zip_code": "10016",
+    "bin": "1076166",
+    "community_board": "106",
+    "complaint_category": "7J",
+    "unit": "RTEU",
+    "disposition_date": "11/18/2024",
+    "disposition_code": "C2",
+    "inspection_date": "11/18/2024",
+    "dobrundate": "20261013000000"
+   },
+   {
+    "complaint_number": "1732346",
+    "status": "CLOSED",
+    "date_entered": "08/02/2026",
+    "house_number": "330",
+    "house_street": "EAST 38 STREET",
+    "zip_code": "10016",
+    "bin": "1076166",
+    "community_board": "106",
+    "complaint_category": "30",
+    "unit": "ERT",
+    "disposition_date": "08/03/2026",
+    "disposition_code": "A8",
+    "inspection_date": "08/03/2026",
+    "dobrundate": "20261013000000"
+   },
+   {
+    "complaint_number": "1682133",
+    "status": "CLOSED",
+    "date_entered": "11/17/2024",
+    "house_number": "330",
+    "house_street": "EAST 38 STREET",
+    "zip_code": "10016",
+    "bin": "1076166",
+    "community_board": "106",
+    "complaint_category": "45",
+    "unit": "Q-L",
+    "disposition_date": "11/20/2024",
+    "disposition_code": "H1",
+    "inspection_date": "11/20/2024",
+    "dobrundate": "20261013000000"
+   },
+   {
+    "complaint_number": "1733072",
+    "status": "CLOSED",
+    "date_entered": "08/07/2026",
+    "house_number": "330",
+    "house_street": "EAST 38 STREET",
+    "zip_code": "10016",
+    "bin": "1076166",
+    "community_board": "106",
+    "complaint_category": "2P",
+    "unit": "FISP",
+    "disposition_date": "08/26/2026",
+    "disposition_code": "Y2",
+    "inspection_date": "08/25/2026",
+    "dobrundate": "20261013000000"
+   },
+   {
+    "complaint_number": "1733077",
+    "status": "CLOSED",
+    "date_entered": "08/07/2026",
+    "house_number": "330",
+    "house_street": "EAST 38 STREET",
+    "zip_code": "10016",
+    "bin": "1076166",
+    "community_board": "106",
+    "complaint_category": "1X",
+    "unit": "MAN.",
+    "disposition_date": "08/11/2026",
+    "disposition_code": "I3",
+    "inspection_date": "08/11/2026",
+    "dobrundate": "20261013000000"
+   },
+   {
+    "complaint_number": "1713542",
+    "status": "CLOSED",
+    "date_entered": "12/30/2025",
+    "house_number": "330",
+    "house_street": "EAST 38 STREET",
+    "zip_code": "10016",
+    "bin": "1076166",
+    "community_board": "106",
+    "complaint_category": "7J",
+    "unit": "RTEU",
+    "disposition_date": "12/30/2025",
+    "disposition_code": "A8",
+    "inspection_date": "12/30/2025",
+    "dobrundate": "20261013000000"
+   },
+   {
+    "complaint_number": "1732256",
+    "status": "ACTIVE",
+    "date_entered": "07/31/2026",
+    "house_number": "330",
+    "house_street": "EAST 38 STREET",
+    "zip_code": "10016",
+    "bin": "1076166",
+    "community_board": "106",
+    "complaint_category": "53",
+    "unit": "BOILR",
+    "disposition_date": "08/05/2026",
+    "disposition_code": "D6",
+    "inspection_date": "08/05/2026",
+    "dobrundate": "20261013000000"
+   },
+   {
+    "complaint_number": "1654159",
+    "status": "CLOSED",
+    "date_entered": "11/24/2023",
+    "house_number": "330",
+    "house_street": "EAST 38 STREET",
+    "zip_code": "10016",
+    "bin": "1076166",
+    "community_board": "106",
+    "complaint_category": "6V",
+    "unit": "OBM",
+    "disposition_date": "11/24/2023",
+    "disposition_code": "I3",
+    "inspection_date": "11/24/2023",
+    "dobrundate": "20261013000000"
+   },
+   {
+    "complaint_number": "1682131",
+    "status": "CLOSED",
+    "date_entered": "11/17/2024",
+    "house_number": "330",
+    "house_street": "EAST 38 STREET",
+    "zip_code": "10016",
+    "bin": "1076166",
+    "community_board": "106",
+    "complaint_category": "6M",
+    "unit": "ELEVR",
+    "disposition_date": "03/05/2025",
+    "disposition_code": "I2",
+    "inspection_date": "03/04/2025",
+    "dobrundate": "20261013000000"
+   }
+  ]
+ },
+ "ecb_violations": {
+  "total": 10,
+  "open": 7,
+  "by_severity": {
+   "CLASS - 1": 5,
+   "CLASS - 2": 5
+  },
+  "recent": [
+   {
+    "ecb_violation_number": "35679747J",
+    "issue_date": "20240209",
+    "severity": "CLASS - 1",
+    "violation_description": "AC28-323.8 AND RCNY 103.13(5) FAILURE TO SECURE PUBLIC SAFETY AND/OR MAKE THE BUILDINGS STRUCTURE OR APPURTENANCES CONFORM TO THE PREVIOUS OF THE ADMINISTRATIVE CODE. AFTER UNSAFE CONDITION FILED BY Q.P.S.I. AT",
+    "ecb_violation_status": "RESOLVE",
+    "penality_imposed": "0"
+   },
+   {
+    "ecb_violation_number": "35679748L",
+    "issue_date": "20240209",
+    "severity": "CLASS - 1",
+    "violation_description": "28-323.1 FAILURE TO MAINTAIN PARKING STRUCTURE IN SAFE CONDITION AT TIME OF INSPECTION ON A PARKING STRUCTURE CONSISTING OF 1 LEVEL BELOW GRADE. OBSERVED CONDITIONS OF CRACKES AND SPALLING CONCRETE ON RAMP FROM",
+    "ecb_violation_status": "RESOLVE",
+    "penality_imposed": "0"
+   },
+   {
+    "ecb_violation_number": "35690072H",
+    "issue_date": "20250323",
+    "severity": "CLASS - 1",
+    "violation_description": "AC 28-323.8 AND RCNY 103-13(5). FAILURE TO SECURE PUBLIC SAFETY AND MAKE BUILDING STRUCTURE AND APPURTENANCES CONFORM TO THE PROVISION OF THE ADMINISTRATIVE CODE AFTER UNSAFE NOTIFICATION FILED BY QSPI. AS NOTE",
+    "ecb_violation_status": "ACTIVE",
+    "penality_imposed": "12500"
+   },
+   {
+    "ecb_violation_number": "39181700J",
+    "issue_date": "20260324",
+    "severity": "CLASS - 2",
+    "violation_description": "NOTED AT TIME OF INSPECTION MINOR CRACKING AT ENTRANCE RAMP OF PARKING GARAGE ON 330 EAST 38 STREET, REPAIR AND/OR REPLACE",
+    "ecb_violation_status": "ACTIVE",
+    "penality_imposed": "1250"
+   },
+   {
+    "ecb_violation_number": "39172032Z",
+    "issue_date": "20251230",
+    "severity": "CLASS - 2",
+    "violation_description": "PERMIT #M01264677-I1-LA EXPIRES ON 4/06/2026 ON FILE WITH THE DEPT OF BUILDINGS AT TIME OF INSPECTION OBSERVED PERMITS ARE NOT POSTED AT THE PREMISES OR FLOORS., POST/PROPERLY POST PERMIT",
+    "ecb_violation_status": "RESOLVE",
+    "penality_imposed": "300"
+   },
+   {
+    "ecb_violation_number": "39198814Z",
+    "issue_date": "20260803",
+    "severity": "CLASS - 2",
+    "violation_description": "IN PARKING GARAGE AT 38TH STREET EXPOSURE CEILING AT HAS MULTIPLE SPOT SPALLING OF CONCRETE FINISH EXPOSING REBARS., REPAIR AND/OR REPLACE",
+    "ecb_violation_status": "ACTIVE",
+    "penality_imposed": "1250"
+   },
+   {
+    "ecb_violation_number": "39172033K",
+    "issue_date": "20251230",
+    "severity": "CLASS - 2",
+    "violation_description": "PERMIT # M01313560-I1-LA EXPIRES ON 4/17/2026 ON FILE WITH THE DEPT OF BUILDINGS AT TIME OF INSPECTION OBSERVED PERMIT ARE NOT POSTED AT THE PREMISES OR FLOORS., POST/PROPERLY POST PERMIT",
+    "ecb_violation_status": "ACTIVE",
+    "penality_imposed": "300"
+   },
+   {
+    "ecb_violation_number": "35726494J",
+    "issue_date": "20260804",
+    "severity": "CLASS - 1",
+    "violation_description": "FAILURE TO MAINTAIN PARKING STRUCTURE IN SAFE CONDITION. AS NOTED AT TIME OF INSPECTION AN OCCUPIED PARKING STRUCTURE CONSISTING OF CELLAR LEVEL OBSERVED SPALLED/CRACKED CONCRETE AT BEAMS, SLABS AND COLUMNS-EXP",
+    "ecb_violation_status": "ACTIVE",
+    "penality_imposed": "12500"
+   },
+   {
+    "ecb_violation_number": "35726495L",
+    "issue_date": "20260804",
+    "severity": "CLASS - 1",
+    "violation_description": "FAILURE TO SECURE PUBLIC SAFETY AND MAKE THE BUILDING'S STRUCTURE AND APPURTENANCES CONFORM TO THE PROVISIONS OF THE ADMINISTRATIVE CODE. ASNOTED AT TIME OF INSPECTION ON AN OCCUPIED PARKING STRUCTURE CONSISTIN",
+    "ecb_violation_status": "ACTIVE",
+    "penality_imposed": "10000"
+   },
+   {
+    "ecb_violation_number": "35686181P",
+    "issue_date": "20240801",
+    "severity": "CLASS - 2",
+    "violation_description": "FAILURE TO MAINTAIN EXTERIOR BUILDING FACADE AND APPURTENANCES. NOTE AT TIME OF INSPECTION OBSERVED AT EXPOSURE #1 CORNER COURTYARD DAMAGED WITH WATER, DAMAGED AND SPALLING AT EXPOSURE #1 OBSERVED DEFECTIVE WIN",
+    "ecb_violation_status": "ACTIVE",
+    "penality_imposed": "1250"
+   }
+  ]
+ },
+ "construction": {
+  "block_filings": 30,
+  "lot_filings": 22,
+  "major_jobs": [
+   {
+    "job_filing_number": "M01314797-I1",
+    "house_no": "330",
+    "street_name": "EAST   38 STREET",
+    "lot": "7501",
+    "job_type": "Alteration",
+    "filing_status": "Approved",
+    "job_description": "Garage Repairs and Temporary Shoring as shown on the drawings filed herewith. No change in use, egress, or occupancy.",
+    "filing_date": "2026-08-21T00:00:00.000",
+    "initial_cost": "450000"
+   },
+   {
+    "job_filing_number": "M01291838-I1",
+    "house_no": "330",
+    "street_name": "EAST   38 STREET",
+    "lot": "7501",
+    "job_type": "Alteration",
+    "filing_status": "Permit Entire",
+    "job_description": "Facade Repair Project as per plans. No change to use, egress, or occupancy.",
+    "filing_date": "2026-06-23T00:00:00.000",
+    "initial_cost": "4068022.5"
+   },
+   {
+    "job_filing_number": "M01329051-I1",
+    "house_no": "330",
+    "street_name": "EAST   38 STREET",
+    "lot": "7501",
+    "job_type": "Alteration",
+    "filing_status": "Approved",
+    "job_description": "General construction work associated with the renovation of an existing apartment. There is no change to use, egress, or occupancy.",
+    "filing_date": "2026-04-03T00:00:00.000",
+    "initial_cost": "499200"
+   }
+  ],
+  "heavy_construction": [],
+  "lot_recent": [
+   {
+    "job_filing_number": "M01387621-P1",
+    "house_no": "330",
+    "street_name": "EAST   38 STREET",
+    "lot": "7501",
+    "job_type": "Alteration",
+    "filing_status": "Approved",
+    "job_description": "Installation of suspended scaffold for facade work or inspection.",
+    "filing_date": "2026-09-14T00:00:00.000",
+    "initial_cost": "0"
+   },
+   {
+    "job_filing_number": "M01447225-S1",
+    "house_no": "330",
+    "street_name": "EAST   38 STREET",
+    "lot": "7501",
+    "job_type": "Alteration",
+    "filing_status": "Approved",
+    "job_description": "Subsequent plumbing application to install new and to modify plumbing fixtures as shown in plans filed herewith. No change in use, occupancy or egress.",
+    "filing_date": "2026-08-31T00:00:00.000",
+    "initial_cost": "30000"
+   },
+   {
+    "job_filing_number": "M01391969-I1",
+    "house_no": "330",
+    "street_name": "EAST   38 STREET",
+    "lot": "7501",
+    "job_type": "Alteration",
+    "filing_status": "Permit Entire",
+    "job_description": "INSTALLATION OF TEMPORARY SIDEWALK SHED AS PER PLAN. NO CHANGE IN USE, EGRESS OR OCCUPANCY.",
+    "filing_date": "2026-08-28T00:00:00.000",
+    "initial_cost": "1000"
+   },
+   {
+    "job_filing_number": "M01447225-I1",
+    "house_no": "330",
+    "street_name": "EAST   38 STREET",
+    "lot": "7501",
+    "job_type": "Alteration",
+    "filing_status": "Approved",
+    "job_description": "Interior renovation of existing class A condo unit. No change in use, occupancy or egress.",
+    "filing_date": "2026-08-28T00:00:00.000",
+    "initial_cost": "174000"
+   },
+   {
+    "job_filing_number": "M01314797-I1",
+    "house_no": "330",
+    "street_name": "EAST   38 STREET",
+    "lot": "7501",
+    "job_type": "Alteration",
+    "filing_status": "Approved",
+    "job_description": "Garage Repairs and Temporary Shoring as shown on the drawings filed herewith. No change in use, egress, or occupancy.",
+    "filing_date": "2026-08-21T00:00:00.000",
+    "initial_cost": "450000"
+   },
+   {
+    "job_filing_number": "M01417436-S1",
+    "house_no": "330",
+    "street_name": "EAST   38 STREET",
+    "lot": "7501",
+    "job_type": "Alteration",
+    "filing_status": "Permit Entire",
+    "job_description": "NEW PLUMBING WORK APT. #34D.",
+    "filing_date": "2026-08-03T00:00:00.000",
+    "initial_cost": "35000"
+   },
+   {
+    "job_filing_number": "M01417436-I1",
+    "house_no": "330",
+    "street_name": "EAST   38 STREET",
+    "lot": "7501",
+    "job_type": "Alteration",
+    "filing_status": "Permit Entire",
+    "job_description": "INTERIOR RENOVATION  IN APT. #34D. NO CHANGE OF USE, EGRESS OR OCCUPANCY.",
+    "filing_date": "2026-07-28T00:00:00.000",
+    "initial_cost": "240000"
+   },
+   {
+    "job_filing_number": "M01428645-I1",
+    "house_no": "330",
+    "street_name": "EAST   38 STREET",
+    "lot": "7501",
+    "job_type": "Alteration",
+    "filing_status": "Permit Entire",
+    "job_description": "Propose interior renovation for apartment 20G on the 20th floor. No change in use, egress, occupancy.",
+    "filing_date": "2026-07-14T00:00:00.000",
+    "initial_cost": "153000"
+   },
+   {
+    "job_filing_number": "M01291838-I1",
+    "house_no": "330",
+    "street_name": "EAST   38 STREET",
+    "lot": "7501",
+    "job_type": "Alteration",
+    "filing_status": "Permit Entire",
+    "job_description": "Facade Repair Project as per plans. No change to use, egress, or occupancy.",
+    "filing_date": "2026-06-23T00:00:00.000",
+    "initial_cost": "4068022.5"
+   },
+   {
+    "job_filing_number": "M01387621-I1",
+    "house_no": "330",
+    "street_name": "EAST   38 STREET",
+    "lot": "7501",
+    "job_type": "Alteration",
+    "filing_status": "Permit Entire",
+    "job_description": "Installation of suspended scaffold for facade work or inspection.",
+    "filing_date": "2026-05-20T00:00:00.000",
+    "initial_cost": "0"
+   },
+   {
+    "job_filing_number": "M01354205-S1",
+    "house_no": "330",
+    "street_name": "EAST   38 STREET",
+    "lot": "7501",
+    "job_type": "Alteration",
+    "filing_status": "Permit Entire",
+    "job_description": "PLUMBING WORK IN CONJUNCTION WITH THE MISCELLANEOUS INTERIOR RENOVATION OF AN EXISTINGRESIDENTIAL \"UNIT 35P\" ON THE 35TH FLOOR OF AN EXISTING MIXED RESIDENTIAL & COMMERCIAL (RM) BUILDING. NO CHANGE IN USE, OCCUPANCY, OR EGRESS.",
+    "filing_date": "2026-04-29T00:00:00.000",
+    "initial_cost": "24999.94"
+   },
+   {
+    "job_filing_number": "M01335282-I1",
+    "house_no": "330",
+    "street_name": "EAST   38 STREET",
+    "lot": "7501",
+    "job_type": "Alteration",
+    "filing_status": "Approved",
+    "job_description": "Mechanical work associated with the renovation of an existing 31st Floor Apartment.",
+    "filing_date": "2026-04-15T00:00:00.000",
+    "initial_cost": "90016"
+   },
+   {
+    "job_filing_number": "M01354205-I1",
+    "house_no": "330",
+    "street_name": "EAST   38 STREET",
+    "lot": "7501",
+    "job_type": "Alteration",
+    "filing_status": "Permit Entire",
+    "job_description": "ALTERATION APPLICATION IS FOR THE MISCELLANEOUS INTERIOR RENOVATION OF AN EXISTINGRESIDENTIAL \"UNIT 35P\" ON THE 35TH FLOOR OF AN EXISTING MIXED RESIDENTIAL & COMMERCIAL (RM) BUILDING. NO CHANGE IN USE, OCCUPANCY, OR EGRESS.",
+    "filing_date": "2026-04-07T00:00:00.000",
+    "initial_cost": "84998.2"
+   },
+   {
+    "job_filing_number": "M01335328-I1",
+    "house_no": "330",
+    "street_name": "EAST   38 STREET",
+    "lot": "7501",
+    "job_type": "Alteration",
+    "filing_status": "Approved",
+    "job_description": "Plumbing work associated with the renovation of an existing 31st Floor Apartment.",
+    "filing_date": "2026-04-06T00:00:00.000",
+    "initial_cost": "71008"
+   },
+   {
+    "job_filing_number": "M01329051-I1",
+    "house_no": "330",
+    "street_name": "EAST   38 STREET",
+    "lot": "7501",
+    "job_type": "Alteration",
+    "filing_status": "Approved",
+    "job_description": "General construction work associated with the renovation of an existing apartment. There is no change to use, egress, or occupancy.",
+    "filing_date": "2026-04-03T00:00:00.000",
+    "initial_cost": "499200"
+   }
+  ]
+ },
+ "bedbugs": {
+  "filings": [
+   {
+    "building_id": "13481",
+    "registration_id": "140741",
+    "borough": "MANHATTAN",
+    "house_number": "345",
+    "street_name": "EAST 37 STREET",
+    "postcode": "10016",
+    "of_dwelling_units": "830",
+    "infested_dwelling_unit_count": "0",
+    "eradicated_unit_count": "0",
+    "re_infested_dwelling_unit": "0",
+    "filing_date": "2025-12-02T00:00:00.000",
+    "filing_period_start_date": "2024-11-01T00:00:00.000",
+    "filling_period_end_date": "2025-10-31T00:00:00.000",
+    "latitude": "40.746037",
+    "longitude": "-73.972944",
+    "community_board": "6",
+    "city_council_district": "4",
+    "census_tract_2010": "78",
+    "bin": "1076166",
+    "bbl": "1009437501",
+    "nta": "Murray Hill-Kips Bay"
+   },
+   {
+    "building_id": "13481",
+    "registration_id": "140741",
+    "borough": "MANHATTAN",
+    "house_number": "345",
+    "street_name": "EAST 37 STREET",
+    "postcode": "10016",
+    "of_dwelling_units": "863",
+    "infested_dwelling_unit_count": "0",
+    "eradicated_unit_count": "0",
+    "re_infested_dwelling_unit": "0",
+    "filing_date": "2024-12-06T00:00:00.000",
+    "filing_period_start_date": "2023-11-01T00:00:00.000",
+    "filling_period_end_date": "2024-10-31T00:00:00.000",
+    "latitude": "40.746037",
+    "longitude": "-73.972944",
+    "community_board": "6",
+    "city_council_district": "4",
+    "census_tract_2010": "78",
+    "bin": "1076166",
+    "bbl": "1009437501",
+    "nta": "Murray Hill-Kips Bay"
+   },
+   {
+    "building_id": "13481",
+    "registration_id": "140741",
+    "borough": "MANHATTAN",
+    "house_number": "345",
+    "street_name": "EAST 37 STREET",
+    "postcode": "10016",
+    "of_dwelling_units": "866",
+    "infested_dwelling_unit_count": "0",
+    "eradicated_unit_count": "0",
+    "re_infested_dwelling_unit": "0",
+    "filing_date": "2023-12-19T00:00:00.000",
+    "filing_period_start_date": "2022-11-01T00:00:00.000",
+    "filling_period_end_date": "2023-10-31T00:00:00.000",
+    "latitude": "40.746037",
+    "longitude": "-73.972944",
+    "community_board": "6",
+    "city_council_district": "4",
+    "census_tract_2010": "78",
+    "bin": "1076166",
+    "bbl": "1009437501",
+    "nta": "Murray Hill-Kips Bay"
+   },
+   {
+    "building_id": "13481",
+    "registration_id": "140741",
+    "borough": "MANHATTAN",
+    "house_number": "345",
+    "street_name": "EAST 37 STREET",
+    "postcode": "10016",
+    "of_dwelling_units": "831",
+    "infested_dwelling_unit_count": "0",
+    "eradicated_unit_count": "0",
+    "re_infested_dwelling_unit": "0",
+    "filing_date": "2022-12-14T00:00:00.000",
+    "filing_period_start_date": "2021-11-01T00:00:00.000",
+    "filling_period_end_date": "2022-10-31T00:00:00.000",
+    "latitude": "40.746037",
+    "longitude": "-73.972944",
+    "community_board": "6",
+    "city_council_district": "4",
+    "census_tract_2010": "78",
+    "bin": "1076166",
+    "bbl": "1009437501",
+    "nta": "Murray Hill-Kips Bay"
+   },
+   {
+    "building_id": "13481",
+    "registration_id": "140741",
+    "borough": "MANHATTAN",
+    "house_number": "345",
+    "street_name": "EAST 37 STREET",
+    "postcode": "10016",
+    "of_dwelling_units": "831",
+    "infested_dwelling_unit_count": "0",
+    "eradicated_unit_count": "0",
+    "re_infested_dwelling_unit": "0",
+    "filing_date": "2021-12-31T00:00:00.000",
+    "filing_period_start_date": "2020-11-01T00:00:00.000",
+    "filling_period_end_date": "2021-10-31T00:00:00.000",
+    "latitude": "40.746037",
+    "longitude": "-73.972944",
+    "community_board": "6",
+    "city_council_district": "4",
+    "census_tract_2010": "78",
+    "bin": "1076166",
+    "bbl": "1009437501",
+    "nta": "Murray Hill-Kips Bay"
+   }
+  ]
+ },
+ "noise_311": {
+  "radius_m": 150,
+  "nearby_total": 1000,
+  "at_building": 31,
+  "nearby_per_year": 333.3,
+  "by_type": {
+   "Noise - Vehicle | Car/Truck Horn": 560,
+   "Noise | Noise: Construction Before/After Hours (NM1)": 220,
+   "Noise | Noise: Construction Equipment (NC1)": 54,
+   "Noise - Residential | Loud Music/Party": 31,
+   "Noise - Residential | Banging/Pounding": 28,
+   "Noise - Street/Sidewalk | Loud Music/Party": 21,
+   "Noise | Noise: Jack Hammering (NC2)": 16,
+   "Noise - Street/Sidewalk | Loud Talking": 14,
+   "Noise | Noise: air condition/ventilation equipment (NV1)": 14,
+   "Noise - Commercial | Banging/Pounding": 13,
+   "Noise - Commercial | Loud Music/Party": 6,
+   "Noise | Noise:  lawn care equipment (NCL)": 5
+  },
+  "at_building_by_type": {
+   "Banging/Pounding": 10,
+   "Noise: Construction Before/After Hours (NM1)": 10,
+   "Loud Music/Party": 7,
+   "Car/Truck Horn": 2,
+   "Noise: air condition/ventilation equipment (NV1)": 1,
+   "Noise: Construction Equipment (NC1)": 1
+  },
+  "by_hour": [
+   151,
+   34,
+   9,
+   8,
+   8,
+   8,
+   12,
+   38,
+   29,
+   36,
+   23,
+   21,
+   10,
+   12,
+   16,
+   10,
+   19,
+   26,
+   30,
+   35,
+   45,
+   68,
+   155,
+   197
+  ],
+  "night_share": 0.57,
+  "by_month": {
+   "2023-10": 32,
+   "2023-11": 36,
+   "2023-12": 52,
+   "2024-01": 62,
+   "2024-02": 13,
+   "2024-03": 50,
+   "2024-04": 33,
+   "2024-05": 54,
+   "2024-06": 57,
+   "2024-07": 9,
+   "2024-08": 6,
+   "2024-09": 45,
+   "2024-10": 112,
+   "2024-11": 42,
+   "2024-12": 19,
+   "2025-01": 6,
+   "2025-02": 19,
+   "2025-03": 21,
+   "2025-04": 9,
+   "2025-05": 29,
+   "2025-06": 37,
+   "2025-07": 4,
+   "2025-08": 10,
+   "2025-09": 10,
+   "2025-10": 44,
+   "2025-11": 39,
+   "2025-12": 18,
+   "2026-01": 14,
+   "2026-02": 2,
+   "2026-03": 18,
+   "2026-04": 41,
+   "2026-05": 24,
+   "2026-06": 16,
+   "2026-07": 3,
+   "2026-08": 1,
+   "2026-09": 10,
+   "2026-10": 3
+  },
+  "at_building_recent": [
+   {
+    "created_date": "2026-10-04T23:51:55.000",
+    "complaint_type": "Noise - Vehicle",
+    "descriptor": "Car/Truck Horn",
+    "incident_address": "330 EAST 38 STREET",
+    "bbl": "1009437501",
+    "resolution_description": "The New York City Police Department responded to the complaint and their investigation determined that no criminal violation existed. The condition was corrected without the need to issue a summons or effect an arrest. If the problem persists, please contact 311 to create another complaint. If possible, provide contact information so responding officers may reach out to you for more details. If necessary, your complaint may be referred to your local precinct's special operations units (Quality of Life, etc.). Thank you for your attention to this matter. We count on New Yorkers like yourself to maintain a safe City, so please let us know if you see other conditions that require our attention."
+   },
+   {
+    "created_date": "2026-10-04T23:45:50.000",
+    "complaint_type": "Noise - Vehicle",
+    "descriptor": "Car/Truck Horn",
+    "incident_address": "330 EAST 38 STREET",
+    "bbl": "1009437501",
+    "resolution_description": "The New York City Police Department responded to the complaint and their investigation determined that no criminal violation existed. The condition was corrected without the need to issue a summons or effect an arrest. If the problem persists, please contact 311 to create another complaint. If possible, provide contact information so responding officers may reach out to you for more details. If necessary, your complaint may be referred to your local precinct's special operations units (Quality of Life, etc.). Thank you for your attention to this matter. We count on New Yorkers like yourself to maintain a safe City, so please let us know if you see other conditions that require our attention."
+   },
+   {
+    "created_date": "2026-04-30T22:02:31.000",
+    "complaint_type": "Noise - Residential",
+    "descriptor": "Loud Music/Party",
+    "incident_address": "330 EAST 38 STREET",
+    "bbl": "1009437501",
+    "resolution_description": "The New York City Police Department responded to the complaint and their investigation determined that police action was not necessary. If the problem persists, please contact 311 to create another complaint. If possible, provide contact information so responding officers may reach out to you for more details. We count on New Yorkers like yourself to maintain a safe City, so please let us know if you see other conditions that require our attention."
+   },
+   {
+    "created_date": "2025-11-14T05:17:00.000",
+    "complaint_type": "Noise",
+    "descriptor": "Noise: Construction Before/After Hours (NM1)",
+    "incident_address": "330 EAST   38 STREET",
+    "bbl": "1009437501",
+    "resolution_description": "The Department of Environmental Protection determined that this complaint is a duplicate of a previously filed complaint. The original complaint is being addressed."
+   },
+   {
+    "created_date": "2025-06-28T00:47:00.000",
+    "complaint_type": "Noise",
+    "descriptor": "Noise: Construction Before/After Hours (NM1)",
+    "incident_address": "330 EAST   38 STREET",
+    "bbl": "1009437501",
+    "resolution_description": "The Department of Environmental Protection researched this complaint and determined that it could be closed."
+   },
+   {
+    "created_date": "2025-02-24T21:59:00.000",
+    "complaint_type": "Noise",
+    "descriptor": "Noise: Construction Before/After Hours (NM1)",
+    "incident_address": "330 EAST   38 STREET",
+    "bbl": "1009437501",
+    "resolution_description": "The Department of Environmental Protection determined that this complaint is a duplicate of a previously filed complaint. The original complaint is being addressed."
+   },
+   {
+    "created_date": "2025-02-24T13:29:00.000",
+    "complaint_type": "Noise",
+    "descriptor": "Noise: Construction Equipment (NC1)",
+    "incident_address": "330 EAST   38 STREET",
+    "bbl": "1009437501",
+    "resolution_description": "The Department of Environmental Protection (DEP) didn't observe a violation of the NYC Air or Noise Code at the time of inspection and couldn't issue a summons.  If the problem still exists, please go to nyc.gov/311 or call 311 to file a new Service Request. If you're outside of New York City, please call (212) NEW-YORK (212-639-9675)."
+   },
+   {
+    "created_date": "2025-02-20T20:14:00.000",
+    "complaint_type": "Noise",
+    "descriptor": "Noise: Construction Before/After Hours (NM1)",
+    "incident_address": "330 EAST   38 STREET",
+    "bbl": "1009437501",
+    "resolution_description": "The Department of Environmental Protection (DEP) didn't observe a violation of the NYC Air or Noise Code at the time of inspection and couldn't issue a summons.  If the problem still exists, please go to nyc.gov/311 or call 311 to file a new Service Request. If you're outside of New York City, please call (212) NEW-YORK (212-639-9675)."
+   },
+   {
+    "created_date": "2024-12-27T15:52:52.000",
+    "complaint_type": "Noise - Residential",
+    "descriptor": "Banging/Pounding",
+    "incident_address": "330 EAST   38 STREET",
+    "bbl": "1009437501",
+    "resolution_description": "The Police Department responded to the complaint and determined that police action was not necessary."
+   },
+   {
+    "created_date": "2024-10-06T08:14:00.000",
+    "complaint_type": "Noise",
+    "descriptor": "Noise: Construction Before/After Hours (NM1)",
+    "incident_address": "330 EAST   38 STREET",
+    "bbl": "1009437501",
+    "resolution_description": "The Department of Environmental Protection determined that this complaint is a duplicate of a previously filed complaint. The original complaint is being addressed."
+   },
+   {
+    "created_date": "2024-10-06T07:20:00.000",
+    "complaint_type": "Noise",
+    "descriptor": "Noise: Construction Before/After Hours (NM1)",
+    "incident_address": "330 EAST   38 STREET",
+    "bbl": "1009437501",
+    "resolution_description": "The Department of Environmental Protection determined that this complaint is a duplicate of a previously filed complaint. The original complaint is being addressed."
+   },
+   {
+    "created_date": "2024-10-06T00:02:00.000",
+    "complaint_type": "Noise",
+    "descriptor": "Noise: Construction Before/After Hours (NM1)",
+    "incident_address": "330 EAST   38 STREET",
+    "bbl": "1009437501",
+    "resolution_description": "The Department of Environmental Protection determined that this complaint is a duplicate of a previously filed complaint. The original complaint is being addressed."
+   },
+   {
+    "created_date": "2024-09-24T23:06:51.000",
+    "complaint_type": "Noise - Residential",
+    "descriptor": "Banging/Pounding",
+    "incident_address": "330 EAST   38 STREET",
+    "bbl": "1009437501",
+    "resolution_description": "The Police Department responded to the complaint and took action to fix the condition."
+   },
+   {
+    "created_date": "2024-09-24T22:30:05.000",
+    "complaint_type": "Noise - Residential",
+    "descriptor": "Loud Music/Party",
+    "incident_address": "330 EAST   38 STREET",
+    "bbl": "1009437501",
+    "resolution_description": "The Police Department responded to the complaint and took action to fix the condition."
+   },
+   {
+    "created_date": "2024-09-24T21:14:40.000",
+    "complaint_type": "Noise - Residential",
+    "descriptor": "Loud Music/Party",
+    "incident_address": "330 EAST   38 STREET",
+    "bbl": "1009437501",
+    "resolution_description": "The Police Department responded to the complaint and took action to fix the condition."
+   },
+   {
+    "created_date": "2024-09-10T21:56:02.000",
+    "complaint_type": "Noise - Residential",
+    "descriptor": "Banging/Pounding",
+    "incident_address": "330 EAST   38 STREET",
+    "bbl": "1009437501",
+    "resolution_description": "The Police Department responded to the complaint and determined that police action was not necessary."
+   },
+   {
+    "created_date": "2024-09-10T21:27:38.000",
+    "complaint_type": "Noise - Residential",
+    "descriptor": "Loud Music/Party",
+    "incident_address": "330 EAST   38 STREET",
+    "bbl": "1009437501",
+    "resolution_description": "The Police Department responded to the complaint and determined that police action was not necessary."
+   },
+   {
+    "created_date": "2024-05-10T00:18:25.000",
+    "complaint_type": "Noise - Commercial",
+    "descriptor": "Banging/Pounding",
+    "incident_address": "330 EAST   38 STREET",
+    "bbl": "1009437501",
+    "resolution_description": "The Police Department responded to the complaint and determined that police action was not necessary."
+   },
+   {
+    "created_date": "2024-04-27T08:50:00.000",
+    "complaint_type": "Noise",
+    "descriptor": "Noise: Construction Before/After Hours (NM1)",
+    "incident_address": "330 EAST   38 STREET",
+    "bbl": "1009437501",
+    "resolution_description": "The Department of Environmental Protection (DEP) didn't observe a violation of the NYC Air or Noise Code at the time of inspection and couldn't issue a summons.  If the problem still exists, please go to nyc.gov/311 or call 311 to file a new Service Request. If you're outside of New York City, please call (212) NEW-YORK (212-639-9675)."
+   },
+   {
+    "created_date": "2024-03-27T12:17:00.000",
+    "complaint_type": "Noise",
+    "descriptor": "Noise: Construction Before/After Hours (NM1)",
+    "incident_address": "330 EAST   38 STREET",
+    "bbl": "1009437501",
+    "resolution_description": "The Department of Environmental Protection (DEP) didn't observe a violation of the NYC Air or Noise Code at the time of inspection and couldn't issue a summons.  If the problem still exists, please go to nyc.gov/311 or call 311 to file a new Service Request. If you're outside of New York City, please call (212) NEW-YORK (212-639-9675)."
+   },
+   {
+    "created_date": "2024-03-23T11:35:00.000",
+    "complaint_type": "Noise",
+    "descriptor": "Noise: air condition/ventilation equipment (NV1)",
+    "incident_address": "330 EAST   38 STREET",
+    "bbl": "1009437501",
+    "resolution_description": "The Department of Environmental Protection requires contact with the complainant to investigate this complaint. A message was left for the complainant at the phone number provided."
+   },
+   {
+    "created_date": "2024-01-31T18:37:02.000",
+    "complaint_type": "Noise - Residential",
+    "descriptor": "Banging/Pounding",
+    "incident_address": "330 EAST   38 STREET",
+    "bbl": "1009437501",
+    "resolution_description": "The Police Department responded to the complaint and took action to fix the condition."
+   },
+   {
+    "created_date": "2024-01-10T22:50:00.000",
+    "complaint_type": "Noise",
+    "descriptor": "Noise: Construction Before/After Hours (NM1)",
+    "incident_address": "330 EAST   38 STREET",
+    "bbl": "1009437501",
+    "resolution_description": "The Department of Environmental Protection determined that this complaint is a duplicate of a previously filed complaint. The original complaint is being addressed."
+   },
+   {
+    "created_date": "2023-12-17T18:32:27.000",
+    "complaint_type": "Noise - Residential",
+    "descriptor": "Banging/Pounding",
+    "incident_address": "330 EAST   38 STREET",
+    "bbl": "1009437501",
+    "resolution_description": "The Police Department responded to the complaint and determined that police action was not necessary."
+   },
+   {
+    "created_date": "2023-12-03T19:12:40.000",
+    "complaint_type": "Noise - Residential",
+    "descriptor": "Banging/Pounding",
+    "incident_address": "330 EAST   38 STREET",
+    "bbl": "1009437501",
+    "resolution_description": "The Police Department responded to the complaint and with the information available observed no evidence of the violation at that time."
+   },
+   {
+    "created_date": "2023-12-03T13:13:30.000",
+    "complaint_type": "Noise - Residential",
+    "descriptor": "Banging/Pounding",
+    "incident_address": "330 EAST   38 STREET",
+    "bbl": "1009437501",
+    "resolution_description": "The Police Department responded to the complaint and determined that police action was not necessary."
+   },
+   {
+    "created_date": "2023-11-27T20:56:40.000",
+    "complaint_type": "Noise - Residential",
+    "descriptor": "Banging/Pounding",
+    "incident_address": "330 EAST   38 STREET",
+    "bbl": "1009437501",
+    "resolution_description": "The Police Department responded to the complaint and determined that police action was not necessary."
+   },
+   {
+    "created_date": "2023-11-16T22:05:06.000",
+    "complaint_type": "Noise - Residential",
+    "descriptor": "Banging/Pounding",
+    "incident_address": "330 EAST   38 STREET",
+    "bbl": "1009437501",
+    "resolution_description": "The Police Department responded to the complaint and determined that police action was not necessary."
+   },
+   {
+    "created_date": "2023-11-10T23:29:27.000",
+    "complaint_type": "Noise - Residential",
+    "descriptor": "Loud Music/Party",
+    "incident_address": "330 EAST   38 STREET",
+    "bbl": "1009437501",
+    "resolution_description": "The Police Department responded to the complaint and took action to fix the condition."
+   },
+   {
+    "created_date": "2023-11-10T22:41:56.000",
+    "complaint_type": "Noise - Residential",
+    "descriptor": "Loud Music/Party",
+    "incident_address": "330 EAST   38 STREET",
+    "bbl": "1009437501",
+    "resolution_description": "The Police Department responded to the complaint and took action to fix the condition."
+   },
+   {
+    "created_date": "2023-11-10T22:37:50.000",
+    "complaint_type": "Noise - Residential",
+    "descriptor": "Loud Music/Party",
+    "incident_address": "330 EAST   38 STREET",
+    "bbl": "1009437501",
+    "resolution_description": "The Police Department responded to the complaint and took action to fix the condition."
+   }
+  ]
+ },
+ "crime": {
+  "radius_m": 300,
+  "last_12m": 129,
+  "by_level": {
+   "MISDEMEANOR": 62,
+   "FELONY": 47,
+   "VIOLATION": 20
+  },
+  "top_offenses": {
+   "PETIT LARCENY": 28,
+   "GRAND LARCENY": 23,
+   "HARRASSMENT 2": 20,
+   "ASSAULT 3 & RELATED OFFENSES": 12,
+   "CRIMINAL MISCHIEF & RELATED OF": 6,
+   "FELONY ASSAULT": 6,
+   "FORGERY": 6,
+   "VEHICLE AND TRAFFIC LAWS": 5
+  }
+ },
+ "summary": {
+  "units": 830.0,
+  "hpd_violations_per_100_units_yr": 0.2,
+  "hpd_complaints_per_100_units_yr": 1.2,
+  "noise_at_building_per_100_units_yr": 1.2,
+  "risk_score": 70,
+  "noise_score": 44,
+  "flags": [
+   "3 open class C (immediately hazardous) HPD violations",
+   "24 HPD complaint lines about heat/hot water",
+   "8 HPD complaint lines about unsanitary condition",
+   "333 noise complaints a year within 150 m",
+   "56% of nearby noise complaints are logged 10 pm-6 am"
+  ]
+ }
+}

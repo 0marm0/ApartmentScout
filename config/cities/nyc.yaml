@@ -1,0 +1,40 @@
+# City profile: New York City. Used when criteria.yaml has `search.city: nyc`.
+name: New York City
+timezone: America/New_York
+geocoder: nyc                     # NYC Planning Labs GeoSearch (returns BBL/BIN)
+buildings: nyc                    # NYC Building Footprints with roof heights
+records: nyc                      # HPD, DOB, ECB, 311, NYPD, PLUTO, bedbugs
+layers: [noise]                   # citywide 311 noise heat layer
+transit_feeds:
+  - name: NYC Subway
+    url: https://rrgtfsfeeds.s3.amazonaws.com/gtfs_subway.zip
+  # Add buses or PATH if your commute needs them (large feeds, slower):
+  # - name: Manhattan buses
+  #   url: https://rrgtfsfeeds.s3.amazonaws.com/gtfs_m.zip
+  # - name: PATH
+  #   url: http://data.trilliumtransit.com/gtfs/path-nj-us/path-nj-us.zip
+listing_sites: [StreetEasy, Zillow, Apartments.com, RentHop, Corcoran, Compass, building websites]
+review_sites: [Openigloo, Google Maps, Yelp, Reddit r/AskNYC, r/NYCapartments, ApartmentRatings, Birdeye]
+# Names for the tallest towers so the 3D view labels them. Matched within 120 m.
+landmarks:
+  - [Central Park Tower, 40.7663, -73.9810]
+  - [Steinway Tower (111 W 57th), 40.7650, -73.9776]
+  - [One57, 40.7656, -73.9790]
+  - [220 Central Park South, 40.7672, -73.9806]
+  - [432 Park Avenue, 40.7616, -73.9719]
+  - [53 West 53rd, 40.7614, -73.9776]
+  - [One Vanderbilt, 40.7530, -73.9786]
+  - [Chrysler Building, 40.7516, -73.9755]
+  - [Bank of America Tower, 40.7556, -73.9845]
+  - [Empire State Building, 40.7484, -73.9857]
+  - [New York Times Building, 40.7562, -73.9897]
+  - [30 Rockefeller Plaza, 40.7593, -73.9794]
+  - [One Manhattan West, 40.7526, -73.9969]
+  - [The Spiral, 40.7556, -73.9996]
+  - [30 Hudson Yards, 40.7538, -74.0011]
+  - [35 Hudson Yards, 40.7546, -74.0023]
+  - [15 Hudson Yards, 40.7536, -74.0035]
+  - [One Penn Plaza, 40.7512, -73.9922]
+  - [One World Trade Center, 40.7127, -74.0134]
+  - [3 World Trade Center, 40.7104, -74.0119]
+  - [Brooklyn Tower, 40.6893, -73.9837]

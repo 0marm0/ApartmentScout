@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ApartmentScout</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231f4fd8'/%3E%3Cpath d='M8 23V13l8-5 8 5v10h-6v-6h-4v6z' fill='white'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="css/app.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="#map" aria-label="ApartmentScout home">
+    <svg viewBox="0 0 32 32" width="26" height="26" aria-hidden="true"><rect width="32" height="32" rx="7" fill="var(--accent)"/><path d="M8 23V13l8-5 8 5v10h-6v-6h-4v6z" fill="var(--accent-ink)"/></svg>
+    <span>ApartmentScout</span>
+  </a>
+  <span class="search-name" id="searchName"></span>
+  <nav class="tabs" id="tabs" aria-label="Views">
+    <a href="#map" data-view="map">Map</a>
+    <a href="#list" data-view="list">Shortlist</a>
+    <a href="#compare" data-view="compare">Compare <span class="badge" id="cmpCount" hidden></span></a>
+    <a href="#unit" data-view="unit">Unit 3D</a>
+    <a href="#plan" data-view="plan">Floor plan</a>
+    <a href="#records" data-view="records">Records</a>
+  </nav>
+  <button class="icon-btn" id="themeBtn" type="button" title="Switch light or dark" aria-label="Switch light or dark">◐</button>
+</header>
+
+<section class="kpis" id="kpis" aria-label="Search summary"></section>
+
+<main id="views">
+  <!-- MAP -->
+  <section class="view" id="view-map">
+    <aside class="side" id="mapSide">
+      <div class="filters" id="filters"></div>
+      <div class="side-list" id="sideList"></div>
+    </aside>
+    <div class="map-wrap">
+      <div id="map" aria-label="Map of listings"></div>
+      <div class="map-tools" id="mapTools"></div>
+      <div class="map-legend" id="legend"></div>
+      <div class="map-readout" id="readout" hidden></div>
+    </div>
+  </section>
+
+  <!-- LIST -->
+  <section class="view" id="view-list" hidden>
+    <div class="list-head">
+      <div class="filters inline" id="filters2"></div>
+    </div>
+    <div class="table-wrap"><table class="grid" id="table"></table></div>
+  </section>
+
+  <!-- COMPARE -->
+  <section class="view" id="view-compare" hidden>
+    <div class="compare-head">
+      <h2>Compare</h2>
+      <p class="muted" id="cmpHint">Pick up to four listings with the ＋ button in the shortlist or the listing panel.</p>
+    </div>
+    <div class="cmp-cards" id="cmpCards"></div>
+    <div class="panel"><h3>Cost against space, every eligible listing</h3><div id="scatter" class="chart"></div></div>
+    <div class="panel"><h3>Score by dimension</h3><div id="dimBars" class="chart"></div></div>
+  </section>
+
+  <!-- UNIT 3D -->
+  <section class="view" id="view-unit" hidden>
+    <div class="u-grid">
+      <div class="u-left">
+        <div class="u-picker"><label for="unitSel">Listing</label><select id="unitSel"></select></div>
+        <div id="stage" class="stage"><canvas id="gl"></canvas><div class="hud" id="hud"></div></div>
+        <div class="panel" id="timePanel"></div>
+        <div class="panel"><h3>Sun path against the skyline</h3><canvas id="pathCv" class="plot"></canvas><div class="legend-row" id="pathLegend"></div></div>
+      </div>
+      <div class="u-right">
+        <div class="panel" id="winPanel"></div>
+        <div class="panel" id="sunPanel"></div>
+        <div class="panel" id="seePanel"></div>
+        <div class="panel" id="heatPanel"></div>
+        <div class="panel note" id="unitNotes"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FLOOR PLAN -->
+  <section class="view" id="view-plan" hidden>
+    <div class="u-grid">
+      <div class="u-left">
+        <div class="u-picker"><label for="planSel">Floor plan</label><select id="planSel"></select></div>
+        <div id="pstage" class="stage"><canvas id="pgl"></canvas><div class="hud" id="phud"></div></div>
+        <div class="panel" id="ptimePanel"></div>
+      </div>
+      <div class="u-right">
+        <div class="panel" id="planInfo"></div>
+        <div class="panel" id="planRooms"></div>
+        <div class="panel note" id="planNotes"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- RECORDS -->
+  <section class="view" id="view-records" hidden>
+    <div class="u-picker"><label for="recSel">Building</label><select id="recSel"></select></div>
+    <div id="recBody"></div>
+  </section>
+</main>
+
+<aside class="drawer" id="drawer" aria-label="Listing details" hidden>
+  <button class="icon-btn close" id="drawerClose" type="button" aria-label="Close">✕</button>
+  <div id="drawerBody"></div>
+</aside>
+
+<footer class="foot">
+  <span id="footGen"></span>
+  <span>Map data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors. Records: city open data. Commute, sun and scores are estimates; verify before you sign.</span>
+</footer>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

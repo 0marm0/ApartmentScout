@@ -1,0 +1,645 @@
+{
+ "id": "the-aurora-704",
+ "building": "The Aurora",
+ "address": "556 Third Avenue, New York, NY",
+ "bbl": "1008927502",
+ "bin": "1018967",
+ "lat": 40.747588,
+ "lon": -73.97714,
+ "generated": "2026-10-13",
+ "window_years": 3,
+ "sources": {
+  "pluto": "https://data.cityofnewyork.us/d/64uk-42ks",
+  "hpd_violations": "https://data.cityofnewyork.us/d/wvxf-dwi5",
+  "hpd_complaints": "https://data.cityofnewyork.us/d/ygpa-z7cr",
+  "dob_complaints": "https://data.cityofnewyork.us/d/eabe-havv",
+  "ecb_violations": "https://data.cityofnewyork.us/d/6bgk-3dad",
+  "dob_now_filings": "https://data.cityofnewyork.us/d/w9ak-ipjd",
+  "bedbugs": "https://data.cityofnewyork.us/d/wz6d-d3jb",
+  "sr311": "https://data.cityofnewyork.us/d/erm2-nwe9",
+  "nypd_complaints": "https://data.cityofnewyork.us/d/5uac-w243",
+  "footprints": "https://data.cityofnewyork.us/d/5zhs-2jue"
+ },
+ "building_info": {
+  "address": "554 3 AVENUE",
+  "yearbuilt": 2002,
+  "yearalter1": 0,
+  "numfloors": 31,
+  "unitsres": 9,
+  "unitstotal": 135,
+  "bldgclass": "RM",
+  "ownername": "UNAVAILABLE OWNER",
+  "zonedist1": "C1-9",
+  "lotarea": 3680,
+  "bldgarea": 121435,
+  "landuse": "4",
+  "histdist": null,
+  "landmark": null
+ },
+ "hpd_violations": {
+  "total": 1,
+  "open": 0,
+  "by_class": {
+   "A": 1
+  },
+  "open_by_class": {},
+  "by_year": {
+   "2026": 1
+  },
+  "top": [
+   [
+    "(A) \u00a7 HMC:FILE ANNUAL BEDBUG REPORT IN ACCORDANCE WITH HPD RULE AS DESCRIBED ON THE BACK OF THIS NOTICE OF VIOLATION OR AS DESCRIBED ON HPD\u001a",
+    1
+   ]
+  ],
+  "recent": [
+   {
+    "violationid": "18830888",
+    "class": "A",
+    "inspectiondate": "2026-04-29T00:00:00.000",
+    "novdescription": "(A) \u00a7 HMC:FILE ANNUAL BEDBUG REPORT IN ACCORDANCE WITH HPD RULE AS DESCRIBED ON THE BACK OF THIS NOTICE OF VIOLATION OR AS DESCRIBED ON HPD\u001aS WEBSITE, WWW.NYC.GOV\\HPD, SEARCH BED BUGS.",
+    "currentstatus": "VIOLATION DISMISSED",
+    "violationstatus": "Close",
+    "rentimpairing": "N"
+   }
+  ]
+ },
+ "hpd_complaints": {
+  "total": 9,
+  "complaints": 9,
+  "by_category": {
+   "HEAT/HOT WATER": 7,
+   "UNSANITARY CONDITION": 2
+  },
+  "by_year": {
+   "2025": 5,
+   "2026": 4
+  },
+  "recent": [
+   {
+    "complaint_id": "14979126",
+    "received_date": "2026-09-16T21:33:13.000",
+    "major_category": "UNSANITARY CONDITION",
+    "minor_category": "MOLD",
+    "apartment": "706",
+    "complaint_status": "CLOSE",
+    "status_description": "HPD conducted an inspection of this complaint. The conditions observed by the inspector did not violate the housing laws enforced by HPD. The complaint has been closed."
+   },
+   {
+    "complaint_id": "14559806",
+    "received_date": "2026-02-20T17:19:23.000",
+    "major_category": "UNSANITARY CONDITION",
+    "minor_category": "MOLD",
+    "apartment": "1906",
+    "complaint_status": "CLOSE",
+    "status_description": "HPD conducted an inspection of this complaint. The conditions observed by the inspector did not violate the housing laws enforced by HPD. The complaint has been closed."
+   },
+   {
+    "complaint_id": "14460230",
+    "received_date": "2026-01-28T18:15:21.000",
+    "major_category": "HEAT/HOT WATER",
+    "minor_category": "ENTIRE BUILDING",
+    "apartment": "BLDG",
+    "complaint_status": "CLOSE",
+    "status_description": "More than one complaint was received for this building-wide condition. This complaint status is for the initial complaint.The Department of Housing Preservation and Development contacted a tenant in the building and verified that the following conditions were corrected. The complaint has been closed. If the condition still exists, please file a new complaint."
+   },
+   {
+    "complaint_id": "14460188",
+    "received_date": "2026-01-28T18:07:51.000",
+    "major_category": "HEAT/HOT WATER",
+    "minor_category": "ENTIRE BUILDING",
+    "apartment": "703",
+    "complaint_status": "CLOSE",
+    "status_description": "HPD called the telephone number on file for this complaint.  Someone at that number indicated that the condition was corrected. The complaint has been closed. Please submit a new service request with 311 if the condition still exists."
+   },
+   {
+    "complaint_id": "14138950",
+    "received_date": "2025-11-11T22:14:53.000",
+    "major_category": "HEAT/HOT WATER",
+    "minor_category": "ENTIRE BUILDING",
+    "apartment": "BLDG",
+    "complaint_status": "CLOSE",
+    "status_description": "More than one complaint was received for this building-wide condition. This complaint status is for the initial complaint.The Department of Housing Preservation and Development contacted a tenant in the building and verified that the following conditions were corrected. The complaint has been closed. If the condition still exists, please file a new complaint."
+   },
+   {
+    "complaint_id": "14138316",
+    "received_date": "2025-11-11T18:47:12.000",
+    "major_category": "HEAT/HOT WATER",
+    "minor_category": "ENTIRE BUILDING",
+    "apartment": "BLDG",
+    "complaint_status": "CLOSE",
+    "status_description": "More than one complaint was received for this building-wide condition. This complaint status is for the initial complaint.The Department of Housing Preservation and Development contacted a tenant in the building and verified that the following conditions were corrected. The complaint has been closed. If the condition still exists, please file a new complaint."
+   },
+   {
+    "complaint_id": "14137302",
+    "received_date": "2025-11-11T14:18:56.000",
+    "major_category": "HEAT/HOT WATER",
+    "minor_category": "APARTMENT ONLY",
+    "apartment": "1902",
+    "complaint_status": "CLOSE",
+    "status_description": "HPD responded to a complaint of no heat or hot water in the building. An occupant of the building confirmed heat and hot water had been restored when the Inspector attempted to conduct the inspection or contacted you at the phone number associated with the complaint. The complaint has been closed. Please submit a new service request with 311 if the condition still exists."
+   },
+   {
+    "complaint_id": "14127457",
+    "received_date": "2025-11-07T10:53:02.000",
+    "major_category": "HEAT/HOT WATER",
+    "minor_category": "ENTIRE BUILDING",
+    "apartment": "202",
+    "complaint_status": "CLOSE",
+    "status_description": "HPD responded to a complaint of no heat or hot water in the building. An occupant of the building confirmed heat and hot water had been restored when the Inspector attempted to conduct the inspection or contacted you at the phone number associated with the complaint. The complaint has been closed. Please submit a new service request with 311 if the condition still exists."
+   },
+   {
+    "complaint_id": "14109665",
+    "received_date": "2025-11-02T19:09:12.000",
+    "major_category": "HEAT/HOT WATER",
+    "minor_category": "ENTIRE BUILDING",
+    "apartment": "1003",
+    "complaint_status": "CLOSE",
+    "status_description": "HPD responded to a complaint of no heat or hot water. Heat was not required at the time of the inspection because the outside temperature was above 55\u00b0 F; by law, violations can only be issued if the outside temperature is below 55 degrees. No violations were issued. If the temperature inside of your apartment is below 68 degrees when it is below 55 degrees outside between 6 am and 10pm OR the temperature inside of your apartment is below 62 degrees between 10 pm and 6 am, please file a new complaint with 311, using 311ONLINE or 311MOBILE."
+   }
+  ]
+ },
+ "dob_complaints": {
+  "total": 7,
+  "by_category": {
+   "8A": 1,
+   "7J": 1,
+   "31": 1,
+   "6M": 2,
+   "23": 1,
+   "1E": 1
+  },
+  "recent": [
+   {
+    "complaint_number": "1696008",
+    "status": "CLOSED",
+    "date_entered": "05/21/2025",
+    "house_number": "554",
+    "house_street": "3 AVENUE",
+    "zip_code": "10016",
+    "bin": "1018967",
+    "community_board": "106",
+    "complaint_category": "8A",
+    "unit": "CSC",
+    "disposition_date": "07/24/2025",
+    "disposition_code": "L2",
+    "inspection_date": "07/23/2025",
+    "dobrundate": "20261013000000"
+   },
+   {
+    "complaint_number": "1719712",
+    "status": "CLOSED",
+    "date_entered": "03/17/2026",
+    "house_number": "556",
+    "house_street": "3 AVENUE",
+    "zip_code": "10016",
+    "bin": "1018967",
+    "community_board": "106",
+    "complaint_category": "7J",
+    "unit": "RTEU",
+    "disposition_date": "03/17/2026",
+    "disposition_code": "I2",
+    "inspection_date": "03/17/2026",
+    "dobrundate": "20261013000000"
+   },
+   {
+    "complaint_number": "1725295",
+    "status": "CLOSED",
+    "date_entered": "05/14/2026",
+    "house_number": "556",
+    "house_street": "THIRD AVENUE",
+    "zip_code": "10016",
+    "bin": "1018967",
+    "community_board": "106",
+    "complaint_category": "31",
+    "unit": "MAN.",
+    "disposition_date": "06/01/2026",
+    "disposition_code": "I2",
+    "inspection_date": "06/01/2026",
+    "dobrundate": "20261013000000"
+   },
+   {
+    "complaint_number": "1736123",
+    "status": "ACTIVE",
+    "date_entered": "09/11/2026",
+    "house_number": "556",
+    "house_street": "THIRD AVENUE",
+    "zip_code": "10016",
+    "bin": "1018967",
+    "community_board": "106",
+    "complaint_category": "6M",
+    "unit": "ELEVR",
+    "dobrundate": "20261013000000"
+   },
+   {
+    "complaint_number": "1715972",
+    "status": "CLOSED",
+    "date_entered": "02/03/2026",
+    "house_number": "556",
+    "house_street": "THIRD AVENUE",
+    "zip_code": "10016",
+    "bin": "1018967",
+    "community_board": "106",
+    "complaint_category": "6M",
+    "unit": "ELEVR",
+    "disposition_date": "02/19/2026",
+    "disposition_code": "I2",
+    "inspection_date": "02/17/2026",
+    "dobrundate": "20261013000000"
+   },
+   {
+    "complaint_number": "1721081",
+    "status": "CLOSED",
+    "date_entered": "03/31/2026",
+    "house_number": "556",
+    "house_street": "3 AVENUE",
+    "zip_code": "10016",
+    "bin": "1018967",
+    "community_board": "106",
+    "complaint_category": "23",
+    "unit": "CSE",
+    "disposition_date": "04/02/2026",
+    "disposition_code": "I2",
+    "inspection_date": "04/02/2026",
+    "dobrundate": "20261013000000"
+   },
+   {
+    "complaint_number": "1725318",
+    "status": "CLOSED",
+    "date_entered": "05/14/2026",
+    "house_number": "556",
+    "house_street": "3 AVENUE",
+    "zip_code": "10016",
+    "bin": "1018967",
+    "community_board": "106",
+    "complaint_category": "1E",
+    "unit": "CSE",
+    "disposition_date": "05/15/2026",
+    "disposition_code": "I2",
+    "inspection_date": "05/15/2026",
+    "dobrundate": "20261013000000"
+   }
+  ]
+ },
+ "ecb_violations": {
+  "total": 1,
+  "open": 0,
+  "by_severity": {
+   "CLASS - 2": 1
+  },
+  "recent": [
+   {
+    "ecb_violation_number": "39540472Z",
+    "issue_date": "20250521",
+    "severity": "CLASS - 2",
+    "violation_description": "31 STORY ALTERATION FACADE WORK.QSSP ONSITE OBSERVED WORK CONTRARY TO SITE SAFETY PLANS/DETAILS ONSITE.SSP-005.00/003.00. TEMPORARY EQUIPMENT IN PLACE ON ROOF SUSPENDED SCAFFOLDS AT EXP#3,4.NO MISSING INADEQUAT",
+    "ecb_violation_status": "RESOLVE",
+    "penality_imposed": "1280"
+   }
+  ]
+ },
+ "construction": {
+  "block_filings": 62,
+  "lot_filings": 1,
+  "major_jobs": [],
+  "heavy_construction": [
+   {
+    "job_filing_number": "M01121001-P3",
+    "house_no": "110",
+    "street_name": "EAST   37 STREET",
+    "lot": "78",
+    "job_type": "Alteration",
+    "filing_status": "Approved",
+    "job_description": "EXISTING GAS SERVICE, METERS, RISERS, AND ALL PIPING CONNECTIONS TO GAS-FIRED FIXTURES TO BE DEMOLISHED AND CAPPED. AND NEW PLUMBING FIXTURES, AND ELEC. HOT WATER HEATER.",
+    "filing_date": "2026-01-26T00:00:00.000",
+    "initial_cost": "231600"
+   },
+   {
+    "job_filing_number": "M01178710-P2",
+    "house_no": "149",
+    "street_name": "EAST   36 STREET",
+    "lot": "31",
+    "job_type": "Alteration",
+    "filing_status": "Objections",
+    "job_description": "Proposed Interior Demolition and Renovation of Existing Duplex Apartment# 1 with Minor Exterior Work.",
+    "filing_date": "2025-10-18T00:00:00.000",
+    "initial_cost": "170289"
+   },
+   {
+    "job_filing_number": "M01121001-P2",
+    "house_no": "110",
+    "street_name": "EAST   37 STREET",
+    "lot": "78",
+    "job_type": "Alteration",
+    "filing_status": "Approved",
+    "job_description": "EXISTING GAS SERVICE, METERS, RISERS, AND ALL PIPING CONNECTIONS TO GAS-FIRED FIXTURES TO BE DEMOLISHED AND CAPPED. AND NEW PLUMBING FIXTURES, AND ELEC. HOT WATER HEATER.",
+    "filing_date": "2025-05-16T00:00:00.000",
+    "initial_cost": "211300"
+   }
+  ],
+  "lot_recent": [
+   {
+    "job_filing_number": "M00978703-P1",
+    "house_no": "556",
+    "street_name": "3 AVENUE",
+    "lot": "7502",
+    "job_type": "Alteration",
+    "filing_status": "Approved",
+    "job_description": "PROPOSED INSTALLATION OF HEAVY DUTY SIDEWALK SHED AS PER PLANS. LIVE LOAD 300 LBS PER SQUARE FEET. SIDEWALK SHED SHALL COMPLY WITH CHAPTER #33 OF THE NYC BUILDING CODE. NO CHANGE IN USE, OCCUPANCY, OR EGRESS UNDER THIS APPLICATION.",
+    "filing_date": "2025-06-02T00:00:00.000",
+    "initial_cost": "5000"
+   }
+  ]
+ },
+ "bedbugs": {
+  "filings": [
+   {
+    "building_id": "2299",
+    "registration_id": "142207",
+    "borough": "MANHATTAN",
+    "house_number": "554",
+    "street_name": "3 AVENUE",
+    "postcode": "10016",
+    "of_dwelling_units": "135",
+    "infested_dwelling_unit_count": "0",
+    "eradicated_unit_count": "0",
+    "re_infested_dwelling_unit": "0",
+    "filing_date": "2026-05-04T00:00:00.000",
+    "filing_period_start_date": "2024-11-01T00:00:00.000",
+    "filling_period_end_date": "2025-10-31T00:00:00.000",
+    "latitude": "40.747432",
+    "longitude": "-73.976891",
+    "community_board": "6",
+    "city_council_district": "4",
+    "census_tract_2010": "80",
+    "bin": "1018967",
+    "bbl": "1008927502",
+    "nta": "Murray Hill-Kips Bay"
+   },
+   {
+    "building_id": "2299",
+    "registration_id": "142207",
+    "borough": "MANHATTAN",
+    "house_number": "554",
+    "street_name": "3 AVENUE",
+    "postcode": "10016",
+    "of_dwelling_units": "135",
+    "infested_dwelling_unit_count": "0",
+    "eradicated_unit_count": "0",
+    "re_infested_dwelling_unit": "0",
+    "filing_date": "2025-01-09T00:00:00.000",
+    "filing_period_start_date": "2023-11-01T00:00:00.000",
+    "filling_period_end_date": "2024-10-31T00:00:00.000",
+    "latitude": "40.747432",
+    "longitude": "-73.976891",
+    "community_board": "6",
+    "city_council_district": "4",
+    "census_tract_2010": "80",
+    "bin": "1018967",
+    "bbl": "1008927502",
+    "nta": "Murray Hill-Kips Bay"
+   },
+   {
+    "building_id": "2299",
+    "registration_id": "142207",
+    "borough": "MANHATTAN",
+    "house_number": "554",
+    "street_name": "3 AVENUE",
+    "postcode": "10016",
+    "of_dwelling_units": "135",
+    "infested_dwelling_unit_count": "0",
+    "eradicated_unit_count": "0",
+    "re_infested_dwelling_unit": "0",
+    "filing_date": "2023-12-28T00:00:00.000",
+    "filing_period_start_date": "2022-11-01T00:00:00.000",
+    "filling_period_end_date": "2023-10-31T00:00:00.000",
+    "latitude": "40.747432",
+    "longitude": "-73.976891",
+    "community_board": "6",
+    "city_council_district": "4",
+    "census_tract_2010": "80",
+    "bin": "1018967",
+    "bbl": "1008927502",
+    "nta": "Murray Hill-Kips Bay"
+   },
+   {
+    "building_id": "2299",
+    "registration_id": "142207",
+    "borough": "MANHATTAN",
+    "house_number": "554",
+    "street_name": "3 AVENUE",
+    "postcode": "10016",
+    "of_dwelling_units": "135",
+    "infested_dwelling_unit_count": "0",
+    "eradicated_unit_count": "0",
+    "re_infested_dwelling_unit": "0",
+    "filing_date": "2022-12-22T00:00:00.000",
+    "filing_period_start_date": "2021-11-01T00:00:00.000",
+    "filling_period_end_date": "2022-10-31T00:00:00.000",
+    "latitude": "40.747432",
+    "longitude": "-73.976891",
+    "community_board": "6",
+    "city_council_district": "4",
+    "census_tract_2010": "80",
+    "bin": "1018967",
+    "bbl": "1008927502",
+    "nta": "Murray Hill-Kips Bay"
+   },
+   {
+    "building_id": "2299",
+    "registration_id": "142207",
+    "borough": "MANHATTAN",
+    "house_number": "554",
+    "street_name": "3 AVENUE",
+    "postcode": "10016",
+    "of_dwelling_units": "13",
+    "infested_dwelling_unit_count": "0",
+    "eradicated_unit_count": "0",
+    "re_infested_dwelling_unit": "0",
+    "filing_date": "2021-12-20T00:00:00.000",
+    "filing_period_start_date": "2020-11-01T00:00:00.000",
+    "filling_period_end_date": "2021-10-31T00:00:00.000",
+    "latitude": "40.747432",
+    "longitude": "-73.976891",
+    "community_board": "6",
+    "city_council_district": "4",
+    "census_tract_2010": "80",
+    "bin": "1018967",
+    "bbl": "1008927502",
+    "nta": "Murray Hill-Kips Bay"
+   }
+  ]
+ },
+ "noise_311": {
+  "radius_m": 150,
+  "nearby_total": 632,
+  "at_building": 6,
+  "nearby_per_year": 210.7,
+  "by_type": {
+   "Noise | Noise: Construction Before/After Hours (NM1)": 110,
+   "Noise - Residential | Banging/Pounding": 95,
+   "Noise - Residential | Loud Music/Party": 95,
+   "Noise - Commercial | Loud Music/Party": 95,
+   "Noise | Noise: Construction Equipment (NC1)": 49,
+   "Noise - Street/Sidewalk | Loud Music/Party": 35,
+   "Noise - Vehicle | Car/Truck Horn": 27,
+   "Noise | Noise: Jack Hammering (NC2)": 25,
+   "Noise - Street/Sidewalk | Loud Talking": 24,
+   "Noise | Noise: air condition/ventilation equipment (NV1)": 13,
+   "Noise - Vehicle | Engine Idling": 9,
+   "Noise | Noise: Alarms (NR3)": 8
+  },
+  "at_building_by_type": {
+   "Loud Music/Party": 6
+  },
+  "by_hour": [
+   50,
+   38,
+   13,
+   16,
+   10,
+   13,
+   7,
+   28,
+   15,
+   32,
+   24,
+   26,
+   11,
+   8,
+   16,
+   15,
+   18,
+   12,
+   22,
+   22,
+   32,
+   53,
+   74,
+   77
+  ],
+  "night_share": 0.46,
+  "by_month": {
+   "2023-10": 10,
+   "2023-11": 10,
+   "2023-12": 14,
+   "2024-01": 13,
+   "2024-02": 11,
+   "2024-03": 6,
+   "2024-04": 6,
+   "2024-05": 7,
+   "2024-06": 17,
+   "2024-07": 23,
+   "2024-08": 20,
+   "2024-09": 22,
+   "2024-10": 34,
+   "2024-11": 15,
+   "2024-12": 17,
+   "2025-01": 11,
+   "2025-02": 14,
+   "2025-03": 11,
+   "2025-04": 7,
+   "2025-05": 16,
+   "2025-06": 25,
+   "2025-07": 7,
+   "2025-08": 14,
+   "2025-09": 25,
+   "2025-10": 27,
+   "2025-11": 12,
+   "2025-12": 33,
+   "2026-01": 24,
+   "2026-02": 14,
+   "2026-03": 6,
+   "2026-04": 24,
+   "2026-05": 40,
+   "2026-06": 22,
+   "2026-07": 12,
+   "2026-08": 16,
+   "2026-09": 31,
+   "2026-10": 16
+  },
+  "at_building_recent": [
+   {
+    "created_date": "2026-01-17T21:48:08.000",
+    "complaint_type": "Noise - Residential",
+    "descriptor": "Loud Music/Party",
+    "incident_address": "556 3 AVENUE",
+    "bbl": "1008927502",
+    "resolution_description": "The New York City Police Department responded to the complaint and their investigation determined that no criminal violation existed. The condition was corrected without the need to issue a summons or effect an arrest. If the problem persists, please contact 311 to create another complaint. If possible, provide contact information so responding officers may reach out to you for more details. If necessary, your complaint may be referred to your local precinct's special operations units (Quality of Life, etc.). Thank you for your attention to this matter. We count on New Yorkers like yourself to maintain a safe City, so please let us know if you see other conditions that require our attention."
+   },
+   {
+    "created_date": "2025-11-21T22:13:03.000",
+    "complaint_type": "Noise - Residential",
+    "descriptor": "Loud Music/Party",
+    "incident_address": "556 3 AVENUE",
+    "bbl": "1008927502",
+    "resolution_description": "The New York City Police Department responded to the complaint and their investigation determined that no criminal violation existed. The condition was corrected without the need to issue a summons or effect an arrest. If the problem persists, please contact 311 to create another complaint. If possible, provide contact information so responding officers may reach out to you for more details. If necessary, your complaint may be referred to your local precinct's special operations units (Quality of Life, etc.). Thank you for your attention to this matter. We count on New Yorkers like yourself to maintain a safe City, so please let us know if you see other conditions that require our attention."
+   },
+   {
+    "created_date": "2025-10-04T05:45:31.000",
+    "complaint_type": "Noise - Commercial",
+    "descriptor": "Loud Music/Party",
+    "incident_address": "556 3 AVENUE",
+    "bbl": "1008927502",
+    "resolution_description": "The Police Department responded to the complaint and with the information available observed no evidence of the violation at that time."
+   },
+   {
+    "created_date": "2025-10-04T05:34:55.000",
+    "complaint_type": "Noise - Commercial",
+    "descriptor": "Loud Music/Party",
+    "incident_address": "556 3 AVENUE",
+    "bbl": "1008927502",
+    "resolution_description": "The Police Department responded to the complaint and with the information available observed no evidence of the violation at that time."
+   },
+   {
+    "created_date": "2025-10-04T05:31:44.000",
+    "complaint_type": "Noise - Commercial",
+    "descriptor": "Loud Music/Party",
+    "incident_address": "556 3 AVENUE",
+    "bbl": "1008927502",
+    "resolution_description": "The Police Department responded to the complaint and with the information available observed no evidence of the violation at that time."
+   },
+   {
+    "created_date": "2025-10-04T05:25:28.000",
+    "complaint_type": "Noise - Street/Sidewalk",
+    "descriptor": "Loud Music/Party",
+    "incident_address": "556 3 AVENUE",
+    "bbl": "1008927502",
+    "resolution_description": "The Police Department responded to the complaint and determined that police action was not necessary."
+   }
+  ]
+ },
+ "crime": {
+  "radius_m": 300,
+  "last_12m": 190,
+  "by_level": {
+   "VIOLATION": 30,
+   "MISDEMEANOR": 75,
+   "FELONY": 85
+  },
+  "top_offenses": {
+   "GRAND LARCENY": 40,
+   "HARRASSMENT 2": 30,
+   "VEHICLE AND TRAFFIC LAWS": 23,
+   "ASSAULT 3 & RELATED OFFENSES": 18,
+   "PETIT LARCENY": 17,
+   "CRIMINAL MISCHIEF & RELATED OF": 17,
+   "FORGERY": 8,
+   "FELONY ASSAULT": 7
+  }
+ },
+ "summary": {
+  "units": 9.0,
+  "hpd_violations_per_100_units_yr": 3.7,
+  "hpd_complaints_per_100_units_yr": 33.3,
+  "noise_at_building_per_100_units_yr": 22.2,
+  "risk_score": 59,
+  "noise_score": 37,
+  "flags": [
+   "7 HPD complaint lines about heat/hot water",
+   "3 heavy-construction filing(s) on the block (demolition, new building, excavation)",
+   "211 noise complaints a year within 150 m",
+   "46% of nearby noise complaints are logged 10 pm-6 am"
+  ]
+ }
+}

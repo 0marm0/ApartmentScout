@@ -1,0 +1,1594 @@
+{
+ "id": "the-maybury-2204",
+ "building": "The Maybury",
+ "address": "550 Tenth Ave, New York, NY",
+ "bbl": "1010507502",
+ "bin": "1076207",
+ "lat": 40.75851,
+ "lon": -73.99591,
+ "generated": "2026-10-13",
+ "window_years": 3,
+ "sources": {
+  "pluto": "https://data.cityofnewyork.us/d/64uk-42ks",
+  "hpd_violations": "https://data.cityofnewyork.us/d/wvxf-dwi5",
+  "hpd_complaints": "https://data.cityofnewyork.us/d/ygpa-z7cr",
+  "dob_complaints": "https://data.cityofnewyork.us/d/eabe-havv",
+  "ecb_violations": "https://data.cityofnewyork.us/d/6bgk-3dad",
+  "dob_now_filings": "https://data.cityofnewyork.us/d/w9ak-ipjd",
+  "bedbugs": "https://data.cityofnewyork.us/d/wz6d-d3jb",
+  "sr311": "https://data.cityofnewyork.us/d/erm2-nwe9",
+  "nypd_complaints": "https://data.cityofnewyork.us/d/5uac-w243",
+  "footprints": "https://data.cityofnewyork.us/d/5zhs-2jue"
+ },
+ "building_info": {
+  "address": "475 WEST 40TH STREET",
+  "yearbuilt": 2023,
+  "yearalter1": 0,
+  "numfloors": 45,
+  "unitsres": 453,
+  "unitstotal": 455,
+  "bldgclass": "RM",
+  "ownername": "GO COVENANT LLC",
+  "zonedist1": "C2-8",
+  "lotarea": 15939,
+  "bldgarea": 341442,
+  "landuse": "4",
+  "histdist": null,
+  "landmark": null
+ },
+ "hpd_violations": {
+  "total": 31,
+  "open": 1,
+  "by_class": {
+   "C": 16,
+   "B": 12,
+   "A": 3
+  },
+  "open_by_class": {
+   "B": 1
+  },
+  "by_year": {
+   "2025": 24,
+   "2026": 7
+  },
+  "top": [
+   [
+    "\u00a7 27-2005, 27-2007, 27-2041.1 HMC, \u00a7238, \u00a7 309; \u00a7 107 (2) ( C) MDL AND 28 RCNY \u00a725-171: REPLACE OR REPAIR THE SELF-CLOSING DOORS THAT IS MIS",
+    11
+   ],
+   [
+    "\u00a7 27-2005 HMC: PROPERLY REPAIR OR REPLACE THE BROKEN OR DEFECTIVE LIGHT SWITCH AT NORTH WALL IN THE PRIVATE HALLWAY LOCATED AT APT 901, 9th ",
+    1
+   ],
+   [
+    "\u00a7 27-2005 HMC: PROPERLY REPAIR OR REPLACE THE BROKEN OR DEFECTIVE LIGHT FIXTURE AT CEILING IN THE BATHROOM LOCATED AT APT 901, 9th STORY, 1s",
+    1
+   ],
+   [
+    "\u00a7 27-2070 ADM CODE PROVIDE AN ADEQUATE SUPPLY OF GAS TO THE FIXTURES AT RANGE IN THE KITCHEN LOCATED AT APT 512, 5th STORY, 6th APARTMENT FR",
+    1
+   ],
+   [
+    "\u00a7 27-2070 ADM CODE PROVIDE AN ADEQUATE SUPPLY OF GAS TO THE FIXTURES AT RANGE IN THE KITCHEN LOCATED AT APT 1401, 13th STORY, 1st APARTMENT ",
+    1
+   ],
+   [
+    "\u00a727-2005 (E) HMC: PROVIDE WRITTEN NOTICE TO THE TENANTS AT LEAST TWENTY-FOUR HOURS PRIOR TO ESSENTIAL SERVICE INTERRUPTION BY POSTING A NOTI",
+    1
+   ],
+   [
+    "\u00a7 27-2031 ADM CODE PROVIDE HOT WATER AT ALL HOT WATER FIXTURES IN THE ENTIRE APARTMENT LOCATED AT APT 512, 5th STORY, 6th APARTMENT FROM SOU",
+    1
+   ],
+   [
+    "\u00a7 27-2005 HMC: PROPERLY REPAIR OR REPLACE THE BROKEN OR DEFECTIVE AT CEILING IN THE BATHROOM LOCATED AT APT 705, 7th STORY, 3rd APARTMENT FR",
+    1
+   ]
+  ],
+  "recent": [
+   {
+    "violationid": "19164936",
+    "class": "B",
+    "inspectiondate": "2026-08-26T00:00:00.000",
+    "novdescription": "\u00a7 27-2005 ADM CODE REPAIR THE BROKEN OR DEFECTIVE PLASTERED SURFACES AND PAINT IN A UNIFORM COLOR AT CEILING IN THE KITCHEN LOCATED AT APT 710, 7th STORY, 3rd APARTMENT FROM SOUTH AT WEST",
+    "currentstatus": "NOV SENT OUT",
+    "violationstatus": "Open",
+    "apartment": "710",
+    "story": "7",
+    "rentimpairing": "N"
+   },
+   {
+    "violationid": "18809102",
+    "class": "B",
+    "inspectiondate": "2026-04-22T00:00:00.000",
+    "novdescription": "\u00a7 27-2005 HMC: PROPERLY REPAIR OR REPLACE THE BROKEN OR DEFECTIVE AT CEILING IN THE BATHROOM LOCATED AT APT 705, 7th STORY, 3rd APARTMENT FROM EAST AT SOUTH",
+    "currentstatus": "VIOLATION CLOSED",
+    "violationstatus": "Close",
+    "apartment": "705",
+    "story": "7",
+    "rentimpairing": "N"
+   },
+   {
+    "violationid": "18662669",
+    "class": "C",
+    "inspectiondate": "2026-02-24T00:00:00.000",
+    "novdescription": "\u00a7 27-2070 ADM CODE PROVIDE AN ADEQUATE SUPPLY OF GAS TO THE FIXTURES AT RANGE IN THE KITCHEN LOCATED AT APT 512, 5th STORY, 6th APARTMENT FROM SOUTH AT WEST",
+    "currentstatus": "VIOLATION DISMISSED",
+    "violationstatus": "Close",
+    "apartment": "512",
+    "story": "5",
+    "rentimpairing": "Y"
+   },
+   {
+    "violationid": "18662667",
+    "class": "C",
+    "inspectiondate": "2026-02-24T00:00:00.000",
+    "novdescription": "\u00a7 27-2070 ADM CODE PROVIDE AN ADEQUATE SUPPLY OF GAS TO THE FIXTURES AT RANGE IN THE KITCHEN LOCATED AT APT 1401, 13th STORY, 1st APARTMENT FROM WEST AT NORTH",
+    "currentstatus": "VIOLATION DISMISSED",
+    "violationstatus": "Close",
+    "apartment": "1401",
+    "story": "13",
+    "rentimpairing": "Y"
+   },
+   {
+    "violationid": "18662670",
+    "class": "C",
+    "inspectiondate": "2026-02-24T00:00:00.000",
+    "novdescription": "\u00a727-2005 (E) HMC: PROVIDE WRITTEN NOTICE TO THE TENANTS AT LEAST TWENTY-FOUR HOURS PRIOR TO ESSENTIAL SERVICE INTERRUPTION BY POSTING A NOTICE IN A PROMINENT PLACE WITHIN THE PUBLIC PART OF THE BUILDING AND ON EACH FLOOR OF SUCH BUILDING, WHERE AN OWNER MUST MAKE A REPAIR THAT MAY RESULT IN AN INTERRUPTION OF ESSENTIAL SERVICES SUCH AS UTILITIES(HEAT, HOT WATER, GAS, ELECTRICITY, OR ELEVATOR) THAT IS EXPECTED TO CONTINUE FOR MORE THAN TWO HOURS. SAMPLE NOTICE AVAILABLE AT WWW.NYC.GOV/HPD OR AS PROVIDED IN THIS NOTICE OF VIOLATION. NO GAS , AND NO HOT WATER AT PUBLIC HALL",
+    "currentstatus": "VIOLATION DISMISSED",
+    "violationstatus": "Close",
+    "story": "0",
+    "rentimpairing": "N"
+   },
+   {
+    "violationid": "18662668",
+    "class": "C",
+    "inspectiondate": "2026-02-24T00:00:00.000",
+    "novdescription": "\u00a7 27-2031 ADM CODE PROVIDE HOT WATER AT ALL HOT WATER FIXTURES IN THE ENTIRE APARTMENT LOCATED AT APT 512, 5th STORY, 6th APARTMENT FROM SOUTH AT WEST",
+    "currentstatus": "VIOLATION DISMISSED",
+    "violationstatus": "Close",
+    "apartment": "512",
+    "story": "5",
+    "rentimpairing": "Y"
+   },
+   {
+    "violationid": "18662666",
+    "class": "C",
+    "inspectiondate": "2026-02-24T00:00:00.000",
+    "novdescription": "\u00a7 27-2031 ADM CODE PROVIDE HOT WATER AT ALL HOT WATER FIXTURES IN THE ENTIRE APARTMENT LOCATED AT APT 1401, 13th STORY, 1st APARTMENT FROM WEST AT NORTH",
+    "currentstatus": "VIOLATION DISMISSED",
+    "violationstatus": "Close",
+    "apartment": "1401",
+    "story": "13",
+    "rentimpairing": "Y"
+   },
+   {
+    "violationid": "18333079",
+    "class": "B",
+    "inspectiondate": "2025-10-29T00:00:00.000",
+    "novdescription": "\u00a7 27-2005 HMC: PROPERLY REPAIR OR REPLACE THE BROKEN OR DEFECTIVE LIGHT FIXTURE AT CEILING IN THE BATHROOM LOCATED AT APT 901, 9th STORY, 1st APARTMENT FROM WEST AT NORTH",
+    "currentstatus": "VIOLATION DISMISSED",
+    "violationstatus": "Close",
+    "apartment": "901",
+    "story": "9",
+    "rentimpairing": "N"
+   },
+   {
+    "violationid": "18333078",
+    "class": "B",
+    "inspectiondate": "2025-10-29T00:00:00.000",
+    "novdescription": "\u00a7 27-2005 ADM CODE REPAIR THE BROKEN OR DEFECTIVE PLASTERED SURFACES AND PAINT IN A UNIFORM COLOR CEILING IN THE BATHROOM LOCATED AT APT 901, 9th STORY, 1st APARTMENT FROM WEST AT NORTH",
+    "currentstatus": "VIOLATION DISMISSED",
+    "violationstatus": "Close",
+    "apartment": "901",
+    "story": "9",
+    "rentimpairing": "N"
+   },
+   {
+    "violationid": "18333077",
+    "class": "B",
+    "inspectiondate": "2025-10-29T00:00:00.000",
+    "novdescription": "\u00a7 27-2005 HMC: PROPERLY REPAIR OR REPLACE THE BROKEN OR DEFECTIVE ELECTRIC OUTLET AT NORTH WALL IN THE KITCHEN LOCATED AT APT 901, 9th STORY, 1st APARTMENT FROM WEST AT NORTH",
+    "currentstatus": "VIOLATION DISMISSED",
+    "violationstatus": "Close",
+    "apartment": "901",
+    "story": "9",
+    "rentimpairing": "N"
+   },
+   {
+    "violationid": "18333082",
+    "class": "B",
+    "inspectiondate": "2025-10-29T00:00:00.000",
+    "novdescription": "\u00a7 27-2005 HMC: REFIT\u001a THE DOOR IN THE ENTRANCE LOCATED AT APT 901, 9th STORY, 1st APARTMENT FROM WEST AT NORTH",
+    "currentstatus": "VIOLATION DISMISSED",
+    "violationstatus": "Close",
+    "apartment": "901",
+    "story": "9",
+    "rentimpairing": "N"
+   },
+   {
+    "violationid": "18333080",
+    "class": "B",
+    "inspectiondate": "2025-10-29T00:00:00.000",
+    "novdescription": "\u00a7 27-2045(B)(1)(B) HMC, \u00a7 12-06, \u00a7 12-07, \u00a7 12-09 RCNY REPAIR, REPLACE OR PROVIDE AN APPROVED AND OPERATIONAL CARBON MONOXIDE DETECTING DEVICE, INSTALLED IN ACCORDANCE WITH APPLICABLE LAW AND RULES DEFECTIVE IN THE ENTIRE APARTMENT LOCATED AT APT 901, 9th STORY, 1st APARTMENT FROM WEST AT NORTH",
+    "currentstatus": "VIOLATION DISMISSED",
+    "violationstatus": "Close",
+    "apartment": "901",
+    "story": "9",
+    "rentimpairing": "N"
+   },
+   {
+    "violationid": "18333081",
+    "class": "B",
+    "inspectiondate": "2025-10-29T00:00:00.000",
+    "novdescription": "\u00a7 27-2045(B)(1)(A) HMC, \u00a7 12-01, \u00a7 12-03 RCNY REPAIR, REPLACE OR PROVIDE AN APPROVED AND OPERATIONAL SMOKE DETECTING DEVICE, INSTALLED IN ACCORDANCE WITH DEPARTMENT OF BUILDINGS RULES AND REGULATIONS DEFECTIVE IN THE ENTIRE APARTMENT LOCATED AT APT 901, 9th STORY, 1st APARTMENT FROM WEST AT NORTH",
+    "currentstatus": "VIOLATION DISMISSED",
+    "violationstatus": "Close",
+    "apartment": "901",
+    "story": "9",
+    "rentimpairing": "N"
+   },
+   {
+    "violationid": "18328289",
+    "class": "C",
+    "inspectiondate": "2025-10-28T00:00:00.000",
+    "novdescription": "\u00a7 27-2005, 27-2007, 27-2041.1 HMC, \u00a7238, \u00a7 309; \u00a7 107 (2) ( C) MDL AND 28 RCNY \u00a725-171: REPLACE OR REPAIR THE SELF-CLOSING DOORS THAT IS MISSING OR DEFECTIVE HINGES IN THE ENTRANCE LOCATED AT APT 901, 9th STORY, 1st APARTMENT FROM EAST AT SOUTH",
+    "currentstatus": "VIOLATION DISMISSED",
+    "violationstatus": "Close",
+    "apartment": "901",
+    "story": "9",
+    "rentimpairing": "N"
+   },
+   {
+    "violationid": "18328290",
+    "class": "B",
+    "inspectiondate": "2025-10-28T00:00:00.000",
+    "novdescription": "\u00a7 27-2005 HMC: PROPERLY REPAIR OR REPLACE THE BROKEN OR DEFECTIVE LIGHT SWITCH AT NORTH WALL IN THE PRIVATE HALLWAY LOCATED AT APT 901, 9th STORY, 1st APARTMENT FROM EAST AT SOUTH",
+    "currentstatus": "VIOLATION DISMISSED",
+    "violationstatus": "Close",
+    "apartment": "901",
+    "story": "9",
+    "rentimpairing": "N"
+   },
+   {
+    "violationid": "18328291",
+    "class": "A",
+    "inspectiondate": "2025-10-28T00:00:00.000",
+    "novdescription": "\u00a7 27-2017.3 HMC: TRACE AND REPAIR THE SOURCE AND ABATE THE VISIBLE MOLD CONDITION... LESS THN 10SQ AT WOOD FLOOR IN THE KITCHEN LOCATED AT APT 901, 9th STORY, 1st APARTMENT FROM EAST AT SOUTH",
+    "currentstatus": "VIOLATION DISMISSED",
+    "violationstatus": "Close",
+    "apartment": "901",
+    "story": "9",
+    "rentimpairing": "N"
+   },
+   {
+    "violationid": "18322028",
+    "class": "B",
+    "inspectiondate": "2025-10-20T00:00:00.000",
+    "novdescription": "\u00a7 27-2005, 2012 HMC & \u00a7 309 MDL: ABATE THE NUISANCE CONSISTING OF EXCESSIVE STORAGE OF MATERIAL HOUSEHOLD ITEMS - GARBAGES BAGS AND BOXES IN THE ENTIRE APARTMENT LOCATED AT APT 3408, 33rd STORY, 2nd APARTMENT FROM SOUTH AT WEST",
+    "currentstatus": "VIOLATION CLOSED",
+    "violationstatus": "Close",
+    "apartment": "3408",
+    "story": "33",
+    "rentimpairing": "N"
+   },
+   {
+    "violationid": "18202351",
+    "class": "B",
+    "inspectiondate": "2025-09-02T00:00:00.000",
+    "novdescription": "\u00a7 27-2005 HMC: PROPERLY REPAIR OR REPLACE THE BROKEN OR DEFECTIVE ELECTRICAL OUTLET AT NORTH WALL IN THE CLOSET IN THE 2nd ROOM FROM NORTH LOCATED AT APT 908, 9th STORY, 2nd APARTMENT FROM SOUTH AT WEST",
+    "currentstatus": "VIOLATION DISMISSED",
+    "violationstatus": "Close",
+    "apartment": "908",
+    "story": "9",
+    "rentimpairing": "N"
+   },
+   {
+    "violationid": "18202352",
+    "class": "B",
+    "inspectiondate": "2025-09-02T00:00:00.000",
+    "novdescription": "\u00a7 27-2026 ADM CODE REPAIR THE BROKEN OR DEFECTIVE CONNECTION AT WASTE DRAIN LINE AT SINK IN THE KITCHEN LOCATED AT APT 908, 9th STORY, 2nd APARTMENT FROM SOUTH AT WEST",
+    "currentstatus": "VIOLATION DISMISSED",
+    "violationstatus": "Close",
+    "apartment": "908",
+    "story": "9",
+    "rentimpairing": "N"
+   },
+   {
+    "violationid": "18202353",
+    "class": "A",
+    "inspectiondate": "2025-09-02T00:00:00.000",
+    "novdescription": "\u00a7 27-2013 ADM CODE PAINT WITH LIGHT COLORED PAINT TO THE SATISFACTION OF THIS DEPARTMENT AT SOUTH WALL IN THE 1st ROOM FROM NORTH LOCATED AT APT 908, 9th STORY, 2nd APARTMENT FROM SOUTH AT WEST",
+    "currentstatus": "VIOLATION DISMISSED",
+    "violationstatus": "Close",
+    "apartment": "908",
+    "story": "9",
+    "rentimpairing": "N"
+   },
+   {
+    "violationid": "18098898",
+    "class": "C",
+    "inspectiondate": "2025-07-14T00:00:00.000",
+    "novdescription": "\u00a7 27-2005, 27-2007, 27-2041.1 HMC, \u00a7238, \u00a7 309; \u00a7 107 (2) ( C) MDL AND 28 RCNY \u00a725-171: REPLACE OR REPAIR THE SELF-CLOSING DOORS THAT IS MISSING OR DEFECTIVE HINGE AT COMPACTOR CLOSET, 21st STORY",
+    "currentstatus": "VIOLATION CLOSED",
+    "violationstatus": "Close",
+    "story": "21",
+    "rentimpairing": "N"
+   },
+   {
+    "violationid": "18098902",
+    "class": "C",
+    "inspectiondate": "2025-07-14T00:00:00.000",
+    "novdescription": "\u00a7 27-2005, 27-2007, 27-2041.1 HMC, \u00a7238, \u00a7 309; \u00a7 107 (2) ( C) MDL AND 28 RCNY \u00a725-171: REPLACE OR REPAIR THE SELF-CLOSING DOORS THAT IS MISSING OR DEFECTIVE HINGE AT COMPACTOR CLOSET, 19th STORY",
+    "currentstatus": "VIOLATION CLOSED",
+    "violationstatus": "Close",
+    "story": "19",
+    "rentimpairing": "N"
+   },
+   {
+    "violationid": "18098909",
+    "class": "C",
+    "inspectiondate": "2025-07-14T00:00:00.000",
+    "novdescription": "\u00a7 27-2005, 27-2007, 27-2041.1 HMC, \u00a7238, \u00a7 309; \u00a7 107 (2) ( C) MDL AND 28 RCNY \u00a725-171: REPLACE OR REPAIR THE SELF-CLOSING DOORS THAT IS MISSING OR DEFECTIVE HINGE AT COMPACTOR CLOSET, 18th STORY",
+    "currentstatus": "VIOLATION CLOSED",
+    "violationstatus": "Close",
+    "story": "18",
+    "rentimpairing": "N"
+   },
+   {
+    "violationid": "18098914",
+    "class": "C",
+    "inspectiondate": "2025-07-14T00:00:00.000",
+    "novdescription": "\u00a7 27-2005, 27-2007, 27-2041.1 HMC, \u00a7238, \u00a7 309; \u00a7 107 (2) ( C) MDL AND 28 RCNY \u00a725-171: REPLACE OR REPAIR THE SELF-CLOSING DOORS THAT IS MISSING OR DEFECTIVE HINGE AT COMPACTOR CLOSET, 16th STORY",
+    "currentstatus": "VIOLATION CLOSED",
+    "violationstatus": "Close",
+    "story": "16",
+    "rentimpairing": "N"
+   },
+   {
+    "violationid": "18098918",
+    "class": "C",
+    "inspectiondate": "2025-07-14T00:00:00.000",
+    "novdescription": "\u00a7 27-2005, 27-2007, 27-2041.1 HMC, \u00a7238, \u00a7 309; \u00a7 107 (2) ( C) MDL AND 28 RCNY \u00a725-171: REPLACE OR REPAIR THE SELF-CLOSING DOORS THAT IS MISSING OR DEFECTIVE HINGE AT COMPACTOR CLOSET, 10th STORY",
+    "currentstatus": "VIOLATION CLOSED",
+    "violationstatus": "Close",
+    "story": "10",
+    "rentimpairing": "N"
+   }
+  ]
+ },
+ "hpd_complaints": {
+  "total": 50,
+  "complaints": 30,
+  "by_category": {
+   "GENERAL": 13,
+   "APPLIANCE": 9,
+   "DOOR/WINDOW": 5,
+   "HEAT/HOT WATER": 4,
+   "UNSANITARY CONDITION": 4,
+   "PLUMBING": 4,
+   "ELECTRIC": 4,
+   "PAINT/PLASTER": 2,
+   "FLOORING/STAIRS": 2,
+   "ELEVATOR": 1,
+   "SAFETY": 1,
+   "WATER LEAK": 1
+  },
+  "by_year": {
+   "2025": 30,
+   "2026": 20
+  },
+  "recent": [
+   {
+    "complaint_id": "15000973",
+    "received_date": "2026-09-30T08:21:44.000",
+    "major_category": "WATER LEAK",
+    "minor_category": "SLOW LEAK",
+    "apartment": "4507",
+    "complaint_status": "OPEN",
+    "status_description": "The following complaint conditions are still open. HPD has already attempted to notify the property owner that the condition exists; the tenant should provide access for the owner to make the repair.  HPD may attempt to contact the tenant by phone to verify the correction of the condition or an HPD Inspector may attempt to conduct an inspection."
+   },
+   {
+    "complaint_id": "14961080",
+    "received_date": "2026-08-31T15:18:36.000",
+    "major_category": "GENERAL",
+    "minor_category": "BELL/BUZZER/INTERCOM",
+    "apartment": "3201",
+    "complaint_status": "CLOSE",
+    "status_description": "An HPD Inspector was not able to gain access to inspect this complaint. The Inspector left a card at the time of the inspection and a letter was sent from HPD after the inspection attempt to encourage you to call to schedule an inspection. HPD did not receive a timely response from you and the complaint has been closed. Please submit a new service request with 311 if the condition still exists."
+   },
+   {
+    "complaint_id": "14961080",
+    "received_date": "2026-08-31T15:18:36.000",
+    "major_category": "PAINT/PLASTER",
+    "minor_category": "DOOR/FRAME",
+    "apartment": "3201",
+    "complaint_status": "CLOSE",
+    "status_description": "An HPD Inspector was not able to gain access to inspect this complaint. The Inspector left a card at the time of the inspection and a letter was sent from HPD after the inspection attempt to encourage you to call to schedule an inspection. HPD did not receive a timely response from you and the complaint has been closed. Please submit a new service request with 311 if the condition still exists."
+   },
+   {
+    "complaint_id": "14961080",
+    "received_date": "2026-08-31T15:18:36.000",
+    "major_category": "APPLIANCE",
+    "minor_category": "ELECTRIC/GAS RANGE",
+    "apartment": "3201",
+    "complaint_status": "CLOSE",
+    "status_description": "An HPD Inspector was not able to gain access to inspect this complaint. The Inspector left a card at the time of the inspection and a letter was sent from HPD after the inspection attempt to encourage you to call to schedule an inspection. HPD did not receive a timely response from you and the complaint has been closed. Please submit a new service request with 311 if the condition still exists."
+   },
+   {
+    "complaint_id": "14961080",
+    "received_date": "2026-08-31T15:18:36.000",
+    "major_category": "FLOORING/STAIRS",
+    "minor_category": "FLOOR",
+    "apartment": "3201",
+    "complaint_status": "CLOSE",
+    "status_description": "An HPD Inspector was not able to gain access to inspect this complaint. The Inspector left a card at the time of the inspection and a letter was sent from HPD after the inspection attempt to encourage you to call to schedule an inspection. HPD did not receive a timely response from you and the complaint has been closed. Please submit a new service request with 311 if the condition still exists."
+   },
+   {
+    "complaint_id": "14961080",
+    "received_date": "2026-08-31T15:18:36.000",
+    "major_category": "APPLIANCE",
+    "minor_category": "REFRIGERATOR",
+    "apartment": "3201",
+    "complaint_status": "CLOSE",
+    "status_description": "An HPD Inspector was not able to gain access to inspect this complaint. The Inspector left a card at the time of the inspection and a letter was sent from HPD after the inspection attempt to encourage you to call to schedule an inspection. HPD did not receive a timely response from you and the complaint has been closed. Please submit a new service request with 311 if the condition still exists."
+   },
+   {
+    "complaint_id": "14948019",
+    "received_date": "2026-08-25T11:05:51.000",
+    "major_category": "PAINT/PLASTER",
+    "minor_category": "WALL",
+    "apartment": "3201",
+    "complaint_status": "CLOSE",
+    "status_description": "An HPD Inspector was not able to gain access to inspect this complaint. The Inspector left a card at the time of the inspection and a letter was sent from HPD after the inspection attempt to encourage you to call to schedule an inspection. HPD did not receive a timely response from you and the complaint has been closed. Please submit a new service request with 311 if the condition still exists."
+   },
+   {
+    "complaint_id": "14948019",
+    "received_date": "2026-08-25T11:05:51.000",
+    "major_category": "APPLIANCE",
+    "minor_category": "REFRIGERATOR",
+    "apartment": "3201",
+    "complaint_status": "CLOSE",
+    "status_description": "An HPD Inspector was not able to gain access to inspect this complaint. The Inspector left a card at the time of the inspection and a letter was sent from HPD after the inspection attempt to encourage you to call to schedule an inspection. HPD did not receive a timely response from you and the complaint has been closed. Please submit a new service request with 311 if the condition still exists."
+   },
+   {
+    "complaint_id": "14948019",
+    "received_date": "2026-08-25T11:05:51.000",
+    "major_category": "FLOORING/STAIRS",
+    "minor_category": "FLOOR",
+    "apartment": "3201",
+    "complaint_status": "CLOSE",
+    "status_description": "An HPD Inspector was not able to gain access to inspect this complaint. The Inspector left a card at the time of the inspection and a letter was sent from HPD after the inspection attempt to encourage you to call to schedule an inspection. HPD did not receive a timely response from you and the complaint has been closed. Please submit a new service request with 311 if the condition still exists."
+   },
+   {
+    "complaint_id": "14948019",
+    "received_date": "2026-08-25T11:05:51.000",
+    "major_category": "DOOR/WINDOW",
+    "minor_category": "DOOR",
+    "apartment": "3201",
+    "complaint_status": "CLOSE",
+    "status_description": "An HPD Inspector was not able to gain access to inspect this complaint. The Inspector left a card at the time of the inspection and a letter was sent from HPD after the inspection attempt to encourage you to call to schedule an inspection. HPD did not receive a timely response from you and the complaint has been closed. Please submit a new service request with 311 if the condition still exists."
+   },
+   {
+    "complaint_id": "14948019",
+    "received_date": "2026-08-25T11:05:51.000",
+    "major_category": "DOOR/WINDOW",
+    "minor_category": "DOOR FRAME",
+    "apartment": "3201",
+    "complaint_status": "CLOSE",
+    "status_description": "An HPD Inspector was not able to gain access to inspect this complaint. The Inspector left a card at the time of the inspection and a letter was sent from HPD after the inspection attempt to encourage you to call to schedule an inspection. HPD did not receive a timely response from you and the complaint has been closed. Please submit a new service request with 311 if the condition still exists."
+   },
+   {
+    "complaint_id": "14913648",
+    "received_date": "2026-07-30T16:03:38.000",
+    "major_category": "GENERAL",
+    "minor_category": "VENTILATION SYSTEM",
+    "apartment": "710",
+    "complaint_status": "CLOSE",
+    "status_description": "HPD conducted an inspection of this complaint. The conditions observed by the inspector did not violate the housing laws enforced by HPD. The complaint has been closed."
+   },
+   {
+    "complaint_id": "14892280",
+    "received_date": "2026-07-17T21:04:05.000",
+    "major_category": "UNSANITARY CONDITION",
+    "minor_category": "PESTS",
+    "apartment": "3409",
+    "complaint_status": "CLOSE",
+    "status_description": "An HPD Inspector was not able to gain access to inspect this complaint. The Inspector left a card at the time of the inspection and a letter was sent from HPD after the inspection attempt to encourage you to call to schedule an inspection. HPD did not receive a timely response from you and the complaint has been closed. Please submit a new service request with 311 if the condition still exists."
+   },
+   {
+    "complaint_id": "14866825",
+    "received_date": "2026-06-30T09:08:44.000",
+    "major_category": "UNSANITARY CONDITION",
+    "minor_category": "PESTS",
+    "apartment": "3409",
+    "complaint_status": "CLOSE",
+    "status_description": "An HPD Inspector was not able to gain access to inspect this complaint. The Inspector left a card at the time of the inspection and a letter was sent from HPD after the inspection attempt to encourage you to call to schedule an inspection. HPD did not receive a timely response from you and the complaint has been closed. Please submit a new service request with 311 if the condition still exists."
+   },
+   {
+    "complaint_id": "14842903",
+    "received_date": "2026-06-14T17:53:29.000",
+    "major_category": "GENERAL",
+    "minor_category": "VENTILATION SYSTEM",
+    "apartment": "NULL",
+    "complaint_status": "CLOSE",
+    "status_description": "HPD conducted an inspection of this complaint. The conditions observed by the inspector did not violate the housing laws enforced by HPD. The complaint has been closed."
+   },
+   {
+    "complaint_id": "14671167",
+    "received_date": "2026-04-12T11:09:01.000",
+    "major_category": "GENERAL",
+    "minor_category": "VENTILATION SYSTEM",
+    "apartment": "705",
+    "complaint_status": "CLOSE",
+    "status_description": "HPD inspected this condition so the complaint has been closed. Violations were issued. The law provides the property owner time to correct the condition(s).  Violation descriptions and the dates for the property owner to correct any violations are available at HPDONLINE.  If the owner has not corrected the condition by the date provided, you may wish to bring a case in housing court seeking the correction of these conditions.To find out more about how to start a housing court case, visit HPD's webpage on Housing Court (https://www.nyc.gov/site/hpd/services-and-information/housing-court.page)."
+   },
+   {
+    "complaint_id": "14671167",
+    "received_date": "2026-04-12T11:09:01.000",
+    "major_category": "UNSANITARY CONDITION",
+    "minor_category": "MOLD",
+    "apartment": "705",
+    "complaint_status": "CLOSE",
+    "status_description": "HPD conducted an inspection of this complaint. The conditions observed by the inspector did not violate the housing laws enforced by HPD. The complaint has been closed."
+   },
+   {
+    "complaint_id": "14567488",
+    "received_date": "2026-02-24T08:02:22.000",
+    "major_category": "HEAT/HOT WATER",
+    "minor_category": "ENTIRE BUILDING",
+    "apartment": "BLDG",
+    "complaint_status": "CLOSE",
+    "status_description": "More than one complaint was received for this building-wide condition. This complaint status is for the initial complaint.The Department of Housing Preservation and Development contacted a tenant in the building and verified that the following conditions were corrected. The complaint has been closed. If the condition still exists, please file a new complaint."
+   },
+   {
+    "complaint_id": "14567323",
+    "received_date": "2026-02-24T05:58:43.000",
+    "major_category": "HEAT/HOT WATER",
+    "minor_category": "ENTIRE BUILDING",
+    "apartment": "BLDG",
+    "complaint_status": "CLOSE",
+    "status_description": "More than one complaint was received for this building-wide condition. This complaint status is for the initial complaint.The Department of Housing Preservation and Development contacted a tenant in the building and verified that the following conditions were corrected. The complaint has been closed. If the condition still exists, please file a new complaint."
+   },
+   {
+    "complaint_id": "14566498",
+    "received_date": "2026-02-23T17:49:43.000",
+    "major_category": "HEAT/HOT WATER",
+    "minor_category": "ENTIRE BUILDING",
+    "apartment": "1603",
+    "complaint_status": "CLOSE",
+    "status_description": "HPD responded to a complaint of no heat or hot water in the building. An occupant of the building confirmed heat and hot water had been restored when the Inspector attempted to conduct the inspection or contacted you at the phone number associated with the complaint. The complaint has been closed. Please submit a new service request with 311 if the condition still exists."
+   },
+   {
+    "complaint_id": "14332141",
+    "received_date": "2025-12-23T21:32:31.000",
+    "major_category": "PLUMBING",
+    "minor_category": "RADIATOR",
+    "apartment": "157",
+    "complaint_status": "CLOSE",
+    "status_description": "An HPD Inspector was not able to gain access to inspect this complaint. The Inspector left a card at the time of the inspection and a letter was sent from HPD after the inspection attempt to encourage you to call to schedule an inspection. HPD did not receive a timely response from you and the complaint has been closed. Please submit a new service request with 311 if the condition still exists."
+   },
+   {
+    "complaint_id": "14332122",
+    "received_date": "2025-12-23T21:20:29.000",
+    "major_category": "GENERAL",
+    "minor_category": "VENTILATION SYSTEM",
+    "apartment": "517",
+    "complaint_status": "CLOSE",
+    "status_description": "An HPD Inspector was not able to gain access to inspect this complaint. The Inspector left a card at the time of the inspection and a letter was sent from HPD after the inspection attempt to encourage you to call to schedule an inspection. HPD did not receive a timely response from you and the complaint has been closed. Please submit a new service request with 311 if the condition still exists."
+   },
+   {
+    "complaint_id": "14211797",
+    "received_date": "2025-11-22T15:09:04.000",
+    "major_category": "GENERAL",
+    "minor_category": "VENTILATION SYSTEM",
+    "apartment": "517",
+    "complaint_status": "CLOSE",
+    "status_description": "An HPD Inspector was not able to gain access to inspect this complaint. The Inspector left a card at the time of the inspection and a letter was sent from HPD after the inspection attempt to encourage you to call to schedule an inspection. HPD did not receive a timely response from you and the complaint has been closed. Please submit a new service request with 311 if the condition still exists."
+   },
+   {
+    "complaint_id": "14097926",
+    "received_date": "2025-10-28T16:47:28.000",
+    "major_category": "APPLIANCE",
+    "minor_category": "ELECTRIC/GAS RANGE",
+    "apartment": "901",
+    "complaint_status": "CLOSE",
+    "status_description": "An HPD Inspector was not able to gain access to inspect this complaint. The Inspector left a card at the time of the inspection and a letter was sent from HPD after the inspection attempt to encourage you to call to schedule an inspection. HPD did not receive a timely response from you and the complaint has been closed. Please submit a new service request with 311 if the condition still exists."
+   },
+   {
+    "complaint_id": "14097577",
+    "received_date": "2025-10-28T14:47:55.000",
+    "major_category": "PLUMBING",
+    "minor_category": "STEAM PIPE/RISER",
+    "apartment": "4108",
+    "complaint_status": "CLOSE",
+    "status_description": "HPD conducted an inspection of this complaint. The conditions observed by the inspector did not violate the housing laws enforced by HPD. The complaint has been closed."
+   }
+  ]
+ },
+ "dob_complaints": {
+  "total": 16,
+  "by_category": {
+   "58": 2,
+   "31": 1,
+   "6M": 2,
+   "21": 1,
+   "91": 1,
+   "7G": 1,
+   "94": 1,
+   "30": 1,
+   "53": 2,
+   "7F": 2,
+   "8A": 1,
+   "03": 1
+  },
+  "recent": [
+   {
+    "complaint_number": "1693324",
+    "status": "CLOSED",
+    "date_entered": "04/15/2025",
+    "house_number": "550",
+    "house_street": "10 AVENUE",
+    "zip_code": "10018",
+    "bin": "1076207",
+    "community_board": "104",
+    "complaint_category": "58",
+    "unit": "BOILR",
+    "disposition_date": "04/17/2025",
+    "disposition_code": "H1",
+    "inspection_date": "04/17/2025",
+    "dobrundate": "20261013000000"
+   },
+   {
+    "complaint_number": "1734215",
+    "status": "ACTIVE",
+    "date_entered": "08/19/2026",
+    "house_number": "550",
+    "house_street": "10 AVENUE",
+    "zip_code": "10018",
+    "bin": "1076207",
+    "community_board": "104",
+    "complaint_category": "31",
+    "unit": "MAN.",
+    "dobrundate": "20261013000000"
+   },
+   {
+    "complaint_number": "1734011",
+    "status": "CLOSED",
+    "date_entered": "08/17/2026",
+    "house_number": "550",
+    "house_street": "10 AVENUE",
+    "zip_code": "10018",
+    "bin": "1076207",
+    "community_board": "104",
+    "complaint_category": "6M",
+    "unit": "ELEVR",
+    "disposition_date": "08/25/2026",
+    "disposition_code": "I2",
+    "inspection_date": "08/24/2026",
+    "dobrundate": "20261013000000"
+   },
+   {
+    "complaint_number": "1653092",
+    "status": "CLOSED",
+    "date_entered": "11/09/2023",
+    "house_number": "550",
+    "house_street": "10 AVENUE",
+    "zip_code": "10018",
+    "bin": "1076207",
+    "community_board": "104",
+    "complaint_category": "21",
+    "unit": "CSE",
+    "disposition_date": "11/09/2023",
+    "disposition_code": "I2",
+    "inspection_date": "11/09/2023",
+    "dobrundate": "20261013000000"
+   },
+   {
+    "complaint_number": "1654769",
+    "status": "CLOSED",
+    "date_entered": "12/04/2023",
+    "house_number": "550",
+    "house_street": "10 AVENUE",
+    "zip_code": "10018",
+    "bin": "1076207",
+    "community_board": "104",
+    "complaint_category": "91",
+    "unit": "CSE",
+    "disposition_date": "12/04/2023",
+    "disposition_code": "I2",
+    "inspection_date": "12/04/2023",
+    "dobrundate": "20261013000000"
+   },
+   {
+    "complaint_number": "1655551",
+    "status": "CLOSED",
+    "date_entered": "12/14/2023",
+    "house_number": "550",
+    "house_street": "10 AVENUE",
+    "zip_code": "10018",
+    "bin": "1076207",
+    "community_board": "104",
+    "complaint_category": "7G",
+    "unit": "CSE",
+    "disposition_date": "12/14/2023",
+    "disposition_code": "I2",
+    "inspection_date": "12/14/2023",
+    "dobrundate": "20261013000000"
+   },
+   {
+    "complaint_number": "1707674",
+    "status": "CLOSED",
+    "date_entered": "10/20/2025",
+    "house_number": "550",
+    "house_street": "10 AVENUE",
+    "zip_code": "10018",
+    "bin": "1076207",
+    "community_board": "104",
+    "complaint_category": "94",
+    "unit": "PLUMB",
+    "disposition_date": "04/10/2026",
+    "disposition_code": "I2",
+    "inspection_date": "04/10/2026",
+    "dobrundate": "20261013000000"
+   },
+   {
+    "complaint_number": "1681841",
+    "status": "CLOSED",
+    "date_entered": "11/13/2024",
+    "house_number": "550",
+    "house_street": "10 AVENUE",
+    "zip_code": "10018",
+    "bin": "1076207",
+    "community_board": "104",
+    "complaint_category": "30",
+    "unit": "CSE",
+    "disposition_date": "11/13/2024",
+    "disposition_code": "I2",
+    "inspection_date": "11/13/2024",
+    "dobrundate": "20261013000000"
+   },
+   {
+    "complaint_number": "1722249",
+    "status": "CLOSED",
+    "date_entered": "04/12/2026",
+    "house_number": "550",
+    "house_street": "10 AVENUE",
+    "zip_code": "10018",
+    "bin": "1076207",
+    "community_board": "104",
+    "complaint_category": "53",
+    "unit": "BOILR",
+    "disposition_date": "05/19/2026",
+    "disposition_code": "I2",
+    "inspection_date": "05/19/2026",
+    "dobrundate": "20261013000000"
+   },
+   {
+    "complaint_number": "1668034",
+    "status": "CLOSED",
+    "date_entered": "05/15/2024",
+    "house_number": "538",
+    "house_street": "10 AVENUE",
+    "zip_code": "10018",
+    "bin": "1076207",
+    "community_board": "104",
+    "complaint_category": "7F",
+    "unit": "CSE",
+    "disposition_date": "05/16/2024",
+    "disposition_code": "I2",
+    "inspection_date": "05/16/2024",
+    "dobrundate": "20261013000000"
+   },
+   {
+    "complaint_number": "1693323",
+    "status": "CLOSED",
+    "date_entered": "04/15/2025",
+    "house_number": "550",
+    "house_street": "10 AVENUE",
+    "zip_code": "10018",
+    "bin": "1076207",
+    "community_board": "104",
+    "complaint_category": "58",
+    "unit": "BOILR",
+    "disposition_date": "04/17/2025",
+    "disposition_code": "I2",
+    "inspection_date": "04/17/2025",
+    "dobrundate": "20261013000000"
+   },
+   {
+    "complaint_number": "1679090",
+    "status": "CLOSED",
+    "date_entered": "10/03/2024",
+    "house_number": "550",
+    "house_street": "10 AVENUE",
+    "zip_code": "10018",
+    "bin": "1076207",
+    "community_board": "104",
+    "complaint_category": "8A",
+    "unit": "CSC",
+    "disposition_date": "10/24/2024",
+    "disposition_code": "L2",
+    "inspection_date": "10/23/2024",
+    "dobrundate": "20261013000000"
+   },
+   {
+    "complaint_number": "1654821",
+    "status": "CLOSED",
+    "date_entered": "12/05/2023",
+    "house_number": "550",
+    "house_street": "10 AVENUE",
+    "zip_code": "10018",
+    "bin": "1076207",
+    "community_board": "104",
+    "complaint_category": "7F",
+    "unit": "CSE",
+    "disposition_date": "12/05/2023",
+    "disposition_code": "I2",
+    "inspection_date": "12/05/2023",
+    "dobrundate": "20261013000000"
+   },
+   {
+    "complaint_number": "1732784",
+    "status": "CLOSED",
+    "date_entered": "08/05/2026",
+    "house_number": "550",
+    "house_street": "10 AVENUE",
+    "zip_code": "10018",
+    "bin": "1076207",
+    "community_board": "104",
+    "complaint_category": "53",
+    "unit": "BOILR",
+    "disposition_date": "08/27/2026",
+    "disposition_code": "I2",
+    "inspection_date": "08/27/2026",
+    "dobrundate": "20261013000000"
+   },
+   {
+    "complaint_number": "1703002",
+    "status": "CLOSED",
+    "date_entered": "08/25/2025",
+    "house_number": "550",
+    "house_street": "10 AVENUE",
+    "zip_code": "10018",
+    "bin": "1076207",
+    "community_board": "104",
+    "complaint_category": "6M",
+    "unit": "ELEVR",
+    "disposition_date": "01/14/2026",
+    "disposition_code": "A8",
+    "inspection_date": "01/14/2026",
+    "dobrundate": "20261013000000"
+   },
+   {
+    "complaint_number": "1655529",
+    "status": "CLOSED",
+    "date_entered": "12/13/2023",
+    "house_number": "550",
+    "house_street": "10 AVENUE",
+    "zip_code": "10018",
+    "bin": "1076207",
+    "community_board": "104",
+    "complaint_category": "03",
+    "unit": "CSE",
+    "disposition_date": "12/14/2023",
+    "disposition_code": "I2",
+    "inspection_date": "12/14/2023",
+    "dobrundate": "20261013000000"
+   }
+  ]
+ },
+ "ecb_violations": {
+  "total": 5,
+  "open": 0,
+  "by_severity": {
+   "CLASS - 2": 5
+  },
+  "recent": [
+   {
+    "ecb_violation_number": "39533102X",
+    "issue_date": "20241003",
+    "severity": "CLASS - 2",
+    "violation_description": "AT TIME OF INSPECTION I OBSERVED A DOUBLE TIER SUSPENDED SCAFFOLD AT EXPOSURE 1 . WITH REVIEW OF THE APPROVED PLANS I OBSERVED THAT THE DOUBLE CABLES AT THE END OF THE OUTRIGGER BEAMS & THE DOUBLE LAYER OF FOAM",
+    "ecb_violation_status": "RESOLVE",
+    "penality_imposed": "0"
+   },
+   {
+    "ecb_violation_number": "39173782M",
+    "issue_date": "20260114",
+    "severity": "CLASS - 2",
+    "violation_description": "VF.. HOIST MACHINE BRAKE MAINTENANCE TAG EXPIRED PROVIDE.. 59-BB-7.... MAINTENANCE LOG MISSING PROVIDE...68-M-7..",
+    "ecb_violation_status": "RESOLVE",
+    "penality_imposed": "625"
+   },
+   {
+    "ecb_violation_number": "39173781K",
+    "issue_date": "20260114",
+    "severity": "CLASS - 2",
+    "violation_description": "VF... HOIST MACHINE BRAKE MAINTENANCE TAG EXPIRED PROVIDE... 59-BB-7.... MAINTENANCE LOG MISSING PROVIDE... 68-M-7...",
+    "ecb_violation_status": "RESOLVE",
+    "penality_imposed": "625"
+   },
+   {
+    "ecb_violation_number": "39173779L",
+    "issue_date": "20260114",
+    "severity": "CLASS - 2",
+    "violation_description": "VF... HOIST MACHINE BRAKE MAINTENANCE TAG EXPIRED PROVIDE..59-BB-7.... MAINTENANCE LOG MISSING PROVIDE...68-M-7...",
+    "ecb_violation_status": "RESOLVE",
+    "penality_imposed": "625"
+   },
+   {
+    "ecb_violation_number": "39173780Z",
+    "issue_date": "20260114",
+    "severity": "CLASS - 2",
+    "violation_description": "VF. HOIST MACHINE BREAK MAINTENANCE TAG EXPIRED PROVIDE.. 59-BB-7 .MAINTENANCE LOG MISSING PROVIDE...68-M-7..",
+    "ecb_violation_status": "RESOLVE",
+    "penality_imposed": "625"
+   }
+  ]
+ },
+ "construction": {
+  "block_filings": 19,
+  "lot_filings": 10,
+  "major_jobs": [
+   {
+    "job_filing_number": "M01132678-P5",
+    "house_no": "550",
+    "street_name": "10 AVENUE",
+    "lot": "7502",
+    "job_type": "Alteration",
+    "filing_status": "Approved",
+    "job_description": "FILING HEREWITH MECHANICAL WORK IN CONJUNCTION WITH INTERIOR RENOVATION FOR EXISTING OFFICE SPACE AS PER PLANS. NO CHANGE IN USE, EGRESS, OR OCCUPANCY.",
+    "filing_date": "2026-07-22T00:00:00.000",
+    "initial_cost": "726037"
+   },
+   {
+    "job_filing_number": "M01132678-P4",
+    "house_no": "550",
+    "street_name": "10 AVENUE",
+    "lot": "7502",
+    "job_type": "Alteration",
+    "filing_status": "Approved",
+    "job_description": "FILING HEREWITH INTERIOR RENOVATION/FIT OUT OF EXISTING OFFICE SPACE AS PER PLANS. NO CHANGE IN USE, EGRESS, OR OCCUPANCY.",
+    "filing_date": "2026-06-04T00:00:00.000",
+    "initial_cost": "1644386"
+   },
+   {
+    "job_filing_number": "M01132678-P1",
+    "house_no": "550",
+    "street_name": "10 AVENUE",
+    "lot": "7502",
+    "job_type": "Alteration",
+    "filing_status": "Approved",
+    "job_description": "FILING HEREWITH INTERIOR RENOVATION/FIT OUT OF EXISTING OFFICE SPACE AS PER PLANS. NO CHANGE IN USE, EGRESS, OR OCCUPANCY.",
+    "filing_date": "2026-04-22T00:00:00.000",
+    "initial_cost": "1644386"
+   },
+   {
+    "job_filing_number": "M01132678-P3",
+    "house_no": "550",
+    "street_name": "10 AVENUE",
+    "lot": "7502",
+    "job_type": "Alteration",
+    "filing_status": "Approved",
+    "job_description": "FILING HEREWITH MECHANICAL WORK IN CONJUNCTION WITH INTERIOR RENOVATION FOR EXISTING OFFICE SPACE AS PER PLANS. NO CHANGE IN USE, EGRESS, OR OCCUPANCY.",
+    "filing_date": "2026-04-03T00:00:00.000",
+    "initial_cost": "726037"
+   }
+  ],
+  "heavy_construction": [],
+  "lot_recent": [
+   {
+    "job_filing_number": "M01132678-P5",
+    "house_no": "550",
+    "street_name": "10 AVENUE",
+    "lot": "7502",
+    "job_type": "Alteration",
+    "filing_status": "Approved",
+    "job_description": "FILING HEREWITH MECHANICAL WORK IN CONJUNCTION WITH INTERIOR RENOVATION FOR EXISTING OFFICE SPACE AS PER PLANS. NO CHANGE IN USE, EGRESS, OR OCCUPANCY.",
+    "filing_date": "2026-07-22T00:00:00.000",
+    "initial_cost": "726037"
+   },
+   {
+    "job_filing_number": "M01132678-P4",
+    "house_no": "550",
+    "street_name": "10 AVENUE",
+    "lot": "7502",
+    "job_type": "Alteration",
+    "filing_status": "Approved",
+    "job_description": "FILING HEREWITH INTERIOR RENOVATION/FIT OUT OF EXISTING OFFICE SPACE AS PER PLANS. NO CHANGE IN USE, EGRESS, OR OCCUPANCY.",
+    "filing_date": "2026-06-04T00:00:00.000",
+    "initial_cost": "1644386"
+   },
+   {
+    "job_filing_number": "M01132678-P1",
+    "house_no": "550",
+    "street_name": "10 AVENUE",
+    "lot": "7502",
+    "job_type": "Alteration",
+    "filing_status": "Approved",
+    "job_description": "FILING HEREWITH INTERIOR RENOVATION/FIT OUT OF EXISTING OFFICE SPACE AS PER PLANS. NO CHANGE IN USE, EGRESS, OR OCCUPANCY.",
+    "filing_date": "2026-04-22T00:00:00.000",
+    "initial_cost": "1644386"
+   },
+   {
+    "job_filing_number": "M01132678-P3",
+    "house_no": "550",
+    "street_name": "10 AVENUE",
+    "lot": "7502",
+    "job_type": "Alteration",
+    "filing_status": "Approved",
+    "job_description": "FILING HEREWITH MECHANICAL WORK IN CONJUNCTION WITH INTERIOR RENOVATION FOR EXISTING OFFICE SPACE AS PER PLANS. NO CHANGE IN USE, EGRESS, OR OCCUPANCY.",
+    "filing_date": "2026-04-03T00:00:00.000",
+    "initial_cost": "726037"
+   },
+   {
+    "job_filing_number": "M01132678-P2",
+    "house_no": "550",
+    "street_name": "10 AVENUE",
+    "lot": "7502",
+    "job_type": "Alteration",
+    "filing_status": "Approved",
+    "job_description": "FILING HEREWITH SPRINKLER WORK IN CONJUNCTION WITH INTERIOR RENOVATION AS PER PLANS. NO CHANGE IN USE, EGRESS, OR OCCUPANCY.",
+    "filing_date": "2026-04-03T00:00:00.000",
+    "initial_cost": "168000"
+   },
+   {
+    "job_filing_number": "M01357922-I1",
+    "house_no": "550",
+    "street_name": "10 AVENUE",
+    "lot": "7502",
+    "job_type": "Alteration",
+    "filing_status": "Permit Entire",
+    "job_description": "ERECT ILLUMINATED WALL SIGN FOR NON-PROFIT ORGANIZATION READING \"COVENANT HOUSE INTERNATIONAL\"",
+    "filing_date": "2026-03-04T00:00:00.000",
+    "initial_cost": "2925"
+   },
+   {
+    "job_filing_number": "M01363645-I1",
+    "house_no": "550",
+    "street_name": "10 AVENUE",
+    "lot": "7502",
+    "job_type": "Alteration",
+    "filing_status": "Permit Entire",
+    "job_description": "PROPOSE NEW ILLUMINATED SIGNAGES FOR EXISTING COMMERCIAL SPACE. NO CHANGE TO USE, EGRESS OR OCCUPANCY.",
+    "filing_date": "2026-03-03T00:00:00.000",
+    "initial_cost": "9000"
+   },
+   {
+    "job_filing_number": "M01316072-S1",
+    "house_no": "550",
+    "street_name": "10 AVENUE",
+    "lot": "7502",
+    "job_type": "Alteration",
+    "filing_status": "LOC Issued",
+    "job_description": "New plumbing fixture per plan for existing commercial space. Alteration on existing sprinkler system. No change in use, occupancy or egress.",
+    "filing_date": "2025-11-19T00:00:00.000",
+    "initial_cost": "32670"
+   },
+   {
+    "job_filing_number": "M01316072-I1",
+    "house_no": "550",
+    "street_name": "10 AVENUE",
+    "lot": "7502",
+    "job_type": "Alteration",
+    "filing_status": "LOC Issued",
+    "job_description": "Interior renovation of existing commercial space. New walls and fixtures per plan. New mechanical system and ductwork. No change in egress, use or occupancy.",
+    "filing_date": "2025-11-19T00:00:00.000",
+    "initial_cost": "108900"
+   },
+   {
+    "job_filing_number": "M01277895-I1",
+    "house_no": "550",
+    "street_name": "10 AVENUE",
+    "lot": "7502",
+    "job_type": "No Work",
+    "filing_status": "Approved",
+    "filing_date": "2025-10-06T00:00:00.000",
+    "initial_cost": "0"
+   }
+  ]
+ },
+ "bedbugs": {
+  "filings": [
+   {
+    "building_id": "1000496",
+    "registration_id": "145243",
+    "borough": "MANHATTAN",
+    "house_number": "550",
+    "street_name": "10 AVENUE",
+    "postcode": "10018",
+    "of_dwelling_units": "453",
+    "infested_dwelling_unit_count": "0",
+    "eradicated_unit_count": "0",
+    "re_infested_dwelling_unit": "0",
+    "filing_date": "2025-12-29T00:00:00.000",
+    "filing_period_start_date": "2024-11-01T00:00:00.000",
+    "filling_period_end_date": "2025-10-31T00:00:00.000",
+    "latitude": "40.758743",
+    "longitude": "-73.996105",
+    "community_board": "4",
+    "city_council_district": "3",
+    "census_tract_2010": "115",
+    "bin": "1076207",
+    "bbl": "1010507502",
+    "nta": "Hell's Kitchen"
+   },
+   {
+    "building_id": "1000496",
+    "registration_id": "145243",
+    "borough": "MANHATTAN",
+    "house_number": "550",
+    "street_name": "10 AVENUE",
+    "postcode": "10018",
+    "of_dwelling_units": "453",
+    "infested_dwelling_unit_count": "0",
+    "eradicated_unit_count": "0",
+    "re_infested_dwelling_unit": "0",
+    "filing_date": "2025-06-17T00:00:00.000",
+    "filing_period_start_date": "2023-11-01T00:00:00.000",
+    "filling_period_end_date": "2024-10-31T00:00:00.000",
+    "latitude": "40.758743",
+    "longitude": "-73.996105",
+    "community_board": "4",
+    "city_council_district": "3",
+    "census_tract_2010": "115",
+    "bin": "1076207",
+    "bbl": "1010507502",
+    "nta": "Hell's Kitchen"
+   }
+  ]
+ },
+ "noise_311": {
+  "radius_m": 150,
+  "nearby_total": 447,
+  "at_building": 67,
+  "nearby_per_year": 149.0,
+  "by_type": {
+   "Noise | Noise: Construction Before/After Hours (NM1)": 166,
+   "Noise - Residential | Loud Music/Party": 108,
+   "Noise - Street/Sidewalk | Loud Music/Party": 27,
+   "Noise - Residential | Banging/Pounding": 20,
+   "Noise | Noise: Jack Hammering (NC2)": 19,
+   "Noise | Noise: air condition/ventilation equipment (NV1)": 15,
+   "Noise | Noise: Construction Equipment (NC1)": 15,
+   "Noise - Street/Sidewalk | Loud Talking": 13,
+   "Noise | Noise, Barking Dog (NR5)": 13,
+   "Noise - Vehicle | Car/Truck Horn": 11,
+   "Noise | Construction": 11,
+   "Noise - Residential | Loud Talking": 8
+  },
+  "at_building_by_type": {
+   "Noise: Construction Before/After Hours (NM1)": 25,
+   "Loud Music/Party": 15,
+   "Noise: Construction Equipment (NC1)": 9,
+   "Noise: Jack Hammering (NC2)": 4,
+   "Construction": 4,
+   "Noise: air condition/ventilation equipment (NV1)": 3,
+   "Banging/Pounding": 3,
+   "Noise, Barking Dog (NR5)": 2,
+   "Construction Equipment": 1,
+   "Jackhammer": 1
+  },
+  "by_hour": [
+   66,
+   52,
+   28,
+   23,
+   7,
+   13,
+   9,
+   13,
+   9,
+   7,
+   2,
+   8,
+   5,
+   6,
+   3,
+   12,
+   12,
+   24,
+   5,
+   10,
+   10,
+   14,
+   51,
+   58
+  ],
+  "night_share": 0.67,
+  "by_month": {
+   "2023-10": 10,
+   "2023-11": 3,
+   "2023-12": 10,
+   "2024-01": 8,
+   "2024-02": 46,
+   "2024-03": 14,
+   "2024-04": 9,
+   "2024-05": 6,
+   "2024-06": 1,
+   "2024-07": 3,
+   "2024-08": 9,
+   "2024-09": 14,
+   "2024-10": 15,
+   "2024-11": 4,
+   "2024-12": 5,
+   "2025-01": 3,
+   "2025-02": 3,
+   "2025-03": 12,
+   "2025-04": 14,
+   "2025-05": 6,
+   "2025-06": 3,
+   "2025-07": 4,
+   "2025-08": 15,
+   "2025-09": 13,
+   "2025-10": 17,
+   "2025-11": 5,
+   "2025-12": 6,
+   "2026-01": 6,
+   "2026-02": 14,
+   "2026-03": 24,
+   "2026-04": 15,
+   "2026-05": 37,
+   "2026-06": 45,
+   "2026-07": 8,
+   "2026-08": 13,
+   "2026-09": 25,
+   "2026-10": 2
+  },
+  "at_building_recent": [
+   {
+    "created_date": "2026-10-09T05:18:24.000",
+    "complaint_type": "Noise - Residential",
+    "descriptor": "Loud Music/Party",
+    "incident_address": "550 10 AVENUE",
+    "bbl": "1010507502",
+    "resolution_description": "The New York City Police Department responded to the complaint and their investigation determined that no criminal violation existed. The condition was corrected without the need to issue a summons or effect an arrest. If the problem persists, please contact 311 to create another complaint. If possible, provide contact information so responding officers may reach out to you for more details. If necessary, your complaint may be referred to your local precinct's special operations units (Quality of Life, etc.). Thank you for your attention to this matter. We count on New Yorkers like yourself to maintain a safe City, so please let us know if you see other conditions that require our attention."
+   },
+   {
+    "created_date": "2026-09-24T00:40:51.000",
+    "complaint_type": "Noise",
+    "descriptor": "Construction Equipment",
+    "incident_address": "550 10 AVENUE",
+    "bbl": "1010507502",
+    "resolution_description": "The Department of Environmental Protection (DEP) didn't observe a violation of the NYC Air or Noise Code at the time of inspection and couldn't issue a summons.  If the problem still exists, please go to nyc.gov/311 or call 311 to file a new Service Request. If you're outside of New York City, please call (212) NEW-YORK (212-639-9675)."
+   },
+   {
+    "created_date": "2026-09-23T00:39:18.000",
+    "complaint_type": "Noise",
+    "descriptor": "Construction",
+    "incident_address": "550 10 AVENUE",
+    "bbl": "1010507502",
+    "resolution_description": "The Department of Environmental Protection researched this complaint and determined that it could be closed."
+   },
+   {
+    "created_date": "2026-09-15T00:29:58.000",
+    "complaint_type": "Noise",
+    "descriptor": "Construction",
+    "incident_address": "550 10 AVENUE",
+    "bbl": "1010507502",
+    "resolution_description": "The Department of Environmental Protection determined that this complaint is a duplicate of a previously filed complaint. The original complaint is being addressed."
+   },
+   {
+    "created_date": "2026-09-15T00:23:11.000",
+    "complaint_type": "Noise",
+    "descriptor": "Construction",
+    "incident_address": "550 10 AVENUE",
+    "bbl": "1010507502",
+    "resolution_description": "The Department of Environmental Protection determined that this complaint is a duplicate of a previously filed complaint. The original complaint is being addressed."
+   },
+   {
+    "created_date": "2026-09-09T23:51:32.000",
+    "complaint_type": "Noise",
+    "descriptor": "Construction",
+    "incident_address": "550 10 AVENUE",
+    "bbl": "1010507502",
+    "resolution_description": "The Department of Environmental Protection researched this complaint and determined that it could be closed."
+   },
+   {
+    "created_date": "2026-08-20T11:57:17.000",
+    "complaint_type": "Noise",
+    "descriptor": "Jackhammer",
+    "incident_address": "550 10 AVENUE",
+    "bbl": "1010507502",
+    "resolution_description": "The Department of Environmental Protection (DEP) didn't observe a violation of the NYC Air or Noise Code at the time of inspection and couldn't issue a summons.  If the problem still exists, please go to nyc.gov/311 or call 311 to file a new Service Request. If you're outside of New York City, please call (212) NEW-YORK (212-639-9675)."
+   },
+   {
+    "created_date": "2026-08-09T03:49:51.000",
+    "complaint_type": "Noise - Residential",
+    "descriptor": "Loud Music/Party",
+    "incident_address": "550 10 AVENUE",
+    "bbl": "1010507502",
+    "resolution_description": "The New York City Police Department responded to the complaint and their investigation determined that no criminal violation existed. The condition was corrected without the need to issue a summons or effect an arrest. If the problem persists, please contact 311 to create another complaint. If possible, provide contact information so responding officers may reach out to you for more details. If necessary, your complaint may be referred to your local precinct's special operations units (Quality of Life, etc.). Thank you for your attention to this matter. We count on New Yorkers like yourself to maintain a safe City, so please let us know if you see other conditions that require our attention."
+   },
+   {
+    "created_date": "2026-06-23T23:38:00.000",
+    "complaint_type": "Noise",
+    "descriptor": "Noise: Construction Before/After Hours (NM1)",
+    "incident_address": "550 10 AVENUE",
+    "bbl": "1010507502",
+    "resolution_description": "The Department of Environmental Protection determined that this complaint is a duplicate of a previously filed complaint. The original complaint is being addressed."
+   },
+   {
+    "created_date": "2026-06-23T23:30:00.000",
+    "complaint_type": "Noise",
+    "descriptor": "Noise: Jack Hammering (NC2)",
+    "incident_address": "550 10 AVENUE",
+    "bbl": "1010507502",
+    "resolution_description": "The Department of Environmental Protection determined that this complaint is a duplicate of a previously filed complaint. The original complaint is being addressed."
+   },
+   {
+    "created_date": "2026-06-18T19:42:00.000",
+    "complaint_type": "Noise",
+    "descriptor": "Noise: Construction Before/After Hours (NM1)",
+    "incident_address": "550 10 AVENUE",
+    "bbl": "1010507502",
+    "resolution_description": "The Department of Environmental Protection determined that this complaint is a duplicate of a previously filed complaint. The original complaint is being addressed."
+   },
+   {
+    "created_date": "2026-06-18T17:40:00.000",
+    "complaint_type": "Noise",
+    "descriptor": "Noise: Construction Equipment (NC1)",
+    "incident_address": "550 10 AVENUE",
+    "bbl": "1010507502",
+    "resolution_description": "The Department of Environmental Protection determined that this complaint is a duplicate of a previously filed complaint. The original complaint is being addressed."
+   },
+   {
+    "created_date": "2026-06-18T17:40:00.000",
+    "complaint_type": "Noise",
+    "descriptor": "Noise: Construction Equipment (NC1)",
+    "incident_address": "550 10 AVENUE",
+    "bbl": "1010507502",
+    "resolution_description": "The Department of Environmental Protection (DEP) didn't observe a violation of the NYC Air or Noise Code at the time of inspection and couldn't issue a summons.  If the problem still exists, please go to nyc.gov/311 or call 311 to file a new Service Request. If you're outside of New York City, please call (212) NEW-YORK (212-639-9675)."
+   },
+   {
+    "created_date": "2026-06-18T17:40:00.000",
+    "complaint_type": "Noise",
+    "descriptor": "Noise: Construction Before/After Hours (NM1)",
+    "incident_address": "550 10 AVENUE",
+    "bbl": "1010507502",
+    "resolution_description": "The Department of Environmental Protection determined that this complaint is a duplicate of a previously filed complaint. The original complaint is being addressed."
+   },
+   {
+    "created_date": "2026-06-18T00:53:00.000",
+    "complaint_type": "Noise",
+    "descriptor": "Noise: Construction Before/After Hours (NM1)",
+    "incident_address": "550 10 AVENUE",
+    "bbl": "1010507502",
+    "resolution_description": "The Department of Environmental Protection determined that this complaint is a duplicate of a previously filed complaint. The original complaint is being addressed."
+   },
+   {
+    "created_date": "2026-06-17T00:06:00.000",
+    "complaint_type": "Noise",
+    "descriptor": "Noise: Construction Before/After Hours (NM1)",
+    "incident_address": "550 10 AVENUE",
+    "bbl": "1010507502",
+    "resolution_description": "The Department of Environmental Protection (DEP) didn't observe a violation of the NYC Air or Noise Code at the time of inspection and couldn't issue a summons.  If the problem still exists, please go to nyc.gov/311 or call 311 to file a new Service Request. If you're outside of New York City, please call (212) NEW-YORK (212-639-9675)."
+   },
+   {
+    "created_date": "2026-06-13T07:12:00.000",
+    "complaint_type": "Noise",
+    "descriptor": "Noise: Construction Before/After Hours (NM1)",
+    "incident_address": "550 10 AVENUE",
+    "bbl": "1010507502",
+    "resolution_description": "The Department of Environmental Protection (DEP) didn't observe a violation of the NYC Air or Noise Code at the time of inspection and couldn't issue a summons.  If the problem still exists, please go to nyc.gov/311 or call 311 to file a new Service Request. If you're outside of New York City, please call (212) NEW-YORK (212-639-9675)."
+   },
+   {
+    "created_date": "2026-06-13T03:48:00.000",
+    "complaint_type": "Noise",
+    "descriptor": "Noise: Construction Before/After Hours (NM1)",
+    "incident_address": "550 10 AVENUE",
+    "bbl": "1010507502",
+    "resolution_description": "The Department of Environmental Protection determined that this complaint is a duplicate of a previously filed complaint. The original complaint is being addressed."
+   },
+   {
+    "created_date": "2026-05-30T00:54:00.000",
+    "complaint_type": "Noise",
+    "descriptor": "Noise: Construction Before/After Hours (NM1)",
+    "incident_address": "550 10 AVENUE",
+    "bbl": "1010507502",
+    "resolution_description": "The Department of Environmental Protection determined that this complaint is a duplicate of a previously filed complaint. The original complaint is being addressed."
+   },
+   {
+    "created_date": "2026-05-27T23:03:00.000",
+    "complaint_type": "Noise",
+    "descriptor": "Noise: Construction Before/After Hours (NM1)",
+    "incident_address": "550 10 AVENUE",
+    "bbl": "1010507502",
+    "resolution_description": "The Department of Environmental Protection researched this complaint and determined that it could be closed."
+   },
+   {
+    "created_date": "2026-05-27T22:40:00.000",
+    "complaint_type": "Noise",
+    "descriptor": "Noise: Construction Before/After Hours (NM1)",
+    "incident_address": "550 10 AVENUE",
+    "bbl": "1010507502",
+    "resolution_description": "The Department of Environmental Protection researched this complaint and determined that it could be closed."
+   },
+   {
+    "created_date": "2026-05-27T13:03:00.000",
+    "complaint_type": "Noise",
+    "descriptor": "Noise: Construction Before/After Hours (NM1)",
+    "incident_address": "550 10 AVENUE",
+    "bbl": "1010507502",
+    "resolution_description": "The Department of Environmental Protection (DEP) didn't observe a violation of the NYC Air or Noise Code at the time of inspection and couldn't issue a summons.  If the problem still exists, please go to nyc.gov/311 or call 311 to file a new Service Request. If you're outside of New York City, please call (212) NEW-YORK (212-639-9675)."
+   },
+   {
+    "created_date": "2026-05-27T05:57:47.000",
+    "complaint_type": "Noise - Residential",
+    "descriptor": "Banging/Pounding",
+    "incident_address": "550 10 AVENUE",
+    "bbl": "1010507502",
+    "resolution_description": "The New York City Police Department responded to the complaint and their investigation determined that police action was not necessary. If the problem persists, please contact 311 to create another complaint. If possible, provide contact information so responding officers may reach out to you for more details. We count on New Yorkers like yourself to maintain a safe City, so please let us know if you see other conditions that require our attention."
+   },
+   {
+    "created_date": "2026-05-27T05:14:00.000",
+    "complaint_type": "Noise",
+    "descriptor": "Noise: Construction Before/After Hours (NM1)",
+    "incident_address": "550 10 AVENUE",
+    "bbl": "1010507502",
+    "resolution_description": "The Department of Environmental Protection researched this complaint and determined that it could be closed."
+   },
+   {
+    "created_date": "2026-05-27T04:24:00.000",
+    "complaint_type": "Noise",
+    "descriptor": "Noise: Construction Before/After Hours (NM1)",
+    "incident_address": "550 10 AVENUE",
+    "bbl": "1010507502",
+    "resolution_description": "The Department of Environmental Protection researched this complaint and determined that it could be closed."
+   },
+   {
+    "created_date": "2026-05-23T00:01:13.000",
+    "complaint_type": "Noise - Street/Sidewalk",
+    "descriptor": "Loud Music/Party",
+    "incident_address": "463 WEST 40 STREET",
+    "bbl": "1010507502",
+    "resolution_description": "Your complaint has been received but does not fall under the jurisdiction of the New York City Police Department.  Please contact your local precinct for more information, including which City agency your request was referred to. We count on New Yorkers like yourself to maintain a safe City, so please let us know if you see other conditions that require our attention."
+   },
+   {
+    "created_date": "2026-05-01T17:29:00.000",
+    "complaint_type": "Noise",
+    "descriptor": "Noise: Jack Hammering (NC2)",
+    "incident_address": "550 10 AVENUE",
+    "bbl": "1010507502",
+    "resolution_description": "The Department of Environmental Protection (DEP) didn't observe a violation of the NYC Air or Noise Code at the time of inspection and couldn't issue a summons.  If the problem still exists, please go to nyc.gov/311 or call 311 to file a new Service Request. If you're outside of New York City, please call (212) NEW-YORK (212-639-9675)."
+   },
+   {
+    "created_date": "2026-04-30T16:42:00.000",
+    "complaint_type": "Noise",
+    "descriptor": "Noise: Construction Equipment (NC1)",
+    "incident_address": "550 10 AVENUE",
+    "bbl": "1010507502",
+    "resolution_description": "The Department of Environmental Protection determined that this complaint is a duplicate of a previously filed complaint. The original complaint is being addressed."
+   },
+   {
+    "created_date": "2026-04-30T16:37:00.000",
+    "complaint_type": "Noise",
+    "descriptor": "Noise: Construction Equipment (NC1)",
+    "incident_address": "550 10 AVENUE",
+    "bbl": "1010507502",
+    "resolution_description": "The Department of Environmental Protection determined that this complaint is a duplicate of a previously filed complaint. The original complaint is being addressed."
+   },
+   {
+    "created_date": "2026-04-30T16:28:00.000",
+    "complaint_type": "Noise",
+    "descriptor": "Noise: Construction Before/After Hours (NM1)",
+    "incident_address": "550 10 AVENUE",
+    "bbl": "1010507502",
+    "resolution_description": "The Department of Environmental Protection researched this complaint and determined that it could be closed."
+   },
+   {
+    "created_date": "2026-04-24T08:20:00.000",
+    "complaint_type": "Noise",
+    "descriptor": "Noise: Construction Equipment (NC1)",
+    "incident_address": "550 10 AVENUE",
+    "bbl": "1010507502",
+    "resolution_description": "The Department of Environmental Protection determined that this complaint is a duplicate of a previously filed complaint. The original complaint is being addressed."
+   },
+   {
+    "created_date": "2026-04-18T23:23:36.000",
+    "complaint_type": "Noise - Residential",
+    "descriptor": "Loud Music/Party",
+    "incident_address": "550 10 AVENUE",
+    "bbl": "1010507502",
+    "resolution_description": "The New York City Police Department responded to the complaint and their investigation determined that no criminal violation existed. The condition was corrected without the need to issue a summons or effect an arrest. If the problem persists, please contact 311 to create another complaint. If possible, provide contact information so responding officers may reach out to you for more details. If necessary, your complaint may be referred to your local precinct's special operations units (Quality of Life, etc.). Thank you for your attention to this matter. We count on New Yorkers like yourself to maintain a safe City, so please let us know if you see other conditions that require our attention."
+   },
+   {
+    "created_date": "2026-04-09T23:17:00.000",
+    "complaint_type": "Noise",
+    "descriptor": "Noise: Construction Before/After Hours (NM1)",
+    "incident_address": "550 10 AVENUE",
+    "bbl": "1010507502",
+    "resolution_description": "The Department of Environmental Protection (DEP) didn't observe a violation of the NYC Air or Noise Code at the time of inspection and couldn't issue a summons.  If the problem still exists, please go to nyc.gov/311 or call 311 to file a new Service Request. If you're outside of New York City, please call (212) NEW-YORK (212-639-9675)."
+   },
+   {
+    "created_date": "2026-04-09T11:03:00.000",
+    "complaint_type": "Noise",
+    "descriptor": "Noise, Barking Dog (NR5)",
+    "incident_address": "550 10 AVENUE",
+    "bbl": "1010507502",
+    "resolution_description": "The Department of Environmental Protection (DEP) didn't observe a violation of the NYC Air or Noise Code at the time of inspection and couldn't issue a summons.  If the problem still exists, please go to nyc.gov/311 or call 311 to file a new Service Request. If you're outside of New York City, please call (212) NEW-YORK (212-639-9675)."
+   },
+   {
+    "created_date": "2026-04-08T00:01:00.000",
+    "complaint_type": "Noise",
+    "descriptor": "Noise: Construction Before/After Hours (NM1)",
+    "incident_address": "550 10 AVENUE",
+    "bbl": "1010507502",
+    "resolution_description": "The Department of Environmental Protection researched this complaint and determined that it could be closed."
+   },
+   {
+    "created_date": "2026-04-05T07:11:43.000",
+    "complaint_type": "Noise - Residential",
+    "descriptor": "Banging/Pounding",
+    "incident_address": "550 10 AVENUE",
+    "bbl": "1010507502",
+    "resolution_description": "The New York City Police Department responded to the complaint and with the information available observed no evidence of a criminal violation at that time. If the problem persists, please contact 311 to create another complaint. If possible, provide contact information so responding officers may reach out to you for more details. If necessary, your complaint may be referred to your local precinct's special operations units (Quality of Life, etc.). We count on New Yorkers like yourself to maintain a safe City, so please let us know if you see other conditions that require our attention."
+   },
+   {
+    "created_date": "2026-03-21T01:18:00.000",
+    "complaint_type": "Noise",
+    "descriptor": "Noise: Jack Hammering (NC2)",
+    "incident_address": "550 10 AVENUE",
+    "bbl": "1010507502",
+    "resolution_description": "The Department of Environmental Protection researched this complaint and determined that it could be closed."
+   },
+   {
+    "created_date": "2026-03-12T01:38:08.000",
+    "complaint_type": "Noise - Residential",
+    "descriptor": "Loud Music/Party",
+    "incident_address": "550 10 AVENUE",
+    "bbl": "1010507502",
+    "resolution_description": "The New York City Police Department responded to the complaint and with the information available observed no evidence of a criminal violation at that time. If the problem persists, please contact 311 to create another complaint. If possible, provide contact information so responding officers may reach out to you for more details. If necessary, your complaint may be referred to your local precinct's special operations units (Quality of Life, etc.). We count on New Yorkers like yourself to maintain a safe City, so please let us know if you see other conditions that require our attention."
+   },
+   {
+    "created_date": "2026-02-19T01:29:00.000",
+    "complaint_type": "Noise",
+    "descriptor": "Noise: Construction Before/After Hours (NM1)",
+    "incident_address": "550 10 AVENUE",
+    "bbl": "1010507502",
+    "resolution_description": "The Department of Environmental Protection researched this complaint and determined that it could be closed."
+   },
+   {
+    "created_date": "2026-02-04T09:59:00.000",
+    "complaint_type": "Noise",
+    "descriptor": "Noise: Construction Before/After Hours (NM1)",
+    "incident_address": "550 10 AVENUE",
+    "bbl": "1010507502",
+    "resolution_description": "The Department of Environmental Protection (DEP) didn't observe a violation of the NYC Air or Noise Code at the time of inspection and couldn't issue a summons.  If the problem still exists, please go to nyc.gov/311 or call 311 to file a new Service Request. If you're outside of New York City, please call (212) NEW-YORK (212-639-9675)."
+   }
+  ]
+ },
+ "crime": {
+  "radius_m": 300,
+  "last_12m": 303,
+  "by_level": {
+   "MISDEMEANOR": 153,
+   "FELONY": 97,
+   "VIOLATION": 53
+  },
+  "top_offenses": {
+   "HARRASSMENT 2": 52,
+   "ASSAULT 3 & RELATED OFFENSES": 46,
+   "PETIT LARCENY": 40,
+   "DANGEROUS DRUGS": 27,
+   "GRAND LARCENY": 26,
+   "CRIMINAL MISCHIEF & RELATED OF": 24,
+   "FELONY ASSAULT": 21,
+   "OFF. AGNST PUB ORD SENSBLTY &": 15
+  }
+ },
+ "summary": {
+  "units": 453.0,
+  "hpd_violations_per_100_units_yr": 2.3,
+  "hpd_complaints_per_100_units_yr": 2.2,
+  "noise_at_building_per_100_units_yr": 4.9,
+  "risk_score": 83,
+  "noise_score": 52,
+  "flags": [
+   "4 HPD complaint lines about heat/hot water",
+   "4 HPD complaint lines about unsanitary condition",
+   "67% of nearby noise complaints are logged 10 pm-6 am"
+  ]
+ }
+}

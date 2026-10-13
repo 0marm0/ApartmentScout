@@ -1,0 +1,33 @@
+{
+  "id": "emerald-green-1211",
+  "title": "Emerald Green #1211",
+  "units": "ft",
+  "source": "Approximate layout drawn from the listing's room dimensions (living 18'10\" x 12'3\", bedroom 16'4\" x 11'0\"). Positions of the bath, kitchen and closets are estimates; replace with the real plan when you get it.",
+  "ceiling": 8.67,
+  "wall": 0.4,
+  "up_bearing": 209,
+  "floor": 12,
+  "rooms": [
+    {"name": "Bedroom", "kind": "bedroom", "x": 0, "y": 7.67, "w": 11, "h": 16.33},
+    {"name": "Living room", "kind": "living", "x": 11.4, "y": 5.17, "w": 12.25, "h": 18.83},
+    {"name": "Kitchen", "kind": "kitchen", "x": 15.4, "y": 0, "w": 8.25, "h": 5.17},
+    {"name": "Entry", "kind": "hall", "x": 8, "y": 0, "w": 7.4, "h": 5.17},
+    {"name": "Bath", "kind": "bath", "x": 0, "y": 0, "w": 8, "h": 7.67},
+    {"name": "W/D + closet", "kind": "closet", "x": 8, "y": 5.17, "w": 3.4, "h": 2.5}
+  ],
+  "windows": [
+    {"room": "Bedroom", "x1": 1.2, "y1": 24, "x2": 9.8, "y2": 24, "sill": 1.6, "head": 7.8, "note": "bay window"},
+    {"room": "Living room", "x1": 12.6, "y1": 24, "x2": 22.6, "y2": 24, "sill": 1.6, "head": 8.0}
+  ],
+  "doors": [
+    {"x1": 11, "y1": 8.6, "x2": 11, "y2": 11.4},
+    {"x1": 11.4, "y1": 8.6, "x2": 11.4, "y2": 11.4},
+    {"x1": 8, "y1": 1.5, "x2": 8, "y2": 4.2},
+    {"x1": 11.6, "y1": 5.17, "x2": 14.6, "y2": 5.17},
+    {"x1": 9.5, "y1": 0, "x2": 12.7, "y2": 0}
+  ],
+  "open_walls": [
+    {"x1": 15.4, "y1": 5.17, "x2": 23.65, "y2": 5.17},
+    {"x1": 15.4, "y1": 0, "x2": 15.4, "y2": 5.17}
+  ]
+}

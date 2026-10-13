@@ -1,0 +1,845 @@
+{
+ "id": "henry-hall-23j",
+ "building": "Henry Hall",
+ "address": "515 West 38th Street, New York, NY",
+ "bbl": "1007107501",
+ "bin": "1089733",
+ "lat": 40.75769,
+ "lon": -73.99797,
+ "generated": "2026-10-13",
+ "window_years": 3,
+ "sources": {
+  "pluto": "https://data.cityofnewyork.us/d/64uk-42ks",
+  "hpd_violations": "https://data.cityofnewyork.us/d/wvxf-dwi5",
+  "hpd_complaints": "https://data.cityofnewyork.us/d/ygpa-z7cr",
+  "dob_complaints": "https://data.cityofnewyork.us/d/eabe-havv",
+  "ecb_violations": "https://data.cityofnewyork.us/d/6bgk-3dad",
+  "dob_now_filings": "https://data.cityofnewyork.us/d/w9ak-ipjd",
+  "bedbugs": "https://data.cityofnewyork.us/d/wz6d-d3jb",
+  "sr311": "https://data.cityofnewyork.us/d/erm2-nwe9",
+  "nypd_complaints": "https://data.cityofnewyork.us/d/5uac-w243",
+  "footprints": "https://data.cityofnewyork.us/d/5zhs-2jue"
+ },
+ "building_info": {
+  "address": "509 WEST 38 STREET",
+  "yearbuilt": 2015,
+  "yearalter1": 2015,
+  "numfloors": 30,
+  "unitsres": 225,
+  "unitstotal": 230,
+  "bldgclass": "RM",
+  "ownername": "UNAVAILABLE OWNER",
+  "zonedist1": "C2-8",
+  "lotarea": 14812,
+  "bldgarea": 203794,
+  "landuse": "4",
+  "histdist": null,
+  "landmark": null
+ },
+ "hpd_violations": {
+  "total": 4,
+  "open": 0,
+  "by_class": {
+   "C": 4
+  },
+  "open_by_class": {},
+  "by_year": {
+   "2025": 4
+  },
+  "top": [
+   [
+    "\u00a7 27-2005, 27-2007, 27-2041.1 HMC, \u00a7238, \u00a7 309; \u00a7 107 (2) ( C) MDL AND 28 RCNY \u00a725-171: REPLACE OR REPAIR THE SELF-CLOSING DOORS THAT IS MIS",
+    3
+   ],
+   [
+    "\u00a7 27-2005 ADM CODE & 309 M/D LAW ABATE THE NUISANCE CONSISTING OF SCALDING HOT WATER ABOVE 130 DEGREES IN THE ENTIRE APARTMENT LOCATED AT AP",
+    1
+   ]
+  ],
+  "recent": [
+   {
+    "violationid": "18313582",
+    "class": "C",
+    "inspectiondate": "2025-10-21T00:00:00.000",
+    "novdescription": "\u00a7 27-2005, 27-2007, 27-2041.1 HMC, \u00a7238, \u00a7 309; \u00a7 107 (2) ( C) MDL AND 28 RCNY \u00a725-171: REPLACE OR REPAIR THE SELF-CLOSING DOORS THAT IS MISSING OR DEFECTIVE HINGES AT DOOR IN THE ENTRANCE LOCATED AT APT 21C, 21st STORY, 1st APARTMENT FROM WEST AT NORTH",
+    "currentstatus": "VIOLATION DISMISSED",
+    "violationstatus": "Close",
+    "apartment": "21C",
+    "story": "21",
+    "rentimpairing": "N"
+   },
+   {
+    "violationid": "18274255",
+    "class": "C",
+    "inspectiondate": "2025-10-05T00:00:00.000",
+    "novdescription": "\u00a7 27-2005, 27-2007, 27-2041.1 HMC, \u00a7238, \u00a7 309; \u00a7 107 (2) ( C) MDL AND 28 RCNY \u00a725-171: REPLACE OR REPAIR THE SELF-CLOSING DOORS THAT IS MISSING OR DEFECTIVE HINGES AT FIRE DOOR LEADING TO FIRE STAIRS (STAIR A) AT PUBLIC HALL, 20th STORY",
+    "currentstatus": "VIOLATION CLOSED",
+    "violationstatus": "Close",
+    "story": "20",
+    "rentimpairing": "N"
+   },
+   {
+    "violationid": "18274254",
+    "class": "C",
+    "inspectiondate": "2025-10-05T00:00:00.000",
+    "novdescription": "\u00a7 27-2005 ADM CODE & 309 M/D LAW ABATE THE NUISANCE CONSISTING OF SCALDING HOT WATER ABOVE 130 DEGREES IN THE ENTIRE APARTMENT LOCATED AT APT 21C, 20th STORY, 1st APARTMENT FROM SOUTH AT WEST , SECTION ''EAST''",
+    "currentstatus": "VIOLATION CLOSED",
+    "violationstatus": "Close",
+    "apartment": "21C",
+    "story": "20",
+    "rentimpairing": "N"
+   },
+   {
+    "violationid": "17746546",
+    "class": "C",
+    "inspectiondate": "2025-03-08T00:00:00.000",
+    "novdescription": "\u00a7 27-2005, 27-2007, 27-2041.1 HMC, \u00a7238, \u00a7 309; \u00a7 107 (2) ( C) MDL AND 28 RCNY \u00a725-171: REPLACE OR REPAIR THE SELF-CLOSING DOORS THAT IS MISSING OR DEFECTIVE HINGES IN THE ENTRANCE LOCATED AT APT 20B, 20th STORY, 1st APARTMENT FROM EAST AT SOUTH , SECTION ''EAST''",
+    "currentstatus": "VIOLATION CLOSED",
+    "violationstatus": "Close",
+    "apartment": "20B",
+    "story": "20",
+    "rentimpairing": "N"
+   }
+  ]
+ },
+ "hpd_complaints": {
+  "total": 43,
+  "complaints": 40,
+  "by_category": {
+   "HEAT/HOT WATER": 33,
+   "PLUMBING": 5,
+   "APPLIANCE": 2,
+   "GENERAL": 2,
+   "UNSANITARY CONDITION": 1
+  },
+  "by_year": {
+   "2024": 28,
+   "2025": 14,
+   "2026": 1
+  },
+  "recent": [
+   {
+    "complaint_id": "14859364",
+    "received_date": "2026-06-24T17:13:14.000",
+    "major_category": "GENERAL",
+    "minor_category": "VENTILATION SYSTEM",
+    "apartment": "24J",
+    "complaint_status": "CLOSE",
+    "status_description": "An HPD Inspector was not able to gain access to inspect this complaint. The Inspector left a card at the time of the inspection and a letter was sent from HPD after the inspection attempt to encourage you to call to schedule an inspection. HPD did not receive a timely response from you and the complaint has been closed. Please submit a new service request with 311 if the condition still exists."
+   },
+   {
+    "complaint_id": "14112309",
+    "received_date": "2025-11-03T23:44:27.000",
+    "major_category": "HEAT/HOT WATER",
+    "minor_category": "APARTMENT ONLY",
+    "apartment": "21CPLE",
+    "complaint_status": "CLOSE",
+    "status_description": "The Department of Housing Preservation and Development was not able to gain access to your apartment or others in the building to inspect for a lack of heat or hot water. The complaint has been closed. If the condition still exists, please file a new complaint."
+   },
+   {
+    "complaint_id": "14112309",
+    "received_date": "2025-11-03T23:44:27.000",
+    "major_category": "PLUMBING",
+    "minor_category": "RADIATOR",
+    "apartment": "21CPLE",
+    "complaint_status": "CLOSE",
+    "status_description": "HPD attempted to conduct an inspection in response to this complaint, but was unable to complete the inspection. Please submit a new service request with 311 if the condition still exists. For more information on the reason why HPD was unable to inspect, contact HPD at the Tenant Information Messaging Service at 212-863-4951."
+   },
+   {
+    "complaint_id": "14101026",
+    "received_date": "2025-10-29T20:36:43.000",
+    "major_category": "UNSANITARY CONDITION",
+    "minor_category": "GARBAGE/RECYCLING STORAGE",
+    "apartment": "BLDG",
+    "complaint_status": "CLOSE",
+    "status_description": "HPD conducted an inspection of this complaint. The conditions observed by the inspector did not violate the housing laws enforced by HPD. The complaint has been closed."
+   },
+   {
+    "complaint_id": "14069470",
+    "received_date": "2025-10-18T00:05:17.000",
+    "major_category": "HEAT/HOT WATER",
+    "minor_category": "APARTMENT ONLY",
+    "apartment": "21C",
+    "complaint_status": "CLOSE",
+    "status_description": "HPD responded to a complaint of no heat or hot water. Heat was not required at the time of the inspection because the outside temperature was above 55\u00b0 F; by law, violations can only be issued if the outside temperature is below 55 degrees. No violations were issued. If the temperature inside of your apartment is below 68 degrees when it is below 55 degrees outside between 6 am and 10pm OR the temperature inside of your apartment is below 62 degrees between 10 pm and 6 am, please file a new complaint with 311, using 311ONLINE or 311MOBILE."
+   },
+   {
+    "complaint_id": "14043996",
+    "received_date": "2025-10-04T16:07:27.000",
+    "major_category": "HEAT/HOT WATER",
+    "minor_category": "APARTMENT ONLY",
+    "apartment": "21C",
+    "complaint_status": "CLOSE",
+    "status_description": "HPD responded to a complaint of no heat or hot water. Heat was not required at the time of the inspection because the outside temperature was above 55\u00b0 F; by law, violations can only be issued if the outside temperature is below 55 degrees. No violations were issued. If the temperature inside of your apartment is below 68 degrees when it is below 55 degrees outside between 6 am and 10pm OR the temperature inside of your apartment is below 62 degrees between 10 pm and 6 am, please file a new complaint with 311, using 311ONLINE or 311MOBILE."
+   },
+   {
+    "complaint_id": "14040112",
+    "received_date": "2025-10-01T10:55:45.000",
+    "major_category": "HEAT/HOT WATER",
+    "minor_category": "APARTMENT ONLY",
+    "apartment": "21C",
+    "complaint_status": "CLOSE",
+    "status_description": "The Department of Housing Preservation and Development was not able to gain access to your apartment or others in the building to inspect for a lack of heat or hot water. The complaint has been closed. If the condition still exists, please file a new complaint."
+   },
+   {
+    "complaint_id": "13665380",
+    "received_date": "2025-03-02T19:51:04.000",
+    "major_category": "GENERAL",
+    "minor_category": "VENTILATION SYSTEM",
+    "apartment": "21C",
+    "complaint_status": "CLOSE",
+    "status_description": "An HPD Inspector was not able to gain access to inspect this complaint. The Inspector left a card at the time of the inspection and a letter was sent from HPD after the inspection attempt to encourage you to call to schedule an inspection. HPD did not receive a timely response from you and the complaint has been closed. Please submit a new service request with 311 if the condition still exists."
+   },
+   {
+    "complaint_id": "13557242",
+    "received_date": "2025-01-23T13:04:16.000",
+    "major_category": "HEAT/HOT WATER",
+    "minor_category": "APARTMENT ONLY",
+    "apartment": "14C",
+    "complaint_status": "CLOSE",
+    "status_description": "HPD called the telephone number on file for this complaint.  Someone at that number indicated that the condition was corrected. The complaint has been closed. Please submit a new service request with 311 if the condition still exists."
+   },
+   {
+    "complaint_id": "13495203",
+    "received_date": "2025-01-08T09:21:03.000",
+    "major_category": "PLUMBING",
+    "minor_category": "WATER SUPPLY",
+    "apartment": "17C",
+    "complaint_status": "CLOSE",
+    "status_description": "HPD conducted an inspection of this complaint. The conditions observed by the inspector did not violate the housing laws enforced by HPD. The complaint has been closed."
+   },
+   {
+    "complaint_id": "13495203",
+    "received_date": "2025-01-08T09:21:03.000",
+    "major_category": "PLUMBING",
+    "minor_category": "WATER SUPPLY",
+    "apartment": "17C",
+    "complaint_status": "CLOSE",
+    "status_description": "HPD conducted an inspection of this complaint. The conditions observed by the inspector did not violate the housing laws enforced by HPD. The complaint has been closed."
+   },
+   {
+    "complaint_id": "13493970",
+    "received_date": "2025-01-07T22:42:49.000",
+    "major_category": "HEAT/HOT WATER",
+    "minor_category": "APARTMENT ONLY",
+    "apartment": "21C",
+    "complaint_status": "CLOSE",
+    "status_description": "More than one complaint was received for this building-wide condition. This complaint status is for the initial complaint.HPD called the telephone number on file for this complaint.  Someone at that number indicated that the condition was corrected. The complaint has been closed. Please submit a new service request with 311 if the condition still exists."
+   },
+   {
+    "complaint_id": "13485869",
+    "received_date": "2025-01-05T22:51:21.000",
+    "major_category": "HEAT/HOT WATER",
+    "minor_category": "APARTMENT ONLY",
+    "apartment": "14C",
+    "complaint_status": "CLOSE",
+    "status_description": "HPD called the telephone number on file for this complaint.  Someone at that number indicated that the condition was corrected. The complaint has been closed. Please submit a new service request with 311 if the condition still exists."
+   },
+   {
+    "complaint_id": "13480002",
+    "received_date": "2025-01-03T18:34:42.000",
+    "major_category": "PLUMBING",
+    "minor_category": "RADIATOR",
+    "apartment": "21C",
+    "complaint_status": "CLOSE",
+    "status_description": "An HPD Inspector was not able to gain access to inspect this complaint. The Inspector left a card at the time of the inspection and a letter was sent from HPD after the inspection attempt to encourage you to call to schedule an inspection. HPD did not receive a timely response from you and the complaint has been closed. Please submit a new service request with 311 if the condition still exists."
+   },
+   {
+    "complaint_id": "13474827",
+    "received_date": "2025-01-01T14:05:43.000",
+    "major_category": "HEAT/HOT WATER",
+    "minor_category": "APARTMENT ONLY",
+    "apartment": "10G",
+    "complaint_status": "CLOSE",
+    "status_description": "More than one complaint was received for this building-wide condition. This complaint status is for the initial complaint.HPD called the telephone number on file for this complaint.  Someone at that number indicated that the condition was corrected. The complaint has been closed. Please submit a new service request with 311 if the condition still exists."
+   },
+   {
+    "complaint_id": "13473532",
+    "received_date": "2024-12-31T11:56:38.000",
+    "major_category": "HEAT/HOT WATER",
+    "minor_category": "ENTIRE BUILDING",
+    "apartment": "BLDG",
+    "complaint_status": "CLOSE",
+    "status_description": "More than one complaint was received for this building-wide condition. This complaint status is for the initial complaint.The Department of Housing Preservation and Development contacted a tenant in the building and verified that the following conditions were corrected. The complaint has been closed. If the condition still exists, please file a new complaint."
+   },
+   {
+    "complaint_id": "13473170",
+    "received_date": "2024-12-31T08:46:21.000",
+    "major_category": "HEAT/HOT WATER",
+    "minor_category": "APARTMENT ONLY",
+    "apartment": "23B",
+    "complaint_status": "CLOSE",
+    "status_description": "More than one complaint was received for this building-wide condition. This complaint status is for the initial complaint.HPD called the telephone number on file for this complaint.  Someone at that number indicated that the condition was corrected. The complaint has been closed. Please submit a new service request with 311 if the condition still exists."
+   },
+   {
+    "complaint_id": "13473060",
+    "received_date": "2024-12-31T07:07:25.000",
+    "major_category": "HEAT/HOT WATER",
+    "minor_category": "ENTIRE BUILDING",
+    "apartment": "BLDG",
+    "complaint_status": "CLOSE",
+    "status_description": "More than one complaint was received for this building-wide condition. This complaint status is for the initial complaint.The Department of Housing Preservation and Development contacted a tenant in the building and verified that the following conditions were corrected. The complaint has been closed. If the condition still exists, please file a new complaint."
+   },
+   {
+    "complaint_id": "13473023",
+    "received_date": "2024-12-31T06:01:10.000",
+    "major_category": "HEAT/HOT WATER",
+    "minor_category": "ENTIRE BUILDING",
+    "apartment": "BLDG",
+    "complaint_status": "CLOSE",
+    "status_description": "More than one complaint was received for this building-wide condition. This complaint status is for the initial complaint.The Department of Housing Preservation and Development contacted a tenant in the building and verified that the following conditions were corrected. The complaint has been closed. If the condition still exists, please file a new complaint."
+   },
+   {
+    "complaint_id": "13472843",
+    "received_date": "2024-12-30T23:34:01.000",
+    "major_category": "HEAT/HOT WATER",
+    "minor_category": "ENTIRE BUILDING",
+    "apartment": "BLDG",
+    "complaint_status": "CLOSE",
+    "status_description": "More than one complaint was received for this building-wide condition. This complaint status is for the initial complaint.The Department of Housing Preservation and Development contacted a tenant in the building and verified that the following conditions were corrected. The complaint has been closed. If the condition still exists, please file a new complaint."
+   },
+   {
+    "complaint_id": "13472839",
+    "received_date": "2024-12-30T23:28:06.000",
+    "major_category": "HEAT/HOT WATER",
+    "minor_category": "ENTIRE BUILDING",
+    "apartment": "BLDG",
+    "complaint_status": "CLOSE",
+    "status_description": "More than one complaint was received for this building-wide condition. This complaint status is for the initial complaint.The Department of Housing Preservation and Development contacted a tenant in the building and verified that the following conditions were corrected. The complaint has been closed. If the condition still exists, please file a new complaint."
+   },
+   {
+    "complaint_id": "13472768",
+    "received_date": "2024-12-30T22:13:16.000",
+    "major_category": "HEAT/HOT WATER",
+    "minor_category": "ENTIRE BUILDING",
+    "apartment": "BLDG",
+    "complaint_status": "CLOSE",
+    "status_description": "More than one complaint was received for this building-wide condition. This complaint status is for the initial complaint.The Department of Housing Preservation and Development contacted a tenant in the building and verified that the following conditions were corrected. The complaint has been closed. If the condition still exists, please file a new complaint."
+   },
+   {
+    "complaint_id": "13472756",
+    "received_date": "2024-12-30T21:50:23.000",
+    "major_category": "HEAT/HOT WATER",
+    "minor_category": "ENTIRE BUILDING",
+    "apartment": "BLDG",
+    "complaint_status": "CLOSE",
+    "status_description": "More than one complaint was received for this building-wide condition. This complaint status is for the initial complaint.The Department of Housing Preservation and Development contacted a tenant in the building and verified that the following conditions were corrected. The complaint has been closed. If the condition still exists, please file a new complaint."
+   },
+   {
+    "complaint_id": "13472726",
+    "received_date": "2024-12-30T21:20:14.000",
+    "major_category": "HEAT/HOT WATER",
+    "minor_category": "ENTIRE BUILDING",
+    "apartment": "BLDG",
+    "complaint_status": "CLOSE",
+    "status_description": "More than one complaint was received for this building-wide condition. This complaint status is for the initial complaint.The Department of Housing Preservation and Development contacted a tenant in the building and verified that the following conditions were corrected. The complaint has been closed. If the condition still exists, please file a new complaint."
+   },
+   {
+    "complaint_id": "13472713",
+    "received_date": "2024-12-30T21:12:02.000",
+    "major_category": "HEAT/HOT WATER",
+    "minor_category": "ENTIRE BUILDING",
+    "apartment": "BLDG",
+    "complaint_status": "CLOSE",
+    "status_description": "More than one complaint was received for this building-wide condition. This complaint status is for the initial complaint.The Department of Housing Preservation and Development contacted a tenant in the building and verified that the following conditions were corrected. The complaint has been closed. If the condition still exists, please file a new complaint."
+   }
+  ]
+ },
+ "dob_complaints": {
+  "total": 1,
+  "by_category": {
+   "4A": 1
+  },
+  "recent": [
+   {
+    "complaint_number": "1677714",
+    "status": "CLOSED",
+    "date_entered": "09/17/2024",
+    "house_number": "515",
+    "house_street": "WEST 38 STREET",
+    "zip_code": "10018",
+    "bin": "1089733",
+    "community_board": "104",
+    "complaint_category": "4A",
+    "unit": "SPOPS",
+    "disposition_date": "10/08/2024",
+    "disposition_code": "C2",
+    "inspection_date": "10/08/2024",
+    "dobrundate": "20261013000000"
+   }
+  ]
+ },
+ "ecb_violations": {
+  "total": 0,
+  "open": 0,
+  "by_severity": {},
+  "recent": []
+ },
+ "construction": {
+  "block_filings": 28,
+  "lot_filings": 1,
+  "major_jobs": [
+   {
+    "job_filing_number": "M01416418-I1",
+    "house_no": "544",
+    "street_name": "WEST   39 STREET",
+    "lot": "58",
+    "job_type": "Full Demolition",
+    "filing_status": "Plan Examiner Review",
+    "job_description": "full demolition of a one-story structure, using hand held, and mechanical means to assist.",
+    "filing_date": "2026-07-09T00:00:00.000",
+    "initial_cost": "400000"
+   },
+   {
+    "job_filing_number": "M01187222-P1",
+    "house_no": "476",
+    "street_name": "11 AVENUE",
+    "lot": "1",
+    "job_type": "Alteration",
+    "filing_status": "Approved",
+    "job_description": "INTERIOR RENOVATION TO THE EXISTING 1ST FL COMMERCIAL SPACE; NEW COMMERCIAL COOKING HOOD; NEW KITCHEN EXHUAST & COMPRESSORS. ASSOCIATED PLUMBING WORK TO BE FILED SUBSEQUENTLY.",
+    "filing_date": "2025-12-03T00:00:00.000",
+    "initial_cost": "300390.9"
+   },
+   {
+    "job_filing_number": "M01026730-P1",
+    "house_no": "521",
+    "street_name": "WEST   38 STREET",
+    "lot": "20",
+    "job_type": "Full Demolition",
+    "filing_status": "Approved",
+    "job_description": "Full Demolition of one story building auto shop, as per plans filed herewith.",
+    "filing_date": "2025-08-20T00:00:00.000",
+    "initial_cost": "1500000"
+   }
+  ],
+  "heavy_construction": [
+   {
+    "job_filing_number": "M01416418-S1",
+    "house_no": "544",
+    "street_name": "WEST   39 STREET",
+    "lot": "58",
+    "job_type": "Full Demolition",
+    "filing_status": "Approved",
+    "job_description": "mechanical means to assist with demolition, machines will be placed on grade.",
+    "filing_date": "2026-10-07T00:00:00.000",
+    "initial_cost": "5000"
+   },
+   {
+    "job_filing_number": "M01416418-I1",
+    "house_no": "544",
+    "street_name": "WEST   39 STREET",
+    "lot": "58",
+    "job_type": "Full Demolition",
+    "filing_status": "Plan Examiner Review",
+    "job_description": "full demolition of a one-story structure, using hand held, and mechanical means to assist.",
+    "filing_date": "2026-07-09T00:00:00.000",
+    "initial_cost": "400000"
+   },
+   {
+    "job_filing_number": "M01026730-S1",
+    "house_no": "521",
+    "street_name": "WEST   38 STREET",
+    "lot": "20",
+    "job_type": "Full Demolition",
+    "filing_status": "Objections",
+    "job_description": "Mechanical equipment use for demolition of 1 story building. Application is filed in conjunction with DM M01026730-I1.",
+    "filing_date": "2026-03-09T00:00:00.000",
+    "initial_cost": "4999.8"
+   },
+   {
+    "job_filing_number": "M01026730-P1",
+    "house_no": "521",
+    "street_name": "WEST   38 STREET",
+    "lot": "20",
+    "job_type": "Full Demolition",
+    "filing_status": "Approved",
+    "job_description": "Full Demolition of one story building auto shop, as per plans filed herewith.",
+    "filing_date": "2025-08-20T00:00:00.000",
+    "initial_cost": "1500000"
+   },
+   {
+    "job_filing_number": "M01235911-I1",
+    "house_no": "528",
+    "street_name": "WEST   39 STREET",
+    "lot": "11",
+    "job_type": "Alteration",
+    "filing_status": "Approved",
+    "job_description": "Install temporary fire standpipe pressurized alarm system for building being demolished under demo #M01033609-I1. Cut/cap standpipe riser floor by floor as required. No change to use egress or occupancy filed under this application.",
+    "filing_date": "2025-06-10T00:00:00.000",
+    "initial_cost": "50000"
+   }
+  ],
+  "lot_recent": [
+   {
+    "job_filing_number": "M01223401-I1",
+    "house_no": "515",
+    "street_name": "WEST   38 STREET",
+    "lot": "7501",
+    "job_type": "Alteration",
+    "filing_status": "Approved",
+    "job_description": "General construction associated with limited facade restoration as per plans filed. No change in occupancy, use or egress.",
+    "filing_date": "2025-05-15T00:00:00.000",
+    "initial_cost": "18800"
+   }
+  ]
+ },
+ "bedbugs": {
+  "filings": [
+   {
+    "building_id": "953908",
+    "registration_id": "144367",
+    "borough": "MANHATTAN",
+    "house_number": "509",
+    "street_name": "WEST 38 STREET",
+    "postcode": "10018",
+    "of_dwelling_units": "225",
+    "infested_dwelling_unit_count": "0",
+    "eradicated_unit_count": "0",
+    "re_infested_dwelling_unit": "0",
+    "filing_date": "2025-12-04T00:00:00.000",
+    "filing_period_start_date": "2024-11-01T00:00:00.000",
+    "filling_period_end_date": "2025-10-31T00:00:00.000",
+    "latitude": "40.757343",
+    "longitude": "-73.997831",
+    "community_board": "4",
+    "city_council_district": "3",
+    "census_tract_2010": "117",
+    "bin": "1089733",
+    "bbl": "1007107501",
+    "nta": "Chelsea-Hudson Yards"
+   },
+   {
+    "building_id": "953908",
+    "registration_id": "144367",
+    "borough": "MANHATTAN",
+    "house_number": "509",
+    "street_name": "WEST 38 STREET",
+    "postcode": "10018",
+    "of_dwelling_units": "225",
+    "infested_dwelling_unit_count": "0",
+    "eradicated_unit_count": "0",
+    "re_infested_dwelling_unit": "0",
+    "filing_date": "2024-12-02T00:00:00.000",
+    "filing_period_start_date": "2023-11-01T00:00:00.000",
+    "filling_period_end_date": "2024-10-31T00:00:00.000",
+    "latitude": "40.757343",
+    "longitude": "-73.997831",
+    "community_board": "4",
+    "city_council_district": "3",
+    "census_tract_2010": "117",
+    "bin": "1089733",
+    "bbl": "1007107501",
+    "nta": "Chelsea-Hudson Yards"
+   },
+   {
+    "building_id": "953908",
+    "registration_id": "144367",
+    "borough": "MANHATTAN",
+    "house_number": "509",
+    "street_name": "WEST 38 STREET",
+    "postcode": "10018",
+    "of_dwelling_units": "225",
+    "infested_dwelling_unit_count": "0",
+    "eradicated_unit_count": "0",
+    "re_infested_dwelling_unit": "0",
+    "filing_date": "2024-11-13T00:00:00.000",
+    "filing_period_start_date": "2022-11-01T00:00:00.000",
+    "filling_period_end_date": "2023-10-31T00:00:00.000",
+    "latitude": "40.757343",
+    "longitude": "-73.997831",
+    "community_board": "4",
+    "city_council_district": "3",
+    "census_tract_2010": "117",
+    "bin": "1089733",
+    "bbl": "1007107501",
+    "nta": "Chelsea-Hudson Yards"
+   },
+   {
+    "building_id": "953908",
+    "registration_id": "144367",
+    "borough": "MANHATTAN",
+    "house_number": "509",
+    "street_name": "WEST 38 STREET",
+    "postcode": "10018",
+    "of_dwelling_units": "225",
+    "infested_dwelling_unit_count": "0",
+    "eradicated_unit_count": "0",
+    "re_infested_dwelling_unit": "0",
+    "filing_date": "2024-03-01T00:00:00.000",
+    "filing_period_start_date": "2022-11-01T00:00:00.000",
+    "filling_period_end_date": "2023-10-31T00:00:00.000",
+    "latitude": "40.757343",
+    "longitude": "-73.997831",
+    "community_board": "4",
+    "city_council_district": "3",
+    "census_tract_2010": "117",
+    "bin": "1089733",
+    "bbl": "1007107501",
+    "nta": "Chelsea-Hudson Yards"
+   },
+   {
+    "building_id": "953908",
+    "registration_id": "144367",
+    "borough": "MANHATTAN",
+    "house_number": "509",
+    "street_name": "WEST 38 STREET",
+    "postcode": "10018",
+    "of_dwelling_units": "225",
+    "infested_dwelling_unit_count": "2",
+    "eradicated_unit_count": "2",
+    "re_infested_dwelling_unit": "0",
+    "filing_date": "2022-12-12T00:00:00.000",
+    "filing_period_start_date": "2021-11-01T00:00:00.000",
+    "filling_period_end_date": "2022-10-31T00:00:00.000",
+    "latitude": "40.757343",
+    "longitude": "-73.997831",
+    "community_board": "4",
+    "city_council_district": "3",
+    "census_tract_2010": "117",
+    "bin": "1089733",
+    "bbl": "1007107501",
+    "nta": "Chelsea-Hudson Yards"
+   }
+  ]
+ },
+ "noise_311": {
+  "radius_m": 150,
+  "nearby_total": 239,
+  "at_building": 14,
+  "nearby_per_year": 79.7,
+  "by_type": {
+   "Noise | Noise: Construction Before/After Hours (NM1)": 78,
+   "Noise - Residential | Loud Music/Party": 43,
+   "Noise - Vehicle | Car/Truck Horn": 26,
+   "Noise - Residential | Banging/Pounding": 19,
+   "Noise | Noise: air condition/ventilation equipment (NV1)": 12,
+   "Noise | Noise: Construction Equipment (NC1)": 9,
+   "Noise - Street/Sidewalk | Loud Music/Party": 9,
+   "Noise | Construction": 9,
+   "Noise - Residential | Loud Talking": 7,
+   "Noise - Commercial | Loud Music/Party": 5,
+   "Noise - Street/Sidewalk | Loud Talking": 5,
+   "Noise - Vehicle | Engine Idling": 3
+  },
+  "at_building_by_type": {
+   "Banging/Pounding": 4,
+   "Car/Truck Horn": 3,
+   "Loud Music/Party": 3,
+   "Noise, Barking Dog (NR5)": 2,
+   "Noise: Construction Before/After Hours (NM1)": 1,
+   "Construction": 1
+  },
+  "by_hour": [
+   38,
+   18,
+   17,
+   4,
+   2,
+   0,
+   14,
+   8,
+   5,
+   10,
+   2,
+   6,
+   7,
+   5,
+   4,
+   3,
+   10,
+   5,
+   7,
+   9,
+   4,
+   12,
+   17,
+   32
+  ],
+  "night_share": 0.54,
+  "by_month": {
+   "2023-10": 2,
+   "2023-11": 4,
+   "2023-12": 5,
+   "2024-01": 5,
+   "2024-02": 4,
+   "2024-03": 3,
+   "2024-04": 1,
+   "2024-05": 3,
+   "2024-06": 2,
+   "2024-08": 3,
+   "2024-09": 5,
+   "2024-10": 9,
+   "2024-11": 3,
+   "2024-12": 5,
+   "2025-01": 3,
+   "2025-02": 1,
+   "2025-03": 5,
+   "2025-04": 1,
+   "2025-05": 10,
+   "2025-06": 4,
+   "2025-07": 9,
+   "2025-08": 4,
+   "2025-09": 4,
+   "2025-10": 18,
+   "2025-11": 8,
+   "2025-12": 13,
+   "2026-01": 11,
+   "2026-02": 12,
+   "2026-03": 17,
+   "2026-04": 11,
+   "2026-05": 12,
+   "2026-06": 16,
+   "2026-07": 5,
+   "2026-08": 2,
+   "2026-09": 16,
+   "2026-10": 3
+  },
+  "at_building_recent": [
+   {
+    "created_date": "2026-07-30T07:18:50.000",
+    "complaint_type": "Noise",
+    "descriptor": "Construction",
+    "incident_address": "515 WEST 38 STREET",
+    "bbl": "1007107501",
+    "resolution_description": "The Department of Environmental Protection (DEP) didn't observe a violation of the NYC Air or Noise Code at the time of inspection and couldn't issue a summons.  If the problem still exists, please go to nyc.gov/311 or call 311 to file a new Service Request. If you're outside of New York City, please call (212) NEW-YORK (212-639-9675)."
+   },
+   {
+    "created_date": "2026-03-19T23:29:00.000",
+    "complaint_type": "Noise",
+    "descriptor": "Noise: Construction Before/After Hours (NM1)",
+    "incident_address": "515 WEST   38 STREET",
+    "bbl": "1007107501",
+    "resolution_description": "The Department of Environmental Protection determined that this complaint is a duplicate of a previously filed complaint. The original complaint is being addressed."
+   },
+   {
+    "created_date": "2025-05-17T01:00:48.000",
+    "complaint_type": "Noise - Residential",
+    "descriptor": "Banging/Pounding",
+    "incident_address": "515 WEST   38 STREET",
+    "bbl": "1007107501",
+    "resolution_description": "The Police Department responded to the complaint and took action to fix the condition."
+   },
+   {
+    "created_date": "2025-05-10T23:31:50.000",
+    "complaint_type": "Noise - Residential",
+    "descriptor": "Loud Music/Party",
+    "incident_address": "515 WEST   38 STREET",
+    "bbl": "1007107501",
+    "resolution_description": "The Police Department responded to the complaint and took action to fix the condition."
+   },
+   {
+    "created_date": "2025-05-02T22:45:48.000",
+    "complaint_type": "Noise - Residential",
+    "descriptor": "Banging/Pounding",
+    "incident_address": "515 WEST   38 STREET",
+    "bbl": "1007107501",
+    "resolution_description": "The Police Department responded to the complaint and with the information available observed no evidence of the violation at that time."
+   },
+   {
+    "created_date": "2024-10-18T23:15:56.000",
+    "complaint_type": "Noise - Residential",
+    "descriptor": "Loud Music/Party",
+    "incident_address": "515 WEST   38 STREET",
+    "bbl": "1007107501",
+    "resolution_description": "The Police Department responded to the complaint and took action to fix the condition."
+   },
+   {
+    "created_date": "2024-09-12T23:41:39.000",
+    "complaint_type": "Noise - Residential",
+    "descriptor": "Banging/Pounding",
+    "incident_address": "517 WEST   38 STREET",
+    "bbl": "1007107501",
+    "resolution_description": "This complaint does not fall under the Police Department's jurisdiction."
+   },
+   {
+    "created_date": "2024-05-21T21:18:48.000",
+    "complaint_type": "Noise - Residential",
+    "descriptor": "Loud Music/Party",
+    "incident_address": "515 WEST   38 STREET",
+    "bbl": "1007107501",
+    "resolution_description": "The Police Department responded to the complaint and with the information available observed no evidence of the violation at that time."
+   },
+   {
+    "created_date": "2024-01-28T12:43:50.000",
+    "complaint_type": "Noise - Vehicle",
+    "descriptor": "Car/Truck Horn",
+    "incident_address": "515 WEST   38 STREET",
+    "bbl": "1007107501",
+    "resolution_description": "The Police Department responded to the complaint and determined that police action was not necessary."
+   },
+   {
+    "created_date": "2024-01-02T12:32:00.000",
+    "complaint_type": "Noise",
+    "descriptor": "Noise, Barking Dog (NR5)",
+    "incident_address": "515 WEST   38 STREET",
+    "bbl": "1007107501",
+    "resolution_description": "The Department of Environmental Protection sent a letter to the complainant and/or respondent and the letter was returned as undeliverable."
+   },
+   {
+    "created_date": "2023-12-30T00:44:00.000",
+    "complaint_type": "Noise",
+    "descriptor": "Noise, Barking Dog (NR5)",
+    "incident_address": "515 WEST   38 STREET",
+    "bbl": "1007107501",
+    "resolution_description": "The Department of Environmental Protection (DEP) closed your Service Request because it didn't include enough dog owner location information to respond to the complaint.  If the excessive dog barking continues, please file a new Service Request. You must include an NYC address for the dog's owner so DEP can send them a letter."
+   },
+   {
+    "created_date": "2023-12-03T00:17:47.000",
+    "complaint_type": "Noise - Vehicle",
+    "descriptor": "Car/Truck Horn",
+    "incident_address": "515 WEST   38 STREET",
+    "bbl": "1007107501",
+    "resolution_description": "This complaint does not fall under the Police Department's jurisdiction."
+   },
+   {
+    "created_date": "2023-11-26T12:49:17.000",
+    "complaint_type": "Noise - Residential",
+    "descriptor": "Banging/Pounding",
+    "incident_address": "515 WEST   38 STREET",
+    "bbl": "1007107501",
+    "resolution_description": "The Police Department responded to the complaint and took action to fix the condition."
+   },
+   {
+    "created_date": "2023-10-22T20:08:51.000",
+    "complaint_type": "Noise - Vehicle",
+    "descriptor": "Car/Truck Horn",
+    "incident_address": "515 WEST   38 STREET",
+    "bbl": "1007107501",
+    "resolution_description": "The Police Department responded to the complaint and with the information available observed no evidence of the violation at that time."
+   }
+  ]
+ },
+ "crime": {
+  "radius_m": 300,
+  "last_12m": 180,
+  "by_level": {
+   "VIOLATION": 35,
+   "FELONY": 57,
+   "MISDEMEANOR": 88
+  },
+  "top_offenses": {
+   "HARRASSMENT 2": 34,
+   "ASSAULT 3 & RELATED OFFENSES": 34,
+   "GRAND LARCENY": 24,
+   "PETIT LARCENY": 22,
+   "CRIMINAL MISCHIEF & RELATED OF": 13,
+   "FELONY ASSAULT": 11,
+   "OFF. AGNST PUB ORD SENSBLTY &": 9,
+   "OFFENSES AGAINST PUBLIC ADMINI": 5
+  }
+ },
+ "summary": {
+  "units": 225.0,
+  "hpd_violations_per_100_units_yr": 0.6,
+  "hpd_complaints_per_100_units_yr": 5.9,
+  "noise_at_building_per_100_units_yr": 2.1,
+  "risk_score": 83,
+  "noise_score": 68,
+  "flags": [
+   "33 HPD complaint lines about heat/hot water",
+   "5 heavy-construction filing(s) on the block (demolition, new building, excavation)",
+   "54% of nearby noise complaints are logged 10 pm-6 am"
+  ]
+ }
+}

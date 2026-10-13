@@ -1,0 +1,61 @@
+# ApartmentScout criteria. Copy into your search folder with `apartmentscout init`.
+# Every field is optional except search.name; leave out what you do not care about.
+
+search:
+  name: My apartment search
+  city: generic              # nyc switches on NYC Open Data (records, footprints, 311 noise layer)
+  timezone: America/New_York # IANA zone for sun times
+  move_in:
+    earliest: 2026-11-01
+    latest: 2026-12-01
+  map_center: [40.7549, -73.9840]   # lat, lon the map opens on
+  map_zoom: 13
+  # tiles: https://tile.openstreetmap.org/{z}/{x}/{y}.png   # optional custom basemap
+  # tiles_attribution: © OpenStreetMap contributors
+
+budget:
+  basis: monthly_cost        # net-effective rent + recurring fees + one-time fees / lease months
+  tiers:                     # labels shown on the map and in reports, cheapest first
+    - {name: Target,  max: 3000}
+    - {name: Stretch, max: 3300}
+  hard_max: 3500             # above this a listing fails the budget gate
+
+unit:
+  min_beds: 1
+  sqft_floor: 450            # this size scores 0
+  sqft_good: 700             # 50
+  sqft_great: 1000           # 100
+
+# Amenity keys: in_unit_wd, elevator, doorman, gym, pool, roof_deck, outdoor_space, dishwasher,
+# central_ac, pets, parking, bike_room, package_room, lounge, coworking, game_room (or your own).
+must_have: [in_unit_wd]
+strongly_prefer: [dishwasher, elevator]
+nice_to_have: [gym, roof_deck, outdoor_space]
+
+commute:
+  destinations:
+    - name: Work
+      address: 1 Main St, Anytown
+      # lat/lon are filled by `apartmentscout geocode`; paste them here
+      arrive_by: "09:00"
+      max_minutes: 35
+      weight: 1.0
+  transit:
+    feeds: []                # add GTFS feeds: - {name: City Metro, url: https://.../gtfs.zip}
+    service_date: 2026-11-04 # a normal weekday inside the feed's calendar
+    walk_speed_kmh: 4.8
+    walk_detour: 1.25
+    station_access_min: 2
+    max_walk_to_station_m: 1200
+
+weights:                     # relative; only the ratios matter
+  cost: 25
+  space: 20
+  commute: 20
+  amenities: 15
+  light_view: 10
+  building: 5
+  quiet: 5
+
+favorites_first: true
+# landmarks: [[Name, lat, lon], ...]   # optional names for towers in the 3D view

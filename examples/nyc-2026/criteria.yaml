@@ -1,0 +1,59 @@
+# ApartmentScout criteria: the sample search (Manhattan 1BR, fall 2026).
+# Copy config/criteria.example.yaml to start your own.
+
+search:
+  name: Manhattan 1BR, fall 2026
+  city: nyc                 # enables the NYC Open Data modules (311, HPD, DOB, PLUTO, footprints)
+  move_in:
+    earliest: 2026-10-15
+    latest: 2026-11-01
+  map_center: [40.7530, -73.9790]
+  map_zoom: 13
+
+budget:
+  basis: monthly_cost       # net-effective rent + recurring fees + one-time fees spread over the lease
+  tiers:
+    - {name: Target,          max: 5000}
+    - {name: Stretch,         max: 5200}
+    - {name: Slightly over,   max: 5450}
+  hard_max: 5450            # anything above is marked over budget
+
+unit:
+  min_beds: 1
+  sqft_floor: 450           # scores 0 at or below
+  sqft_good: 750            # scores 50
+  sqft_great: 1050          # scores 100
+
+must_have: [in_unit_wd, elevator]
+strongly_prefer: [doorman, gym]
+nice_to_have: [roof_deck, pool, lounge, game_room, dishwasher]
+
+commute:
+  destinations:
+    - name: Office
+      address: 425 Lexington Ave, New York, NY
+      lat: 40.752269
+      lon: -73.974947
+      arrive_by: "09:00"
+      max_minutes: 30
+      weight: 1.0
+  transit:
+    feeds:
+      - name: NYC Subway
+        url: https://rrgtfsfeeds.s3.amazonaws.com/gtfs_subway.zip
+    walk_speed_kmh: 4.8
+    max_walk_to_station_m: 1200
+    service_date: 2026-10-14   # a normal weekday inside the feed's calendar
+
+# Relative weights. They are normalised, so only the ratios matter.
+weights:
+  cost: 20
+  space: 25
+  commute: 15
+  amenities: 15
+  light_view: 10
+  building: 10              # resident reviews and public-record risk
+  quiet: 5
+
+# Optional: hand-set favourites always float to the top of the shortlist view.
+favorites_first: true
