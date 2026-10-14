@@ -83,6 +83,37 @@ export function setModel(m) { model = m; colors = themeColors(); buildShell(); f
 export function setWallMode(m) { wallMode = m; if (model) buildShell(); }
 export function retheme() { colors = themeColors(); if (model) { buildShell(); rebuildAllItems(); } }
 let lastItems = [];
+let lighting = { ambient: 1 };
+// per-window city shade: an invisible shadow caster fills the opening of every window a neighbour blocks
+let shades = [], shadeState = [];
+export function setWindowShade(blocked = []) {
+  shadeState = blocked.slice();
+  shades.forEach((m, i) => { m.visible = !!shadeState[i]; });
+  dirty = true;
+}
+// "City outside": the neighbouring buildings around the apartment (plan/citymesh.js), drawn only
+let city = null;
+export function setCity(group) {
+  if (city) { scene.remove(city); city.traverse((o) => { o.geometry?.dispose(); o.material?.dispose?.(); }); }
+  city = group || null;
+  if (city) scene.add(city);
+  cam.far = city ? 1200 : 400; cam.updateProjectionMatrix();
+  const gr = shell?.getObjectByName('ground'); if (gr) gr.visible = !city; // the floor-level ground would hide the street
+  controls.maxDistance = city ? 240 : 60;
+  // step back so the neighbours come into view (and in again when the layer goes)
+  if (rig.mode === 'orbit') {
+    const t = controls.target, d = cam.position.clone().sub(t), L = d.length();
+    if (city && L < 40) cam.position.copy(t).addScaledVector(d.normalize(), 46);
+    else if (!city && L > 60) cam.position.copy(t).addScaledVector(d.normalize(), 24);
+    controls.update();
+  }
+  dirty = true;
+}
+export const hasCity = () => !!city;
+export function setLighting(options = {}) {
+  if (Number.isFinite(options.ambient)) lighting.ambient = Math.max(0, Math.min(2, options.ambient));
+  dirty = true;
+}
 
 function buildShell() {
   clear(shell); clear(proxies); clear(labels);
@@ -91,7 +122,7 @@ function buildShell() {
   const b = model.bounds, cx = (b.x0 + b.x1) / 2, cy = (b.y0 + b.y1) / 2;
   // ground
   const ground = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), std(C.ground, { roughness: 1 }));
-  ground.rotation.x = -Math.PI / 2; ground.position.set(cx * M, -0.02, -cy * M); ground.receiveShadow = true; ground.name = 'ground'; shell.add(ground);
+  ground.rotation.x = -Math.PI / 2; ground.position.set(cx * M, -0.02, -cy * M); ground.receiveShadow = true; ground.name = 'ground'; ground.visible = !city; shell.add(ground);
   // floors
   for (const r of model.rooms) {
     const shape = new THREE.Shape(r.poly.map(([x, y]) => new THREE.Vector2(x * M, y * M)));
@@ -110,6 +141,14 @@ function buildShell() {
   }
   const ceil = new THREE.Mesh(new THREE.BoxGeometry((b.x1 - b.x0 + 24) * M, 0.08, (b.y1 - b.y0 + 24) * M), proxyMat);
   ceil.position.set(cx * M, H * M + 0.04, -cy * M); ceil.castShadow = true; proxies.add(ceil);
+  // window shades (shadow casters only), switched per window by setWindowShade
+  shades = [];
+  const shadeMat = new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false, side: THREE.DoubleSide });
+  model.windows.forEach((w, i) => {
+    const m = new THREE.Mesh(new THREE.PlaneGeometry((w.len + 2) * M, (w.head - w.sill + 2) * M), shadeMat);
+    m.position.copy(W(w.mid[0], w.mid[1], (w.sill + w.head) / 2)); m.rotation.y = Math.atan2(w.b[1] - w.a[1], w.b[0] - w.a[0]);
+    m.castShadow = true; m.visible = !!shadeState[i]; m.name = 'window shade'; proxies.add(m); shades.push(m);
+  });
   // glass
   const glassMat = new THREE.MeshStandardMaterial({ color: 0x9fc6e8, transparent: true, opacity: C.dark ? 0.22 : 0.28, roughness: 0.08, side: THREE.DoubleSide, depthWrite: false });
   for (const w of model.windows) {
@@ -208,7 +247,8 @@ export function setSun(dir, on, up) {
   const v = new THREE.Vector3(dir.x, dir.up, -dir.y).normalize();
   sunL.position.copy(sunL.target.position).addScaledVector(v, 60);
   sunL.intensity = on ? 3.6 + 4 * Math.max(0, dir.up) : 0;
-  hemi.intensity = up ? colors.hemiDay : colors.hemiNight; amb.intensity = up ? 0.45 : 0.3;
+  hemi.intensity = (up ? colors.hemiDay : colors.hemiNight) * lighting.ambient;
+  amb.intensity = (up ? 0.45 : 0.3) * lighting.ambient;
   scene.background = (up ? colors.bg : colors.night).clone();
   dirty = true;
 }
@@ -421,7 +461,7 @@ export const eyeState = () => ({ at: [rig.pos.x / M, -rig.pos.z / M], yaw: rig.y
 export function snapshotPNG() { renderer.render(scene, cam); return renderer.domElement.toDataURL('image/png'); }
 export async function exportGLB() {
   const { GLTFExporter } = await import('three/addons/exporters/GLTFExporter.js');
-  const keep = [labels.visible, overlay.visible, proxies.visible]; labels.visible = false; overlay.visible = false; proxies.visible = false;
+  const keep = [labels.visible, overlay.visible, proxies.visible, city?.visible]; labels.visible = false; overlay.visible = false; proxies.visible = false; if (city) city.visible = false;
   const ground = shell.getObjectByName('ground'); if (ground) ground.visible = false;
   for (const g of groups.values()) { const d = g.getObjectByName('decal'), o = g.getObjectByName('outline'); if (d) d.userData.v = d.visible, d.visible = false; if (o) o.userData.v = o.visible, o.visible = false; }
   const root = new THREE.Group(); root.name = model.title || model.id || 'apartment';
@@ -433,7 +473,7 @@ export async function exportGLB() {
   try {
     return await new Promise((res, rej) => new GLTFExporter().parse(root, res, rej, { binary: true, onlyVisible: true }));
   } finally {
-    labels.visible = keep[0]; overlay.visible = keep[1]; proxies.visible = keep[2]; if (ground) ground.visible = true;
+    labels.visible = keep[0]; overlay.visible = keep[1]; proxies.visible = keep[2]; if (city) city.visible = keep[3] !== false; if (ground) ground.visible = true;
     for (const g of groups.values()) { const d = g.getObjectByName('decal'), o = g.getObjectByName('outline'); if (d) d.visible = !!d.userData.v; if (o) o.visible = !!o.userData.v; }
     dirty = true;
   }

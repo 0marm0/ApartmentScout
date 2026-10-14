@@ -18,15 +18,35 @@ import { parseLayout, validateLayout, serialiseLayout, asPreset, newId, MAX_BYTE
 import * as G3 from './plan/scene3d.js';
 import * as P2 from './plan/plan2d.js';
 import { renderCompare, cancelCompare } from './plan/compare.js';
+import { lightState, windowReach } from './plan/light.js';
+import { parseProject, serialiseProject } from './plan/project.js';
+import { editFixture, editWindow, editOrientation } from './plan/architecture.js';
+import { canonicalFaces, snapPosition } from './unit/scenario.js';
+import { placePlan, windowSkylines, windowBlocked, windowMinutes } from './plan/city.js';
+import { cityGroup } from './plan/citymesh.js';
 
 const st = {
   id: null, date: '', min: 720, playing: false, site: null, mode: 'both', view: 'bird', wall: 'cut', tab: 'furniture',
   snap: true, zonesAll: false, sight: true, swings: false,
+  directSun: true, ambient: 1,
 };
-let model = null, siteProf = null, items = [], R = [], ev = null, sel = null, flash = null, flashT = 0, loop = false, ready = false;
+// onSite: the plan placed on its site; winSky: one skyline per plan window (per-window city occlusion)
+let onSite = null, winSky = null, winMin = null, winMinKey = '';
+let model = null, rawPlan = null, projectLibrary = Object.create(null), siteProf = null, items = [], R = [], ev = null, sel = null, flash = null, flashT = 0, loop = false, ready = false;
 const undo = [], redo = [];
 const isPhone = () => matchMedia('(max-width: 760px)').matches;
 const key = (id) => `plan.${S.base}.${id}`;
+const libraryKey = () => `plan-projects.${S.base}`;
+function saveProjectLibrary(next) {
+  const text=JSON.stringify(next);
+  if(new TextEncoder().encode(text).length>3*1024*1024)throw Error('Local plan library is full. Export and remove a project first.');
+  localStorage.setItem('as:'+libraryKey(),text);
+  projectLibrary=next;
+}
+const planIds = () => [...new Set([...(S.manifest.plans || []), ...Object.keys(projectLibrary)])];
+function planOptions() {
+  $('planSel').innerHTML = planIds().map(id=>`<option value="${esc(id)}">${esc(projectLibrary[id]?.plan.title || (byId(id) ? label(byId(id)) : id))}${projectLibrary[id] ? ' · local project' : ''}</option>`).join('') || '<option>No floor plans yet</option>';
+}
 const IC = {
   undo: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M5.5 3.5L2.5 6.5l3 3"/><path d="M2.8 6.5H10a3.5 3.5 0 010 7H7"/></svg>',
   redo: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M10.5 3.5l3 3-3 3"/><path d="M13.2 6.5H6a3.5 3.5 0 000 7h3"/></svg>',
@@ -61,6 +81,9 @@ export function init() {
           <div class="ps-menu" id="psMenu" role="menu" hidden>
             <button type="button" role="menuitem" data-f="save">Save layout file<span>.json</span></button>
             <button type="button" role="menuitem" data-f="load">Load layout file…</button>
+            <button type="button" role="menuitem" data-f="project-save">Save complete plan project<span>.json</span></button>
+            <button type="button" role="menuitem" data-f="project-load">Import complete plan project…</button>
+            <button type="button" role="menuitem" data-f="project-restore">Remove local project override</button>
             <button type="button" role="menuitem" data-f="preset">Copy as plan preset</button>
             <button type="button" role="menuitem" data-f="compare">Compare with the other plans</button>
             <hr><button type="button" role="menuitem" data-f="glb">Export 3D model<span>.glb</span></button>
@@ -68,6 +91,7 @@ export function init() {
             <hr><button type="button" role="menuitem" data-f="clear">Clear all furniture</button>
           </div></div>
         <input type="file" id="psFile" accept=".json,application/json" hidden>
+        <input type="file" id="psProjectFile" accept=".json,application/json" hidden>
       </div>
     </header>
     <div class="ps-grid">
@@ -95,18 +119,23 @@ export function init() {
     </div>
     <section class="panel ps-compare" id="psCompare" hidden aria-label="Compare plans"></section>
   </div>`;
-  const ids = S.manifest.plans || [];
-  $('planSel').innerHTML = ids.length ? ids.map((id) => `<option value="${esc(id)}">${esc(byId(id) ? label(byId(id)) : id)}</option>`).join('') : '<option>No floor plans yet</option>';
+  const savedProjects = store.get(libraryKey(), {});
+  for (const [id, value] of Object.entries(savedProjects && typeof savedProjects === 'object' ? savedProjects : {}).slice(0,20)) {
+    const parsed=parseProject(value,{planId:id});
+    if(parsed.ok)projectLibrary[id]=parsed.project;
+  }
+  planOptions();
   $('planSel').addEventListener('change', (e) => (location.hash = '#plan/' + encodeURIComponent(e.target.value)));
   st.mode = isPhone() ? '2d' : 'both';
   bindChrome();
-  on('theme', () => { if (!ready) return; G3.retheme(); recompute({ all: true }); });
+  on('theme', () => { if (!ready) return; G3.retheme(); recompute({ all: true }); applyCity(); });
 }
 
 export async function show(id) {
-  const ids = S.manifest.plans || [];
+  const ids = planIds();
   if (!ids.length) {
-    $('psPanes').innerHTML = `<div class="empty"><b>No floor plans yet</b>Add <span class="mono">plans/&lt;listing-id&gt;.json</span> to your search and run <span class="mono">apartmentscout build</span>. See <span class="mono">docs/guides/floor-plans.md</span>, or ask your agent to draw one from the listing plan (skill <span class="mono">floor-plan-model</span>).</div>`;
+    $('psTitle').textContent='No floor plans yet';
+    $('psSub').textContent='Import a complete plan project through Layout, or ask your research agent to prepare one from a dimensioned plan.';
     return;
   }
   const wantCompare = id === 'compare';
@@ -120,9 +149,9 @@ export async function show(id) {
 
 // ------------------------------------------------------------------ loading
 async function load(id) {
-  const raw = await loadJSON(`${S.base}/plans/${id}.json`, null);
+  const raw = projectLibrary[id]?.plan || await loadJSON(`${S.base}/plans/${id}.json`, null);
   st.id = id;
-  try { model = normalisePlan(raw); } catch (e) {
+  try { model = normalisePlan(raw); rawPlan=JSON.parse(JSON.stringify(raw)); } catch (e) {
     model = null;
     $('psTitle').textContent = 'Floor plan';
     $('psInsp').innerHTML = `<div class="empty"><b>This plan could not be read</b>${esc(e.message || e)}</div>`;
@@ -131,27 +160,33 @@ async function load(id) {
   const qs = new URLSearchParams(location.search);
   st.date = qs.get('date') || (S.crit.search?.move_in?.earliest ? String(S.crit.search.move_in.earliest).slice(0, 10) : new Date().toISOString().slice(0, 10));
   st.min = +(qs.get('pmin') || 720);
-  st.site = null; siteProf = null;
+  st.site = null; siteProf = null; onSite = winSky = winMin = null; winMinKey = '';
   if ((S.manifest.sites || []).includes(id)) {
     const site = await loadJSON(`${S.base}/sites/${id}.json`, null);
     if (site?.b?.length && site.b[site.target]) {
-      const B = prepBuildings(site.b, site.holes && typeof site.holes === 'object' ? site.holes : null), T = B[site.target] || B[0], F = facesOf(T, 8, B);
-      // v2 site files carry the Python party-wall verdict per face; it wins over the browser's sampling
-      for (const f of site.faces || []) { const g = f && F.find((x) => x.i === f.i); if (!g) continue; if (f.shared) g.shared = true; else if (+site.version >= 2) g.shared = false; }
-      const open = F.filter((f) => !f.shared), pool = open.length ? open : F; // never put the sun window on a party wall
+      const B = prepBuildings(site.b, site.holes && typeof site.holes === 'object' ? site.holes : null), T = B[site.target] || B[0];
+      const F = canonicalFaces(facesOf(T,8,B),site.faces||[],site.version);
+      const pool = F.filter((f) => !f.shared);
+      st.site=site;
+      if(pool.length) {
       const want = model.up_bearing ?? site.window?.bearing ?? 180;
       const face = pool.reduce((best, f) => (Math.abs(angDiff(f.bearing, want)) < Math.abs(angDiff(best.bearing, want)) - 0.5 || (Math.abs(Math.abs(angDiff(f.bearing, want)) - Math.abs(angDiff(best.bearing, want))) <= 0.5 && f.length > best.length) ? f : best), pool[0]);
-      const t = snapOpen(face, face.i === site.window?.face ? site.window?.t ?? 0.5 : 0.5), x = face.a[0] + (face.b[0] - face.a[0]) * t, y = face.a[1] + (face.b[1] - face.a[1]) * t;
+      const t = snapPosition(face, face.i === site.window?.face ? site.window?.t ?? 0.5 : 0.5,snapOpen), x = face.a[0] + (face.b[0] - face.a[0]) * t, y = face.a[1] + (face.b[1] - face.a[1]) * t;
       const floor = model.floor || byId(id)?.floor || 5;
       siteProf = horizonProfile(B, x + Math.sin(face.bearing * DEG) * 0.4, y + Math.cos(face.bearing * DEG) * 0.4, T.g + (floor - 1) * (site.floor_height_m || 3.2) + 1.6);
-      st.site = site;
+      placeOnSite(site, floor);
+      }
     }
   }
   if (!ready) { G3.init($('pgl'), $('pstage'), () => {}); P2.mount($('p2d'), { item: (i) => R.find((x) => x.id === i), select, move: dragTo, commit: () => commit() }); bind3D(); ready = true; }
   G3.setModel(model); G3.setWallMode(st.wall);
   P2.setModel(model);
+  st.city = !!store.get(`plan-city.${S.base}`, false); applyCity();
   // furniture: the saved layout for this plan, else the first preset
-  const saved = store.get(key(id), null), v = saved && validateLayout(saved, { planId: id });
+  const saved = projectLibrary[id]?.layout || store.get(key(id), null), v = saved && validateLayout(saved, { planId: id });
+  const light = projectLibrary[id]?.lighting || store.get(`plan-light.${S.base}.${id}`, {});
+  st.directSun = light.directSun !== false;
+  st.ambient = typeof light.ambient === 'number' && Number.isFinite(light.ambient) ? Math.max(0, Math.min(2, light.ambient)) : 1;
   items = v?.ok ? v.layout.items : (model.layouts[0]?.items || []).map((x) => ({ ...x }));
   undo.length = 0; redo.length = 0; sel = null; cancelCompare(); $('psCompare').hidden = true;
   st.activePreset = v?.ok ? null : model.layouts[0]?.id || null;
@@ -169,15 +204,33 @@ function head() {
 }
 
 // ------------------------------------------------------------------ state changes
-const snapshot = () => JSON.stringify(items);
+const snapshot = () => JSON.stringify({items,plan:rawPlan,siteProfile:siteProf?Array.from(siteProf):null,lighting:{directSun:st.directSun,ambient:st.ambient}});
 function checkpoint() { undo.push(snapshot()); if (undo.length > 80) undo.shift(); redo.length = 0; markUndo(); }
-function persist() { store.set(key(st.id), serialiseLayout(st.id, items)); }
+function persist() {
+  store.set(key(st.id), serialiseLayout(st.id, items));
+  if(projectLibrary[st.id]) {
+    const project=serialiseProject(rawPlan,items,{directSun:st.directSun,ambient:st.ambient});
+    try{saveProjectLibrary(Object.assign(Object.create(null),projectLibrary,{[st.id]:project}));}
+    catch(e){toast('Browser project could not be saved. Export a complete project backup.',6000);}
+  }
+}
 function commit() { persist(); markUndo(); recompute({ panels: true }); }
 function markUndo() { $('psUndo').disabled = !undo.length; $('psRedo').disabled = !redo.length; }
 function doUndo(back = true) {
   const from = back ? undo : redo, to = back ? redo : undo; if (!from.length) return;
-  to.push(snapshot()); items = JSON.parse(from.pop()); if (sel && !items.some((x) => x.id === sel)) sel = null;
+  to.push(snapshot());
+  const saved=JSON.parse(from.pop());items=saved.items;
+  if(saved.plan) {
+    rawPlan=saved.plan;model=normalisePlan(rawPlan);G3.setModel(model);G3.setWallMode(st.wall);P2.setModel(model);
+    siteProf=Array.isArray(saved.siteProfile)?Float64Array.from(saved.siteProfile):null;
+    if(st.site && siteProf)placeOnSite(st.site,model.floor||byId(st.id)?.floor||5);
+    else dropPlacement();
+  }
+  if(saved.lighting) {st.directSun=saved.lighting.directSun;st.ambient=saved.lighting.ambient;}
+  if (sel && !items.some((x) => x.id === sel)) sel = null;
+  if(projectLibrary[st.id])projectLibrary[st.id]=serialiseProject(rawPlan,items,{directSun:st.directSun,ambient:st.ambient});
   persist(); markUndo(); recompute({ all: true });
+  refreshSun();head();
 }
 
 /** Re-resolve, re-check and redraw. opts.all rebuilds every 3D item; opts.panels redraws the side. */
@@ -267,6 +320,20 @@ function flashPoly(poly) { flash = poly; flashT = performance.now() + 2400; over
 
 // ------------------------------------------------------------------ chrome: modes, cameras, walls, tabs, files, keys
 function bindChrome() {
+  $('psProjectFile').addEventListener('change',async e=>{
+    const file=e.target.files?.[0];e.target.value='';if(!file)return;
+    if(file.size>MAX_BYTES) { toast('Complete plan projects must be smaller than 1 MB.');return; }
+    const result=parseProject(await file.text());
+    if(!result.ok) { toast(`Project not imported: ${result.error}`,6000);return; }
+    const id=result.project.plan.id;
+    if(!projectLibrary[id]&&Object.keys(projectLibrary).length>=20) { toast('Keep up to 20 local projects. Export and remove one before adding another.');return; }
+    try{saveProjectLibrary(Object.assign(Object.create(null),projectLibrary,{[id]:result.project}));}
+    catch(e){toast(`Project not imported: ${e.message||e}`,6000);return;}
+    store.set(key(id),result.layout);
+    store.set(`plan-light.${S.base}.${id}`,result.project.lighting||{});
+    planOptions();await load(id);location.hash='#plan/'+encodeURIComponent(id);
+    toast('Imported local plan project. The original search files are unchanged.');
+  });
   $('psMode').addEventListener('click', (e) => { const b = e.target.closest('[data-m]'); if (b) setMode(b.dataset.m); });
   $('psCams').addEventListener('click', (e) => { const b = e.target.closest('[data-v]'); if (b) camera(b.dataset.v); });
   $('psWalls').addEventListener('click', (e) => { const b = e.target.closest('[data-w]'); if (b) setWall(b.dataset.w); });
@@ -342,9 +409,24 @@ function camera(v) {
 }
 
 async function fileAction(f) {
+  if(f==='project-load') { $('psProjectFile').click(); return; }
   if (!model) return;
   if (f === 'save') saveBlob(new Blob([JSON.stringify(serialiseLayout(st.id, items), null, 2)], { type: 'application/json' }), `${st.id}-layout.json`);
+  else if(f==='project-save') {
+    try { const project=serialiseProject(rawPlan,items,{directSun:st.directSun,ambient:st.ambient});saveBlob(new Blob([JSON.stringify(project,null,2)],{type:'application/json'}),`${st.id}-project.json`); }
+    catch(e) { toast(`Project export failed: ${e.message || e}`,5000); }
+  }
+  else if(f==='project-restore') {
+    if(!projectLibrary[st.id]) { toast('This is the original source plan; no local override exists.'); return; }
+    const old=st.id;const remaining=Object.assign(Object.create(null),projectLibrary);delete remaining[old];
+    try{saveProjectLibrary(remaining);}catch(e){toast('Could not remove the browser project.',5000);return;}planOptions();
+    const next=planIds().includes(old)?old:planIds()[0];
+    if(next) { await load(next);location.hash='#plan/'+encodeURIComponent(next); }
+    else { st.id=null;model=null;rawPlan=null;$('psTitle').textContent='No floor plans yet';$('psSub').textContent='Import another complete plan project through Layout.'; }
+    toast('Removed local project. Source files are unchanged.');
+  }
   else if (f === 'load') $('psFile').click();
+  else if (f === 'compare') openCompare();
   else if (f === 'preset') {
     const txt = JSON.stringify(asPreset(items, { k: model.k, id: 'my-layout', name: 'My layout', note: '' }), null, 2);
     try { await navigator.clipboard.writeText(txt); toast('Copied. Paste it into "layouts" in the plan file'); } catch { saveBlob(new Blob([txt], { type: 'application/json' }), `${st.id}-preset.json`); }
@@ -357,7 +439,7 @@ async function fileAction(f) {
 }
 function openCompare() {
   const el = $('psCompare'); el.hidden = false;
-  renderCompare(el, { ids: S.manifest.plans || [], current: st.id, model, items: R, load: (i) => loadJSON(`${S.base}/plans/${i}.json`, null), labelOf: (i, m) => m.title || (byId(i) ? label(byId(i)) : i) });
+  renderCompare(el, { ids: planIds(), current: st.id, model, items: R, load: (i) => projectLibrary[i]?.plan || loadJSON(`${S.base}/plans/${i}.json`, null), labelOf: (i, m) => m.title || (byId(i) ? label(byId(i)) : i) });
   requestAnimationFrame(() => el.scrollIntoView({ behavior: 'smooth', block: 'start' }));
 }
 function saveBlob(blob, name) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); }
@@ -493,8 +575,37 @@ function tab() {
   if (st.tab === 'furniture') el.innerHTML = furnitureTab();
   else if (st.tab === 'checks') el.innerHTML = checksTab();
   else if (st.tab === 'light') { el.innerHTML = '<div id="psLight"></div>'; refreshSun(); }
-  else el.innerHTML = planTab();
+  else { el.innerHTML = planTab() + architecturePanel(); bindArchitecture(); }
   markCams();
+}
+function architecturePanel() {
+  return `<details class="ps-architecture"><summary>Edit geometry assumptions</summary><p class="ps-note">Test fixture sizes, window openings or orientation. Edits are unmeasured local scenarios; the source plan stays unchanged. Dimensions below are in inches.</p><div class="field"><label for="psArchTarget">Element</label><select id="psArchTarget"><option value="orientation">Plan orientation</option>${(rawPlan.fixtures||[]).map((f,i)=>`<option value="fx:${i}">${esc(f.label||f.kind||'Fixture')} · ${i+1}</option>`).join('')}${(rawPlan.windows||[]).map((w,i)=>`<option value="win:${i}">Window · ${esc(w.room||i+1)}</option>`).join('')}</select></div><div id="psArchFields"></div><button class="btn" type="button" id="psArchApply">Apply local scenario</button></details>`;
+}
+function bindArchitecture() {
+  const target=$('psArchTarget');if(!target)return;
+  const field=(key,title,value)=>`<div class="field"><label for="psArch-${key}">${title}</label><input id="psArch-${key}" data-arch="${key}" type="number" step="0.1" value="${value==null?'':(+value).toFixed(2)}"></div>`;
+  const draw=()=>{
+    const [kind,index]=target.value.split(':');const i=+index;
+    if(kind==='orientation')$('psArchFields').innerHTML=field('bearing','Top of plan faces · degrees from north',model.up_bearing);
+    else if(kind==='fx') {
+      const f=model.fixtures.find(f=>f.id===`fx${i}`);if(!f){$('psArchFields').textContent='This fixture has unresolved geometry.';return;}
+      const xs=f.poly.map(p=>p[0]),ys=f.poly.map(p=>p[1]);
+      $('psArchFields').innerHTML=[field('width','Width',Math.max(...xs)-Math.min(...xs)),field('depth','Depth',Math.max(...ys)-Math.min(...ys)),field('height','Height',f.height),field('reserve','Front clearance reserve',f.reserve),field('x','Plan X',Math.min(...xs)),field('y','Plan Y',Math.min(...ys))].join('');
+    }else {const w=model.windows[i];$('psArchFields').innerHTML=w?[field('width','Opening width',w.len),field('sill','Sill above floor',w.sill),field('head','Window head above floor',w.head)].join(''):'Window geometry unresolved.';}
+  };target.onchange=draw;draw();
+  $('psArchApply').onclick=()=>{
+    try {
+      const values={};for(const el of $('psArchFields').querySelectorAll('[data-arch]')){if(el.value.trim()==='')throw Error('Enter a value for each dimension.');values[el.dataset.arch]=+el.value;}
+      const [kind,index]=target.value.split(':');const edited=kind==='fx'?editFixture(rawPlan,+index,values):kind==='win'?editWindow(rawPlan,+index,values):editOrientation(rawPlan,values.bearing);
+      const project=serialiseProject(edited,items,{directSun:st.directSun,ambient:st.ambient});
+      saveProjectLibrary(Object.assign(Object.create(null),projectLibrary,{[st.id]:project}));
+      checkpoint();rawPlan=project.plan;model=normalisePlan(rawPlan);
+      G3.setModel(model);G3.setWallMode(st.wall);P2.setModel(model);
+      if(kind==='orientation') { siteProf=null; dropPlacement(); } else if (st.site && siteProf) placeOnSite(st.site, model.floor || byId(st.id)?.floor || 5);
+      planOptions();$('planSel').value=st.id;persist();head();recompute({all:true});refreshSun();
+      toast('Local geometry scenario applied. Undo restores the previous geometry.');
+    }catch(e){toast(`Geometry unchanged: ${e.message||e}`,6000);}
+  };
 }
 function furnitureTab() {
   const pres = model.layouts.length ? `<h3 class="label">Layouts <span>written for this plan</span></h3><div class="ps-presets">${model.layouts.map((l) => `<button type="button" class="ps-preset${st.activePreset === l.id ? ' on' : ''}" data-p="${esc(l.id)}"><b>${esc(l.name)}</b>${l.note ? `<span>${esc(l.note)}</span>` : ''}</button>`).join('')}</div>` : '';
@@ -569,21 +680,60 @@ function refreshSun() {
   const tz = st.site?.timezone || S.crit.search?.timezone || 'America/New_York';
   const [y, m, d] = st.date.split('-').map(Number);
   const s = sunPos(zonedMs(y, m - 1, d, st.min, tz), lat, lon);
-  const up = s.alt > 0, blocked = up && siteProf && s.alt <= hAt(siteProf, s.az);
+  // per-window city occlusion when the plan is placed on its site: only the windows a neighbour blocks lose their sun
+  const perWin = up_(s) && winSky && winSky.length === model.windows.length ? model.windows.map((w, i) => windowBlocked(winSky, i, s)) : null;
+  const up = s.alt > 0, blocked = perWin ? perWin.every(Boolean) : up && siteProf && s.alt <= hAt(siteProf, s.az);
+  G3.setWindowShade(perWin || []);
+  const nBlk = perWin ? perWin.filter(Boolean).length : 0;
+  const mk = `${st.date}|${winSky ? winSky.length : 0}`;
+  if (winSky && mk !== winMinKey) { winMinKey = mk; winMin = windowMinutes(winSky, model, y, m - 1, d, lat, lon, tz); }
+  const placementKnown=!st.site||!!siteProf;
+  const light = lightState({ bearing:placementKnown?model.up_bearing:null, altitude:s.alt, blocked:!!blocked, directSun:st.directSun, ambient:st.ambient });
   const rel = (s.az - (model.up_bearing ?? 0)) * DEG, ca = Math.cos(s.alt * DEG);
-  G3.setSun({ x: Math.sin(rel) * ca, y: Math.cos(rel) * ca, up: Math.sin(s.alt * DEG) }, up && !blocked, up);
+  G3.setLighting({ambient:light.ambient});
+  G3.setSun({ x: Math.sin(rel) * ca, y: Math.cos(rel) * ca, up: Math.sin(s.alt * DEG) }, light.directional, up);
   const tv = $('pTimeV'); if (tv) tv.textContent = fmtT(st.min);
   const t = $('pTime'); if (t) t.style.setProperty('--p', `${((st.min - 300) / 930) * 100}%`);
-  $('phud').innerHTML = `<span>${esc(st.date)} ${fmtT(st.min)}</span><span class="${up && !blocked ? 'lit' : 'shade'}">${!up ? 'Night' : blocked ? 'Sun behind neighbours' : `Sun ${Math.round(s.alt)}° up, ${compass(s.az)}`}</span>${model.up_bearing == null ? '<span>Orientation unknown</span>' : ''}`;
+  $('phud').innerHTML = `<span>${esc(st.date)} ${fmtT(st.min)}</span><span class="${light.directional ? 'lit' : 'shade'}">${!placementKnown ? 'Window placement unresolved · direct sun withheld' : !light.orientationKnown ? 'Orientation unknown · direct sun unresolved' : !up ? 'Night' : blocked ? (perWin ? 'Every window shaded by neighbours' : 'Site observation point shaded') : nBlk ? `Sun blocked at ${nBlk} of ${perWin.length} windows` : !st.directSun ? 'Direct sun hidden in preview' : `Sun ${Math.round(s.alt)}° up, ${compass(s.az)}`}</span>`;
   const el = $('psLight'); if (!el) return;
-  const rows = model.windows.map((w) => {
-    const da = Math.abs(angDiff(s.az, w.bearing)), ok = up && !blocked && da < 90;
-    const depth = ok ? (w.head * Math.cos(da * DEG)) / Math.tan(Math.max(1, s.alt) * DEG) : 0;
-    return `<tr><td>${esc(w.room || 'Window')}${w.note ? `<br><small class="faint">${esc(w.note)}</small>` : ''}</td><td class="num">${Math.round(w.bearing)}° ${compass(w.bearing)}</td><td>${ok ? `<span class="ok">reaches ${fmtIn(Math.min(depth, 480))} in</span>` : `<span class="faint">${!up ? 'night' : blocked ? 'blocked by neighbours' : 'sun behind this wall'}</span>`}</td></tr>`;
+  if (!el.querySelector('#psLightResults')) {
+    el.innerHTML = `<div class="ps-light-controls"><label class="tg"><input id="psDirectSun" type="checkbox"> Show directional sunlight</label>${onSite ? `<label class="tg ps-city-tg"><input id="psCityTg" type="checkbox"> Show the city outside</label>` : ''}<div class="field"><label for="psAmbient">Background light preview <span id="psAmbientValue"></span></label><input id="psAmbient" type="range" min="0" max="2" step="0.05"></div><p class="ps-note faint">Background intensity is a display preference, not measured brightness or lux.</p></div><div id="psLightResults"></div>`;
+    const saveLight=()=>{store.set(`plan-light.${S.base}.${st.id}`,{directSun:st.directSun,ambient:st.ambient});if(projectLibrary[st.id])persist();refreshSun();};
+    $('psDirectSun').onchange=e=>{st.directSun=e.target.checked;saveLight();};
+    $('psAmbient').oninput=e=>{st.ambient=+e.target.value;saveLight();};
+    $('psCityTg')?.addEventListener('change', (e) => { st.city = e.target.checked; store.set(`plan-city.${S.base}`, st.city); applyCity(); });
+  }
+  if ($('psCityTg')) $('psCityTg').checked = !!st.city;
+  $('psDirectSun').checked=st.directSun;
+  $('psDirectSun').disabled=!light.orientationKnown;
+  $('psAmbient').value=st.ambient;
+  $('psAmbientValue').textContent=st.ambient.toFixed(2)+'×';
+  const rows = model.windows.map((w, wi) => {
+    const reach=windowReach({bearing:w.bearing,sunAzimuth:s.az,altitude:s.alt,head:w.head,orientationKnown:light.orientationKnown,blocked:perWin ? perWin[wi] : !!blocked});
+    const status={'orientation-unknown':'Orientation unresolved',night:'Night','site-blocked':perWin ? 'Shaded by neighbours' : 'Site observation point shaded',behind:'Sun behind this wall',unresolved:'Window dimensions unresolved'}[reach.state];
+    const today = winMin && winMin[wi] != null && light.orientationKnown ? hmShort(winMin[wi]) : '—';
+    return `<tr><td>${esc(w.room || 'Window')}${w.note ? `<br><small class="faint">${esc(w.note)}</small>` : ''}</td><td class="num">${light.orientationKnown ? Math.round(w.bearing)+'° '+compass(w.bearing) : 'Unknown'}</td><td>${reach.inches!=null ? `<span>${fmtIn(reach.inches)} unoccluded reach</span>` : `<span class="faint">${status}</span>`}</td>${winSky ? `<td class="num">${today}</td>` : ''}</tr>`;
   }).join('');
-  el.innerHTML = `<p class="ps-sunline">${esc(st.date)} at ${fmtT(st.min)}: sun ${Math.round(s.az)}° ${compass(s.az)}, ${up ? Math.round(s.alt) + '° up' : 'below the horizon'}${blocked ? ', <b>behind nearby buildings</b>' : ''}.</p>
-    <table class="mini"><thead><tr><th>Window</th><th class="num">Faces</th><th>Direct sun</th></tr></thead><tbody>${rows}</tbody></table>
-    <p class="ps-note faint">${st.site ? `Neighbouring buildings come from the site model (floor ${esc(model.floor || byId(st.id)?.floor || '?')}); the sun switches off when they block it.` : 'No site model for this listing, so neighbouring buildings are not modelled. Run the unit-light-and-view skill to add one.'} Furniture casts real shadows, so you can see where morning sun lands on the bed.</p>`;
+  $('psLightResults').innerHTML = `<p class="ps-sunline">${esc(st.date)} at ${fmtT(st.min)}: sun ${Math.round(s.az)}° ${compass(s.az)}, ${up ? Math.round(s.alt) + '° up' : 'below the horizon'}.</p>
+    ${!light.orientationKnown ? `<p class="ps-note">${!placementKnown ? 'The city model does not resolve a valid window observation point for this edited plan. Re-establish its placement before interpreting sunlight.' : 'Confirm the plan orientation to enable directional sunlight. No north-facing assumption is applied.'}</p>` : ''}
+    <table class="mini"><thead><tr><th>Window</th><th class="num">Faces</th><th>Geometric estimate</th>${winSky ? '<th class="num">Sun today</th>' : ''}</tr></thead><tbody>${rows}</tbody></table>
+    <p class="ps-note faint">${winSky ? `Each window has its own skyline from the city model: the plan's window wall is placed on the ${Math.round(onSite.az)}° facade at the site's window position, floor ${esc(model.floor || byId(st.id)?.floor || '?')}, so a neighbour in front of one window shades only that window. Where the unit sits along the facade is an assumption.` : siteProf ? 'Neighbour shading uses one assumed observation point from the city model. It does not resolve each individual window or a multi-facade apartment.' : 'No resolved neighbouring-window observation point is available for this plan.'} Floor reach is an unoccluded projection from window-head height, not actual room penetration. Walls and furniture can intercept it. Rendered shadows are approximate; glazing, clouds, diffuse daylight and reflections are not simulated.</p>`;
+}
+
+// ------------------------------------------------------------------ the plan on its site (per-window skylines, city outside)
+const up_ = (s) => s.alt > 0;
+const hmShort = (min) => { if (!min) return 'none'; const h = Math.floor(min / 60), mm = Math.round(min % 60); return h && mm ? `${h} h ${String(mm).padStart(2, '0')}` : h ? `${h} h` : `${mm} m`; };
+function placeOnSite(site, floor) {
+  try { onSite = placePlan(site, model, floor); winSky = onSite ? windowSkylines(onSite, model) : null; } catch { onSite = winSky = null; }
+  winMin = null; winMinKey = '';
+  if (ready) applyCity();
+}
+function dropPlacement() { onSite = winSky = winMin = null; winMinKey = ''; G3.setWindowShade([]); applyCity(); }
+function applyCity() {
+  if (!ready) return;
+  if (!st.city || !onSite) { if (G3.hasCity()) G3.setCity(null); return; }
+  const dark = document.documentElement.dataset.theme !== 'light', css = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  G3.setCity(cityGroup(onSite, { colors: { low: dark ? css('--surface-3') : css('--ink-4'), high: css('--ink-3'), roof: dark ? css('--ink-3') : css('--surface-1'), own: css('--accent'), ground: dark ? css('--surface-1') : css('--surface-3') } }));
 }
 
 // ------------------------------------------------------------------ frame loop

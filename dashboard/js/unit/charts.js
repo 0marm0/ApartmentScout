@@ -4,19 +4,26 @@ import { css } from '../util.js';
 import { dayTable, hAt, fmtT, compass } from '../sun.js';
 
 export const STRIP_FROM = 300, STRIP_TO = 1290, STRIP_STEP = 5;
-const STATE_NAMES = ['night', 'sun behind the facade', 'shaded by buildings', 'direct sun'];
+const STATE_NAMES = ['night', 'sun behind the facade', 'shaded by buildings', 'direct sun', 'direct sun through a side pane'];
 
-/** Run-length segments of a day-state array as positioned divs. */
-export function stripBar(states) {
+/**
+ * Run-length segments of a day-state array as positioned divs. With `who` (per-slot blocker index,
+ * -1 when none) and `name` (index -> text), shaded runs split per building and their tooltip names it.
+ */
+export function stripBar(states, who = null, name = null) {
   const n = states.length; let h = '';
+  const key = (k) => (who && states[k] === 2 ? `2:${who[k]}` : String(states[k]));
   for (let k = 0; k < n;) {
-    let j = k; while (j < n && states[j] === states[k]) j++;
+    let j = k; const kk = key(k); while (j < n && key(j) === kk) j++;
     const a = STRIP_FROM + k * STRIP_STEP, b = STRIP_FROM + j * STRIP_STEP;
-    h += `<i class="s${states[k]}" style="left:${(k / n) * 100}%;width:${((j - k) / n) * 100}%" title="${fmtT(a)} to ${fmtT(b)}: ${STATE_NAMES[states[k]]}"></i>`;
+    const by = who && states[k] === 2 && name ? name(who[k]) : '';
+    const tip = `${fmtT(a)} to ${fmtT(b)}: ${by ? 'shaded by ' + by : STATE_NAMES[states[k]]}`;
+    h += `<i class="s${states[k]}" style="left:${(k / n) * 100}%;width:${((j - k) / n) * 100}%" title="${escAttr(tip)}"${by ? ` data-bi="${who[k]}"` : ''}></i>`;
     k = j;
   }
   return h;
 }
+const escAttr = (s) => String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 export function stripTicks() {
   let h = '';
   for (let m = 360; m <= 1260; m += 180) h += `<span style="left:${((m - STRIP_FROM) / (STRIP_TO - STRIP_FROM)) * 100}%">${fmtT(m).replace(':00', '')}</span>`;
@@ -26,22 +33,23 @@ export const stateAt = (states, min) => states[Math.max(0, Math.min(states.lengt
 export const STATE_LABEL = STATE_NAMES;
 
 /**
- * Sun path against the skyline. o: {lat, lon, tz, date:'YYYY-MM-DD', az (window bearing), profA, profB, profF, sun:{az,alt}}
+ * Sun path against the skyline. o: {lat, lon, tz, date:'YYYY-MM-DD', az (window bearing), profA, profB, profF, sun:{az,alt},
+ * spread (degrees: the widest pane offset of a bay window, 0 for a flat window)}
  */
 export function drawPath(c, o) {
   const dpr = devicePixelRatio || 1, cw = c.clientWidth || 380, ch = Math.round(Math.min(340, Math.max(230, cw * 0.66)));
   c.width = Math.round(cw * dpr); c.height = Math.round(ch * dpr); c.style.height = ch + 'px';
   const g = c.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, cw, ch);
   const ink = css('--ink'), ink2 = css('--ink-2'), ink3 = css('--ink-3'), ink4 = css('--ink-4'), line = css('--line-strong'), sun = css('--sun'), warn = css('--warn'), panel = css('--surface-1');
-  const L0 = 34, R = 8, T0 = 10, Bm = 26, pw = cw - L0 - R, ph = ch - T0 - Bm, a0 = o.az - 105, a1 = o.az + 105, amax = 75;
+  const L0 = 34, R = 8, T0 = 10, Bm = 26, pw = cw - L0 - R, ph = ch - T0 - Bm, sp = Math.max(0, Math.min(80, +o.spread || 0)), a0 = o.az - 105 - sp, a1 = o.az + 105 + sp, amax = 75;
   const X = (a) => L0 + ((a - a0) / (a1 - a0)) * pw, Y = (al) => T0 + ph - (Math.max(0, Math.min(amax, al)) / amax) * ph;
   g.font = `500 10px ${css('--font-mono') || 'monospace'}`; g.textBaseline = 'middle'; g.lineWidth = 1;
   for (let al = 0; al <= amax; al += 15) { g.strokeStyle = line; g.globalAlpha = al ? 0.5 : 1; g.beginPath(); g.moveTo(L0, Y(al) + 0.5); g.lineTo(cw - R, Y(al) + 0.5); g.stroke(); g.globalAlpha = 1; g.fillStyle = ink3; g.textAlign = 'right'; g.fillText(al + '°', L0 - 6, Y(al)); }
   for (let a = Math.ceil(a0 / 45) * 45; a <= a1; a += 45) { const aa = ((a % 360) + 360) % 360; g.fillStyle = ink3; g.textAlign = 'center'; g.fillText(`${compass(aa)} ${aa}°`, X(a), ch - Bm + 15); }
   // facade edges (sun behind the window beyond these)
   g.fillStyle = ink4; g.globalAlpha = 0.16;
-  g.fillRect(L0, T0, X(o.az - 90) - L0, ph); g.fillRect(X(o.az + 90), T0, cw - R - X(o.az + 90), ph); g.globalAlpha = 1;
-  g.setLineDash([3, 4]); g.strokeStyle = ink3; [o.az - 90, o.az + 90].forEach((a) => { g.beginPath(); g.moveTo(X(a) + 0.5, T0); g.lineTo(X(a) + 0.5, T0 + ph); g.stroke(); }); g.setLineDash([]);
+  g.fillRect(L0, T0, X(o.az - 90 - sp) - L0, ph); g.fillRect(X(o.az + 90 + sp), T0, cw - R - X(o.az + 90 + sp), ph); g.globalAlpha = 1;
+  g.setLineDash([3, 4]); g.strokeStyle = ink3; [o.az - 90 - sp, o.az + 90 + sp].forEach((a) => { g.beginPath(); g.moveTo(X(a) + 0.5, T0); g.lineTo(X(a) + 0.5, T0 + ph); g.stroke(); }); g.setLineDash([]);
   const prof = (p, fill, stroke, dash) => {
     if (!p) return;
     g.beginPath(); g.moveTo(X(a0), T0 + ph);
@@ -61,7 +69,7 @@ export function drawPath(c, o) {
     g.lineWidth = w; g.lineCap = 'round';
     for (const [m, az, al] of t) {
       const a = wrap(az); if (a < a0 || a > a1) { prev = null; continue; }
-      const p = [X(a), Y(al)], lit = Math.abs(a - o.az) < 90 && al > hAt(o.profA, az);
+      const p = [X(a), Y(al)], lit = Math.abs(a - o.az) < 90 + sp && al > hAt(o.profA, az);
       if (prev) { g.strokeStyle = colr; g.globalAlpha = hrs && !lit ? 0.38 : 1; g.beginPath(); g.moveTo(prev[0], prev[1]); g.lineTo(p[0], p[1]); g.stroke(); }
       prev = p;
     }
@@ -90,7 +98,8 @@ export function drawPath(c, o) {
     const a = wrap(o.sun.az);
     if (a >= a0 && a <= a1) { g.beginPath(); g.arc(X(a), Y(o.sun.alt), 6.5, 0, 6.3); g.fillStyle = sun; g.fill(); g.lineWidth = 2; g.strokeStyle = panel; g.stroke(); g.lineWidth = 1; }
   }
-  // the window's own bearing: a sun-coloured tick on the axis
+  // the window's own bearing: a sun-coloured tick on the axis (side panes of a bay: hollow ticks)
+  if (sp) for (const a of [o.az - sp, o.az + sp]) { g.strokeStyle = sun; g.lineWidth = 1.4; g.beginPath(); g.moveTo(X(a), T0 + ph); g.lineTo(X(a) - 3.5, T0 + ph + 6); g.lineTo(X(a) + 3.5, T0 + ph + 6); g.closePath(); g.stroke(); g.lineWidth = 1; }
   g.fillStyle = sun; g.beginPath(); g.moveTo(X(o.az), T0 + ph - 1); g.lineTo(X(o.az) - 4, T0 + ph + 6); g.lineTo(X(o.az) + 4, T0 + ph + 6); g.closePath(); g.fill();
 }
 
@@ -135,4 +144,40 @@ export function table(y, mo, d, lat, lon, tz, step) {
   const k = `${y}-${mo}-${d}-${lat}-${lon}-${tz}-${step}`;
   if (!memo.has(k)) { if (memo.size > 120) memo.clear(); memo.set(k, dayTable(y, mo, d, lat, lon, tz, step)); }
   return memo.get(k);
+}
+
+/**
+ * Eye height against the neighbouring roofs in the facing sector: one horizontal bar per building (roof
+ * height above this building's ground, nearest first), vertical lines for eye heights (this floor, the
+ * compare floor, other listed units). rows: [{name, h, dist, future}], eyes: [{label, z, kind: 'cur'|'cmp'|'unit'}].
+ */
+export function roofBars(rows, eyes) {
+  const W = 360, L = 118, R = 34, top = 30, rh = 21, H = top + rows.length * rh + 18;
+  const max = Math.max(10, ...rows.map((r) => r.h), ...eyes.map((e) => e.z)) * 1.08;
+  const X = (v) => L + (Math.max(0, v) / max) * (W - L - R);
+  const cur = eyes.find((e) => e.kind === 'cur')?.z ?? 0;
+  const fmt = (d) => (d >= 1000 ? (d / 1000).toFixed(1) + ' km' : Math.round(d) + ' m');
+  let s = `<defs><pattern id="uRoofHatch" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="5" height="5" fill="var(--warn)" opacity=".12"/><line x1="0" y1="0" x2="0" y2="5" stroke="var(--warn)" stroke-width="1.6" opacity=".6"/></pattern></defs>`;
+  for (let v = 0; v <= max; v += max > 120 ? 50 : 20) s += `<line x1="${X(v)}" x2="${X(v)}" y1="${top - 4}" y2="${H - 16}" class="gl"/><text x="${X(v)}" y="${H - 4}" text-anchor="middle" class="ax">${v} m</text>`;
+  rows.forEach((r, i) => {
+    const y = top + i * rh, d = r.h - cur, cls = d > 1.5 ? 'above' : d > -1.5 ? 'level' : 'below';
+    const tip = `${r.name}: roof ${Math.round(r.h)} m, ${fmt(r.dist)} away, ${cls === 'above' ? Math.round(d) + ' m above your eyes' : cls === 'level' ? 'at eye level' : Math.round(-d) + ' m below your eyes'}${r.future ? ' (proposed)' : ''}`;
+    s += `<g class="row ${cls}${r.future ? ' fut' : ''}"${r.bi != null ? ` data-bi="${r.bi}"` : ''}><title>${escAttr(tip)}</title>`;
+    s += `<text x="0" y="${y + 9}" class="nm">${escAttr(r.name.length > 19 ? r.name.slice(0, 18) + '…' : r.name)}</text><text x="0" y="${y + 18}" class="ds">${fmt(r.dist)}${r.future ? ' · proposed' : ''}</text>`;
+    s += `<rect x="${L}" y="${y + 3}" width="${Math.max(2, X(r.h) - L)}" height="${rh - 8}" rx="3" class="bar"${r.future ? ' fill="url(#uRoofHatch)"' : ''}/>`;
+    s += `<text x="${X(r.h) + 4}" y="${y + 13}" class="v">${Math.round(r.h)}</text></g>`;
+  });
+  // eye lines, labels staggered on two rows so close floors stay readable (this floor always on the lower row)
+  const lab = [...eyes].sort((a, b) => (b.kind === 'cur') - (a.kind === 'cur') || a.z - b.z), rowOf = new Map(), used = [[], []];
+  for (const e of lab) {
+    const x = X(e.z), w = e.label.length * 5.4 + 6;
+    const fits = (r) => used[r].every(([a, b]) => x + w / 2 < a || x - w / 2 > b);
+    const r = fits(0) ? 0 : fits(1) ? 1 : -1;
+    if (r >= 0) { used[r].push([x - w / 2 - 2, x + w / 2 + 2]); rowOf.set(e, r); }
+  }
+  for (const e of [...eyes].sort((a, b) => (a.kind === 'cur') - (b.kind === 'cur'))) {
+    const x = X(e.z), r = rowOf.get(e);
+    s += `<g class="eye ${e.kind}"><line x1="${x}" x2="${x}" y1="${top - 6 - (r === 1 ? 10 : 0)}" y2="${H - 16}"/>${r != null ? `<text x="${x}" y="${top - 9 - r * 11}" text-anchor="middle">${escAttr(e.label)}</text>` : ''}<title>${escAttr(`${e.label}: eyes at ${Math.round(e.z)} m`)}</title></g>`;
+  }
+  return `<svg class="u-roofs" viewBox="0 0 ${W} ${H}" role="img" aria-label="Eye height against the roofs of the nearest buildings in view">${s}</svg>`;
 }

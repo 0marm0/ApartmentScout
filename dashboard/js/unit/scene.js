@@ -1,7 +1,9 @@
 // Unit 3D scene: the city as merged prisms with a height ramp, a time-of-day sky dome, sun light with soft
 // shadows, footprint outlines, streets, proposed buildings, the target building and its window, the sun and
-// its ray, and DOM labels drawn as glass chips. Four cameras: orbit, from the window, north-up street plan,
-// top down. The view module owns the state; this module only draws it.
+// its ray, and DOM labels drawn as glass chips. Five cameras: orbit, from the window, inside the apartment
+// (the floor plan's shell placed at the real slab height and bearing, lit by the real sun through the city),
+// north-up street plan, top down. A bay window draws as a small fan of panes. GLB export of the scene.
+// The view module owns the state; this module only draws it.
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { DEG } from '../sun.js';
@@ -91,6 +93,7 @@ export class UnitStage {
     this.data = data;
     if (this.scene) disposeTree(this.scene);
     const scene = this.scene = new THREE.Scene();
+    this.interior = null; this.inEye = null; this.fanLine = null;
     const { B, T } = data;
     const cx = (T.bb[0] + T.bb[2]) / 2, cy = (T.bb[1] + T.bb[3]) / 2;
     this.center = W3(cx, cy, 0); this.cxy = [cx, cy];
@@ -162,6 +165,8 @@ export class UnitStage {
     halo.scale.set(26, 26, 1);
     const paneX = new THREE.Mesh(pane.geometry, new THREE.MeshBasicMaterial({ color: pal.sun, side: THREE.DoubleSide, transparent: true, opacity: 0.55, depthTest: false, depthWrite: false }));
     paneX.renderOrder = 9; this.marker.add(pane, halo, paneX); scene.add(this.marker);
+    this.paneMat = pane.material; this.fan = new THREE.Group(); this.marker.add(this.fan); this.panes = [0];
+    this.interior = null; this.inEye = null;
     this.rayMat = new THREE.MeshBasicMaterial({ color: pal.sun, transparent: true, opacity: 0.95, depthWrite: false });
     this.ray = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 1, 8, 1, true).translate(0, 0.5, 0), this.rayMat); this.ray.renderOrder = 4; scene.add(this.ray);
     this.hitDot = new THREE.Mesh(new THREE.SphereGeometry(2.2, 16, 12), new THREE.MeshBasicMaterial({ color: pal.bad })); scene.add(this.hitDot);
@@ -336,13 +341,20 @@ export class UnitStage {
   placeLabels(cam) {
     const W = this.el.clientWidth, H = this.el.clientHeight, placed = [], v = new THREE.Vector3();
     const order = [...this.labels].sort((a, b) => b.prio - a.prio);
+    // inside the apartment, a label only shows when the glass (not a wall or the ceiling) is in front of it
+    const solid = this.mode === 'in' && this.interior ? this.interior.group.children.filter((o) => o.isMesh && o.name !== 'glass') : null;
+    const rc = solid ? new THREE.Raycaster() : null;
+    const walled = (pos) => { const d = pos.clone().sub(cam.position), L = d.length(); rc.set(cam.position, d.normalize()); rc.far = L; return rc.intersectObjects(solid, false).length > 0; };
     for (const L of order) {
       let show = this.opts.labels || L.cls === 'win';
       if (L.cls === 'street') show = show && this.opts.streets;
       if (L.cls === 'future') show = show && this.opts.future;
-      if (L.cls === 'win') show = this.mode !== 'win';
+      if (L.cls === 'win') show = this.mode !== 'win' && this.mode !== 'in';
+      if (L.cls === 'own' && this.mode === 'in') show = false;
       if (L.cls === 'own' && this.opts.target === 'hidden') show = false;
-      if (L.lm && this.mode === 'win') { L.el.classList.toggle('dim', !!L.lm.hidden); }
+      if (L.lm && (this.mode === 'win' || this.mode === 'in')) { L.el.classList.toggle('dim', !!L.lm.hidden && !this.showHidden); }
+      if (L.lm && L.lm.hidden && !this.showHidden && this.mode === 'in') show = false;
+      if (show && solid && (L.cls === 'street' || walled(L.pos))) show = false;
       if (show) {
         v.copy(L.pos).project(cam);
         if (v.z > 1 || v.z < -1 || Math.abs(v.x) > 1.05 || Math.abs(v.y) > 1.05) show = false;
@@ -366,10 +378,11 @@ export class UnitStage {
     if (this.streets) this.streets.visible = o.streets;
     if (this.future) this.future.visible = o.future;
     this.cone.visible = o.cone && this.mode !== 'win';
-    const t = o.target;
+    const t = this.mode === 'in' ? 'hidden' : o.target;
     this.tMesh.visible = t !== 'hidden';
     this.tMat.opacity = t === 'faint' ? 0.2 : 1; this.tMat.depthWrite = t !== 'faint'; this.tMesh.castShadow = t === 'solid';
-    this.tEdges.visible = t !== 'solid'; this.tEdgeMat.opacity = t === 'hidden' ? 0.45 : 0.9;
+    this.tEdges.visible = t !== 'solid' && this.mode !== 'in'; this.tEdgeMat.opacity = t === 'hidden' ? 0.45 : 0.9;
+    if (this.interior) this.interior.group.visible = this.mode === 'in' || o.target !== 'solid';
     this.dirty = true;
   }
   setPalette() {
@@ -399,7 +412,9 @@ export class UnitStage {
     const d = new THREE.Vector3(Math.sin(s.az * DEG) * Math.cos(s.alt * DEG), Math.sin(s.alt * DEG), -Math.cos(s.az * DEG) * Math.cos(s.alt * DEG));
     this.sunDir = d;
     const up = s.alt > 0, k = Math.max(0, Math.min(1, s.alt / 30));
-    this.sunL.position.copy(this.center).addScaledVector(d, 2000);
+    const focus = this.mode === 'in' && this.interior ? this.interior.group.position : this.center;
+    this.sunL.target.position.copy(focus); this.sunL.target.updateMatrixWorld();
+    this.sunL.position.copy(focus).addScaledVector(d, 2000);
     this.sunL.color.copy(mix(pal.sun, pal.white, 0.35 + 0.6 * k));
     this.sunL.intensity = up ? pal.sunMax * (0.35 + 0.65 * Math.sin((Math.min(Math.max(s.alt, 0), 60) / 60) * Math.PI / 2)) : 0;
     const zen = skyAt(pal.sky.zen, s.alt), hor = skyAt(pal.sky.hor, s.alt);
@@ -418,34 +433,81 @@ export class UnitStage {
     this.dirty = true;
   }
   /** w: {x,y,z,fx,fy}, az: window bearing; floorZ / cmpZ: slab heights; fh floor height. */
-  setWindow(w, az, floorZ, cmpZ, fh, label) {
-    this.win = { ...w, az };
+  setWindow(w, az, floorZ, cmpZ, fh, label, panes = [0]) {
+    this.win = { ...w, az, floorZ }; this.setPanes(panes);
     const n = new THREE.Vector3(Math.sin(az * DEG), 0, -Math.cos(az * DEG));
     this.marker.position.copy(W3(w.fx, w.fy, w.z)).addScaledVector(n, 0.35);
     this.marker.lookAt(this.marker.position.clone().add(n));
     this.band.position.y = floorZ; this.band.scale.set(1, Math.max(0.6, fh * 0.92), 1);
     this.cmpBand.position.y = cmpZ; this.cmpBand2.position.y = cmpZ + fh;
     this.cone.position.copy(W3(w.x, w.y, w.z)); this.cone.rotation.z = (90 - az) * DEG - Math.PI / 3;
+    this.placeInterior();
     if (this.winLab) { this.winLab.pos.copy(W3(w.fx, w.fy, w.z + 3)); this.winLab.el.querySelector('span').textContent = label; this.winLab.w = 0; requestAnimationFrame(() => { this.winLab.w = this.winLab.el.offsetWidth; this.winLab.h = this.winLab.el.offsetHeight; }); }
     this.dirty = true;
   }
   /** Sun ray from the window: to the sky when lit, to the wall that blocks it otherwise. */
   setRay(state, hit) {
     const show = this.opts.ray && this.win && this.lastSun && this.lastSun.alt > 0 && state !== 'behind';
-    this.ray.visible = !!show && this.mode !== 'win'; this.hitDot.visible = false;
+    this.ray.visible = !!show && this.mode !== 'win' && this.mode !== 'in'; this.hitDot.visible = false;
     if (this.blockEdges) { this.scene.remove(this.blockEdges); this.blockEdges.geometry.dispose(); this.blockEdges = null; }
     if (!show) { this.dirty = true; return; }
     const o = W3(this.win.x, this.win.y, this.win.z), d = this.sunDir;
     let len = 520;
-    if (hit) { len = hit.dist / Math.max(0.05, Math.cos(this.lastSun.alt * DEG)); this.hitDot.position.copy(o).addScaledVector(d, len); this.hitDot.visible = this.mode !== 'win'; }
+    if (hit) { len = hit.dist / Math.max(0.05, Math.cos(this.lastSun.alt * DEG)); this.hitDot.position.copy(o).addScaledVector(d, len); this.hitDot.visible = this.mode !== 'win' && this.mode !== 'in'; }
     this.ray.position.copy(o); this.ray.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), d); this.ray.scale.set(1, len, 1);
     this.rayMat.color.copy(hit ? this.pal.bad : this.pal.sun);
-    if (hit && hit.bi != null && hit.bi !== this.data.ti && this.data.B[hit.bi] && this.mode !== 'win') {
+    if (hit && hit.bi != null && hit.bi !== this.data.ti && this.data.B[hit.bi] && this.mode !== 'win' && this.mode !== 'in') {
       this.blockEdges = new THREE.LineSegments(this.edgeGeo([hit.bi], true), new THREE.LineBasicMaterial({ color: this.pal.bad, transparent: true, opacity: 0.9 }));
       this.blockEdges.renderOrder = 6; this.scene.add(this.blockEdges);
     }
     this.dirty = true;
   }
+  /** Bay window: one pane per bearing offset, as a small fan of glass with short rays out of each pane. */
+  setPanes(panes) {
+    const key = (panes || [0]).join(',');
+    if (this.fan.userData.key === key) return;
+    this.fan.userData.key = key; this.panes = panes || [0];
+    while (this.fan.children.length) { const c = this.fan.children.pop(); c.geometry?.dispose(); }
+    if (this.panes.length < 2) { this.marker.children[0].visible = this.marker.children[2].visible = true; this.dirty = true; return; }
+    this.marker.children[0].visible = this.marker.children[2].visible = false;
+    const lineMat = this.fanLine || (this.fanLine = new THREE.LineBasicMaterial({ color: this.pal.sun, transparent: true, opacity: 0.85, depthWrite: false }));
+    const maxO = Math.max(...this.panes.map((o) => Math.abs(o))) || 45;
+    for (const o of this.panes) {
+      const side = o === 0 ? 0 : -Math.sign(o), wPane = o === 0 ? 2.2 : 1.3;
+      const g = new THREE.PlaneGeometry(wPane, 2.3), m = new THREE.Mesh(g, this.paneMat);
+      m.position.set(side * (1.1 + 0.45 * Math.abs(o) / maxO), 0, o === 0 ? 0.9 : 0.45); m.rotation.y = -o * DEG; this.fan.add(m);
+      const n = new THREE.Vector3(Math.sin(-o * DEG), 0, Math.cos(-o * DEG));
+      const a = m.position.clone(), b = a.clone().addScaledVector(n, 14);
+      this.fan.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([a, b]), lineMat));
+    }
+    this.dirty = true;
+  }
+
+  // ---------------------------------------------------------------- the apartment inside the city
+  /** info: buildInterior() result, or null to remove it. */
+  setInterior(info) {
+    if (this.interior) { this.scene.remove(this.interior.group); disposeTree(this.interior.group); }
+    this.interior = info || null;
+    if (info) { this.scene.add(info.group); this.placeInterior(); }
+    this.applyMode(); this.dirty = true;
+  }
+  /** Put the shell at the window's facade point, slab height and facade bearing (walls 0.15 m inside the outline). */
+  placeInterior() {
+    if (!this.interior || !this.win) return;
+    const w = this.win, az = w.az, nx = Math.sin(az * DEG), ny = Math.cos(az * DEG);
+    this.interior.group.position.copy(W3(w.fx - nx * 0.15, w.fy - ny * 0.15, w.floorZ));
+    this.interior.group.rotation.set(0, -az * DEG, 0);
+    this.interior.group.updateMatrixWorld(true); this.dirty = true;
+  }
+  /** Standing point and look bearing for the interior camera at window k of the shell. */
+  setInteriorEye(k) {
+    const I = this.interior; if (!I) return;
+    const w = I.windows[k] || I.windows.find((x) => x.facade) || I.windows[0];
+    if (!w) { this.inEye = null; return; }
+    this.inEye = { local: new THREE.Vector3(w.eye[0], 1.6, w.eye[1]), off: w.bearingOff };
+    this.dirty = true;
+  }
+
   select(bi) {
     if (this.selEdges) { this.scene.remove(this.selEdges); this.selEdges.geometry.dispose(); this.selEdges = null; }
     if (bi != null && this.data.B[bi]) {
@@ -483,14 +545,34 @@ export class UnitStage {
   setMode(m) {
     const prev = this.mode; this.mode = m;
     this.controls.enabled = m === 'orbit' || m === 'top'; this.planControls.enabled = m === 'plan';
-    if (m === 'top') this.topDown(prev !== 'plan' && prev !== 'win');
+    if (m === 'top') this.topDown(prev !== 'plan' && prev !== 'win' && prev !== 'in');
     if (m === 'orbit' && (prev === 'top' || prev === 'orbit')) this.resetOrbit(true);
     if (m === 'plan') this.resetPlan();
-    this.marker.visible = this.band.visible = m !== 'win';
-    this.cmpBand.visible = this.cmpBand2.visible = m === 'orbit' || m === 'top';
-    this.applyOpts();
+    this.applyMode();
   }
-  activeCam() { return this.mode === 'win' ? this.winCam : this.mode === 'plan' ? this.planCam : this.orbitCam; }
+  /** Per-mode visibility: inside the apartment the target prism, floor bands and window marker step aside
+   *  and the sun's shadow camera tightens around the unit so the city's shadows land sharply on the floor. */
+  applyMode() {
+    const m = this.mode, inside = m === 'in';
+    this.marker.visible = this.band.visible = m !== 'win' && !inside;
+    this.cmpBand.visible = this.cmpBand2.visible = m === 'orbit' || m === 'top';
+    if (this.interior) this.interior.group.visible = inside || this.opts.target !== 'solid';
+    const sc = this.sunL.shadow.camera;
+    if (inside && this.interior) {
+      // bias is in shadow-depth units over a ~4 km range: keep it to a few centimetres so 20 cm walls and the
+      // ceiling still cast (the city-scale bias would let the sun through them)
+      const r = 34; Object.assign(sc, { left: -r, right: r, top: r, bottom: -r });
+      this.sunL.shadow.normalBias = 0.02; this.sunL.shadow.bias = -0.000004;
+    } else {
+      Object.assign(sc, { left: -560, right: 560, top: 560, bottom: -560 });
+      this.sunL.shadow.normalBias = 0.6; this.sunL.shadow.bias = -0.00035;
+    }
+    sc.updateProjectionMatrix();
+    this.winCam.near = inside ? 0.05 : 0.3; this.winCam.updateProjectionMatrix();
+    this.applyOpts();
+    if (this.lastSun) this.setSun(this.lastSun);
+  }
+  activeCam() { return this.mode === 'win' || this.mode === 'in' ? this.winCam : this.mode === 'plan' ? this.planCam : this.orbitCam; }
   resize() {
     const w = this.el.clientWidth, h = this.el.clientHeight; if (!w || !h) return;
     this.renderer.setSize(w, h, false);
@@ -520,6 +602,10 @@ export class UnitStage {
       const az = (this.win.az + this.look.yaw) * DEG, pt = this.look.pitch * DEG;
       cam.position.copy(W3(this.win.x, this.win.y, this.win.z)); cam.fov = this.look.fov; cam.updateProjectionMatrix();
       cam.lookAt(cam.position.clone().add(new THREE.Vector3(Math.sin(az) * Math.cos(pt), Math.sin(pt), -Math.cos(az) * Math.cos(pt))));
+    } else if (this.mode === 'in' && this.interior && this.inEye && this.win) {
+      const az = (this.win.az + this.inEye.off + this.look.yaw) * DEG, pt = (this.look.pitch - 6) * DEG;
+      cam.position.copy(this.interior.group.localToWorld(this.inEye.local.clone())); cam.fov = this.look.fov; cam.updateProjectionMatrix();
+      cam.lookAt(cam.position.clone().add(new THREE.Vector3(Math.sin(az) * Math.cos(pt), Math.sin(pt), -Math.cos(az) * Math.cos(pt))));
     }
     const fog = this.scene.fog;
     if (this.mode === 'plan' || this.mode === 'top') { fog.near = 1e5; fog.far = 2e5; } else { fog.near = 1100; fog.far = 4200; }
@@ -541,6 +627,25 @@ export class UnitStage {
     let lo = 0, hi = starts.length - 1;
     while (lo < hi) { const mid = (lo + hi + 1) >> 1; if (starts[mid] <= v) lo = mid; else hi = mid - 1; }
     return ids[lo];
+  }
+  // ---------------------------------------------------------------- export
+  /** Binary glTF of the city, this building, streets, proposed buildings and the apartment shell, with the
+   *  model's provenance in the root's userData (extras). Y up, metres, origin at the site origin. */
+  async exportGLB(meta = {}) {
+    const { GLTFExporter } = await import('three/addons/exporters/GLTFExporter.js');
+    const root = new THREE.Group(); root.name = meta.name || 'site'; root.userData = meta;
+    const city = new THREE.Group(); city.name = 'city';
+    const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9 });
+    this.city.forEach((m, i) => { const c = new THREE.Mesh(m.geometry, mat); c.name = i ? 'city-far' : 'city-near'; city.add(c); });
+    const t = new THREE.Mesh(this.tMesh.geometry, new THREE.MeshStandardMaterial({ color: this.pal.accent, roughness: 0.6 })); t.name = 'this-building';
+    root.add(city, t);
+    if (this.streets) { const s = new THREE.Mesh(this.streets.geometry, new THREE.MeshStandardMaterial({ color: this.pal.street, roughness: 1 })); s.name = 'streets'; root.add(s); }
+    if (this.future) { const f = new THREE.Group(); f.name = 'proposed'; this.future.children.forEach((c) => { if (c.isMesh) f.add(new THREE.Mesh(c.geometry, new THREE.MeshStandardMaterial({ color: this.pal.warn, transparent: true, opacity: 0.35 }))); }); root.add(f); }
+    if (this.interior) { const a = this.interior.group.clone(); a.visible = true; a.name = 'apartment'; a.traverse((o) => { o.visible = true; }); root.add(a); }
+    const w = this.win;
+    if (w) { const m = new THREE.Mesh(new THREE.PlaneGeometry(3.4, 2.3), new THREE.MeshStandardMaterial({ color: this.pal.sun, emissive: this.pal.sun, side: THREE.DoubleSide })); m.position.copy(this.marker.position); m.quaternion.copy(this.marker.quaternion); m.name = 'window'; root.add(m); }
+    root.updateMatrixWorld(true);
+    return new Promise((res, rej) => new GLTFExporter().parse(root, res, rej, { binary: true }));
   }
   dispose() { if (this.scene) disposeTree(this.scene); this.controls?.dispose(); this.planControls?.dispose(); }
 }
