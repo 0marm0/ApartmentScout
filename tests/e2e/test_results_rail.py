@@ -689,14 +689,14 @@ def test_worker_scores_exactly_like_rescore(open_page) -> None:
     p = s.page
     _wait_worker(s)
     out = p.evaluate("""async () => {
-      const a = await import('/js/app.js'), rs = [...document.querySelectorAll('#rail [data-w]')];
+      const a = await import('/js/app.js'), live = await import('/js/features/rescore-live.js'), rs = [...document.querySelectorAll('#rail [data-w]')];
       const raf = () => new Promise((r) => requestAnimationFrame(r));
       const sig = () => JSON.stringify(a.S.listings.map((L) => [L._s, L._rank, L._ranks]));
       const bad = [];
       let seed = 11; const rnd = () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 2 ** 32);
       for (let round = 0; round < 6; round++) {
         rs.forEach((r) => { r.value = String(Math.round(rnd() * 40)); r.dispatchEvent(new Event('input', { bubbles: true })); });
-        await new Promise((r) => setTimeout(r, 160));        // let the worker answer
+        for (let t = 0; t < 200 && (live.busy() || t < 2); t++) await new Promise((r) => setTimeout(r, 25));   // let the worker answer (slow runners take longer)
         const fromWorker = sig();
         a.rescore();                                          // the main-thread reference on the same weights
         if (sig() !== fromWorker) bad.push(round);

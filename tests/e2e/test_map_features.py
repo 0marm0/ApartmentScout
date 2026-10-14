@@ -197,7 +197,7 @@ def test_split_view_follows_the_table_and_links_rows_and_pins(open_page, webgl: 
     n_rows = pg.evaluate(f"async () => {APP}.filtered().length")
     assert pg.evaluate("() => window.__asSplitMap.getSource('sp-pins')._data.features.length") == n_rows
     pg.evaluate(f"async () => {APP}.setFilter('maxCommute', 15)")
-    pg.wait_for_function(f"async (n) => window.__asSplitMap.getSource('sp-pins')._data.features.length !== n", arg=n_rows, timeout=10000)
+    pg.wait_for_function(f"async () => window.__asSplitMap.getSource('sp-pins')._data.features.length === {APP}.filtered().length && {APP}.filtered().length !== {n_rows}", timeout=30000)
     assert pg.evaluate("() => window.__asSplitMap.getSource('sp-pins')._data.features.length") == pg.evaluate(f"async () => {APP}.filtered().length")
     # hovering a row pulses its pin and previews its route
     pg.wait_for_timeout(600)
