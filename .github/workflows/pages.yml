@@ -38,6 +38,8 @@ jobs:
           cp docs/images/*.png _site/images/
           cp dashboard/assets/*.svg _site/assets/
           cp -R dashboard/. _site/demo/
+          # listing photos of the example search (owner cleared; see docs/gallery/manifest.json policy)
+          if [ -d examples/nyc-2026/media ]; then cp -R examples/nyc-2026/media _site/demo/media; fi
           # never publish private or scratch folders, even if they ever get committed
           rm -rf _site/demo/data-private _site/demo/_mockup
           sed -i "s#__REPO__#${REPO_URL}#g; s#__SITE__#${SITE_URL}#g" _site/index.html

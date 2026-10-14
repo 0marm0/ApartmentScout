@@ -279,6 +279,10 @@ function drawTags() {
   F.filter((L) => isSaved(L.id) || L.favorite).forEach((L) => pick.set(L.id, L));
   if (S.sel) { const L = S.listings.find((x) => x.id === S.sel); if (L?.lat != null) pick.set(L.id, L); }
   for (const L of pick.values()) {
+    // MapLibre positions a marker by setting `transform` on its root element, so the root stays unstyled and the
+    // tag (which animates its own transform on hover and selection) lives inside it; otherwise tags drift on pan.
+    const root = document.createElement('div');
+    root.className = 'tag-anchor';
     const el = document.createElement('button');
     el.type = 'button';
     el.className = `price-tag ${S.sel === L.id ? 'sel' : ''} ${isSaved(L.id) || L.favorite ? 'fav' : ''}`;
@@ -286,7 +290,8 @@ function drawTags() {
     el.setAttribute('aria-label', `${label(L)}, ${money(cost(L))} a month`);
     el.innerHTML = `<i style="--c:${scoreColor(score(L))}">${Math.round(score(L) ?? 0)}</i>${isSaved(L.id) ? '<svg class="st" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1.6l1.9 4 4.4.5-3.3 3 .9 4.3L8 11.2 4.1 13.4 5 9.1 1.7 6.1l4.4-.5z"/></svg>' : ''}${moneyShort(cost(L))}`;
     el.addEventListener('click', (e) => { e.stopPropagation(); openDrawer(L.id); });
-    markers.push(new maplibregl.Marker({ element: el, anchor: 'bottom', offset: [0, -6] }).setLngLat([L.lon, L.lat]).addTo(map));
+    root.append(el);
+    markers.push(new maplibregl.Marker({ element: root, anchor: 'bottom', offset: [0, -6] }).setLngLat([L.lon, L.lat]).addTo(map));
   }
   declutter();
 }

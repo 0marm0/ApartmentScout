@@ -1,7 +1,7 @@
 // ApartmentScout dashboard core: data loading, shared state, live ranking, filters rail, result cards,
 // listing drawer, saved picks, router, theme and keyboard shortcuts. Views live in their own modules and
 // talk to the core through the exports below and the event bus (on/emit).
-import { $, esc, money, moneyShort, safeUrl, scoreColor, ring, unitGlyph, bullets, bullet, routeNames, ICONS, toast, LINE_COLORS, aerialHTML, imagesOf, walkMinutes, routeBadge, legBadges, miles } from './util.js';
+import { $, esc, money, moneyShort, safeUrl, scoreColor, ring, unitGlyph, bullets, bullet, routeNames, ICONS, toast, LINE_COLORS, aerialHTML, imagesOf, imgFallback, walkMinutes, routeBadge, legBadges, miles } from './util.js';
 
 export const store = {
   get(k, d) { try { const v = localStorage.getItem('as:' + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
@@ -294,7 +294,7 @@ function modesHTML(L) {
   return `<div class="c-modes">${chip('walk', ICONS.walk, m.walk, 'Walk')}${chip('subway', ICONS.train, m.subway, 'Subway')}${chip('bus', ICONS.bus, m.bus, 'Bus')}<span class="line-bullets">${m.legs ? legBadges(m.legs, 3) : bullets(m.route, 3)}</span><span class="to">min to ${esc(d.name)}</span></div>`;
 }
 function mediaHTML(L, im) {
-  if (im.own.length) return `<img src="${esc(im.own[0])}" alt="" loading="lazy" referrerpolicy="no-referrer"><span class="nph">${im.own.length} photo${im.own.length > 1 ? 's' : ''}</span>`;
+  if (im.own.length) return `<img src="${esc(im.own[0])}" alt="" loading="lazy" referrerpolicy="no-referrer"${imgFallback(L, 0)}><span class="nph">${im.own.length} photo${im.own.length > 1 ? 's' : ''}</span>`;
   if (im.building.length) return `<img src="${esc(im.building[0].url)}" alt="" loading="lazy" referrerpolicy="no-referrer"><span class="kind">Building</span>`;
   if (L.lat != null) return `${aerialHTML(L, 136, 108, 18)}<span class="kind">Aerial</span>`;
   return `<div class="glyph">${unitGlyph(L)}</div>`;
@@ -436,7 +436,7 @@ export function openDrawer(id, opt = {}) {
   const obs = (L.commute_observations || []).map((o) => `<div class="leg"><span class="ic walk"></span><span>${esc(o.provider || 'Checked')} ${esc(o.mode || '')}${o.departure ? ', ' + esc(o.departure) : ''}</span><span class="m">${esc(o.minutes)} min</span></div>`).join('');
   const range = s.range && s.range[0] !== s.range[1] ? `range ${Math.round(s.range[0])}–${Math.round(s.range[1])}` : '';
   $('drawer').innerHTML = `<div class="d-scroll">
-    <div class="d-hero">${slides.length ? `<div class="track" id="dTrack">${slides.map((x, i) => `<img src="${esc(x.url)}" alt="${esc(x.kind)} ${i + 1} of ${esc(label(L))}" referrerpolicy="no-referrer" class="${x.plan ? 'plan' : ''}" ${i > 1 ? 'loading="lazy"' : ''}>`).join('')}</div><div class="shade"></div><span class="count" id="dCount">1 / ${slides.length}</span><span class="credit" id="dCredit"></span>`
+    <div class="d-hero">${slides.length ? `<div class="track" id="dTrack">${slides.map((x, i) => `<img src="${esc(x.url)}" alt="${esc(x.kind)} ${i + 1} of ${esc(label(L))}" referrerpolicy="no-referrer" class="${x.plan ? 'plan' : ''}" ${i > 1 ? 'loading="lazy"' : ''}${x.kind === 'Photo' ? imgFallback(L, i) : ''}>`).join('')}</div><div class="shade"></div><span class="count" id="dCount">1 / ${slides.length}</span><span class="credit" id="dCredit"></span>`
       : L.lat != null ? `${aerialHTML(L, 448, 232, 19)}<div class="shade"></div><span class="kind">Aerial view${L.floor ? ` · floor ${Math.round(L.floor)}` : ''}${L.exposure?.length ? ' · faces ' + esc(L.exposure.join('/')) : ''}</span>` : unitGlyph(L, 448, 232)}
       <div class="hero-btns"><button type="button" id="dSave" aria-pressed="${!!my.saved}" aria-label="${my.saved ? 'Remove from picks' : 'Save to picks'}" style="${my.saved ? 'color:var(--fav)' : ''}">${my.saved ? ICONS.star : ICONS.starO}</button><button type="button" id="dClose" aria-label="Close">${ICONS.x}</button></div></div>
     <div class="d-head"><div class="t"><h2>${esc(L.building || L.address)} <span>${esc(L.unit || '')}</span></h2><p>${esc(L.address || '')}${L.neighborhood ? ' · ' + esc(L.neighborhood) : ''}</p></div>${ring(score(L), 64, 5)}</div>

@@ -256,7 +256,7 @@ def _listing_photo_problems(rel: str, data: object, policy: dict | None = None) 
         if L.get("photos"):
             probs.append(("INFO:" if (policy or {}).get("listing_photo_urls") == "allowed" else "") + f"{rel}: {lid} has listing photos")
         if L.get("photos_local"):
-            probs.append(f"{rel}: {lid} has local photo copies (photos_local)")
+            probs.append(("INFO:" if (policy or {}).get("listing_photo_files") == "allowed" else "") + f"{rel}: {lid} has local photo copies (photos_local)")
         for bp in L.get("building_photos") or []:
             if isinstance(bp, dict) and bp.get("local"):
                 probs.append(f"{rel}: {lid} has a local building-photo copy")
@@ -272,10 +272,14 @@ def _listing_photo_problems(rel: str, data: object, policy: dict | None = None) 
 def check_photos(repo: Path, files: list[str]) -> list[Finding]:
     found: list[Finding] = []
     scope = [f for f in files if f.startswith(("examples/", "dashboard/data/", "dist/"))]
+    allow_media, media_ok = _photo_policy(repo).get("listing_photo_files") == "allowed", 0
     for rel in scope:
         parts = rel.split("/")
         ext = Path(rel).suffix.lower()
         if "media" in parts[:-1] or "photos" in parts[:-1]:
+            if allow_media and re.match(r"^examples/[^/]+/media/", rel):
+                media_ok += 1
+                continue
             found.append(Finding("FAIL", "photos", f"{rel}: media or photos folder in tracked example data"))
         elif ext in IMAGE_EXT and not re.match(r"^examples/[^/]+/research/charts/", rel):
             found.append(Finding("FAIL", "photos", f"{rel}: image file in example data"))
@@ -298,6 +302,9 @@ def check_photos(repo: Path, files: list[str]) -> list[Finding]:
             text = (repo / rel).read_text(encoding="utf-8", errors="replace")
             if '"photos_local"' in text or "data:image/jpeg" in text:
                 found.append(Finding("FAIL", "photos", f"{rel}: embeds local photo paths or JPEG data"))
+    if media_ok:
+        found.append(Finding("INFO", "photos", f"{media_ok} listing photo files under examples/*/media "
+                             f"(allowed by the owner's policy in docs/gallery/manifest.json)"))
     if not any(f.level == "FAIL" for f in found):
         found.append(Finding("PASS", "photos", f"{len(scope)} example and dashboard data files"))
     return found

@@ -158,7 +158,7 @@ section[id] { position: relative; }
 h2 { margin-top: 14px; font-size: clamp(32px, 4.2vw, 52px); line-height: 1.06; font-weight: 600; letter-spacing: -0.035em; text-wrap: balance; }
 .agents h2, .start h2 { font-size: clamp(30px, 3.4vw, 44px); }
 .sub { margin-top: 18px; font-size: 18px; line-height: 1.6; color: var(--ink-2); max-width: 620px; text-wrap: pretty; }
-.sub code, .agents code { font-size: .88em; padding: 1px 6px; border-radius: var(--r-xs); background: var(--surface-2); border: 1px solid var(--line); color: var(--ink); }
+.sub code, .agents code, .feat-copy code, .cards4 code { font-size: .88em; padding: 1px 6px; border-radius: var(--r-xs); background: var(--surface-2); border: 1px solid var(--line); color: var(--ink); }
 
 /* --------------------------------------------------------------- features */
 .feat {
@@ -198,6 +198,11 @@ h2 { margin-top: 14px; font-size: clamp(32px, 4.2vw, 52px); line-height: 1.06; f
 .feat-media.stack { padding-bottom: 12%; }
 .feat-media.stack .inset { position: absolute; width: 46%; right: -6%; bottom: 0; box-shadow: var(--shadow-3), 0 0 0 1px var(--line); }
 .feat.flip .feat-media.stack .inset { right: auto; left: -6%; }
+/* Screenshots that are not 16:10: .mid centres the crop, .tall shows the top of a tall panel. */
+.frame img.mid, .shot img.mid { object-position: center; }
+.feat-media.stack .inset.tall { width: 34%; right: -4%; }
+.feat-media.stack .inset.tall img { aspect-ratio: 448 / 540; object-position: top; }
+.cards4.extras { margin-top: 120px; }
 
 /* --------------------------------------------------------------- agents */
 .agents-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 72px; align-items: start; }
@@ -397,6 +402,8 @@ h2 { margin-top: 14px; font-size: clamp(32px, 4.2vw, 52px); line-height: 1.06; f
   .feat { margin-top: 80px; gap: 28px; }
   .sec-h + .feat { margin-top: 56px; }
   .feat-media.stack .inset, .feat.flip .feat-media.stack .inset { left: auto; right: -4px; width: 52%; }
+  .feat-media.stack .inset.tall { width: 40%; }
+  .cards4.extras { margin-top: 80px; }
   .skills { grid-template-columns: 1fr; }
   .console-body { padding: 18px; }
   .code pre { font-size: 12px; padding: 14px; }

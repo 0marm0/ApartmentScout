@@ -228,7 +228,8 @@ export function aerialHTML(L, w = 136, h = 108, z = 18) {
 }
 /** The best image list for a listing: its own photos first, then licensed building photos. */
 export function imagesOf(L) {
-  const own = [...(L.photos_local || []), ...(L.photos || [])].map(safeUrl).filter(Boolean);
+  // local copies first, but only as many as there are; each local copy falls back to its original link (imgFallback)
+  const own = [...(L.photos_local || []), ...(L.photos || []).slice((L.photos_local || []).length)].map(safeUrl).filter(Boolean);
   const bld = (L.building_photos || []).map((p) => ({ ...p, url: safeUrl(p.url) })).filter((p) => p.url);
   return { own: [...new Set(own)], building: bld };
 }
@@ -250,3 +251,9 @@ export function routeBadge(leg) {
 }
 export const legBadges = (legs = [], max = 3) => legs.filter((l) => l.route).slice(0, max).map(routeBadge).join('');
 export const miles = (m) => (m == null ? '' : m < 160 ? `${Math.round(m * 3.28084 / 10) * 10} ft` : `${(m / 1609.34).toFixed(m < 1609 ? 1 : 1)} mi`);
+
+/** onerror attribute for an <img>: swap a missing local copy for the listing's original photo link once. */
+export function imgFallback(L, i = 0) {
+  const loc = (L.photos_local || [])[i], web = safeUrl((L.photos || [])[i]);
+  return loc && web ? ` onerror="this.onerror=null;this.src='${esc(web)}'"` : '';
+}

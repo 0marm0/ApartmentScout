@@ -255,6 +255,10 @@ select.sel { appearance: none; height: 28px; padding: 0 26px 0 10px; border-radi
   font: 650 12px/1 var(--font-sans); font-variant-numeric: tabular-nums; letter-spacing: -0.01em; white-space: nowrap;
   transition: transform var(--t-base) var(--ease-spring), background var(--t-fast), color var(--t-fast), box-shadow var(--t-base);
 }
+.tag-anchor { pointer-events: none; }
+.tag-anchor > .price-tag { pointer-events: auto; transform-origin: 50% 100%; }
+.tag-anchor:has(.price-tag:hover), .tag-anchor:has(.price-tag.hl) { z-index: 5; }
+.tag-anchor:has(.price-tag.sel) { z-index: 6; }
 .price-tag::after { content: ""; position: absolute; left: 50%; bottom: -5px; width: 8px; height: 8px; margin-left: -4px; background: inherit;
   border-right: 1px solid var(--line-strong); border-bottom: 1px solid var(--line-strong); transform: rotate(45deg); border-radius: 0 0 2px 0; }
 .price-tag i { display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; font: 700 9.5px/1 var(--font-sans); font-style: normal;

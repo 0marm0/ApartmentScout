@@ -392,6 +392,9 @@ def standalone(data_dir: Path, dest: Path) -> Path:
     data = {}
     for f in sorted(data_dir.rglob("*.json")):
         data["data/" + f.relative_to(data_dir).as_posix()] = json.loads(f.read_text())
+    if not (dest.parent / "media").is_dir() and isinstance(data.get("data/listings.json"), list):
+        # local photo copies are not embedded: without a media/ folder next to the file use the photo links
+        data["data/listings.json"] = [{k: v for k, v in L.items() if k != "photos_local"} for L in data["data/listings.json"]]
     blob = json.dumps(data, separators=(",", ":"), default=str).replace("</", "<\\/")
     js = bundle.read_text().replace("</script", "<\\/script")
     # inline every local stylesheet (tokens, shell and the per-view files) in document order

@@ -922,6 +922,7 @@
   "listing_photo_urls": "allowed",
   "gallery": "all images public",
   "decided": "2026-10-13",
-  "reason": "Owner decision: the repository is private and permission was obtained. Re-check before making the repository public."
+  "reason": "Owner decision on 2026-10-13: the repository is private and permission was obtained, so listing photos (hot-linked URLs and web-sized copies under examples/<search>/media) and every gallery image may be published. Re-check before making the repository public.",
+  "listing_photo_files": "allowed"
  }
 }
