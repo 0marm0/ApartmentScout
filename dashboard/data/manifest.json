@@ -1,10 +1,11 @@
 {
- "generated": "2026-10-13T22:37:38",
+ "generated": "2026-10-13T21:07:40",
  "version": "0.1.0",
  "search": "Manhattan 1BR, fall 2026",
  "layers": [
   "commute-office.json",
-  "noise.json"
+  "noise.json",
+  "transit-lines.json"
  ],
  "sites": [
   "atlas-38d",

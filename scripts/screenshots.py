@@ -48,6 +48,7 @@ def serve(directory: Path, port: int):
             pass
 
     http.server.ThreadingHTTPServer.allow_reuse_address = True
+    http.server.ThreadingHTTPServer.request_queue_size = 128
     httpd = http.server.ThreadingHTTPServer(("127.0.0.1", port), partial(Quiet, directory=str(directory)))
     threading.Thread(target=httpd.serve_forever, daemon=True).start()
     return httpd

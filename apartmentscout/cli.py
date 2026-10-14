@@ -202,8 +202,7 @@ def cmd_dossier(args):
 
 
 def cmd_site(args):
-    from .geo.buildings import build_site, fetch_nyc, fetch_osm, nyc_landmark_names
-    from .sun import pick_face, sun_study, target_faces
+    from .geo.site import make_site
     ws = ws_from(args)
     crit = ws.criteria()
     Ls = _listings(ws)
@@ -212,40 +211,30 @@ def cmd_site(args):
         sys.exit("Listing has no coordinates. Run `apartmentscout geocode` first.")
     city = crit["search"].get("city")
     log(f"  footprints around {L['id']} ({'NYC Open Data' if city == 'nyc' else 'OpenStreetMap'})")
-    if city == "nyc":
-        bs = fetch_nyc(L["lat"], L["lon"], args.radius)
-        names = nyc_landmark_names([b["bbl"] for b in sorted(bs, key=lambda b: -b["height"])[:40]])
-        site = build_site(L, bs, "NYC Building Footprints", names, city_profile(city).get("landmarks"))
-    else:
-        bs = fetch_osm(L["lat"], L["lon"], args.radius)
-        site = build_site(L, bs, "OpenStreetMap contributors (ODbL)", None,
-                          (crit.get("landmarks") or []) + (city_profile(city).get("landmarks") or []))
-    floor = args.floor or int(L.get("floor") or 5)
-    faces = target_faces(site)
-    face = None
-    if args.bearing is not None:
-        face = min(faces, key=lambda f: abs((f["bearing"] - args.bearing + 540) % 360 - 180))
-    else:
-        face = pick_face(faces, L.get("exposure"))
-    site["faces"] = [{k: f[k] for k in ("i", "bearing", "length")} for f in faces]
+    lms = (crit.get("landmarks") or []) + (city_profile(city).get("landmarks") or [])
+    site, face, timings = make_site(L, crit, cache_dir=ws.cache_dir / "site", floor=args.floor, bearing=args.bearing,
+                                    t=args.position, radius=args.radius, streets=not args.no_streets,
+                                    future=not args.no_future, refresh=args.refresh, landmarks=lms, say=log)
     if face:
-        tz = crit["search"].get("timezone") or "America/New_York"
-        st = sun_study(site, face, floor, tz, dt.date.today().year)
-        site["window"] = {"face": face["i"], "bearing": face["bearing"], "floor": floor, "t": 0.5}
-        site["study"] = {k: st[k] for k in ("sun_hours", "floors_table", "skyline_ahead_deg", "open_sky_share")}
-        L["site"] = {"file": f"sites/{L['id']}.json", "floor": floor, "bearing": face["bearing"],
-                     "sun_hours": st["sun_hours"], "skyline_ahead_deg": st["skyline_ahead_deg"],
-                     "open_sky_share": st["open_sky_share"]}
-        log(f"  window faces {face['bearing']:.0f} deg, floor {floor}: direct sun h/day by month {st['sun_hours']}")
+        st, w = site["study"], site["window"]
+        rng = st["sun_hours_range"]
+        L["site"] = {"file": f"sites/{L['id']}.json", "floor": w["floor"], "bearing": face["bearing"],
+                     "sun_hours": st["sun_hours"], "sun_hours_range": {"lo": rng["lo"], "hi": rng["hi"]},
+                     "skyline_ahead_deg": st["skyline_ahead_deg"], "open_sky_share": st["open_sky_share"]}
+        log(f"  window faces {face['bearing']:.0f} deg at t={w['t']}, floor {w['floor']}: "
+            f"direct sun h/day by month {st['sun_hours']}")
+        log(f"  range over facade positions {rng['positions']} and floors {rng['floors']}: "
+            f"Dec {rng['lo'][11]}-{rng['hi'][11]} h, Jun {rng['lo'][5]}-{rng['hi'][5]} h")
     else:
         L["site"] = {"file": f"sites/{L['id']}.json"}
-        log("  exposure unknown: pick the facade in the dashboard (Unit 3D tab) or pass --bearing.")
-    site["timezone"] = crit["search"].get("timezone") or "America/New_York"
+        log("  exposure unknown or only party walls match: pick the facade in the dashboard (Unit 3D tab) "
+            "or pass --bearing.")
+    log("  timings " + ", ".join(f"{k} {v:.1f}s" for k, v in timings.items()))
     (ws.sites_dir / f"{L['id']}.json").write_text(json.dumps(site, separators=(",", ":")))
     save(Ls, ws.listings_path)
     if args.charts and face:
         from .charts import sun_charts
-        for p in sun_charts(site, face, floor, ws.research_dir / "charts", L["id"]):
+        for p in sun_charts(site, face, site["window"]["floor"], ws.research_dir / "charts", L["id"]):
             log(f"  chart {p}")
 
 
@@ -354,6 +343,7 @@ def cmd_serve(args):
         def log_message(self, *a):
             pass
     http.server.ThreadingHTTPServer.allow_reuse_address = True
+    http.server.ThreadingHTTPServer.request_queue_size = 128  # the dashboard loads many files at once
     with http.server.ThreadingHTTPServer(("127.0.0.1", args.port), Quiet) as httpd:
         url = f"http://127.0.0.1:{args.port}/"
         log(f"ApartmentScout dashboard at {url}  (Ctrl+C to stop)")
@@ -405,8 +395,13 @@ def main(argv=None):
     s.add_argument("id")
     s.add_argument("--floor", type=int)
     s.add_argument("--bearing", type=float, help="window facing in degrees if exposure is unknown")
+    s.add_argument("--position", type=float, help="window position along the facade, 0..1 (default: middle of "
+                   "the facade's open stretch)")
     s.add_argument("--radius", type=float, default=600)
     s.add_argument("--charts", action="store_true", help="also write PNG charts to research/charts")
+    s.add_argument("--no-streets", action="store_true", help="skip street centrelines")
+    s.add_argument("--no-future", action="store_true", help="skip filed / permitted new buildings (NYC)")
+    s.add_argument("--refresh", action="store_true", help="ignore cached downloads")
     s = add("score", cmd_score, "score and rank listings")
     s.add_argument("--top", type=int, default=20)
     s = add("report", cmd_report, "write a markdown shortlist report")

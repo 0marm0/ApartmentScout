@@ -464,3 +464,9 @@ button.price-tag { font-family: var(--font-sans); }
 .results-h .seg { flex-wrap: nowrap; flex: none; }
 .results-h .seg button { padding: 0 9px; }
 .d-actions .btn { flex: 1 1 0; min-width: 0; padding: 0 8px; overflow: hidden; text-overflow: ellipsis; justify-content: center; }
+.isobar { display: flex; height: 10px; border-radius: 3px; overflow: hidden; gap: 1px; }
+.isobar i { flex: 1; }
+.isobar i.lim { box-shadow: inset -2px 0 0 var(--ink); }
+.isoticks { display: flex; margin-top: 4px; font: 500 var(--fs-2xs) var(--font-mono); color: var(--ink-3); }
+.isoticks span { flex: 1; text-align: right; padding-right: 1px; }
+.isoticks span.lim { color: var(--ink); font-weight: 600; }

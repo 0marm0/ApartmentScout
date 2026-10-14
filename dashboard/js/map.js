@@ -6,21 +6,21 @@ import { S, on, filtered, openDrawer, label, cost, commuteOf, loadJSON, dest, sc
 import { $, esc, money, moneyShort, safeUrl, css, scoreColor, unitGlyph, gridImage, gridValueAt, idwGrid, RAMPS, bullet } from './util.js';
 import { contours } from '../vendor/d3-contour.js';
 
-const BANDS = [10, 20, 30, 45, 60];
+const STEPS = [5, 10, 15, 20, 25, 30, 40, 50, 60];   // isochrone steps in minutes
 const layers = {};          // name -> grid json
 let map, popup, markers = [], destMarker, inited = false, active = null, heat = 'commute', vector = true, show3d = false, showLines = true;
 
 const PAL = {
   dark: { land: '#0e1116', park: '#0f1915', water: '#070b11', building: '#141820', buildingLine: '#1a1f29', minor: '#171b23', major: '#1f2530', motor: '#272e3b',
-    label: '#5f6878', hood: '#7d8697', halo: '#0e1116', waterLabel: '#34506d', rail: '#1d222b', station: '#e9edf3', stationLine: '#0e1116', ring: '#c9cfda', pinLine: '#0b0d12', caseOp: 0.55 },
+    label: '#5f6878', hood: '#a3acbb', halo: '#0e1116', waterLabel: '#34506d', rail: '#1d222b', station: '#e9edf3', stationLine: '#0e1116', ring: '#c9cfda', pinLine: '#0b0d12', caseOp: 0.55 },
   light: { land: '#f0efea', park: '#dfe9d5', water: '#c6d8e6', building: '#e4e2dc', buildingLine: '#d8d5ce', minor: '#ffffff', major: '#ffffff', motor: '#fbeecb',
-    label: '#717784', hood: '#8a8f9b', halo: '#f0efea', waterLabel: '#6c8ba6', rail: '#d9d7d0', station: '#ffffff', stationLine: '#2b303b', ring: '#3a4150', pinLine: '#ffffff', caseOp: 0.12 },
+    label: '#717784', hood: '#5d6370', halo: '#f0efea', waterLabel: '#6c8ba6', rail: '#d9d7d0', station: '#ffffff', stationLine: '#2b303b', ring: '#3a4150', pinLine: '#ffffff', caseOp: 0.12 },
 };
 const PAINT = [
   ['bg', 'background-color', 'land'], ['park', 'fill-color', 'park'], ['park2', 'fill-color', 'park'], ['water', 'fill-color', 'water'], ['waterway', 'line-color', 'water'],
   ['building', 'fill-color', 'building'], ['building', 'fill-outline-color', 'buildingLine'], ['b3d', 'fill-extrusion-color', 'building'],
   ['rd-minor', 'line-color', 'minor'], ['rd-major', 'line-color', 'major'], ['rd-motor', 'line-color', 'motor'], ['rail', 'line-color', 'rail'],
-  ['lbl-road', 'text-color', 'label'], ['lbl-road', 'text-halo-color', 'halo'], ['lbl-hood', 'text-color', 'hood'], ['lbl-hood', 'text-halo-color', 'halo'],
+  ['lbl-road', 'text-color', 'label'], ['lbl-road', 'text-halo-color', 'halo'], ['lbl-hood', 'text-color', 'hood'], ['lbl-hood', 'text-halo-color', 'halo'], ['lbl-hoods', 'text-color', 'hood'], ['lbl-hoods', 'text-halo-color', 'halo'],
   ['lbl-water', 'text-color', 'waterLabel'], ['stations', 'circle-color', 'station'], ['stations', 'circle-stroke-color', 'stationLine'],
   ['lbl-station', 'text-color', 'label'], ['lbl-station', 'text-halo-color', 'halo'], ['walk-rings', 'line-color', 'ring'], ['lbl-rings', 'text-color', 'label'], ['lbl-rings', 'text-halo-color', 'halo'],
   ['line-case', 'line-opacity', 'caseOp'],
@@ -36,16 +36,17 @@ function vectorStyle(p) {
       { id: 'bg', type: 'background', paint: { 'background-color': p.land } },
       { id: 'park', type: 'fill', source: 'omt', 'source-layer': 'landuse', filter: ['in', ['get', 'class'], ['literal', ['park', 'cemetery', 'grass', 'pitch', 'garden']]], paint: { 'fill-color': p.park } },
       { id: 'park2', type: 'fill', source: 'omt', 'source-layer': 'park', paint: { 'fill-color': p.park, 'fill-opacity': 0.9 } },
+      { id: 'building', type: 'fill', source: 'omt', 'source-layer': 'building', minzoom: 14, paint: { 'fill-color': p.building, 'fill-outline-color': p.buildingLine, 'fill-opacity': ['interpolate', ['linear'], ['zoom'], 14, 0, 15, 1] } },
+      { id: 'rail', type: 'line', source: 'omt', 'source-layer': 'transportation', filter: ['==', ['get', 'class'], 'rail'], paint: { 'line-color': p.rail, 'line-width': 1, 'line-dasharray': [3, 3] } },
+      // the commute heat is inserted here: above streets and buildings, below water, so rivers stay clear
       { id: 'water', type: 'fill', source: 'omt', 'source-layer': 'water', paint: { 'fill-color': p.water } },
       { id: 'waterway', type: 'line', source: 'omt', 'source-layer': 'waterway', paint: { 'line-color': p.water, 'line-width': 1.5 } },
-      { id: 'building', type: 'fill', source: 'omt', 'source-layer': 'building', minzoom: 14, paint: { 'fill-color': p.building, 'fill-outline-color': p.buildingLine, 'fill-opacity': ['interpolate', ['linear'], ['zoom'], 14, 0, 15, 1] } },
-      { id: 'rd-minor', type: 'line', source: 'omt', 'source-layer': 'transportation', filter: ['in', ['get', 'class'], ['literal', ['minor', 'service', 'tertiary']]], layout: { 'line-cap': 'round', 'line-join': 'round' },
-        paint: { 'line-color': p.minor, 'line-width': ['interpolate', ['exponential', 1.6], ['zoom'], 12, 0.4, 15, 3, 18, 14] } },
-      { id: 'rd-major', type: 'line', source: 'omt', 'source-layer': 'transportation', filter: ['in', ['get', 'class'], ['literal', ['primary', 'secondary', 'trunk']]], layout: { 'line-cap': 'round', 'line-join': 'round' },
+      { id: 'rd-minor', type: 'line', source: 'omt', 'source-layer': 'transportation', filter: ['all', ['!=', ['get', 'brunnel'], 'tunnel'], ['in', ['get', 'class'], ['literal', ['minor', 'service', 'tertiary']]]], layout: { 'line-cap': 'round', 'line-join': 'round' },
+        paint: { 'line-color': p.minor, 'line-opacity': 0.7, 'line-width': ['interpolate', ['exponential', 1.6], ['zoom'], 12, 0.4, 15, 3, 18, 14] } },
+      { id: 'rd-major', type: 'line', source: 'omt', 'source-layer': 'transportation', filter: ['all', ['!=', ['get', 'brunnel'], 'tunnel'], ['in', ['get', 'class'], ['literal', ['primary', 'secondary', 'trunk']]]], layout: { 'line-cap': 'round', 'line-join': 'round' },
         paint: { 'line-color': p.major, 'line-width': ['interpolate', ['exponential', 1.6], ['zoom'], 10, 0.6, 15, 5, 18, 22] } },
-      { id: 'rd-motor', type: 'line', source: 'omt', 'source-layer': 'transportation', filter: ['==', ['get', 'class'], 'motorway'], layout: { 'line-cap': 'round', 'line-join': 'round' },
+      { id: 'rd-motor', type: 'line', source: 'omt', 'source-layer': 'transportation', filter: ['all', ['!=', ['get', 'brunnel'], 'tunnel'], ['==', ['get', 'class'], 'motorway']], layout: { 'line-cap': 'round', 'line-join': 'round' },
         paint: { 'line-color': p.motor, 'line-width': ['interpolate', ['exponential', 1.6], ['zoom'], 10, 1, 15, 6, 18, 26] } },
-      { id: 'rail', type: 'line', source: 'omt', 'source-layer': 'transportation', filter: ['==', ['get', 'class'], 'rail'], paint: { 'line-color': p.rail, 'line-width': 1, 'line-dasharray': [3, 3] } },
       { id: 'b3d', type: 'fill-extrusion', source: 'omt', 'source-layer': 'building', minzoom: 14, layout: { visibility: 'none' },
         paint: { 'fill-extrusion-color': p.building, 'fill-extrusion-height': ['coalesce', ['get', 'render_height'], 10], 'fill-extrusion-base': ['coalesce', ['get', 'render_min_height'], 0], 'fill-extrusion-opacity': 0.85 } },
       { id: 'lbl-water', type: 'symbol', source: 'omt', 'source-layer': 'water_name', layout: { 'text-field': ['get', 'name:latin'], 'text-font': ['Noto Sans Italic'], 'text-size': 12, 'text-letter-spacing': 0.15 }, paint: { 'text-color': p.waterLabel } },
@@ -72,12 +73,30 @@ function customStyle() {
 }
 
 // ------------------------------------------------------------------ heat surfaces
-/** Smooth contour bands from a commute grid, clipped to the cells the router could reach. */
-function bandsImage(g) {
-  const k = 4, s = 4, { rows, cols } = g;
+/** Commute isochrones: the router grid is smoothed (Gaussian, validity-weighted), upsampled and contoured in
+ *  5-minute steps. Fills are painted to a canvas clipped to the cells the router could reach; contour lines come
+ *  back as GeoJSON (lon/lat) so MapLibre can draw them crisply with minute labels along the line. */
+function isochrones(g) {
+  const k = 4, s = 3, { rows, cols } = g, lim = dest()?.max_minutes || 30;
   const raw = g.values.map((v) => (v == null || v < 0 ? NaN : v));
-  let a = raw.slice();
-  for (let pass = 0; pass < 6; pass++) {   // borrow values from valid neighbours so interpolation at the mask edge stays sane
+  // validity-weighted Gaussian blur (sigma ~0.9 cell) so shapes follow the city, not the 150 m grid
+  const K = [0.054, 0.244, 0.403, 0.244, 0.054];
+  const blur = (src) => {
+    const tmp = new Float64Array(rows * cols), wt = new Float64Array(rows * cols), out = new Float64Array(rows * cols), ow = new Float64Array(rows * cols);
+    for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+      let a = 0, w = 0;
+      for (let d = -2; d <= 2; d++) { const cc = c + d; if (cc < 0 || cc >= cols) continue; const v = src[r * cols + cc]; if (!isNaN(v)) { a += v * K[d + 2]; w += K[d + 2]; } }
+      tmp[r * cols + c] = a; wt[r * cols + c] = w;
+    }
+    for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+      let a = 0, w = 0;
+      for (let d = -2; d <= 2; d++) { const rr = r + d; if (rr < 0 || rr >= rows) continue; a += tmp[rr * cols + c] * K[d + 2]; w += wt[rr * cols + c] * K[d + 2]; }
+      out[r * cols + c] = w > 0.05 ? a / w : NaN; ow[r * cols + c] = w;
+    }
+    return out;
+  };
+  let a = blur(raw);
+  for (let pass = 0; pass < 6; pass++) {   // extend values a few cells past the mask so interpolation at the edge stays sane
     const b = a.slice();
     for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
       const i = r * cols + c; if (!isNaN(a[i])) continue;
@@ -99,26 +118,45 @@ function bandsImage(g) {
       mask[y * W + x] = bil(raw, (v) => (isNaN(v) ? 0 : 1));
     }
   }
-  const mk = () => { const c = document.createElement('canvas'); c.width = W * s; c.height = H * s; return c; };
+  const cv = document.createElement('canvas'); cv.width = W * s; cv.height = H * s;
+  const ctx = cv.getContext('2d');
   const path = (geom) => { const p = new Path2D(); for (const poly of geom.coordinates) for (const ring of poly) { ring.forEach(([x, y], j) => (j ? p.lineTo(x * s, (H - y) * s) : p.moveTo(x * s, (H - y) * s))); p.closePath(); } return p; };
   const [clip] = contours().size([W, H]).thresholds([0.5])(mask);
-  const all = contours().size([W, H]).thresholds(BANDS.map((t) => -t))(up);   // d3 sorts thresholds: look up by value
-  const geoms = BANDS.map((t) => all.find((gg) => gg.value === -t));
-  const cv = mk(), ctx = cv.getContext('2d');
+  const all = contours().size([W, H]).thresholds(STEPS.map((t) => -t))(up);   // d3 sorts thresholds: look each up by value
+  const geoms = STEPS.map((t) => all.find((gg) => gg.value === -t));
+  const pal = stepColors(lim);
   ctx.save(); ctx.clip(path(clip), 'evenodd');
-  const colors = BANDS.map((t) => css(`--band-${t}`));
-  for (let i = BANDS.length - 1; i >= 0; i--) { ctx.fillStyle = colors[i]; ctx.fill(path(geoms[i]), 'evenodd'); }
+  for (let i = STEPS.length - 1; i >= 0; i--) { ctx.fillStyle = pal[i]; ctx.fill(path(geoms[i]), 'evenodd'); }
   ctx.restore();
-  const ov = mk(), o = ov.getContext('2d'), lim = dest()?.max_minutes || 30, light = theme() === 'light';
-  o.save(); o.clip(path(clip), 'evenodd');
-  BANDS.forEach((t, i) => {
-    o.strokeStyle = t === lim ? (light ? 'rgba(29,34,48,.85)' : 'rgba(255,255,255,.8)') : (light ? 'rgba(20,24,34,.16)' : 'rgba(255,255,255,.16)');
-    o.lineWidth = t === lim ? 3.5 : 1.6; o.setLineDash(t === lim ? [9, 7] : []); o.lineJoin = 'round'; o.lineCap = 'round';
-    o.stroke(path(geoms[i]));
+  // contour lines in lon/lat, dropping the stretches that only trace the edge of the reachable area
+  const [lo0, la0, lo1, la1] = g.bbox, inside = (x, y) => { const xi = Math.min(W - 1, Math.max(0, Math.floor(x))), yi = Math.min(H - 1, Math.max(0, Math.floor(y))); return mask[yi * W + xi] > 0.97 && up[yi * W + xi] > -110; };
+  const toLL = ([x, y]) => [+(lo0 + (x / W) * (lo1 - lo0)).toFixed(5), +(la0 + (y / H) * (la1 - la0)).toFixed(5)];
+  const features = [];
+  STEPS.forEach((t, i) => {
+    if (t > 60) return;
+    const runs = [];
+    for (const poly of geoms[i].coordinates) for (const ring of poly) {
+      let cur = [];
+      for (const pt of ring) { if (inside(pt[0], pt[1])) cur.push(toLL(pt)); else { if (cur.length > 3) runs.push(cur); cur = []; } }
+      if (cur.length > 3) runs.push(cur);
+    }
+    if (runs.length) features.push({ type: 'Feature', properties: { t, lim: t === lim, label: t === lim ? `${t} min limit` : `${t} min` }, geometry: { type: 'MultiLineString', coordinates: runs } });
   });
-  o.restore();
-  return { fill: cv.toDataURL(), lines: ov.toDataURL() };
+  return { fill: cv.toDataURL(), lines: { type: 'FeatureCollection', features } };
 }
+/** Fill colour per step: a bright-to-deep sequential ramp inside the commute limit, muted and fading beyond it. */
+function stepColors(lim) {
+  // green when close, through amber to red at and beyond the limit (the reading people expect from a commute map)
+  const light = theme() === 'light';
+  const ramp = ['#1fbf75', '#52c76b', '#9cc951', '#d4c24a', '#e8a640', '#e8803a', '#dc5a43', '#c2454c', '#9a3a52'];
+  const nIn = STEPS.filter((t) => t <= lim).length;
+  return STEPS.map((t, i) => {
+    const pos = t <= lim ? (i / Math.max(1, nIn - 1)) * 5 : 5 + (i - nIn + 1);
+    const c = ramp[Math.min(ramp.length - 1, Math.round(pos))];
+    return hexA(c, t <= lim ? (light ? 0.4 : 0.44) : (light ? 0.34 : 0.38) - (i - nIn) * 0.05);
+  });
+}
+const hexA = (h, a) => `rgba(${parseInt(h.slice(1, 3), 16)},${parseInt(h.slice(3, 5), 16)},${parseInt(h.slice(5, 7), 16)},${a})`;
 function rentGrid() {
   const like = Object.values(layers).find((g) => g?.rows);
   if (!like) return null;
@@ -133,7 +171,7 @@ function scoreGrid() {
 }
 const NOISE = (v) => RAMPS.noise.fn(v);
 function heatImages(k) {
-  if (k === 'commute') { const g = Object.values(layers).find((x) => x?.kind === 'commute'); if (!g) return null; return { g, ...bandsImage(g), opacity: +css('--band-alpha') || 0.3 }; }
+  if (k === 'commute') { const g = Object.values(layers).find((x) => x?.kind === 'commute'); if (!g) return null; const iso = isochrones(g); return { g, fill: iso.fill, iso: iso.lines, opacity: 1 }; }
   if (k === 'noise') {
     const g = layers.noise; if (!g) return null;
     const per = 12 / (g.months || 12);
@@ -145,7 +183,7 @@ function heatImages(k) {
 }
 function setHeat(k) {
   heat = k;
-  for (const id of ['heat', 'heat-lines']) if (map.getLayer(id)) map.removeLayer(id);
+  for (const id of ['heat-labels', 'heat-lines', 'heat']) if (map.getLayer(id)) map.removeLayer(id);
   for (const id of ['heat', 'heat-lines']) if (map.getSource(id)) map.removeSource(id);
   active = null;
   const im = heatImages(k);
@@ -155,11 +193,17 @@ function setHeat(k) {
     const before = map.getLayer('water') && vector ? 'water' : map.getLayer('esri-ref') ? 'esri-ref' : undefined;
     map.addSource('heat', { type: 'image', url: im.fill, coordinates });
     map.addLayer({ id: 'heat', type: 'raster', source: 'heat', paint: { 'raster-opacity': im.opacity, 'raster-resampling': 'linear', 'raster-fade-duration': 0 } }, before);
-    if (im.lines) {
-      map.addSource('heat-lines', { type: 'image', url: im.lines, coordinates });
-      map.addLayer({ id: 'heat-lines', type: 'raster', source: 'heat-lines', paint: { 'raster-opacity': 0.75, 'raster-fade-duration': 0 } }, before);
+    if (im.iso) {
+      const light = theme() === 'light', ink = light ? '#1d2230' : '#ffffff';
+      map.addSource('heat-lines', { type: 'geojson', data: im.iso });
+      map.addLayer({ id: 'heat-lines', type: 'line', source: 'heat-lines', layout: { 'line-join': 'round', 'line-cap': 'round' },
+        paint: { 'line-color': ink, 'line-opacity': ['case', ['get', 'lim'], 0.85, 0.22], 'line-width': ['case', ['get', 'lim'], 2, 0.8], 'line-dasharray': ['case', ['get', 'lim'], ['literal', [2.5, 2]], ['literal', [1, 0]]] } }, before);
+      map.addLayer({ id: 'heat-labels', type: 'symbol', source: 'heat-lines', minzoom: 12,
+        layout: { 'symbol-placement': 'line', 'symbol-spacing': 420, 'text-field': ['get', 'label'], 'text-font': ['Noto Sans Bold'], 'text-size': ['case', ['get', 'lim'], 11, 10], 'text-keep-upright': true, 'text-padding': 4 },
+        paint: { 'text-color': ink, 'text-opacity': ['case', ['get', 'lim'], 0.95, 0.6], 'text-halo-color': light ? '#f0efea' : '#0e1116', 'text-halo-width': 1.6 } });
     }
   }
+  if (map.getLayer('pins')) map.setPaintProperty('pins', 'circle-color', k === 'commute' ? ['case', ['get', 'fav'], css('--accent'), theme() === 'light' ? '#2b303b' : '#eef1f6'] : ['get', 'col']);
   renderLegend(); renderSwitch();
 }
 
@@ -172,6 +216,17 @@ function pinData() {
   return { type: 'FeatureCollection', features: sorted(filtered()).filter((L) => L.lat != null).reverse().map((L) => ({ type: 'Feature', id: L.id,
     properties: { id: L.id, col: scoreColor(score(L)), fav: !!(isSaved(L.id) || L.favorite || ['shortlist', 'touring', 'applied'].includes(L.status)), gone: L.status === 'gone' },
     geometry: { type: 'Point', coordinates: [L.lon, L.lat] } })) };
+}
+/** Neighbourhood labels placed at the middle of each neighbourhood's listings (tiles rarely label them at city zoom). */
+function hoodPoints() {
+  const g = new Map();
+  for (const L of S.listings) {
+    if (L.lat == null || !L.neighborhood) continue;
+    const n = L.neighborhood.split(/\s*[/(]\s*/)[0].trim(); if (!n || n.length > 22) continue;
+    const a = g.get(n) || g.set(n, []).get(n); a.push([L.lon, L.lat]);
+  }
+  const med = (v) => v.sort((x, y) => x - y)[Math.floor(v.length / 2)];
+  return { type: 'FeatureCollection', features: [...g].filter(([, pts]) => pts.length >= 3).map(([n, pts]) => ({ type: 'Feature', properties: { n: n.toUpperCase(), k: pts.length }, geometry: { type: 'Point', coordinates: [med(pts.map((q) => q[0])), med(pts.map((q) => q[1]))] } })) };
 }
 function addOverlays() {
   const p = PAL[theme()], d = dest();
@@ -195,9 +250,12 @@ function addOverlays() {
   map.addSource('listings', { type: 'geojson', data: pinData(), promoteId: 'id' });
   map.addLayer({ id: 'pins', type: 'circle', source: 'listings', paint: {
     'circle-radius': ['interpolate', ['linear'], ['zoom'], 11, ['case', ['get', 'fav'], 4, 2.6], 15, ['case', ['get', 'fav'], 9, 6.5]],
-    'circle-color': ['get', 'col'], 'circle-opacity': ['case', ['get', 'gone'], 0.35, 1],
+    'circle-color': heat === 'commute' ? ['case', ['get', 'fav'], css('--accent'), theme() === 'light' ? '#2b303b' : '#eef1f6'] : ['get', 'col'], 'circle-opacity': ['case', ['get', 'gone'], 0.35, 1],
     'circle-stroke-width': ['case', ['boolean', ['feature-state', 'hover'], false], 3, 1.4],
     'circle-stroke-color': ['case', ['boolean', ['feature-state', 'hover'], false], css('--ink'), p.pinLine] } });
+  map.addSource('hoods', { type: 'geojson', data: hoodPoints() });
+  map.addLayer({ id: 'lbl-hoods', type: 'symbol', source: 'hoods', minzoom: 11.5, layout: { 'text-field': ['get', 'n'], 'text-font': ['Noto Sans Bold'], 'text-size': ['interpolate', ['linear'], ['zoom'], 12, 10, 15, 13], 'text-letter-spacing': 0.12, 'text-max-width': 8, 'symbol-sort-key': ['-', 0, ['get', 'k']], 'text-padding': 8 },
+    paint: { 'text-color': p.hood, 'text-halo-color': p.halo, 'text-halo-width': 1.8 } });
   setHeat(heat);
 }
 function drawTags() {
@@ -239,7 +297,7 @@ function addDest() {
 
 // ------------------------------------------------------------------ chrome
 function renderSwitch() {
-  const opts = [['commute', 'Commute', 'var(--band-20)'], ['noise', 'Noise', '#8e4fd6'], ['rent', 'Rent / ft²', '#ee8a3a'], ['score', 'Score', 'var(--score-4)'], ['none', 'None', 'transparent']]
+  const opts = [['commute', 'Commute', 'linear-gradient(90deg,#1fbf75,#e8a640,#dc5a43)'], ['noise', 'Noise', '#8e4fd6'], ['rent', 'Rent / ft²', '#ee8a3a'], ['score', 'Score', 'var(--score-4)'], ['none', 'None', 'transparent']]
     .filter(([k]) => (k === 'commute' ? Object.values(layers).some((g) => g?.kind === 'commute') : k === 'noise' ? !!layers.noise : true));
   $('layerSwitch').innerHTML = opts.map(([k, t, c]) => `<button type="button" class="${heat === k ? 'on' : ''}" data-layer="${k}" aria-pressed="${heat === k}"><i style="background:${c}"></i>${t}</button>`).join('');
   $('layerSwitch').querySelectorAll('[data-layer]').forEach((b) => b.addEventListener('click', () => setHeat(b.dataset.layer)));
@@ -249,9 +307,11 @@ function renderLegend() {
   const g = active, lim = dest()?.max_minutes || 30;
   let body = '';
   if (heat === 'commute' && g) {
+    const pal = stepColors(lim);
     body = `<h4>Door to door to ${esc(g.name)} <span>arrive ${esc(g.arrive_by || '')}</span></h4>
-      <div class="bands">${BANDS.map((t) => `<div class="${t === lim ? 'lim' : ''}"><i style="background:var(--band-${t})"></i>≤ ${t}${t === lim ? ' limit' : ''}</div>`).join('')}</div>
-      <div class="src">${esc(g.feeds?.length ? g.feeds.join(', ') + ' timetable' : 'Walking only')}, averaged over several arrivals. Water and cells beyond walking range of a stop are left clear.</div>`;
+      <div class="isobar">${STEPS.map((t, i) => `<i style="background:${pal[i].replace(/[\d.]+\)$/, '1)')};opacity:${t <= lim ? 1 : 0.55}" class="${t === lim ? 'lim' : ''}"></i>`).join('')}</div>
+      <div class="isoticks">${STEPS.map((t) => `<span class="${t === lim ? 'lim' : ''}">${t}</span>`).join('')}</div>
+      <div class="src">Best door-to-door minutes on the ${esc(g.feeds?.length ? g.feeds.join(', ') + ' timetable' : 'walking network')}, averaged over several arrivals: green is close, red is past your ${lim}-minute limit (dashed). Water and areas beyond walking range of a stop are left clear.</div>`;
   } else if (heat === 'noise' && g) {
     body = `<h4>311 noise complaints <span>per year, ${esc(g.cell_m)} m cells</span></h4><div class="bar" style="height:8px;border-radius:2px;background:${RAMPS.noise.css}"></div><div class="ticks"><span>0</span><span>10</span><span>100</span><span>1k</span><span>4k</span></div><div class="src">${(g.total || 0).toLocaleString()} requests since ${esc(g.since || '')}. Calls are reports, not findings.</div>`;
   } else if (heat === 'rent') {
