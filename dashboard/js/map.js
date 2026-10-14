@@ -2,13 +2,18 @@
 // subway lines, contour-band commute heat (masked by water and by the router's no-data cells),
 // noise / rent / score surfaces, score-coloured pins, price tags and hover cards.
 // Falls back to Esri raster tiles when vector tiles are switched off or fail.
-import { S, on, filtered, openDrawer, label, cost, commuteOf, loadJSON, dest, score, isSaved, sorted } from './app.js';
+import { S, on, filtered, openDrawer, label, cost, commuteOf, loadJSON, dest, score, isSaved, sorted, setCommute, modeSegHTML, MODE_LABEL } from './app.js';
+import { commuteLayerKey, walkRingMetres } from './criteria.js';
 import { $, esc, money, moneyShort, safeUrl, css, scoreColor, unitGlyph, gridImage, gridValueAt, idwGrid, RAMPS, bullet, aerialHTML, imagesOf } from './util.js';
 import { contours } from '../vendor/d3-contour.js';
 
 const STEPS = [5, 10, 15, 20, 25, 30, 40, 50, 60];   // isochrone steps in minutes
 const layers = {};          // name -> grid json
-let map, popup, markers = [], destMarker, inited = false, active = null, heat = 'commute', vector = true, show3d = false, showLines = true;
+let map, popup, markers = [], destMarkers = [], inited = null, active = null, heat = 'commute', vector = true, show3d = false, showLines = true, picking = false;
+/** The surface for the selected destination and mode (null for walk, or when that grid was never computed). */
+const commuteLayer = () => { const k = commuteLayerKey(layers, dest(), S.commuteMode); return k ? layers[k] : null; };
+const hasCommute = () => Object.values(layers).some((g) => /^commute/.test(g?.kind || '')) || (S.crit.commute?.destinations || []).some((d) => d.lat != null);
+const walkKmh = () => S.crit.commute?.transit?.walk_speed_kmh || 4.8;
 
 const PAL = {
   dark: { land: '#0e1116', park: '#0f1915', water: '#070b11', building: '#141820', buildingLine: '#1a1f29', minor: '#171b23', major: '#1f2530', motor: '#272e3b',
@@ -179,7 +184,7 @@ function scoreGrid() {
 }
 const NOISE = (v) => RAMPS.noise.fn(v);
 function heatImages(k) {
-  if (k === 'commute') { const g = Object.values(layers).find((x) => x?.kind === 'commute'); if (!g) return null; const iso = isochrones(g); return { g, fill: iso.fill, iso: iso.lines, opacity: 1 }; }
+  if (k === 'commute') { const g = commuteLayer(); if (!g) return null; const iso = isochrones(g); return { g, fill: iso.fill, iso: iso.lines, opacity: 1 }; }
   if (k === 'noise') {
     const g = layers.noise; if (!g) return null;
     const per = 12 / (g.months || 12);
@@ -236,14 +241,37 @@ function hoodPoints() {
   const med = (v) => v.sort((x, y) => x - y)[Math.floor(v.length / 2)];
   return { type: 'FeatureCollection', features: [...g].filter(([, pts]) => pts.length >= 3).map(([n, pts]) => ({ type: 'Feature', properties: { n: n.toUpperCase(), k: pts.length }, geometry: { type: 'Point', coordinates: [med(pts.map((q) => q[0])), med(pts.map((q) => q[1]))] } })) };
 }
+/** Walking rings around the selected destination: 10 and 20 minutes, and up to the commute limit in walk mode.
+ *  Radius = minutes at the walking speed over a 1.25 street-detour factor, the same estimate the cards use. */
+function ringMinutes() {
+  const d = dest(); if (d?.lat == null) return [];
+  if (S.commuteMode !== 'walk') return [10, 20];
+  const lim = Math.max(20, d.max_minutes || 30);
+  return [10, 20, 30, 45, 60].filter((m) => m <= lim + 5);
+}
+function ringData() {
+  const d = dest(), mins = ringMinutes();
+  return {
+    rings: { type: 'FeatureCollection', features: mins.map((t) => ({ type: 'Feature', properties: { t: `${t} min walk` }, geometry: { type: 'LineString', coordinates: circle(d.lon, d.lat, walkRingMetres(t, walkKmh())) } })) },
+    labels: { type: 'FeatureCollection', features: mins.map((t) => ({ type: 'Feature', properties: { t: `${t} min walk` }, geometry: { type: 'Point', coordinates: [d.lon, d.lat + walkRingMetres(t, walkKmh()) / 110574] } })) },
+  };
+}
+function refreshRings() {
+  if (!map?.getSource('rings')) return;
+  const r = ringData();
+  map.getSource('rings').setData(r.rings); map.getSource('ring-labels').setData(r.labels);
+  const w = S.commuteMode === 'walk';
+  map.setPaintProperty('walk-rings', 'line-opacity', w ? 0.9 : 0.55); map.setPaintProperty('walk-rings', 'line-width', w ? 1.6 : 1.2);
+}
 function addOverlays() {
-  const p = PAL[theme()], d = dest();
-  if (d?.lat != null) {
-    const rings = [[800, '10 min walk'], [1600, '20 min walk']];
-    map.addSource('rings', { type: 'geojson', data: { type: 'FeatureCollection', features: rings.map(([m, t]) => ({ type: 'Feature', properties: { t }, geometry: { type: 'LineString', coordinates: circle(d.lon, d.lat, m) } })) } });
-    map.addSource('ring-labels', { type: 'geojson', data: { type: 'FeatureCollection', features: rings.map(([m, t]) => ({ type: 'Feature', properties: { t }, geometry: { type: 'Point', coordinates: [d.lon, d.lat + m / 110574] } })) } });
+  const p = PAL[theme()];
+  {
+    const r = ringData();
+    map.addSource('rings', { type: 'geojson', data: r.rings });
+    map.addSource('ring-labels', { type: 'geojson', data: r.labels });
     map.addLayer({ id: 'walk-rings', type: 'line', source: 'rings', paint: { 'line-color': p.ring, 'line-width': 1.2, 'line-opacity': 0.55, 'line-dasharray': [2, 3] } });
     map.addLayer({ id: 'lbl-rings', type: 'symbol', source: 'ring-labels', layout: { 'text-field': ['get', 't'], 'text-font': ['Noto Sans Regular'], 'text-size': 10, 'text-offset': [0, -0.7] }, paint: { 'text-color': p.label, 'text-halo-color': p.halo, 'text-halo-width': 2 } });
+    refreshRings();
   }
   if (S.transit) {
     const fs = S.transit.features;
@@ -289,7 +317,7 @@ function drawTags() {
     el.dataset.id = L.id;
     el.setAttribute('aria-label', `${label(L)}, ${money(cost(L))} a month`);
     el.innerHTML = `<i style="--c:${scoreColor(score(L))}">${Math.round(score(L) ?? 0)}</i>${isSaved(L.id) ? '<svg class="st" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1.6l1.9 4 4.4.5-3.3 3 .9 4.3L8 11.2 4.1 13.4 5 9.1 1.7 6.1l4.4-.5z"/></svg>' : ''}${moneyShort(cost(L))}`;
-    el.addEventListener('click', (e) => { e.stopPropagation(); openDrawer(L.id); });
+    el.addEventListener('click', (e) => { e.stopPropagation(); if (!picking) openDrawer(L.id); });
     root.append(el);
     markers.push(new maplibregl.Marker({ element: root, anchor: 'bottom', offset: [0, -6] }).setLngLat([L.lon, L.lat]).addTo(map));
   }
@@ -321,30 +349,56 @@ function pulse() {
   pulseRaf = requestAnimationFrame(step);
 }
 function addDest() {
-  destMarker?.remove();
-  const d = dest(); if (d?.lat == null) return;
-  const el = document.createElement('div');
-  el.innerHTML = `<div class="dest-pin" title="${esc(d.name)}"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="3" y="2" width="10" height="12" rx="1.5"/><path d="M6 5h1M9 5h1M6 8h1M9 8h1M7 14v-3h2v3"/></svg></div><div class="dest-label">${esc(d.name)}<span>${esc((d.address || '').split(',')[0])}${d.arrive_by ? ' · arrive ' + esc(d.arrive_by) : ''}</span></div>`;
-  destMarker = new maplibregl.Marker({ element: el }).setLngLat([d.lon, d.lat]).addTo(map);
+  destMarkers.forEach((m) => m.remove()); destMarkers = [];
+  const sel = dest();
+  for (const d of S.crit.commute?.destinations || []) {
+    if (d.lat == null) continue;
+    const on2 = d === sel, el = document.createElement('div');
+    el.className = `dest-mk ${on2 ? 'on' : 'off'}`;
+    el.innerHTML = `<div class="dest-pin" title="${esc(d.name)}"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="3" y="2" width="10" height="12" rx="1.5"/><path d="M6 5h1M9 5h1M6 8h1M9 8h1M7 14v-3h2v3"/></svg></div><div class="dest-label">${esc(d.name)}${on2 ? `<span>${esc((d.address || '').split(',')[0])}${d.arrive_by ? ' · arrive ' + esc(d.arrive_by) : ''}</span>` : ''}</div>`;
+    if (!on2) { el.title = `Show the commute to ${d.name}`; el.addEventListener('click', (e) => { e.stopPropagation(); if (!picking) setCommute({ dest: d.name }); }); }
+    destMarkers.push(new maplibregl.Marker({ element: el }).setLngLat([d.lon, d.lat]).addTo(map));
+  }
+}
+/** Let the renter click a spot for a destination; resolves {lat, lon}, or null on Esc / Cancel. */
+export function pickPoint(name = 'the destination') {
+  return new Promise((resolve) => {
+    if (!map) { resolve(null); return; }
+    picking = true;
+    const cv = map.getCanvas(); cv.style.cursor = 'crosshair'; popup?.remove();
+    const hint = document.createElement('div');
+    hint.className = 'float pick-hint'; hint.setAttribute('role', 'status');
+    hint.innerHTML = `<span>Click the map to place <b>${esc(name)}</b></span><button type="button" class="btn sm ghost">Cancel</button>`;
+    $('view-map').append(hint);
+    const done = (pt) => { picking = false; cv.style.cursor = ''; map.off('click', onClick); removeEventListener('keydown', onKey, true); hint.remove(); resolve(pt); };
+    const onClick = (e) => done({ lat: e.lngLat.lat, lon: e.lngLat.lng });
+    const onKey = (e) => { if (e.key === 'Escape') { e.stopPropagation(); done(null); } };
+    hint.querySelector('button').addEventListener('click', () => done(null));
+    map.on('click', onClick); addEventListener('keydown', onKey, true);
+  });
 }
 
 // ------------------------------------------------------------------ chrome
 function renderSwitch() {
   const opts = [['commute', 'Commute', 'linear-gradient(90deg,#1fbf75,#e8a640,#dc5a43)'], ['noise', 'Noise', '#8e4fd6'], ['rent', 'Rent / ft²', '#ee8a3a'], ['score', 'Score', 'var(--score-4)'], ['none', 'None', 'transparent']]
-    .filter(([k]) => (k === 'commute' ? Object.values(layers).some((g) => g?.kind === 'commute') : k === 'noise' ? !!layers.noise : true));
+    .filter(([k]) => (k === 'commute' ? hasCommute() : k === 'noise' ? !!layers.noise : true));
   $('layerSwitch').innerHTML = opts.map(([k, t, c]) => `<button type="button" class="${heat === k ? 'on' : ''}" data-layer="${k}" aria-pressed="${heat === k}"><i style="background:${c}"></i>${t}</button>`).join('');
   $('layerSwitch').querySelectorAll('[data-layer]').forEach((b) => b.addEventListener('click', () => setHeat(b.dataset.layer)));
 }
 function renderLegend() {
   const lineChips = (S.transit?.features || []).filter((f) => f.properties.kind === 'line').flatMap((f) => f.properties.routes.filter((r) => r.length < 3)).map(bullet).join('');
-  const g = active, lim = dest()?.max_minutes || 30;
+  const g = active, d = dest(), lim = d?.max_minutes || 30, mode = S.commuteMode, ml = MODE_LABEL[mode].toLowerCase();
   let body = '';
-  if (heat === 'commute' && g) {
-    const pal = stepColors(lim);
-    body = `<h4>Door to door to ${esc(g.name)} <span>arrive ${esc(g.arrive_by || '')}</span></h4>
-      <div class="isobar">${STEPS.map((t, i) => `<i style="background:${pal[i].replace(/[\d.]+\)$/, '1)')};opacity:${t <= lim ? 1 : 0.55}" class="${t === lim ? 'lim' : ''}"></i>`).join('')}</div>
+  if (heat === 'commute') {
+    const pal = stepColors(lim), ds = S.crit.commute?.destinations || [];
+    const what = { best: 'Fastest door-to-door minutes by subway, bus or walking', subway: 'Subway with walking only (no buses)', bus: 'Bus with walking only (no subway)' }[mode];
+    body = `<h4>${ds.length > 1 ? `<select class="sel lg-dest" id="lgDest" aria-label="Commute destination">${ds.map((x) => `<option value="${esc(x.name)}" ${x === d ? 'selected' : ''}>To ${esc(x.name)}</option>`).join('')}</select>` : `Door to door to ${esc(d?.name || '')}`} <span>arrive ${esc(d?.arrive_by || '')}</span></h4>
+      ${modeSegHTML(d, 'lgMode')}
+      ${g ? `<div class="isobar">${STEPS.map((t, i) => `<i style="background:${pal[i].replace(/[\d.]+\)$/, '1)')};opacity:${t <= lim ? 1 : 0.55}" class="${t === lim ? 'lim' : ''}"></i>`).join('')}</div>
       <div class="isoticks">${STEPS.map((t) => `<span class="${t === lim ? 'lim' : ''}">${t}</span>`).join('')}</div>
-      <div class="src">Best door-to-door minutes on the ${esc(g.feeds?.length ? g.feeds.join(', ') + ' timetable' : 'walking network')}, averaged over several arrivals: green is close, red is past your ${lim}-minute limit (dashed). Water and areas beyond walking range of a stop are left clear.</div>`;
+      <div class="src">${what} on the ${esc(g.feeds?.length ? g.feeds.join(', ') + ' timetable' : 'walking network')}, averaged over several arrivals: green is close, red is past your ${lim}-minute limit (dashed). Water and areas beyond walking range of a stop are left clear.</div>`
+      : mode === 'walk' ? `<div class="src">Walking has no timetable surface. The dashed rings are ${ringMinutes().join(', ')} minutes on foot at ${walkKmh()} km/h, straight line with a 1.25 street detour. Cards, filters and columns use the router's walking minutes where it has them, else the same estimate.</div>`
+      : `<div class="src">No ${ml} surface for ${esc(d?.name || 'this destination')}${d?._stale ? ' (new or moved in your edited criteria)' : ''}. Run <code>apartmentscout commute</code>${mode === 'bus' ? ' with a bus GTFS feed' : ''} to draw it. Pins, cards and filters use per-listing ${ml} minutes where the router computed them.</div>`}`;
   } else if (heat === 'noise' && g) {
     body = `<h4>311 noise complaints <span>per year, ${esc(g.cell_m)} m cells</span></h4><div class="bar" style="height:8px;border-radius:2px;background:${RAMPS.noise.css}"></div><div class="ticks"><span>0</span><span>10</span><span>100</span><span>1k</span><span>4k</span></div><div class="src">${(g.total || 0).toLocaleString()} requests since ${esc(g.since || '')}. Calls are reports, not findings.</div>`;
   } else if (heat === 'rent') {
@@ -353,6 +407,8 @@ function renderLegend() {
     body = `<h4>Average score nearby <span>with your weights</span></h4><div class="bar" style="height:8px;border-radius:2px;background:${RAMPS.score.css}"></div><div class="ticks"><span>30</span><span>50</span><span>65</span><span>80</span><span>95</span></div>`;
   } else body = `<h4>Listings <span>pins coloured by score</span></h4><div class="bar" style="height:8px;border-radius:2px;background:${RAMPS.score.css}"></div><div class="ticks"><span>30</span><span>50</span><span>65</span><span>80</span><span>95</span></div>`;
   $('legend').innerHTML = body + (lineChips && showLines ? `<div class="lines">${lineChips}</div>` : '');
+  $('lgDest')?.addEventListener('change', (e) => setCommute({ dest: e.target.value }));
+  $('legend').querySelectorAll('#lgMode [data-mode]').forEach((b) => b.addEventListener('click', () => setCommute({ mode: b.dataset.mode })));
 }
 function renderCtl() {
   const b = (id, title, svg, on2) => `<button type="button" data-ctl="${id}" title="${title}" aria-label="${title}" class="${on2 ? 'on' : ''}" aria-pressed="${!!on2}">${svg}</button>`;
@@ -385,7 +441,7 @@ function readout(e) {
   const r = gridValueAt(g, e.lngLat.lat, e.lngLat.lng);
   if (!r || r.v == null || r.v < 0) { el.hidden = true; return; }
   let t;
-  if (heat === 'commute') t = `<b>${Math.round(r.v)} min</b> <span class="faint">door to door to ${esc(g.name)}</span>`;
+  if (heat === 'commute') t = `<b>${Math.round(r.v)} min</b> <span class="faint">${S.commuteMode === 'best' ? 'door to door' : 'by ' + MODE_LABEL[S.commuteMode].toLowerCase()} to ${esc(dest()?.name || g.name)}</span>`;
   else if (heat === 'noise') t = `<b>${Math.round((r.v * 12) / (g.months || 12))}</b> <span class="faint">noise complaints a year in this ${esc(g.cell_m)} m cell${g.night ? ` (${g.night[r.i] ?? 0} at night)` : ''}</span>`;
   else if (heat === 'rent') t = `<b>$${r.v.toFixed(2)}</b> <span class="faint">per ft² a month nearby</span>`;
   else t = `<b>${Math.round(r.v)}</b> <span class="faint">average score nearby</span>`;
@@ -400,10 +456,12 @@ function wire() {
     if (hov !== f.id) { if (hov) map.setFeatureState({ source: 'listings', id: hov }, { hover: false }); hov = f.id; map.setFeatureState({ source: 'listings', id: hov }, { hover: true }); }
     const L = S.listings.find((x) => x.id === f.id); if (!L) return;
     const im = imagesOf(L), ph = im.own[0] || im.building[0]?.url;
-    popup.setLngLat([L.lon, L.lat]).setHTML(`<div class="hovercard">${ph ? `<img src="${esc(ph)}" alt="" referrerpolicy="no-referrer">` : aerialHTML(L, 236, 118, 18)}<div class="hb"><div class="t">${esc(label(L))}</div><div class="s">${esc(L.neighborhood || '')}${L.sqft ? ' · ' + Math.round(L.sqft) + ' ft²' : ''}</div><div class="p"><b>${money(cost(L))}/mo</b><span>${commuteOf(L) != null ? Math.round(commuteOf(L)) + ' min · ' : ''}score ${Math.round(score(L) ?? 0)}</span></div></div></div>`).addTo(map);
+    if (picking) return;
+    const cm = commuteOf(L), cml = S.commuteMode === 'best' ? '' : ' ' + MODE_LABEL[S.commuteMode].toLowerCase();
+    popup.setLngLat([L.lon, L.lat]).setHTML(`<div class="hovercard">${ph ? `<img src="${esc(ph)}" alt="" referrerpolicy="no-referrer">` : aerialHTML(L, 236, 118, 18)}<div class="hb"><div class="t">${esc(label(L))}</div><div class="s">${esc(L.neighborhood || '')}${L.sqft ? ' · ' + Math.round(L.sqft) + ' ft²' : ''}</div><div class="p"><b>${money(cost(L))}/mo</b><span>${cm != null ? Math.round(cm) + ' min' + cml + ' · ' : ''}score ${Math.round(score(L) ?? 0)}</span></div></div></div>`).addTo(map);
   });
   map.on('mouseleave', 'pins', () => { map.getCanvas().style.cursor = ''; if (hov) map.setFeatureState({ source: 'listings', id: hov }, { hover: false }); hov = null; popup.remove(); });
-  map.on('click', 'pins', (e) => openDrawer(e.features[0].id));
+  map.on('click', 'pins', (e) => { if (!picking) openDrawer(e.features[0].id); });
   map.on('mousemove', readout);
   map.on('mouseout', () => ($('readout').hidden = true));
   let raf = 0;
@@ -424,6 +482,12 @@ export function init() {
   on('weights-settled', () => { if (!map?.getSource('listings')) return; map.getSource('listings').setData(pinData()); drawTags(); if (heat === 'score') setHeat('score'); });
   on('saved', () => { if (map?.getSource('listings')) { map.getSource('listings').setData(pinData()); drawTags(); } });
   on('sort', () => map && drawTags());
+  on('commute', () => {
+    if (!map) return;
+    refreshRings(); addDest();
+    if (heat === 'commute' && map.getSource('listings')) setHeat('commute'); else renderLegend();
+    renderSwitch();
+  });
   on('theme', () => {
     if (!map) return;
     if (!vector || customStyle()) { rebuild(); return; }
@@ -449,15 +513,19 @@ export function init() {
 }
 
 export async function show() {
-  if (!inited) {
-    inited = true;
+  if (!inited) inited = boot();
+  await inited;
+  requestAnimationFrame(() => map.resize());
+}
+async function boot() {
+  {
     for (const name of S.manifest.layers || []) {
       if (name.startsWith('transit')) continue;
       const g = await loadJSON(`${S.base}/layers/${name}`, null);
       if (g) layers[name.replace('.json', '')] = g;
     }
     const want = new URLSearchParams(location.search).get('layer');
-    heat = want ? (want.startsWith('commute') ? 'commute' : want) : Object.values(layers).some((g) => g?.kind === 'commute') ? 'commute' : 'none';
+    heat = want ? (want.startsWith('commute') ? 'commute' : want) : hasCommute() ? 'commute' : 'none';
     if (new URLSearchParams(location.search).get('basemap') === 'raster') vector = false;
     const c = S.crit.search?.map_center, d = dest();
     const center = c ? [c[1], c[0]] : d?.lat != null ? [d.lon, d.lat] : [-73.98, 40.75];
@@ -469,5 +537,4 @@ export async function show() {
     map.once('style.load', onStyle);
     wire(); renderCtl(); renderSwitch(); addDest();
   }
-  requestAnimationFrame(() => map.resize());
 }

@@ -1,7 +1,8 @@
 // ApartmentScout dashboard core: data loading, shared state, live ranking, filters rail, result cards,
 // listing drawer, saved picks, router, theme and keyboard shortcuts. Views live in their own modules and
 // talk to the core through the exports below and the event bus (on/emit).
-import { $, esc, money, moneyShort, safeUrl, scoreColor, ring, unitGlyph, bullets, bullet, routeNames, ICONS, toast, LINE_COLORS, aerialHTML, imagesOf, imgFallback, walkMinutes, routeBadge, legBadges, miles } from './util.js';
+import { $, esc, money, moneyShort, safeUrl, scoreColor, ring, unitGlyph, bullets, bullet, routeNames, ICONS, toast, LINE_COLORS, aerialHTML, imagesOf, imgFallback, routeBadge, legBadges, miles } from './util.js';
+import { COMMUTE_MODES, commuteEntry, modeMinutes, modeOptions, evaluate, applyProfile, profileOf, diffProfile, serverSteps, parseDay, cashFlow, basisLabel } from './criteria.js';
 
 export const store = {
   get(k, d) { try { const v = localStorage.getItem('as:' + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
@@ -22,27 +23,100 @@ export const S = {
   filters: { q: '', tiers: null, over: false, maxCommute: 75, toggles: [], status: ACTIVE, savedOnly: false },
   weights: {}, compare: store.get('compare', []), picks: store.get('picks', {}),
   sel: null, sort: 'match', group: 'units', view: 'map', listeners: {},
+  // commute lens shared by the map surface, pins, cards, filters, KPIs, Shortlist and Compare: mode + destination
+  commuteMode: 'best', destName: null,
+  crit0: {}, preview: null,   // criteria.json as loaded, and the applied browser preview of edited criteria (or null)
 };
 export const on = (ev, fn) => ((S.listeners[ev] ||= []).push(fn));
 export const emit = (ev, x) => (S.listeners[ev] || []).forEach((f) => f(x));
 export const byId = (id) => S.listings.find((L) => L.id === id);
-export const dests = () => (S.crit.commute?.destinations || []).map((d) => d.name);
-export const dest = () => S.crit.commute?.destinations?.[0];
-export const commuteOf = (L, d = dests()[0]) => L.commute?.[d]?.minutes;
+const allDests = () => S.crit.commute?.destinations || [];
+/** The selected destination (the commute lens), else the first. */
+export const dest = () => allDests().find((d) => d.name === S.destName) || allDests()[0];
+/** Destination names, the selected one first (views that show one destination read dests()[0]). */
+export const dests = () => { const a = dest(); return a ? [a.name, ...allDests().filter((d) => d !== a).map((d) => d.name)] : []; };
+const walkKmh = () => S.crit.commute?.transit?.walk_speed_kmh || 4.8;
+export const MODE_LABEL = Object.fromEntries(COMMUTE_MODES);
+/** Door-to-door minutes for a listing in the selected mode (best / subway / bus / walk) to a destination name. */
+export function commuteOf(L, d = dest()?.name, mode = S.commuteMode) {
+  const D = allDests().find((x) => x.name === d);
+  return D ? modeMinutes(L, D, mode, walkKmh()) : L.commute?.[d]?.minutes ?? null;
+}
 export const label = (L) => `${L.building || L.address}${L.unit ? ' ' + L.unit : ''}`;
 export const cost = (L) => L.score?.monthly_cost;
 export const score = (L) => L._s ?? L.score?.overall;
-/** Door-to-door minutes by mode for a listing and destination: walk / subway / bus / best, from the router when it
- *  computed modes, else walk from distance and the stored transit time as subway. */
+/** Door-to-door minutes by mode for a listing and destination: walk / subway / bus from the router (walk from
+ *  distance when the router has none), the fastest of them, and `sel` = minutes in the selected mode. */
 export function modesOf(L, d = dest()) {
-  const c = L.commute?.[d?.name] || {}, m = c.modes || {};
-  const routerWalk = c.mode === 'walk' ? c.minutes : null;   // the router found walking faster than any train
-  const walk = m.walk?.minutes ?? routerWalk ?? walkMinutes(L.lat, L.lon, d?.lat, d?.lon, (S.crit.commute?.transit?.walk_speed_kmh) || 4.8);
-  const subway = m.subway?.minutes ?? (c.mode === 'walk' ? null : c.minutes ?? null);
-  const bus = m.bus?.minutes ?? null;
+  const c = commuteEntry(L, d) || {}, m = c.modes || {}, kmh = walkKmh(), mode = S.commuteMode;
+  const walk = modeMinutes(L, d, 'walk', kmh), subway = modeMinutes(L, d, 'subway', kmh), bus = modeMinutes(L, d, 'bus', kmh);
   const opts = [['walk', walk], ['subway', subway], ['bus', bus]].filter(([, v]) => v != null).sort((x, y) => x[1] - y[1]);
-  return { walk, subway, bus, best: opts[0]?.[1] ?? null, bestMode: opts[0]?.[0] ?? null, route: m.transit?.route || m.subway?.route || c.route,
-    legs: m.transit?.legs || null, modes: m, transit: m.transit?.minutes ?? null };
+  const pick = mode === 'best' ? m.transit : mode === 'walk' ? null : m[mode];
+  return { walk, subway, bus, best: opts[0]?.[1] ?? null, bestMode: opts[0]?.[0] ?? null, route: pick?.route || (mode === 'best' ? m.subway?.route || c.route : null),
+    legs: pick?.legs || null, modes: m, transit: m.transit?.minutes ?? null, mode, sel: modeMinutes(L, d, mode, kmh) };
+}
+const searchKey = (k) => `${k}:${S.crit0.search?.name || S.base}`;
+/** Switch the commute lens; every surface that shows minutes follows. */
+export function setCommute({ mode, dest: dn } = {}) {
+  if (mode && MODE_LABEL[mode]) S.commuteMode = mode;
+  if (dn && allDests().some((d) => d.name === dn)) S.destName = dn;
+  fitMode(!!dn && !mode);
+  store.set(searchKey('commute'), { mode: S.commuteMode, dest: S.destName });
+  drawerMode = S.commuteMode === 'best' ? 'transit' : S.commuteMode;
+  renderRail(); renderKPIs(); renderCards();
+  emit('commute'); emit('filters', { quiet: true }); emit('weights');
+  if (S.sel) reopenDrawer();
+}
+/** Keep the lens on a mode the selected destination has data for; on a destination switch, prefer its preferred mode. */
+function fitMode(preferDest) {
+  const d = dest(), ch = modeOptions({}, S.listings, d), ok = (m) => ch.find((o) => o.mode === m)?.enabled;
+  if (preferDest && d?.mode && ok(d.mode)) S.commuteMode = d.mode;
+  if (!ok(S.commuteMode)) S.commuteMode = ch.find((o) => o.enabled)?.mode || 'best';
+  drawerMode = S.commuteMode === 'best' ? 'transit' : S.commuteMode;
+}
+/** Mode buttons for a destination: enabled when the router left minutes for that mode (walk: when it has coordinates). */
+export function modeChoices(d = dest()) {
+  return modeOptions({}, S.listings, d).map((o) => ({ ...o, on: o.mode === S.commuteMode }));
+}
+
+// ------------------------------------------------------------------ edited criteria (browser preview)
+/** The day the scorer evaluated "Now" and move-in windows against. */
+export const scoreDay = () => parseDay(S.crit0.scoring?.as_of || S.manifest.generated?.slice(0, 10) || new Date().toISOString().slice(0, 10));
+/** Apply an edited profile (or null to go back to criteria.json): re-evaluate gates, tiers, eligibility and the
+ *  criteria-driven parts in the browser, re-rank, and re-render everything. Nothing is written to disk. */
+export function applyCriteria(profile, { quiet = false } = {}) {
+  const base = profileOf(S.crit0);
+  if (profile && !diffProfile(base, profile).length) profile = null;
+  const today = scoreDay(), nTiers = (S.crit.budget?.tiers || []).length;
+  if (profile) {
+    S.crit = applyProfile(S.crit0, profile);
+    let kept = {};
+    for (const L of S.listings) { const r = evaluate(L, L._score0, S.crit, today); L.score = r.score; for (const k of r.kept) kept[k] = (kept[k] || 0) + 1; }
+    S.preview = { profile, changes: diffProfile(base, profile), steps: serverSteps(S.crit0, S.crit, { kept }) };
+    store.set(searchKey('criteria'), profile);
+  } else {
+    S.crit = S.crit0; S.preview = null;
+    for (const L of S.listings) L.score = L._score0;
+    store.set(searchKey('criteria'), null);
+  }
+  if (!allDests().some((d) => d.name === S.destName)) S.destName = allDests()[0]?.name || null;
+  fitMode(!!profile && !quiet);
+  store.set(searchKey('commute'), { mode: S.commuteMode, dest: S.destName });
+  if ((S.crit.budget?.tiers || []).length !== nTiers) { S.filters.tiers = (S.crit.budget?.tiers || []).map((_, i) => i); S.filters.over = false; saveFilters(); }
+  rescore(); renderRail(); renderKPIs(); renderCards(); renderSearchSwitch();
+  emit('criteria'); emit('commute'); emit('filters', { quiet: true }); emit('weights'); emit('weights-settled');
+  if (S.sel) reopenDrawer();
+  if (!quiet) toast(profile ? 'Previewing your edited criteria in this browser' : 'Back to the criteria in criteria.yaml');
+}
+function renderSearchSwitch() {
+  const b = $('searchSwitch'); if (!b) return;
+  b.classList.toggle('pv', !!S.preview);
+  b.title = S.preview ? 'Search settings: previewing edited criteria in this browser' : 'Search settings';
+}
+export async function openSettings() { (await import('./settings.js')).openSettings(); }
+function reopenDrawer() {
+  const sc = $('drawer').querySelector('.d-scroll'), y = sc?.scrollTop || 0;
+  openDrawer(S.sel); const s2 = $('drawer').querySelector('.d-scroll'); if (s2) s2.scrollTop = y;
 }
 export const tierIndex = (L) => (S.crit.budget?.tiers || []).findIndex((t) => t.name === L.score?.budget_tier);
 export const isSaved = (id) => !!S.picks[id]?.saved;
@@ -98,7 +172,7 @@ export function coverage(L) {
   const facts = [
     ['Monthly cost', cost(L) != null], ['Size', !!L.sqft], ['Floor', L.floor != null && !L.floor_inferred], ['Exposure', !!L.exposure?.length],
     ['In-unit W/D', am.in_unit_wd != null], ['Elevator', am.elevator != null], ['Doorman', am.doorman != null],
-    ['Commute', commuteOf(L) != null], ['Building records', !!L.records?.flags || (S.manifest.dossiers || []).includes(L.id)], ['Reviews', !!L.reviews?.summary],
+    ['Commute', commuteOf(L, undefined, 'best') != null], ['Building records', !!L.records?.flags || (S.manifest.dossiers || []).includes(L.id)], ['Reviews', !!L.reviews?.summary],
   ];
   return { have: facts.filter((f) => f[1]).length, total: facts.length, missing: facts.filter((f) => !f[1]).map((f) => f[0]) };
 }
@@ -124,7 +198,7 @@ export function filtered() {
     if (!st.has(L.status || 'new')) return false;
     if (f.savedOnly && !isSaved(L.id)) return false;
     if (q && !`${L.building} ${L.unit} ${L.address} ${L.neighborhood}`.toLowerCase().includes(q)) return false;
-    if (cap != null && (cost(L) == null || cost(L) > cap)) return false;
+    if (cap != null && (budgetAmt(L) == null || budgetAmt(L) > cap)) return false;
     if (f.maxCommute < 75 && commuteOf(L) != null && commuteOf(L) > f.maxCommute) return false;
     for (const k of f.toggles) if (!featureOk(L, k)) return false;
     return true;
@@ -173,7 +247,7 @@ function exportCSV() {
   const cols = [['id', (L) => L.id], ['building', (L) => L.building], ['unit', (L) => L.unit], ['address', (L) => L.address], ['neighborhood', (L) => L.neighborhood],
     ['status', (L) => L.status], ['score', (L) => score(L)?.toFixed(1)], ['rank', (L) => L._rank], ['monthly_cost', (L) => cost(L)?.toFixed(0)], ['gross', (L) => L.price?.gross],
     ['budget_tier', (L) => L.score?.budget_tier], ['sqft', (L) => L.sqft], ['beds', (L) => L.beds], ['floor', (L) => L.floor], ['exposure', (L) => (L.exposure || []).join(' ')],
-    [`commute_${dests()[0] || ''}`, (L) => commuteOf(L)?.toFixed(0)], ['in_unit_wd', (L) => L.amenities?.in_unit_wd], ['doorman', (L) => L.amenities?.doorman], ['gym', (L) => L.amenities?.gym],
+    [`commute_${dests()[0] || ''}_${S.commuteMode}`, (L) => commuteOf(L)?.toFixed(0)], ['in_unit_wd', (L) => L.amenities?.in_unit_wd], ['doorman', (L) => L.amenities?.doorman], ['gym', (L) => L.amenities?.gym],
     ['saved', (L) => (isSaved(L.id) ? 'yes' : '')], ['my_tier', (L) => pick(L.id).tier], ['my_note', (L) => pick(L.id).note], ['checked', (L) => L.checked], ['listing_url', (L) => safeUrl(L.links?.listing)]];
   // spreadsheet formula injection: text starting with = + - @ (or tab / CR) is prefixed with an apostrophe
   const guard = (v) => (typeof v === 'string' && /^[=+\-@\t\r]/.test(v) ? "'" + v : v);
@@ -200,13 +274,16 @@ function renderKPIs() {
   const short = S.listings.filter((L) => ['shortlist', 'touring', 'applied'].includes(L.status)).length;
   const noGeo = act.filter((L) => L.lat == null).length;
   const mc = median(F.map((L) => commuteOf(L)));
-  $('kpis').innerHTML = [
+  const pv = S.preview ? `<div class="kpi pv-banner" role="status"><i aria-hidden="true"></i><b>Browser preview of your edited criteria</b><span class="faint">${S.preview.changes.length} change${S.preview.changes.length === 1 ? '' : 's'} · files unchanged</span><button type="button" class="btn sm" data-pv="edit">Edit</button><button type="button" class="btn sm ghost" data-pv="reset">Reset</button></div>` : '';
+  $('kpis').innerHTML = pv + [
     [`${S.listings.length}<small>${act.length} active</small>`, 'tracked'], [`${F.length}`, 'match filters'], [`${elig.length}`, 'eligible'],
-    [`${short}`, 'shortlisted'], [`${money(median(F.map(cost)))}`, 'median / mo'], [mc != null ? `${Math.round(mc)}<small>min</small>` : '—', `median to ${esc(dests()[0] || 'work')}`],
+    [`${short}`, 'shortlisted'], [`${money(median(F.map(cost)))}`, 'median / mo'], [mc != null ? `${Math.round(mc)}<small>min</small>` : '—', `median${S.commuteMode === 'best' ? '' : ' by ' + MODE_LABEL[S.commuteMode].toLowerCase()} to ${esc(dests()[0] || 'work')}`],
   ].map(([v, k]) => `<div class="kpi"><span class="v">${v}</span><span class="k">${k}</span></div>`).join('') +
     (top ? `<div class="kpi"><span class="k">Top match</span><a href="#" data-open="${esc(top.id)}">${esc(label(top))}</a></div>` : '') +
     `<span class="spacer"></span><span class="gen" title="Listings come from the sources your agent swept; this is not a census of the market.">${S.manifest.generated ? 'Data built ' + esc(S.manifest.generated.slice(0, 10)) : 'No data yet: run apartmentscout build'}${noGeo ? ` · ${noGeo} awaiting coordinates` : ''} · not a market census</span>`;
   $('kpis').querySelector('[data-open]')?.addEventListener('click', (e) => { e.preventDefault(); openDrawer(e.currentTarget.dataset.open, { fly: true }); });
+  $('kpis').querySelector('[data-pv=edit]')?.addEventListener('click', openSettings);
+  $('kpis').querySelector('[data-pv=reset]')?.addEventListener('click', () => applyCriteria(null));
 }
 
 // ------------------------------------------------------------------ filter rail
@@ -224,17 +301,20 @@ function renderRail() {
   const sel = new Set(f.tiers || []);
   const cap = tierCap();
   const tot = Object.values(S.weights).reduce((a, b) => a + b, 0) || 1;
-  const costs = act.map(cost).filter((v) => v != null).sort((a, b) => a - b);
+  const costs = act.map(budgetAmt).filter((v) => v != null).sort((a, b) => a - b);
   const lo = Math.floor((costs[Math.floor(costs.length * 0.02)] || 2000) / 250) * 250, hi = Math.ceil((costs[Math.floor(costs.length * 0.98)] || 8000) / 250) * 250;
-  const d = S.crit.commute?.destinations?.[0];
+  const d = dest(), ds = allDests();
   const must = new Set(S.crit.must_have || []);
   $('rail').innerHTML = `
+    <div class="sec search-sec"><button type="button" class="srch-row ${S.preview ? 'pv' : ''}" id="railSettings" aria-label="Search settings">
+      <span class="t"><b>${esc(S.crit.search?.name || 'Your search')}</b><small>${esc(searchSummary())}</small></span><span class="go">${S.preview ? '<span class="pill warn">Preview</span>' : ''}Edit</span></button></div>
     ${tiers.length ? `<div class="sec"><div class="sec-h"><h3>Budget</h3><button class="reset" type="button" data-reset="tiers">${f.over || !sel.size ? 'Within budget' : 'Any price'}</button></div>
-      <div class="tiers">${tiers.map((t, i) => `<button type="button" class="tier ${sel.has(i) ? 'on' : ''}" data-tier="${i}" aria-pressed="${sel.has(i)}"><b><i style="background:var(${TIER_VARS[i] || '--tier-3'})"></i>≤ ${money(t.max)}</b><span>${esc(t.name)} · ${cnt((L) => cost(L) != null && cost(L) <= t.max)}</span></button>`).join('')}
-        <button type="button" class="tier ${f.over ? 'on' : ''}" data-over aria-pressed="${f.over}"><b><i style="background:var(--tier-over)"></i>Over</b><span>${cnt((L) => cost(L) > (S.crit.budget?.hard_max ?? 1e9))} over the cap</span></button></div>
-      <div class="range"><div class="range-h"><span>Monthly cost, net of concessions</span><b>${cap ? '≤ ' + money(cap) : 'Any'}</b></div>${hist(costs, lo, hi, 36, cap)}</div></div>` : ''}
-    ${d ? `<div class="sec"><div class="sec-h"><h3>Commute</h3><span class="faint" style="font-size:var(--fs-xs)">to ${esc(d.name)}</span></div>
-      <div class="range-h"><span>Door to door, arrive ${esc(d.arrive_by || '')}</span><b id="comVal">${f.maxCommute >= 75 ? 'Any' : '≤ ' + f.maxCommute + ' min'}</b></div>
+      <div class="tiers">${tiers.map((t, i) => `<button type="button" class="tier ${sel.has(i) ? 'on' : ''}" data-tier="${i}" aria-pressed="${sel.has(i)}"><b><i style="background:var(${TIER_VARS[i] || '--tier-3'})"></i>≤ ${money(t.max)}</b><span>${esc(t.name)} · ${cnt((L) => budgetAmt(L) != null && budgetAmt(L) <= t.max)}</span></button>`).join('')}
+        <button type="button" class="tier ${f.over ? 'on' : ''}" data-over aria-pressed="${f.over}"><b><i style="background:var(--tier-over)"></i>Over</b><span>${cnt((L) => budgetAmt(L) > (S.crit.budget?.hard_max ?? 1e9))} over the cap</span></button></div>
+      <div class="range"><div class="range-h"><span>${esc(BASIS_RAIL[S.crit.budget?.basis] || BASIS_RAIL.monthly_cost)}</span><b>${cap ? '≤ ' + money(cap) : 'Any'}</b></div>${hist(costs, lo, hi, 36, cap)}</div></div>` : ''}
+    ${d ? `<div class="sec"><div class="sec-h"><h3>Commute</h3>${ds.length > 1 ? `<select class="sel cm-dest" id="rDest" aria-label="Commute destination">${ds.map((x) => `<option value="${esc(x.name)}" ${x === d ? 'selected' : ''}>to ${esc(x.name)}</option>`).join('')}</select>` : `<span class="faint" style="font-size:var(--fs-xs)">to ${esc(d.name)}</span>`}</div>
+      ${modeSegHTML(d, 'rMode')}
+      <div class="range-h"><span>${esc(MODE_LABEL[S.commuteMode])} door to door${d.arrive_by ? ', arrive ' + esc(d.arrive_by) : ''}</span><b id="comVal">${f.maxCommute >= 75 ? 'Any' : '≤ ' + f.maxCommute + ' min'}</b></div>
       ${hist(act.map((L) => commuteOf(L)), 0, 60, 30, f.maxCommute < 75 ? f.maxCommute : null)}
       <input type="range" id="rCom" min="5" max="75" value="${f.maxCommute}" style="${pct(f.maxCommute, 5, 75)}" aria-label="Maximum commute in minutes"></div>` : ''}
     <div class="sec"><div class="sec-h"><h3>Must-haves and features</h3>${f.toggles.length ? '<button class="reset" type="button" data-reset="toggles">Clear</button>' : ''}</div>
@@ -263,6 +343,9 @@ function renderRail() {
   R.querySelector('[data-reset=toggles]')?.addEventListener('click', () => setFilter('toggles', []));
   $('rCom')?.addEventListener('input', (e) => { S.filters.maxCommute = +e.target.value; saveFilters(); refreshRailValues(); emit('filters', { quiet: true }); });
   $('rCom')?.addEventListener('change', () => renderRail());
+  $('rDest')?.addEventListener('change', (e) => setCommute({ dest: e.target.value }));
+  R.querySelectorAll('#rMode [data-mode]').forEach((b) => b.addEventListener('click', () => setCommute({ mode: b.dataset.mode })));
+  $('railSettings')?.addEventListener('click', openSettings);
   $('presetSel')?.addEventListener('change', (e) => {
     const p = S.crit.scoring?.presets?.[e.target.value]; if (!p) return;
     S.preset = e.target.value; S.weights = { ...p.weights }; store.set('preset', S.preset); store.set('weights', S.weights);
@@ -272,6 +355,17 @@ function renderRail() {
     e.preventDefault();
     download('weights.yaml', `# paste into criteria.yaml\n${S.preset ? `scoring:\n  preset: ${S.preset}\n` : ''}weights:\n${DIMS.map(([k]) => `  ${k}: ${S.weights[k] || 0}`).join('\n')}\n`, 'text/yaml');
   });
+}
+const BASIS_RAIL = { monthly_cost: 'Monthly cost, net of concessions', net: 'Net-effective rent (fees left out)', gross: 'Gross rent in a paid month, plus known fees' };
+/** The amount budget tiers compare: the scorer's budget_amount (by basis), else the monthly cost. */
+export const budgetAmt = (L) => L.score?.cost?.budget_amount ?? cost(L);
+function searchSummary() {
+  const t = S.crit.budget?.tiers?.[0], m = (S.crit.must_have || []).length, n = allDests().length;
+  return [t ? `${t.name} ${money(t.max)}` : null, `${m} must-have${m === 1 ? '' : 's'}`, `${n} destination${n === 1 ? '' : 's'}`].filter(Boolean).join(' · ');
+}
+/** Best / Subway / Bus / Walk buttons; a mode without router minutes is disabled and says why. */
+export function modeSegHTML(d, id) {
+  return `<div class="seg cm-seg" id="${id}" role="group" aria-label="Commute mode">${modeChoices(d).map((o) => `<button type="button" data-mode="${o.mode}" class="${o.on ? 'on' : ''}" aria-pressed="${o.on}" ${o.enabled ? '' : `disabled title="No ${o.label.toLowerCase()} times for ${esc(d?.name || 'this destination')}: run apartmentscout commute with a ${o.label.toLowerCase()} feed"`}>${o.label}</button>`).join('')}</div>`;
 }
 function presetsHTML() {
   const P = S.crit.scoring?.presets; if (!P) return '';
@@ -290,8 +384,9 @@ function modesHTML(L) {
   const d = dest(); if (!d) return '';
   const m = modesOf(L, d);
   if (m.best == null) return '<div class="c-modes"><span class="faint">Commute not computed</span></div>';
-  const chip = (k, icon, v, label) => `<span class="mode ${m.bestMode === k ? 'best' : ''} ${v == null ? 'na' : ''}" title="${label}: ${v == null ? 'not computed' : Math.round(v) + ' min door to door'}">${icon}<b>${v == null ? '—' : Math.round(v)}</b></span>`;
-  return `<div class="c-modes">${chip('walk', ICONS.walk, m.walk, 'Walk')}${chip('subway', ICONS.train, m.subway, 'Subway')}${chip('bus', ICONS.bus, m.bus, 'Bus')}<span class="line-bullets">${m.legs ? legBadges(m.legs, 3) : bullets(m.route, 3)}</span><span class="to">min to ${esc(d.name)}</span></div>`;
+  // the selected mode is outlined; the fastest is green
+  const chip = (k, icon, v, label) => `<span class="mode ${m.bestMode === k ? 'best' : ''} ${m.mode === k ? 'on' : ''} ${v == null ? 'na' : ''}" title="${label}: ${v == null ? 'not computed' : Math.round(v) + ' min door to door'}">${icon}<b>${v == null ? '—' : Math.round(v)}</b></span>`;
+  return `<div class="c-modes">${chip('walk', ICONS.walk, m.walk, 'Walk')}${chip('subway', ICONS.train, m.subway, 'Subway')}${chip('bus', ICONS.bus, m.bus, 'Bus')}<span class="line-bullets">${m.mode === 'walk' ? '' : m.legs ? legBadges(m.legs, 3) : bullets(m.route, 3)}</span><span class="to">min to ${esc(d.name)}</span></div>`;
 }
 function mediaHTML(L, im) {
   if (im.own.length) return `<img src="${esc(im.own[0])}" alt="" loading="lazy" referrerpolicy="no-referrer"${imgFallback(L, 0)}><span class="nph">${im.own.length} photo${im.own.length > 1 ? 's' : ''}</span>`;
@@ -371,8 +466,9 @@ function legRows(legs) {
 }
 function commuteSection(L, d) {
   if (!d) return '';
-  const c = L.commute?.[d.name], mo = modesOf(L, d);
+  const c = commuteEntry(L, d), mo = modesOf(L, d);
   if (!c && mo.walk == null) return '';
+  const stale = d._stale ? `<p class="money-note">${esc(d.name)} is new or moved in your edited criteria: transit times need <code>apartmentscout commute</code>; walking is estimated from distance.</p>` : '';
   const M = c?.modes || {};
   const avail = MODE_META.filter(([k]) => (k === 'walk' ? mo.walk != null : M[k]?.minutes != null || (k === 'transit' && c?.minutes != null)));
   if (!avail.some(([k]) => k === drawerMode)) drawerMode = avail[0]?.[0] || 'walk';
@@ -385,7 +481,7 @@ function commuteSection(L, d) {
     <div class="mode-tiles" role="tablist">${avail.map(([k, n, ic]) => `<button type="button" role="tab" aria-selected="${k === drawerMode}" class="mt ${k === drawerMode ? 'on' : ''} ${val(k) === best ? 'best' : ''}" data-mode="${k}">${ic}<b>${Math.round(val(k))}<small>min</small></b><span>${n}</span></button>`).join('')}</div>
     <div class="route">${drawerMode === 'walk' ? `<div class="leg"><span class="ic walk"></span><span>Walk the whole way <span class="faint">${miles((M.walk?.m) ?? null)}</span></span><span class="m">${Math.round(mo.walk)} min</span></div>` : sel?.legs ? legRows(sel.legs) : legsHTML(sel?.route || '')}${obs}</div>
     ${sel?.transfers != null && drawerMode !== 'walk' ? `<div class="faint" style="font-size:var(--fs-xs);margin-top:8px">${sel.transfers ? sel.transfers + ' transfer' + (sel.transfers > 1 ? 's' : '') : 'One-seat ride'} · ${Math.round(sel.walk_min ?? 0)} min walking · ${Math.round(sel.ride_min ?? 0)} min riding${sel.wait_min ? ` · ${Math.round(sel.wait_min)} min waiting` : ''}</div>` : ''}
-    ${live ? `<a class="d-link" href="${esc(live)}" target="_blank" rel="noopener">Check the live route ${ICONS.ext}</a>` : ''}</div>`;
+    ${stale}${live ? `<a class="d-link" href="${esc(live)}" target="_blank" rel="noopener">Check the live route ${ICONS.ext}</a>` : ''}</div>`;
 }
 function moneySection(L) {
   const s = L.score || {}, p = L.price || {}, c = s.cost || {}, am = L.amenities || {}, sz = L.size || {};
@@ -396,21 +492,36 @@ function moneySection(L) {
   const pv = Number.isFinite(pv0) ? pv0 : null;
   const ppsf = pv ?? (L.sqft && cost(L) && (!sz.basis || ['reported', 'exact_plan'].includes(sz.basis)) ? cost(L) / L.sqft : null);
   const head = Object.entries(c.headroom || {}).map(([k, v]) => `<span class="pill ${v >= 0 ? 'good' : 'bad'}">${esc(k)} ${v >= 0 ? '+' : '−'}${money(Math.abs(v)).slice(1) ? money(Math.abs(v)) : '$0'}</span>`).join('');
-  const conc = c.concession || {};
+  const conc = c.concession || {}, cf = cashFlow(L), mo = cf.monthly, sg = cf.signing, ls = cf.lease;
+  const unk = '<span class="pill warn">unknown</span>';
+  const row = (k, v, sub = '', cls = '') => `<div class="cf-row ${cls}"><span>${k}${sub ? `<small>${sub}</small>` : ''}</span><b>${v}</b></div>`;
+  const feeTxt = mo.fees == null ? unk : Array.isArray(mo.fees) ? `${money(mo.fees[0])}–${money(mo.fees[1])}` : mo.fees ? money(mo.fees) : 'None';
+  const bb = S.crit.budget?.basis || 'monthly_cost';
+  const cn = c.concession_needed, cnT = cn && Object.entries(cn).filter(([k, v]) => /^\d+$/.test(k) && v?.rent_only_ask != null && v.rent_only_ask > 0);
   return `<div class="d-sec"><h3>Money <span>${c.rent?.lease_months ? Math.round(c.rent.lease_months) + '-month lease' : 'lease term unknown'}</span></h3>
     <div class="money"><div><div class="k">Monthly cost</div><div class="v big">${money(c.monthly ?? cost(L))}${open ? '<small class="plus">+ fees?</small>' : ''}</div></div>
       <div><div class="k">Gross rent</div><div class="v">${money(c.rent?.gross ?? p.gross)}</div></div>
       <div><div class="k">${c.rent?.basis === 'conditional' ? 'Net (if eligible)' : 'Paid month'}</div><div class="v">${money(c.rent?.basis === 'conditional' ? c.rent?.illustrations?.[0]?.net : c.paid_month ?? p.gross)}</div></div></div>
-    ${c.unknown?.length ? `<p class="money-note">Unknown and not assumed: ${esc(c.unknown.join(', '))}.</p>` : ''}
     ${c.rent?.basis === 'conditional' ? `<p class="money-note">Free months are advertised without a lease term, so the net depends on it: ${(c.rent.illustrations || []).map((i) => `${esc(i.lease_months)} months → ${money(i.net)}`).join(' · ')}.</p>` : ''}
-    ${conc.notes?.length || conc.excluded?.length ? `<p class="money-note">${esc([...(conc.notes || []), ...(conc.excluded || [])].join(' · '))}</p>` : ''}
-    ${c.scenarios?.length ? `<p class="money-note">Sources disagree: ${c.scenarios.map((x) => `${esc(x.source || 'claim')} ${money(x.monthly ?? x.gross)}`).join(' vs ')} (ranked on the higher one).</p>` : ''}
-    <div class="facts"><div><div class="k">Move-in cash</div><div class="v">${money(c.move_in_min)}${c.move_in_unknown?.length ? '<small> +' + esc(c.move_in_unknown.join(', ')) + '</small>' : ''}</div></div>
+    ${conc.notes?.length || conc.excluded ? `<p class="money-note">${esc([...(conc.notes || []), ...(conc.excluded ? [conc.excluded] : [])].join(' · '))}</p>` : ''}
+    ${c.scenarios?.length ? `<p class="money-note">Sources disagree: ${c.scenarios.map((x) => `${esc(x.label || x.source || 'claim')} ${money(x.monthly ?? x.gross)}`).join(' vs ')} (ranked on the higher one).</p>` : ''}
+    <div class="cashflow">
+      <div class="cf-col"><h4>Every month <span>recurring</span></h4>
+        ${row('Rent', money(mo.gross), mo.free ? 'in a month you pay' : '')}${row('Monthly fees', feeTxt, mo.fees == null ? 'not added, not assumed' : '')}
+        ${row('Cash each month', `${money(mo.paid ?? mo.gross)}${mo.fees == null ? '<small class="plus">+ fees</small>' : ''}`, '', 'tot')}
+        ${mo.free && mo.net != null ? row('Net effective', money(mo.net), `${esc(mo.free)} month${mo.free === 1 ? '' : 's'} free, averaged`) : ''}</div>
+      <div class="cf-col"><h4>At signing <span>once</span></h4>
+        ${sg.lines.map(([k, v, t]) => row(esc(k), v == null ? unk : money(v), t === 'refundable' ? 'refundable' : '')).join('')}
+        ${row('Documented so far', `${money(sg.total)}${sg.unknown.length ? '<small class="plus">+ unknowns</small>' : ''}`, '', 'tot')}</div></div>
+    ${sg.unknown.length || mo.fees == null ? `<p class="money-note cf-unknown">Still undocumented: ${esc([...(mo.fees == null ? ['monthly fees'] : []), ...sg.unknown].join(', '))}. Ask the leasing office before you compare finalists.</p>` : ''}
+    <div class="lease-total"><span class="k">Over the lease</span>${ls.term ? `<b>${money(ls.total)}</b><span class="faint">${ls.term} months${ls.assumed ? ' (assumed; lease term unknown)' : ''} · rent, known fees and one-time fees${ls.feesUnknown ? ' · monthly fees unknown' : ''} · plus a refundable deposit${ls.deposit != null ? ' of ' + money(ls.deposit) : ''}</span>`
+      : `<b>${ls.options.map((o) => `${money(o.total)} <small>/ ${o.months} mo</small>`).join(' · ')}</b><span class="faint">depends on the lease term${ls.feesUnknown ? ' · monthly fees unknown' : ''}</span>`}</div>
+    <div class="facts">
       <div><div class="k">Size</div><div class="v">${sizeTxt}${basis ? `<small> ${basis}</small>` : ''}</div></div><div><div class="k">$ / ft²</div><div class="v">${ppsf ? '$' + ppsf.toFixed(2) : '—'}</div></div>
       <div><div class="k">Floor</div><div class="v">${L.floor != null ? Math.round(L.floor) + (L.floor_inferred ? '?' : '') : '—'}${L.exposure?.length ? ' · ' + esc(L.exposure.join('/')) : ''}</div></div>
       <div><div class="k">W/D</div><div class="v">${am.in_unit_wd ? 'In unit' : am.in_unit_wd === false ? 'No' : '?'}</div></div><div><div class="k">Doorman</div><div class="v">${esc(am.doorman || '?')}</div></div><div><div class="k">Gym</div><div class="v">${am.gym ? 'Yes' : am.gym === false ? 'No' : '?'}</div></div><div><div class="k">Elevator</div><div class="v">${am.elevator ? 'Yes' : am.elevator === false ? 'No' : '?'}</div></div></div>
-    ${head ? `<div class="headroom"><span class="faint">Headroom</span>${head}</div>` : ''}
-    ${c.concession_needed ? `<p class="money-note">To reach your target it would take about <b>${esc(c.concession_needed.months?.toFixed ? c.concession_needed.months.toFixed(1) : c.concession_needed.months)} free months</b>${c.concession_needed.ask ? ' (ask for ' + esc(c.concession_needed.ask) + ')' : ''}.</p>` : ''}</div>`;
+    ${head ? `<div class="headroom"><span class="faint">Headroom${bb !== 'monthly_cost' ? ' on ' + esc(basisLabel(bb)) : ''}</span>${head}</div>` : ''}
+    ${cnT?.length ? `<p class="money-note">To reach ${money(cn.target)}, ask for about <b>${cnT.map(([t, v]) => `${v.rent_only_ask} free month${v.rent_only_ask === 1 ? '' : 's'} on ${t}`).join(', ')}</b> (rent only).</p>` : ''}</div>`;
 }
 function whySection(L) {
   const s = L.score || {}, R = reasons(L), cov = coverage(L);
@@ -444,7 +555,7 @@ export function openDrawer(id, opt = {}) {
 ${moneySection(L)}
 ${whySection(L)}
     ${commuteSection(L, d)}
-    ${sun ? `<div class="d-sec"><h3>Direct sun on the window <span>floor ${esc(L.site.floor)}, facing ${Math.round(L.site.bearing)}°</span></h3><div class="sunbars">${sun.map((h, i) => `<div title="${h.toFixed(1)} h"><i style="height:${Math.max(3, (h / 9) * 100)}%"></i><span>${'JFMAMJJASOND'[i]}</span></div>`).join('')}</div><div class="faint" style="font-size:var(--fs-xs);margin-top:8px">Skyline straight ahead ${esc(L.site.skyline_ahead_deg)}° · ${L.site.open_sky_share != null ? Math.round(L.site.open_sky_share * 100) + '% open sky in view' : ''}</div></div>` : ''}
+    ${sun ? `<div class="d-sec"><h3>Direct sun on the window <span>floor ${esc(L.site.floor)}, facing ${Math.round(L.site.bearing)}°</span></h3><div class="sunbars">${sun.map((h, i) => `<div title="${h.toFixed(1)} h possible${L.site.sun_hours_expected?.[i] != null ? ` · ${(+L.site.sun_hours_expected[i]).toFixed(1)} h expected on a typical month` : ''}"><i style="height:${Math.max(3, (h / 9) * 100)}%"></i><span>${'JFMAMJJASOND'[i]}</span></div>`).join('')}</div><div class="faint" style="font-size:var(--fs-xs);margin-top:8px">Hours of possible (clear-sky) direct sun on the 15th${L.site.sun_year?.expected != null ? ` · a year: ${Number(L.site.sun_year.possible).toLocaleString()} h possible, about ${Number(L.site.sun_year.expected).toLocaleString()} h expected with typical cloud` : ''}</div><div class="faint" style="font-size:var(--fs-xs);margin-top:4px">Skyline straight ahead ${esc(L.site.skyline_ahead_deg)}° · ${L.site.open_sky_share != null ? Math.round(L.site.open_sky_share * 100) + '% open sky in view' : ''}${L.site.sky_view != null ? ` · sky view ${Math.round(L.site.sky_view * 100)}% (overcast sky)` : ''}${L.site.daylight_factor_est != null ? ` · estimated daylight factor ≈${esc(L.site.daylight_factor_est)}%, not measured` : ''}</div></div>` : ''}
     ${rec.flags?.length ? `<div class="d-sec"><h3>Public records <span>reports, not findings</span></h3>${rec.flags.slice(0, 4).map((x) => `<div class="flag">${esc(x)}</div>`).join('')}</div>` : ''}
     ${rv.summary ? `<div class="d-sec"><h3>Residents say</h3>${ratings ? `<div class="reviews">${ratings}</div>` : ''}<p class="muted" style="margin:0;font-size:var(--fs-sm)">${esc(rv.summary)}</p></div>` : ''}
     ${L.notes ? `<div class="d-sec"><h3>Open questions</h3><p class="muted" style="margin:0;font-size:var(--fs-sm)">${esc(L.notes)}</p></div>` : ''}
@@ -483,7 +594,7 @@ export function closeDrawer() {
 // ------------------------------------------------------------------ router
 // Views load on first visit, so a slow or blocked CDN (three.js for the 3D views) never blanks the app.
 const VIEWS = { map: () => import('./map.js'), list: () => import('./list.js'), compare: () => import('./compare.js'), unit: () => import('./unit3d.js'),
-  plan: () => import('./plan3d.js'), records: () => import('./records.js'), tours: () => import('./tours.js'), research: () => import('./research.js') };
+  plan: () => import('./plan3d.js').then((m) => (import('./plan/tracer-ui.js').then((t) => t.attach()).catch(() => {}), m)), records: () => import('./records.js'), tours: () => import('./tours.js'), research: () => import('./research.js') };
 const loaded = {};
 async function viewModule(v) {
   if (!loaded[v]) loaded[v] = VIEWS[v]().then((m) => { m.init?.(); return m; });
@@ -547,8 +658,13 @@ async function boot() {
   const [listings, crit, manifest, notes] = await Promise.all([
     getJSON(`${S.base}/listings.json`, []), getJSON(`${S.base}/criteria.json`, {}), getJSON(`${S.base}/manifest.json`, {}), getJSON(`${S.base}/notes.json`, {}),
   ]);
-  Object.assign(S, { listings, crit, manifest, notes });
+  Object.assign(S, { listings, crit, manifest, notes, crit0: crit });
+  for (const L of listings) L._score0 = L.score;   // the scorer's result; a browser preview never overwrites it
   if (crit.scoring?.dimensions?.length) DIMS.splice(0, DIMS.length, ...crit.scoring.dimensions);
+  const cm = store.get(searchKey('commute'), null);
+  if (cm) { if (MODE_LABEL[cm.mode]) S.commuteMode = cm.mode; S.destName = cm.dest || null; }
+  const qm = qs.get('mode'); if (MODE_LABEL[qm]) S.commuteMode = qm;
+  drawerMode = S.commuteMode === 'best' ? 'transit' : S.commuteMode;
   S.weights = { ...(crit.weights || {}), ...(store.get('weights', null) || {}) };
   S.preset = store.get('preset', null) || crit.scoring?.preset || null;
   const saved = store.get('filters2', null);
@@ -564,6 +680,11 @@ async function boot() {
   $('searchName').textContent = crit.search?.name || 'Your search';
   document.title = crit.search?.name ? `${crit.search.name} · ApartmentScout` : 'ApartmentScout';
   const flip = setupTheme();
+  const prof = store.get(searchKey('criteria'), null);
+  if (prof) { try { applyCriteria(prof, { quiet: true }); } catch { store.set(searchKey('criteria'), null); S.crit = S.crit0; for (const L of listings) L.score = L._score0; } }
+  if (!allDests().some((d) => d.name === S.destName)) S.destName = allDests()[0]?.name || null;
+  fitMode(false);
+  $('searchSwitch').addEventListener('click', openSettings); renderSearchSwitch();
   rescore(); renderRail(); renderKPIs(); renderCards();
   on('filters', (o) => { renderKPIs(); renderCards(); if (!o?.quiet) renderRail(); });
   // weight sliders fire on every pixel: coalesce to one render per frame, and render the full card list once the drag settles
