@@ -1,33 +1,90 @@
 {
+  "schema": 2,
   "id": "emerald-green-1211",
   "title": "Emerald Green #1211",
   "units": "ft",
-  "source": "Approximate layout drawn from the listing's room dimensions (living 18'10\" x 12'3\", bedroom 16'4\" x 11'0\"). Positions of the bath, kitchen and closets are estimates; replace with the real plan when you get it.",
+  "source": "Approximate layout drawn from the listing's room dimensions (living 18'10\" x 12'3\", bedroom 16'4\" x 11'0\"). Positions of the bath, kitchen, closets, AC units and door swings are estimates; replace with the real plan when you get it.",
+  "provenance": {
+    "match": "stated-dims",
+    "checked": "2026-10-13",
+    "printed": ["Living room 18'10\" x 12'3\"", "Bedroom 16'4\" x 11'0\""],
+    "estimated": ["Bath, kitchen, entry and closet positions", "Door positions and swings", "AC units: assumed through-wall units; size and place unverified", "Window widths"]
+  },
   "ceiling": 8.67,
   "wall": 0.4,
   "up_bearing": 209,
   "floor": 12,
   "rooms": [
-    {"name": "Bedroom", "kind": "bedroom", "x": 0, "y": 7.67, "w": 11, "h": 16.33},
-    {"name": "Living room", "kind": "living", "x": 11.4, "y": 5.17, "w": 12.25, "h": 18.83},
-    {"name": "Kitchen", "kind": "kitchen", "x": 15.4, "y": 0, "w": 8.25, "h": 5.17},
-    {"name": "Entry", "kind": "hall", "x": 8, "y": 0, "w": 7.4, "h": 5.17},
-    {"name": "Bath", "kind": "bath", "x": 0, "y": 0, "w": 8, "h": 7.67},
-    {"name": "W/D + closet", "kind": "closet", "x": 8, "y": 5.17, "w": 3.4, "h": 2.5}
+    {"name": "Bedroom", "kind": "bedroom", "x": 0, "y": 7.67, "w": 11, "h": 16.33, "stated": "16'4\" x 11'0\""},
+    {"name": "Living room", "kind": "living", "x": 11.4, "y": 5.17, "w": 12.25, "h": 18.83, "stated": "18'10\" x 12'3\""},
+    {"name": "Kitchen", "kind": "kitchen", "x": 15.4, "y": 0, "w": 8.25, "h": 5.17, "est": true},
+    {"name": "Entry", "kind": "hall", "x": 8, "y": 0, "w": 7.4, "h": 5.17, "est": true},
+    {"name": "Bath", "kind": "bath", "x": 0, "y": 0, "w": 8, "h": 7.67, "est": true},
+    {"name": "W/D + closet", "kind": "closet", "x": 8, "y": 5.17, "w": 3.4, "h": 2.5, "est": true}
   ],
   "windows": [
     {"room": "Bedroom", "x1": 1.2, "y1": 24, "x2": 9.8, "y2": 24, "sill": 1.6, "head": 7.8, "note": "bay window"},
     {"room": "Living room", "x1": 12.6, "y1": 24, "x2": 22.6, "y2": 24, "sill": 1.6, "head": 8.0}
   ],
   "doors": [
-    {"x1": 11, "y1": 8.6, "x2": 11, "y2": 11.4},
+    {"x1": 11, "y1": 8.6, "x2": 11, "y2": 11.4, "hinge": "a", "swing": "-x", "room": "Bedroom", "name": "bedroom door"},
     {"x1": 11.4, "y1": 8.6, "x2": 11.4, "y2": 11.4},
-    {"x1": 8, "y1": 1.5, "x2": 8, "y2": 4.2},
-    {"x1": 11.6, "y1": 5.17, "x2": 14.6, "y2": 5.17},
-    {"x1": 9.5, "y1": 0, "x2": 12.7, "y2": 0}
+    {"x1": 8, "y1": 1.5, "x2": 8, "y2": 4.2, "hinge": "a", "swing": "-x", "room": "Bath", "name": "bath door"},
+    {"x1": 11.6, "y1": 5.17, "x2": 14.6, "y2": 5.17, "swing": "none", "name": "living room opening"},
+    {"x1": 9.5, "y1": 0, "x2": 12.7, "y2": 0, "hinge": "a", "swing": "+y", "kind": "entry", "name": "front door"}
   ],
   "open_walls": [
     {"x1": 15.4, "y1": 5.17, "x2": 23.65, "y2": 5.17},
     {"x1": 15.4, "y1": 0, "x2": 15.4, "y2": 5.17}
+  ],
+  "fixtures": [
+    {"kind": "closet", "label": "Bedroom closet", "x": 0.2, "y": 7.87, "w": 4.5, "h": 2, "height": 7, "doors": "bifold", "reserve": 1.5, "est": true, "note": "The listing mentions closets but not where they are."},
+    {"kind": "wd", "label": "Washer/dryer", "x": 8.3, "y": 5.4, "w": 2.4, "h": 2.1, "est": true},
+    {"kind": "counter", "label": "Counter and range", "x": 15.6, "y": 0.2, "w": 5.4, "h": 2.1, "est": true},
+    {"kind": "fridge", "label": "Fridge", "x": 21.0, "y": 0.2, "w": 2.45, "h": 2.4, "est": true},
+    {"kind": "tub", "label": "Tub", "x": 0.2, "y": 0.2, "w": 5, "h": 2.5, "est": true},
+    {"kind": "toilet", "label": "Toilet", "x": 0.5, "y": 5.1, "w": 1.6, "h": 2.3, "est": true},
+    {"kind": "vanity", "label": "Vanity", "x": 5.4, "y": 5.6, "w": 2.4, "h": 1.85, "est": true},
+    {"kind": "ac", "label": "Bedroom AC", "x": 0.2, "y": 20.3, "w": 0.8, "h": 3.5, "height": 2, "est": true, "reserve": 1.5, "note": "Assumed through-wall unit beside the window; size and place unverified."},
+    {"kind": "ac", "label": "Living room AC", "x": 22.85, "y": 20.3, "w": 0.6, "h": 3.5, "height": 2, "est": true, "reserve": 1.5, "note": "Assumed through-wall unit beside the window; size and place unverified."}
+  ],
+  "keepout": [
+    {"name": "Path from the front door", "x": 9.5, "y": 0.2, "w": 3.2, "h": 4.8}
+  ],
+  "layouts": [
+    {
+      "id": "bed-left-wall",
+      "name": "Bed on the left wall, floating sofa",
+      "note": "Headboard on the solid left wall with both sides free and a 65-inch TV 8.5 ft from the pillows; the sofa sits 1.5 ft off the wall so the living-room TV is about 8 ft from the seat.",
+      "items": [
+        {"id": "bed", "ref": "queen-bed", "x": 3.7, "y": 15.9, "rot": 270},
+        {"id": "nightstand-1", "ref": "nightstand", "x": 0.87, "y": 12.43, "rot": 270},
+        {"id": "nightstand-2", "ref": "nightstand", "x": 0.87, "y": 19.37, "rot": 270},
+        {"id": "dresser", "ref": "dresser", "x": 6.2, "y": 8.69, "rot": 180},
+        {"id": "tv-bed", "ref": "tv-65", "x": 10.65, "y": 15.9, "rot": 90},
+        {"id": "sofa", "ref": "sofa-3", "x": 20.5, "y": 15.5, "rot": 90},
+        {"id": "coffee", "ref": "coffee-table", "x": 16.75, "y": 15.5, "rot": 90},
+        {"id": "tv", "ref": "tv-65", "x": 11.75, "y": 15.5, "rot": 270},
+        {"id": "dining", "ref": "dining-4", "x": 19.5, "y": 8.0, "rot": 0},
+        {"id": "desk", "ref": "desk", "x": 13.8, "y": 22.8, "rot": 0}
+      ]
+    },
+    {
+      "id": "bed-right-wall",
+      "name": "Bed on the door wall, desk at the window",
+      "note": "Headboard on the right wall past the door swing; a desk takes the bay window and the TV goes on the opposite wall.",
+      "items": [
+        {"id": "bed", "ref": "queen-bed", "x": 7.3, "y": 16.5, "rot": 90},
+        {"id": "nightstand-1", "ref": "nightstand", "x": 10.13, "y": 13.03, "rot": 90},
+        {"id": "nightstand-2", "ref": "nightstand", "x": 10.13, "y": 19.97, "rot": 90},
+        {"id": "dresser", "ref": "dresser", "x": 6.2, "y": 8.69, "rot": 180},
+        {"id": "desk-bed", "ref": "desk", "x": 5.0, "y": 22.8, "rot": 0},
+        {"id": "tv-bed", "ref": "tv-65", "x": 0.35, "y": 16.5, "rot": 270},
+        {"id": "sofa", "ref": "sofa-3", "x": 20.5, "y": 15.5, "rot": 90},
+        {"id": "coffee", "ref": "coffee-table", "x": 16.75, "y": 15.5, "rot": 90},
+        {"id": "tv", "ref": "tv-65", "x": 11.75, "y": 15.5, "rot": 270},
+        {"id": "dining", "ref": "dining-round", "x": 19.2, "y": 7.8, "rot": 0}
+      ]
+    }
   ]
 }

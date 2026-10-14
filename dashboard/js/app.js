@@ -437,7 +437,7 @@ function setupKeys(flipTheme) {
     if (/^[1-7]$/.test(e.key)) { location.hash = views[+e.key - 1]; return; }
     if (e.key === '?') {
       const el = document.createElement('div'); el.className = 'kbd-help';
-      el.innerHTML = `<div class="panel"><h3>Keyboard</h3><dl>${[['/', 'Search listings'], ['j k', 'Next or previous listing'], ['s', 'Save the open listing'], ['c', 'Add it to compare'], ['1–7', 'Switch view'], ['t', 'Light or dark'], ['Esc', 'Close']].map(([k, t]) => `<dt>${k.split(' ').map((x) => `<kbd>${x}</kbd>`).join(' ')}</dt><dd style="margin:0">${t}</dd>`).join('')}</dl></div>`;
+      el.innerHTML = `<div class="panel"><h3>Keyboard</h3><dl>${[['/', 'Search listings'], ['j k', 'Next or previous listing'], ['s', 'Save the open listing'], ['c', 'Add it to compare'], ['1–7', 'Switch view'], ['t', 'Light or dark'], ['Esc', 'Close'], ...(S.view === 'plan' ? [['R', 'Turn the selected piece'], ['← →', 'Nudge 1 in (Shift 6 in)'], ['D', 'Duplicate'], ['Del', 'Remove'], ['⌘Z', 'Undo'], ['W A S D', 'Walk mode']] : []), ...(S.view === 'unit' ? [['p', 'Play or pause the day'], [', .', 'Step 15 minutes']] : [])].map(([k, t]) => `<dt>${k.split(' ').map((x) => `<kbd>${x}</kbd>`).join(' ')}</dt><dd style="margin:0">${t}</dd>`).join('')}</dl></div>`;
       el.addEventListener('click', () => el.remove()); document.body.append(el);
     }
   });
