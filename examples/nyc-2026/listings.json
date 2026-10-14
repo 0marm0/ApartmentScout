@@ -2214,6 +2214,14 @@
    "evidence": "Photo 7 gray cabinets, white quartz peninsula, steel fridge and gas range with brass faucet; 8 white subway bath with dark vanity; 1 plan; 2-6 exterior and ornate lobby and bar.",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/henry-hall-23j/f49ff24ae9be2ba855350e1e1dfb5036-se_extra_large_1500_800-5a1243b0.webp": {
+    "watermark": true,
+    "why": [
+     "text-heavy"
+    ]
+   }
   }
  },
  {
@@ -3796,7 +3804,15 @@
   },
   "floorplan_images": [
    "media/the-knox-7ba/fp-ef806e5c1637.webp"
-  ]
+  ],
+  "photo_flags": {
+   "media/the-knox-7ba/p-2f6162d97c45.webp": {
+    "watermark": true,
+    "why": [
+     "person"
+    ]
+   }
+  }
  },
  {
   "id": "the-horizon-35d",
@@ -4428,6 +4444,26 @@
    "evidence": "Parquet floors, white builder cabinets with black granite and Bosch dishwasher, beige travertine baths, corner bay with river view (1-7).",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/the-horizon-35d/163045934-60fb177f.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/the-horizon-35d/163045935-e7ab0851.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/the-horizon-35d/163045940-c4ef1f2b.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   }
   }
  },
  {
@@ -6322,6 +6358,20 @@
    "evidence": "Dark flat-panel kitchen with integrated panel fridge and Miele-style oven, gas cooktop (2), large-format stone bath with soaking tub (4), Starck lobby and gym (5-6).",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/gramercy-starck-10l/162998393-771ee123.webp": {
+    "watermark": true,
+    "why": [
+     "face"
+    ]
+   },
+   "media/gramercy-starck-10l/162998397-67fc0369.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   }
   }
  },
  {
@@ -7480,7 +7530,33 @@
     "scope": "building",
     "year": null
    }
-  ]
+  ],
+  "photo_flags": {
+   "media/the-highpoint-condo-31f/161393096-9daa6209.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/the-highpoint-condo-31f/161393097-7cec7c9b.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/the-highpoint-condo-31f/161393098-b3d2c527.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/the-highpoint-condo-31f/161393102-88f36466.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   }
+  }
  },
  {
   "id": "the-aurora-704",
@@ -9524,6 +9600,21 @@
    "evidence": "White raised-panel cabinets, black granite and stainless appliances (3), white shaker-vanity tub bath (5), dark parquet (2,4,6), doorman lobby (8); photo 1 is staged.",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/yorkshire-towers-10ne/fp-caae6f260a0d.webp": {
+    "watermark": true,
+    "why": [
+     "email",
+     "phone number"
+    ]
+   },
+   "media/yorkshire-towers-10ne/p-d6d3ddd97344.webp": {
+    "watermark": true,
+    "why": [
+     "face"
+    ]
+   }
   }
  },
  {
@@ -10266,6 +10357,75 @@
    "evidence": "Photo 2 staged living room with dark-framed bay windows and hardwood; 4 white bath with marble floor and shower wall; 1,5-7 pool, hot tub, courtyard, lobby; 8 plan.",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/the-corinthian-9i/162857077-b89f81be.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/the-corinthian-9i/162857085-b087186f.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/the-corinthian-9i/162857086-e19b279e.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/the-corinthian-9i/162857087-e48e14ae.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo",
+     "large lettering (sign or logo card)"
+    ]
+   },
+   "media/the-corinthian-9i/162857088-61c8dbfc.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/the-corinthian-9i/163094243-d121b5e3.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/the-corinthian-9i/163094244-230f80d3.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/the-corinthian-9i/163094245-a0bc25fb.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/the-corinthian-9i/163094247-58944286.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/the-corinthian-9i/163094250-37666988.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/the-corinthian-9i/163094338-04f2421e.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   }
   }
  },
  {
@@ -10873,6 +11033,15 @@
    "evidence": "White gloss cabinets, quartz, stainless with gas range, gray subway tile (1,6); dark vinyl-look plank (2,5); brown-tile bath with wood vanity (7); living photo 4 staged; roof lawn (8).",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/the-landon-17b/b-f609614aae22.webp": {
+    "watermark": true,
+    "why": [
+     "large lettering (sign or logo card)",
+     "text-heavy"
+    ]
+   }
   }
  },
  {
@@ -11657,7 +11826,15 @@
     "scope": "building",
     "year": null
    }
-  ]
+  ],
+  "photo_flags": {
+   "media/the-lewis-10f/fp-f7b5545f7241.webp": {
+    "watermark": true,
+    "why": [
+     "phone number"
+    ]
+   }
+  }
  },
  {
   "id": "townsend-9e",
@@ -13039,6 +13216,14 @@
    "evidence": "Virtually staged bedroom and living room with light wood floors and river-view windows (1-3); white subway tub bath with black floating vanity (4); gym, lounge mural, river-view deck (5-8).",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/275-south-street-14o/p-41852cb01f14.webp": {
+    "watermark": true,
+    "why": [
+     "person"
+    ]
+   }
   }
  },
  {
@@ -14382,6 +14567,21 @@
    "evidence": "Photos 1,2,4,5 rendered-looking furniture with large picture windows and hardwood; 3 lobby; 6-7 roof terrace (not graded); no kitchen or bath shown.",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/atlas-38d/00adddd1bf0fe146d890ce8884f0346a-se_extra_large_1500_800-93d78db4.webp": {
+    "watermark": true,
+    "why": [
+     "person"
+    ]
+   },
+   "media/atlas-38d/fp-67dd443a2817.webp": {
+    "watermark": true,
+    "why": [
+     "email",
+     "phone number"
+    ]
+   }
   }
  },
  {
@@ -15021,6 +15221,21 @@
    "evidence": "Virtually staged living/bed (1,2,8); kitchen barely visible with stainless appliances (8); lobby with revolving door, terrace, library (3-6).",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/atlas-42h/00adddd1bf0fe146d890ce8884f0346a-se_extra_large_1500_800-93d78db4.webp": {
+    "watermark": true,
+    "why": [
+     "person"
+    ]
+   },
+   "media/atlas-42h/fp-89f69f1aacda.webp": {
+    "watermark": true,
+    "why": [
+     "email",
+     "phone number"
+    ]
+   }
   }
  },
  {
@@ -15800,6 +16015,16 @@
    "evidence": "Dark cherry floors, corner glass with river view (1); wood cabinets with frosted-glass uppers, stainless fridge, gas cooktop, wall oven, dishwasher, tile floor (2); Bosch stacked W/D (4); pool, terrace, lounge, gym (5-8).",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/silver-towers-s20a/09db2d0dd7d4e47c821a7c56effddab9-se_extra_large_1500_800-bc40760f.webp": {
+    "watermark": true,
+    "why": [
+     "phone number",
+     "text-heavy",
+     "web address"
+    ]
+   }
   }
  },
  {
@@ -16563,6 +16788,22 @@
    "evidence": "Photo 1 only: staged bedroom with floor-to-ceiling glass, cherry-tone wood floor and river view; photo 2 plan.",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/silver-towers-s48b/946fa2f0a6987d51f5ee324e83a33910-se_extra_large_1500_800-1897b7c2.webp": {
+    "watermark": true,
+    "why": [
+     "phone number",
+     "text-heavy",
+     "web address"
+    ]
+   },
+   "media/silver-towers-s48b/fp-260cf750f408.webp": {
+    "watermark": true,
+    "why": [
+     "phone number"
+    ]
+   }
   }
  },
  {
@@ -17352,6 +17593,22 @@
    "evidence": "Photos 2-3 white cabinets, integrated panel fridge, Bertazzoni-style range and herringbone marble splash; 4 marble bath with frameless glass slider; 1,6,8 herringbone oak; 5 Bosch W/D; 7 custom closet.",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/yorkshire-towers-10de/fp-3dfa24749cae.webp": {
+    "watermark": true,
+    "why": [
+     "email",
+     "phone number"
+    ]
+   },
+   "media/yorkshire-towers-10de/fp-f443d4acbd3f.webp": {
+    "watermark": true,
+    "why": [
+     "email",
+     "phone number"
+    ]
+   }
   }
  },
  {
@@ -19731,6 +19988,14 @@
    "evidence": "Corner unit with floor-to-ceiling black-framed glass, light-oak plank, island kitchen with white panel appliances (1-3, furnished/staged), sky lounge, spa pool and skyline views (4-8).",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/american-copper-buildings-the-copper-e37e/p-4bf0bc1f2818.webp": {
+    "watermark": true,
+    "why": [
+     "person"
+    ]
+   }
   }
  },
  {
@@ -20317,7 +20582,15 @@
     "scope": "building",
     "year": null
    }
-  ]
+  ],
+  "photo_flags": {
+   "media/chartwell-house-16e/p-a19bbf00ed27.webp": {
+    "watermark": true,
+    "why": [
+     "large lettering (sign or logo card)"
+    ]
+   }
+  }
  },
  {
   "id": "pearl-pine-912",
@@ -21967,6 +22240,14 @@
    "evidence": "Bertazzoni range with white flat-panel and wood-front cabinets and stone counter (6), wood-look tile tub bath with floating vanity (7), empty-room plank floors and floor-to-ceiling river views (3-5); photos 1-2 virtually staged.",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/the-east-2106/p-25151005470a.webp": {
+    "watermark": true,
+    "why": [
+     "large lettering (sign or logo card)"
+    ]
+   }
   }
  },
  {
@@ -22771,6 +23052,14 @@
    "evidence": "Light-oak flat-panel kitchen with panel-ready fridge, wall oven, marble-look backsplash (2); beige large-format tile tub bath with floating vanity (5); staged living and bed (1,4); ornate lobby, locker room, roof deck (3,6-8).",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/one-west-1-west-street-1640/p-acb5778480cd.webp": {
+    "watermark": true,
+    "why": [
+     "large lettering (sign or logo card)"
+    ]
+   }
   }
  },
  {
@@ -24338,6 +24627,21 @@
    "evidence": "Blond flat-panel cabinetry with integrated panel fridge, wall oven and gas cooktop (2), pale wide-plank oak, white-tile bath with freestanding tub, vessel sink and glass shower (4,8).",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/gramercy-starck-5h/b-608d374353d9.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/gramercy-starck-5h/b-9cc2fb0ed7b9.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo",
+     "face"
+    ]
+   }
   }
  },
  {
@@ -25721,6 +26025,20 @@
    "evidence": "Oak flat-panel kitchen with stainless fridge, gas range, dishwasher, white counters (1,3); oak floors, tall glass balcony door (2,6); balcony with river view (7); tower and courtyard exterior (8).",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/via-57-west-521/b-8242740efdbe.webp": {
+    "watermark": true,
+    "why": [
+     "person"
+    ]
+   },
+   "media/via-57-west-521/p-d237327d804c.webp": {
+    "watermark": true,
+    "why": [
+     "face"
+    ]
+   }
   }
  },
  {
@@ -27610,6 +27928,26 @@
    "evidence": "Virtually staged living and bedroom with light oak floors and black-framed windows (1-4); dark wood-grain cabinets, white quartz, stainless gas range and micro (5); loft shot (7) and render (8) are amenity or other.",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/exhibit-downtown-15e/b-dd43dab21102.webp": {
+    "watermark": true,
+    "why": [
+     "person"
+    ]
+   },
+   "media/exhibit-downtown-15e/p-201c63093837.webp": {
+    "watermark": true,
+    "why": [
+     "person"
+    ]
+   },
+   "media/exhibit-downtown-15e/p-dd47dd647100.webp": {
+    "watermark": true,
+    "why": [
+     "large lettering (sign or logo card)"
+    ]
+   }
   }
  },
  {
@@ -29408,6 +29746,14 @@
    "evidence": "Real phone shots show empty rooms with light herringbone floor and black-framed window onto a nearby facade (2,3); other rooms virtually staged with Chrysler skyline (4,5,7,8); screening room (6).",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/the-knox-13c/p-f15c3f4b5aa8.webp": {
+    "watermark": true,
+    "why": [
+     "text-heavy"
+    ]
+   }
   }
  },
  {
@@ -30124,7 +30470,21 @@
     "scope": "building",
     "year": null
    }
-  ]
+  ],
+  "photo_flags": {
+   "media/the-west-residence-club-103/163395777-44169ace.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/the-west-residence-club-103/163395778-d42a8b66.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   }
+  }
  },
  {
   "id": "devon-condominium-10b",
@@ -31228,6 +31588,15 @@
    "evidence": "Photo 2 wood-veneer cabinets, stone counter, steel fridge, micro and gas range; 3 tan-tile bath with floating wood vanity and glass door; 1,4 staged bedroom with light plank floor.",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/gotham-west-536/fp-453858a3a60b.webp": {
+    "watermark": true,
+    "why": [
+     "email",
+     "phone number"
+    ]
+   }
   }
  },
  {
@@ -31839,6 +32208,15 @@
    "evidence": "Virtually staged living and bedroom (1,3,4) with tall glass and Hudson views; beige-tile tub bath with glass panel and wood vanity (2,5); no kitchen shown.",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/gotham-west-821/fp-1f9652ee792a.webp": {
+    "watermark": true,
+    "why": [
+     "email",
+     "phone number"
+    ]
+   }
   }
  },
  {
@@ -33324,6 +33702,26 @@
    "evidence": "All photos are computer-staged: flat-panel white kitchen with integrated fridge, GE wall oven and gas cooktop (2,5), light oak plank, corner windows (1,3).",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/pearl-house-5g/fp-b2754d3eb068.webp": {
+    "watermark": true,
+    "why": [
+     "phone number"
+    ]
+   },
+   "media/pearl-house-5g/fp-ce9286aed22a.webp": {
+    "watermark": true,
+    "why": [
+     "phone number"
+    ]
+   },
+   "media/pearl-house-5g/fp-d12786ec37d0.webp": {
+    "watermark": true,
+    "why": [
+     "phone number"
+    ]
+   }
   }
  },
  {
@@ -34091,6 +34489,20 @@
    "evidence": "Virtually staged corner living and bedroom with dark floors and floor-to-ceiling glass (2,3,5); galley kitchen with dark wood lowers, stainless, white quartz, mosaic backsplash (4); marble-look tub bath (6); terrace, gym (1,8).",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/the-adele-phf/fp-7aa282ba4f1d.webp": {
+    "watermark": true,
+    "why": [
+     "phone number"
+    ]
+   },
+   "media/the-adele-phf/fp-8e706b22a0be.webp": {
+    "watermark": true,
+    "why": [
+     "phone number"
+    ]
+   }
   }
  },
  {
@@ -36121,6 +36533,14 @@
    "evidence": "Building-wide model render: light flat-panel kitchen with integrated fridge and wall oven (2), tall windows (1), plain tub bath (3-4), rendered lobby and terraces (5-7).",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/7-platt-14g/773cbcc276226c3f74b45b07fe73a7cd-se_extra_large_1500_800-5ed87f32.webp": {
+    "watermark": true,
+    "why": [
+     "person"
+    ]
+   }
   }
  },
  {
@@ -36792,6 +37212,14 @@
    "evidence": "Rendered or staged look (1-7): white flat-panel kitchen with panel-ready fridge, wall oven, gas cooktop (2,5); large-format gray tile glass shower, floating vanity (7); neighbor facade; lounge (8).",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/pearl-house-7l/fp-aca982091682.webp": {
+    "watermark": true,
+    "why": [
+     "phone number"
+    ]
+   }
   }
  },
  {
@@ -38451,6 +38879,26 @@
    "evidence": "Photo 1 glossy white kitchen with black counter and steel appliances; 2-4 staged living and bedroom with oak floors; 5 Bosch stacked W/D; 6 simple subway-tile bath; 7-8 terrace and lawn amenity.",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/mercedes-house-1807/b-1819d58ed8c2.webp": {
+    "watermark": true,
+    "why": [
+     "person"
+    ]
+   },
+   "media/mercedes-house-1807/b-705e38b5de63.webp": {
+    "watermark": true,
+    "why": [
+     "face"
+    ]
+   },
+   "media/mercedes-house-1807/p-fbe3912123b8.webp": {
+    "watermark": true,
+    "why": [
+     "person"
+    ]
+   }
   }
  },
  {
@@ -40485,6 +40933,20 @@
    "evidence": "Photo 1 light hardwood, quartz counter and large picture window; 2 marble-look bath with white vanity; 3-6 lobby, lounge, gym; 7 wide skyline (possibly not from unit); 8 plan.",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/the-atelier-14d/34335762-21151b69.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/the-atelier-14d/34335764-337e0b46.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   }
   }
  },
  {
@@ -41157,6 +41619,32 @@
    "evidence": "Photos 1-2 look rendered or virtually staged with flat-panel cabinetry, built-in oven, cooktop and light wide-plank oak; 3 bedroom glass wall; 5 stacked W/D; 6-7 striking lounge and lobby; 8 plan.",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/the-oskar-10f/162786781-b779f167.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/the-oskar-10f/162786791-f5cdcc6f.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/the-oskar-10f/162786793-ba81a0a0.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/the-oskar-10f/162786794-a54110e3.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   }
   }
  },
  {
@@ -46474,6 +46962,14 @@
    "evidence": "Wide living windows with sun (1,2); white cabinets, granite counters, stainless French-door fridge, gas range, dishwasher (6,7,8); worn parquet floors and track lighting (3,4).",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/1510-lexington-12f/fp-fae588258664.webp": {
+    "watermark": true,
+    "why": [
+     "phone number"
+    ]
+   }
   }
  },
  {
@@ -48071,6 +48567,94 @@
    "evidence": "Light wide-plank floors and corner floor-to-ceiling glass (1,2); light-wood kitchen with stone waterfall island, stainless micro and range (1); plain white tub bath with wood vanity (3); marble corridor, pool lounge, tower exterior (4-7).",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/1516-park-avenue-3h/162692672-70874091.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/1516-park-avenue-3h/162692674-f1786bcc.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/1516-park-avenue-3h/162692676-fe065042.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/1516-park-avenue-3h/162692679-036d0e07.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/1516-park-avenue-3h/162692682-a6176507.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/1516-park-avenue-3h/162692683-56bd2a71.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/1516-park-avenue-3h/162692684-11c7e542.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/1516-park-avenue-3h/162692685-51ca051a.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/1516-park-avenue-3h/162692686-b65d8829.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/1516-park-avenue-3h/162692687-3bf4ecea.webp": {
+    "watermark": true,
+    "why": [
+     "email",
+     "text-heavy",
+     "web address"
+    ]
+   },
+   "media/1516-park-avenue-3h/b-45db5acad565.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/1516-park-avenue-3h/b-6f2bb07b40c9.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/1516-park-avenue-3h/b-948311283075.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/1516-park-avenue-3h/b-bd9038f6388d.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   }
   }
  },
  {
@@ -48496,6 +49080,66 @@
    "evidence": "Virtually staged rooms (1,2): light wide-plank floors, wood island with stone counter (1), large windows (2); Bosch stacked W/D (3); lounge with floor-to-ceiling glass, roof deck, new tower exterior (4-7).",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/1516-park-avenue-8a/163123475-cc0cd99f.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/1516-park-avenue-8a/163123476-83b9f9ef.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/1516-park-avenue-8a/163123479-6c81f18f.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/1516-park-avenue-8a/163123482-769355f6.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/1516-park-avenue-8a/163123483-d6db7945.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo",
+     "large lettering (sign or logo card)",
+     "text-heavy"
+    ]
+   },
+   "media/1516-park-avenue-8a/163123486-5222c474.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/1516-park-avenue-8a/163123487-186c4ad6.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/1516-park-avenue-8a/163123489-9c7d9309.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/1516-park-avenue-8a/163123493-f237c29d.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo",
+     "text-heavy",
+     "web address"
+    ]
+   }
   }
  },
  {
@@ -49011,7 +49655,27 @@
     "scope": "building",
     "year": null
    }
-  ]
+  ],
+  "photo_flags": {
+   "media/308-east-109th-street-6c/163250638-b817f8fd.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/308-east-109th-street-6c/163250645-3975bd1e.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/308-east-109th-street-6c/163250646-1509433c.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   }
+  }
  },
  {
   "id": "3880-9th-avenue-4c",
@@ -51075,6 +51739,88 @@
    "evidence": "Marketing set with staged furniture: gray flat-panel kitchen with quartz and stainless fridge/microwave (2-3), pale plank floor (1), rendered courtyard, lounge and karaoke room (5-7).",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/405-west-206th-street-1205e/163445432-daef29d0.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/405-west-206th-street-1205e/163445437-0fef3e82.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/405-west-206th-street-1205e/163445443-bbfb8d53.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/405-west-206th-street-1205e/163445454-2ed4436b.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/405-west-206th-street-1205e/163445463-3cca837c.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/405-west-206th-street-1205e/163445467-ab3ebdb2.webp": {
+    "watermark": true,
+    "why": [
+     "person"
+    ]
+   },
+   "media/405-west-206th-street-1205e/163445470-1038f558.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/405-west-206th-street-1205e/163445474-303a72d4.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo",
+     "person"
+    ]
+   },
+   "media/405-west-206th-street-1205e/163445476-e44a6a9c.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo",
+     "person"
+    ]
+   },
+   "media/405-west-206th-street-1205e/b-18a29bea09e3.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/405-west-206th-street-1205e/b-3c7f194dc3b5.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/405-west-206th-street-1205e/b-5a32be4c3720.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/405-west-206th-street-1205e/b-76765e47dde8.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   }
   }
  },
  {
@@ -51905,6 +52651,88 @@
    "evidence": "Photos 1-3 appear to be renders of a light-cabinet kitchen with steel appliances and corner windows; 5-7 render of courtyard, lounge, gym and terrace; 8 plan.",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/405-west-206th-street-1402e/162998515-5e2d0d83.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/405-west-206th-street-1402e/162998517-7fd31424.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/405-west-206th-street-1402e/162998519-9ebb0fa3.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/405-west-206th-street-1402e/162998523-c7071953.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/405-west-206th-street-1402e/162998528-0ded6ee0.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/405-west-206th-street-1402e/162998530-b8b199d1.webp": {
+    "watermark": true,
+    "why": [
+     "person"
+    ]
+   },
+   "media/405-west-206th-street-1402e/162998532-d9edac1c.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/405-west-206th-street-1402e/162998534-b2d1c974.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo",
+     "person"
+    ]
+   },
+   "media/405-west-206th-street-1402e/162998535-907d345b.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo",
+     "person"
+    ]
+   },
+   "media/405-west-206th-street-1402e/b-18a29bea09e3.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/405-west-206th-street-1402e/b-3c7f194dc3b5.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/405-west-206th-street-1402e/b-5a32be4c3720.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/405-west-206th-street-1402e/b-76765e47dde8.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   }
   }
  },
  {
@@ -52723,6 +53551,64 @@
    "evidence": "Photo 1 render of an open kitchen and living room with corner windows and steel appliances; 2-7 renders of courtyard, lounge, gym, terrace and building; 8 plan.",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/405-west-206th-street-211e/163165607-34fde188.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/405-west-206th-street-211e/163165610-d02c9384.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/405-west-206th-street-211e/163165612-2216b1a8.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo",
+     "person"
+    ]
+   },
+   "media/405-west-206th-street-211e/163165613-e73abeda.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo",
+     "person"
+    ]
+   },
+   "media/405-west-206th-street-211e/163165615-ef014d0a.webp": {
+    "watermark": true,
+    "why": [
+     "person"
+    ]
+   },
+   "media/405-west-206th-street-211e/b-1b53aece14bd.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/405-west-206th-street-211e/b-4462aac57148.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/405-west-206th-street-211e/b-4d252fe2d4a9.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/405-west-206th-street-211e/b-da24e35de27c.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   }
   }
  },
  {
@@ -53326,6 +54212,138 @@
    "evidence": "Staged living and bedroom with pale plank floor and large windows (1-2); the rest are courtyard, roof, lounge and theater renders (3-7).",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/405-west-206th-street-310/162903067-d7f84632.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/405-west-206th-street-310/162903069-d35bbfa7.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/405-west-206th-street-310/162903071-9fa02191.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/405-west-206th-street-310/162903074-26d6286a.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/405-west-206th-street-310/162903079-54bb1810.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/405-west-206th-street-310/162903088-98900651.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/405-west-206th-street-310/162903091-0eb1d977.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/405-west-206th-street-310/162903092-84d275fc.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/405-west-206th-street-310/162903093-709be75f.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/405-west-206th-street-310/162903094-87aea3b8.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/405-west-206th-street-310/162903098-15c0dd45.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/405-west-206th-street-310/162903099-7cc32900.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/405-west-206th-street-310/162903100-e34df77f.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo",
+     "person"
+    ]
+   },
+   "media/405-west-206th-street-310/162903101-8f135452.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/405-west-206th-street-310/162903103-31e6ce7b.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/405-west-206th-street-310/162903105-76d29a7c.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo",
+     "large lettering (sign or logo card)",
+     "web address"
+    ]
+   },
+   "media/405-west-206th-street-310/162903109-46bb6310.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/405-west-206th-street-310/b-4e0365df216a.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/405-west-206th-street-310/b-617fa77d921e.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo",
+     "person"
+    ]
+   },
+   "media/405-west-206th-street-310/b-868b051fa8fe.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/405-west-206th-street-310/b-ebf5f409382d.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   }
   }
  },
  {
@@ -57086,6 +58104,14 @@
    "evidence": "White and light-wood kitchen with GE stainless range and fridge (2), large-format tile tub bath with floating vanity (7), light oak plank (1,4,6), sauna (8); rooms look professionally staged.",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/the-westline-607/1bad370c9a643c865ddba628f2a06a57-se_extra_large_1500_800-6b2001de.webp": {
+    "watermark": true,
+    "why": [
+     "text-heavy"
+    ]
+   }
   }
  },
  {
@@ -57550,7 +58576,15 @@
     "scope": "building",
     "year": null
    }
-  ]
+  ],
+  "photo_flags": {
+   "media/devon-condominium-2g/p-4caf909503fe.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   }
+  }
  },
  {
   "id": "manhattan-place-25au",
@@ -58517,7 +59551,21 @@
     "scope": "building",
     "year": null
    }
-  ]
+  ],
+  "photo_flags": {
+   "media/greenwich-house-lofts-3h/fp-3ce7d459aadf.webp": {
+    "watermark": true,
+    "why": [
+     "phone number"
+    ]
+   },
+   "media/greenwich-house-lofts-3h/fp-bebaa7dde8ac.webp": {
+    "watermark": true,
+    "why": [
+     "phone number"
+    ]
+   }
+  }
  },
  {
   "id": "2-gold-street-2512",
@@ -63954,6 +65002,44 @@
    "evidence": "One staged living-room photo with big window and bridge view (1); rest are sauna, lounges, wine and cigar rooms, porte-cochere and garden (2-8).",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/one-manhattan-square-17n/131302674-ea5c4910.webp": {
+    "watermark": true,
+    "why": [
+     "person"
+    ]
+   },
+   "media/one-manhattan-square-17n/159106225-47642a69.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/one-manhattan-square-17n/159106226-d2fd52ec.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/one-manhattan-square-17n/159106227-78f37bca.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/one-manhattan-square-17n/159106228-324058f1.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/one-manhattan-square-17n/162548555-50c34d2a.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   }
   }
  },
  {
@@ -65316,7 +66402,33 @@
     "scope": "building",
     "year": null
    }
-  ]
+  ],
+  "photo_flags": {
+   "media/1325-fifth-avenue-6e/163326729-b5d6c1ae.webp": {
+    "watermark": true,
+    "why": [
+     "person"
+    ]
+   },
+   "media/1325-fifth-avenue-6e/163326739-cbcf3253.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/1325-fifth-avenue-6e/163326740-d3ebda65.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/1325-fifth-avenue-6e/163326746-c1e97ca3.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   }
+  }
  },
  {
   "id": "370-columbus-avenue-2c",
@@ -66412,7 +67524,21 @@
     "scope": "building",
     "year": null
    }
-  ]
+  ],
+  "photo_flags": {
+   "media/217-front-street-2c/d66079ea8aec0a86faf8b800b390699f-se_extra_large_1500_800-58927508.webp": {
+    "watermark": true,
+    "why": [
+     "text-heavy"
+    ]
+   },
+   "media/217-front-street-2c/p-96a18e9cb314.webp": {
+    "watermark": true,
+    "why": [
+     "person"
+    ]
+   }
+  }
  },
  {
   "id": "208-delancey-4g",
@@ -67096,6 +68222,44 @@
    "evidence": "Photo 1 white and oak flat-panel kitchen with panel fridge, double built-in ovens, gas cooktop and marble slab splash on wide light-oak planks; 2 curved ribbon windows; 3-7 lobby, lounges and gardens.",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/208-delancey-4g/163442689-bffe2e45.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/208-delancey-4g/163442691-114aab90.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/208-delancey-4g/163442694-d9183599.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/208-delancey-4g/163442698-388487c6.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/208-delancey-4g/163583843-267c0f82.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/208-delancey-4g/163583844-2c955361.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   }
   }
  },
  {
@@ -71148,6 +72312,14 @@
    "evidence": "Single exterior photo of a red-brick and tan tower (1); no interior shots.",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/the-anthem-607/fp-85f32449753d.webp": {
+    "watermark": true,
+    "why": [
+     "phone number"
+    ]
+   }
   }
  },
  {
@@ -71731,6 +72903,213 @@
    "evidence": "Hardwood bedroom with large windows and Juliette balcony (2,3), orange wood kitchen cabinets with stainless micro (4), river through kitchen window (4); checker-floor lobby (6,7), floor plan (8).",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/603-west-148th-street-11c/163238101-e1844688.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/603-west-148th-street-11c/163238105-db147c45.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/603-west-148th-street-11c/163238106-0a49a10c.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/603-west-148th-street-11c/163238111-667189ce.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/603-west-148th-street-11c/163238112-2a39d835.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/603-west-148th-street-11c/163238114-014990ce.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/603-west-148th-street-11c/163238117-b9b73b51.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/603-west-148th-street-11c/163238118-8144d14f.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/603-west-148th-street-11c/163238119-b8ed5b54.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/603-west-148th-street-11c/163238130-a72b97cd.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/603-west-148th-street-11c/163238131-084d3edc.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/603-west-148th-street-11c/163238132-df52738e.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/603-west-148th-street-11c/163238133-efcab56f.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/603-west-148th-street-11c/163238134-5c184879.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/603-west-148th-street-11c/163238136-aed00078.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/603-west-148th-street-11c/163238143-8430b815.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/603-west-148th-street-11c/163238144-6dc334b8.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/603-west-148th-street-11c/163238146-ee756412.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/603-west-148th-street-11c/163238147-4a1e097d.webp": {
+    "watermark": true,
+    "why": [
+     "large lettering (sign or logo card)"
+    ]
+   },
+   "media/603-west-148th-street-11c/163238148-5a006947.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/603-west-148th-street-11c/163238149-e3f96a8e.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/603-west-148th-street-11c/163238150-816bd03a.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/603-west-148th-street-11c/163238152-ea1e5eea.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/603-west-148th-street-11c/163238156-575d34b8.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/603-west-148th-street-11c/163238157-14003b28.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/603-west-148th-street-11c/163238161-e31773c8.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo",
+     "large lettering (sign or logo card)"
+    ]
+   },
+   "media/603-west-148th-street-11c/163238163-433b7388.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/603-west-148th-street-11c/163238164-35bb5cbe.webp": {
+    "watermark": true,
+    "why": [
+     "text-heavy"
+    ]
+   },
+   "media/603-west-148th-street-11c/163252471-e0874612.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/603-west-148th-street-11c/163253676-3f0b5deb.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/603-west-148th-street-11c/163261537-2b4a2340.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/603-west-148th-street-11c/163435850-e76b369f.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/603-west-148th-street-11c/163435853-1b99df10.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/603-west-148th-street-11c/163435854-f4d0d902.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   }
   }
  },
  {
@@ -76202,6 +77581,14 @@
    "floors": 27,
    "source": "NYC PLUTO (64uk-42ks) by BBL",
    "checked": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/300-east-39th-8g/b-777d68d2c043.webp": {
+    "watermark": true,
+    "why": [
+     "large lettering (sign or logo card)"
+    ]
+   }
   }
  },
  {
@@ -80724,6 +82111,15 @@
    "evidence": "Single close-up of a stacked Bosch washer/dryer behind white flat-panel doors (1); nothing else to judge.",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/the-nicole-5k/fp-f985c7cefe5b.webp": {
+    "watermark": true,
+    "why": [
+     "email",
+     "phone number"
+    ]
+   }
   }
  },
  {
@@ -86470,6 +87866,14 @@
    "evidence": "White range and dishwasher, white raised-panel cabinets, vinyl floor in kitchen (2,5), plain white-tile tub bath (8), orange parquet (1,3,6); furniture in 1/3/4 may be staged.",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/212-east-47th-street-7b/b-05d1b811c5ef.webp": {
+    "watermark": true,
+    "why": [
+     "large lettering (sign or logo card)"
+    ]
+   }
   }
  },
  {
@@ -87279,6 +88683,56 @@
    "evidence": "Open kitchen with bar and stainless microwave, oak floors (1), Bosch stacked W/D (4), pool and fitness amenity shots (5-8); no bath shown.",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/mercedes-house-952/b-1819d58ed8c2.webp": {
+    "watermark": true,
+    "why": [
+     "person"
+    ]
+   },
+   "media/mercedes-house-952/b-705e38b5de63.webp": {
+    "watermark": true,
+    "why": [
+     "face"
+    ]
+   },
+   "media/mercedes-house-952/fp-574b037832e5.webp": {
+    "watermark": true,
+    "why": [
+     "phone number"
+    ]
+   },
+   "media/mercedes-house-952/p-280ee8c5d4a7.webp": {
+    "watermark": true,
+    "why": [
+     "face"
+    ]
+   },
+   "media/mercedes-house-952/p-6a6d388138ab.webp": {
+    "watermark": true,
+    "why": [
+     "face"
+    ]
+   },
+   "media/mercedes-house-952/p-a42cbe2b19b5.webp": {
+    "watermark": true,
+    "why": [
+     "face"
+    ]
+   },
+   "media/mercedes-house-952/p-a73b1eca543a.webp": {
+    "watermark": true,
+    "why": [
+     "person"
+    ]
+   },
+   "media/mercedes-house-952/p-c079f70cda28.webp": {
+    "watermark": true,
+    "why": [
+     "face"
+    ]
+   }
   }
  },
  {
@@ -90162,6 +91616,21 @@
    "evidence": "Photo 1 maple cabinets with granite counter and open plan; 1-2 staged rooms on light hardwood with black-framed windows; 3 lobby; 4-7 lounge and gym; 8 terrace.",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/the-nicole-7f/fp-be09244b5697.webp": {
+    "watermark": true,
+    "why": [
+     "email",
+     "phone number"
+    ]
+   },
+   "media/the-nicole-7f/p-dcd37487e327.webp": {
+    "watermark": true,
+    "why": [
+     "person"
+    ]
+   }
   }
  },
  {
@@ -92062,6 +93531,26 @@
    "evidence": "Marketing/model-unit photos: oak flat-panel kitchen with white quartz, stainless suite and stacked W/D closet (2-3), light oak floor, glass wall to a nearby facade (1).",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/via-57-west-215/abc9e87050948f6d02a49bfa3aa42b57-se_extra_large_1500_800-4285c134.webp": {
+    "watermark": true,
+    "why": [
+     "face"
+    ]
+   },
+   "media/via-57-west-215/b-8242740efdbe.webp": {
+    "watermark": true,
+    "why": [
+     "person"
+    ]
+   },
+   "media/via-57-west-215/fp-40c716184f8c.webp": {
+    "watermark": true,
+    "why": [
+     "phone number"
+    ]
+   }
   }
  },
  {
@@ -92834,6 +94323,20 @@
    "evidence": "Only two photos: staged living room with floor-to-ceiling glass facing a close facade and honey hardwood (1); oak flat-panel kitchen with stainless range, micro, white counters (2).",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/via-57-west-613/b-8242740efdbe.webp": {
+    "watermark": true,
+    "why": [
+     "person"
+    ]
+   },
+   "media/via-57-west-613/fp-ea42d6ce2706.webp": {
+    "watermark": true,
+    "why": [
+     "phone number"
+    ]
+   }
   }
  },
  {
@@ -98375,6 +99878,14 @@
    "evidence": "Stainless fridge/range/dishwasher, white quartz and maple-glass cabinets (6), dark-tile tub bath (8), light vinyl-plank floors throughout (1-5,7).",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/212-east-47th-street-17j/b-05d1b811c5ef.webp": {
+    "watermark": true,
+    "why": [
+     "large lettering (sign or logo card)"
+    ]
+   }
   }
  },
  {
@@ -98920,6 +100431,14 @@
    "evidence": "Mahogany flat-panel kitchen with stainless fridge, microwave and gas range (1), sliding glass doors to balcony (2-3, staged), rooftop terraces and kids room (5-8).",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/212-east-47th-street-32h/b-05d1b811c5ef.webp": {
+    "watermark": true,
+    "why": [
+     "large lettering (sign or logo card)"
+    ]
+   }
   }
  },
  {
@@ -100627,6 +102146,20 @@
    "evidence": "Photos 1 and 5 are marked virtually staged; real photos show honey-maple kitchen with black granite and stainless dishwasher (2), white subway bath with marble vanity (7-8), light oak floors, skyline view (4).",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/425-fifth-avenue-23d/p-4c29a5fa204a.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/425-fifth-avenue-23d/p-a87855495250.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   }
   }
  },
  {
@@ -111677,7 +113210,15 @@
     "scope": "building",
     "year": null
    }
-  ]
+  ],
+  "photo_flags": {
+   "media/ml-house-3c/fp-53fe238d9dff.webp": {
+    "watermark": true,
+    "why": [
+     "email"
+    ]
+   }
+  }
  },
  {
   "id": "two-waterline-square-20k",
@@ -112952,6 +114493,14 @@
    "evidence": "Dark hardwood, balcony doors and large windows (2,3,4,6); red-wood cabinets with quartz, mosaic backsplash, stainless fridge and gas range (7); marble-topped vanity and glass shower (8).",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/212-east-47th-street-19c/b-05d1b811c5ef.webp": {
+    "watermark": true,
+    "why": [
+     "large lettering (sign or logo card)"
+    ]
+   }
   }
  },
  {
@@ -113772,6 +115321,14 @@
    "evidence": "Photos 1-2 light-oak parquet, gray flat-panel kitchen with white quartz, steel fridge and gas range; 3 gray-tile bath with navy fluted vanity; 4-8 lounge, gym, game room and terrace.",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/twenty-exchange-1813/fp-310b1e7e3345.webp": {
+    "watermark": true,
+    "why": [
+     "person"
+    ]
+   }
   }
  },
  {
@@ -114985,7 +116542,15 @@
     "scope": "building",
     "year": null
    }
-  ]
+  ],
+  "photo_flags": {
+   "media/one-carnegie-hill-27e/p-d8d2be8a99ba.webp": {
+    "watermark": true,
+    "why": [
+     "person"
+    ]
+   }
+  }
  },
  {
   "id": "153-norfolk-street-2ff",
@@ -121748,7 +123313,33 @@
     "scope": "building",
     "year": null
    }
-  ]
+  ],
+  "photo_flags": {
+   "media/401-west-56th-street-5g/115240363-1b3d959c.webp": {
+    "watermark": true,
+    "why": [
+     "person"
+    ]
+   },
+   "media/401-west-56th-street-5g/163257957-806dc4d4.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/401-west-56th-street-5g/163257959-67d9aa4d.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/401-west-56th-street-5g/163257963-a1898533.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   }
+  }
  },
  {
   "id": "405-west-206th-street-1100e",
@@ -122571,6 +124162,88 @@
    "evidence": "Marketing set: corner windows with river view (1), white flat-panel kitchen with stainless suite and quartz (2), walnut-vanity bath with glass shower (4), rendered courtyard, lounge and karaoke room (5-7).",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/405-west-206th-street-1100e/163166135-9c18d629.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/405-west-206th-street-1100e/163166137-0a1033b4.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/405-west-206th-street-1100e/163166140-32e8ef29.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/405-west-206th-street-1100e/163166141-19e37713.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/405-west-206th-street-1100e/163166147-88eae372.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/405-west-206th-street-1100e/163166149-0f32d985.webp": {
+    "watermark": true,
+    "why": [
+     "person"
+    ]
+   },
+   "media/405-west-206th-street-1100e/163166151-bdd3ed64.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/405-west-206th-street-1100e/163166153-7bbb9c38.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo",
+     "person"
+    ]
+   },
+   "media/405-west-206th-street-1100e/163166154-caa45c73.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo",
+     "person"
+    ]
+   },
+   "media/405-west-206th-street-1100e/b-1b53aece14bd.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/405-west-206th-street-1100e/b-4462aac57148.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/405-west-206th-street-1100e/b-4d252fe2d4a9.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/405-west-206th-street-1100e/b-da24e35de27c.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   }
   }
  },
  {
@@ -123394,6 +125067,94 @@
    "evidence": "Photos 1-3 rendered-looking staging with corner glass, light oak, white quartz island and steel appliances; 4 frameless glass shower with wood vanity; 5-7 rendered amenities; 8 two-bedroom plan.",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/405-west-206th-street-312/162904116-379cbc74.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/405-west-206th-street-312/162904118-8c310adb.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/405-west-206th-street-312/162904121-1f1c4785.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/405-west-206th-street-312/162904122-9fd994d0.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/405-west-206th-street-312/162904124-4f69b583.webp": {
+    "watermark": true,
+    "why": [
+     "person"
+    ]
+   },
+   "media/405-west-206th-street-312/162904137-4e0cd2b6.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/405-west-206th-street-312/162904145-8c21a87c.webp": {
+    "watermark": true,
+    "why": [
+     "person"
+    ]
+   },
+   "media/405-west-206th-street-312/162904155-87f31c96.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/405-west-206th-street-312/162904164-622416e8.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo",
+     "person"
+    ]
+   },
+   "media/405-west-206th-street-312/162904170-3cbd5968.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo",
+     "person"
+    ]
+   },
+   "media/405-west-206th-street-312/b-1b53aece14bd.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/405-west-206th-street-312/b-4462aac57148.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/405-west-206th-street-312/b-4d252fe2d4a9.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/405-west-206th-street-312/b-da24e35de27c.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   }
   }
  },
  {
@@ -124217,6 +125978,88 @@
    "evidence": "Model-unit marketing shots (1-4): corner windows with river view, white kitchen with stainless fridge and range, quartz island (2), glass shower with wood vanity (4); courtyard, lounge, karaoke renders (5-7).",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/405-west-206th-street-707n/163445312-92b57e44.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/405-west-206th-street-707n/163445314-3a5dc51f.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/405-west-206th-street-707n/163445317-849aadc5.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/405-west-206th-street-707n/163445318-20dc4a97.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/405-west-206th-street-707n/163445324-e737de69.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/405-west-206th-street-707n/163445326-260bf6a0.webp": {
+    "watermark": true,
+    "why": [
+     "person"
+    ]
+   },
+   "media/405-west-206th-street-707n/163445328-ed58047e.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/405-west-206th-street-707n/163445330-4435b9c7.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo",
+     "person"
+    ]
+   },
+   "media/405-west-206th-street-707n/163445331-40979bb0.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo",
+     "person"
+    ]
+   },
+   "media/405-west-206th-street-707n/b-1b53aece14bd.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/405-west-206th-street-707n/b-4462aac57148.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/405-west-206th-street-707n/b-4d252fe2d4a9.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/405-west-206th-street-707n/b-da24e35de27c.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   }
   }
  },
  {
@@ -129860,6 +131703,14 @@
    "evidence": "Bath with white subway tile, herringbone floor and wood vanity (1); lifestyle balcony shot facing adjacent towers (2); wood-ceiling lounge with floor-to-ceiling glass (3); no kitchen or living room.",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/via-215/p-15a589426108.webp": {
+    "watermark": true,
+    "why": [
+     "face"
+    ]
+   }
   }
  },
  {
@@ -133304,6 +135155,14 @@
    "evidence": "Photo 1 white glossy flat-panel kitchen with steel micro; 3 white subway bath with walnut vanity; 1-2 staged wood-plank rooms; 2 large window; 6-8 roof terrace and lounge.",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/niko-east-village-5h/p-fc43ac94bb82.webp": {
+    "watermark": true,
+    "why": [
+     "person"
+    ]
+   }
   }
  },
  {
@@ -145864,6 +147723,14 @@
    "evidence": "Gut-renovated: white shaker cabinets, quartz peninsula, stainless apartment-size range, stacked W/D (1,2); stained oak floors (4,5); wood-look tile tub bath (8); windows onto brick.",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/147-east-30th-street-5d/p-64bbf37d9474.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   }
   }
  },
  {
@@ -146450,6 +148317,14 @@
    "evidence": "Virtually staged living and bedroom with honey floors and wide window (1,4); white shaker kitchen with gray counters, stainless gas range and micro (5); white subway-tile shower bath (6); brick exterior and roof terraces (2,7,8).",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/152-ludlow-7d/p-36dacce980e2.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   }
   }
  },
  {
@@ -147860,6 +149735,20 @@
    "evidence": "Photos 1,2,4,5 marked virtually staged; real kitchen has white flat-panel uppers, light-wood base, stainless range and fridge (3); new bath with bamboo-tile accent, floating vanity and glass slider (6); uniform light plank floor looks like vinyl.",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/425-west-57th-street-2a/p-3b5fada8dabf.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/425-west-57th-street-2a/p-3c5cb45cc249.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   }
   }
  },
  {
@@ -154362,6 +156251,14 @@
    "evidence": "Rendered or staged look: curved floor-to-ceiling bay window (1), wood and white flat-panel kitchen with marble backsplash, gas cooktop, black wall oven (2), Miele-style stacked W/D (4); lounge, gym, terrace, tower renders (5-8).",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/208-delancey-2a/fp-48877fbf4d04.webp": {
+    "watermark": true,
+    "why": [
+     "email"
+    ]
+   }
   }
  },
  {
@@ -154801,7 +156698,57 @@
     "scope": "building",
     "year": null
    }
-  ]
+  ],
+  "photo_flags": {
+   "media/209-east-25th-street-4e/p-12ecf8c0d6b5.webp": {
+    "watermark": true,
+    "why": [
+     "web address"
+    ]
+   },
+   "media/209-east-25th-street-4e/p-24a114f95f46.webp": {
+    "watermark": true,
+    "why": [
+     "web address"
+    ]
+   },
+   "media/209-east-25th-street-4e/p-2ec6f98091da.webp": {
+    "watermark": true,
+    "why": [
+     "web address"
+    ]
+   },
+   "media/209-east-25th-street-4e/p-442d96336c5c.webp": {
+    "watermark": true,
+    "why": [
+     "web address"
+    ]
+   },
+   "media/209-east-25th-street-4e/p-78912355ab14.webp": {
+    "watermark": true,
+    "why": [
+     "web address"
+    ]
+   },
+   "media/209-east-25th-street-4e/p-9859727e12e7.webp": {
+    "watermark": true,
+    "why": [
+     "web address"
+    ]
+   },
+   "media/209-east-25th-street-4e/p-9c83b3f59a6b.webp": {
+    "watermark": true,
+    "why": [
+     "web address"
+    ]
+   },
+   "media/209-east-25th-street-4e/p-f0c95db38356.webp": {
+    "watermark": true,
+    "why": [
+     "web address"
+    ]
+   }
+  }
  },
  {
   "id": "fifty-five-broad-2702",
@@ -162433,6 +164380,14 @@
    "floors": 11,
    "source": "NYC PLUTO (64uk-42ks) by BBL",
    "checked": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/650-first-avenue-7m/b-2d470efc92c5.webp": {
+    "watermark": true,
+    "why": [
+     "person"
+    ]
+   }
   }
  },
  {
@@ -163171,6 +165126,14 @@
    "evidence": "Rendered or virtually staged furniture; white flat-panel kitchen with stainless French-door fridge, microwave and gas range (2), plank floors, floor-to-ceiling glass (1,3).",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/685-first-solow-tower-18b/b-4c08d0e9a1e3.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   }
   }
  },
  {
@@ -163912,6 +165875,14 @@
    "evidence": "Photos 2-3 look rendered or staged with floor-to-ceiling glass, white flat-panel kitchen, steel appliances and light oak; 4 Bosch W/D; 1,5-8 mailroom and lounges with river views.",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/685-first-solow-tower-26h/b-4c08d0e9a1e3.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   }
   }
  },
  {
@@ -166777,6 +168748,14 @@
    "evidence": "Photos 1-4 rendered-looking staging with wide picture windows, wood floor and skyline outlook; no kitchen or bath.",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/atlas-45f/b-98bec303d6d9.webp": {
+    "watermark": true,
+    "why": [
+     "person"
+    ]
+   }
   }
  },
  {
@@ -172817,7 +174796,45 @@
     "scope": "building",
     "year": null
    }
-  ]
+  ],
+  "photo_flags": {
+   "media/three-worldwide-plaza-th1f/163214328-e0c2fbd2.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/three-worldwide-plaza-th1f/163214334-eb56e266.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/three-worldwide-plaza-th1f/163214339-2be2255c.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/three-worldwide-plaza-th1f/163214342-410df4b5.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/three-worldwide-plaza-th1f/163214344-f792690e.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/three-worldwide-plaza-th1f/163214345-d56cb1c9.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   }
+  }
  },
  {
   "id": "gotham-west-2908",
@@ -173421,6 +175438,15 @@
    "floors": 31,
    "source": "NYC PLUTO (64uk-42ks) by BBL",
    "checked": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/gotham-west-2908/fp-5c8c5587c523.webp": {
+    "watermark": true,
+    "why": [
+     "email",
+     "phone number"
+    ]
+   }
   }
  },
  {
@@ -174270,6 +176296,14 @@
    "floors": 11,
    "source": "NYC PLUTO (64uk-42ks) by BBL",
    "checked": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/650-first-avenue-5c/b-2d470efc92c5.webp": {
+    "watermark": true,
+    "why": [
+     "person"
+    ]
+   }
   }
  },
  {
@@ -174746,6 +176780,14 @@
    "floors": 11,
    "source": "NYC PLUTO (64uk-42ks) by BBL",
    "checked": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/650-first-avenue-8l/b-2d470efc92c5.webp": {
+    "watermark": true,
+    "why": [
+     "person"
+    ]
+   }
   }
  },
  {
@@ -175222,6 +177264,14 @@
    "floors": 11,
    "source": "NYC PLUTO (64uk-42ks) by BBL",
    "checked": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/650-first-avenue-8n/b-2d470efc92c5.webp": {
+    "watermark": true,
+    "why": [
+     "person"
+    ]
+   }
   }
  },
  {
@@ -175923,6 +177973,14 @@
    "floors": 44,
    "source": "NYC PLUTO (64uk-42ks) by BBL",
    "checked": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/685-first-solow-tower-3f/b-4c08d0e9a1e3.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   }
   }
  },
  {
@@ -176645,7 +178703,21 @@
   },
   "floorplan_images": [
    "media/685-first-solow-tower-3j/fp-d090b2130f64.webp"
-  ]
+  ],
+  "photo_flags": {
+   "media/685-first-solow-tower-3j/b-4c08d0e9a1e3.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/685-first-solow-tower-3j/reconciled_685_first_3j.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   }
+  }
  },
  {
   "id": "american-copper-buildings-the-copper-e18d",
@@ -187882,6 +189954,14 @@
    "evidence": "Only a landscaped courtyard between the pyramid-shaped tower wings (1) and a full indoor basketball court (2).",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/via-57-west-2805/p-2203b19339be.webp": {
+    "watermark": true,
+    "why": [
+     "person"
+    ]
+   }
   }
  },
  {
@@ -189694,6 +191774,14 @@
    "evidence": "Tall grid windows with skyline (1-2, staged duplicates), white flat-panel kitchen with gray island and stainless suite (3), subway-tile tub bath (4), AEG W/D (5), industrial lobby, billiards and gym (6-8).",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/jones-l-e-s-10a/fp-4879c9ddbe23.webp": {
+    "watermark": true,
+    "why": [
+     "phone number"
+    ]
+   }
   }
  },
  {
@@ -196200,6 +198288,20 @@
    "evidence": "Single exterior shot of the pyramid-shaped tower from the river; no interior or amenity photos.",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/via-57-west-651/b-8242740efdbe.webp": {
+    "watermark": true,
+    "why": [
+     "person"
+    ]
+   },
+   "media/via-57-west-651/fp-bed93591dd61.webp": {
+    "watermark": true,
+    "why": [
+     "phone number"
+    ]
+   }
   }
  },
  {
@@ -196690,7 +198792,15 @@
     "scope": "building",
     "year": null
    }
-  ]
+  ],
+  "photo_flags": {
+   "media/marc-20a/p-09e74014db95.webp": {
+    "watermark": true,
+    "why": [
+     "large lettering (sign or logo card)"
+    ]
+   }
+  }
  },
  {
   "id": "carnegie-park-condominium-1416",
@@ -203871,6 +205981,14 @@
    "floors": 27,
    "source": "NYC PLUTO (64uk-42ks) by BBL",
    "checked": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/300-east-39th-phh/b-777d68d2c043.webp": {
+    "watermark": true,
+    "why": [
+     "large lettering (sign or logo card)"
+    ]
+   }
   }
  },
  {
@@ -205221,6 +207339,56 @@
    "evidence": "Photo 2 dark wood-grain flat-panel cabinets with pro-style range and panel fridge; 1,3 floor-to-ceiling glass and skyline; 4-8 lifestyle shots of bowling alley, roof deck and lounge; likely model unit.",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/555ten-20k/fp-51c968db4747.webp": {
+    "watermark": true,
+    "why": [
+     "phone number"
+    ]
+   },
+   "media/555ten-20k/p-1df9c6001f6c.webp": {
+    "watermark": true,
+    "why": [
+     "face"
+    ]
+   },
+   "media/555ten-20k/p-488886ce93f5.webp": {
+    "watermark": true,
+    "why": [
+     "person"
+    ]
+   },
+   "media/555ten-20k/p-ca79786fb3a0.webp": {
+    "watermark": true,
+    "why": [
+     "face"
+    ]
+   },
+   "media/555ten-20k/p-cf3df2b5d261.webp": {
+    "watermark": true,
+    "why": [
+     "face"
+    ]
+   },
+   "media/555ten-20k/p-e2f41e8eefc6.webp": {
+    "watermark": true,
+    "why": [
+     "face"
+    ]
+   },
+   "media/555ten-20k/p-e86361826bc1.webp": {
+    "watermark": true,
+    "why": [
+     "face"
+    ]
+   },
+   "media/555ten-20k/p-fb059a2fd1bd.webp": {
+    "watermark": true,
+    "why": [
+     "person"
+    ]
+   }
   }
  },
  {
@@ -210663,6 +212831,14 @@
    "evidence": "Oak cabinets with light quartz, copper mosaic backsplash, GE stainless fridge and gas range, tile floor (1,2); chevron parquet living room with big window onto towers (3); only three photos.",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/the-ashley-windsor-912/fp-6d360f2dd628.webp": {
+    "watermark": true,
+    "why": [
+     "phone number"
+    ]
+   }
   }
  },
  {
@@ -212943,7 +215119,69 @@
     "scope": "building",
     "year": null
    }
-  ]
+  ],
+  "photo_flags": {
+   "media/308-east-109th-street-6a/162921677-34a35855.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/308-east-109th-street-6a/162921679-4eb5a610.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/308-east-109th-street-6a/162921680-464065bb.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/308-east-109th-street-6a/162921681-c730ba75.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/308-east-109th-street-6a/162921683-f1f0eb6f.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/308-east-109th-street-6a/162921684-126cf63d.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/308-east-109th-street-6a/162921685-cc49939a.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/308-east-109th-street-6a/162921686-41c4666e.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/308-east-109th-street-6a/162921688-284f20ba.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/308-east-109th-street-6a/162921690-7eb11b7c.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   }
+  }
  },
  {
   "id": "303-east-83rd-equity-residential-11c",
@@ -220995,6 +223233,26 @@
    "evidence": "Photos 1-2,5-6 rendered-looking staging with floor-to-ceiling glass, light wide-plank oak and white flat-panel kitchen; 7 large-format gray tile bath with wood vanity; 3-4 real-looking balcony river view.",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/sky-37s/fp-141078ba9a62.webp": {
+    "watermark": true,
+    "why": [
+     "phone number"
+    ]
+   },
+   "media/sky-37s/fp-e3f591b98957.webp": {
+    "watermark": true,
+    "why": [
+     "phone number"
+    ]
+   },
+   "media/sky-37s/p-0f618b3e3c89.webp": {
+    "watermark": true,
+    "why": [
+     "person"
+    ]
+   }
   }
  },
  {
@@ -222963,6 +225221,17 @@
    "evidence": "Only a floor plan (photo 1); text on plan lists oak floors, steel Bertazzoni appliances and a spa-like bath but none are shown.",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/lyra-1604/9a43001bbca12c818ef5599518e396bb-b29019c8.webp": {
+    "watermark": true,
+    "why": [
+     "email",
+     "phone number",
+     "text-heavy",
+     "web address"
+    ]
+   }
   }
  },
  {
@@ -225182,6 +227451,14 @@
    "evidence": "Only a Knox Residence B floor plan; no interior or amenity photos to grade.",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/the-knox-35b/p-a64349554ec3.webp": {
+    "watermark": true,
+    "why": [
+     "text-heavy"
+    ]
+   }
   }
  },
  {
@@ -225937,6 +228214,56 @@
    "evidence": "Furnished corporate-rental photos: blond oak floors and wide picture window (1-3), compact wood-grain flat-panel kitchen with stainless range and dishwasher (6-7), street view of brick tower (5).",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/stonehenge-51-2f/p-153cab2f10e4.webp": {
+    "watermark": true,
+    "why": [
+     "web address"
+    ]
+   },
+   "media/stonehenge-51-2f/p-4a873b03b175.webp": {
+    "watermark": true,
+    "why": [
+     "web address"
+    ]
+   },
+   "media/stonehenge-51-2f/p-571c0e245793.webp": {
+    "watermark": true,
+    "why": [
+     "web address"
+    ]
+   },
+   "media/stonehenge-51-2f/p-6d1cebf077d6.webp": {
+    "watermark": true,
+    "why": [
+     "web address"
+    ]
+   },
+   "media/stonehenge-51-2f/p-8d94e04b644f.webp": {
+    "watermark": true,
+    "why": [
+     "web address"
+    ]
+   },
+   "media/stonehenge-51-2f/p-8fdbdcf80825.webp": {
+    "watermark": true,
+    "why": [
+     "web address"
+    ]
+   },
+   "media/stonehenge-51-2f/p-b5cd80d17812.webp": {
+    "watermark": true,
+    "why": [
+     "web address"
+    ]
+   },
+   "media/stonehenge-51-2f/p-edc837be2b06.webp": {
+    "watermark": true,
+    "why": [
+     "web address"
+    ]
+   }
   }
  },
  {
@@ -232253,6 +234580,14 @@
    "evidence": "Furnished corporate-rental photos: white cabinets, stainless fridge and micro, brown mosaic backsplash (2); dark hardwood (2,3); window onto neighboring brick building (1).",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/830-8th-avenue-8a/p-784e390865e9.webp": {
+    "watermark": true,
+    "why": [
+     "web address"
+    ]
+   }
   }
  },
  {
@@ -233178,7 +235513,33 @@
     "scope": "building",
     "year": null
    }
-  ]
+  ],
+  "photo_flags": {
+   "media/515-east-72nd-street-9a/163639074-d7827093.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/515-east-72nd-street-9a/163639075-c174c446.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/515-east-72nd-street-9a/163639076-b0e403e5.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   },
+   "media/515-east-72nd-street-9a/163639077-fc314f14.webp": {
+    "watermark": true,
+    "why": [
+     "broker mark / not a photo"
+    ]
+   }
+  }
  },
  {
   "id": "stonehenge-57-6r",
@@ -233702,7 +236063,51 @@
     "scope": "building",
     "year": null
    }
-  ]
+  ],
+  "photo_flags": {
+   "media/stonehenge-57-6r/p-0b2895a13aee.webp": {
+    "watermark": true,
+    "why": [
+     "web address"
+    ]
+   },
+   "media/stonehenge-57-6r/p-26e986c20356.webp": {
+    "watermark": true,
+    "why": [
+     "web address"
+    ]
+   },
+   "media/stonehenge-57-6r/p-83450cf1a862.webp": {
+    "watermark": true,
+    "why": [
+     "web address"
+    ]
+   },
+   "media/stonehenge-57-6r/p-8ce2ba9bd1d6.webp": {
+    "watermark": true,
+    "why": [
+     "web address"
+    ]
+   },
+   "media/stonehenge-57-6r/p-b32443646ad6.webp": {
+    "watermark": true,
+    "why": [
+     "web address"
+    ]
+   },
+   "media/stonehenge-57-6r/p-be2385c2de58.webp": {
+    "watermark": true,
+    "why": [
+     "web address"
+    ]
+   },
+   "media/stonehenge-57-6r/p-ce6870cf225e.webp": {
+    "watermark": true,
+    "why": [
+     "web address"
+    ]
+   }
+  }
  },
  {
   "id": "the-charleston-9j",
@@ -234696,6 +237101,14 @@
    "evidence": "Photos 1,4-8 vacant light plank floor and large dark-framed windows; 2-3 tan-tile tub bath with pedestal sink and black band; 5 skyline view.",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/300-east-39th-1brfl28/b-777d68d2c043.webp": {
+    "watermark": true,
+    "why": [
+     "large lettering (sign or logo card)"
+    ]
+   }
   }
  },
  {
@@ -235218,6 +237631,14 @@
    "floors": 27,
    "source": "NYC PLUTO (64uk-42ks) by BBL",
    "checked": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/300-east-39th-28d/b-777d68d2c043.webp": {
+    "watermark": true,
+    "why": [
+     "large lettering (sign or logo card)"
+    ]
+   }
   }
  },
  {
@@ -242794,6 +245215,14 @@
    "floors": 18,
    "source": "NYC PLUTO (64uk-42ks) by BBL",
    "checked": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/1510-lexington-15q/fp-be702dcd0bcb.webp": {
+    "watermark": true,
+    "why": [
+     "phone number"
+    ]
+   }
   }
  },
  {
@@ -243376,6 +245805,14 @@
    "evidence": "Photos 1-5 look AI-rendered or virtually staged: white shaker kitchen with subway tile, steel appliances and gas range, light oak floors, glass doors to a patio.",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/jones-l-e-s-1a/fp-80191ed93754.webp": {
+    "watermark": true,
+    "why": [
+     "phone number"
+    ]
+   }
   }
  },
  {
@@ -243885,6 +246322,14 @@
    "floors": 27,
    "source": "NYC PLUTO (64uk-42ks) by BBL",
    "checked": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/300-east-39th-12c/b-777d68d2c043.webp": {
+    "watermark": true,
+    "why": [
+     "large lettering (sign or logo card)"
+    ]
+   }
   }
  },
  {
@@ -247225,6 +249670,14 @@
    "floors": 27,
    "source": "NYC PLUTO (64uk-42ks) by BBL",
    "checked": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/300-east-39th-22j/b-777d68d2c043.webp": {
+    "watermark": true,
+    "why": [
+     "large lettering (sign or logo card)"
+    ]
+   }
   }
  },
  {
@@ -247766,7 +250219,16 @@
     "scope": "building",
     "year": null
    }
-  ]
+  ],
+  "photo_flags": {
+   "media/the-metropolis-33e/fp-cdd310a4cc38.webp": {
+    "watermark": true,
+    "why": [
+     "email",
+     "phone number"
+    ]
+   }
+  }
  },
  {
   "id": "77-east-12th-street-2k",
@@ -249417,7 +251879,25 @@
     "scope": "building",
     "year": null
    }
-  ]
+  ],
+  "photo_flags": {
+   "media/mantena-6d/p-062697619734.webp": {
+    "watermark": true,
+    "why": [
+     "large lettering (sign or logo card)",
+     "phone number",
+     "web address"
+    ]
+   },
+   "media/mantena-6d/p-fde6195e1125.webp": {
+    "watermark": true,
+    "why": [
+     "large lettering (sign or logo card)",
+     "phone number",
+     "web address"
+    ]
+   }
+  }
  },
  {
   "id": "view-34-n04f",
@@ -254170,6 +256650,14 @@
    "evidence": "Light-wood galley kitchen with stainless fridge, dishwasher, gas range and light counter on tile (1), stacked front-load W/D closet (2), parquet floor in empty room (3); no windows or bath.",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/the-ashley-windsor-1202/fp-91fd306248de.webp": {
+    "watermark": true,
+    "why": [
+     "phone number"
+    ]
+   }
   }
  },
  {
@@ -258349,6 +260837,26 @@
    "evidence": "Cherry frosted-glass cabinets, black granite, stainless fridge and gas range on slate tile (2,5,6), beige-marble tub bath with curved honey vanity (3), gray plank flooring (1,2); living photos virtually staged (7-8).",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/the-anthem-1024/fp-a98abcfaecd6.webp": {
+    "watermark": true,
+    "why": [
+     "phone number"
+    ]
+   },
+   "media/the-anthem-1024/fp-b953b019f468.webp": {
+    "watermark": true,
+    "why": [
+     "phone number"
+    ]
+   },
+   "media/the-anthem-1024/fp-cbd04bac07c1.webp": {
+    "watermark": true,
+    "why": [
+     "phone number"
+    ]
+   }
   }
  },
  {
@@ -268740,6 +271248,14 @@
    "evidence": "Virtually staged living and bedroom with gray-brown plank floors and large windows (1-4); white stacked-tile tub bath with light wood vanity (5); roof garden, terrace and gym (6-8).",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "photo_flags": {
+   "media/the-biltmore-22c/p-57ea70874fba.webp": {
+    "watermark": true,
+    "why": [
+     "large lettering (sign or logo card)"
+    ]
+   }
   }
  },
  {
