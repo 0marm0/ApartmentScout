@@ -34,6 +34,7 @@ management behaviour and lease terms.
 | `apartmentscout/` | Python package and CLI (`apartmentscout` or `scout`). |
 | `dashboard/` | Static web dashboard (map, heatmaps, shortlist, compare, Unit 3D, floor plan, records). |
 | `config/criteria.example.yaml` | Template for the renter's criteria. |
+| `config/intake.yaml` | The intake questionnaire: question, why, default and criteria key, in the order the wizard asks. |
 | `config/cities/*.yaml` | City profiles: data sources, transit feeds, landmark names. |
 | `searches/<name>/` | One folder per search (criteria, listings, research, caches). Git-ignored. |
 | `examples/nyc-2026/` | A complete worked example (Manhattan 1BR search, 732 listings). |
@@ -47,7 +48,7 @@ Work through these stages in order. Each has a skill with the detail.
 
 | # | Stage | Skill | Output |
 |---|---|---|---|
-| 1 | Intake: interview the renter, write `criteria.yaml` | `apartment-search` | `searches/<name>/criteria.yaml` |
+| 1 | Intake: interview the renter (`config/intake.yaml`), write `criteria.yaml` | `apartment-search` | `searches/<name>/criteria.yaml` |
 | 2 | Sourcing: find every candidate listing | `listing-sourcing` | `listings.json` rows with sources |
 | 3 | Enrichment: geocode, commute, city layers | `commute-analysis` | `apartmentscout geocode / commute / layers` |
 | 4 | Scoring and first shortlist | `apartment-search` | `apartmentscout score`, `report` |
@@ -66,6 +67,8 @@ them, because price history and "what else was there" matter at negotiation time
 ```bash
 pip install -e .                                  # once
 apartmentscout init searches/my-search --city nyc # new search folder from the template
+apartmentscout init searches/my-search --criteria answers.yaml   # ... or from a checked criteria file (or --interactive)
+apartmentscout criteria --check searches/my-search/criteria.yaml  # validate criteria.yaml and print a summary
 export APARTMENTSCOUT_SEARCH=searches/my-search   # or pass --search to every command
 apartmentscout import listings.csv                # add or update listings from CSV/JSON
 apartmentscout geocode                            # coordinates (NYC also gets BBL/BIN)

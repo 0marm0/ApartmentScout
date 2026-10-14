@@ -8,31 +8,47 @@ description: Run or resume a full apartment search with ApartmentScout - intake 
 ## 1. Find or create the search
 
 - If `$APARTMENTSCOUT_SEARCH` or `./search/criteria.yaml` exists, resume it: read `criteria.yaml`,
-  run `apartmentscout score --top 20`, and summarise where things stand (counts by status, top 10,
-  open questions) before doing anything else.
-- Otherwise run `apartmentscout init searches/<short-name> --city <city>` (use `--city nyc` for
-  New York City so the NYC data modules switch on) and do the intake below.
+  run `apartmentscout criteria --check` and `apartmentscout score --top 20`, and summarise where things
+  stand (counts by status, top 10, open questions) before doing anything else.
+- Otherwise start a new search with the intake below. The renter can also do it themselves, with no agent,
+  in the dashboard's **New search** wizard (top bar, then *New search*) or with
+  `apartmentscout init searches/<name> --city <city> --interactive`. All three ask the same questions in the
+  same order, from `config/intake.yaml`, and write the same `criteria.yaml`.
 
 ## 2. Intake interview
 
-Ask only what you cannot infer, in one or two rounds. Capture the answers in `criteria.yaml`:
+`config/intake.yaml` is the questionnaire. Read it first: it lists seven steps (basics, places, money, home,
+amenities, building and interior taste, weights), and for every question the wording to use (`ask`), why it
+matters (`why`), the default to use when the renter has no preference (`default`) and the `criteria.yaml` key the
+answer goes to (`maps_to`). Follow it:
 
-| Topic | Field | Ask about |
-|---|---|---|
-| Place | `search.city`, `search.map_center` | City, neighbourhoods in or out |
-| Dates | `search.move_in` | Earliest and latest lease start |
-| Money | `budget.tiers`, `budget.hard_max` | Target, stretch and absolute limits, judged on monthly cost |
-| Size | `unit.min_beds`, `unit.sqft_*` | Bedrooms, square feet that would feel small / good / great |
-| Must-haves | `must_have` | Deal-breakers (in-unit laundry, elevator, pets, outdoor space...) |
-| Preferences | `strongly_prefer`, `nice_to_have` | Doorman, gym, roof, pool, dishwasher, game room... |
-| Commute | `commute.destinations` | Every regular destination, arrive-by time, max minutes, weight |
-| Priorities | `weights` | Relative weight of cost, space, commute, amenities, light, building, quiet |
+1. Ask in the file's order, one step or two at a time, in plain language. Skip what the renter already told you or
+   what you can infer, and say which defaults you are assuming. Never invent an answer: an unanswered question takes
+   its default. Only `search.name` is required.
+2. Show the renter a one-screen summary of what you heard (budget tiers and cap, size, must-haves, places, the top
+   weights) and let them correct it. Criteria and weights are theirs to decide.
+3. Write the file through the CLI rather than by hand-editing the template:
 
-Amenity keys the scorer understands are listed in `apartmentscout/listings.py` (`AMENITY_KEYS`).
-New keys are fine; they just need to appear in listings too.
+   ```bash
+   # put the answers in a criteria file (the layout of config/criteria.example.yaml), then
+   apartmentscout init searches/<short-name> --city <city> --criteria answers.yaml
+   apartmentscout criteria --check searches/<short-name>/criteria.yaml
+   ```
 
-Then run `apartmentscout geocode` (fills destination coordinates) and copy the printed
-coordinates into `criteria.yaml`.
+   `init --criteria` validates the file with the scorer's own rules, refuses to write anything if it has problems,
+   and adds the city's transit feeds and time zone when missing (`--city nyc` for New York City, so the NYC data
+   modules switch on). To start from the commented template instead, leave `--criteria` off and edit the file.
+   Fix every `error` that `criteria --check` prints; read the `warning` lines with the renter.
+4. Building and interior taste (luxury level, renovated interior, new appliances, view, light, quiet) becomes
+   weights through the table under `steps: taste` in the questionnaire: each answered item (0 not important to 3
+   essential) sets the weight of its dimension, and the weights on one dimension add up. Unanswered items change
+   nothing. Buildings the renter already has a view on go under `building_ratings` (building name to a rating from
+   1 to 5); more can be added as the search goes on.
+5. Run `apartmentscout geocode` (fills destination coordinates) and copy the printed coordinates into
+   `criteria.yaml` if you want them pinned.
+
+Amenity keys the scorer understands are listed under `amenities:` in the questionnaire (and in
+`apartmentscout/listings.py`, `AMENITY_KEYS`). New keys are fine; they just need to appear in listings too.
 
 ## 3. Source, enrich, score
 

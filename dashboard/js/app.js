@@ -114,9 +114,11 @@ export function applyCriteria(profile, { quiet = false } = {}) {
 function renderSearchSwitch() {
   const b = $('searchSwitch'); if (!b) return;
   b.classList.toggle('pv', !!S.preview);
-  b.title = S.preview ? 'Search settings: previewing edited criteria in this browser' : 'Search settings';
+  b.title = S.preview ? 'Searches and settings: previewing edited criteria in this browser' : 'Searches, settings and New search';
 }
 export async function openSettings() { (await import('./settings.js')).openSettings(); }
+/** The New search wizard (mode 'new', or 'edit' for every criterion of the open search). */
+export async function openWizard(o) { (await import('./onboarding.js')).openWizard(o); }
 function reopenDrawer() {
   const sc = $('drawer').querySelector('.d-scroll'), y = sc?.scrollTop || 0;
   openDrawer(S.sel); const s2 = $('drawer').querySelector('.d-scroll'); if (s2) s2.scrollTop = y;
@@ -815,7 +817,9 @@ async function boot() {
   if (prof) { try { applyCriteria(prof, { quiet: true }); } catch { store.set(searchKey('criteria'), null); S.crit = S.crit0; for (const L of listings) L.score = L._score0; } }
   if (!allDests().some((d) => d.name === S.destName)) S.destName = allDests()[0]?.name || null;
   fitMode(false);
-  $('searchSwitch').addEventListener('click', openSettings); renderSearchSwitch();
+  $('searchSwitch').setAttribute('aria-haspopup', 'menu'); $('searchSwitch').setAttribute('aria-expanded', 'false');
+  for (const id of ['searchSwitch', 'searchMenuBtn']) $(id)?.addEventListener('click', async () => (await import('./onboarding.js')).openSearchMenu($(id)));
+  renderSearchSwitch();
   rescore(); renderRail(); renderKPIs(); renderCards();
   on('filters', (o) => { renderKPIs(); renderCards(); if (!o?.quiet) renderRail(); });
   // weight sliders fire on every pixel: coalesce to one render per frame, and render the full card list once the drag settles
@@ -852,6 +856,7 @@ async function boot() {
   addEventListener('hashchange', route);
   await route();
   viewModule('map');   // the map keeps pins in sync even while another view is open
+  import('./onboarding.js').then((m) => m.initOnboarding()).catch(() => {});   // empty state, ?new=1
   if (qs.get('open')) openDrawer(qs.get('open'), { fly: true, instant: true });
 }
 boot();

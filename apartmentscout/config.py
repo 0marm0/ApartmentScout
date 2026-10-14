@@ -140,7 +140,14 @@ def resolve_scoring(c: dict[str, Any]) -> tuple[dict[str, float], dict[str, Any]
 
 
 def load_criteria(path: str | Path) -> dict[str, Any]:
-    c = yaml.safe_load(Path(path).read_text(encoding="utf-8")) or {}
+    return load_criteria_text(Path(path).read_text(encoding="utf-8"))
+
+
+def load_criteria_text(text: str) -> dict[str, Any]:
+    """Parse criteria.yaml text with the defaults and scoring resolution `load_criteria` applies."""
+    c = yaml.safe_load(text) or {}
+    if not isinstance(c, dict):
+        raise ValueError("criteria.yaml must be a mapping of sections (search, budget, unit, ...)")
     c.setdefault("search", {})
     c.setdefault("budget", {})
     c.setdefault("unit", {})

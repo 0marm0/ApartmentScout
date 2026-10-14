@@ -1,6 +1,7 @@
 """ApartmentScout command line.
 
-    apartmentscout init my-search --city nyc       start a search folder
+    apartmentscout init my-search --city nyc       start a search folder (--interactive asks, --criteria FILE starts from a file)
+    apartmentscout criteria --check [FILE]         validate criteria.yaml and print a summary
     apartmentscout import listings.csv             add listings from CSV/JSON
     apartmentscout geocode                         add coordinates (and NYC BBL/BIN)
     apartmentscout commute                         commute grids + per-listing times by mode
@@ -19,13 +20,11 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
-import http.server
 import json
 import os
 import re
 import shutil
 import sys
-import urllib.parse
 import webbrowser
 from pathlib import Path
 
@@ -69,33 +68,37 @@ def _find(listings, key):
 
 
 # --------------------------------------------------------------------------- commands
-def cmd_init(args):
+def cmd_init(args, input_fn=None):
+    """Create a search folder: the commented template, a criteria file you wrote or downloaded (--criteria), or the
+    answers to the intake questionnaire (--interactive; falls back to the template when stdin is not a terminal)."""
+    from .intake import Quit, init_search, interview, render_criteria
     root = Path(args.path).resolve()
     if (root / "criteria.yaml").exists() and not args.force:
         sys.exit(f"{root} already has a criteria.yaml (use --force to overwrite).")
-    root.mkdir(parents=True, exist_ok=True)
-    src = REPO / "config" / "criteria.example.yaml"
-    text = src.read_text()
-    if args.city:
-        text = text.replace("city: generic", f"city: {args.city}")
-        prof = city_profile(args.city)
-        if prof.get("timezone"):
-            text = text.replace("timezone: America/New_York", f"timezone: {prof['timezone']}")
-        if prof.get("transit_feeds"):
-            import yaml
-            # each feed whole (name, url, mode, exclude_routes, map_lines ...), one flow mapping per line
-            feeds = "\n".join("      - " + yaml.safe_dump(dict(f), default_flow_style=True, sort_keys=False,
-                                                          width=10_000).strip() for f in prof["transit_feeds"])
-            text = text.replace("    feeds: []                # add GTFS feeds: - {name: City Metro, url: https://.../gtfs.zip}",
-                                "    feeds:\n" + feeds)
-    (root / "criteria.yaml").write_text(text)
-    (root / "research").mkdir(exist_ok=True)
-    (root / "plans").mkdir(exist_ok=True)
-    if not (root / "listings.json").exists():
-        save([], root / "listings.json")
-    with (root / "listings.template.csv").open("w") as f:
-        f.write(",".join(CSV_TEMPLATE_COLUMNS) + "\n")
-    log(f"Created {root}\n  1. Edit criteria.yaml (budget, must-haves, commute addresses).\n"
+    text = None
+    if args.criteria:
+        try:
+            text = Path(args.criteria).read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError) as e:
+            sys.exit(f"Cannot read {args.criteria}: {e}")
+    elif args.interactive:
+        if input_fn is None and not (sys.stdin.isatty() and sys.stdout.isatty()):
+            log("Not a terminal, so there is nothing to ask: using the template. "
+                "Edit criteria.yaml, or answer config/intake.yaml's questions with your agent.")
+        else:
+            try:
+                answers = interview(input_fn or input, log)
+            except (Quit, KeyboardInterrupt):
+                sys.exit("\nStopped before the end of the questions; nothing was written.")
+            if args.city:
+                answers.setdefault("search", {})["city"] = args.city
+            text = render_criteria(answers, "Written by apartmentscout init --interactive.")
+    try:
+        city = init_search(root, args.city, text, force=args.force)
+    except ValueError as e:
+        sys.exit(f"criteria.yaml has problems, nothing was written:\n{e}")
+    log(f"Created {root} (city: {city})\n  1. {'Review' if text else 'Edit'} criteria.yaml (budget, must-haves, commute addresses);"
+        f" `apartmentscout criteria --check {root / 'criteria.yaml'}` validates it.\n"
         f"  2. Add listings: `apartmentscout import listings.csv` or ask your agent to research them.\n"
         f"  3. `apartmentscout all --search {root}` then `apartmentscout serve --search {root}`.")
 
@@ -519,44 +522,49 @@ def _export(ws: Workspace, out: Path):
     (out / "manifest.json").write_text(json.dumps(manifest, indent=1))
 
 
+def _rescore(ws: Workspace) -> None:
+    """Score and rank every listing and save: what `apartmentscout score` does, without the printout."""
+    from .score import score_all
+    Ls = _listings(ws)
+    score_all(Ls, ws.criteria())
+    save(Ls, ws.listings_path)
+
+
+def _searches_dir(args, ws: Workspace | None) -> Path:
+    """Where new searches are created: --searches-dir, $APARTMENTSCOUT_SEARCHES, the folder holding the open search
+    when that is called `searches`, else ./searches."""
+    given = getattr(args, "searches_dir", None) or os.environ.get("APARTMENTSCOUT_SEARCHES")
+    if given:
+        return Path(given).resolve()
+    if ws is not None and ws.root.parent.name == "searches":
+        return ws.root.parent
+    return Path("searches").resolve()
+
+
 def cmd_serve(args):
     """Serve the dashboard. The bundled example exports into dashboard/data (the committed demo);
     any other search exports into its own git-ignored cache so private data never lands in the repo,
-    and the server maps /data/ and /media/ (locally saved listing photos) to that search."""
-    data_dir, media_dir = DASH / "data", None
+    and the server maps /data/ and /media/ (locally saved listing photos) to that search.
+
+    Unless --no-api is given the page also gets a local-only API (see localapi.py) so the New search wizard can save
+    criteria.yaml and create or switch search folders."""
+    from .localapi import ServeState, make_server
+    ws = None
     if args.search or os.environ.get("APARTMENTSCOUT_SEARCH") or Path("search/criteria.yaml").exists():
         try:
             ws = ws_from(args)
-            example = (REPO / "examples").resolve() in ws.root.resolve().parents
-            data_dir = DASH / "data" if example else ws.cache_dir / "dashboard-data"
-            _export(ws, data_dir)
-            media_dir = ws.root / "media"
         except SystemExit:
             pass
-    routes = {"/data/": data_dir.resolve(), "/media/": media_dir.resolve() if media_dir else None}
-
-    class Handler(http.server.SimpleHTTPRequestHandler):
-        def __init__(self, *a, **kw):
-            super().__init__(*a, directory=str(DASH), **kw)
-
-        def translate_path(self, path):
-            clean = path.split("?", 1)[0].split("#", 1)[0]
-            for prefix, root in routes.items():
-                if root and clean.startswith(prefix):
-                    rel = Path(urllib.parse.unquote(clean[len(prefix):]))
-                    target = (root / rel).resolve()
-                    if root in target.parents or target == root:
-                        return str(target)
-                    return str(root / "__forbidden__")
-            return super().translate_path(path)
-
-        def log_message(self, *a):
-            pass
-    http.server.ThreadingHTTPServer.allow_reuse_address = True
-    http.server.ThreadingHTTPServer.request_queue_size = 128  # the dashboard loads many files at once
-    with http.server.ThreadingHTTPServer(("127.0.0.1", args.port), Handler) as httpd:
-        url = f"http://127.0.0.1:{args.port}/"
+    state = ServeState(dash=DASH, searches_dir=_searches_dir(args, ws), ws=None, data_dir=DASH / "data", media_dir=None,
+                       export=_export, rescore=_rescore, api=not args.no_api)
+    if ws is not None:
+        state.activate(ws)
+    httpd = make_server(state, args.port)
+    with httpd:
+        url = f"http://127.0.0.1:{state.port}/"
         log(f"ApartmentScout dashboard at {url}  (Ctrl+C to stop)")
+        if state.api:
+            log("  New search wizard: saves criteria.yaml and creates search folders from the page (this machine only).")
         if not args.no_open:
             webbrowser.open(url)
         httpd.serve_forever()
@@ -588,6 +596,10 @@ def main(argv=None):
     s.add_argument("path")
     s.add_argument("--city", default=None, help="nyc enables NYC Open Data modules")
     s.add_argument("--force", action="store_true")
+    s.add_argument("--criteria", metavar="FILE", help="start from this criteria.yaml (for example one downloaded from "
+                   "the dashboard's New search wizard); it is validated and the city's transit feeds are added if missing")
+    s.add_argument("--interactive", action="store_true", help="answer the intake questionnaire (config/intake.yaml) "
+                   "on the terminal; without a terminal this writes the template")
     s.set_defaults(fn=cmd_init)
     s = add("import", cmd_import, "import listings from CSV or JSON")
     s.add_argument("file")
@@ -648,6 +660,9 @@ def main(argv=None):
     s = add("serve", cmd_serve, "serve the dashboard locally")
     s.add_argument("--port", type=int, default=8765)
     s.add_argument("--no-open", action="store_true")
+    s.add_argument("--no-api", action="store_true", help="serve the files only: no save, create or re-score from the page")
+    s.add_argument("--searches-dir", metavar="DIR", help="where the wizard creates new search folders "
+                   "(default: the folder holding the open search if it is called searches, else ./searches)")
     s = add("all", cmd_all, "geocode, commute, layers, score and build")
     s.add_argument("--provider", default="auto")
     s.add_argument("--force", action="store_true")

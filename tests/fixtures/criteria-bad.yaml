@@ -1,0 +1,15 @@
+# Deliberately broken: tests/test_intake.py expects every one of these problems to be reported.
+search:
+  move_in: {earliest: 2026-12-01, latest: 2026-11-01}
+budget:
+  basis: monthly_cost
+  tiers: [{name: A, max: 5000}, {name: B, max: 4000}]
+  hard_max: 3000
+unit: {sqft_floor: 900, sqft_good: 700, sqft_great: 1000}
+must_have: [elevator]
+strongly_prefer: [elevator]
+commute:
+  destinations:
+    - {name: Work, address: 1 Main St, arrive_by: "9am"}
+weights: {cost: -5}
+building_ratings: {Ritz: 9}

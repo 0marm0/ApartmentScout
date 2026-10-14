@@ -1,0 +1,317 @@
+# ApartmentScout intake questionnaire: the one list of questions behind every way of starting a search.
+#
+#   - an agent asks these, in this order, and writes the answers into criteria.yaml
+#     (`apartmentscout init searches/<name> --city <city> --criteria <file>`; see the apartment-search skill);
+#   - `apartmentscout init --interactive` prompts for them on a terminal, with these defaults;
+#   - the dashboard's "New search" wizard (dashboard/js/wizard.js) shows the same steps and fields in the same
+#     order. tests/test_intake.py checks that the wizard and this file stay in step.
+#
+# Each question has: id, maps_to (the criteria.yaml key), type, ask (the wording to use), why (what the answer
+# changes), default (used when the renter has no preference) and, where it helps, choices / min / max / unit / tip.
+# `default: null` means "leave the key out". Dates written "+14d" mean that many days from today.
+# Only search.name is required. Never invent an answer: if the renter does not know yet, use the default and say so.
+
+version: 1
+
+steps:
+  - id: basics
+    title: Basics
+    blurb: Name the search, pick the city and the move-in window.
+    questions:
+      - id: name
+        maps_to: search.name
+        type: text
+        required: true
+        default: My apartment search
+        ask: What should we call this search?
+        why: Shown in the dashboard's top bar and used for the folder name.
+      - id: city
+        maps_to: search.city
+        type: choice
+        choices: [generic, nyc]          # plus any file in config/cities/*.yaml
+        default: generic
+        ask: Which city are you looking in?
+        why: >-
+          `nyc` switches on NYC Open Data (building records, footprints, 311 noise layer, subway entrances) and fills
+          in the MTA transit feeds. Any other city runs on the generic modules: you add its GTFS feeds yourself.
+      - id: timezone
+        maps_to: search.timezone
+        type: text
+        default: America/New_York        # replaced by the city profile's timezone when it has one
+        ask: Which time zone is it in?
+        why: Sun hours and arrive-by times use this IANA zone (for example America/Chicago).
+      - id: move_in_earliest
+        maps_to: search.move_in.earliest
+        type: date
+        default: "+14d"
+        ask: What is the earliest date you could start a lease?
+        why: Units available much earlier than this cost you overlapping rent and score lower on move date.
+      - id: move_in_latest
+        maps_to: search.move_in.latest
+        type: date
+        default: "+60d"
+        ask: And the latest date you could move in?
+        why: Units that only free up after this date are flagged, or rejected when the deadline is hard.
+      - id: move_in_hard
+        maps_to: search.move_in.hard
+        type: bool
+        default: false
+        ask: Is that latest date a hard deadline (for example a lease ending)?
+        why: A hard deadline fails units available later than the window instead of warning about them.
+      - id: map_center
+        maps_to: search.map_center
+        type: latlon
+        default: null
+        ask: Where should the map open (latitude, longitude)? Skip if you will add destinations.
+        why: The map centres on the first destination with coordinates when this is left out.
+
+  - id: places
+    title: Places
+    blurb: Every place you travel to regularly, with arrive-by time, limit and weight.
+    questions:
+      - id: destinations
+        maps_to: commute.destinations
+        type: destinations
+        max_items: 4
+        default: []
+        ask: Where do you go regularly (work, a partner's office, a gym, family)? Give each a name and an address.
+        why: Door-to-door commute times, the heat map and the commute score are computed per destination.
+        item:
+          - id: name
+            maps_to: name
+            type: text
+            required: true
+            ask: What is the place called?
+          - id: address
+            maps_to: address
+            type: text
+            ask: Street address (or place it by clicking the map in the dashboard)?
+          - id: lat
+            maps_to: lat
+            type: number
+            default: null
+            min: -90
+            max: 90
+            tip: Filled in by `apartmentscout geocode` when you only gave an address.
+          - id: lon
+            maps_to: lon
+            type: number
+            default: null
+            min: -180
+            max: 180
+          - id: arrive_by
+            maps_to: arrive_by
+            type: time
+            default: "09:00"
+            ask: What time do you need to arrive?
+            why: Transit is routed for the minutes before this time.
+          - id: max_minutes
+            maps_to: max_minutes
+            type: int
+            default: 30
+            min: 1
+            max: 180
+            ask: What is the longest door-to-door trip you would accept (minutes)?
+            why: A trip at the limit scores 50; half the limit scores 100.
+          - id: weight
+            maps_to: weight
+            type: number
+            default: 1.0
+            min: 0
+            ask: How much does this place matter next to the others (1 = normal, 2 = twice as much)?
+            why: Relative weight when you have several destinations.
+          - id: mode
+            maps_to: mode
+            type: choice
+            choices: [best, subway, bus, walk]
+            default: best
+            ask: Which way do you usually go?
+            why: Sets the mode the dashboard shows first; the score always uses the fastest trip.
+
+  - id: money
+    title: Money
+    blurb: What you can pay, judged on monthly cost.
+    questions:
+      - id: budget_basis
+        maps_to: budget.basis
+        type: choice
+        choices: [monthly_cost, net, gross]
+        default: monthly_cost
+        ask: How should fees count against your budget?
+        why: >-
+          monthly_cost spreads free months and one-time fees over the lease and adds recurring fees (the honest number);
+          net uses rent after free months and ignores fees; gross uses the rent in a month you pay plus known monthly fees.
+      - id: budget_tiers
+        maps_to: budget.tiers
+        type: tiers
+        max_items: 4
+        default: [{name: Target, max: 3000}, {name: Stretch, max: 3300}]
+        ask: What is your target monthly budget, and how far could you stretch? Name each step and give its limit.
+        why: Tiers label every unit on the map and in reports, cheapest first. Rising amounts, unique names.
+      - id: hard_max
+        maps_to: budget.hard_max
+        type: money
+        default: 3500
+        ask: What is the absolute most you would pay per month?
+        why: Above this a unit fails the budget gate. Must be at least the last tier.
+
+  - id: home
+    title: Home
+    blurb: Bedrooms and the sizes that would feel small, good and great.
+    questions:
+      - id: min_beds
+        maps_to: unit.min_beds
+        type: int
+        default: 1
+        min: 0
+        max: 6
+        ask: How many bedrooms at least (0 = studio)?
+        why: A unit with fewer bedrooms has its space score halved.
+      - id: sqft_floor
+        maps_to: unit.sqft_floor
+        type: int
+        default: 450
+        min: 100
+        ask: What size in square feet feels too small (scores 0)?
+        why: The low end of the space score.
+      - id: sqft_good
+        maps_to: unit.sqft_good
+        type: int
+        default: 700
+        ask: What size feels good (scores 50)?
+        why: The middle of the space score. Must be above the floor.
+      - id: sqft_great
+        maps_to: unit.sqft_great
+        type: int
+        default: 1000
+        ask: What size feels great (scores 100)?
+        why: The top of the space score. Must be above "good".
+
+  - id: amenities
+    title: Amenities
+    blurb: Deal-breakers, strong preferences and nice-to-haves.
+    questions:
+      - id: must_have
+        maps_to: must_have
+        type: amenity_list
+        default: [in_unit_wd]
+        ask: Which amenities are deal-breakers?
+        why: A unit confirmed without one fails the gate; an unverified one stays eligible, flagged "unverified". Keep this short.
+      - id: strongly_prefer
+        maps_to: strongly_prefer
+        type: amenity_list
+        default: [dishwasher, elevator]
+        ask: Which would you strongly prefer?
+        why: Counts double in the amenities score.
+      - id: nice_to_have
+        maps_to: nice_to_have
+        type: amenity_list
+        default: [gym, roof_deck, outdoor_space]
+        ask: Which are nice to have?
+        why: Counts once in the amenities score.
+
+  - id: taste
+    title: Building and interior
+    blurb: How much finish, view, light and quiet matter, and any buildings you already rate.
+    # Importance levels, asked for each item: 0 = not important, 1 = somewhat, 2 = very, 3 = essential.
+    # An answered item sets the weight of its dimension: the weights of every item on that dimension add up
+    # (levels index into `weights`). Dimensions the scorer does not have yet (`interior` before it ships) fold into
+    # `building`. Unanswered items change nothing.
+    levels: [Not important, Somewhat, Very, Essential]
+    questions:
+      - id: luxury
+        maps_to: weights.building
+        type: level
+        dimension: building
+        weights: [2, 5, 10, 16]
+        default: null
+        ask: How much does a polished, luxury-level building matter (lobby, service, finishes)?
+        why: Sets the Building weight, which blends resident reviews, public records and building quality.
+      - id: renovated
+        maps_to: weights.interior
+        type: level
+        dimension: interior
+        weights: [0, 3, 6, 10]
+        default: null
+        ask: How much does a renovated, modern interior matter?
+        why: Sets the Interior weight (kitchen and bath finish, flooring, fixtures).
+      - id: appliances
+        maps_to: weights.interior
+        type: level
+        dimension: interior
+        weights: [0, 2, 4, 6]
+        default: null
+        ask: How much do new appliances matter?
+        why: Adds to the Interior weight.
+      - id: view
+        maps_to: weights.light_view
+        type: level
+        dimension: light_view
+        weights: [0, 2, 5, 8]
+        default: null
+        ask: How much does the view matter?
+        why: Sets part of the Light and view weight.
+      - id: light
+        maps_to: weights.light_view
+        type: level
+        dimension: light_view
+        weights: [0, 3, 6, 10]
+        default: null
+        ask: How much does natural light matter?
+        why: Adds to the Light and view weight (direct sun hours and sky view are modelled from the exact unit).
+      - id: quiet
+        maps_to: weights.quiet
+        type: level
+        dimension: quiet
+        weights: [0, 3, 6, 10]
+        default: null
+        ask: How much does a quiet home matter?
+        why: Sets the Quiet weight (311 noise, street and construction exposure).
+      - id: building_ratings
+        maps_to: building_ratings
+        type: ratings
+        default: {}
+        min: 1
+        max: 5
+        ask: Are there buildings you already have a view on? Give each a rating from 1 (avoid) to 5 (love). Skip if none yet; add them as you go.
+        why: Optional. Kept in criteria.yaml as a map of building name to rating, for the scorer to use when it supports it.
+
+  - id: weights
+    title: Weights
+    blurb: What matters most when units are ranked. Only the ratios count.
+    questions:
+      - id: preset
+        maps_to: scoring.preset
+        type: choice
+        choices: [balanced, biggest-and-nicest, cheapest-good-enough, shortest-commute]   # config.PRESETS
+        default: balanced
+        ask: Which description fits best, balanced or leaning one way?
+        why: A named, versioned weight recipe. Your taste answers then adjust the dimensions they cover.
+      - id: weights
+        maps_to: weights
+        type: weights
+        default: null                  # the preset's weights, adjusted by the taste answers
+        min: 0
+        max: 40
+        ask: Anything to change? Give dimension=weight pairs (for example commute=30).
+        why: Relative importance of each dimension; the dashboard shows each as a share of 100%.
+
+# The amenity keys the scorer understands (listings.AMENITY_KEYS). Your own keys are fine; they only need to appear
+# in listings too. Labels are what the wizard and the interactive prompt show.
+amenities:
+  - {key: in_unit_wd,    label: In-unit W/D}
+  - {key: elevator,      label: Elevator}
+  - {key: doorman,       label: Doorman}
+  - {key: gym,           label: Gym}
+  - {key: pool,          label: Pool}
+  - {key: roof_deck,     label: Roof deck}
+  - {key: outdoor_space, label: Private outdoor space}
+  - {key: dishwasher,    label: Dishwasher}
+  - {key: central_ac,    label: Central air}
+  - {key: pets,          label: Pets allowed}
+  - {key: parking,       label: Parking}
+  - {key: bike_room,     label: Bike room}
+  - {key: package_room,  label: Package room}
+  - {key: lounge,        label: Lounge}
+  - {key: coworking,     label: Coworking}
+  - {key: game_room,     label: Game room}

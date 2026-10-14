@@ -1,7 +1,7 @@
 // Command palette (⌘K, Ctrl+K or "/"): jump to any listing by name, address or neighbourhood, filter the
 // results, switch view, and run the shell's actions (theme, search settings, export, shortcuts, the open
 // listing's save / compare / share). One modal; the query input keeps focus and the options are a listbox.
-import { S, on, store, openDrawer, label, cost, score, isSaved, toggleSave, toggleCompare, setFilter, openSettings, filtered } from './app.js';
+import { S, on, store, openDrawer, label, cost, score, isSaved, toggleSave, toggleCompare, setFilter, openSettings, filtered, openWizard } from './app.js';
 import { flipTheme } from './shell.js';
 import { $, esc, money, ICONS, imagesOf, imgFallback, scoreColor, toast } from './util.js';
 
@@ -105,6 +105,7 @@ function build(q) {
     sel && ['Copy a link to the open home', 'Opens ' + label(sel) + ' for whoever you send it to', IC.link, '', () => shareListing(sel.id)],
     S.filters.q && ['Clear the text filter', `Now showing homes matching “${S.filters.q}”`, IC.filter, '', () => applyFilter('')],
     ['Switch to ' + (document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark') + ' theme', 'Light or dark', IC.theme, 't', () => flipTheme()],
+    ['New search', 'Step-by-step wizard for a fresh set of criteria', ICONS.plus, '', () => openWizard({ mode: 'new' })],
     ['Search settings', 'Budget, must-haves, destinations and weights', IC.gear, '', () => openSettings()],
     innerWidth <= 1180 && ['Filters and ranking weights', 'Open the filter rail', IC.rail, '', () => { if (!['map', 'list'].includes(S.view)) location.hash = 'map'; document.body.classList.add('rail-open'); }],
     ['Export the filtered homes as CSV', `${filtered().length} homes`, IC.dl, '', () => $('csvBtn')?.click()],
