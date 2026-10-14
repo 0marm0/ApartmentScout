@@ -19,13 +19,11 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
-import http.server
 import json
 import os
 import re
 import shutil
 import sys
-import urllib.parse
 import webbrowser
 from pathlib import Path
 
@@ -510,44 +508,49 @@ def _export(ws: Workspace, out: Path):
     (out / "manifest.json").write_text(json.dumps(manifest, indent=1))
 
 
+def _rescore(ws: Workspace) -> None:
+    """Score and rank every listing and save: what `apartmentscout score` does, without the printout."""
+    from .score import score_all
+    Ls = _listings(ws)
+    score_all(Ls, ws.criteria())
+    save(Ls, ws.listings_path)
+
+
+def _searches_dir(args, ws: Workspace | None) -> Path:
+    """Where new searches are created: --searches-dir, $APARTMENTSCOUT_SEARCHES, the folder holding the open search
+    when that is called `searches`, else ./searches."""
+    given = getattr(args, "searches_dir", None) or os.environ.get("APARTMENTSCOUT_SEARCHES")
+    if given:
+        return Path(given).resolve()
+    if ws is not None and ws.root.parent.name == "searches":
+        return ws.root.parent
+    return Path("searches").resolve()
+
+
 def cmd_serve(args):
     """Serve the dashboard. The bundled example exports into dashboard/data (the committed demo);
     any other search exports into its own git-ignored cache so private data never lands in the repo,
-    and the server maps /data/ and /media/ (locally saved listing photos) to that search."""
-    data_dir, media_dir = DASH / "data", None
+    and the server maps /data/ and /media/ (locally saved listing photos) to that search.
+
+    Unless --no-api is given the page also gets a local-only API (see localapi.py) so the New search wizard can save
+    criteria.yaml and create or switch search folders."""
+    from .localapi import ServeState, make_server
+    ws = None
     if args.search or os.environ.get("APARTMENTSCOUT_SEARCH") or Path("search/criteria.yaml").exists():
         try:
             ws = ws_from(args)
-            example = (REPO / "examples").resolve() in ws.root.resolve().parents
-            data_dir = DASH / "data" if example else ws.cache_dir / "dashboard-data"
-            _export(ws, data_dir)
-            media_dir = ws.root / "media"
         except SystemExit:
             pass
-    routes = {"/data/": data_dir.resolve(), "/media/": media_dir.resolve() if media_dir else None}
-
-    class Handler(http.server.SimpleHTTPRequestHandler):
-        def __init__(self, *a, **kw):
-            super().__init__(*a, directory=str(DASH), **kw)
-
-        def translate_path(self, path):
-            clean = path.split("?", 1)[0].split("#", 1)[0]
-            for prefix, root in routes.items():
-                if root and clean.startswith(prefix):
-                    rel = Path(urllib.parse.unquote(clean[len(prefix):]))
-                    target = (root / rel).resolve()
-                    if root in target.parents or target == root:
-                        return str(target)
-                    return str(root / "__forbidden__")
-            return super().translate_path(path)
-
-        def log_message(self, *a):
-            pass
-    http.server.ThreadingHTTPServer.allow_reuse_address = True
-    http.server.ThreadingHTTPServer.request_queue_size = 128  # the dashboard loads many files at once
-    with http.server.ThreadingHTTPServer(("127.0.0.1", args.port), Handler) as httpd:
-        url = f"http://127.0.0.1:{args.port}/"
+    state = ServeState(dash=DASH, searches_dir=_searches_dir(args, ws), ws=None, data_dir=DASH / "data", media_dir=None,
+                       export=_export, rescore=_rescore, api=not args.no_api)
+    if ws is not None:
+        state.activate(ws)
+    httpd = make_server(state, args.port)
+    with httpd:
+        url = f"http://127.0.0.1:{state.port}/"
         log(f"ApartmentScout dashboard at {url}  (Ctrl+C to stop)")
+        if state.api:
+            log("  New search wizard: saves criteria.yaml and creates search folders from the page (this machine only).")
         if not args.no_open:
             webbrowser.open(url)
         httpd.serve_forever()
@@ -638,6 +641,9 @@ def main(argv=None):
     s = add("serve", cmd_serve, "serve the dashboard locally")
     s.add_argument("--port", type=int, default=8765)
     s.add_argument("--no-open", action="store_true")
+    s.add_argument("--no-api", action="store_true", help="serve the files only: no save, create or re-score from the page")
+    s.add_argument("--searches-dir", metavar="DIR", help="where the wizard creates new search folders "
+                   "(default: the folder holding the open search if it is called searches, else ./searches)")
     s = add("all", cmd_all, "geocode, commute, layers, score and build")
     s.add_argument("--provider", default="auto")
     s.add_argument("--force", action="store_true")
