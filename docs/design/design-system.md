@@ -114,6 +114,14 @@ the results column) inside the same shell.
 - **Price tag.** Map marker for the top twelve and saved listings: score dot + short price; tags that
   collide with a better-ranked tag hide, the pin stays. A starred home wears a gold ring and glow, is never hidden by
   decluttering, never joins a cluster bubble and draws above the other tags.
+- **Route preview.** A hovered home's commute drawn on the map: dashed walk legs (ink with a surface casing so they read on
+  any commute band), rides in the official line colour, white transfer dots, and a solid pill with the minutes and route
+  bullets. Estimated geometry is shown as such: dotted and labelled "path approximate" or "straight line". Labels are
+  solid surfaces because they are data, and hide when their leg is too short to hold them.
+- **Lens chips.** Map lenses that are not a heat layer (starred-only) are chips at the end of the layer switch behind a
+  hairline divider: a grey star that turns gold when the lens is on, a count in tabular figures, disabled at zero.
+- **Sun lens.** Direct-sun hours use their own scale (indigo, violet, apricot, sun yellow; blue-to-orange survives colour
+  blindness). Unknown is grey and translucent, named on the legend, never mapped to the low end of the scale.
 - **Drawer.** Floating card with photo carousel or hero glyph, sticky action bar (Unit 3D, Records,
   Compare, Listing).
 - **Weight slider.** Re-ranks every card and pin while dragging; shows each weight as a share of 100%.
