@@ -390,10 +390,11 @@ def cmd_build(args):
 
 
 def standalone(data_dir: Path, dest: Path) -> Path:
-    """One self-contained HTML file: the dashboard, its CSS and JS bundle, and every data file.
+    """One self-contained HTML file: the dashboard, its CSS and JS bundle, every data file and the
+    vendored libraries (MapLibre, three.js and its addons, Geist fonts).
 
-    Works when opened as a file, in app previews and on any static host. MapLibre, three.js and
-    fonts still load from public CDNs, and map tiles need an internet connection."""
+    Works when opened as a file, in app previews and on any static host, with no network except
+    map tiles; without tiles the map falls back to a plain background under the local overlays."""
     bundle = DASH / "dist" / "app.bundle.js"
     if not bundle.exists():
         sys.exit("dashboard/dist/app.bundle.js is missing. Run scripts/bundle.sh (needs Node and esbuild).")
@@ -411,9 +412,50 @@ def standalone(data_dir: Path, dest: Path) -> Path:
                   lambda m: f"<style>\n{(DASH / m.group(1)).read_text()}\n</style>", html)
     html = html.replace('<script type="module" src="js/app.js"></script>',
                         f"<script>window.__AS_DATA__={blob};</script>\n<script type=\"module\">\n{js}\n</script>")
+    html = _inline_vendor(html)
     dest.parent.mkdir(parents=True, exist_ok=True)
     dest.write_text(html)
     return dest.resolve()
+
+
+
+def _inline_vendor(html: str) -> str:
+    """Inline dashboard/vendor: fonts and MapLibre as <style>/<script>, three.js and its addons as data: URLs in
+    the import map (a data: module cannot resolve relative imports, so those are pointed at the import map)."""
+    import base64
+    import posixpath
+
+    V = DASH / "vendor"
+
+    def b64(b: bytes) -> str:
+        return base64.b64encode(b).decode()
+
+    def js_url(src: str) -> str:
+        return "data:text/javascript;base64," + b64(src.encode())
+
+    fonts = re.sub(r'url\("([^"]+\.woff2)"\)',
+                   lambda m: f'url("data:font/woff2;base64,{b64((V / "fonts" / m.group(1)).read_bytes())}")',
+                   (V / "fonts" / "geist.css").read_text())
+    ml_css = (V / "maplibre-gl" / "maplibre-gl.css").read_text()
+    ml_js = re.sub(r"//# sourceMappingURL=\S+", "", (V / "maplibre-gl" / "maplibre-gl.js").read_text())
+    ml_js = ml_js.replace("</script", "<\\/script")
+    swaps = {'<link rel="stylesheet" href="vendor/fonts/geist.css">': f"<style>\n{fonts}\n</style>",
+             '<link rel="stylesheet" href="vendor/maplibre-gl/maplibre-gl.css">': f"<style>\n{ml_css}\n</style>",
+             '<script src="vendor/maplibre-gl/maplibre-gl.js"></script>': f"<script>\n{ml_js}\n</script>"}
+    for a, b in swaps.items():
+        html = html.replace(a, b)
+    imports = {"three": js_url((V / "three" / "three.module.min.js").read_text())}
+    addons = V / "three" / "addons"
+    for f in sorted(addons.rglob("*.js")):
+        rel = f.relative_to(addons).as_posix()
+        src = re.sub(r"""(\bfrom\s*|\bimport\s*\(\s*)(['"])(\.{1,2}/[^'"]+)\2""",
+                     lambda m: f"{m.group(1)}{m.group(2)}three/addons/"
+                               f"{posixpath.normpath(posixpath.join(posixpath.dirname(rel), m.group(3)))}{m.group(2)}",
+                     f.read_text())
+        imports["three/addons/" + rel] = js_url(src)
+    imap = json.dumps({"imports": imports}, indent=1)
+    return re.sub(r'<script type="importmap">.*?</script>', lambda m: f'<script type="importmap">\n{imap}\n</script>',
+                  html, count=1, flags=re.S)
 
 
 def _export(ws: Workspace, out: Path):

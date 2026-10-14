@@ -13,6 +13,21 @@ python scripts/release_check.py              # privacy, images, ignore rules, ph
 It must end with `OK to release`. WARN lines do not block; read them anyway. With LibreOffice installed the test
 run also recalculates an exported workbook and checks its scores against `score.py`.
 
+Then run the browser suite (CI runs it too, in the `e2e` job):
+
+```bash
+python -m playwright install chromium        # once
+APARTMENTSCOUT_E2E=1 pytest -m e2e tests/e2e -q -rs
+```
+
+It opens all eight views, the drawer, the settings sheet and the command palette in dark and light at 1440 and
+390 px with every non-local request blocked (so the map must show its offline basemap). It fails on any page error,
+any console error other than a blocked tile or photo fetch, any view that shows "This view could not load",
+anything wider than a 390 px phone, a broken key interaction (open a listing, switch commute mode, drag a weight,
+add to compare, switch research tabs) or a **critical** axe-core violation. Serious axe violations are listed as
+warnings: read them. About 2 to 3 minutes. Without Chromium installed the suite skips itself unless
+`APARTMENTSCOUT_E2E=1`; `APARTMENTSCOUT_E2E=0` turns it off.
+
 ## 2. Keep your private strings outside the repo
 
 The privacy scan always looks for local home-directory paths and e-mail addresses. Add the strings only you know
@@ -57,12 +72,14 @@ machine but a fresh clone would not ignore it.
 - Rebuild the example dashboard from `examples/nyc-2026` (`apartmentscout build --search examples/nyc-2026`), not
   from a private search.
 - Rebuild the standalone file (`scripts/bundle.sh`, then `apartmentscout build --standalone dist/...`) and run the
-  gate again: it scans `dist/` too.
+  gate again: it scans `dist/` too. The file inlines MapLibre, three.js and the Geist fonts from `dashboard/vendor/`,
+  so it opens with no network; only map tiles (and the plan tracer's pdf.js) still need one.
 
 ## 6. Notices and attribution
 
-- `THIRD_PARTY_NOTICES.md` matches what the dashboard loads (check `dashboard/index.html` and `dashboard/js/map.js`
-  for new CDN libraries, fonts or tile sources).
+- `THIRD_PARTY_NOTICES.md` matches what the dashboard loads and vendors (check `dashboard/index.html`,
+  `dashboard/vendor/` and `dashboard/js/map.js` for new libraries, fonts or tile sources). A new
+  `three/addons/...` import must be copied into `dashboard/vendor/three/addons/` (a test checks this).
 - The map attribution control is visible in published screenshots.
 - Wikimedia Commons photos show author and licence wherever they appear.
 

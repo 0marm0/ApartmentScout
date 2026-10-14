@@ -8,10 +8,8 @@
 <meta name="theme-color" content="#08090c">
 <link rel="apple-touch-icon" href="assets/app-icon.svg">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Cstyle%3E.tower%7Bfill:#263533%7D.ring%7Bfill:#05583f%7D%40media (prefers-color-scheme: dark)%7B.tower%7Bfill:#fff%7D.ring%7Bfill:#12865f%7D%7D%3C/style%3E%3Cdefs%3E%3CclipPath id=%22h%22%3E%3Ccircle cx=%2250%22 cy=%2240%22 r=%2225%22/%3E%3C/clipPath%3E%3C/defs%3E%3Cpath d=%22M50 95C50 95 15.5 57.5 15.5 40A34.5 34.5 0 1 1 84.5 40C84.5 57.5 50 95 50 95ZM75 40A25 25 0 1 1 25 40A25 25 0 1 1 75 40Z%22 fill=%22#05583f%22 fill-rule=%22evenodd%22 class=%22ring%22/%3E%3Cpath d=%22M49.25 29L50 16.5L50.75 29ZM48 29H52V36.6H48ZM46 36.6H54V39.2H46ZM44 39.2H56V42.2H44ZM42 42.2H58V47.8H42ZM40 47.8H60V70H40ZM45.3 41.6H46.7V70H45.3ZM49.3 41.6H50.7V70H49.3ZM53.3 41.6H54.7V70H53.3Z%22 fill=%22#263533%22 fill-rule=%22evenodd%22 clip-path=%22url(#h)%22 class=%22tower%22/%3E%3C/svg%3E">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+<link rel="stylesheet" href="vendor/fonts/geist.css">
+<link rel="stylesheet" href="vendor/maplibre-gl/maplibre-gl.css">
 <link rel="stylesheet" href="css/tokens.css">
 <link rel="stylesheet" href="css/app.css">
 <link rel="stylesheet" href="css/enhance.css">
@@ -23,11 +21,11 @@
 <link rel="stylesheet" href="css/views/records.css">
 <link rel="stylesheet" href="css/views/tours.css">
 <link rel="stylesheet" href="css/views/research.css">
-<script src="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script src="vendor/maplibre-gl/maplibre-gl.js"></script>
 <script type="importmap">
 { "imports": {
-  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  "three": "./vendor/three/three.module.min.js",
+  "three/addons/": "./vendor/three/addons/"
 } }
 </script>
 </head>
@@ -79,6 +77,7 @@
       <div class="float map-ctl" id="mapCtl"></div>
       <div class="float legend" id="legend"></div>
       <div class="float readout" id="readout" hidden></div>
+      <div class="float map-offline" id="mapOffline" role="status" hidden><i aria-hidden="true"></i>Offline basemap<span class="more">· pins, lines and heat from local data</span></div>
       <div class="attrib" id="attrib"></div>
     </section>
     <section class="view" id="view-list" aria-label="Shortlist" hidden></section>

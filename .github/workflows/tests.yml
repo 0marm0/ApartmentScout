@@ -10,8 +10,25 @@ jobs:
           python-version: "3.12"
       - run: pip install -e ".[dev]"
       - run: pytest -q
+        env:
+          APARTMENTSCOUT_E2E: "0"   # the browser suite runs in its own job below
       - run: python scripts/release_check.py --skip-tests --only privacy,ignored,photos
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
       - run: node --test tests/js
+  e2e:
+    # every dashboard view in dark and light at 1440 and 390 px, key interactions and axe-core, in headless Chromium
+    # (SwiftShader WebGL; checks that need WebGL skip themselves if it is missing). Tiles and photos are blocked.
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e ".[dev]"
+      - run: python -m playwright install --with-deps chromium
+      - run: pytest -m e2e tests/e2e -q -rs
+        env:
+          APARTMENTSCOUT_E2E: "1"

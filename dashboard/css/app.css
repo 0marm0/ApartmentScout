@@ -244,6 +244,9 @@ select.sel { appearance: none; height: 28px; padding: 0 26px 0 10px; border-radi
 .legend .src { margin-top: 9px; font-size: var(--fs-2xs); color: var(--ink-3); line-height: 1.45; }
 .legend .lines { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 9px; padding-top: 9px; border-top: 1px solid var(--line); align-items: center; font-size: var(--fs-2xs); color: var(--ink-3); }
 .readout { top: 58px; left: 14px; padding: 6px 10px; border-radius: var(--r-md); font-size: var(--fs-xs); font-variant-numeric: tabular-nums; pointer-events: none; }
+.map-offline { right: 14px; bottom: 26px; display: flex; align-items: center; gap: 7px; height: 28px; padding: 0 12px; border-radius: var(--r-pill); font-size: var(--fs-xs); color: var(--ink-2); white-space: nowrap; pointer-events: none; }
+.map-offline[hidden] { display: none; }
+.map-offline i { width: 6px; height: 6px; border-radius: 50%; background: var(--warn); }
 .attrib { position: absolute; right: 8px; bottom: 6px; z-index: 4; font-size: 10px; color: var(--ink-3); }
 .attrib a { color: inherit; }
 
@@ -558,6 +561,7 @@ body { grid-template-columns: minmax(0, 1fr); }
 .c-modes .mode b { font-weight: 650; font-variant-numeric: tabular-nums; color: var(--ink); }
 .c-modes .mode.best { background: var(--good-soft); color: var(--good); }
 .c-modes .mode.best b { color: var(--good); }
+:root[data-theme="light"] .c-modes .mode.best b { color: color-mix(in srgb, var(--good) 55%, var(--ink)); }   /* AA on the soft green */
 .c-modes .mode.na { opacity: .5; }
 .c-modes .line-bullets { margin-left: 3px; }
 .c-modes .to { color: var(--ink-3); margin-left: 2px; }
@@ -723,4 +727,40 @@ body { grid-template-columns: minmax(0, 1fr); }
   .cashflow { grid-template-columns: minmax(0, 1fr); }
   .sh-prev .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .kpi.pv-banner .faint { display: none; }
+}
+
+/* ------------------------------------------------------------------ phone (390-760 px)
+   Every view tab stays reachable: the tab strip gets its own full-width row and scrolls sideways (enhance.js keeps
+   the active tab in view). The map layer chips stay on one scrolling line clear of the zoom
+   column, and the Shortlist keeps rank, listing, monthly cost and score on screen (the other columns step aside). */
+@media (max-width: 760px) {
+  body { grid-template-rows: auto auto minmax(0, 1fr); }
+  .topbar { flex-wrap: wrap; row-gap: 6px; padding: 8px var(--s-3) 6px; min-height: var(--topbar-h); }
+  .topbar .brand { order: 1; }
+  .topbar .top-actions { order: 2; margin-left: auto; }
+  .topbar .nav { order: 3; flex: 1 0 100%; margin: 0; overflow-x: auto; overscroll-behavior-x: contain; scroll-padding-inline: 16px; }
+  .nav a { flex: none; padding: 6px 11px; }
+  .top-actions a.btn[href$="studios.html"] { display: none; }
+  .layer-switch { right: 54px; max-width: max-content; overflow-x: auto; flex-wrap: nowrap; scrollbar-width: none; overscroll-behavior-x: contain; }
+  .layer-switch::-webkit-scrollbar { display: none; }
+  .layer-switch button { flex: none; white-space: nowrap; padding: 0 9px; }
+  .map-offline { right: 8px; bottom: 22px; }
+  .map-offline .more { display: none; }
+}
+@media (max-width: 600px) {
+  #view-list table.lst :is(.c-thumb, .c-hood, .c-tier, .c-sqft, .c-ppsf, .c-commute, .c-floor, .c-wd, .c-door, .c-gym, .c-known, .c-status) { display: none; }
+  #view-list table.lst { table-layout: fixed; }
+  #view-list table.lst .c-name { min-width: 0; max-width: none; width: auto; }
+  #view-list table.lst .c-name .sub { text-overflow: ellipsis; }
+  #view-list table.lst .c-name .sub > span:last-child { overflow: hidden; text-overflow: ellipsis; }
+  #view-list table.lst .nm b { white-space: normal; overflow-wrap: anywhere; }
+  #view-list table.lst .c-act { width: 34px; padding-right: 0; }
+  #view-list table.lst .c-act .cmp { display: none; }
+  #view-list table.lst .c-rank { width: 26px; padding-left: 2px; padding-right: 4px; }
+  #view-list table.lst .c-cost { width: 88px; }
+  #view-list table.lst .c-score { width: 56px; }
+  #view-list table.lst th.c-score > button { padding-left: 4px; padding-right: 6px; justify-content: flex-end; }
+  #view-list table.lst td.c-score { padding-right: 10px; }
+  #view-list table.lst .c-score .t-bar { display: none; }
+  #view-list table.lst td.c-score .t-score { justify-content: flex-end; }
 }

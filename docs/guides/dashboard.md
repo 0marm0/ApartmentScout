@@ -83,8 +83,11 @@ apartmentscout build --standalone my-search.html
 ```
 
 writes one self-contained HTML file with the dashboard, its code, every stylesheet and all the data
-embedded. It opens with a double-click, in app preview panes and on any host. The map tiles, three.js
-and fonts still load from their CDNs, so it needs a connection for those. It embeds the data, so treat it
+embedded. It opens with a double-click, in app preview panes and on any host. MapLibre, three.js and
+the Geist fonts are inlined from `dashboard/vendor/`, so it works with no connection: only the map tiles
+need one, and without them the map shows a plain background with the pins, transit lines and heat layers
+from the embedded data and an "Offline basemap" note (`?basemap=none` forces this). The plan tracer still
+loads pdf.js from a CDN to open PDF plans. It embeds the data, so treat it
 like the search itself: it shows your listings and notes to anyone you send it to.
 
 After editing `dashboard/js/`, run `scripts/bundle.sh` (Node + esbuild) to refresh

@@ -22,3 +22,6 @@ scout = "apartmentscout.cli:main"
 
 [tool.setuptools.packages.find]
 include = ["apartmentscout*"]
+
+[tool.pytest.ini_options]
+markers = ["e2e: dashboard checks in a real browser (Playwright); see tests/e2e/conftest.py"]
