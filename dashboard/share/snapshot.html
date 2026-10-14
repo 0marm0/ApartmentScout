@@ -1,0 +1,574 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<meta name="color-scheme" content="dark light">
+<title>Shortlist · ApartmentScout</title>
+<!--
+  ApartmentScout shared shortlist and decision memo: ONE template for the dashboard's "Share shortlist" / "Decision memo"
+  buttons and for `apartmentscout share`. A builder (dashboard/js/features/share-model.js in the browser,
+  apartmentscout/share.py on the command line) fills the as-data block below with a payload shaped by the as-schema block
+  and writes this file out. Everything on the page is drawn from that payload by the script at the bottom: no network, no
+  libraries, no fonts to fetch. Photos are embedded thumbnails or links.
+-->
+<style>
+:root {
+  color-scheme: dark;
+  --font: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --bg: #08090c; --s1: #0e1015; --s2: #13161d; --s3: #1a1e27; --hover: #1e2330;
+  --line: rgba(255,255,255,.075); --line2: rgba(255,255,255,.13);
+  --ink: #eef1f6; --ink2: #a9b1bf; --ink3: #8a94a6; --ink4: #4a5160;
+  --accent: #8b96ff; --accent2: #a6aeff; --accent-ink: #0b0d1f; --accent-soft: rgba(139,150,255,.13); --accent-line: rgba(139,150,255,.38);
+  --good: #4fd19a; --warn: #f0b04c; --bad: #f2735f; --sun: #f5b547; --fav: #ffd166;
+  --good-soft: rgba(79,209,154,.12); --warn-soft: rgba(240,176,76,.12); --bad-soft: rgba(242,115,95,.12);
+  --shadow: 0 1px 0 rgba(255,255,255,.04) inset, 0 12px 34px rgba(0,0,0,.4);
+  --r: 14px; --r2: 10px;
+}
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #f4f4f1; --s1: #ffffff; --s2: #fafaf8; --s3: #f1f1ed; --hover: #eeeee9;
+  --line: rgba(20,24,34,.08); --line2: rgba(20,24,34,.14);
+  --ink: #12151c; --ink2: #4b5261; --ink3: #656c7b; --ink4: #aab0bc;
+  --accent: #4b55e6; --accent2: #3a43d0; --accent-ink: #fff; --accent-soft: rgba(75,85,230,.09); --accent-line: rgba(75,85,230,.34);
+  --good: #0c7a4c; --warn: #8f5a03; --bad: #bd3d27; --sun: #b97a0a; --fav: #b07d00;
+  --good-soft: rgba(19,148,94,.09); --warn-soft: rgba(183,116,6,.1); --bad-soft: rgba(207,70,48,.09);
+  --shadow: 0 10px 28px rgba(20,24,34,.1);
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 400 14px/1.5 var(--font); font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased; }
+a { color: var(--accent2); text-decoration: none; } a:hover { text-decoration: underline; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+h1, h2, h3, h4, p { margin: 0; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.wrap { max-width: 1160px; margin: 0 auto; padding: 0 20px; }
+
+/* ---- top bar */
+.bar { position: sticky; top: 0; z-index: 20; background: color-mix(in srgb, var(--bg) 86%, transparent); -webkit-backdrop-filter: blur(16px) saturate(150%); backdrop-filter: blur(16px) saturate(150%); border-bottom: 1px solid var(--line); }
+.bar .wrap { display: flex; align-items: center; gap: 14px; height: 52px; }
+.brand { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; letter-spacing: -.01em; color: var(--ink); }
+.brand svg { width: 20px; height: 20px; }
+.ro { white-space: nowrap; font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--ink3); padding: 3px 8px; border: 1px solid var(--line2); border-radius: 999px; }
+.sp { flex: 1; }
+.seg { display: inline-flex; padding: 3px; gap: 2px; border-radius: 11px; background: color-mix(in srgb, var(--ink) 6%, transparent); border: 1px solid var(--line); }
+.seg button { height: 28px; padding: 0 14px; border: 0; border-radius: 8px; background: none; color: var(--ink2); font: 500 12.5px var(--font); cursor: pointer; }
+.seg .short { display: none; }
+.seg button[aria-pressed="true"] { background: var(--s1); color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,.25); }
+.btn { display: inline-flex; align-items: center; gap: 7px; height: 34px; padding: 0 13px; border-radius: 10px; border: 1px solid var(--line2); background: var(--s2); color: var(--ink); font: 500 13px var(--font); cursor: pointer; text-decoration: none; }
+.btn:hover { background: var(--hover); text-decoration: none; }
+.btn.primary { background: var(--accent); border-color: transparent; color: var(--accent-ink); }
+.btn svg { width: 15px; height: 15px; }
+.icon { width: 34px; padding: 0; justify-content: center; }
+
+/* ---- head */
+.head { padding: 34px 0 20px; display: grid; gap: 18px; }
+.eyebrow { font-size: 11.5px; font-weight: 600; letter-spacing: .09em; text-transform: uppercase; color: var(--accent2); }
+.head h1 { font-size: clamp(26px, 4vw, 40px); line-height: 1.08; letter-spacing: -.025em; font-weight: 650; margin-top: 6px; }
+.head .sub { margin-top: 8px; color: var(--ink2); font-size: 15px; max-width: 70ch; }
+.stats { display: flex; flex-wrap: wrap; gap: 10px; }
+.stat { min-width: 120px; padding: 11px 14px; border-radius: var(--r2); background: var(--s1); border: 1px solid var(--line); }
+.stat b { display: block; font-size: 21px; font-weight: 650; letter-spacing: -.02em; }
+.stat span { font-size: 11.5px; color: var(--ink3); }
+
+/* ---- overview: map + ranked list */
+.overview { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 16px; margin-bottom: 26px; }
+.panel { background: var(--s1); border: 1px solid var(--line); border-radius: var(--r); box-shadow: var(--shadow); overflow: hidden; }
+.map { position: relative; background: var(--s2); }
+.map svg { display: block; width: 100%; height: auto; }
+.map .bg { fill: var(--s2); }
+.map .tl { fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; opacity: .9; }
+.map .pin circle { fill: var(--accent); stroke: var(--s1); stroke-width: 2.4; }
+.map .pin text { fill: var(--accent-ink); font: 650 11px var(--font); text-anchor: middle; }
+.map .pin.t1 circle { stroke: var(--fav); stroke-width: 3.2; }
+.map .dest rect { fill: #0f8f5a; stroke: var(--s1); stroke-width: 2; }
+.map .dest text { fill: var(--ink); font: 600 11px var(--font); paint-order: stroke; stroke: var(--s2); stroke-width: 3px; text-anchor: middle; }
+.map .cap { position: absolute; left: 10px; bottom: 9px; padding: 2px 8px; border-radius: 6px; background: color-mix(in srgb, var(--s1) 88%, transparent); font-size: 11px; color: var(--ink3); }
+.rank-list { list-style: none; margin: 0; padding: 6px; }
+.rank-list li { display: grid; grid-template-columns: 26px minmax(0, 1fr) auto auto; gap: 10px; align-items: center; padding: 9px 10px; border-radius: 10px; }
+.rank-list li:hover { background: var(--s2); }
+.rank-list .n { width: 24px; height: 24px; display: grid; place-items: center; border-radius: 50%; background: var(--accent-soft); color: var(--accent2); font: 650 12px var(--font); }
+.rank-list .t b { font-weight: 600; } .rank-list .t small { display: block; color: var(--ink3); font-size: 12px; }
+.rank-list .sc { display: block; } .rank-list .p { font-weight: 650; text-align: right; } .rank-list .p small { display: block; font-weight: 500; font-size: 11.5px; color: var(--ink3); }
+
+/* ---- cards */
+.cards { display: grid; gap: 18px; padding-bottom: 60px; }
+.home { display: grid; grid-template-columns: minmax(260px, 340px) minmax(0, 1fr); background: var(--s1); border: 1px solid var(--line); border-radius: var(--r); box-shadow: var(--shadow); overflow: hidden; }
+.media { position: relative; background: var(--s3); min-height: 240px; display: flex; flex-direction: column; }
+.media .main { position: relative; flex: 1; min-height: 190px; }
+.media .main img, .media .main svg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.media .thumbs { display: flex; gap: 4px; padding: 4px; background: var(--s1); }
+.media .thumbs button { flex: 1; height: 46px; padding: 0; border: 2px solid transparent; border-radius: 7px; overflow: hidden; background: var(--s3); cursor: pointer; opacity: .75; }
+.media .thumbs button[aria-current="true"] { border-color: var(--accent); opacity: 1; }
+.media .thumbs img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.badge-rank { position: absolute; z-index: 2; left: 10px; top: 10px; padding: 3px 10px; border-radius: 999px; background: color-mix(in srgb, #05060a 70%, transparent); color: #fff; font: 650 12.5px var(--font); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+.credit { position: absolute; z-index: 2; right: 8px; bottom: 8px; max-width: 85%; padding: 2px 8px; border-radius: 6px; background: color-mix(in srgb, #05060a 66%, transparent); color: #e8ebf2; font-size: 10.5px; }
+.body { padding: 18px 20px 16px; display: grid; gap: 13px; align-content: start; min-width: 0; }
+.row1 { display: flex; gap: 14px; align-items: flex-start; }
+.row1 .t { flex: 1; min-width: 0; }
+.row1 h3 { font-size: 20px; letter-spacing: -.02em; font-weight: 650; line-height: 1.2; }
+.row1 h3 span { color: var(--ink2); font-weight: 500; }
+.row1 p { margin-top: 3px; color: var(--ink3); font-size: 13px; }
+.ring { position: relative; width: 58px; height: 58px; flex: none; }
+.ring svg { display: block; transform: rotate(-90deg); }
+.ring b { position: absolute; inset: 0; display: grid; place-items: center; font-size: 19px; font-weight: 650; line-height: 1; letter-spacing: 0; }
+.ring.sm b { font-size: 12px; } .ring.md b { font-size: 15px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { display: inline-flex; align-items: center; gap: 5px; height: 22px; padding: 0 9px; border-radius: 999px; background: var(--s3); color: var(--ink2); font-size: 11.5px; font-weight: 600; white-space: nowrap; }
+.chip.accent { background: var(--accent-soft); color: var(--accent2); } .chip.good { background: var(--good-soft); color: var(--good); }
+.chip.warn { background: var(--warn-soft); color: var(--warn); } .chip.bad { background: var(--bad-soft); color: var(--bad); } .chip.fav { background: color-mix(in srgb, var(--fav) 14%, transparent); color: var(--fav); }
+.price { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 12px; }
+.price b { font-size: 30px; font-weight: 650; letter-spacing: -.03em; line-height: 1; }
+.price .per { color: var(--ink3); font-size: 13px; margin-left: -8px; }
+.price .gross { color: var(--ink3); font-size: 13px; }
+.price abbr { text-decoration: underline dotted; cursor: help; }
+.facts { display: flex; flex-wrap: wrap; gap: 4px 18px; font-size: 13px; color: var(--ink2); }
+.facts b { color: var(--ink); font-weight: 600; }
+.commute { font-size: 13px; color: var(--ink2); display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: center; }
+.commute b { color: var(--ink); font-size: 15px; }
+.commute .m { color: var(--ink3); }
+.why h4, .sec h4 { font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--ink3); margin-bottom: 7px; }
+.reasons { list-style: none; margin: 0; padding: 0; display: grid; gap: 5px; }
+.reasons li { display: grid; grid-template-columns: 44px 84px minmax(0, 1fr); gap: 8px; align-items: baseline; font-size: 13px; }
+.reasons .pts { font-weight: 650; text-align: right; } .reasons .pts.pos { color: var(--good); } .reasons .pts.neg { color: var(--bad); } .reasons .pts.zero { color: var(--ink3); }
+.reasons .lab { color: var(--ink); font-weight: 550; } .reasons .txt { color: var(--ink2); }
+.foot { display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: center; color: var(--ink3); font-size: 12px; padding-top: 4px; border-top: 1px solid var(--line); }
+details.more { border-top: 1px solid var(--line); }
+details.more > summary { cursor: pointer; list-style: none; padding: 11px 0 2px; font-size: 12.5px; font-weight: 600; color: var(--accent2); }
+details.more > summary::-webkit-details-marker { display: none; }
+details.more > summary::before { content: "▸ "; } details.more[open] > summary::before { content: "▾ "; }
+.tables { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 28px; padding-top: 12px; }
+.tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+.tbl th { text-align: left; font-weight: 500; color: var(--ink3); padding: 4px 12px 4px 0; vertical-align: top; width: 46%; }
+.tbl td { padding: 4px 0; text-align: right; font-weight: 550; }
+.tbl tr + tr > * { border-top: 1px solid var(--line); }
+.tbl td small, .tbl th small { display: block; color: var(--ink3); font-weight: 400; font-size: 11.5px; }
+.tbl tr.tot th, .tbl tr.tot td { color: var(--ink); font-weight: 650; }
+.est { color: var(--warn); } .unk { color: var(--ink3); font-weight: 500; font-style: italic; }
+.bars { display: grid; gap: 6px; }
+.bar-row { display: grid; grid-template-columns: 96px minmax(0, 1fr) 30px; gap: 8px; align-items: center; font-size: 12.5px; color: var(--ink2); }
+.bar-row .tr { height: 6px; border-radius: 3px; background: var(--s3); overflow: hidden; } .bar-row .tr i { display: block; height: 100%; border-radius: 3px; }
+.bar-row b { text-align: right; color: var(--ink); font-weight: 650; }
+.bar-row.unknown .tr { background: repeating-linear-gradient(45deg, var(--s3) 0 4px, transparent 4px 8px); }
+.sun { display: flex; align-items: flex-end; gap: 3px; height: 38px; margin: 4px 0 2px; }
+.sun div { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; height: 100%; font-size: 9.5px; color: var(--ink3); gap: 2px; }
+.sun i { display: block; width: 100%; border-radius: 2px; background: var(--sun); min-height: 2px; opacity: .9; }
+.legs { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 3px; font-size: 12.5px; color: var(--ink2); }
+.dots { letter-spacing: 2px; color: var(--accent2); } .dots i { color: var(--ink4); font-style: normal; }
+.q { margin: 0; padding-left: 18px; font-size: 13px; color: var(--ink2); display: grid; gap: 4px; }
+.mynote { padding: 10px 12px; border-radius: 10px; background: var(--accent-soft); border: 1px solid var(--accent-line); font-size: 13px; white-space: pre-wrap; }
+.glyph text { font: 500 11px var(--font); fill: var(--ink3); }
+.empty { padding: 80px 20px; text-align: center; color: var(--ink2); }
+.legal { margin: 8px 0 60px; padding-top: 18px; border-top: 1px solid var(--line); color: var(--ink3); font-size: 12px; line-height: 1.6; max-width: 90ch; }
+
+/* ---- memo layout */
+body[data-view="memo"] .cards-view, body[data-view="cards"] .memo-view { display: none; }
+.memo-view { background: var(--s1); border: 1px solid var(--line); border-radius: var(--r); margin: 6px 0 60px; padding: 44px 52px; box-shadow: var(--shadow); }
+.memo h1 { font-size: 30px; letter-spacing: -.025em; font-weight: 650; margin: 4px 0 6px; }
+.memo .lead { color: var(--ink2); max-width: 70ch; }
+.memo h2 { font-size: 18px; letter-spacing: -.015em; font-weight: 650; margin: 32px 0 10px; }
+.memo .grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px 36px; }
+.rt { width: 100%; border-collapse: collapse; font-size: 13px; }
+.rt th { text-align: left; font-size: 10.5px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--ink3); padding: 6px 8px; border-bottom: 1.5px solid var(--line2); white-space: nowrap; }
+.rt td { padding: 9px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.rt .n { text-align: right; white-space: nowrap; }
+.rt td b { font-weight: 600; } .rt td small { display: block; color: var(--ink3); font-size: 11.5px; }
+.wline { display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; margin-top: 22px; }
+.wline .k { font-size: 10.5px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--ink3); margin-right: 6px; }
+.wc { padding: 3px 10px; border-radius: 999px; background: var(--s3); font-size: 12.5px; color: var(--ink2); } .wc b { color: var(--ink); font-weight: 650; }
+.how { margin-top: 12px; font-size: 12.5px; color: var(--ink3); max-width: 90ch; }
+.m-home { margin-top: 38px; padding-top: 26px; border-top: 2px solid var(--line2); }
+.m-head { display: flex; gap: 16px; align-items: flex-start; margin-bottom: 14px; }
+.m-head .rk { width: 38px; height: 38px; flex: none; display: grid; place-items: center; border-radius: 50%; background: var(--accent); color: var(--accent-ink); font: 650 16px var(--font); }
+.m-head h2 { margin: 0; font-size: 22px; } .m-head p { color: var(--ink3); margin-top: 2px; }
+.m-head .price { margin-left: auto; text-align: right; display: block; } .m-head .price .per { margin-left: 2px; } .m-head .price b { font-size: 26px; } .m-head .price small { display: block; color: var(--ink3); font-size: 12px; margin-top: 2px; min-height: 1em; }
+.m-photos { display: grid; grid-template-columns: 2fr 1fr; grid-template-rows: 1fr 1fr; gap: 6px; margin-bottom: 18px; height: 300px; }
+.m-photos.n3 div:first-child { grid-row: 1 / 3; }
+.m-photos.n1 { grid-template-columns: 1fr; grid-template-rows: 1fr; } .m-photos.n2 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr; }
+.m-photos div { position: relative; border-radius: 9px; overflow: hidden; background: var(--s3); min-height: 0; }
+.m-photos img, .m-photos svg { width: 100%; height: 100%; object-fit: cover; display: block; }
+.m-sec { break-inside: avoid; margin-bottom: 4px; }
+.m-sec h4 { font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--ink3); margin: 0 0 6px; padding-bottom: 5px; border-bottom: 1.5px solid var(--line2); }
+.m-sec + .m-sec { margin-top: 16px; }
+.sign { margin-top: 34px; display: grid; grid-template-columns: 1fr 1fr; gap: 28px; font-size: 12px; color: var(--ink3); }
+.sign div { border-top: 1px solid var(--ink4); padding-top: 6px; }
+
+@media screen and (max-width: 860px) {
+  .overview { grid-template-columns: 1fr; }
+  .home { grid-template-columns: 1fr; }
+  .media .main { min-height: 220px; }
+  .tables, .memo .grid2 { grid-template-columns: 1fr; }
+  .memo-view { padding: 24px 18px; }
+  .bar .wrap { gap: 8px; } .brand span { display: none; } .ro { display: none; } .seg .long { display: none; } .seg .short { display: inline; } .seg button { padding: 0 11px; }
+  .btn .lbl { display: none; } .btn { padding: 0 10px; }
+  .rank-list li { grid-template-columns: 26px minmax(0, 1fr) auto; } .rank-list .sc { display: none; }
+  .reasons li { grid-template-columns: 40px 1fr; } .reasons .txt { grid-column: 2; margin-top: -2px; }
+  .m-photos { height: auto; grid-template-columns: 1fr 1fr; grid-template-rows: auto; } .m-photos.n3 div:first-child { grid-row: auto; grid-column: 1 / -1; } .m-photos div { aspect-ratio: 4/3; }
+}
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; transition: none !important; animation: none !important; } }
+
+/* ---- print: the memo is the document; cards print too, one home per block */
+@page { margin: 13mm 12mm; }
+@media print {
+  :root, :root[data-theme="dark"], :root[data-theme="light"] {
+    color-scheme: light; --bg: #fff; --s1: #fff; --s2: #f7f7f5; --s3: #efefec; --line: #e2e2dd; --line2: #cfcfc8; --ink: #14171e; --ink2: #3c4250; --ink3: #5b6272; --ink4: #9aa0ac;
+    --accent: #3b45cf; --accent2: #3b45cf; --accent-ink: #fff; --accent-soft: #eceefc; --accent-line: #c9cdf3; --good: #0b6b42; --warn: #805000; --bad: #a8321f; --sun: #b97a0a; --fav: #9a6c00;
+    --good-soft: #e5f4ec; --warn-soft: #fbf0dc; --bad-soft: #fbe8e4; --shadow: none;
+  }
+  body { font-size: 10.5pt; background: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .bar, .no-print, .thumbs, details.more > summary { display: none !important; }
+  .wrap { max-width: none; padding: 0; }
+  .head { padding-top: 0; }
+  .panel, .home, .memo-view, .stat { box-shadow: none; }
+  .memo-view { border: 0; padding: 0; margin: 0; }
+  .home { break-inside: avoid; margin-bottom: 10px; grid-template-columns: 62mm 1fr; }
+  details.more > :not(summary) { display: block; }
+  details.more { border: 0; }
+  .m-home { break-before: page; margin-top: 0; padding-top: 0; border-top: 0; }
+  .m-home .grid2 { display: block; column-count: 2; column-gap: 9mm; }
+  .m-home .grid2 > div { display: contents; }
+  .m-home .m-sec { break-inside: avoid; }
+  .memo-view { font-size: 9.6pt; line-height: 1.4; }
+  .m-photos { height: 46mm; margin-bottom: 6mm; gap: 4px; }
+  .m-head { margin-bottom: 8px; } .m-head h2 { font-size: 17pt; } .m-head .price b { font-size: 19pt; }
+  .m-home .tbl { font-size: 9.2pt; } .m-home .tbl th, .m-home .tbl td { padding: 2px 0; }
+  .m-sec + .m-sec { margin-top: 9px; } .m-home .m-sec h4 { margin-bottom: 3px; padding-bottom: 3px; }
+  .m-home .reasons li { font-size: 9.2pt; } .m-home .reasons { gap: 3px; }
+  .m-home .bar-row { font-size: 9.2pt; } .m-home .sun { height: 26px; }
+  .wline, .rt { break-inside: avoid; }
+  .m-sec, .tbl tr { break-inside: avoid; }
+  .rt tr { break-inside: avoid; }
+  a { color: inherit; }
+  .legal { margin-bottom: 0; }
+}
+</style>
+</head>
+<body data-view="cards">
+<header class="bar no-print">
+  <div class="wrap">
+    <span class="brand"><svg viewBox="10 10 80 88" aria-hidden="true"><path d="M50 95C50 95 15.5 57.5 15.5 40A34.5 34.5 0 1 1 84.5 40C84.5 57.5 50 95 50 95ZM75 40A25 25 0 1 1 25 40A25 25 0 1 1 75 40Z" fill="#12865f" fill-rule="evenodd"/><path d="M49.25 29L50 16.5L50.75 29ZM48 29H52V36.6H48ZM46 36.6H54V39.2H46ZM44 39.2H56V42.2H44ZM42 42.2H58V47.8H42ZM40 47.8H60V70H40Z" fill="currentColor"/></svg><span>ApartmentScout</span></span>
+    <span class="ro" title="A snapshot: nothing here changes or sends anything">Read-only</span>
+    <span class="sp"></span>
+    <div class="seg" role="group" aria-label="Layout"><button type="button" data-view="cards" aria-pressed="true">Shortlist</button><button type="button" data-view="memo" aria-pressed="false"><span class="long">Decision memo</span><span class="short">Memo</span></button></div>
+    <button type="button" class="btn primary" id="print"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4.5 6V2h7v4M4.5 12H3a1 1 0 01-1-1V7a1 1 0 011-1h10a1 1 0 011 1v4a1 1 0 01-1 1h-1.5M4.5 9.5h7V14h-7z"/></svg><span class="lbl">Print or save as PDF</span></button>
+    <button type="button" class="btn icon" id="theme" aria-label="Switch between dark and light" title="Dark or light"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M13.5 9.5A5.5 5.5 0 016.5 2.5a5.5 5.5 0 107 7z"/></svg></button>
+  </div>
+</header>
+<main class="wrap" id="app"><noscript><div class="empty">This shortlist is drawn by a small script on the page. Turn JavaScript on to read it.</div></noscript></main>
+
+<script type="application/json" id="as-schema">
+{
+  "version": 1,
+  "listing": ["id", "building", "unit", "address", "neighborhood", "lat", "lon", "beds", "sqft", "size", "floor", "floor_inferred", "exposure", "available", "checked", "status", "price", "amenities", "score", "site", "records", "reviews", "photo_review", "building_facts", "notes", "links"],
+  "price": ["gross", "net_effective", "free_months", "lease_months", "fees_monthly", "fees_one_time", "broker_fee", "application_fee", "deposit"],
+  "size": ["sqft", "basis", "range"],
+  "score": ["version", "overall", "confidence", "range", "parts", "budget_tier", "monthly_cost", "gates", "tags", "ppsf", "cost"],
+  "site": ["floor", "bearing", "sun_hours", "sun_hours_expected", "sun_year", "skyline_ahead_deg", "open_sky_share", "sky_view", "daylight_factor_est"],
+  "records": ["risk_score", "noise_score", "flags"],
+  "reviews": ["summary", "questions", "risk", "ratings"],
+  "photo_review": ["interior", "kitchen", "renovation", "appliances", "floors", "windows", "natural_light", "view", "view_note", "building_luxury", "scope", "confidence", "evidence", "method", "reviewed"],
+  "building_facts": ["year_built", "floors", "source"],
+  "links": ["listing"],
+  "commute_modes": ["walk", "subway", "bus", "transit"],
+  "commute": ["minutes", "mode", "route", "modes"],
+  "commute_mode": ["minutes", "m", "route", "transfers", "ride_min", "walk_min", "wait_min", "legs"],
+  "commute_leg": ["mode", "min", "m", "from", "to", "route", "board", "alight", "wait", "at"],
+  "pick": ["tier", "note"],
+  "photos": { "max_per_home": 3, "thumb_px": 560, "quality": 0.74, "budget_kb": 900 },
+  "map": { "max_points": 3500, "min_spacing_m": 30, "decimals": 4, "pad": 0.2 },
+  "text_max": { "notes": 1200, "summary": 600, "questions": 600, "evidence": 420, "flag": 220, "pick_note": 2000 }
+}
+</script>
+<script type="application/json" id="as-data">null</script>
+<script>
+(() => {
+'use strict';
+const D = JSON.parse(document.getElementById('as-data').textContent);
+const app = document.getElementById('app');
+const root = document.documentElement;
+if (!D || !Array.isArray(D.homes)) { app.innerHTML = '<div class="empty"><b>Nothing to show</b><p>This is the empty template. Build a shortlist with the dashboard\'s Share button or <code>apartmentscout share</code>.</p></div>'; return; }
+
+// ------------------------------------------------------------------ helpers
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const money = (v) => (v == null || isNaN(v) ? '—' : '$' + Math.round(v).toLocaleString('en-US'));
+const num = (v) => (v != null && v !== '' && Number.isFinite(+v) ? +v : null);
+const href = (u) => (/^https?:\/\//i.test(String(u || '')) ? String(u) : null);
+const src = (u) => (/^(https?:\/\/|data:image\/(jpeg|png|webp);base64,)/i.test(String(u || '')) ? String(u) : null);
+const day = (s) => { const m = String(s || '').match(/^(\d{4})-(\d{2})-(\d{2})/); if (!m) return ''; return new Date(Date.UTC(+m[1], +m[2] - 1, +m[3])).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }); };
+const dayShort = (s) => { const m = String(s || '').match(/^(\d{4})-(\d{2})-(\d{2})/); if (!m) return String(s || ''); return new Date(Date.UTC(+m[1], +m[2] - 1, +m[3])).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' }); };
+const RAMP = [[30, [229, 96, 79]], [50, [238, 155, 69]], [65, [215, 201, 90]], [80, [103, 198, 138]], [95, [47, 179, 131]]];
+const scoreRGB = (v) => { v = v == null ? 50 : v; if (v <= RAMP[0][0]) return RAMP[0][1]; for (let i = 1; i < RAMP.length; i++) if (v <= RAMP[i][0]) { const t = (v - RAMP[i - 1][0]) / (RAMP[i][0] - RAMP[i - 1][0]); return RAMP[i - 1][1].map((a, k) => Math.round(a + (RAMP[i][1][k] - a) * t)); } return RAMP[RAMP.length - 1][1]; };
+const scoreColor = (v) => `rgb(${scoreRGB(v).join(',')})`;
+const sc = (h) => h.score || {};
+const cost = (h) => sc(h).cost || {};
+const monthly = (h) => cost(h).monthly_expected ?? cost(h).monthly ?? sc(h).monthly_cost ?? null;
+const name = (h) => `${h.building || h.address || h.id}${h.unit ? ' ' + h.unit : ''}`;
+const FEE_EST = (h) => !!cost(h).fees_estimate;
+const dest = D.dest || null;
+const plural = (n, a, b) => `${n} ${n === 1 ? a : b}`;
+const sum = (a) => a.reduce((x, y) => x + y, 0);
+const med = (a) => { const s = a.filter((v) => v != null).sort((x, y) => x - y); return s.length ? (s.length % 2 ? s[(s.length - 1) / 2] : (s[s.length / 2 - 1] + s[s.length / 2]) / 2) : null; };
+
+// ring
+function ring(v, size = 58, st = 5) {
+  const r = (size - st) / 2, c = 2 * Math.PI * r, f = Math.max(0, Math.min(1, (v ?? 0) / 100));
+  return `<div class="ring${size < 40 ? ' sm' : size < 50 ? ' md' : ''}" style="width:${size}px;height:${size}px" title="Score ${v == null ? 'unknown' : Math.round(v)} out of 100 with these weights"><svg width="${size}" height="${size}" aria-hidden="true"><circle cx="${size / 2}" cy="${size / 2}" r="${r}" fill="none" stroke="var(--s3)" stroke-width="${st}"/><circle cx="${size / 2}" cy="${size / 2}" r="${r}" fill="none" stroke="${scoreColor(v)}" stroke-width="${st}" stroke-linecap="round" stroke-dasharray="${c * f} ${c}"/></svg><b>${v == null ? '?' : Math.round(v)}</b></div>`;
+}
+// a stand-in for a missing photo: the tower with this floor lit, and the exposure
+function glyph(h) {
+  const fl = Math.round(h.floor || 0), n = Math.min(50, Math.max(12, fl + 4)), W = 320, H = 240, top = 26, bot = 214, tx = 70, tw = 74;
+  const y = fl ? bot - (fl / n) * (bot - top) : null;
+  const lines = Array.from({ length: 12 }, (_, i) => `<rect x="${tx + 8}" y="${(top + 8 + i * ((bot - top - 14) / 12)).toFixed(1)}" width="${tw - 16}" height="2.4" rx="1" fill="var(--ink4)" opacity=".4"/>`).join('');
+  return `<svg class="glyph" viewBox="0 0 ${W} ${H}" role="img" aria-label="No photo: floor ${fl || 'unknown'}"><rect width="${W}" height="${H}" fill="var(--s3)"/><rect x="${tx}" y="${top}" width="${tw}" height="${bot - top}" rx="4" fill="var(--s1)" stroke="var(--line2)"/>${lines}${y != null ? `<rect x="${tx + 3}" y="${(y - 2.5).toFixed(1)}" width="${tw - 6}" height="5.5" rx="2" fill="var(--sun)"/>` : ''}<text x="${tx + tw + 36}" y="100">${fl ? 'Floor ' + fl : 'Floor unknown'}</text><text x="${tx + tw + 36}" y="120">${h.exposure?.length ? 'Faces ' + esc(h.exposure.join('/')) : 'Exposure unknown'}</text><text x="${tx + tw + 36}" y="152" style="font-size:10px">No photo saved</text></svg>`;
+}
+const photoTag = (p, alt, lazy = true) => `<img src="${esc(src(p.src))}" alt="${esc(alt)}" ${lazy ? 'loading="lazy"' : ''} decoding="async" referrerpolicy="no-referrer" onerror="this.closest('[data-ph]')?.classList.add('broken');this.remove()">`;
+const photos = (h) => (h.photos || []).filter((p) => src(p.src));
+
+// commute
+function modeMin(h, mode) {
+  const m = h.commute?.modes?.[mode]?.minutes;
+  if (m != null) return { v: +m, est: false };
+  if (mode === 'walk' && dest && h.lat != null) {   // the router's walk time is missing: straight line x 1.25 at 4.8 km/h
+    const R = 6371000, r = Math.PI / 180, dl = (dest.lat - h.lat) * r, dn = (dest.lon - h.lon) * r;
+    const a = Math.sin(dl / 2) ** 2 + Math.cos(h.lat * r) * Math.cos(dest.lat * r) * Math.sin(dn / 2) ** 2;
+    return { v: (2 * R * Math.asin(Math.sqrt(a)) * 1.25) / 80, est: true };
+  }
+  return null;
+}
+function commuteOf(h) {
+  if (!dest) return null;
+  const modes = ['walk', 'subway', 'bus'].map((k) => [k, modeMin(h, k)]).filter(([, v]) => v);
+  const sel = D.commute?.mode || 'best';
+  const best = [...modes].sort((a, b) => a[1].v - b[1].v)[0] || null;
+  const pick = sel !== 'best' ? modes.find(([k]) => k === sel) || best : best;
+  const legs = (h.commute?.modes?.transit?.legs || h.commute?.modes?.[pick?.[0]]?.legs || []);
+  return { modes, pick, best, legs, route: h.commute?.modes?.transit?.route || h.commute?.route || null };
+}
+const legText = (l) => {
+  if (l.mode === 'walk') return `Walk ${Math.round(l.min)} min${l.to && l.to !== 'destination' ? ' to ' + esc(l.to) : l.to === 'destination' ? ' to ' + esc(dest?.name || 'the destination') : ''}`;
+  if (l.mode === 'transfer') return `Transfer${l.at ? ' at ' + esc(l.at) : ''}, ${Math.round(l.min)} min`;
+  return `${esc(l.route || l.mode || 'Ride')} from ${esc(l.from || '?')} to ${esc(l.to || '?')}, ${Math.round(l.min)} min${l.wait ? ` (+${Math.round(l.wait)} wait)` : ''}`;
+};
+function commuteLine(h) {
+  const c = commuteOf(h); if (!c || !c.pick) return dest ? `<div class="commute"><span class="m">Commute to ${esc(dest.name)} not computed</span></div>` : '';
+  const lab = { walk: 'walk', subway: 'subway', bus: 'bus' };
+  return `<div class="commute"><span><b>${Math.round(c.pick[1].v)} min</b> to ${esc(dest.name)}${c.pick[1].est ? ' <abbr title="Estimated from the straight-line distance">est.</abbr>' : ''}${D.commute?.mode && D.commute.mode !== 'best' ? ' by ' + lab[D.commute.mode] : ''}</span>${c.modes.map(([k, v]) => `<span class="m">${lab[k]} ${Math.round(v.v)}${v.est ? '*' : ''}</span>`).join('')}</div>`;
+}
+
+// facts
+const gateText = (g) => {
+  const [k, v] = String(g).split(':');
+  if (k === 'over_budget') return ['Over budget', 'bad'];
+  if (k === 'fails') return [`Fails: ${String(v || '').replaceAll('_', ' ')}`, 'bad'];
+  if (k === 'unverified') return [{ fees: 'Fees unknown', lease_term: 'Lease term unknown' }[v] || `Unconfirmed: ${String(v || '').replaceAll('_', ' ').replaceAll(',', ', ')}`, 'warn'];
+  if (k === 'unknown_cost') return ['Cost unknown', 'bad'];
+  return [({ price_dispute: 'Price claims disagree', concession: 'Concession may not apply', move_date: 'Available after your window', stale: 'Not rechecked recently' })[k] || String(g).replaceAll('_', ' '), 'warn'];
+};
+const amen = (h) => {
+  const a = h.amenities || {}, out = [];
+  if (a.in_unit_wd) out.push('W/D in unit'); if (a.doorman === 'full-time') out.push('Full-time doorman'); if (a.gym) out.push('Gym'); if (a.elevator) out.push('Elevator'); if (a.dishwasher) out.push('Dishwasher'); if (a.roof_deck) out.push('Roof deck'); if (a.pets) out.push('Pets allowed');
+  return out;
+};
+function sizeText(h) {
+  const z = h.size || {};
+  if (z.range) return `~${Math.round(z.range[0])}–${Math.round(z.range[1])} ft²`;
+  return h.sqft ? `${Math.round(h.sqft)} ft²` : null;
+}
+const bedText = (h) => (h.beds == null ? '' : h.beds ? `${h.beds} bd` : 'Studio');
+const floorText = (h) => (h.floor != null ? `Floor ${Math.round(h.floor)}${h.floor_inferred ? '?' : ''}${h.exposure?.length ? ' · faces ' + h.exposure.join('/') : ''}` : h.exposure?.length ? `Faces ${h.exposure.join('/')}` : null);
+const ppsfText = (h) => { const p = sc(h).ppsf; const v = p && typeof p === 'object' ? p.value : p; return Number.isFinite(+v) && v != null ? `$${(+v).toFixed(2)}/ft²` : null; };
+
+// ------------------------------------------------------------------ money
+function moneyRows(h) {
+  const c = cost(h), p = h.price || {}, rows = [], rent = c.rent || {};
+  const gross = rent.gross ?? p.gross;
+  rows.push(['Gross rent', money(gross), '']);
+  const free = rent.free_months ?? p.free_months, term = rent.lease_months ?? p.lease_months;
+  if (free) rows.push(['Concession', `${free} month${free === 1 ? '' : 's'} free`, term ? `on a ${term}-month lease` : 'lease term not stated: the net depends on it']);
+  if (rent.net != null && rent.net !== gross) rows.push(['Net-effective rent', money(rent.net), rent.basis === 'conditional' ? 'if the concession applies' : 'free months spread over the lease']);
+  if (c.fees_known) rows.push(['Monthly fees', c.fees_monthly != null ? money(Array.isArray(c.fees_monthly) ? c.fees_monthly[0] : c.fees_monthly) : 'None', 'documented']);
+  else if (c.fees_estimate) rows.push(['Monthly fees', `<span class="est">~${money(c.fees_estimate.monthly)}</span>`, `<span class="est">estimated</span>: no fee sheet yet, so ranking assumes ${esc((c.fees_estimate.parts || []).join('; ')) || 'what similar buildings charge'}`]);
+  else rows.push(['Monthly fees', '<span class="unk">unknown</span>', 'not added, not assumed']);
+  const m = monthly(h);
+  rows.push(['Monthly cost used to rank', `<b>${money(m)}</b>${FEE_EST(h) ? ' <span class="est">incl. estimate</span>' : ''}`, c.fees_estimate && c.monthly != null ? `documented so far ${money(c.monthly)}` : 'first-lease equivalent', 'tot']);
+  const one = [['Broker fee', p.broker_fee], ['Application fee', p.application_fee], ['Amenity / move-in fees', p.fees_one_time], ['Security deposit', p.deposit ?? c.upfront?.deposit]].filter(([, v]) => v != null);
+  for (const [k, v] of one) rows.push([k, money(v), k === 'Security deposit' ? 'refundable' : 'once']);
+  if (c.move_in_min != null) rows.push(['Cash at signing, documented', money(c.move_in_min), c.move_in_unknown?.length ? `<span class="est">+ unknown: ${esc(c.move_in_unknown.join(', '))}</span>` : '']);
+  else if (c.move_in_unknown?.length) rows.push(['At signing', '<span class="unk">unknown</span>', esc(c.move_in_unknown.join(', '))]);
+  const n = term || 12;
+  if (m != null) rows.push([`Over the lease`, money(m * n), `${n} months${term ? '' : ' (assumed; lease term unknown)'}, rent and fees`]);
+  return rows;
+}
+const rowsHTML = (rows, cls = 'tbl') => `<table class="${cls}"><tbody>${rows.map((r) => `<tr${r[3] === 'tot' || r === 'tot' ? ' class="tot"' : ''}><th scope="row">${r[0]}${r[2] ? `<small>${r[2]}</small>` : ''}</th><td>${r[1]}</td></tr>`).join('')}</tbody></table>`;
+
+function lightRows(h) {
+  const s = h.site || {}, rows = [];
+  if (h.floor != null) rows.push(['Floor', `${Math.round(h.floor)}${h.floor_inferred ? ' <span class="est">inferred</span>' : ''}`, '']);
+  rows.push(['Windows face', h.exposure?.length ? esc(h.exposure.join(' / ')) : '<span class="unk">unknown</span>', s.bearing != null ? `modelled at ${Math.round(s.bearing)}°` : '']);
+  if (s.sun_hours) {
+    rows.push(['Direct sun, December', `${s.sun_hours[11].toFixed(1)} h`, 'on a clear day, modelled']);
+    rows.push(['Direct sun, June', `${s.sun_hours[5].toFixed(1)} h`, '']);
+    if (s.sun_year?.expected != null) rows.push(['Sun across a year', `~${Math.round(s.sun_year.expected).toLocaleString('en-US')} h`, `${Math.round(s.sun_year.possible).toLocaleString('en-US')} h possible; expected counts typical cloud`]);
+  } else rows.push(['Direct sun', '<span class="unk">not modelled</span>', 'no site model for this unit']);
+  if (s.open_sky_share != null) rows.push(['Open sky in view', `${Math.round(s.open_sky_share * 100)}%`, '']);
+  if (s.sky_view != null) rows.push(['Sky view', `${Math.round(s.sky_view * 100)}%`, 'overcast sky']);
+  if (s.daylight_factor_est != null) rows.push(['Daylight factor', `≈ ${s.daylight_factor_est}%`, 'estimated, not measured']);
+  return rows;
+}
+const sunBars = (h) => { const a = h.site?.sun_hours; if (!a) return ''; const mx = Math.max(9, ...a); return `<div class="sun" role="img" aria-label="Hours of direct sun by month, January to December">${a.map((v, i) => `<div title="${'JFMAMJJASOND'[i]}: ${v.toFixed(1)} h"><i style="height:${Math.max(6, (v / mx) * 100)}%"></i>${'JFMAMJJASOND'[i]}</div>`).join('')}</div>`; };
+const dots = (n) => { const k = Math.max(0, Math.min(5, Math.round(n))); return `<span class="dots" aria-label="${k} out of 5">${'●'.repeat(k)}<i>${'●'.repeat(5 - k)}</i></span>`; };
+function gradeHTML(h) {
+  const p = sc(h).parts || {}, r = h.photo_review || {}, rec = h.records || {}, DIM = { building: 'Building', interior: 'Interior', quiet: 'Quiet', light_view: 'Light & view' };
+  const bars = Object.entries(DIM).map(([k, lab]) => { const v = p[k]; return `<div class="bar-row ${v == null ? 'unknown' : ''}"><span>${lab}</span><span class="tr"><i style="width:${v ?? 0}%;background:${scoreColor(v)}"></i></span><b>${v == null ? '?' : Math.round(v)}</b></div>`; }).join('');
+  const g = [['Interior', r.interior], ['Kitchen', r.kitchen], ['Building luxury', r.building_luxury], ['Natural light', r.natural_light], ['View', r.view]].filter(([, v]) => v != null);
+  const meta = [r.renovation && `renovation: ${esc(r.renovation)}`, r.appliances && `appliances: ${esc(String(r.appliances).replaceAll('-', ' '))}`, r.floors && `floors: ${esc(r.floors)}`, r.windows && `windows: ${esc(r.windows)}`].filter(Boolean);
+  const recs = [rec.risk_score != null && ['Records score', `${rec.risk_score}/100`, 'higher is cleaner; reports, not findings'], rec.noise_score != null && ['Street quiet', `${rec.noise_score}/100`, 'from 311 noise reports']].filter(Boolean);
+  return `<div class="bars">${bars}</div>${g.length ? `<table class="tbl" style="margin-top:10px"><tbody>${g.map(([k, v]) => `<tr><th scope="row">${k}</th><td>${dots(v)} <small style="display:inline">${v}/5</small></td></tr>`).join('')}</tbody></table><p style="font-size:11.5px;color:var(--ink3);margin-top:6px">${meta.join(' · ')}${r.method ? `${meta.length ? '. ' : ''}Graded from the listing photos against a written rubric${r.confidence ? ` (${esc(r.confidence)} confidence)` : ''}; not a site visit.` : ''}</p>` : '<p class="unk" style="font-size:12.5px;margin-top:8px">No photo grading yet.</p>'}${recs.length ? rowsHTML(recs.map(([a, b, c]) => [a, b, c])) : ''}`;
+}
+function openQuestions(h) {
+  const q = [], gates = (sc(h).gates || []).map(gateText).filter(([, k]) => k !== 'bad' || true);
+  for (const [t] of gates) q.push(t + ': confirm with the leasing office');
+  const c = cost(h);
+  if (c.fees_estimate) q.push('Ask for the fee sheet: ranking uses an estimate of monthly fees');
+  if ((c.move_in_unknown || []).length) q.push(`Get in writing: ${c.move_in_unknown.join(', ')}`);
+  if (h.floor_inferred) q.push('Confirm the floor: it is inferred from the unit number');
+  if (!h.exposure?.length) q.push('Which way do the windows face?');
+  if (!h.sqft && !(h.size || {}).range) q.push('Exact square footage and a floor plan');
+  if (h.reviews?.questions) q.push(h.reviews.questions);
+  for (const f of (h.records?.flags || []).slice(0, 3)) q.push('Public record to read: ' + f);
+  return [...new Set(q)];
+}
+
+// ------------------------------------------------------------------ reasons
+const reasonsHTML = (h, n = 4) => {
+  const R = (h.reasons || []).slice(0, n);
+  if (!R.length) return '';
+  return `<ul class="reasons">${R.map((r) => `<li><span class="pts ${r.pts > 0.05 ? 'pos' : r.pts < -0.05 ? 'neg' : 'zero'}">${r.pts > 0.05 ? '+' : r.pts < -0.05 ? '−' : ''}${Math.abs(r.pts).toFixed(1)}</span><span class="lab">${esc(r.label)}</span><span class="txt">${esc(r.sentence)}</span></li>`).join('')}</ul>`;
+};
+
+// ------------------------------------------------------------------ map
+function mapHTML() {
+  const hs = D.homes.filter((h) => h.lat != null && h.lon != null), pts = [...hs, ...(dest ? [dest] : [])];
+  if (!pts.length) return '';
+  const la = pts.map((p) => p.lat), lo = pts.map((p) => p.lon), midLat = (Math.min(...la) + Math.max(...la)) / 2, kx = Math.cos((midLat * Math.PI) / 180);
+  let x0 = Math.min(...lo) * kx, x1 = Math.max(...lo) * kx, y0 = Math.min(...la), y1 = Math.max(...la);
+  const pad = Math.max(x1 - x0, y1 - y0, 0.006) * 0.2; x0 -= pad; x1 += pad; y0 -= pad; y1 += pad;
+  const W = 640, H = 440, k = Math.min(W / (x1 - x0), H / (y1 - y0)), ox = (W - (x1 - x0) * k) / 2, oy = (H - (y1 - y0) * k) / 2;
+  const P = (lat, lon) => [ox + (lon * kx - x0) * k, H - oy - (lat - y0) * k];
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Map of the shortlist: ${hs.map((h, i) => `${i + 1}, ${esc(name(h))}`).join('; ')}"><rect class="bg" width="${W}" height="${H}"/>`;
+  for (const ln of D.map?.lines || []) {
+    const d = (ln.d || []).map((run) => run.map(([lon, lat], i) => { const [x, y] = P(lat, lon); return `${i ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)}`; }).join('')).join('');
+    if (d) s += `<path class="tl" d="${d}" stroke="${esc(/^#[0-9a-f]{3,8}$/i.test(ln.c || '') ? ln.c : 'var(--ink4)')}"/>`;
+  }
+  if (dest) { const [x, y] = P(dest.lat, dest.lon); s += `<g class="dest"><rect x="${x - 8}" y="${y - 8}" width="16" height="16" rx="4"/><text x="${x}" y="${y - 14}">${esc(dest.name)}</text></g>`; }
+  hs.forEach((h) => { const [x, y] = P(h.lat, h.lon), n = D.homes.indexOf(h) + 1; s += `<g class="pin ${h.pick?.tier === 'S' ? 't1' : ''}"><circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="12"/><text x="${x.toFixed(1)}" y="${(y + 4).toFixed(1)}">${n}</text><title>${n}. ${esc(name(h))}</title></g>`; });
+  return s + `</svg><span class="cap">${(D.map?.lines || []).length ? 'Subway lines in agency colours · ' : ''}north up · schematic, not street detail</span>`;
+}
+
+// ------------------------------------------------------------------ the shortlist layout
+function cardHTML(h, i) {
+  const m = monthly(h), s = sc(h), g = (s.gates || []).map(gateText), P = photos(h), tier = h.pick?.tier, c = cost(h);
+  const gross = c.rent?.gross ?? h.price?.gross;
+  const media = P.length
+    ? `<div class="main" data-ph><img src="${esc(src(P[0].src))}" alt="${esc(name(h))}, photo 1 of ${P.length}" decoding="async" referrerpolicy="no-referrer" onerror="this.closest('[data-ph]').classList.add('broken');this.remove()">${P[0].credit ? `<span class="credit">${esc(P[0].credit)}</span>` : ''}</div>${P.length > 1 ? `<div class="thumbs no-print" role="group" aria-label="Photos of ${esc(name(h))}">${P.map((p, j) => `<button type="button" data-img="${j}" aria-label="Photo ${j + 1}" ${j ? '' : 'aria-current="true"'}><img src="${esc(src(p.src))}" alt="" decoding="async" referrerpolicy="no-referrer"></button>`).join('')}</div>` : ''}`
+    : `<div class="main">${glyph(h)}</div>`;
+  const facts = [sizeText(h) && `<span><b>${sizeText(h)}</b></span>`, bedText(h) && `<span>${bedText(h)}</span>`, floorText(h) && `<span>${esc(floorText(h))}</span>`, ppsfText(h) && `<span>${ppsfText(h)}</span>`, h.available && `<span>Available ${esc(/^\d{4}-\d{2}-\d{2}/.test(h.available) ? dayShort(h.available) : h.available)}</span>`].filter(Boolean);
+  const link = href(h.links?.listing);
+  return `<article class="home" id="h${i + 1}" data-i="${i}" aria-label="${esc(name(h))}">
+    <div class="media"><span class="badge-rank">#${i + 1}</span>${media}</div>
+    <div class="body">
+      <div class="row1"><div class="t"><h3>${esc(h.building || h.address)} <span>${esc(h.unit || '')}</span></h3><p>${esc(h.address || '')}${h.neighborhood ? ' · ' + esc(h.neighborhood) : ''}</p></div>${ring(s.overall)}</div>
+      <div class="chips">${tier ? `<span class="chip ${tier === 'S' ? 'fav' : tier === 'Pass' ? '' : 'accent'}" title="The renter's tier">Tier ${esc(tier)}</span>` : ''}${s.budget_tier ? `<span class="chip">${esc(s.budget_tier)}</span>` : ''}${g.map(([t, k]) => `<span class="chip ${k}">${esc(t)}</span>`).join('')}${(s.tags || []).map((t) => `<span class="chip warn">${esc(t)}</span>`).join('')}</div>
+      <div class="price"><b>${money(m)}</b><span class="per">/mo${FEE_EST(h) ? ' <abbr title="Includes estimated fees: no fee sheet yet">est.</abbr>' : ''}</span>${gross != null && m != null && Math.abs(gross - m) > 5 ? `<span class="gross">${money(gross)} gross</span>` : ''}</div>
+      <div class="facts">${facts.join('')}</div>
+      ${commuteLine(h)}
+      <div class="why"><h4>Why it ranks #${i + 1}</h4>${reasonsHTML(h, 4)}</div>
+      <details class="more"><summary>Money, light, building and open questions</summary>
+        <div class="tables"><div class="sec"><h4>Money</h4>${rowsHTML(moneyRows(h))}</div><div class="sec"><h4>Light and view</h4>${rowsHTML(lightRows(h))}${sunBars(h)}</div>
+          <div class="sec"><h4>Building and interior</h4>${gradeHTML(h)}</div><div class="sec"><h4>Open questions</h4>${openQuestions(h).length ? `<ul class="q">${openQuestions(h).map((x) => `<li>${esc(x)}</li>`).join('')}</ul>` : '<p class="unk">None recorded.</p>'}${h.pick?.note ? `<h4 style="margin-top:14px">Notes</h4><div class="mynote">${esc(h.pick.note)}</div>` : ''}</div></div></details>
+      <div class="foot"><span>Checked ${esc(h.checked ? dayShort(h.checked) || h.checked : 'unknown')}</span>${s.confidence != null ? `<span>${s.confidence}% of the weight rests on known facts</span>` : ''}${link ? `<a href="${esc(link)}" target="_blank" rel="noopener noreferrer">Original listing ↗</a>` : ''}</div>
+    </div></article>`;
+}
+function overviewHTML() {
+  const H = D.homes;
+  return `<section class="overview" aria-label="Overview"><div class="panel map" role="figure">${mapHTML()}</div>
+    <div class="panel"><ol class="rank-list">${H.map((h, i) => `<li><span class="n">${i + 1}</span><span class="t"><b><a href="#h${i + 1}" data-jump="${i + 1}">${esc(name(h))}</a></b><small>${esc(h.neighborhood || h.address || '')}${sizeText(h) ? ' · ' + sizeText(h) : ''}</small></span><span class="p">${money(monthly(h))}${FEE_EST(h) ? '<small>est. fees</small>' : '<small>per month</small>'}</span><span class="sc">${ring(sc(h).overall, 34, 3.5)}</span></li>`).join('')}</ol></div></section>`;
+}
+function headHTML() {
+  const H = D.homes, ms = H.map(monthly).filter((v) => v != null), best = H.map((h) => sc(h).overall).filter((v) => v != null);
+  const when = D.generated ? day(D.generated) : '';
+  return `<section class="head"><div><div class="eyebrow">${esc(D.search?.name || 'Apartment search')}</div><h1>${D.title ? esc(D.title) : `${plural(H.length, 'home', 'homes')} on the shortlist`}</h1>
+    <p class="sub">${H.length ? `Ranked by the renter's weights${D.weights?.length ? ` (${D.weights.filter((w) => w.pct > 0).slice(0, 3).map((w) => `${esc(w.label)} ${w.pct}%`).join(', ')}…)` : ''}. Costs are net of concessions and include fees where known; estimates are marked.` : 'No homes were picked.'}</p></div>
+    <div class="stats"><div class="stat"><b>${H.length}</b><span>homes</span></div><div class="stat"><b>${ms.length ? money(med(ms)) : '—'}</b><span>median per month</span></div><div class="stat"><b>${ms.length ? money(Math.min(...ms)) : '—'}</b><span>lowest per month</span></div><div class="stat"><b>${best.length ? Math.round(Math.max(...best)) : '—'}</b><span>top score</span></div>${when ? `<div class="stat"><b style="font-size:16px;padding-top:4px">${esc(when)}</b><span>snapshot taken</span></div>` : ''}</div></section>`;
+}
+const legalHTML = () => `<p class="legal">A snapshot of one renter's shortlist, taken ${esc(day(D.generated) || 'on an unrecorded day')}. Facts are as of each home's check date and have not been rechecked; prices and availability change daily. Estimates are marked "est." and are never presented as quotes. Public-record counts are reports, not findings. Scores come from the renter's own weights and say nothing about anyone else's priorities. ${esc(D.source || 'Made with ApartmentScout')}. Confirm every figure with the leasing office before you rely on it.</p>`;
+
+// ------------------------------------------------------------------ the memo layout
+function weightsRows() {
+  const w = (D.weights || []).filter((x) => x.pct > 0).sort((a, b) => b.pct - a.pct);
+  return w.length ? `<div class="wline"><span class="k">What mattered</span>${w.map((x) => `<span class="wc">${esc(x.label)} <b>${x.pct}%</b></span>`).join('')}</div>` : '';
+}
+function memoTable() {
+  const H = D.homes;
+  return `<table class="rt"><thead><tr><th>#</th><th>Home</th><th class="n">Per month</th><th class="n">Gross</th><th class="n">Size</th><th class="n">${dest ? 'To ' + esc(dest.name) : 'Commute'}</th><th class="n">Score</th><th>Tier</th><th>Open</th></tr></thead><tbody>${H.map((h, i) => {
+    const c = commuteOf(h), g = (sc(h).gates || []).map(gateText), gross = cost(h).rent?.gross ?? h.price?.gross;
+    return `<tr><td><b>${i + 1}</b></td><td><b>${esc(name(h))}</b><small>${esc(h.neighborhood || h.address || '')}</small></td><td class="n"><b>${money(monthly(h))}</b>${FEE_EST(h) ? '<small class="est">est. fees</small>' : ''}</td><td class="n">${money(gross)}</td><td class="n">${sizeText(h) || '—'}</td><td class="n">${c?.pick ? Math.round(c.pick[1].v) + ' min' : '—'}</td><td class="n"><b>${sc(h).overall == null ? '?' : Math.round(sc(h).overall)}</b></td><td>${esc(h.pick?.tier || '—')}</td><td>${g.length ? g.map(([t]) => esc(t)).join('; ') : '—'}</td></tr>`;
+  }).join('')}</tbody></table>`;
+}
+function memoHome(h, i) {
+  const P = photos(h).slice(0, 3), s = sc(h), c = commuteOf(h), m = monthly(h), link = href(h.links?.listing), gross = cost(h).rent?.gross ?? h.price?.gross;
+  const ph = P.length ? `<div class="m-photos n${P.length}">${P.map((p, j) => `<div data-ph>${photoTag(p, `${name(h)}, photo ${j + 1}`, false)}</div>`).join('')}</div>` : '';
+  const legs = c?.legs?.length ? `<ul class="legs">${c.legs.map((l) => `<li>${legText(l)}</li>`).join('')}</ul>` : '';
+  const comRows = c ? [...c.modes.map(([k, v]) => [{ walk: 'Walk', subway: 'Subway', bus: 'Bus' }[k], `${Math.round(v.v)} min${v.est ? '*' : ''}`, k === 'walk' && !v.est && h.commute?.modes?.walk?.m ? `${(h.commute.modes.walk.m / 1609.34).toFixed(1)} mi` : '']), c.pick ? ['Used for ranking', `<b>${Math.round(c.pick[1].v)} min</b>`, c.pick[1].est ? 'estimated from the straight-line distance' : `door to door${dest?.arrive_by ? ', arrive ' + esc(dest.arrive_by) : ''}`] : null].filter(Boolean) : [];
+  const unitRows = [['Size', sizeText(h) || '<span class="unk">not published</span>', h.size?.basis ? esc(String(h.size.basis).replaceAll('_', ' ')) : ''], ['Bedrooms', bedText(h) || '—', ''], ['$ per ft²', ppsfText(h) || '—', ''], ['Available', esc(h.available ? (/^\d{4}-\d{2}-\d{2}/.test(h.available) ? day(h.available) : h.available) : '—'), ''], ['Amenities', esc(amen(h).join(', ')) || '<span class="unk">none confirmed</span>', '']];
+  const oq = openQuestions(h);
+  return `<section class="m-home" id="m${i + 1}"><div class="m-head"><span class="rk">${i + 1}</span><div><h2>${esc(name(h))}</h2><p>${esc(h.address || '')}${h.neighborhood ? ' · ' + esc(h.neighborhood) : ''}${h.pick?.tier ? ` · tier ${esc(h.pick.tier)}` : ''}</p></div><div class="price"><b>${money(m)}</b><span class="per"> /mo${FEE_EST(h) ? ' est.' : ''}</span><small>${gross != null && m != null && Math.abs(gross - m) > 5 ? money(gross) + ' gross' : ''}</small></div>${ring(s.overall, 46, 4.5)}</div>
+    ${ph}
+    <div class="grid2"><div><div class="m-sec"><h4>Money</h4>${rowsHTML(moneyRows(h))}</div><div class="m-sec"><h4>Space</h4>${rowsHTML(unitRows)}</div>
+        ${dest ? `<div class="m-sec"><h4>Commute to ${esc(dest.name)}</h4>${rowsHTML(comRows)}${legs}${c?.modes.some(([, v]) => v.est) ? '<p style="font-size:11.5px;color:var(--ink3);margin-top:6px">* estimated from the straight-line distance</p>' : ''}</div>` : ''}</div>
+      <div><div class="m-sec"><h4>Light and view</h4>${rowsHTML(lightRows(h))}${sunBars(h)}</div><div class="m-sec"><h4>Building and interior</h4>${gradeHTML(h)}</div>
+        <div class="m-sec"><h4>Why it ranks #${i + 1}</h4>${reasonsHTML(h, 6)}</div></div></div>
+    <div class="m-sec" style="margin-top:16px"><h4>Open questions</h4>${oq.length ? `<ul class="q">${oq.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>` : '<p class="unk">None recorded.</p>'}</div>
+    ${h.pick?.note ? `<div class="m-sec"><h4>Your notes</h4><div class="mynote">${esc(h.pick.note)}</div></div>` : ''}
+    <p style="margin-top:12px;font-size:12px;color:var(--ink3)">Checked ${esc(h.checked ? dayShort(h.checked) || h.checked : 'unknown')}${s.confidence != null ? ` · ${s.confidence}% of the weight rests on known facts${s.range && s.range[0] !== s.range[1] ? `; could land ${Math.round(s.range[0])}–${Math.round(s.range[1])}` : ''}` : ''}${link ? ` · <a href="${esc(link)}" rel="noopener noreferrer">${esc(link.replace(/^https?:\/\//, '').slice(0, 70))}</a>` : ''}</p></section>`;
+}
+function memoHTML() {
+  const H = D.homes, top = H[0];
+  return `<article class="memo"><div class="eyebrow">Decision memo</div><h1>${esc(D.search?.name || 'Apartment decision')}</h1>
+    <p class="lead">${plural(H.length, 'home', 'homes')} compared on ${D.dest ? 'cost, space, commute to ' + esc(D.dest.name) + ', light, building and quiet' : 'the renter\'s criteria'}, ranked by the renter's own weights.${top ? ` ${esc(name(top))} ranks first at ${money(monthly(top))} a month with a score of ${sc(top).overall == null ? '?' : Math.round(sc(top).overall)}.` : ''} Prepared ${esc(day(D.generated) || '')}.</p>
+    <h2>Ranking</h2>${memoTable()}
+    ${weightsRows()}<p class="how">Costs are the first-lease monthly equivalent: gross rent over the lease after free months, plus recurring fees, plus one-time fees spread across the lease. Where a fee sheet is missing the ranking adds an estimate from similar buildings and marks it "est.". Unknown facts count as a neutral 50 and widen the score range instead of counting as bad news.</p>
+    ${H.map(memoHome).join('')}
+    <div class="sign"><div>Decision</div><div>Date</div></div>${legalHTML()}</article>`;
+}
+
+// ------------------------------------------------------------------ boot
+function render() {
+  if (D.title) document.title = `${D.title} · ApartmentScout`; else document.title = `${D.search?.name || 'Shortlist'} · ApartmentScout`;
+  app.innerHTML = `<div class="cards-view">${headHTML()}${overviewHTML()}<div class="cards">${D.homes.map(cardHTML).join('')}</div>${legalHTML()}</div><div class="memo-view">${memoHTML()}</div>`;
+}
+const view = () => document.body.dataset.view;
+function setView(v, push = true) {
+  document.body.dataset.view = v === 'memo' ? 'memo' : 'cards';
+  document.querySelectorAll('.seg [data-view]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.view === view())));
+  if (push) { try { history.replaceState(null, '', v === 'memo' ? '#memo' : location.pathname + location.search); } catch { /* file URLs may refuse */ } }
+}
+render();
+const start = /^#memo/.test(location.hash) ? 'memo' : D.view === 'memo' ? 'memo' : 'cards';
+setView(start, false);
+const saved = (() => { try { return localStorage.getItem('as-share-theme'); } catch { return null; } })();
+if (saved === 'light' || saved === 'dark') root.dataset.theme = saved; else if (matchMedia('(prefers-color-scheme: light)').matches) root.dataset.theme = 'light';
+document.querySelectorAll('.seg [data-view]').forEach((b) => b.addEventListener('click', () => setView(b.dataset.view)));
+document.getElementById('print').addEventListener('click', () => window.print());
+document.getElementById('theme').addEventListener('click', () => { const next = root.dataset.theme === 'light' ? 'dark' : 'light'; root.dataset.theme = next; try { localStorage.setItem('as-share-theme', next); } catch { /* ignore */ } });
+app.addEventListener('click', (e) => {
+  const t = e.target.closest('[data-img]'); if (t) { const card = t.closest('.home'), i = +t.dataset.img, P = photos(D.homes[+card.dataset.i]); const m = card.querySelector('.main'); if (P[i]) { m.querySelector('img')?.remove(); m.classList.remove('broken'); m.insertAdjacentHTML('afterbegin', photoTag(P[i], `${name(D.homes[+card.dataset.i])}, photo ${i + 1} of ${P.length}`, false)); const cr = m.querySelector('.credit'); if (cr) cr.textContent = P[i].credit || ''; card.querySelectorAll('[data-img]').forEach((b) => b.toggleAttribute('aria-current', b === t)); } }
+  const j = e.target.closest('[data-jump]'); if (j) { e.preventDefault(); document.getElementById('h' + j.dataset.jump)?.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' }); }
+});
+if (/^#memo-print/.test(location.hash)) { setView('memo', false); setTimeout(() => window.print(), 400); }
+})();
+</script>
+</body>
+</html>
