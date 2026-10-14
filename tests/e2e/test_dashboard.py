@@ -15,7 +15,11 @@ import pytest
 pytestmark = pytest.mark.e2e
 
 AXE = Path(__file__).parent / "vendor" / "axe.min.js"
-VIEWS = ["map", "list", "compare", "unit", "plan", "records", "research", "tours"]
+# the six tabs in the top bar; Tours sits under Shortlist and Records under Research (old links redirect, see below)
+VIEWS = ["map", "list", "compare", "unit", "plan", "research"]
+SUBVIEWS = ["list/tours", "research/records/emerald-green-1211"]
+# the section that shows for a route: Tours has its own section, Records is hosted inside Research
+SECTION = {"list/tours": "tours"}
 SLOW = {"unit": 2500, "plan": 2500, "map": 1500}        # WebGL views need a moment to draw
 
 # Elements wider than the viewport at 390 px that a scrolling or clipping ancestor does not contain.
@@ -40,7 +44,7 @@ def _show(s, view: str) -> None:
     """Route to a view the way a click on its tab does, then wait for it to render."""
     pg = s.page
     pg.evaluate("(v) => { location.hash = v; }", view)
-    name = view.split("/")[0]
+    name = SECTION.get(view, view.split("/")[0])
     pg.wait_for_function("(v) => { const el = document.getElementById('view-' + v); return el && !el.hidden && el.children.length > 0; }",
                          arg=name, timeout=20000)
     pg.wait_for_timeout(SLOW.get(name, 700))
@@ -58,7 +62,7 @@ def _overflow(s) -> list[str]:
 def test_every_view_loads_clean(open_page, theme: str, width: int) -> None:
     s = open_page("#map", theme=theme, width=width, height=900 if width > 600 else 844)
     problems = []
-    for v in VIEWS:
+    for v in VIEWS + SUBVIEWS:
         _show(s, v)
         errs = s.take()
         if errs:
@@ -93,6 +97,7 @@ def test_every_view_loads_clean(open_page, theme: str, width: int) -> None:
 
 def test_all_view_tabs_reachable_on_a_phone(open_page) -> None:
     s = open_page("#map", width=390, height=844)
+    assert s.page.locator("#tabs a").count() == len(VIEWS)
     for v in VIEWS:
         tab = s.page.locator(f'#tabs a[data-view="{v}"]')
         tab.scroll_into_view_if_needed()
@@ -235,7 +240,7 @@ def _axe(page) -> list[dict]:
 def test_accessibility(open_page, theme: str, tmp_path_factory) -> None:
     s = open_page("#map", theme=theme)
     critical, serious = [], []
-    for v in VIEWS:
+    for v in VIEWS + SUBVIEWS:
         _show(s, v)
         for x in _axe(s.page):
             (critical if x["impact"] == "critical" else serious if x["impact"] == "serious" else []).append({"view": v, **x})
@@ -245,3 +250,95 @@ def test_accessibility(open_page, theme: str, tmp_path_factory) -> None:
         warnings.warn(f"axe ({theme}): {len(serious)} serious violation(s): "
                       + "; ".join(f"#{x['view']} {x['id']} x{x['n']}" for x in serious[:12]) + f" (details: {out})")
     assert not critical, json.dumps(critical, indent=1)
+
+
+# ------------------------------------------------------------------ consolidated navigation, theme, stats strip, starred tags
+def test_old_deep_links_redirect(open_page) -> None:
+    """#tours, #records/<id> and #research/<tab> keep working: they land on Tours under Shortlist and Records under Research."""
+    s = open_page("#map")
+    pg = s.page
+    pg.evaluate("() => { location.hash = '#tours'; }")
+    pg.wait_for_function("() => location.hash === '#list/tours' && !document.getElementById('view-tours').hidden", timeout=10000)
+    assert pg.evaluate("() => document.querySelector('#tabs a.on').dataset.view") == "list"
+    assert pg.locator("#subnav a.on").inner_text().startswith("Tours")
+    pg.evaluate("() => { location.hash = '#records/emerald-green-1211'; }")
+    pg.wait_for_function("() => location.hash === '#research/records/emerald-green-1211'", timeout=10000)
+    pg.wait_for_selector("#view-research #rec .rec-pick-btn", timeout=15000)
+    assert "Emerald Green" in pg.locator("#rec .rec-pick-btn .v").inner_text()
+    assert pg.locator('#view-research [role=tab][data-tab="records"]').get_attribute("aria-selected") == "true"
+    pg.evaluate("() => { location.hash = '#research/media'; }")
+    pg.wait_for_selector('#view-research [role=tab][data-tab="media"][aria-selected="true"]', timeout=10000)
+    assert not pg.evaluate("() => !!document.querySelector('#view-research #rec')")   # the report goes back to its parking section
+    assert not s.take()
+
+
+def test_theme_modes_menu_and_shortcut(open_page) -> None:
+    """System, dark and light from the settings menu; `t` still flips; ?theme= wins; the choice is remembered."""
+    s = open_page("#map")
+    pg = s.page
+    theme = lambda: pg.evaluate("() => document.documentElement.dataset.theme")  # noqa: E731
+    assert theme() == "dark"
+    assert pg.locator("#themeBtn").count() == 0                         # the toggle moved into the menu
+    pg.locator("#setBtn").click()
+    pg.wait_for_selector("#setMenu:not([hidden])")
+    pg.locator("[data-theme-mode=light]").click()
+    assert theme() == "light" and pg.locator("[data-theme-mode=light]").get_attribute("aria-checked") == "true"
+    pg.keyboard.press("Escape")
+    assert pg.evaluate("() => document.getElementById('setMenu').hidden")
+    pg.keyboard.press("t")
+    assert theme() == "dark"
+    pg.locator("#setBtn").click()
+    pg.locator("[data-theme-mode=system]").click()
+    assert pg.evaluate("() => localStorage.getItem('as:theme')") == '"system"'
+    pg.emulate_media(color_scheme="light")
+    pg.wait_for_function("() => document.documentElement.dataset.theme === 'light'", timeout=5000)
+    assert pg.evaluate("() => document.documentElement.dataset.themePref") == "system"
+    pg.goto(pg.url.split("?")[0].split("#")[0] + "?theme=dark#map")
+    pg.wait_for_function("() => document.documentElement.dataset.theme === 'dark'", timeout=10000)
+    assert not s.take()
+
+
+def test_stats_strip_is_a_thin_subline(open_page) -> None:
+    s = open_page("#map", width=1440)
+    h = s.page.locator("#kpis").bounding_box()["height"]
+    assert 24 <= h <= 30, f"stats strip is {h}px tall"
+    assert s.page.locator("#kpis .kpi.p1").count() == 3
+    # on a phone the secondary figures fold into the popover, and every figure is still in it
+    s.page.set_viewport_size({"width": 390, "height": 844})
+    s.page.wait_for_timeout(200)
+    assert s.page.locator("#kpis .kpi-more").is_visible()
+    s.page.locator("#kpis .kpi-more").click()
+    s.page.wait_for_selector("#kpiPop:not([hidden])")
+    keys = [t.strip() for t in s.page.locator("#kpiPop .kpi-i .k").all_inner_texts()]
+    assert {"tracked", "match filters", "eligible", "shortlisted", "median / mo"} <= set(keys), keys
+    s.page.keyboard.press("Escape")
+    assert s.page.evaluate("() => document.getElementById('kpiPop').hidden")
+    assert not s.take()
+
+
+def test_starred_tags_always_show_and_update_live(open_page, webgl: bool) -> None:
+    """A starred home keeps a gold price tag at every zoom (never decluttered, never inside a count bubble), above plain
+    tags, and starring or unstarring updates the map without a reload."""
+    if not webgl:
+        pytest.skip("no WebGL in this browser (SwiftShader unavailable)")
+    s = open_page("#map")
+    pg = s.page
+    _show(s, "map")
+    pg.wait_for_selector(".price-tag", timeout=20000)
+    # pick a listing that is not already starred or flagged favorite in the data
+    lid = pg.evaluate("""async () => { const a = await import('/js/app.js');
+      return a.sorted(a.filtered()).find((L) => L.lat != null && !a.isSaved(L.id) && !L.favorite)?.id; }""")
+    pg.evaluate("async (id) => { (await import('/js/app.js')).toggleSave(id); }", lid)
+    sel = f'.price-tag[data-id="{lid}"]'
+    pg.wait_for_selector(sel + ".fav", timeout=5000)
+    pg.evaluate("() => window.__asMap.setZoom(10)")
+    pg.wait_for_timeout(1200)
+    assert pg.evaluate("(s) => { const t = document.querySelector(s); return !!t && !t.parentElement.classList.contains('hid'); }", sel)
+    assert pg.evaluate("() => document.querySelectorAll('.tag-anchor:not(.hid) .price-tag:not(.fav):not(.sel)').length") == 0
+    assert pg.evaluate("(id) => window.__asMap.getSource('starred')._data.features.some((f) => f.id === id)", lid)
+    assert pg.evaluate("(id) => !window.__asMap.getSource('listings')._data.features.some((f) => f.id === id)", lid)
+    assert pg.evaluate("(s) => getComputedStyle(document.querySelector(s)).borderTopColor !== getComputedStyle(document.querySelector('.price-tag:not(.fav)') || document.body).borderTopColor", sel)
+    pg.evaluate("async (id) => { (await import('/js/app.js')).toggleSave(id); }", lid)
+    pg.wait_for_function("(s) => !document.querySelector(s) || !document.querySelector(s).classList.contains('fav')", arg=sel, timeout=5000)
+    assert pg.evaluate("(id) => !window.__asMap.getSource('starred')._data.features.some((f) => f.id === id)", lid)
+    assert not s.take()
