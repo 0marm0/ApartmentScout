@@ -234,17 +234,17 @@ def check_ignored(repo: Path) -> list[Finding]:
     return found
 
 
-def _photo_policy() -> dict:
+def _photo_policy(repo: Path) -> dict:
     """The owner's recorded photo policy (docs/gallery/manifest.json "policy"); hot-linked listing photo URLs may be
     allowed there, local copies never are."""
     try:
-        m = json.loads((Path(__file__).resolve().parent.parent / "docs/gallery/manifest.json").read_text())
+        m = json.loads((repo / "docs/gallery/manifest.json").read_text())
         return m.get("policy") or {}
     except (OSError, ValueError):
         return {}
 
 
-def _listing_photo_problems(rel: str, data: object) -> list[str]:
+def _listing_photo_problems(rel: str, data: object, policy: dict | None = None) -> list[str]:
     rows = data if isinstance(data, list) else (data.get("listings") if isinstance(data, dict) else None)
     if not isinstance(rows, list):
         return []
@@ -254,7 +254,7 @@ def _listing_photo_problems(rel: str, data: object) -> list[str]:
             continue
         lid = L.get("id", "?")
         if L.get("photos"):
-            probs.append(("INFO:" if _photo_policy().get("listing_photo_urls") == "allowed" else "") + f"{rel}: {lid} has listing photos")
+            probs.append(("INFO:" if (policy or {}).get("listing_photo_urls") == "allowed" else "") + f"{rel}: {lid} has listing photos")
         if L.get("photos_local"):
             probs.append(f"{rel}: {lid} has local photo copies (photos_local)")
         for bp in L.get("building_photos") or []:
@@ -284,7 +284,7 @@ def check_photos(repo: Path, files: list[str]) -> list[Finding]:
                 data = json.loads((repo / rel).read_text(encoding="utf-8"))
             except (OSError, ValueError):
                 continue
-            probs = _listing_photo_problems(rel, data)
+            probs = _listing_photo_problems(rel, data, _photo_policy(repo))
             info = [p for p in probs if p.startswith("INFO:")]
             if info:
                 found.append(Finding("INFO", "photos", f"{rel}: {len(info)} listings carry hot-linked listing photos "
