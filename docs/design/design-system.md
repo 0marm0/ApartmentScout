@@ -33,8 +33,23 @@ Borders are hairlines: `--line` 6.5% white, `--line-strong` 11% white. Floating 
 
 **Ink.** `--ink` for primary text, `--ink-2` for secondary, `--ink-3` for labels, `--ink-4` for disabled and glyph strokes.
 
-**Accent.** Iris `--accent #8b96ff` (light theme `#4b55e6`): selection, primary buttons, slider fill,
-active toggles. Never used for data.
+**Accent.** Iris `--accent #8b96ff` (light theme `#4952e2`): selection, primary buttons, slider fill,
+active toggles. Never used for data. The renter can pick another accent in the settings menu; each is a token set for
+both themes in `dashboard/css/accents.css` (the accent family `--accent`, `--accent-strong`, `--accent-ink`,
+`--accent-soft`, `--accent-line`, plus the two glass values that borrow its hue):
+
+| Accent | Dark `--accent` | Light `--accent` | Text on the accent |
+|---|---|---|---|
+| Iris (default) | `#8b96ff` | `#4952e2` | `#0b0d1f` / `#ffffff` |
+| Jade | `#34d1a2` | `#08724f` | `#04140f` / `#ffffff` |
+| Amber | `#f2b24a` | `#915500` | `#1c1203` / `#ffffff` |
+| Rose | `#ff7fa1` | `#bb2148` | `#22060f` / `#ffffff` |
+
+Every set is checked by `tests/js/accents.test.mjs` against the real token files: the accent and `--accent-strong` as text
+reach 4.5:1 on `--ground` and `--surface-1/2/3`, accent text keeps 4.5:1 on its own soft wash, `--ink-3` keeps 4.5:1 on the
+wash over `--surface-1` (selected tiers, status chips), and `--accent-ink` keeps 4.5:1 on `--accent` and `--accent-strong`.
+Light-theme accents are darker than the dark-theme ones for that reason (amber becomes a bronze). The e2e axe sweep also
+runs on every accent in both themes.
 
 **Data scales.**
 
@@ -70,6 +85,20 @@ top-left rim, `--glass-edge-b` at the bottom-right). Both themes have their own 
 (`--ink-3-glass`). With `prefers-reduced-transparency` or without `backdrop-filter` every panel is its solid
 surface. Price tags stay solid: they are data, not chrome. Rules live in `dashboard/css/glass.css`.
 
+## Comfort settings
+
+Four data attributes on `<html>` (set by `dashboard/js/features/comfort.js`, styled in `dashboard/css/comfort.css`) change
+the system without touching a component:
+
+- `data-transparency="reduced"`: every glass token becomes its solid surface and `backdrop-filter` is off.
+- `data-contrast="high"`: `--ink-2/3/4` and the hairlines are pushed apart from the ground in both themes, panels go solid,
+  links are underlined and the focus ring is 3 px.
+- `data-motion="reduced"`: transition and animation durations collapse to nothing; `matchMedia('(prefers-reduced-motion)')`
+  answers true so script animations follow.
+- `data-text="l" | "xl"`: the `--fs-*` scale and the bar heights are multiplied by 1.125 or 1.25 (`--ts`).
+
+Each is on when the OS asks **or** the renter chose it: a page never switches off a system-wide accessibility setting.
+
 ## Motion
 
 | Token | Value | Use |
@@ -81,7 +110,7 @@ surface. Price tags stay solid: they are data, not chrome. Rules live in `dashbo
 | `--ease-out` | `cubic-bezier(.2,.8,.2,1)` | Default |
 | `--ease-spring` | `cubic-bezier(.34,1.36,.64,1)` | Switch knobs, price-tag hover, save star |
 
-Map moves use `easeTo` at 700 ms. Interactive controls lift 0.5 px on hover, press to 0.985 and show a 2 px accent ring on keyboard focus. Everything respects `prefers-reduced-motion`.
+Map moves use `easeTo` at 700 ms. The golden-hour tint (opt-in) is a warm wash at `z-index: 3` over the map whose opacity (`--gh`, 0 to about 0.55) and glow side (`--gx`, `--gy`) come from the sun position; it uses `--sun` and `--score-2` only. Interactive controls lift 0.5 px on hover, press to 0.985 and show a 2 px accent ring on keyboard focus. Everything respects `prefers-reduced-motion`.
 
 ## App shell
 
@@ -116,11 +145,19 @@ the results column) inside the same shell.
   decluttering, never joins a cluster bubble and draws above the other tags.
 - **Drawer.** Floating card with photo carousel or hero glyph, sticky action bar (Unit 3D, Records,
   Compare, Listing).
+- **Toast.** A dark pill at the bottom. A change the renter can undo ("Starred X", "Weight: Cost") adds an **Undo** button and
+  the shortcut; it stays while the pointer rests on it.
+- **Query chips.** Accent-soft pills above the results for filters that came from a plain-language search, each with an ×.
+- **Cheat sheet, chord hint, coach marks.** A two-column dialog on `--surface-1` (a bottom sheet on a phone), a glass pill
+  that lists the second keys while a `g` waits, and a dimmed page with an accent-ringed spotlight and a card.
+- **Empty state.** A 184 px inline scene (hairline strokes in `--ink-4`, flat `--surface-*` fills, one `--accent` detail,
+  `--fav` for stars and `--sun` for light), a title, one line of help and the next action. Scenes: picks, compare, records,
+  plan, unit, filters, media, history, queue, watch.
 - **Weight slider.** Re-ranks every card and pin while dragging; shows each weight as a share of 100%.
 - **Histogram slider.** Distribution of the current results behind the range, out-of-range bars greyed.
 
 ## Accessibility
 
-Body text on every surface meets WCAG AA in both themes. Focus rings use the accent at 2 px with
+Body text on every surface meets WCAG AA in both themes, in every accent, and in the high-contrast and largest-text settings; the e2e axe sweep fails the build on any serious or critical violation on all six tabs, Tours and Records. Focus rings use the accent at 2 px with
 offset. Colour never carries meaning alone: bands have minute labels, tiers have names, unknowns have
 text. Links built from data pass through `safeUrl()` (http and https only).
