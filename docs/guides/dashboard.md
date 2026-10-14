@@ -35,6 +35,7 @@ a listing (for example `#unit/emerald-green-1211` or `#plan/emerald-green-1211`)
 | `?` | Show the shortcuts for the current view |
 | `/` | Search listings |
 | `j` / `k` | Next or previous listing on the Map (opens it in the drawer) |
+| `[` / `]` | Fly to the previous or next starred home on the Map and open its mini card (with the drawer open, move the drawer) |
 | `s` | Save the open listing to your picks |
 | `c` | Add the open listing to Compare |
 | `1`–`6` | Switch tab (Map, Shortlist, Compare, Unit 3D, Floor plan, Research) |
@@ -48,6 +49,36 @@ the day) and `,` `.` (step 15 minutes). The floor plan adds `R` (turn), arrows (
 Saved picks, tiers, tour notes, compare, filters and weights are kept in your browser's local storage.
 Use **Back up picks** on the Tours view to keep them as a file, and **Restore** to load them in another
 browser.
+
+## Map interactions
+
+**Route preview on hover.** Hover a result card, a map pin or price tag, or a Shortlist row and that home's commute
+route is drawn for the destination and mode you have selected (`L.commute[destination].modes[mode].legs`): walk legs
+dashed, subway rides along the line's own geometry in the official colour, a dot at each transfer, route bullets and
+a pill with the door-to-door minutes. Keyboard focus on a price tag or Shortlist row previews it too, and the route
+stays for the home open in the drawer when nothing is hovered. It is one GeoJSON source updated in place (the layers
+are added once), with a short intent delay so sweeping across cards does not flicker. Two things are drawn honestly
+rather than invented: walking legs are straight segments (the data has no street geometry, and a walk-only route says
+"straight line"), and bus stops are not in the map layers, so a bus journey is one dotted chord labelled "path
+approximate". On the Shortlist the route shows on the docked map (below). Logic: `dashboard/js/features/route-geometry.js`.
+
+**Starred-only lens.** The "★ N" chip at the end of the map's layer switch counts your saved picks (never the
+`favorite` field in the data) and filters the map to them, ignoring the other filters, so the count and the pins
+agree. While it is on, a fit button flies to the stars and **+ List** also applies the rail's *Saved picks only*
+filter to the results. `[` and `]` fly to the previous or next star (in the current sort order) and open its mini
+card; with the drawer open they move the drawer between stars. The lens is not remembered across reloads.
+
+**Sun lens.** *Sun* in the layer switch (offered when any home has a site model) colours pins by hours of direct sun
+(`site.sun_hours[month]`, clear-sky hours on the 15th) on an indigo-to-yellow scale, with a legend and a month
+stepper that starts on the current month. Homes with a model keep an unclustered pin and a price tag with a sun
+chip; homes without one stay small and grey, are labelled "unknown" on the legend, tag and hover card, and are never
+treated as zero sun. Build more models with `apartmentscout site`.
+
+**Split view.** On the Shortlist the **Map** button docks a mini map (about a third of the width, stacked above the
+table on a phone; remembered in this browser). It draws exactly the rows the table's filters leave and refits when
+that set changes (a re-sort or a star does not move it). Hovering a row pulses its pin and previews its route;
+hovering a pin lights its row; clicking a pin scrolls to the row, highlights it and moves keyboard focus there (in
+building grouping it opens the group first).
 
 ## New search wizard
 
@@ -136,7 +167,7 @@ URL options:
 |---|---|
 | `?data=path/to/data` | Load another data folder |
 | `?theme=light` / `?theme=dark` | Start in a theme |
-| `?layer=commute` / `noise` / `rent` / `score` / `none` | Start on a map layer |
+| `?layer=commute` / `noise` / `rent` / `score` / `sun` / `none` | Start on a map layer |
 | `?basemap=raster` | Use the raster fallback basemap instead of vector tiles |
 | `?open=<listing-id>` | Open a listing in the drawer |
 | `?new=1` / `?wizard=edit` | Open the New search wizard (or edit the open search); `&step=3` picks the step |
