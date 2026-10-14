@@ -66,6 +66,16 @@ def test_laundry_in_building_fails_the_in_unit_must_have():
     assert "fails:in_unit_wd" in s["gates"] and not s["eligible"]
 
 
+def test_waived_must_have_is_scored_but_not_gated():
+    am = {"in_unit_wd": False, "elevator": True, "doorman": "full-time", "gym": True}
+    s = score_listing(unit(amenities=am, waived_must_have=["in_unit_wd"]), crit(), TODAY)
+    assert not any(g.startswith("fails") for g in s["gates"]) and s["eligible"]
+    assert s["parts"]["amenities"] < 100      # the missing W/D still costs amenity points
+    # a waiver only covers what it names
+    s2 = score_listing(unit(amenities={**am, "elevator": False}, waived_must_have=["in_unit_wd"]), crit(), TODAY)
+    assert "fails:elevator" in s2["gates"]
+
+
 def test_fitness_studio_is_not_a_studio_apartment():
     assert is_studio({"type": "1BR with fitness studio access"}) is None
     assert is_studio({"type": "Studio apartment"}) is True

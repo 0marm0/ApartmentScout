@@ -296,10 +296,12 @@ def part_amenities(L: dict, crit: dict) -> tuple[Part, list[str], list[str]]:
     flags: list[str] = []
     am = {k: _amenity_value(k, v, flags) for k, v in raw.items()}
     fails, unknown = [], []
+    waived = set(L.get("waived_must_have") or [])   # the renter accepted this unit without it: scored, not gated
     for k in crit.get("must_have", []):
         v = am.get(k)
         if v is False or v == "none":
-            fails.append(k)
+            if k not in waived:
+                fails.append(k)
         elif v is None:
             unknown.append(k)
     pts, tot, known, have, wanted = 0.0, 0.0, 0, 0, 0
@@ -330,6 +332,8 @@ def part_amenities(L: dict, crit: dict) -> tuple[Part, list[str], list[str]]:
     summ = f"{have} of {wanted} wanted amenities confirmed"
     if fails:
         summ += "; missing must-have: " + ", ".join(AMENITY_NAMES.get(k, k) for k in fails)
+    if waived & set(crit.get("must_have", [])):
+        summ += "; waived by you: " + ", ".join(AMENITY_NAMES.get(k, k) for k in sorted(waived) if k in crit.get("must_have", []))
     elif unknown:
         summ += "; unverified must-have: " + ", ".join(AMENITY_NAMES.get(k, k) for k in unknown)
     return Part(100 * pts / tot, summ, items, flags=sorted(set(flags))), fails, unknown

@@ -259,7 +259,7 @@ def _listing_photo_problems(rel: str, data: object, policy: dict | None = None) 
             probs.append(("INFO:" if (policy or {}).get("listing_photo_files") == "allowed" else "") + f"{rel}: {lid} has local photo copies (photos_local)")
         for bp in L.get("building_photos") or []:
             if isinstance(bp, dict) and bp.get("local"):
-                probs.append(f"{rel}: {lid} has a local building-photo copy")
+                probs.append(("INFO:" if (policy or {}).get("listing_photo_files") == "allowed" else "") + f"{rel}: {lid} has a local building-photo copy")
                 break
         for v in (L.get("links") or {}).values():
             if isinstance(v, str) and re.match(r"^(\./)?(photos|media)/", v):
@@ -291,7 +291,7 @@ def check_photos(repo: Path, files: list[str]) -> list[Finding]:
             probs = _listing_photo_problems(rel, data, _photo_policy(repo))
             info = [p for p in probs if p.startswith("INFO:")]
             if info:
-                found.append(Finding("INFO", "photos", f"{rel}: {len(info)} listings carry hot-linked listing photos "
+                found.append(Finding("INFO", "photos", f"{rel}: {len(info)} photo entries (hot-linked or local copies) "
                                      f"(allowed by the owner's policy in docs/gallery/manifest.json)"))
             for p in probs:
                 if p.startswith("INFO:"):

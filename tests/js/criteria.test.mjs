@@ -79,6 +79,8 @@ test('must-haves: unknown is unverified (still eligible), false fails', () => {
   assert.deepEqual(unk.fails, []);
   const door = amenitiesPart({ amenities: { doorman: 'none' } }, { must_have: ['doorman'] });
   assert.deepEqual(door.fails, ['doorman']);
+  const waived = amenitiesPart({ amenities: { gym: true, in_unit_wd: false }, waived_must_have: ['in_unit_wd'] }, crit);
+  assert.deepEqual(waived.fails, []);
 
   const p = profileOf(CRIT); p.must_have = ['in_unit_wd', 'elevator', 'gym']; p.strongly_prefer = ['doorman'];
   const c2 = applyProfile(CRIT, p);

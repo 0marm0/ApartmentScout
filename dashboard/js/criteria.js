@@ -98,7 +98,8 @@ export function amenitiesPart(L, crit) {
   let approx = false;
   for (const [k, v] of Object.entries(raw)) { const r = amenityValue(k, v); am[k] = r.v; approx ||= r.approx; }
   const fails = [], unknown = [];
-  for (const k of crit.must_have || []) { const v = am[k]; if (v === false || v === 'none') fails.push(k); else if (v == null) unknown.push(k); }
+  const waived = new Set(L.waived_must_have || []);   // accepted by the renter without it: scored, not gated
+  for (const k of crit.must_have || []) { const v = am[k]; if (v === false || v === 'none') { if (!waived.has(k)) fails.push(k); } else if (v == null) unknown.push(k); }
   let pts = 0, tot = 0, known = 0, have = 0, wanted = 0;
   const items = [];
   for (const [keys, w, tag] of [[crit.must_have || [], 3, 'must-have'], [crit.strongly_prefer || [], 2, 'strong'], [crit.nice_to_have || [], 1, 'nice']]) {
