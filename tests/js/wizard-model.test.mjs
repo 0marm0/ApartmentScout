@@ -5,7 +5,7 @@ import fs from 'node:fs';
 import {
   STEPS, TASTE, CITIES, contextOf, blankDraft, draftFromCriteria, draftToCriteria, toCriteriaYAML, dumpYAML, validateDraft,
   tasteWeights, applyTaste, selectPreset, weightShares, weightOverrides, tiersFromTarget, diffAgainst, draftToProfile, cliCommands,
-  stepSummary, slugify, addDays, firstError, FALLBACK_DIMS, presetWeights,
+  stepSummary, slugify, addDays, firstError, FALLBACK_DIMS, presetWeights, tasteDim,
 } from '../../dashboard/js/wizard-model.js';
 import { profileOf, applyProfile, validateProfile } from '../../dashboard/js/criteria.js';
 
@@ -76,6 +76,17 @@ test('taste answers set weights; a missing dimension folds into building', () =>
   const d = good(); d.taste.quiet = 3;
   assert.equal(applyTaste(d, ctx).weights.quiet, 10);
   assert.equal(d.weights.quiet, 5, 'the draft is not mutated');
+});
+
+test('clearing a taste answer puts its dimension back to the preset unless another answer still feeds it', () => {
+  let d = good(); d.taste.luxury = 3; d.taste.renovated = 2;          // both feed building here (interior folds in)
+  d = applyTaste(d, ctx, ['building']);
+  assert.equal(d.weights.building, 22);
+  d.taste.renovated = null; d = applyTaste(d, ctx, [tasteDim('renovated', ctx)]);
+  assert.equal(d.weights.building, 16, 'luxury still answers for building');
+  d.taste.luxury = null; d = applyTaste(d, ctx, [tasteDim('luxury', ctx)]);
+  assert.equal(d.weights.building, 10, 'back to the balanced preset');
+  assert.equal(tasteDim('view', ctx), 'light_view');
 });
 
 test('presets replace the weights, then the taste answers go on top', () => {

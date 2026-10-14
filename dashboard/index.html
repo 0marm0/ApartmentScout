@@ -13,6 +13,7 @@
 <link rel="stylesheet" href="css/tokens.css">
 <link rel="stylesheet" href="css/app.css">
 <link rel="stylesheet" href="css/enhance.css">
+<link rel="stylesheet" href="css/wizard.css">
 <link rel="stylesheet" href="css/views/list.css">
 <link rel="stylesheet" href="css/views/compare.css">
 <link rel="stylesheet" href="css/views/unit.css">
@@ -36,7 +37,7 @@
     <svg width="26" height="26" viewBox="10 10 80 88" aria-hidden="true" class="brand-mark"><defs><clipPath id="brandHole"><circle cx="50" cy="40" r="25"/></clipPath></defs><path d="M50 95C50 95 15.5 57.5 15.5 40A34.5 34.5 0 1 1 84.5 40C84.5 57.5 50 95 50 95ZM75 40A25 25 0 1 1 25 40A25 25 0 1 1 75 40Z" fill="var(--brand)" fill-rule="evenodd"/><path d="M49.25 29L50 16.5L50.75 29ZM48 29H52V36.6H48ZM46 36.6H54V39.2H46ZM44 39.2H56V42.2H44ZM42 42.2H58V47.8H42ZM40 47.8H60V70H40ZM45.3 41.6H46.7V70H45.3ZM49.3 41.6H50.7V70H49.3ZM53.3 41.6H54.7V70H53.3Z" fill="var(--brand-tower)" fill-rule="evenodd" clip-path="url(#brandHole)"/></svg>
     <span>ApartmentScout</span>
   </a>
-  <button class="search-switch" type="button" id="searchSwitch" title="This search"><i class="dot"></i><b id="searchName">Search</b></button>
+  <button class="search-switch" type="button" id="searchSwitch" title="This search"><i class="dot"></i><b id="searchName">Search</b><svg class="chev" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M2 4l3 3 3-3"/></svg></button>
   <nav class="nav" id="tabs" aria-label="Views">
     <a href="#map" data-view="map">Map</a>
     <a href="#list" data-view="list">Shortlist</a>
@@ -51,6 +52,7 @@
     <button class="btn filters-btn" type="button" id="filtersBtn">Filters</button>
     <div class="cmdk"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="6" cy="6" r="4.5"/><path d="M9.5 9.5L13 13"/></svg><input id="q" type="text" readonly placeholder="Search or jump to…" aria-label="Search homes, views and actions" aria-haspopup="dialog" autocomplete="off"><button type="button" class="q-clear" id="qClear" aria-label="Clear the text filter" title="Clear the text filter"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4.5 4.5l7 7M11.5 4.5l-7 7"/></svg></button><kbd>⌘K</kbd></div>
     <button class="icon-btn pl-btn" type="button" id="plBtn" title="Search homes, views and actions" aria-label="Search homes, views and actions" aria-haspopup="dialog"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5L14 14"/></svg></button>
+    <button class="icon-btn" type="button" id="searchMenuBtn" title="Searches: new search, edit criteria, settings" aria-label="Searches and New search" aria-haspopup="menu" aria-expanded="false"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M1.8 4.2a1 1 0 011-1h3l1.5 1.7h5.9a1 1 0 011 1v6.4a1 1 0 01-1 1H2.8a1 1 0 01-1-1zM8 7v3.4M6.3 8.7h3.4"/></svg></button>
     <button class="icon-btn" type="button" data-act="csv" id="csvBtn" title="Export the filtered listings as CSV" aria-label="Export CSV"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2v8M4.5 6.5L8 10l3.5-3.5M3 13h10"/></svg></button>
     <button class="icon-btn" type="button" id="themeBtn" title="Light or dark (t)" aria-label="Switch theme"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M13.5 9.5A5.5 5.5 0 016.5 2.5a5.5 5.5 0 107 7z"/></svg></button>
   </div>

@@ -156,10 +156,17 @@ export function tasteWeights(taste = {}, ctx = contextOf()) {
   }
   return out;
 }
-/** A copy of the draft with the taste answers laid over its weights. */
-export function applyTaste(draft, ctx = contextOf()) {
-  const d = clone(draft);
-  Object.assign(d.weights, tasteWeights(d.taste, ctx));
+/** The dimension a taste item feeds in this scorer (interior folds into building when the scorer has no such dimension). */
+export function tasteDim(id, ctx = contextOf()) {
+  const t = TASTE.find((x) => x.id === id);
+  return t && dimKeys(ctx).includes(t.dimension) ? t.dimension : 'building';
+}
+/** A copy of the draft with the taste answers laid over its weights. `cleared` names dimensions whose answers were just
+ *  removed: with no answer left on them they go back to the preset's weight. */
+export function applyTaste(draft, ctx = contextOf(), cleared = []) {
+  const d = clone(draft), tw = tasteWeights(d.taste, ctx), base = presetWeights(ctx, d.preset);
+  Object.assign(d.weights, tw);
+  for (const k of cleared) if (!(k in tw)) d.weights[k] = base[k];
   return d;
 }
 /** A copy with a preset's weights, then the taste answers on top. */
@@ -425,16 +432,24 @@ export function diffAgainst(crit0, d, ctx = contextOf(crit0)) {
   if (ra !== rb) out.push(`Building ratings: ${d.building_ratings.filter((r) => r.name.trim()).map((r) => `${r.name.trim()} ${r.rating}`).join(', ') || 'none'}`);
   return out;
 }
-/** Commands to run after downloading criteria.yaml. */
-export function cliCommands(d, { file = '~/Downloads/criteria.yaml' } = {}) {
-  const folder = d.folder || slugify(d.name), path = `searches/${folder}`, city = /^[a-z0-9_-]+$/.test(d.city || '') ? d.city : 'generic';
+/** Commands to run after downloading criteria.yaml for a new search. */
+export function cliCommands(d, { file = '~/Downloads/criteria.yaml', path } = {}) {
+  const folder = d.folder || slugify(d.name), at = path || `searches/${folder}`, city = /^[a-z0-9_-]+$/.test(d.city || '') ? d.city : 'generic';
   const withCity = city === 'generic' ? '' : ` --city ${city}`;
   return {
-    path,
-    oneStep: [`apartmentscout init ${path}${withCity} --criteria ${file}`, `apartmentscout criteria --check ${path}/criteria.yaml`],
-    twoStep: [`apartmentscout init ${path}${withCity}`, `cp ${file} ${path}/criteria.yaml`, `apartmentscout criteria --check ${path}/criteria.yaml`],
-    then: [`apartmentscout import listings.csv --search ${path}   # or ask your agent to find listings`, `apartmentscout all --search ${path}`, `apartmentscout serve --search ${path}`],
-    steps: [`apartmentscout geocode --search ${path}`, `apartmentscout commute --search ${path}`, `apartmentscout score --search ${path}`, `apartmentscout build --search ${path}`],
+    path: at,
+    oneStep: [`apartmentscout init ${at}${withCity} --criteria ${file}`, `apartmentscout criteria --check ${at}/criteria.yaml`],
+    twoStep: [`apartmentscout init ${at}${withCity}`, `cp ${file} ${at}/criteria.yaml`, `apartmentscout criteria --check ${at}/criteria.yaml`],
+    then: [`apartmentscout import listings.csv --search ${at}   # or ask your agent to find listings`, `apartmentscout all --search ${at}`, `apartmentscout serve --search ${at}`],
+    steps: [`apartmentscout geocode --search ${at}`, `apartmentscout commute --search ${at}`, `apartmentscout score --search ${at}`, `apartmentscout build --search ${at}`],
+  };
+}
+/** Commands to apply a downloaded criteria.yaml to a search that already exists. */
+export function editCommands(path, file = '~/Downloads/criteria.yaml') {
+  return {
+    oneStep: [`cp ${file} ${path}/criteria.yaml`, `apartmentscout criteria --check ${path}/criteria.yaml`, `apartmentscout commute --search ${path}   # only if a destination moved or is new`, `apartmentscout score --search ${path} && apartmentscout build --search ${path}`],
+    twoStep: [`apartmentscout criteria --check ${file}`, `cp ${path}/criteria.yaml ${path}/criteria.backup.yaml`, `cp ${file} ${path}/criteria.yaml`],
+    then: [`apartmentscout all --search ${path}`], steps: [`apartmentscout score --search ${path}`, `apartmentscout build --search ${path}`],
   };
 }
 export const rescoreCommands = (path = 'searches/<folder>') => [`apartmentscout score --search ${path}`, `apartmentscout build --search ${path}`];
