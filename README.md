@@ -16,7 +16,7 @@ and bus, read the building's records, and see the light from inside the exact un
 
 ![The ApartmentScout dashboard: door-to-door commute bands over Manhattan, scored price tags, a filter rail and ranked listing cards](docs/images/map-commute.png)
 
-ApartmentScout came out of a real search for a one-bedroom in Manhattan: 732 listings in 600 buildings,
+ApartmentScout came out of a real search for a one-bedroom in Manhattan: 738 listings in 600 buildings,
 and the same questions for every finalist. What does it really cost a month once the fees and free
 months are counted? How long is the trip door to door? What do the city's records and the tenants say
 about the building? How loud is the street, and will the window see the sky or a wall? This repo turns

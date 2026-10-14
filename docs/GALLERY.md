@@ -2,7 +2,8 @@
 
 Screenshots of the ApartmentScout dashboard on the included example (a Manhattan one-bedroom search from
 fall 2026 with a commute to a Midtown office near Grand Central), followed by the earlier one-off tools
-built during that search, which the dashboard grew out of. Listing photos and videos are never shown.
+built during that search, which the dashboard grew out of. Listing photos in the cards were cleared for use in
+this private repository; re-check their rights before making it public.
 
 Every image here is marked `public` in [`gallery/manifest.json`](gallery/manifest.json); see
 [THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md) for map and photo attribution.
@@ -16,7 +17,7 @@ listing cards with walk, subway and bus minutes; and a vector map with heat laye
 lines, price tags and a floating listing drawer.
 
 <table>
-<tr><td width="50%"><img src="images/map-commute.png" alt="Commute layer"><br><sub>Best-of-transit door-to-door minutes, arriving 09:00: green inside the 30-minute limit, red past it, the limit dashed</sub></td><td width="50%"><img src="images/map-drawer.png" alt="Listing drawer"><br><sub>Listing drawer: a credited building photo, monthly cost, gross rent and paid month, move-in cash, unknown fees left unknown, tier headroom and why it ranks here</sub></td></tr>
+<tr><td width="50%"><img src="images/map-commute.png" alt="Commute layer"><br><sub>Best-of-transit door-to-door minutes to Grand Central, arriving 09:00, walking on the real street network to real station entrances: greens to 15 minutes, yellow and gold to the 30-minute limit (dashed), reds past it</sub></td><td width="50%"><img src="images/map-drawer.png" alt="Listing drawer"><br><sub>Listing drawer: a credited building photo, monthly cost, gross rent and paid month, move-in cash, unknown fees left unknown, tier headroom and why it ranks here</sub></td></tr>
 <tr><td width="50%"><img src="images/map-noise.png" alt="Noise layer"><br><sub>311 noise complaints per year in 150 m cells (335,923 requests), labelled as reports, not findings</sub></td><td width="50%"><img src="images/map-rent.png" alt="Rent layer"><br><sub>Monthly cost per ft², interpolated from the listings</sub></td></tr>
 <tr><td width="50%"><img src="images/map-score.png" alt="Score layer"><br><sub>Average score nearby with your weights</sub></td><td width="50%"><img src="images/map-commute-light.png" alt="Light theme"><br><sub>The light theme</sub></td></tr>
 <tr><td width="50%"><img src="images/map-3d.png" alt="3D buildings"><br><sub>3D buildings over the commute bands, with subway lines, stations and walking-time rings</sub></td><td width="50%"><img src="images/map-drawer-commute.png" alt="Commute by mode in the drawer"><br><sub>Commute by mode: best, subway, bus and walk tiles, the route leg by leg with times, records flags, what residents say and open questions</sub></td></tr>
@@ -53,6 +54,18 @@ the apartment.
 
 <table>
 <tr><td width="68%"><img src="images/plan-bird.png" alt="Floor plan studio"><br><sub>Synced 2D plan and 3D model under the real sun: ten pieces placed with fit checks all clear, bed and sofa TV distances marked ideal, eye-level cameras and two layout presets written for this plan</sub></td><td width="32%"><img src="images/plan-top.png" alt="Top down"><br><sub>Top-down at 5 pm on June 21; every window shaded by neighbours</sub></td></tr>
+</table>
+
+### Paramount Tower 25E
+
+The unit the search ended on: $4,995 a month plus $37 in fees, E line on the 24th floor, a nine-minute walk to
+Grand Central. It has no in-unit washer/dryer; the renter waived that must-have for the space and the view, so
+it still costs amenity points but no longer gates the unit out. It ranks #8.
+
+<table>
+<tr><td colspan="2"><img src="images/map-paramount.png" alt="Paramount Tower 25E on the map"><br><sub>The listing drawer for 25E over the commute map</sub></td></tr>
+<tr><td width="50%"><img src="images/unit-paramount.png" alt="Paramount Tower 25E in Unit 3D"><br><sub>Unit 3D: the tower among its Murray Hill neighbours on October 15 at 1 pm. The window direction is not recorded, so the SSW facade is an assumption, labelled as one</sub></td><td width="50%"><img src="images/plan-paramount.png" alt="Paramount Tower 25E floor plan"><br><sub>Floor plan studio on the Glenwood E-line drawing: nine pieces placed, all clear, TV distances marked ideal</sub></td></tr>
+<tr><td width="50%"><img src="images/unit-paramount-window.png" alt="Window camera"><br><sub>Window camera, 24th floor at 1 pm, on the assumed facade: in the shadow of 240 East 38th Street</sub></td><td width="50%"><img src="images/unit-paramount-inside.png" alt="Inside camera"><br><sub>Inside: the bedroom bay at the 25th-floor slab height, morning sun on the side pane</sub></td></tr>
 </table>
 
 ### Records

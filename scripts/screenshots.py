@@ -68,6 +68,12 @@ SHOTS = [
     ("compare-light", "?theme=light#compare/the-highpoint-condo-31f,the-horizon-35d,townsend-14c,emerald-green-1211", (1600, 1000), [], 4000, None),
     ("mobile-drawer", "?open=the-corinthian-9i#map", (420, 900), [], 9000, None),
     ("mobile-unit", "?date=2026-10-15&min=780#unit/emerald-green-1211", (420, 900), [], 10000, None),
+    # Paramount Tower 25E (E line, floor 25)
+    ("map-paramount", "?layer=commute&open=paramount-tower-25e#map", (1600, 1000), [], 9000, None),
+    ("unit-paramount", "?date=2026-10-15&min=780#unit/paramount-tower-25e", (1600, 1000), [], 10000, None),
+    ("unit-paramount-window", "?date=2026-10-15&min=780&mode=window#unit/paramount-tower-25e", (1600, 1000), [], 10000, "#stage"),
+    ("unit-paramount-inside", "?date=2026-10-15&min=690&mode=in#unit/paramount-tower-25e", (1600, 1000), [], 10000, "#stage"),
+    ("plan-paramount", "?date=2026-10-15&pmin=780#plan/paramount-tower-25e", (1600, 1000), [], 8000, None),
 ]
 
 
@@ -87,9 +93,12 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--only", nargs="*")
     ap.add_argument("--port", type=int, default=8799)
+    ap.add_argument("--root", type=Path, default=ROOT / "dashboard", help="dashboard folder to serve")
+    ap.add_argument("--out", type=Path, default=OUT)
     args = ap.parse_args()
-    OUT.mkdir(parents=True, exist_ok=True)
-    httpd = serve(ROOT / "dashboard", args.port)
+    out = args.out
+    out.mkdir(parents=True, exist_ok=True)
+    httpd = serve(args.root, args.port)
     with sync_playwright() as p:
         # real GPU where there is one (SwiftShader drops MapLibre and three.js layers from screenshots)
         gpu = ["--use-angle=metal", "--ignore-gpu-blocklist", "--enable-gpu"] if sys.platform == "darwin" else \
@@ -114,9 +123,9 @@ def main():
                     tall = page.evaluate(f"document.querySelector({target!r}).scrollHeight")
                     page.set_viewport_size({"width": w, "height": min(int(tall) + 160, 6000)})
                     page.wait_for_timeout(1500)
-            path = OUT / f"{name}.png"
+            path = out / f"{name}.png"
             (page.locator(sel).screenshot(path=str(path)) if sel else page.screenshot(path=str(path)))
-            print(f"{name:18s} -> {path.relative_to(ROOT)}" + (f"   errors: {errors}" if errors else ""))
+            print(f"{name:18s} -> {path}" + (f"   errors: {errors}" if errors else ""))
             page.close()
         browser.close()
     httpd.shutdown()
