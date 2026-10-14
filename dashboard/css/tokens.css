@@ -12,9 +12,10 @@
   /* space (4px grid) and radius */
   --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 20px; --s-6: 24px; --s-8: 32px; --s-10: 40px;
   --r-xs: 4px; --r-sm: 6px; --r-md: 10px; --r-lg: 14px; --r-xl: 20px; --r-pill: 999px;
+  --r-inner: 7px;   /* a segment inside a 10px control with 3px padding: outer radius minus padding */
 
   /* layout */
-  --topbar-h: 56px; --stats-h: 44px; --rail-w: 288px; --list-w: 432px; --drawer-w: 448px;
+  --topbar-h: 48px; --stats-h: 28px; --subnav-h: 38px; --rail-w: 288px; --list-w: 432px; --drawer-w: 448px;
 
   /* motion */
   --ease-out: cubic-bezier(.2, .8, .2, 1);
@@ -56,6 +57,20 @@
   --shadow-2: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 8px 24px rgba(0, 0, 0, 0.45), 0 2px 6px rgba(0, 0, 0, 0.3);
   --shadow-3: 0 1px 0 rgba(255, 255, 255, 0.05) inset, 0 24px 64px rgba(0, 0, 0, 0.6), 0 6px 16px rgba(0, 0, 0, 0.35);
   --glass: blur(18px) saturate(140%);
+  /* liquid glass: floating panels over the map. Alpha stays high enough that secondary text keeps AA over the
+     brightest commute colours; the tint, edge gradient and inner highlight carry the effect. */
+  --glass-bg: rgba(15, 18, 26, 0.8);
+  --glass-tint: rgba(139, 150, 255, 0.075);
+  --glass-blur: blur(22px) saturate(170%);
+  --glass-line: rgba(255, 255, 255, 0.1);
+  --glass-hi: rgba(255, 255, 255, 0.13);
+  --glass-edge-a: rgba(255, 255, 255, 0.24);
+  --glass-edge-b: rgba(139, 150, 255, 0.2);
+  --glass-seg: rgba(255, 255, 255, 0.1);
+  --glass-shadow: 0 12px 34px rgba(0, 0, 0, 0.44), 0 2px 8px rgba(0, 0, 0, 0.3);
+  --ink-3-glass: #9ba4b5;
+  --ring: 0 0 0 3px var(--accent-soft);
+  --lift: 0 6px 18px rgba(0, 0, 0, 0.32);
   --band-alpha: 0.3;
   color-scheme: dark;
 }
@@ -87,6 +102,16 @@
   --shadow-1: 0 1px 2px rgba(20, 24, 34, 0.06);
   --shadow-2: 0 8px 24px rgba(20, 24, 34, 0.08), 0 2px 6px rgba(20, 24, 34, 0.05);
   --shadow-3: 0 24px 64px rgba(20, 24, 34, 0.16), 0 6px 16px rgba(20, 24, 34, 0.08);
+  --glass-bg: rgba(255, 255, 255, 0.84);
+  --glass-tint: rgba(75, 85, 230, 0.06);
+  --glass-line: rgba(20, 24, 34, 0.1);
+  --glass-hi: rgba(255, 255, 255, 0.95);
+  --glass-edge-a: rgba(255, 255, 255, 0.95);
+  --glass-edge-b: rgba(75, 85, 230, 0.18);
+  --glass-seg: rgba(255, 255, 255, 0.95);
+  --glass-shadow: 0 12px 32px rgba(20, 24, 34, 0.15), 0 2px 6px rgba(20, 24, 34, 0.07);
+  --ink-3-glass: #596070;
+  --lift: 0 6px 18px rgba(20, 24, 34, 0.12);
   --band-alpha: 0.26;
   color-scheme: light;
 }
