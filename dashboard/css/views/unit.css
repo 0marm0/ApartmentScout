@@ -20,9 +20,9 @@
 /* desktop: a split workspace. The page header stays put, the model and its time strip fill the remaining
    height exactly, and the inspector column scrolls on its own, so no height leaves an empty area under the model. */
 @media (min-width: 1181px) {
-  #view-unit .u-pad { height: 100%; display: flex; flex-direction: column; padding-bottom: var(--s-5); }
-  #view-unit .u-head, #view-unit .u-units { flex: none; }
-  .u-grid { flex: 1 1 auto; min-height: 560px; grid-template-rows: minmax(0, 1fr); align-items: stretch; }
+  #view-unit .u-pad { min-height: 100%; display: flex; flex-direction: column; padding-bottom: var(--s-5); }
+  #view-unit .u-head, #view-unit .u-units, #view-unit .u-studies { flex: none; }
+  .u-grid { flex: none; height: calc(100vh - 230px); min-height: 560px; grid-template-rows: minmax(0, 1fr); align-items: stretch; }
   .u-grid:has(> .empty) { display: block; flex: none; min-height: 0; }
   .u-main { min-height: 0; }
   .u-stage.canvas-stage { flex: 1 1 auto; min-height: 360px; height: auto; }
@@ -366,3 +366,99 @@
 .u-card-parts .u-part-src a { color: var(--ink-2); }
 .u-card-parts .pill { font-size: var(--fs-2xs); }
 .u-card-parts p { margin: 4px 0 0; font-size: var(--fs-2xs); }
+
+/* ------------------------------------------------------------------ heights layer labels (3D) */
+.u-lab.ht { padding: 2px 6px 3px; border-radius: 6px; }
+.u-lab.ht b { font: 600 10.5px var(--font-mono); font-variant-numeric: tabular-nums; }
+.u-lab.ring { padding: 0; border: 0; background: none; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none;
+  font: 600 10px var(--font-mono); color: var(--ink-2); text-shadow: 0 0 3px var(--ground), 0 0 6px var(--ground); }
+.u-lab.ring::after { display: none; }
+
+/* ------------------------------------------------------------------ studies */
+.u-studies { padding: var(--s-3) var(--s-4) var(--s-4); margin-top: var(--s-4); }
+.u-st-h { display: flex; align-items: center; gap: var(--s-2) var(--s-4); flex-wrap: wrap; margin-bottom: var(--s-3); }
+.u-st-h h3 { margin: 0; font-size: var(--fs-xs); font-weight: 600; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--ink-3); display: flex; gap: var(--s-2); align-items: baseline; }
+.u-st-h h3 span { text-transform: none; letter-spacing: 0; font-weight: 400; }
+.u-st-h .seg { flex: 0 1 auto; overflow-x: auto; scrollbar-width: none; max-width: 100%; }
+.u-st-h .seg button { white-space: nowrap; }
+.u-st-h .seg button[aria-selected="true"] { background: var(--surface-3); color: var(--ink); box-shadow: var(--shadow-1); }
+.u-st-acts { display: flex; gap: 4px; margin-left: auto; }
+.u-st-acts .btn { height: 28px; padding: 0 10px; font-size: var(--fs-xs); gap: 5px; }
+.u-st-acts .btn svg { width: 13px; height: 13px; }
+.u-st-cv { display: block; width: 100%; border-radius: var(--r-md); }
+.u-st-body .u-note { margin-top: var(--s-2); }
+
+/* heights map */
+.u-hm-grid { display: grid; grid-template-columns: minmax(0, 620px) minmax(0, 1fr); gap: var(--s-5); align-items: start; }
+.u-hm-side .u-sec-t { margin-top: var(--s-3); }
+.u-hm { position: relative; border-radius: var(--r-md); overflow: hidden; background: var(--surface-2); border: 1px solid var(--line); }
+.u-hm svg { display: block; width: 100%; height: auto; }
+.u-hm .bl path { stroke: var(--surface-1); stroke-width: .6; cursor: pointer; transition: opacity var(--t-fast); }
+.u-hm .bl path:hover { stroke: var(--ink); stroke-width: 1.2; }
+.u-hm .bl path.t { fill: var(--accent); stroke: var(--ink); stroke-width: 1.6; }
+.u-hm .bl path.sel { stroke: var(--ink); stroke-width: 1.8; }
+.u-hm .bl path.ed { stroke: var(--warn); stroke-width: 1.6; stroke-dasharray: 3 2; }
+.u-hm .fu path { fill: color-mix(in srgb, var(--warn) 14%, transparent); stroke: var(--warn); stroke-width: 1.2; stroke-dasharray: 4 3; }
+.u-hm .st polyline { fill: none; stroke: var(--line-strong); stroke-width: 1; stroke-dasharray: 1 3; }
+.u-hm .ring { fill: none; stroke: var(--ink-3); stroke-width: 1; stroke-dasharray: 5 4; }
+.u-hm .face { stroke: var(--sun); stroke-width: 2.4; stroke-linecap: round; }
+.u-hm .fan { stroke: var(--sun); stroke-width: 1.2; stroke-opacity: .6; stroke-dasharray: 3 3; }
+.u-hm .faceh { fill: var(--sun); }
+.u-hm .win { fill: var(--sun); stroke: var(--surface-1); stroke-width: 2; }
+.u-hm-l { position: absolute; transform: translate(-50%, -50%); padding: 1px 5px; border-radius: 5px; background: var(--overlay); border: 1px solid var(--line-strong);
+  font: 600 10.5px var(--font-mono); color: var(--ink); font-variant-numeric: tabular-nums; white-space: nowrap; cursor: pointer; backdrop-filter: var(--glass); -webkit-backdrop-filter: var(--glass); }
+.u-hm-l small { font-size: 9px; color: var(--ink-3); }
+.u-hm-l.ed { border-color: var(--warn); color: var(--warn); }
+.u-hm-r { position: absolute; transform: translate(-50%, -50%); font: 600 10px var(--font-mono); color: var(--ink-3); pointer-events: none; text-shadow: 0 0 3px var(--surface-2), 0 0 6px var(--surface-2); }
+.u-hm-n { position: absolute; top: 8px; right: 10px; width: 24px; height: 24px; display: grid; place-items: center; border-radius: 50%; background: var(--overlay); border: 1px solid var(--line-strong); font: 700 11px var(--font-sans); color: var(--bad); }
+.u-hm-sc { position: absolute; left: 10px; bottom: 8px; display: flex; flex-direction: column; gap: 2px; width: 40%; font: 500 10px var(--font-mono); color: var(--ink-3); pointer-events: none; }
+.u-hm-sc i { display: block; height: 4px; border: 1px solid var(--ink-3); border-top: 0; }
+.u-hm-legend { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: var(--s-2); font-size: var(--fs-2xs); color: var(--ink-3); }
+.u-hm-legend span { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+.u-hm-legend i { width: 12px; height: 10px; border-radius: 2px; border: 1px solid var(--line); }
+.u-hm-legend i.t { background: var(--accent); }
+.u-hm-legend i.fu { border: 1.5px dashed var(--warn); }
+.u-hm-legend i.face { height: 3px; border: 0; background: var(--sun); }
+.u-hm-side .label { margin-bottom: 6px; }
+.u-sec { width: 100%; max-width: 780px; height: auto; display: block; overflow: visible; }
+.u-sec .gl { stroke: var(--line); }
+.u-sec .ax { font: 500 9.5px var(--font-mono); fill: var(--ink-3); }
+.u-sec .facebg { fill: var(--sun); opacity: .08; }
+.u-sec .col { cursor: pointer; }
+.u-sec .col rect { stroke: var(--line-strong); }
+.u-sec .col:hover rect { stroke: var(--ink); }
+.u-sec .med { stroke: var(--ink); stroke-width: 1.5; opacity: .7; }
+.u-sec .v { font: 600 10.5px var(--font-mono); fill: var(--ink); }
+.u-sec .dir { font: 600 11px var(--font-sans); fill: var(--ink-2); }
+.u-sec .dir.on { fill: var(--sun); }
+.u-sec .sub { font: 500 9.5px var(--font-mono); fill: var(--ink-3); }
+.u-sec .none { font: 500 9.5px var(--font-mono); fill: var(--ink-4); }
+.u-sec .eye { stroke: var(--sun); stroke-width: 1.5; stroke-dasharray: 5 3; }
+.u-sec .eyel { font: 600 10px var(--font-mono); fill: var(--sun); }
+.u-sec-d { margin-top: var(--s-3); }
+.u-sec-d summary { cursor: pointer; font-size: var(--fs-sm); font-weight: 500; color: var(--ink-2); }
+.u-sec-d summary span { color: var(--ink-3); font-weight: 400; font-size: var(--fs-xs); }
+.u-sec-t { margin-top: var(--s-2); width: 100%; }
+.u-sec-t td b { display: block; font-weight: 500; }
+.u-sec-t td small { color: var(--ink-3); font: 500 var(--fs-2xs) var(--font-mono); }
+.u-sec-t tr.face td:first-child { color: var(--sun); font-weight: 600; }
+.u-sec-t tr[data-bi] { cursor: pointer; }
+
+/* what if */
+.u-if .u-if-h { margin-top: var(--s-3); }
+.u-if select { width: 100%; }
+.u-if-acts { display: flex; align-items: center; flex-wrap: wrap; gap: 6px var(--s-3); margin-top: var(--s-2); }
+.u-if-acts .tg { margin-left: auto; padding: 0; }
+.u-if-m { margin-top: var(--s-3); }
+.u-side .u-if-m.metrics.m4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.u-up { color: var(--good) !important; } .u-down { color: var(--bad) !important; }
+.u-if-list { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: var(--s-3); }
+.u-if-list .label { width: 100%; }
+.u-if-list .chip { font-size: var(--fs-xs); }
+
+@media (max-width: 900px) { .u-hm-grid { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 460px) {
+  .u-studies { padding: var(--s-3); }
+  .u-st-acts { margin-left: 0; }
+  .u-hm-l { font-size: 9px; padding: 0 3px; }
+}

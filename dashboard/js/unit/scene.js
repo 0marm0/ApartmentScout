@@ -8,6 +8,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { DEG } from '../sun.js';
 import { css, esc } from '../util.js';
+import { heightClass, pickLabels } from './heights.js';
 
 const isLight = () => document.documentElement.dataset.theme === 'light';
 const col = (name, fb) => { const v = css(name); return new THREE.Color(/^#[0-9a-f]{3,8}$/i.test(v) ? v.slice(0, 7) : fb); };
@@ -22,7 +23,13 @@ export function palette() {
   const accent = col('--accent', '#8b96ff'), sun = col('--sun', '#f5b547'), warn = col('--warn', '#f0b04c'), bad = col('--bad', '#f2735f');
   const blue = col('--band-30', '#3a93e0'), coral = col('--score-1', '#e5604f'), violet = col('--band-45', '#6a55b8');
   const white = new THREE.Color(1, 1, 1);
+  // height classes (unit/heights.js HCLASS): light theme runs pale to deep blue, dark theme muted to bright
+  const hcls = L
+    ? [mix(s1, blue, 0.06), mix(s1, blue, 0.22), mix(s1, blue, 0.42), mix(s1, blue, 0.68), blue.clone(), mix(blue, ink, 0.4), mix(violet, ink, 0.5)]
+    : [mix(s3, ink4, 0.55), mix(s3, blue, 0.3), mix(s3, blue, 0.55), mix(s3, blue, 0.8), mix(blue, ink, 0.22), mix(blue, ink, 0.48), mix(violet, ink, 0.5)];
+  const lit = mix(sun, white, 0.45);
   return L ? {
+    hcls, lit,
     tBase: accent.clone(),
     light: true, ground: mix(s3, ink4, 0.22), bLow: mix(s3, ink4, 0.42), bHigh: mix(s1, s3, 0.25), street: mix(s1, s3, 0.2), streetOp: 0.95,
     outline: ink3, outlineOp: 0.32, edge: ink3, edgeOp: 0.22, accent, sun, warn, bad, ink, white,
@@ -32,6 +39,7 @@ export function palette() {
     },
     hemiDay: 1.9, hemiNight: 0.9, sunMax: 3.4,
   } : {
+    hcls, lit,
     tBase: mix(accent, ground, 0.42),
     light: false, ground: mix(s3, ink4, 0.3), bLow: mix(s3, ink4, 0.5), bHigh: mix(ink4, ink3, 0.4), street: mix(s3, ink4, 0.55), streetOp: 0.9,
     outline: ink3, outlineOp: 0.3, edge: ground, edgeOp: 0.45, accent, sun, warn, bad, ink, white,
@@ -70,6 +78,41 @@ function glowTexture() {
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
 }
 
+/**
+ * Facade detail for the building materials, all in the shader (no textures, no extra geometry): a hint of a
+ * window grid on walls (one row per floor height, a bay every 3 m) that fades to its average as cells get smaller
+ * than a few pixels, a darker band at the foot of every wall (cheap ambient occlusion where walls meet the street),
+ * and after dusk a scatter of lit windows. `U` holds the shared uniforms: uNight 0..1, uFloorH, uDetail, uLitCol.
+ */
+function decorate(mat, U, key) {
+  mat.onBeforeCompile = (sh) => {
+    Object.assign(sh.uniforms, U);
+    sh.vertexShader = sh.vertexShader
+      .replace('#include <common>', '#include <common>\nvarying vec3 vWP; varying vec3 vWN;')
+      .replace('#include <project_vertex>', '#include <project_vertex>\nvWP = (modelMatrix * vec4(transformed, 1.0)).xyz; vWN = normalize(mat3(modelMatrix) * objectNormal);');
+    sh.fragmentShader = sh.fragmentShader
+      .replace('#include <common>', `#include <common>
+varying vec3 vWP; varying vec3 vWN; uniform float uNight; uniform float uFloorH; uniform float uDetail; uniform vec3 uLitCol;
+float uHash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }`)
+      .replace('#include <color_fragment>', `#include <color_fragment>
+float uWall = 1.0 - smoothstep(0.35, 0.6, abs(vWN.y));
+vec2 uT = normalize(vec2(-vWN.z, vWN.x) + 1e-5);
+float uV = vWP.y;
+vec2 uCell = vec2(dot(vWP.xz, uT) / 3.0, uV / uFloorH);
+vec2 uF = fract(uCell), uW = fwidth(uCell);
+float uFar = smoothstep(0.3, 0.75, max(uW.x, uW.y));
+float uWin = smoothstep(0.2 - uW.x, 0.2 + uW.x, uF.x) * (1.0 - smoothstep(0.8 - uW.x, 0.8 + uW.x, uF.x))
+  * smoothstep(0.3 - uW.y, 0.3 + uW.y, uF.y) * (1.0 - smoothstep(0.86 - uW.y, 0.86 + uW.y, uF.y));
+uWin = mix(uWin, 0.36, uFar) * step(4.0, uV) * uWall;
+float uAo = mix(1.0, mix(0.58, 1.0, smoothstep(0.0, 24.0, uV)), uWall);
+diffuseColor.rgb *= uAo * (1.0 - 0.3 * uWin * uDetail);
+float uSeed = uHash(floor(uCell) + vec2(floor(dot(vWP.xz, normalize(vWN.xz + 1e-5)) * 0.37), 7.0));
+float uLit = mix(step(0.66, uSeed) * uWin, 0.045 * step(4.0, uV) * uWall, uFar) * uDetail;`)
+      .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\ntotalEmissiveRadiance += uLitCol * uLit * uNight;');
+  };
+  mat.customProgramCacheKey = () => key;
+}
+
 function disposeTree(o) {
   o.traverse((m) => { m.geometry?.dispose?.(); const ms = Array.isArray(m.material) ? m.material : m.material ? [m.material] : []; ms.forEach((x) => { x.map?.dispose?.(); x.dispose?.(); }); });
 }
@@ -85,6 +128,10 @@ export class UnitStage {
     this.mode = 'orbit'; this.look = { yaw: 0, pitch: 6, fov: 70 }; this.dirty = true; this.tween = null;
     this.opts = { shadows: true, labels: true, streets: true, future: true, cone: false, ray: true, target: 'solid' };
     this.labels = []; this.pal = palette(); this.onCompass = null;
+    this.opts.heights = false;
+    // shared facade uniforms (see decorate)
+    this.facU = { uNight: { value: 0 }, uFloorH: { value: 3.2 }, uDetail: { value: 1 }, uLitCol: { value: new THREE.Color(1, 0.8, 0.5) } };
+    this.stillCam = new THREE.PerspectiveCamera(50, 1, 0.3, 12000);
   }
 
   // ---------------------------------------------------------------- build
@@ -132,17 +179,22 @@ export class UnitStage {
 
     // city: merged prisms, near ones cast shadows
     this.bMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9, metalness: 0 });
+    this.facU.uLitCol.value.copy(pal.lit);
+    decorate(this.bMat, this.facU, 'unit-city');
+    this.vrange = new Map();
     const near = [], far = [];
     B.forEach((b, i) => { if (b === T) return; const d = Math.hypot((b.bb[0] + b.bb[2]) / 2 - cx, (b.bb[1] + b.bb[3]) / 2 - cy); (d < 900 ? near : far).push(i); });
     this.city = [this.merged(near, true), this.merged(far, false)];
     this.city.forEach((m) => scene.add(m));
     this.edgeMat = new THREE.LineBasicMaterial({ color: pal.edge, transparent: true, opacity: pal.edgeOp, depthWrite: false });
-    this.edges = new THREE.LineSegments(this.edgeGeo(near.filter((i) => this.distTo(B[i]) < 760)), this.edgeMat); scene.add(this.edges);
+    this.edgeIdx = near.filter((i) => this.distTo(B[i]) < 760);
+    this.edges = new THREE.LineSegments(this.edgeGeo(this.edgeIdx), this.edgeMat); scene.add(this.edges);
     this.outlineMat = new THREE.LineBasicMaterial({ color: pal.outline, transparent: true, opacity: pal.outlineOp, depthWrite: false });
     this.outlines = new THREE.LineSegments(this.outlineGeo(near.filter((i) => this.distTo(B[i]) < 820)), this.outlineMat); scene.add(this.outlines);
 
     // target building in the accent, with solid / faint / hidden display
     this.tMat = new THREE.MeshStandardMaterial({ color: pal.tBase, roughness: 0.62, metalness: 0.05, transparent: true, opacity: 1 });
+    decorate(this.tMat, this.facU, 'unit-target');
     this.tMesh = new THREE.Mesh(this.solidGeo(T), this.tMat); this.tMesh.castShadow = this.tMesh.receiveShadow = true; this.tMesh.userData.bi = data.ti; scene.add(this.tMesh);
     this.tEdgeMat = new THREE.LineBasicMaterial({ color: pal.accent, transparent: true, opacity: 0.9, depthWrite: false });
     this.tEdges = new THREE.LineSegments(this.edgeGeo([data.ti], true), this.tEdgeMat); scene.add(this.tEdges);
@@ -178,6 +230,15 @@ export class UnitStage {
     this.sunDisc = new THREE.Mesh(new THREE.SphereGeometry(30, 24, 16), new THREE.MeshBasicMaterial({ color: pal.sun, fog: false }));
     this.sunGlow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTexture(), color: pal.sun, transparent: true, depthWrite: false, fog: false, blending: THREE.AdditiveBlending }));
     this.sunGlow.scale.set(420, 420, 1); scene.add(this.sunDisc, this.sunGlow);
+
+    // height rings (Heights layer): 150 m and 300 m around the window, drawn on the ground
+    this.rings = new THREE.Group();
+    this.ringMat = new THREE.LineDashedMaterial({ color: pal.ink, dashSize: 6, gapSize: 4, transparent: true, opacity: 0.55, depthWrite: false });
+    for (const r of [150, 300]) {
+      const pts = Array.from({ length: 129 }, (_, k) => new THREE.Vector3(Math.cos((k / 128) * Math.PI * 2) * r, 0.4, Math.sin((k / 128) * Math.PI * 2) * r));
+      const ln = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), this.ringMat); ln.computeLineDistances(); this.rings.add(ln);
+    }
+    this.rings.position.copy(this.center); scene.add(this.rings);
 
     // streets and proposed buildings
     this.streets = this.streetMesh(data.streets || []); if (this.streets) scene.add(this.streets);
@@ -247,8 +308,9 @@ export class UnitStage {
   merged(idx, cast) {
     const { B } = this.data, P = [], N = [], C = [], H = [], starts = [], ids = [];
     let v = 0;
+    const mesh = { r: [] };
     for (const i of idx) {
-      starts.push(v); ids.push(i);
+      starts.push(v); ids.push(i); mesh.r.push([i, v]);
       for (const { geo, h } of this.prismsOf(B[i])) {
         const pos = geo.attributes.position.array, nor = geo.attributes.normal.array;
         const c = this.heightColor(h), roof = mix(c, this.pal.white, this.pal.light ? 0.25 : 0.08);
@@ -266,6 +328,7 @@ export class UnitStage {
     g.computeBoundingSphere();
     const m = new THREE.Mesh(g, this.bMat); m.castShadow = cast; m.receiveShadow = true;
     m.userData.starts = Int32Array.from(starts); m.userData.ids = Int32Array.from(ids); m.userData.h = Float32Array.from(H);
+    mesh.r.forEach(([i, s0], k) => this.vrange.set(i, [m, s0, k + 1 < mesh.r.length ? mesh.r[k + 1][1] : v]));
     return m;
   }
   /** Roof outlines plus vertical lines at real corners. */
@@ -358,6 +421,11 @@ export class UnitStage {
       const x = ring.reduce((a, q) => a + q[0], 0) / ring.length, y = ring.reduce((a, q) => a + q[1], 0) / ring.length;
       add(`<b>${esc(f.name || 'Proposed building')}</b><span>${Math.round(+f.h || 0)} m · ${esc(f.status || 'proposed')}</span>`, W3(x, y, (+f.h || 0) + 6), 'future', 3);
     }
+    // roof heights for the Heights layer: the nearest buildings and the tallest within 300 m
+    const { B } = this.data, rows = [];
+    B.forEach((b, i) => { if (b === T) return; const d = this.distTo(b); if (d < 320) rows.push({ i, x: (b.bb[0] + b.bb[2]) / 2, y: (b.bb[1] + b.bb[3]) / 2, h: b.top - Math.max(b.g, 0), dist: d }); });
+    for (const r of pickLabels(rows, { max: 22, near: 10, minSep: 30, radius: 300 })) add(`<b>${Math.round(r.h)} m</b>`, W3(r.x, r.y, B[r.i].top + 3), 'ht', 1.5, { bi: r.i });
+    for (const r of [150, 300]) add(`${r} m`, W3(this.cxy[0] + r * Math.SQRT1_2, this.cxy[1] - r * Math.SQRT1_2, 1), 'ring', 1, { r });
     this.winLab = null;
     add('<b>Window</b><span></span>', new THREE.Vector3(), 'win', 9); this.winLab = this.labels[this.labels.length - 1];
     requestAnimationFrame(() => { for (const L of this.labels) { L.w = L.el.offsetWidth; L.h = L.el.offsetHeight; } this.dirty = true; });
@@ -373,6 +441,7 @@ export class UnitStage {
       let show = this.opts.labels || L.cls === 'win';
       if (L.cls === 'street') show = show && this.opts.streets;
       if (L.cls === 'future') show = show && this.opts.future;
+      if (L.cls === 'ht' || L.cls === 'ring') show = show && this.opts.heights && this.mode !== 'in';
       if (L.cls === 'win') show = this.mode !== 'win' && this.mode !== 'in';
       if (L.cls === 'own' && this.mode === 'in') show = false;
       if (L.cls === 'own' && this.opts.target === 'hidden') show = false;
@@ -385,7 +454,7 @@ export class UnitStage {
       }
       if (show) {
         const x = (v.x + 1) / 2 * W, y = (1 - v.y) / 2 * H, w = L.w || 80, h = L.h || 30;
-        const r = L.cls === 'street' ? [x - w / 2, y - h / 2, x + w / 2, y + h / 2] : [x - w / 2, y - h - 6, x + w / 2, y - 6];
+        const r = L.cls === 'street' || L.cls === 'ring' ? [x - w / 2, y - h / 2, x + w / 2, y + h / 2] : [x - w / 2, y - h - 6, x + w / 2, y - 6];
         if (r[0] < 4 || r[2] > W - 4 || r[1] < 4 || r[3] > H - 4) show = L.cls === 'win' || L.cls === 'own' ? show : false;
         if (show && L.cls !== 'win' && placed.some((p) => r[0] < p[2] + 4 && r[2] > p[0] - 4 && r[1] < p[3] + 3 && r[3] > p[1] - 3)) show = false;
         if (show) { placed.push(r); L.el.style.transform = `translate(${Math.round(r[0])}px, ${Math.round(r[1])}px)`; L.sx = r[0]; L.sy = r[1]; }
@@ -401,6 +470,7 @@ export class UnitStage {
     [this.bMat, this.groundMat, this.tMat].forEach((m) => (m.needsUpdate = true));
     if (this.streets) this.streets.visible = o.streets;
     if (this.future) this.future.visible = o.future;
+    this.rings.visible = !!o.heights && this.mode !== 'win' && this.mode !== 'in';
     this.cone.visible = o.cone && this.mode !== 'win';
     const t = this.mode === 'in' ? 'hidden' : o.target;
     this.tMesh.visible = t !== 'hidden';
@@ -418,19 +488,99 @@ export class UnitStage {
     this.tMat.color.copy(pal.tBase); this.tEdgeMat.color.copy(pal.accent); this.tFoot.material.color.copy(pal.accent);
     this.cmpBand.material.color.copy(pal.ink); this.coneMat.color.copy(pal.accent);
     if (this.streetMat) { this.streetMat.color.copy(pal.street); this.streetMat.opacity = pal.streetOp; }
-    // recolour the city
+    this.ringMat.color.copy(pal.ink); this.facU.uLitCol.value.copy(pal.lit);
+    this.recolor();
+    if (this.lastSun) this.setSun(this.lastSun);
+    this.dirty = true;
+  }
+  /** Vertex colours of the city: the continuous height ramp, or the height classes when the Heights layer is on. */
+  recolor() {
+    const pal = this.pal, cls = !!this.opts.heights;
     for (const m of this.city) {
       const colA = m.geometry.attributes.color, nor = m.geometry.attributes.normal.array, H = m.userData.h, memo = new Map();
       for (let v = 0; v < colA.count; v++) {
         let cr = memo.get(H[v]);
-        if (!cr) { const c = this.heightColor(H[v]); cr = [c, mix(c, pal.white, pal.light ? 0.25 : 0.08)]; memo.set(H[v], cr); }
+        if (!cr) { const c = cls ? pal.hcls[heightClass(H[v])].clone() : this.heightColor(H[v]); cr = [c, mix(c, pal.white, pal.light ? 0.25 : cls ? 0.12 : 0.08)]; memo.set(H[v], cr); }
         const cc = nor[v * 3 + 1] > 0.9 ? cr[1] : cr[0]; colA.setXYZ(v, cc.r, cc.g, cc.b);
       }
       colA.needsUpdate = true;
     }
-    if (this.lastSun) this.setSun(this.lastSun);
     this.dirty = true;
   }
+  /** CSS colours of the height classes for the 2D map legend (same as the 3D Heights layer). */
+  classColors() { return this.pal.hcls.map((c) => '#' + c.getHexString()); }
+  /**
+   * Show building bi at a new height above its ground: its vertices in the merged city scale about the ground
+   * (k = new height / original height; 0 flattens it), its edges and its height label follow. `B` is the edited
+   * building list (sun.js format) the view now uses everywhere; `g` the building's ground.
+   */
+  setHeight(bi, k, g, B) {
+    const r = this.vrange?.get(bi); if (!r) return;
+    const [m, a, b] = r, pos = m.geometry.attributes.position, H = m.userData.h;
+    if (!m.userData.y0) m.userData.y0 = Float32Array.from({ length: pos.count }, (_, v) => pos.getY(v));
+    if (!m.userData.h0) m.userData.h0 = Float32Array.from(H);
+    const y0 = m.userData.y0;
+    for (let v = a; v < b; v++) { const y = y0[v]; pos.setY(v, y > g + 0.01 ? g + (y - g) * Math.max(0.004, k) : y); H[v] = m.userData.h0[v] * k; }
+    pos.needsUpdate = true; m.geometry.computeBoundingSphere();
+    this.data.B = B;
+    this.edges.geometry.dispose(); this.edges.geometry = this.edgeGeo(this.edgeIdx);
+    const L = this.labels.find((x) => x.cls === 'ht' && x.bi === bi);
+    if (L) { const nb = B[bi]; L.el.querySelector('b').textContent = `${Math.round(nb.top - Math.max(nb.g, 0))} m`; L.pos.y = nb.top + 3; L.w = 0; requestAnimationFrame(() => { L.w = L.el.offsetWidth; }); }
+    this.recolor();
+    if (this.selEdges && this.selBi === bi) this.select(bi);
+  }
+  setFloorH(fh) { this.facU.uFloorH.value = Math.max(2.4, +fh || 3.2); this.dirty = true; }
+
+  // ---------------------------------------------------------------- still renders (view studies)
+  /** Hide the markers and overlays for clean study renders; `keepWindow` leaves the window marker and floor band. */
+  beginStills(keepWindow = false) {
+    // looking out of the window, this building is behind the camera: hide it so a 360° strip sees the city behind it
+    this._stillVis = [this.marker, this.band, this.cmpBand, this.cmpBand2, this.ray, this.hitDot, this.cone, this.selEdges, this.blockEdges, this.interior?.group, this.rings, ...(keepWindow ? [] : [this.tMesh, this.tEdges, this.tFoot])].filter(Boolean).map((o) => [o, o.visible]);
+    for (const [o] of this._stillVis) if (!(keepWindow && (o === this.marker || o === this.band))) o.visible = false;
+    this._stillSun = this.lastSun;
+  }
+  endStills() {
+    for (const [o, v] of this._stillVis || []) o.visible = v;
+    this._stillVis = null;
+    this.renderer.setViewport(0, 0, this.el.clientWidth, this.el.clientHeight);
+    if (this._stillSun) this.setSun(this._stillSun);
+    this.dirty = true; this.frame(true);
+  }
+  /** A window-style camera at local point w {x,y,z} looking along bearing az, tilted up `pitch`, vertical fov. */
+  lookCam(w, az, pitch, vfov) {
+    const c = this.stillCam; c.fov = vfov; c.near = 0.3; c.position.copy(W3(w.x, w.y, w.z));
+    const a = az * DEG, p = pitch * DEG; c.up.set(0, 1, 0);
+    c.lookAt(c.position.clone().add(new THREE.Vector3(Math.sin(a) * Math.cos(p), Math.sin(p), -Math.cos(a) * Math.cos(p))));
+    return c;
+  }
+  /** The orbit or plan camera as it is now (for boards that keep the user's view). */
+  currentCam() { return this.activeCam(); }
+  /**
+   * Render the scene with camera `cam` into the lower-left corner of the drawing buffer and copy it into ctx at
+   * (dx, dy, dw, dh) in ctx units. The visible canvas is redrawn by endStills() before the browser paints.
+   */
+  drawStill(cam, ctx, dx, dy, dw, dh) {
+    const r = this.renderer, pr = r.getPixelRatio(), cw = this.el.clientWidth, ch = this.el.clientHeight;
+    const s = Math.min(1, cw / dw, ch / dh), w = Math.max(1, Math.floor(dw * s)), h = Math.max(1, Math.floor(dh * s));
+    const aspect = dw / dh;
+    if (cam.isPerspectiveCamera) { const a0 = cam.aspect; cam.aspect = aspect; cam.updateProjectionMatrix(); cam.userData.a0 = a0; }
+    else { const o = { l: cam.left, r: cam.right, t: cam.top, b: cam.bottom }; const hh = (cam.top - cam.bottom) / 2, hw = hh * aspect; Object.assign(cam, { left: -hw, right: hw }); cam.updateProjectionMatrix(); cam.userData.o0 = o; }
+    r.setViewport(0, 0, w, h); r.setScissor(0, 0, w, h); r.setScissorTest(true);
+    const fog = this.scene.fog, ortho = !cam.isPerspectiveCamera || cam === this.orbitCam && this.mode === 'top';
+    fog.near = ortho ? 1e5 : 1100; fog.far = ortho ? 2e5 : 4200;
+    this.sky.position.copy(cam.position);
+    r.render(this.scene, cam);
+    r.setScissorTest(false);
+    ctx.drawImage(this.cv, 0, this.cv.height - h * pr, w * pr, h * pr, dx, dy, dw, dh);
+    if (cam.isPerspectiveCamera) { cam.aspect = cam.userData.a0 ?? cam.aspect; cam.updateProjectionMatrix(); }
+    else if (cam.userData.o0) { const o = cam.userData.o0; Object.assign(cam, { left: o.l, right: o.r, top: o.t, bottom: o.b }); cam.updateProjectionMatrix(); }
+  }
+  /** Screen position (0..1, 0..1, visible) of a local point for camera cam with the given aspect. */
+  project(cam, x, y, z, aspect) {
+    if (cam.isPerspectiveCamera) { const a0 = cam.aspect; cam.aspect = aspect; cam.updateProjectionMatrix(); const v = W3(x, y, z).project(cam); cam.aspect = a0; cam.updateProjectionMatrix(); return { x: (v.x + 1) / 2, y: (1 - v.y) / 2, ok: v.z < 1 && v.z > -1 }; }
+    const v = W3(x, y, z).project(cam); return { x: (v.x + 1) / 2, y: (1 - v.y) / 2, ok: true };
+  }
+
   setSun(s) {
     this.lastSun = s; const pal = this.pal;
     const d = new THREE.Vector3(Math.sin(s.az * DEG) * Math.cos(s.alt * DEG), Math.sin(s.alt * DEG), -Math.cos(s.az * DEG) * Math.cos(s.alt * DEG));
@@ -454,6 +604,8 @@ export class UnitStage {
     this.sunDisc.position.copy(sp); this.sunGlow.position.copy(sp);
     this.sunDisc.visible = this.sunGlow.visible = s.alt > -1.5;
     this.sunDisc.material.color.copy(mix(pal.sun, pal.white, 0.25 + 0.5 * k));
+    // lit windows fade in through dusk
+    this.facU.uNight.value = Math.max(0, Math.min(1, (3 - s.alt) / 9)) * (pal.light ? 0.75 : 1);
     this.dirty = true;
   }
   /** w: {x,y,z,fx,fy}, az: window bearing; floorZ / cmpZ: slab heights; fh floor height. */
@@ -464,6 +616,8 @@ export class UnitStage {
     this.marker.lookAt(this.marker.position.clone().add(n));
     this.band.position.y = floorZ; this.band.scale.set(1, Math.max(0.6, fh * 0.92), 1);
     this.cmpBand.position.y = cmpZ; this.cmpBand2.position.y = cmpZ + fh;
+    this.rings.position.copy(W3(w.x, w.y, 0));
+    for (const L of this.labels) if (L.cls === 'ring') L.pos.copy(W3(w.x + L.r * Math.SQRT1_2, w.y - L.r * Math.SQRT1_2, 1));
     this.cone.position.copy(W3(w.x, w.y, w.z)); this.cone.rotation.z = (90 - az) * DEG - Math.PI / 3;
     this.placeInterior();
     if (this.winLab) { this.winLab.pos.copy(W3(w.fx, w.fy, w.z + 3)); this.winLab.el.querySelector('span').textContent = label; this.winLab.w = 0; requestAnimationFrame(() => { this.winLab.w = this.winLab.el.offsetWidth; this.winLab.h = this.winLab.el.offsetHeight; }); }
@@ -533,6 +687,7 @@ export class UnitStage {
   }
 
   select(bi) {
+    this.selBi = bi;
     if (this.selEdges) { this.scene.remove(this.selEdges); this.selEdges.geometry.dispose(); this.selEdges = null; }
     if (bi != null && this.data.B[bi]) {
       this.selEdges = new THREE.LineSegments(this.edgeGeo([bi], true), new THREE.LineBasicMaterial({ color: this.pal.ink, transparent: true, opacity: 1, depthTest: false }));

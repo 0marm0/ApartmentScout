@@ -16,13 +16,16 @@ import { UnitStage } from './unit/scene.js';
 import { STRIP_FROM, STRIP_TO, STRIP_STEP, stripBar, stripTicks, drawPath, heatHTML, monthBandSVG, table, roofBars } from './unit/charts.js';
 import { unitsBoard, neighboursTable, neighboursCSV, sortRows, NB_FIRST_DIR, blockersTable, evidenceExtras, checksBlock, receiptsBlock, dirBearing, fmtDist } from './unit/panels.js';
 import { buildInterior, genericPlan } from './unit/interior.js';
+import { sectorHeights, sectorOf, applyEdits, HCLASS_LABELS } from './unit/heights.js';
+import { heightMapHTML, sectorChartSVG, sectorTable, renderFloorViews, renderPanorama, renderSeasons } from './unit/studies.js';
 import { normalisePlan } from './plan/model.js';
 
-let site = null, B = [], T = null, FACES = [], LM = [], FUT = [], BF = null, stage = null, plan = null, interior = null;
+let site = null, B0 = [], FUTB = [], edits = new Map(), B = [], T = null, FACES = [], LM = [], FUT = [], BF = null, stage = null, plan = null, interior = null;
 const st = {
   id: null, face: 0, t: 0.5, floor: 10, cmp: 20, az: 180, date: '', min: 780, mode: 'orbit', playing: false,
   manual: {}, moved: null, sel: null, first: true, bay: false, src: null, lmSel: new Set(), slabOff: null, inWin: -1,
-  nbSort: { key: 'dist', dir: 1 }, nbOpen: false, allLm: false, photo: null,
+  nbSort: { key: 'dist', dir: 1 }, nbOpen: false, allLm: false, photo: null, video: false,
+  study: 'heights', ifBi: null,
 };
 let profA = null, profB = null, profF = null, statesA = null, statesB = null, blkA = null, blkRows = [], NBR = [], curSun = null, curHit = null, heat = null, heatTok = 0, loopOn = false, lastT = 0;
 const tz = () => site?.timezone || S.crit.search?.timezone || 'America/New_York';
@@ -59,6 +62,7 @@ const ICON = {
   play: '<svg viewBox="0 0 16 16" fill="currentColor"><path d="M4.5 3v10l8.5-5z"/></svg>',
   pause: '<svg viewBox="0 0 16 16" fill="currentColor"><rect x="4" y="3" width="3" height="10" rx="1"/><rect x="9" y="3" width="3" height="10" rx="1"/></svg>',
   reset: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 8a5 5 0 109-3M12 2v3H9"/></svg>',
+  heights: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M2.5 13.5V8h3v5.5M6.5 13.5V3h3v10.5M10.5 13.5V6h3v7.5M1.5 13.5h13"/></svg>',
 };
 
 // ------------------------------------------------------------------ layout
@@ -76,11 +80,11 @@ export function init() {
       <div class="u-main">
         <div id="stage" class="canvas-stage u-stage">
           <canvas id="gl" tabindex="0" aria-label="3D model of the building and its neighbours. Arrow keys turn the view, plus and minus zoom."></canvas>
-          <img class="u-photo" id="uPhoto" alt="" hidden>
+          <img class="u-photo" id="uPhoto" alt="" hidden><video class="u-photo" id="uVid" muted playsinline preload="auto" hidden></video>
           <div class="u-labels" id="uLabels" aria-hidden="true"></div>
           <div class="float u-modes" id="uModes" role="group" aria-label="Camera">${MODES.map(([k, t, tip]) => `<button type="button" data-mode="${k}" title="${tip}" aria-pressed="false">${t}</button>`).join('')}</div>
           <div class="float u-tools" id="uTools" role="group" aria-label="Layers">
-            ${[['shadows', 'Shadows'], ['labels', 'Labels'], ['streets', 'Street names and centrelines'], ['future', 'Proposed buildings'], ['ray', 'Sun ray'], ['cone', 'View cone']].map(([k, t]) => `<button type="button" data-tg="${k}" title="${t}" aria-label="${t}" aria-pressed="false">${ICON[k]}</button>`).join('')}
+            ${[['shadows', 'Shadows'], ['labels', 'Labels'], ['heights', 'Heights: colour by height class, label roofs, 150 m and 300 m rings'], ['streets', 'Street names and centrelines'], ['future', 'Proposed buildings'], ['ray', 'Sun ray'], ['cone', 'View cone']].map(([k, t]) => `<button type="button" data-tg="${k}" title="${t}" aria-label="${t}" aria-pressed="false">${ICON[k]}</button>`).join('')}
             <hr><button type="button" id="uTarget" title="This building: solid" aria-label="This building display: solid">${ICON.target}<i class="u-tmode">S</i></button>
             <button type="button" id="uHome" title="Reset the camera" aria-label="Reset the camera">${ICON.reset}</button>
           </div>
@@ -93,9 +97,10 @@ export function init() {
             <div class="field"><label for="uYaw">Turn <span class="val" id="uYawV"></span></label><input type="range" id="uYaw" min="-90" max="90" value="0"></div>
             <div class="field"><label for="uPitch">Tilt <span class="val" id="uPitchV"></span></label><input type="range" id="uPitch" min="-15" max="60" value="6"></div>
             <div class="u-photo-ctl u-win-only">
-              <label class="btn ghost u-photo-btn" title="Overlay a photo taken from the window (it stays in this browser and is never uploaded)">${ICON.photo}<span id="uPhotoLbl">Match a photo</span><input type="file" id="uPhotoIn" accept="image/*" class="sr"></label>
-              <div class="field" id="uPhotoOp" hidden><label for="uOpac">Photo <span class="val" id="uOpacV"></span></label><input type="range" id="uOpac" min="0" max="100" value="55"></div>
-              <button type="button" class="btn ghost" id="uPhotoX" hidden>Remove photo</button>
+              <label class="btn ghost u-photo-btn" title="Overlay a photo or a video taken from the window (it stays in this browser and is never uploaded)">${ICON.photo}<span id="uPhotoLbl">Match a photo</span><input type="file" id="uPhotoIn" accept="image/*,video/*" class="sr"></label>
+              <div class="field" id="uVidT" hidden><label for="uFrame">Video frame <span class="val" id="uFrameV"></span></label><input type="range" id="uFrame" min="0" max="1000" value="0"></div>
+              <div class="field" id="uPhotoOp" hidden><label for="uOpac">Overlay <span class="val" id="uOpacV"></span></label><input type="range" id="uOpac" min="0" max="100" value="55"></div>
+              <button type="button" class="btn ghost" id="uPhotoX" hidden>Remove overlay</button>
             </div>
           </div>
           <div class="u-loading" id="uLoad"><span class="skeleton"></span>Building the model…</div>
@@ -105,6 +110,7 @@ export function init() {
       <aside class="u-side">
         <section class="panel" id="winPanel"></section>
         <section class="panel" id="sunPanel"></section>
+        <section class="panel u-if" id="ifPanel" aria-label="What if"></section>
         <section class="panel" id="seePanel"></section>
         <section class="panel"><h3>Sun path against the skyline <span id="pathNote"></span></h3><canvas id="pathCv" class="plot u-path" role="img" aria-label="Sun path against the skyline seen from the window"></canvas>
           <div class="legend-row" id="pathLegend"></div></section>
@@ -112,14 +118,16 @@ export function init() {
         <section class="panel" id="nbPanel"></section>
         <section class="panel" id="evPanel"></section>
       </aside>
-    </div></div>`;
+    </div>
+    <section class="panel u-studies" id="studyPanel" aria-label="Studies" hidden></section></div>`;
   const ids = S.manifest.sites || [];
   const sel = $('unitSel');
   sel.innerHTML = ids.length ? ids.map((id) => { const L = byId(id); return `<option value="${esc(id)}">${esc(L ? label(L) : id)}${L?.floor ? ' · floor ' + Math.round(L.floor) : ''}</option>`; }).join('') : '<option>No site models yet</option>';
   sel.addEventListener('change', () => { location.hash = '#unit/' + encodeURIComponent(sel.value); });
   $('uSnap').addEventListener('click', snapshot);
+  new ResizeObserver(fitGrid).observe(root);
   $('uGlb').addEventListener('click', exportGLB);
-  on('theme', () => { stage?.setPalette(); if (site && hasWindow()) { buildApartment(); drawPathChart(); landmarks(); stage.dirty = true; } });
+  on('theme', () => { stage?.setPalette(); if (site && hasWindow()) { buildApartment(); drawPathChart(); landmarks(); stage.dirty = true; studyStale(true); } });
   // read-only hook for headless checks (Playwright): never used by the page itself
   window.__unit3d = { st, get sun() { return curSun; }, get hit() { return curHit; }, get blockers() { return blkRows; }, get neighbours() { return NBR.length; }, get interior() { return !!stage?.interior; }, get stage() { return stage; } };
 }
@@ -137,6 +145,17 @@ export async function show(id) {
   if (!loopOn) { loopOn = true; requestAnimationFrame(frame); }
 }
 
+/**
+ * Desktop: the model, its time strip and the inspector fill the first screen exactly and the studies sit below
+ * it, so the grid gets an explicit height (the view minus everything above the grid).
+ */
+function fitGrid() {
+  const root = document.getElementById('view-unit'), g = $('uGrid'); if (!root || !g) return;
+  if (!matchMedia('(min-width: 1181px)').matches || g.querySelector(':scope > .empty')) { g.style.height = ''; return; }
+  const top = g.getBoundingClientRect().top - root.getBoundingClientRect().top + root.scrollTop;
+  g.style.height = Math.max(560, root.clientHeight - top - 20) + 'px';
+}
+
 // ------------------------------------------------------------------ load
 async function load(id) {
   $('uLoad').hidden = false;
@@ -152,12 +171,16 @@ async function load(id) {
   try { scen = (await import('./plan/scenario-bridge.js')).getPlanScenario(id, { base: S.base }); } catch { scen = null; }
   if (scen?.plan) { try { plan = normalisePlan(scen.plan); plan._scenario = scen.label || 'edited plan'; } catch { plan = null; } }
   else if ((S.manifest.plans || []).includes(id)) { try { plan = normalisePlan(await loadJSON(`${S.base}/plans/${id}.json`, null)); } catch { plan = null; } }
-  B = prepBuildings(site.b, site.holes && typeof site.holes === 'object' ? site.holes : null, site.components && typeof site.components === 'object' ? site.components : null);
-  T = B[site.target] || B[0];
+  B0 = prepBuildings(site.b, site.holes && typeof site.holes === 'object' ? site.holes : null, site.components && typeof site.components === 'object' ? site.components : null);
+  T = B0[site.target] || B0[0];
+  edits = readEdits(new URLSearchParams(location.search), id);
+  if (!edits.size && editsMem.has(id)) edits = new Map(editsMem.get(id)); // kept while you visit other units
+  B = applyEdits(B0, edits);
   FACES = canonicalFaces(facesOf(T, 8, B), site.faces, site.version);
   LM = (site.lm || []).filter((l) => Array.isArray(l) && l.length >= 5).map((l) => ({ name: String(l[0]), idx: l[1], x: +l[2], y: +l[3], top: +l[4] }));
   FUT = (Array.isArray(site.future) ? site.future : []).filter((f) => f && Array.isArray(f.ring) && f.ring.length >= 3 && +f.h > 0);
-  BF = FUT.length ? B.concat(prepBuildings(FUT.map((f) => [+f.h, 0, 1, f.ring.flat()]))) : null;
+  FUTB = FUT.length ? prepBuildings(FUT.map((f) => [+f.h, 0, 1, f.ring.flat()])) : [];
+  BF = FUT.length ? B.concat(FUTB) : null;
   const L = listing(), qs = new URLSearchParams(location.search), w = site.window || {};
   // facade: the site file's choice unless it is a party wall, else the listing's exposure, else the longest open face
   const open = FACES.map((f, i) => [f, i]).filter(([f]) => !f.shared);
@@ -193,7 +216,7 @@ async function load(id) {
     st.manual = { face: true, pos: true, az: true, floor: true };
   }
   st.floor = Math.min(maxFloor(), st.floor); st.cmp = Math.min(maxFloor(), st.cmp);
-  header();
+  header(); fitGrid();
   if (!stage) {
     stage = new UnitStage($('gl'), $('stage'), $('uLabels'));
     stage.onCompass = (az) => { const n = $('uNeedle'); if (n) n.setAttribute('transform', `rotate(${-az} 20 20)`); };
@@ -204,19 +227,22 @@ async function load(id) {
   stage.opts.streets = true; stage.opts.future = restored?.future ?? true;
   if (restored) Object.assign(stage.look, restored.look);
   await new Promise((r) => requestAnimationFrame(r)); // let the loading state paint before the heavy build
-  stage.build({ B, T, ti: B.indexOf(T), streets: Array.isArray(site.streets) ? site.streets : [], future: FUT, lm: LM, ownLabel: site.listing?.building || L.building || 'This building' });
+  stage.build({ B: B0, T, ti: B0.indexOf(T), streets: Array.isArray(site.streets) ? site.streets : [], future: FUT, lm: LM, ownLabel: site.listing?.building || L.building || 'This building' });
+  stage.setFloorH(FH());
+  for (const [bi, h] of edits) stage.setHeight(bi, h / Math.max(0.01, B0[bi].top - B0[bi].g), B0[bi].g, B);
   stage.resize();
   $('uSnap').disabled = $('uGlb').disabled = !hasWindow();
-  unitsRow();
+  unitsRow(); fitGrid();
   if (!hasWindow()) {
     st.mode = 'orbit'; st.playing = false; ++heatTok;
     profA = profB = profF = statesA = statesB = null; interior = null;
-    $('timePanel').innerHTML = ''; $('winPanel').innerHTML = '<h3>Window unresolved</h3><p>No exposed facade passed the placement checks. The city remains available to inspect; a verified window position is needed for sunlight and outlook estimates.</p>';
+    $('timePanel').innerHTML = ''; $('studyPanel').innerHTML = ''; $('studyPanel').hidden = $('ifPanel').hidden = true; $('winPanel').innerHTML = '<h3>Window unresolved</h3><p>No exposed facade passed the placement checks. The city remains available to inspect; a verified window position is needed for sunlight and outlook estimates.</p>';
     evidencePanel(); syncTools(); setMode('orbit', true); unresolvedWindow();
     stage.resetOrbit(false); closeCard(); $('uLoad').hidden = true; return;
   }
   buildApartment();
-  buildTimePanel(); buildWindowPanel(); evidencePanel(); syncTools();
+  $('studyPanel').hidden = $('ifPanel').hidden = false;
+  buildTimePanel(); buildWindowPanel(); buildStudies(); evidencePanel(); syncTools();
   setMode(st.mode, true);
   refreshWindow(true);
   stage.resetOrbit(false); if (st.mode === 'top') stage.topDown(false);
@@ -306,7 +332,8 @@ function wireStage() {
   $('uModes').querySelectorAll('[data-mode]').forEach((b) => b.addEventListener('click', () => setMode(b.dataset.mode)));
   $('uTools').querySelectorAll('[data-tg]').forEach((b) => b.addEventListener('click', () => {
     const k = b.dataset.tg; stage.opts[k] = !stage.opts[k]; stage.applyOpts(); syncTools();
-    if (k === 'future' && FUT.length) refreshWindow(false); else refreshTime();
+    if (k === 'heights') { stage.recolor(); if (st.study === 'heights') renderStudy(); return; }
+    if (k === 'future' && FUT.length) { refreshWindow(false); ifPanel(); } else refreshTime();
   }));
   $('uTarget').addEventListener('click', () => {
     const order = ['solid', 'faint', 'hidden']; stage.opts.target = order[(order.indexOf(stage.opts.target) + 1) % 3]; stage.applyOpts(); syncTools();
@@ -314,22 +341,30 @@ function wireStage() {
   });
   $('uHome').addEventListener('click', () => { if (st.mode === 'plan') stage.resetPlan(); else if (st.mode === 'top') stage.topDown(true); else if (st.mode === 'win' || st.mode === 'in') { setLook(70, 0, 6); } else stage.resetOrbit(true); });
   $('uCompass').addEventListener('click', faceNorth);
-  for (const [id, k] of [['uFov', 'fov'], ['uYaw', 'yaw'], ['uPitch', 'pitch']]) $(id).addEventListener('input', (e) => { stage.look[k] = +e.target.value; syncLens(); stage.dirty = true; syncUrlSoon(); });
+  for (const [id, k] of [['uFov', 'fov'], ['uYaw', 'yaw'], ['uPitch', 'pitch']]) $(id).addEventListener('input', (e) => { stage.look[k] = +e.target.value; syncLens(); stage.dirty = true; syncUrlSoon(); if (st.study === 'floors') studyStale(); });
   $('uInWin').addEventListener('change', (e) => { st.inWin = +e.target.value; stage.setInteriorEye(st.inWin); setLook(stage.look.fov, 0, 6); hud(curSun, hudState()); });
   // photo matching: the file is read in this browser only (an object URL), never uploaded or stored
+  // a video works the same way: pick the frame that shows the skyline best with the frame slider
   $('uPhotoIn').addEventListener('change', (e) => {
     const f = e.target.files?.[0]; e.target.value = ''; if (!f) return;
-    if (!/^image\//.test(f.type)) { toast('Choose an image file'); return; }
+    const vid = /^video\//.test(f.type);
+    if (!vid && !/^image\//.test(f.type)) { toast('Choose an image or a video file'); return; }
     if (st.photo) URL.revokeObjectURL(st.photo);
-    st.photo = URL.createObjectURL(f);
-    const img = $('uPhoto'); img.src = st.photo; img.hidden = st.mode !== 'win'; img.style.opacity = $('uOpac').value / 100;
-    $('uPhotoOp').hidden = $('uPhotoX').hidden = false; $('uPhotoLbl').textContent = 'Another photo';
+    st.photo = URL.createObjectURL(f); st.video = vid;
+    const img = $('uPhoto'), v = $('uVid');
+    if (vid) { img.removeAttribute('src'); v.src = st.photo; v.addEventListener('loadedmetadata', () => { $('uFrame').max = Math.max(1, Math.floor(v.duration * 10)); $('uFrame').value = 0; syncFrame(); }, { once: true }); }
+    else { v.removeAttribute('src'); v.load?.(); img.src = st.photo; }
+    overlayVisible(); overlayOpacity();
+    $('uPhotoOp').hidden = $('uPhotoX').hidden = false; $('uVidT').hidden = !vid; $('uPhotoLbl').textContent = vid ? 'Another photo or video' : 'Another photo';
     stage.showHidden = true; st.allLm = true; landmarks(); stage.dirty = true; fill($('uOpac')); $('uOpacV').textContent = $('uOpac').value + '%';
-    toast('Photo overlaid. Turn, tilt and zoom until the skyline lines up, then tick the landmarks you can see', 4200);
+    toast(`${vid ? 'Video' : 'Photo'} overlaid. ${vid ? 'Pick a frame, then t' : 'T'}urn, tilt and zoom until the skyline lines up, then tick the landmarks you can see`, 4200);
   });
-  $('uOpac').addEventListener('input', (e) => { $('uPhoto').style.opacity = e.target.value / 100; $('uOpacV').textContent = e.target.value + '%'; fill(e.target); });
+  $('uFrame').addEventListener('input', syncFrame);
+  $('uOpac').addEventListener('input', (e) => { overlayOpacity(); $('uOpacV').textContent = e.target.value + '%'; fill(e.target); });
   $('uPhotoX').addEventListener('click', clearPhoto);
   $('uUnits').addEventListener('click', (e) => { const b = e.target.closest('[data-unit]'); if (b) tryUnit(b.dataset.unit); });
+  $('ifPanel').addEventListener('click', (e) => { const x = e.target.closest('[data-unedit]'); if (x) { setEdit(+x.dataset.unedit, null, true); ifPanel(true); syncUrl(); } if (e.target.closest('#uIfReset')) { resetEdits(); syncUrl(); } });
+  $('sunPanel').addEventListener('click', (e) => { if (e.target.closest('#uSamples')) samplesCSV(); });
   // click to inspect a building; drag to look around in window and inside modes
   const cv = $('gl'); let down = null;
   const looking = () => st.mode === 'win' || st.mode === 'in';
@@ -412,7 +447,7 @@ function faceNorth() {
 function setLook(fov, yaw, pitch) {
   stage.look.fov = Math.max(35, Math.min(110, fov)); stage.look.yaw = Math.max(-90, Math.min(90, yaw)); stage.look.pitch = Math.max(-15, Math.min(60, pitch));
   $('uFov').value = stage.look.fov; $('uYaw').value = stage.look.yaw; $('uPitch').value = stage.look.pitch; syncLens(); stage.dirty = true;
-  syncUrlSoon();
+  syncUrlSoon(); if (st.study === 'floors') studyStale();
 }
 function syncLens() {
   const L = stage.look;
@@ -426,7 +461,7 @@ function setMode(m, quiet = false) {
   st.mode = m; stage.setMode(m);
   $('uModes').querySelectorAll('[data-mode]').forEach((b) => { b.disabled = !hasWindow() && (b.dataset.mode === 'win' || b.dataset.mode === 'in'); b.classList.toggle('on', b.dataset.mode === m); b.setAttribute('aria-pressed', String(b.dataset.mode === m)); });
   $('uLens').hidden = m !== 'win' && m !== 'in'; $('stage').dataset.mode = m;
-  $('uPhoto').hidden = m !== 'win' || !st.photo;
+  overlayVisible();
   if (m === 'win' || m === 'in') syncLens();
   if (!quiet) { refreshTime(); syncUrl(); }
 }
@@ -441,10 +476,18 @@ function syncTools() {
   $('uTarget').title = `This building: ${nm} (click to change)${interior ? '. Faint or hidden shows the apartment inside' : ''}`; $('uTarget').setAttribute('aria-label', `This building display: ${nm}`);
   $('uTarget').querySelector('.u-tmode').textContent = t[0].toUpperCase(); $('uTarget').classList.toggle('on', t !== 'solid');
 }
+function overlayVisible() { $('uPhoto').hidden = st.mode !== 'win' || !st.photo || st.video; $('uVid').hidden = st.mode !== 'win' || !st.photo || !st.video; }
+function overlayOpacity() { const o = $('uOpac').value / 100; $('uPhoto').style.opacity = o; $('uVid').style.opacity = o; }
+function syncFrame() {
+  const v = $('uVid'), t = +$('uFrame').value / 10;
+  if (Number.isFinite(v.duration)) v.currentTime = Math.min(t, Math.max(0, v.duration - 0.05));
+  $('uFrameV').textContent = `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}.${Math.floor((t * 10) % 10)}`; fill($('uFrame'));
+}
 function clearPhoto() {
   if (st.photo) URL.revokeObjectURL(st.photo);
-  st.photo = null; const img = $('uPhoto'); img.hidden = true; img.removeAttribute('src');
-  $('uPhotoOp').hidden = $('uPhotoX').hidden = true; $('uPhotoLbl').textContent = 'Match a photo';
+  st.photo = null; st.video = false; const img = $('uPhoto'); img.hidden = true; img.removeAttribute('src');
+  const v = $('uVid'); v.hidden = true; v.removeAttribute('src'); v.load?.();
+  $('uPhotoOp').hidden = $('uPhotoX').hidden = $('uVidT').hidden = true; $('uPhotoLbl').textContent = 'Match a photo';
   stage.showHidden = false; stage.dirty = true;
 }
 
@@ -509,8 +552,8 @@ function buildTimePanel() {
     e.preventDefault();
   });
 }
-function setTime(m) { st.min = clampMin(m); refreshTime(); syncUrlSoon(); }
-function dateChanged() { statesA = statesB = null; refreshStrip(); refreshTime(); if (heat && heat.year !== +st.date.slice(0, 4)) computeHeat(); else drawHeat(); syncUrl(); }
+function setTime(m) { st.min = clampMin(m); refreshTime(); syncUrlSoon(); if (st.study !== 'heights') studyStale(); }
+function dateChanged() { statesA = statesB = null; refreshStrip(); refreshTime(); if (heat && heat.year !== +st.date.slice(0, 4)) computeHeat(); else drawHeat(); ifPanel(); studyStale(); syncUrl(); }
 function togglePlay() {
   if (!hasWindow()) return;
   st.playing = !st.playing; lastT = 0;
@@ -546,14 +589,15 @@ function refreshStrip() {
 // ------------------------------------------------------------------ window panel
 function buildWindowPanel() {
   const mf = maxFloor(), shared = FACES.filter((f) => f.shared).length, streets = site.streets || [];
-  const opts = FACES.map((f, i) => [f, i]).filter(([f]) => !f.shared).sort((a, b) => a[0].bearing - b[0].bearing || b[0].length - a[0].length).map(([f, i]) => {
-    const mid = [(f.a[0] + f.b[0]) / 2, (f.a[1] + f.b[1]) / 2], s = streetAhead(streets, mid[0], mid[1], f.bearing);
-    return `<option value="${i}">${compass(f.bearing)} ${Math.round(f.bearing)}° · ${Math.round(f.length)} m${f.court ? ' · light court' : ''}${s ? ' · ' + esc(s.name) : ''}</option>`;
+  // shared walls stay listed, disabled, with the reason (a rejected hypothesis is still worth seeing)
+  const opts = FACES.map((f, i) => [f, i]).sort((a, b) => a[0].shared - b[0].shared || a[0].bearing - b[0].bearing || b[0].length - a[0].length).map(([f, i]) => {
+    const mid = [(f.a[0] + f.b[0]) / 2, (f.a[1] + f.b[1]) / 2], s = f.shared ? null : streetAhead(streets, mid[0], mid[1], f.bearing);
+    return `<option value="${i}"${f.shared ? ' disabled' : ''}>${compass(f.bearing)} ${Math.round(f.bearing)}° · ${Math.round(f.length)} m${f.shared ? ' · shared wall, no windows' : ''}${f.court ? ' · light court' : ''}${s ? ' · ' + esc(s.name) : ''}</option>`;
   }).join('');
   const sitePanes = Array.isArray(site.window?.panes) && site.window.panes.length > 1;
   $('winPanel').innerHTML = `<h3>Window <span id="uWinProv"></span></h3>
     <div class="field"><label for="uFace">Facade</label><select id="uFace">${opts}</select></div>
-    ${shared ? `<p class="u-note">${shared} shared wall${shared > 1 ? 's' : ''} hidden: a neighbour is built against ${shared > 1 ? 'them' : 'it'}, so ${shared > 1 ? 'they have' : 'it has'} no windows.</p>` : ''}
+    ${shared ? `<p class="u-note">${shared} shared wall${shared > 1 ? 's are' : ' is'} listed but cannot be chosen: a neighbour is built against ${shared > 1 ? 'them' : 'it'}, so ${shared > 1 ? 'they have' : 'it has'} no windows.</p>` : ''}
     ${st.moved ? `<p class="u-note warn">The site file put the window on a shared wall (${Math.round(st.moved.bearing)}°). Moved to the nearest open facade.</p>` : ''}
     <div class="u-sliders">
       <div class="field"><label for="uPos">Position along facade <span class="val" id="uPosV"></span></label><input type="range" id="uPos" min="2" max="98" value="${Math.round(st.t * 100)}"></div>
@@ -595,8 +639,8 @@ function syncWindowPanel() {
   const f = FACES[st.face];
   $('uPosV').textContent = Math.round(st.t * 100) + '%'; $('uFloorV').textContent = st.floor; $('uCmpV').textContent = st.cmp; $('uAzV').textContent = `${Math.round(st.az)}° ${compass(st.az)}`;
   ['uPos', 'uFloor', 'uCmp', 'uAz'].forEach((id) => fill($(id)));
-  const w = winPos(st.floor), s = streetAhead(site.streets, w.fx, w.fy, st.az);
-  $('uWinFoot').textContent = `${Math.round(st.t * f.length)} m along a ${Math.round(f.length)} m facade · eye level ${Math.round(w.z)} m${s ? ` · ${s.name} ${Math.round(s.dist)} m ahead` : ''}`;
+  const w = winPos(st.floor), s = streetAhead(site.streets, w.fx, w.fy, st.az), wall = nearestAhead(w);
+  $('uWinFoot').textContent = `${Math.round(st.t * f.length)} m along a ${Math.round(f.length)} m facade · eye level ${Math.round(w.z)} m${s ? ` · ${s.name} centreline ${Math.round(s.dist)} m ahead` : ''}${wall ? ` · first building straight out: ${bname(wall.bi, true)}, ${Math.round(wall.h)} m tall, ${Math.round(wall.d)} m` : ' · nothing taller than your eyes straight out'}`;
   $('uWinReset').hidden = !(st.manual.face || st.manual.pos || st.manual.floor || st.manual.az || st.slabOff != null || st.src);
   $('uWinProv').innerHTML = provChip(provenance().exposure);
   const P = panes();
@@ -620,7 +664,8 @@ function refreshWindow(heavy) {
   stage.setWindow(a, st.az, slabZ(st.floor), slabZ(st.cmp), FH(), `Floor ${st.floor} · ${compass(st.az)}${st.bay ? ' · bay' : ''}`, panes() || [0]);
   syncWindowPanel(); subline(); refreshStrip(); computeNeighbours(); landmarks(); neighboursPanel(); refreshTime();
   if (heavy || !heat) computeHeat(); else drawHeat();
-  evidencePanel();
+  evidencePanel(); ifPanel(heavy);
+  studyStale(true);
   syncUrlSoon();
 }
 function unresolvedWindow() {
@@ -701,7 +746,8 @@ function sunPanel(s, state) {
     ${rangeTxt}${!baseline && site.study?.sun_hours_range ? '<p class="u-note">The saved uncertainty band belongs to the original window, floor and study year. It is hidden for this edited scenario.</p>' : ''}
     ${daylightBlock(vals, mo - 1)}
     ${blockersTable(blkRows, dayLbl)}
-    <div class="u-band-wrap"><div class="label">By month · floor ${st.floor} <span>${rng ? 'bar: this window · band: range' : 'hours on the 15th'}</span></div>${monthBandSVG(vals, rng, mo - 1)}</div>`;
+    <div class="u-band-wrap"><div class="label">By month · floor ${st.floor} <span>${rng ? 'bar: this window · band: range' : 'hours on the 15th'}</span></div>${monthBandSVG(vals, rng, mo - 1)}</div>
+    <div class="u-nb-foot"><button type="button" class="btn" id="uSamples" title="Every 10 minutes on this date and the solstices and equinoxes: sun position, state and the building in the way">${ICON.down}Sun samples CSV</button></div>`;
 }
 /** Sunshine fraction by month for the site's city (the site file's table, else the built-in one), or null. */
 const sunshineFrac = () => { const f = site?.study?.sunshine?.fraction; return Array.isArray(f) && f.length === 12 ? f.map(Number) : SUNSHINE[S.crit.search?.city]?.fraction || null; };
@@ -797,8 +843,9 @@ function roofsBlock(w) {
     ${clear ? `<p class="u-note">${clear}</p>` : ''}</div>`;
 }
 function nearestAhead(w) {
-  const ux = Math.sin(st.az * DEG), uy = Math.cos(st.az * DEG); let best = 1e9, top = 0;
-  for (const b0 of B) {
+  const ux = Math.sin(st.az * DEG), uy = Math.cos(st.az * DEG); let best = 1e9, top = 0, bi = -1;
+  for (let b0i = 0; b0i < B.length; b0i++) {
+    const b0 = B[b0i];
     if (b0 === T) continue;
     for (const b of solidsOf(b0)) for (const p of [b.p, ...(b.holes || [])]) {
       const n = p.length / 2;
@@ -806,11 +853,11 @@ function nearestAhead(w) {
         const ax = p[2 * j], ay = p[2 * j + 1], j2 = (j + 1) % n, ex = p[2 * j2] - ax, ey = p[2 * j2 + 1] - ay;
         const den = ux * ey - uy * ex; if (Math.abs(den) < 1e-9) continue;
         const wx = ax - w.x, wy = ay - w.y, t = (wx * ey - wy * ex) / den, s = (wx * uy - wy * ux) / den;
-        if (t > 0.5 && s >= 0 && s <= 1 && t < best && b.top > w.z) { best = t; top = b.top - Math.max(b0.g, 0); }
+        if (t > 0.5 && s >= 0 && s <= 1 && t < best && b.top > w.z) { best = t; top = b0.top - Math.max(b0.g, 0); bi = b0i; }
       }
     }
   }
-  return best < 1e9 ? { d: best, h: top } : null;
+  return best < 1e9 ? { d: best, h: top, bi } : null;
 }
 
 // ------------------------------------------------------------------ neighbours
@@ -986,6 +1033,7 @@ function evidencePanel() {
     ['Window position', p.position, 'Where the unit sits along its facade is rarely published. The model puts the window at the point you choose.'],
     ['Floor', p.floor, p.floor === 'inferred' ? 'Guessed from the unit number.' : L.floor != null ? `Listing gives floor ${esc(Math.round(L.floor))}.` : 'No floor on the listing.'],
   ];
+  if (edits.size) ev.push(['Neighbour heights', 'manual', `What-if scenario: ${[...edits].map(([bi, h]) => `${esc(bname(bi, true))} at ${Math.round(h)} m instead of ${Math.round(h0Of(bi))} m`).join('; ')}. Every number on the page uses it.`]);
   if (st.bay && hasWindow()) ev.push(['Bay window', Array.isArray(site.window?.panes) && site.window.panes.length > 1 ? 'model' : 'manual', `Counted as ${panes().length} panes at ${paneFacings(st.az, panes()).map((x) => Math.round(x) + '°').join(', ')}, all sharing one skyline point.${planSaysBay() ? ' The floor plan marks a bay.' : ''}`]);
   $('evPanel').innerHTML = `<h3>Assumptions and evidence</h3>
     <ul class="u-ev">${ev.map(([k, v, t]) => `<li><div class="u-ev-k">${k}${provChip(v)}</div><p>${t}</p></li>`).join('')}${ex.notes.join('')}</ul>
@@ -1006,6 +1054,236 @@ function evidencePanel() {
 }
 function safeLink(u) { const v = safeUrl(u); return v && /^https?:/i.test(v) ? `, <a href="${esc(v)}" target="_blank" rel="noopener">source</a>` : ''; }
 
+// ------------------------------------------------------------------ what if: neighbour heights
+/** Height edits in the page address: wh=<site id>|<index>:<metres>,... (only for the same site). */
+function readEdits(qs, id) {
+  const out = new Map(), raw = qs.get('wh') || '', [sid, list] = raw.split('|');
+  if (sid !== id || !list) return out;
+  for (const part of list.split(',')) {
+    const [i, h] = part.split(':').map(Number);
+    if (Number.isInteger(i) && i >= 0 && i < B0.length && i !== B0.indexOf(T) && Number.isFinite(h) && h >= 0 && h <= 900) out.set(i, h);
+  }
+  return out;
+}
+const h0Of = (bi) => B0[bi].top - B0[bi].g;
+const editsMem = new Map();
+/** Set building bi to h metres (its original height clears the edit), then re-run everything that depends on it. */
+function setEdit(bi, h, heavy = false) {
+  if (bi == null || !B0[bi] || B0[bi] === T) return;
+  const h0 = h0Of(bi);
+  if (h == null || Math.abs(h - h0) < 0.5) edits.delete(bi); else edits.set(bi, Math.max(0, h));
+  editsMem.set(st.id, new Map(edits));
+  B = applyEdits(B0, edits); BF = FUT.length ? B.concat(FUTB) : null;
+  stage.setHeight(bi, (edits.get(bi) ?? h0) / Math.max(0.01, h0), B0[bi].g, B);
+  heat = heavy ? null : heat;
+  refreshWindow(false);
+  if (heavy) computeHeat();
+}
+function resetEdits() {
+  const ids = [...edits.keys()]; edits.clear(); editsMem.delete(st.id); B = applyEdits(B0, edits); BF = FUT.length ? B.concat(FUTB) : null;
+  for (const bi of ids) stage.setHeight(bi, 1, B0[bi].g, B);
+  refreshWindow(false); computeHeat(); ifPanel(true);
+}
+/** Buildings worth testing: the main blockers, the selected building, then the nearest in the window's field. */
+function ifCandidates() {
+  const out = [], seen = new Set(), push = (bi, why) => { if (bi == null || bi < 0 || bi >= B0.length || B0[bi] === T || seen.has(bi)) return; seen.add(bi); out.push({ bi, why }); };
+  for (const r of blkRows) push(r.bi, 'takes sun');
+  if (st.sel != null) push(st.sel, 'selected');
+  for (const bi of edits.keys()) push(bi, 'edited');
+  for (const r of NBR.filter((x) => !x.future && (x.view === 'in view' || x.view === 'side')).sort((a, b) => a.dist - b.dist).slice(0, 12)) push(r.bi, 'in view');
+  return out;
+}
+let ifTok = 0;
+function ifPanel(rebuild = false) {
+  if (!hasWindow()) return;
+  const cands = ifCandidates();
+  if (st.ifBi == null || !cands.some((c) => c.bi === st.ifBi)) { st.ifBi = cands[0]?.bi ?? null; rebuild = true; }
+  if (rebuild || !$('uIfSel')) {
+    $('ifPanel').innerHTML = `<h3>What if <span>neighbour heights</span></h3>
+      <p class="u-note">Make a building taller, shorter or gone and every number on this page (hours, the strip, the floor table, the views) re-runs with it. Use it for a rumoured addition, a tower going up, or a height you doubt.</p>
+      ${cands.length ? `<div class="field"><label for="uIfSel">Building</label><select id="uIfSel">${cands.map((c) => `<option value="${c.bi}">${esc(bname(c.bi, true))} · ${Math.round(h0Of(c.bi))} m · ${c.why}</option>`).join('')}</select></div>
+      <div class="field u-if-h"><label for="uIfH">Height <span class="val" id="uIfHV"></span></label><input type="range" id="uIfH" min="0" max="100" step="1"></div>
+      <div class="u-if-acts"><button type="button" class="btn ghost sm" id="uIfZero">Remove it</button><button type="button" class="btn ghost sm" id="uIfOne">As built</button>${FUT.length ? `<label class="tg u-if-fut ${stage.opts.future ? 'on' : ''}"><input type="checkbox" class="sr" id="uIfFut" ${stage.opts.future ? 'checked' : ''}><span class="switch"></span><span class="lbl">Proposed buildings</span></label>` : ''}</div>` : '<p class="u-note">No building in front of this window to test.</p>'}
+      <div id="uIfRes"></div>`;
+    if (cands.length) {
+      $('uIfSel').value = st.ifBi;
+      $('uIfSel').addEventListener('change', (e) => { st.ifBi = +e.target.value; st.sel = st.ifBi; openCard(st.ifBi); ifPanel(true); });
+      let raf = 0;
+      $('uIfH').addEventListener('input', (e) => { const v = +e.target.value; ifSlider(v); cancelAnimationFrame(raf); raf = requestAnimationFrame(() => setEdit(st.ifBi, v)); });
+      $('uIfH').addEventListener('change', (e) => { setEdit(st.ifBi, +e.target.value, true); syncUrl(); });
+      $('uIfZero').addEventListener('click', () => { setEdit(st.ifBi, 0, true); ifPanel(true); syncUrl(); });
+      $('uIfOne').addEventListener('click', () => { setEdit(st.ifBi, null, true); ifPanel(true); syncUrl(); });
+      $('uIfFut')?.addEventListener('change', (e) => { stage.opts.future = e.target.checked; e.target.closest('.tg').classList.toggle('on', e.target.checked); stage.applyOpts(); syncTools(); refreshWindow(false); computeHeat(); });
+    }
+  }
+  if (st.ifBi != null && $('uIfH')) {
+    const h0 = h0Of(st.ifBi), max = Math.ceil(Math.max(h0 * 2, h0 + 60, edits.get(st.ifBi) || 0));
+    const sl = $('uIfH'); sl.max = max;
+    if (document.activeElement !== sl) sl.value = Math.round(edits.get(st.ifBi) ?? h0);
+    ifSlider(+sl.value);
+  }
+  const tok = ++ifTok;
+  clearTimeout(ifPanel.t); ifPanel.t = setTimeout(() => { if (tok === ifTok) ifResults(); }, 60);
+}
+function ifSlider(v) {
+  const h0 = h0Of(st.ifBi), d = v - h0;
+  $('uIfHV').textContent = `${Math.round(v)} m${Math.abs(d) >= 0.5 ? ` (${d > 0 ? '+' : '−'}${Math.round(Math.abs(d))})` : ' · as built'}`;
+  fill($('uIfH'));
+}
+/** As built vs this scenario: direct sun at this floor today and on Dec 15 / Jun 15, and the sky view. */
+function ifResults() {
+  const box = $('uIfRes'); if (!box) return;
+  const on = edits.size > 0;
+  const o = site.origin, w = winPos(st.floor), P = panes(), y = +st.date.slice(0, 4), [, mo, d] = ymd();
+  const fut = stage.opts.future && FUTB.length;
+  const prof0 = on ? horizonProfile(fut ? B0.concat(FUTB) : B0, w.x, w.y, w.z) : null, prof1 = profF && stage.opts.future ? profF : profA;
+  const days = [['Today', mo - 1, d], ['Dec 15', 11, 15], ['Jun 15', 5, 15]];
+  const cell = (lbl, m, dd) => {
+    const tab = table(y, m, dd, o.lat, o.lon, tz(), 6), now = litInfo(tab, prof1, st.az, 6, P).min, was = on ? litInfo(tab, prof0, st.az, 6, P).min : now;
+    const dl = now - was;
+    return `<div class="metric"><div class="k">${lbl}</div><div class="v">${hm(now)}</div><div class="s ${dl > 0 ? 'u-up' : dl < 0 ? 'u-down' : ''}">${on ? (Math.abs(dl) < 1 ? 'no change' : `${dl > 0 ? '+' : '−'}${hm(Math.abs(dl))} vs as built`) : 'as built'}</div></div>`;
+  };
+  const sv1 = skyView(prof1, st.az, P), sv0 = on ? skyView(prof0, st.az, P) : sv1;
+  box.innerHTML = `<div class="metrics m4 u-if-m">${days.map((x) => cell(...x)).join('')}
+      <div class="metric"><div class="k">Sky view</div><div class="v">${Math.round(sv1 * 100)}<small>%</small></div><div class="s ${sv1 > sv0 + 0.005 ? 'u-up' : sv1 < sv0 - 0.005 ? 'u-down' : ''}">${on ? (Math.abs(sv1 - sv0) < 0.005 ? 'no change' : `${sv1 > sv0 ? '+' : '−'}${Math.round(Math.abs(sv1 - sv0) * 100)} pts`) : 'as built'}</div></div></div>
+    ${on ? `<div class="u-if-list"><span class="label">Scenario</span>${[...edits].map(([bi, h]) => `<button type="button" class="chip" data-unedit="${bi}" title="Back to as built">${esc(bname(bi, true))}: ${Math.round(h0Of(bi))} → ${Math.round(h)} m <span aria-hidden="true">×</span></button>`).join('')}<button type="button" class="btn ghost sm" id="uIfReset">Reset all</button></div>` : ''}`;
+}
+
+// ------------------------------------------------------------------ studies (heights map, views, panorama, seasons)
+const STUDY_TABS = [['heights', 'Heights around'], ['floors', 'Views by floor'], ['pano', '360° skyline'], ['seasons', 'Seasons']];
+let studyT = 0, studyDirty = true, studyIO = null, studyVisible = false;
+function buildStudies() {
+  $('studyPanel').innerHTML = `<div class="u-st-h"><h3>Studies <span id="uStNote"></span></h3>
+      <div class="seg" id="uStTabs" role="tablist" aria-label="Study">${STUDY_TABS.map(([k, t]) => `<button type="button" role="tab" data-st="${k}" aria-selected="${k === st.study}">${t}</button>`).join('')}</div>
+      <div class="u-st-acts"><button type="button" class="btn ghost sm" id="uStGo" title="Render again from the current settings">${ICON.reset}Refresh</button><button type="button" class="btn ghost sm" id="uStPng" title="Save this study as a PNG">${ICON.down}PNG</button></div></div>
+    <div class="u-st-body" id="uStBody"></div>`;
+  $('uStTabs').addEventListener('click', (e) => { const b = e.target.closest('[data-st]'); if (!b) return; st.study = b.dataset.st; $('uStTabs').querySelectorAll('[data-st]').forEach((x) => x.setAttribute('aria-selected', String(x.dataset.st === st.study))); studyDirty = true; renderStudy(); });
+  $('uStGo').addEventListener('click', () => renderStudy());
+  $('uStPng').addEventListener('click', studyPNG);
+  $('uStBody').addEventListener('click', (e) => { const r = e.target.closest('[data-bi]'); if (r && r.dataset.bi !== '') { const bi = +r.dataset.bi; if (bi >= 0 && bi < B.length) { openCard(bi); if (st.mode === 'win' || st.mode === 'in') aimAt(bi); } } });
+  if (!studyIO) {
+    studyIO = new IntersectionObserver((es) => { studyVisible = es.some((x) => x.isIntersecting); if (studyVisible && studyDirty) studyStale(); }, { rootMargin: '120px' });
+    studyIO.observe($('studyPanel'));
+  }
+  studyDirty = true; renderStudy();
+}
+/** Mark the open study out of date; it re-renders after a pause when it is on screen (never while the day plays). */
+function studyStale(soon = false) {
+  studyDirty = true; clearTimeout(studyT);
+  if (!site || !hasWindow() || !$('uStBody')) return;
+  if (st.study === 'heights' && soon) { renderStudy(); return; }
+  studyT = setTimeout(() => { if (studyVisible && !st.playing && !$('view-unit').hidden) renderStudy(); }, st.study === 'heights' ? 150 : 650);
+}
+const themeInk = () => ({ font: css('--font-sans') || 'sans-serif', mono: css('--font-mono') || 'monospace', bg: css('--overlay') || 'rgba(14,16,21,.8)', fg: css('--ink'), ink3: css('--ink-3'), line: css('--line-strong'), sun: css('--sun'), bad: css('--bad'), blue: css('--band-30'), surface: css('--surface-1'), shade: document.documentElement.dataset.theme === 'light' ? 'rgba(20,24,32,.42)' : 'rgba(4,5,8,.55)' });
+function studyFloors() {
+  const mf = maxFloor(), want = [Math.max(2, Math.round(mf * 0.12)), st.floor, st.cmp, mf];
+  return [...new Set(want)].sort((a, b) => a - b).slice(0, 4);
+}
+function renderStudy() {
+  const body = $('uStBody'); if (!body || !site || !hasWindow()) return;
+  clearTimeout(studyT); studyDirty = false;
+  const W = Math.max(280, body.clientWidth || 600), k = st.study, note = $('uStNote');
+  if (k === 'heights') {
+    const w = winPos(st.floor), eye = w.z - BASE();
+    const rows = NBR.map((r) => ({ ...r, bi: r.future ? null : r.bi }));
+    const sec = sectorHeights(rows, { radius: 150, eye, future: !!stage.opts.future });
+    const facing = [...new Set(paneFacings(st.az, panes()).map((a) => sectorOf(a)))];
+    const colors = stage.classColors();
+    body.innerHTML = `<div class="u-hm-grid"><div>${heightMapHTML({ B, ti: B.indexOf(T), w, az: st.az, spread: spread(), colors, names: (i) => bname(i, true), future: stage.opts.future ? FUT : [], streets: site.streets || [], radius: 300, sel: st.sel, edits })}</div>
+      <div class="u-hm-side"><div class="label">Tallest roof in each direction <span>within 150 m · bar: tallest · tick: median</span></div>${sectorChartSVG(sec, { eye, eyeLabel: `Floor ${st.floor} eyes`, colors, facing, radius: 150 })}
+      <p class="u-note">${secSummary(sec, facing, eye)}</p>
+      <details class="u-sec-d"${W > 1100 ? ' open' : ''}><summary>Roofs by direction <span>table</span></summary>${sectorTable(sec, { facing })}</details></div></div>
+      <p class="u-note">City roof heights above each building's own ground, from the footprint data (see Assumptions). Heights edited in What if show here too. Click a building or a bar to inspect it.</p>`;
+    note.textContent = `300 m · ${HCLASS_LABELS.length} height classes`;
+    return;
+  }
+  if (!body.querySelector('canvas.u-st-cv')) body.innerHTML = '<canvas class="u-st-cv" role="img" aria-label="Rendered study"></canvas><p class="u-note" id="uStCap"></p>';
+  const canvas = body.querySelector('canvas.u-st-cv'), th = themeInk(), cap = $('uStCap');
+  if (k === 'floors') {
+    const o = site.origin, tab = tableFor(6), P = panes();
+    const floors = studyFloors().map((f) => {
+      const w = winPos(f), prof = f === st.floor ? profA : f === st.cmp ? profB : horizonProfile(B, w.x, w.y, w.z);
+      const sv = skyView(prof, st.az, P), sun = litInfo(tab, prof, st.az, 6, P).min;
+      return { w, cur: f === st.floor, label: `Floor ${f}${f === st.floor ? ' · this unit' : f === st.cmp ? ' · compare' : ''}`, sub: [`Eyes ${Math.round(w.z)} m · sky ${Math.round(sv * 100)}% · skyline ${Math.round(hAt(prof, st.az))}°`, `Direct sun ${hm(sun)} on ${fmtDay()}`] };
+    });
+    renderFloorViews({ stage, cv: canvas, width: W, floors, az: st.az, yaw: stage.look.yaw, pitch: stage.look.pitch, fov: stage.look.fov, theme: th });
+    cap.textContent = `Same bearing (${Math.round(st.az + stage.look.yaw)}° ${compass(st.az + stage.look.yaw)}), tilt, lens and time (${fmtT(st.min)}, ${fmtDay()}) from each floor at this window position. Turn and zoom with the lens controls in the Window view.`;
+    note.textContent = `${floors.length} floors · ${fmtT(st.min)}`;
+  } else if (k === 'pano') {
+    const w = winPos(st.floor), H = Math.round(Math.min(300, Math.max(170, W * 0.24)));
+    renderPanorama({ stage, cv: canvas, width: W, height: H, w, az: st.az, spread: spread(), pitch: 10, lm: LM.map((l) => ({ ...l, hidden: !!l.hidden })), theme: th });
+    const vis = LM.filter((l) => !l.hidden).length;
+    cap.textContent = `All the way round from the window on floor ${st.floor} at ${fmtT(st.min)}, ${fmtDay()}. The shaded half is behind the window. ${vis} of ${LM.length} landmarks can be seen from this floor; faint chips are hidden behind nearer buildings.`;
+    note.textContent = `floor ${st.floor} · centred on ${Math.round(st.az)}°`;
+  } else if (k === 'seasons') {
+    const y = +st.date.slice(0, 4), o = site.origin, w = winPos(st.floor), P = panes();
+    const dates = [[2, 20, 'Mar 20'], [5, 21, 'Jun 21'], [8, 22, 'Sep 22'], [11, 21, 'Dec 21']], times = [540, 720, 900, 1080];
+    const rows = dates.map(([m, d, lbl]) => ({ label: lbl, cells: times.map((min) => {
+      const s = sunPos(zonedMs(y, m, d, min, tz()), o.lat, o.lon), up = s.alt > 0, fr = inFront(s.az, st.az, P);
+      const hit = up && fr ? rayBlock(blockerSet(), w.x, w.y, w.z, s.az, s.alt) : null;
+      const state = !up ? 'night' : !fr ? 'behind' : hit ? 'shade' : P && Math.abs(angDiff(s.az, st.az)) >= 90 ? 'side' : 'lit';
+      return { sun: s, label: fmtT(min), state };
+    }) }));
+    const cam = stage.currentCam(), aspect = Math.max(1.2, Math.min(1.9, ($('stage').clientWidth || 16) / ($('stage').clientHeight || 10)));
+    renderSeasons({ stage, cv: canvas, width: W, aspect, cam, rows, theme: th });
+    cap.textContent = `The current ${{ orbit: 'orbit', win: 'window', in: 'inside', plan: 'plan', top: 'top-down' }[st.mode]} camera on the solstices and equinoxes at 9 am, noon, 3 pm and 6 pm (clock time, daylight saving included). Badges: the window on floor ${st.floor}. Move the camera and press Refresh to compare another view.`;
+    note.textContent = `${{ orbit: 'Orbit', win: 'Window', in: 'Inside', plan: 'Plan', top: 'Top' }[st.mode]} camera · floor ${st.floor}`;
+  }
+}
+const fmtDay = () => { const [y, m, d] = ymd(); return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' }); };
+function secSummary(sec, facing, eye) {
+  const f = facing.map((i) => sec[i]).filter((q) => q.tallest);
+  const tall = [...sec].filter((q) => q.tallest).sort((a, b) => b.tallest.h - a.tallest.h)[0];
+  const open = sec.filter((q) => !q.count || q.above === 0).map((q) => q.dir);
+  const parts = [];
+  if (f.length) parts.push(`Toward the window (${f.map((q) => q.dir).join(', ')}): ${f.map((q) => `${q.above} of ${q.count} roofs above your eyes, tallest ${esc(short(q.tallest.name))} at ${Math.round(q.tallest.h)} m`).join('; ')}.`);
+  if (tall) parts.push(`Tallest nearby: ${esc(short(tall.tallest.name))}, ${Math.round(tall.tallest.h)} m to the ${tall.dir}.`);
+  if (open.length) parts.push(`Nothing above eye level (${Math.round(eye)} m) to the ${open.join(', ')} within 150 m.`);
+  return parts.join(' ');
+}
+const short = (s, n = 26) => (String(s).length > n ? String(s).slice(0, n - 1) + '…' : String(s));
+function studyPNG() {
+  const k = st.study, name = `${st.id}-floor${st.floor}-${k}.png`;
+  if (k !== 'heights') { const cv = $('uStBody').querySelector('canvas'); if (!cv) return; cv.toBlob((b) => { if (b) { download(name, b, 'image/png'); toast('Study saved'); } }, 'image/png'); return; }
+  // heights: rasterise the SVG map with its labels drawn on top
+  const svg = $('uStBody').querySelector('.u-hm svg'); if (!svg) return;
+  const S = 1280, c = document.createElement('canvas'); c.width = S; c.height = S;
+  const g = c.getContext('2d'), clone = svg.cloneNode(true);
+  // inline the computed styles the SVG relies on
+  clone.querySelectorAll('*').forEach((el, i) => { const src = svg.querySelectorAll('*')[i], cs = getComputedStyle(src); el.setAttribute('style', `fill:${cs.fill};stroke:${cs.stroke};stroke-width:${cs.strokeWidth};stroke-dasharray:${cs.strokeDasharray};opacity:${cs.opacity};fill-opacity:${cs.fillOpacity}`); });
+  clone.setAttribute('width', S); clone.setAttribute('height', S);
+  const img = new Image();
+  img.onload = () => {
+    g.fillStyle = css('--surface-1'); g.fillRect(0, 0, S, S); g.drawImage(img, 0, 0, S, S);
+    g.font = `600 22px ${css('--font-sans') || 'sans-serif'}`; g.textAlign = 'center'; g.textBaseline = 'middle';
+    $('uStBody').querySelectorAll('.u-hm-l').forEach((l) => { const x = parseFloat(l.style.left) / 100 * S, y = parseFloat(l.style.top) / 100 * S; g.lineWidth = 5; g.strokeStyle = css('--surface-1'); g.strokeText(l.textContent, x, y); g.fillStyle = css('--ink'); g.fillText(l.textContent, x, y); });
+    c.toBlob((b) => { if (b) { download(name, b, 'image/png'); toast('Heights map saved'); } }, 'image/png');
+  };
+  img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(new XMLSerializer().serializeToString(clone));
+}
+
+// ------------------------------------------------------------------ sun samples CSV (every 10 minutes, with blockers)
+function samplesCSV() {
+  if (!hasWindow()) return;
+  const o = site.origin, y = +st.date.slice(0, 4), [, mo, d] = ymd(), w = winPos(st.floor), P = panes(), BB = blockerSet();
+  const prof = profF && stage.opts.future ? profF : profA, step = 10;
+  const days = [[mo - 1, d], [2, 20], [5, 21], [8, 22], [11, 21]].filter((x, i, a) => a.findIndex((q) => q[0] === x[0] && q[1] === x[1]) === i);
+  const names = ['night', 'behind facade', 'shaded', 'direct sun', 'direct sun (side pane)'];
+  const lines = ['date,time,sun_azimuth_deg,sun_altitude_deg,state,blocker,blocker_height_m,blocker_distance_m,floor,eye_m,facing_deg,scenario'];
+  const esc2 = (v) => { const s = String(v ?? ''); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+  const scen = edits.size ? [...edits].map(([bi, h]) => `${bname(bi, true)} ${Math.round(h0Of(bi))}->${Math.round(h)} m`).join('; ') : 'as built';
+  for (const [m, dd] of days) {
+    const res = dayBlockers(y, m, dd, o.lat, o.lon, tz(), BB, w, prof, st.az, STRIP_FROM, STRIP_TO, step, P);
+    const date = `${y}-${String(m + 1).padStart(2, '0')}-${String(dd).padStart(2, '0')}`;
+    for (let k = 0; k < res.states.length; k++) {
+      const min = STRIP_FROM + k * step + step / 2, s = sunPos(zonedMs(y, m, dd, min, tz()), o.lat, o.lon), bi = res.bi[k], b = bi >= 0 ? BB[bi] : null;
+      lines.push([date, `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(Math.floor(min % 60)).padStart(2, '0')}`, s.az.toFixed(1), s.alt.toFixed(1), names[res.states[k]], b ? bname(bi, true) : '', b ? (b.top - Math.max(b.g, 0)).toFixed(1) : '', b ? distToBuilding(b, w.x, w.y).toFixed(1) : '', st.floor, w.z.toFixed(1), Math.round(st.az), scen].map(esc2).join(','));
+    }
+  }
+  download(`${st.id}-floor${st.floor}-sun-samples.csv`, lines.join('\n') + '\n', 'text/csv');
+  toast(`${lines.length - 1} samples saved (every ${step} minutes, ${days.length} dates)`);
+}
+
 // ------------------------------------------------------------------ URL sync
 let urlT = 0;
 function syncUrlSoon() { clearTimeout(urlT); urlT = setTimeout(syncUrl, 400); }
@@ -1014,6 +1292,7 @@ function syncUrl() {
   const qs = new URLSearchParams(location.search);
   writeScenario(qs, st, FACES[st.face], stage.look, stage.opts.future);
   qs.set('date', st.date); qs.set('min', String(Math.round(st.min / 5) * 5)); qs.set('floor', String(st.floor));
+  if (edits.size) qs.set('wh', `${st.id}|${[...edits].map(([bi, h]) => `${bi}:${Math.round(h * 10) / 10}`).join(',')}`); else qs.delete('wh');
   if (st.mode === 'orbit') qs.delete('mode'); else qs.set('mode', st.mode === 'win' ? 'window' : st.mode === 'in' ? 'inside' : st.mode);
   const url = `${location.pathname}?${qs}#unit/${encodeURIComponent(st.id)}`;
   if (url !== location.pathname + location.search + location.hash) history.replaceState(history.state, '', url);
@@ -1052,7 +1331,7 @@ function snapshot() {
   const state = { night: 'night', behind: 'sun behind the facade', lit: 'direct sun on the window', side: 'direct sun through a side pane', shade: 'window in shadow' }[hudState()];
   g.fillText(`${label(L) || st.id} · floor ${st.floor} · window faces ${Math.round(st.az)}° ${compass(st.az)}${st.bay ? ' (bay)' : ''} · ${new Date(Date.UTC(y, m - 1, d)).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })} ${fmtT(st.min)} ${zn}`, 16 * k, h + 22 * k);
   g.fillStyle = css('--ink-2'); g.font = `500 ${11.5 * k}px ${sans}`;
-  g.fillText(`${state} · direct sun this date ${hm(A.min)} · exposure: ${(PROV[p.exposure] || [p.exposure])[0].toLowerCase()} · window position: ${(PROV[p.position] || [p.position])[0].toLowerCase()} · ${site.source || 'footprints'} as ${B.some((b) => b.parts) ? 'prisms and building parts' : 'straight prisms'}, direct sun only`, 16 * k, h + 45 * k);
+  g.fillText(`${state} · direct sun this date ${hm(A.min)} · exposure: ${(PROV[p.exposure] || [p.exposure])[0].toLowerCase()} · window position: ${(PROV[p.position] || [p.position])[0].toLowerCase()} · ${site.source || 'footprints'} as ${B.some((b) => b.parts) ? 'prisms and building parts' : 'straight prisms'}, direct sun only${edits.size ? ` · what-if: ${edits.size} neighbour height${edits.size > 1 ? 's' : ''} changed` : ''}`, 16 * k, h + 45 * k);
   g.textAlign = 'right'; g.fillStyle = css('--ink-3'); g.font = `600 ${11 * k}px ${sans}`; g.fillText('ApartmentScout', w - 16 * k, h + 22 * k);
   const name = `${st.id}-floor${st.floor}-${st.date}-${String(Math.floor(st.min / 60)).padStart(2, '0')}${String(st.min % 60).padStart(2, '0')}-${{ win: 'window', in: 'inside' }[st.mode] || st.mode}.png`;
   c.toBlob((blob) => { if (!blob) { toast('Snapshot failed'); return; } download(name, blob, 'image/png'); toast('Snapshot saved'); }, 'image/png');
@@ -1066,6 +1345,7 @@ async function exportGLB() {
     window_position: Math.round(st.t * 100) / 100, slab_height_m: Math.round(slabZ(st.floor) * 10) / 10, floor_height_m: FH(),
     provenance: { exposure: p.exposure, window_position: p.position, floor: p.floor, target: site.provenance?.target || null },
     apartment: interior ? (interior.generic ? 'generic room' : plan?.title || 'floor plan') : null,
+    height_edits: edits.size ? [...edits].map(([bi, h]) => ({ index: bi, name: bname(bi, true), original_m: Math.round(h0Of(bi) * 10) / 10, scenario_m: Math.round(h * 10) / 10 })) : [],
     source: site.source || '', site_generated: site.generated || null, exported: new Date().toISOString(),
     frame: 'metres; glTF Y up; x east, -z north; origin at the site origin', geometry: B.some((b) => b.parts) ? 'footprints extruded to roof height; buildings with components (OpenStreetMap building parts or a manual file) drawn as stacked prisms' : 'footprints extruded to roof height (no setbacks or crowns)',
   };
