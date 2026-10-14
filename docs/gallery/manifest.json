@@ -687,7 +687,7 @@
       "file": "docs/images/compare-light.png",
       "note": "ApartmentScout dashboard on the public example data",
       "publication_status": "public",
-      "sha256": "353f8eb7a7cb214ed57d000f4554f474f0d395a701b5ff9589bd761e3dd30805",
+      "sha256": "99b39f09fe9f509aa604a73892da6dbc3fd7dd63f918bd301a0304e318a6828e",
       "bytes": 340251,
       "width": 1600,
       "height": 1000
@@ -695,7 +695,7 @@
     {
       "file": "docs/images/compare.png",
       "publication_status": "public",
-      "sha256": "5304a0154f90b172bfa17f6603846cf254de04ba6417f784dadaef220af5360f",
+      "sha256": "ba546cdf300207f74e4c4bcb13633ce4961f75c0af88f32fd57b266b41549959",
       "bytes": 658444,
       "width": 1600,
       "height": 3548,
@@ -705,7 +705,7 @@
       "file": "docs/images/drawer-money.png",
       "note": "ApartmentScout dashboard on the public example data",
       "publication_status": "public",
-      "sha256": "8fdff3a389e1aae079202e78127cca9b9551dae15e4351349591fda0702c31c1",
+      "sha256": "0a3d7c7acb8f317a56f59d280e84b2336f51456e7928d29a575e7ca782c550ad",
       "bytes": 82366,
       "width": 448,
       "height": 880
@@ -713,7 +713,7 @@
     {
       "file": "docs/images/map-3d.png",
       "publication_status": "public",
-      "sha256": "30a3dd75dcaada49fea657940638acff98dcf06cff503b11b93dcaf7224e31b3",
+      "sha256": "27147732048bd0b8b83d4725b77445328be062f45238aa0a08eae5e9c5daeb8d",
       "bytes": 709398,
       "width": 880,
       "height": 900,
@@ -723,7 +723,7 @@
       "file": "docs/images/map-bus.png",
       "note": "ApartmentScout dashboard on the public example data",
       "publication_status": "public",
-      "sha256": "2c559d78e844d96009b3b5a0e0068b316c98637df2a8dcc19e9753136ab1044f",
+      "sha256": "702573e13d6313ce3abce5d4e43f11b94d4586736403d76c6d5f9905bb85b9fb",
       "bytes": 1053895,
       "width": 1600,
       "height": 1000
@@ -731,7 +731,7 @@
     {
       "file": "docs/images/map-commute-light.png",
       "publication_status": "public",
-      "sha256": "7993ce63c221ace29f2ff0ac4f2504d046257febb33bd2e510a302197b531a2e",
+      "sha256": "41a0022063bd4e1a39d266e69f3d743b4082923aa124527288f4355d91da1589",
       "bytes": 1110275,
       "width": 1600,
       "height": 1000,
@@ -740,7 +740,7 @@
     {
       "file": "docs/images/map-commute.png",
       "publication_status": "public",
-      "sha256": "940ddb8d09d3e298553464235811e7c0b1d63a5271efb73fdea5a771fe7cfd80",
+      "sha256": "255250c718a36a583fef4e1561e750ac6a86c6217a698ef9cbb504f44afdeb80",
       "bytes": 1081329,
       "width": 1600,
       "height": 1000,
@@ -749,7 +749,7 @@
     {
       "file": "docs/images/map-drawer-commute.png",
       "publication_status": "public",
-      "sha256": "702c5fdd4d540b7df72210e1ffa8de7c53e7716f2c74b9310d330604e0a3a8ec",
+      "sha256": "29c33d21fedd46b2bdc1eac0559db107712a8fb4ca98de343982d090b60af69e",
       "bytes": 84213,
       "width": 448,
       "height": 880,
@@ -758,7 +758,7 @@
     {
       "file": "docs/images/map-drawer.png",
       "publication_status": "public",
-      "sha256": "3012f49c3d905e4b4689bd164bb5016e522745a02c092cf490925d306962bdcb",
+      "sha256": "57e29cd18fd97a5187669494f6de653cee7b9a659299ef94ea0269682ba46b15",
       "bytes": 956361,
       "width": 1600,
       "height": 1000,
@@ -768,7 +768,7 @@
       "file": "docs/images/map-light-drawer.png",
       "note": "ApartmentScout dashboard on the public example data",
       "publication_status": "public",
-      "sha256": "3d2b07470e8b404bffd095f63f4dcf984a1765d225fea94b2c7317a637c9259b",
+      "sha256": "3352e6871e4c9871b3a40c19626acffcfd7731530df09a59ccb0feb9a31b1a59",
       "bytes": 994597,
       "width": 1600,
       "height": 1000
@@ -776,7 +776,7 @@
     {
       "file": "docs/images/map-noise.png",
       "publication_status": "public",
-      "sha256": "0d10d882e4542722f4a9aa021a673c0a6e9b75b8074a393d8cdae7eb62f6c55d",
+      "sha256": "0389bd5233b7e4c28515fcebd9525832b35bb18c3056275650be110c98d12ef8",
       "bytes": 1115659,
       "width": 1600,
       "height": 1000,
@@ -785,7 +785,7 @@
     {
       "file": "docs/images/map-rent.png",
       "publication_status": "public",
-      "sha256": "cb72d75b84cafbc2770c7d55df4a2cdf141b68268cbf51aa272e24671c2fa560",
+      "sha256": "6fe45472046579fdee63d9ba4b05a4b24904b8df38c143a0512246245b195351",
       "bytes": 1030512,
       "width": 1600,
       "height": 1000,
@@ -794,7 +794,7 @@
     {
       "file": "docs/images/map-score.png",
       "publication_status": "public",
-      "sha256": "713817892a8dc4649027cb7e469a795848618c8c63f93a463bf37042683100c3",
+      "sha256": "cfde51d6a33a8ceafe3c12668b3d26a5e68f11d2832fbf2866062671bccd056e",
       "bytes": 1021826,
       "width": 1600,
       "height": 1000,
@@ -804,7 +804,7 @@
       "file": "docs/images/map-walk.png",
       "note": "ApartmentScout dashboard on the public example data",
       "publication_status": "public",
-      "sha256": "f8a95da0fb4ae789ca56468ccb34185d3e22673d186464cdf0dc0b39f394c351",
+      "sha256": "651a1fe062ef0b4df38d08c28161ce5825c7c64e85b14d75d2904d983d3b8f7a",
       "bytes": 484784,
       "width": 880,
       "height": 900
@@ -813,7 +813,7 @@
       "file": "docs/images/mobile-drawer.png",
       "note": "ApartmentScout dashboard on the public example data",
       "publication_status": "public",
-      "sha256": "28b677acd3a6d1294208b7ef867bc102f8a30d9aae06ed644160a37458750936",
+      "sha256": "734c2c7bb5b66b871586a7c9aed120f16bef6faf9a0759b1061895f88e29f814",
       "bytes": 404410,
       "width": 630,
       "height": 1350
@@ -821,7 +821,7 @@
     {
       "file": "docs/images/mobile-map.png",
       "publication_status": "public",
-      "sha256": "a419a1bb02443d18952c5e04ce0f77cd6b4e1f192638e2aa9dc8774a2271703c",
+      "sha256": "164b5d17b56f35ae2aefb778eccd47d9da9df2a5d04a8b6da595008ce0ed9fab",
       "bytes": 582949,
       "width": 630,
       "height": 1350,
@@ -831,7 +831,7 @@
       "file": "docs/images/mobile-unit.png",
       "note": "ApartmentScout dashboard on the public example data",
       "publication_status": "public",
-      "sha256": "ee96ec0b01c8831d0a71a39221f7e00143c03b97dd85c2ca29e26d83a4a78230",
+      "sha256": "94bcff4094e97f41b8828647fdd86c1c1698de76f177d1ad6d021a4fc9b454db",
       "bytes": 208399,
       "width": 630,
       "height": 1350
@@ -839,7 +839,7 @@
     {
       "file": "docs/images/plan-bird.png",
       "publication_status": "public",
-      "sha256": "eb4e797e7716c768b97248177e906c4895aae803c5b1675aca71ea89bd670b71",
+      "sha256": "d7bd6bdb3ac3055b947b06e6f036f0fb346e6e60d1624fbf547af724a4c277d9",
       "bytes": 271883,
       "width": 1600,
       "height": 1000,
@@ -849,7 +849,7 @@
       "file": "docs/images/plan-light-tab.png",
       "note": "ApartmentScout dashboard on the public example data",
       "publication_status": "public",
-      "sha256": "9be9a153fddfa1061014c7033e9949600f70cfc59e42eb12f74e1cc53febfabb",
+      "sha256": "f6c25c19989da24dab47b6969d00164a2fac79ebb93b6dacc911581307b39da9",
       "bytes": 285210,
       "width": 1600,
       "height": 1000
@@ -857,7 +857,7 @@
     {
       "file": "docs/images/plan-top.png",
       "publication_status": "public",
-      "sha256": "07fd85c9166e5f2d87d77a6a145d557776cb7ed804c46436654327e72f2cf2bd",
+      "sha256": "2ab1092869b2741604aaf4ef54f6dcbb758553f3ba5087a61245d65c4d8f0f5c",
       "bytes": 46800,
       "width": 582,
       "height": 711,
@@ -867,7 +867,7 @@
       "file": "docs/images/plan-tracer.png",
       "note": "ApartmentScout dashboard on the public example data",
       "publication_status": "public",
-      "sha256": "bc04cee027cbf65fac7f4d4b6240502ef7164991d16cbfcc71ff1d5e0fc5a398",
+      "sha256": "b13386d5793f69419eaf1c610879b7c8932f16ff3432f2b2669e395ee3b8396b",
       "bytes": 72906,
       "width": 1600,
       "height": 1000
@@ -875,7 +875,7 @@
     {
       "file": "docs/images/records.png",
       "publication_status": "public",
-      "sha256": "2425020524fa5079f7ab63c1876461e919d2c8174bb2891cad4e51a03541d4a6",
+      "sha256": "78a5a37229e744c958e431eacd26163adfada175827b13f3a42fa0e1eb8f5493",
       "bytes": 940452,
       "width": 1600,
       "height": 5049,
@@ -885,7 +885,7 @@
       "file": "docs/images/research-gone.png",
       "note": "ApartmentScout dashboard on the public example data",
       "publication_status": "public",
-      "sha256": "f0733ba8bb4b61b301524d7ffd54be13677ffee219cfb8b6d84e41e713ddfe12",
+      "sha256": "0f2bd15505aea14b6194a4f0499b407eaa2b45ec2d0d35af133a6d7b33b24b49",
       "bytes": 102790,
       "width": 1600,
       "height": 1000
@@ -893,7 +893,7 @@
     {
       "file": "docs/images/research-media.png",
       "publication_status": "public",
-      "sha256": "e09323fad765eddda684019b57009808488bde54c7eca9dc3305d4bde970cc9d",
+      "sha256": "39536662d3b2da23fc8cdaa96e7c284cb661347fdb950dec9e979b8e328c3763",
       "bytes": 192621,
       "width": 1600,
       "height": 1000,
@@ -902,7 +902,7 @@
     {
       "file": "docs/images/research.png",
       "publication_status": "public",
-      "sha256": "9b868fc82b5858f57e9e9ff0b0ed98afc2b2a78abaa5986c93854f2da217350e",
+      "sha256": "bfd410bdabe1f60c2d323b653da3f1a944ded5668a6118f65e1b3283b1796bdf",
       "bytes": 247000,
       "width": 1600,
       "height": 1000,
@@ -912,7 +912,7 @@
       "file": "docs/images/settings.png",
       "note": "ApartmentScout dashboard on the public example data",
       "publication_status": "public",
-      "sha256": "95b827c48275393c555b285608045aaffa6c7477798df6e9482707ab5e4fd628",
+      "sha256": "fe1bb854c5397dbb078364d5d2b28cc61956b717bcfb2cb03c9dae377d55a53e",
       "bytes": 582070,
       "width": 1600,
       "height": 1000
@@ -920,7 +920,7 @@
     {
       "file": "docs/images/shortlist.png",
       "publication_status": "public",
-      "sha256": "bc5a73515a9bf55bc7d174d9dc0830ee300e61991da1b6c8edf05f91b8809d3d",
+      "sha256": "13a2cbec13e94c764580e492521aa0a49312fa92984a98a8abdb879999ad13a8",
       "bytes": 325221,
       "width": 1600,
       "height": 1000,
@@ -929,7 +929,7 @@
     {
       "file": "docs/images/tours.png",
       "publication_status": "public",
-      "sha256": "b8460d07a0ffd2c4bb3f7e76e14f111a763623e0a0c3663ad20eeb92bafaa084",
+      "sha256": "9d84447445933c3f10c8e7bac9ee8d5c77ac63d89fbe30f9ebe7f95dfd6cff93",
       "bytes": 179430,
       "width": 1600,
       "height": 1000,
@@ -939,7 +939,7 @@
       "file": "docs/images/unit-daylight.png",
       "note": "ApartmentScout dashboard on the public example data",
       "publication_status": "public",
-      "sha256": "d5876d7f49914ede95ee438453431fe919e7e2afc155e43b222c8e5d2aede9a1",
+      "sha256": "9e56da48080daec10bd38df57205ff6abf4f00c25c641243ff1b53e49feb86db",
       "bytes": 79585,
       "width": 404,
       "height": 1093
@@ -947,7 +947,7 @@
     {
       "file": "docs/images/unit-floors.png",
       "publication_status": "public",
-      "sha256": "208c3f153d6ed6603e23b115fba90951df277750d7ff666e3e3858019eb46b8f",
+      "sha256": "ae268f10b5f2489177d0ba8b7745664f861fa7975bda957332d5ed89db034863",
       "bytes": 79193,
       "width": 404,
       "height": 555,
@@ -956,7 +956,7 @@
     {
       "file": "docs/images/unit-inside.png",
       "publication_status": "public",
-      "sha256": "28ae1518da8943753300de834b35b80637ba62c5267d5a0a90778549a3be509f",
+      "sha256": "3a4f0ff3ae0d4643009a3d050b6cc16c949364b21c83b0b6b16bb70882b2a06d",
       "bytes": 54867,
       "width": 1132,
       "height": 503,
@@ -966,7 +966,7 @@
       "file": "docs/images/unit-light-theme.png",
       "note": "ApartmentScout dashboard on the public example data",
       "publication_status": "public",
-      "sha256": "19b9cc788f8ef05e932a67025ea970c81d66e68390a96b0a9e9532bfd66f1c6c",
+      "sha256": "8762df8547dd856ce51b216f1961cb9c68dbbfc6f42952643e5b973ffe4b91f9",
       "bytes": 404192,
       "width": 1600,
       "height": 1000
@@ -974,7 +974,7 @@
     {
       "file": "docs/images/unit-maybury.png",
       "publication_status": "public",
-      "sha256": "040f7bf74d341f1db640ad4cbeadce412897f8abf0868a3357c5f5591f3858e2",
+      "sha256": "fd61929803fee85581ee8a6fdeeca50c50260c74e3d3662f6c5bfd92755b789a",
       "bytes": 195393,
       "width": 1132,
       "height": 503,
@@ -983,7 +983,7 @@
     {
       "file": "docs/images/unit-orbit-dec.png",
       "publication_status": "public",
-      "sha256": "8af6f7461bdac78cfabddce9a8c267730429abaa39d75177ad23a4e903d4fbe7",
+      "sha256": "2d16bba909ac8b533ceee08b0685c2485ab45b098fa8917005a1f07ba8c69266",
       "bytes": 264639,
       "width": 1132,
       "height": 503,
@@ -992,7 +992,7 @@
     {
       "file": "docs/images/unit-orbit.png",
       "publication_status": "public",
-      "sha256": "db8976d4204011f0b978c224bf57ff4954096271cfb1ecb5611def14685612db",
+      "sha256": "7c7a2c402fd353134c6eebf0e02755b8e8efa1902f7aec477afe59aeec33a241",
       "bytes": 427489,
       "width": 1600,
       "height": 1000,
@@ -1001,7 +1001,7 @@
     {
       "file": "docs/images/unit-plan-view.png",
       "publication_status": "public",
-      "sha256": "c275acb1954db41344e8c069cdd726a0871415072762bade9b6a38ee88ae02f4",
+      "sha256": "472f901f82f52b9d2981266835f98c3581bb901f46ee42793a103b89baab96f1",
       "bytes": 361496,
       "width": 1132,
       "height": 503,
@@ -1010,7 +1010,7 @@
     {
       "file": "docs/images/unit-sunpath.png",
       "publication_status": "public",
-      "sha256": "f284d46dc898e4f4241a5b01ed99322d6e63cb21df8af98293b0e9dc8574f892",
+      "sha256": "99029dafef7419f994bea2c1154ff1e8b1d8379cb49416f2044aa3d143c4039d",
       "bytes": 29760,
       "width": 362,
       "height": 240,
@@ -1019,7 +1019,7 @@
     {
       "file": "docs/images/unit-window-12.png",
       "publication_status": "public",
-      "sha256": "bcb14bbc9e7ccc66040adf51192fe5dfe78e6d2e72738581363bb173288b8a12",
+      "sha256": "00e100ca76c886a33c4a8a43ace2e64ab7e85bc60076ee28782e3589e62cb67c",
       "bytes": 80722,
       "width": 1132,
       "height": 503,
@@ -1028,7 +1028,7 @@
     {
       "file": "docs/images/unit-window-21.png",
       "publication_status": "public",
-      "sha256": "9d0b7083eb4e5525f2b07bf113a532b9a1b22f05a3c3fa77d43d92581dda6ccd",
+      "sha256": "373f48f758dd9352b4ab8d33c5db2c2a8c97acddfd31a58d9d24a4d71794d629",
       "bytes": 149972,
       "width": 1132,
       "height": 503,
@@ -1037,31 +1037,31 @@
     {
       "file": "docs/images/map-paramount.png",
       "publication_status": "public",
-      "sha256": "55c9d0ae9babf120b6498dd93cb526ab202451ca88ec4e8afbb51040fe5a3e2d",
+      "sha256": "8258c289a08e6d7e4c6efc830e0e1a5ec8d7f45496069544eea00a9a5aed1e8d",
       "note": "dashboard screenshot of the example search"
     },
     {
       "file": "docs/images/plan-paramount.png",
       "publication_status": "public",
-      "sha256": "7f8839d936bbd78b7efb1b046b9ede9c927bf162003ddb0be6535cbee2c6cb91",
+      "sha256": "2f08d18dd91ac98303da66c0220ae59d130e65762795e1beafe3ce9db611c862",
       "note": "dashboard screenshot of the example search"
     },
     {
       "file": "docs/images/unit-paramount-inside.png",
       "publication_status": "public",
-      "sha256": "48a20001473dc93b6c6ba0ce10ca240dc1f5a5868bada2de0b177b7a1c3d0c62",
+      "sha256": "c23f714a2a195d0562f0eaee84eeb400e79136e41abcb5ff157f3d515b023915",
       "note": "dashboard screenshot of the example search"
     },
     {
       "file": "docs/images/unit-paramount-window.png",
       "publication_status": "public",
-      "sha256": "f61ee0e4767f56f1a017927abde3296dbabdba4515efbe22090ed251f25db6bc",
+      "sha256": "38aa8903fdd61b29ebbad7890c5a6bb3a741767de2acbd8c27911c8af4c8de08",
       "note": "dashboard screenshot of the example search"
     },
     {
       "file": "docs/images/unit-paramount.png",
       "publication_status": "public",
-      "sha256": "470f3f39020830ebc93e18b657cb7f6994a0089b0e2b546e181a26623dbc7b02",
+      "sha256": "a3e322c277d2f6cd53136c7b848a17ca22d1d6f3f97a477813cf73f2c80c07c0",
       "note": "dashboard screenshot of the example search"
     }
   ],
