@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-14T13:15:18",
+ "generated": "2026-10-14T17:50:13",
  "version": "0.1.0",
  "search": "Manhattan 1BR, fall 2026",
  "layers": [
@@ -70,6 +70,7 @@
   "the-oskar-10f",
   "townsend-14c"
  ],
+ "lqip": true,
  "extra": [
   "coverage.json",
   "history.json",
