@@ -39,7 +39,7 @@ a listing (for example `#unit/emerald-green-1211` or `#plan/emerald-green-1211`)
 | `c` | Add the open listing to Compare |
 | `1`–`6` | Switch tab (Map, Shortlist, Compare, Unit 3D, Floor plan, Research) |
 | `t` | Flip light and dark (the settings menu also has System) |
-| `Esc` | Close the drawer or the help |
+| `Esc` | Close the lightbox, the drawer or the help |
 
 The Shortlist adds arrow keys, `Enter`, `s` and `c` on the focused row. Unit 3D adds `p` (play or pause
 the day) and `,` `.` (step 15 minutes). The floor plan adds `R` (turn), arrows (nudge 1 in, `Shift` 6 in),
@@ -48,6 +48,39 @@ the day) and `,` `.` (step 15 minutes). The floor plan adds `R` (turn), arrows (
 Saved picks, tiers, tour notes, compare, filters and weights are kept in your browser's local storage.
 Use **Back up picks** on the Tours view to keep them as a file, and **Restore** to load them in another
 browser.
+
+## Photos
+
+**Order.** On the cards, in the drawer, in the lightbox and in the Shortlist thumbnail the photos come in one order: clean exact-unit
+photos first, then same line (another floor of the same stack), then the building (amenities, lobby, exterior, other units), floor plans
+and the street. A photo flagged as carrying a broker's phone number, logo or watermark (`photo_flags`, see the
+[data model](data-model.md#photos)) is kept but goes to the end of its group. A card's photo count reads by group: "8 unit · 22 building"
+(a lone group of unit photos reads "8 photos"); it is a button that opens the lightbox.
+
+**Lightbox.** Click the count on a card, the photo or the expand button in the drawer, or a tile in Research > Media.
+
+| Control | Does |
+|---|---|
+| `←` `→`, `Home`, `End`, swipe, thumbnails | Move between photos (neighbours are preloaded) |
+| Tabs: All, Unit, Same line, Building, Floor plans, Street | Filter the sequence; each tab shows its count; `←` `→` move between tabs while one is focused |
+| Pinch, wheel (or `Ctrl` + wheel on a trackpad), double-click or double-tap, `+` `-` `0`, the zoom buttons | Zoom up to 6x around the pointer; drag to pan |
+| Pull the photo down | Close |
+| `Plan` Off / Overlay / Side by side (`f` cycles) | Overlay the listing's floor plan on the photo with an opacity slider, or show it next to the photo; offered when the listing has a plan |
+| `Esc`, the close button, a click on the backdrop | Close; focus returns to what opened it |
+| Open listing | Opens the drawer (outside the drawer only) |
+
+Each photo has a caption: its group, the title, the credit and licence (linked to the source page) and, for a flagged photo, a "Broker mark"
+note. The viewer is a dialog: focus is trapped, the page behind is inert, and each change is announced ("Photo 3 of 14. Building."). It follows
+the theme, drops its blur under `prefers-reduced-transparency` and its motion under `prefers-reduced-motion`, and fits a 390 px phone (the
+tabs scroll, the zoom buttons give way to pinch).
+
+**Blur-up and the transition.** Cards, the drawer and gallery tiles paint a tiny blurred preview from `data/lqip.json` at once and fade the
+photo in over it. Opening a listing from its card morphs the card photo into the drawer's hero with the View Transitions API (Chromium and
+Safari); elsewhere, and with `prefers-reduced-motion`, the drawer slides in as before.
+
+**Research > Media.** A justified gallery: rows of equal height whose widths follow each photo's ratio. Filter by scope (All, Unit, Same
+line, Building, Floor plans, Street, Aerial fallback), hide broker-marked photos, and lay it out by listing, by building or as one flat
+list. A tile shows its group, a broker-mark badge and, on hover, its credit; a click opens the lightbox on that section's photos.
 
 ## New search wizard
 

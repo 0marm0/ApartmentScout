@@ -144,7 +144,7 @@ know it; otherwise a default band is used (see [methodology](methodology.md#size
 
 ## Photos
 
-Three optional fields. See [photos](photos.md) for sources, licences and privacy.
+Optional fields. See [photos](photos.md) for sources, licences and privacy.
 
 ```json
 "photos": ["https://portal.example/unit-507-living.jpg", "media/the-unit-507/plan.jpg"],
@@ -174,6 +174,36 @@ Three optional fields. See [photos](photos.md) for sources, licences and privacy
 | `building_photos[].year` | number | Year taken when Commons records it; show it, buildings change. |
 | `building_photos[].width`, `height` | number | Size of `url` in pixels. |
 | `building_photos[].local` | string | Saved copy under `media/`, private searches only. |
+| `floorplan_images` | list of strings | Floor plan images: links and saved copies (`media/...`). The dashboard shows the saved copy and keeps its link as a fallback. |
+| `photos_meta` | list of objects | Parallel to `photos` and `photos_local` (same index). Each entry may carry `scope`, `title`, `credit` (one line), `source` and `page`. A photo with no entry is the exact unit. |
+| `photos_meta[].scope` | enum | `exact-unit` (the unit itself), `same-line` (same stack, another floor) or `same-building` (another unit or a common area). Decides the lightbox group. |
+| `photo_flags` | object | Per listing, keyed by a saved photo path (the string in `photos_local`, `building_photos[].local` or `floorplan_images`): `{"watermark": true, "why": ["phone number"]}`. Marks a photo that carries a broker's phone number, logo, web address, e-mail or a person's face. The dashboard keeps it but orders it last in its group and badges it. Written by `scripts/apply_photo_flags.py` (idempotent: only this field changes) from a review pass whose output maps each photo path to `{"why": [...], "uses": [[listing id, kind]]}`. |
+
+### Photo groups and order
+
+Every dashboard surface (cards, drawer, lightbox, Research gallery, Shortlist thumbnail) sorts a listing's images the same way
+(`dashboard/js/features/photos.js`). The group comes from the scope: a listing's own photo is **unit** unless its
+`photos_meta` says otherwise, `same-line` is **line**, `same-building` and building photos are **building**, `street` photos are
+**street**, and floor plans are **plan**. The order is unit, same line, building, floor plans, street; inside a group a photo
+flagged in `photo_flags` goes last and otherwise the data order holds. A card's photo is the first unit, line or building image,
+never a plan. The card's count reads "8 unit · 22 building".
+
+### Blur-up previews: `lqip.json`
+
+`apartmentscout build` writes `data/lqip.json` next to `listings.json` when Pillow is installed (`pip install 'apartmentscout[images]'`;
+without it the build says so and the dashboard simply fades photos in). It holds a 24 px wide WebP per leading photo, the first of
+each of the unit, same-line and building groups of every listing, base64 encoded, a few hundred bytes each:
+
+```json
+{"v": 1, "w": 24, "fmt": "webp", "items": {"media/the-unit-507/p-1a2b3c4d.webp": [1200, 800, "UklGR..."]}}
+```
+
+Keys are the saved photo path; each value is `[source width, source height, base64]`. `manifest.json` says `"lqip": true` when the file
+was written. The dashboard fetches it beside the main data (never inside `listings.json`, which stays the same size), paints each preview
+blurred behind its photo and cross-fades when the photo arrives, and uses the pixel size as the layout ratio in the Research gallery.
+Previews are cached by file size and modification time in `<search>/cache/lqip.json`, so a rebuild only reads photos that changed.
+The example's sidecar is about 290 KB for 970 photos. The standalone file embeds it when it is under 400 KB; without a `media/` folder
+beside the file the previews are re-keyed by each photo's original link (about 63 KB for the example).
 
 ## Commute
 
