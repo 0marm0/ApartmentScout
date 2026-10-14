@@ -4,7 +4,7 @@
 
 > **5 October update:** User confirms amenities cost $350/year ($29.17/month). Owner asking rent plus annualized amenities is $5,051.17/month before utilities. The [new view and noise deep dive](../emerald_green_2026-10-05/DEEP_DIVE.md) supersedes the amenity-price uncertainty below and adds surrounding heights and complaint-level analysis.
 
-Research date: October 4, 2026. Apartment of interest: #1211. Prepared for the existing Manhattan search: roughly $5,000 monthly, an enclosed bedroom, in-unit laundry, elevator, staffed service, gym, and a workable commute to 425 Lexington Avenue.
+Research date: October 4, 2026. Apartment of interest: #1211. Prepared for the existing Manhattan search: roughly $5,000 monthly, an enclosed bedroom, in-unit laundry, elevator, staffed service, gym, and a workable commute to Grand Central.
 
 ## Recommendation
 
@@ -121,7 +121,7 @@ Nearby long-term construction is real: the [Port Authority 2025 annual report](h
 
 ## Commute and everyday access
 
-For the existing office target, 425 Lexington Avenue, use these **unverified planning ranges**:
+For the commute target, Grand Central, use these **unverified planning ranges**:
 
 | Mode | Working estimate | Route / uncertainty |
 |---|---|---|

@@ -54,10 +54,10 @@
  "commute": {
   "destinations": [
    {
-    "name": "Office",
-    "address": "425 Lexington Ave, New York, NY",
-    "lat": 40.752269,
-    "lon": -73.974947,
+    "name": "Grand Central",
+    "address": "Grand Central Terminal, 89 E 42nd St, New York, NY",
+    "lat": 40.752726,
+    "lon": -73.977229,
     "arrive_by": "09:00",
     "max_minutes": 30,
     "weight": 1.0

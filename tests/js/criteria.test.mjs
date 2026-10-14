@@ -153,17 +153,17 @@ test('a moved destination drops its stored minutes and surfaces until the router
 
 test('commute modes: best, subway, bus and walk read the router, and bus is never a relabelled transit time', () => {
   const d = CRIT.commute.destinations[0];
-  const L = LISTINGS.find((x) => x.commute?.Office?.modes?.bus);
-  const m = L.commute.Office;
+  const L = LISTINGS.find((x) => x.commute?.[d.name]?.modes?.bus);
+  const m = L.commute[d.name];
   assert.equal(modeMinutes(L, d, 'best'), m.minutes);
   assert.equal(modeMinutes(L, d, 'subway'), m.modes.subway.minutes);
   assert.equal(modeMinutes(L, d, 'bus'), m.modes.bus.minutes);
   assert.equal(modeMinutes(L, d, 'walk'), m.modes.walk.minutes);
-  const legacy = { lat: 40.75, lon: -73.98, commute: { Office: { minutes: 21, mode: 'transit', route: 'walk 5 min to X → 6 to Y' } } };
+  const legacy = { lat: 40.75, lon: -73.98, commute: { [d.name]: { minutes: 21, mode: 'transit', route: 'walk 5 min to X → 6 to Y' } } };
   assert.equal(modeMinutes(legacy, d, 'subway'), 21);
   assert.equal(modeMinutes(legacy, d, 'bus'), null);
   assert.ok(Math.abs(modeMinutes(legacy, d, 'walk') - walkEstimate(legacy, d)) < 1e-9);
-  const walker = { lat: 40.752, lon: -73.975, commute: { Office: { minutes: 3, mode: 'walk' } } };
+  const walker = { lat: 40.752, lon: -73.975, commute: { [d.name]: { minutes: 3, mode: 'walk' } } };
   assert.equal(modeMinutes(walker, d, 'walk'), 3);
   assert.equal(modeMinutes(walker, d, 'subway'), null);
   assert.ok(Math.abs(walkRingMetres(10) - 640) < 1e-9);
@@ -171,7 +171,7 @@ test('commute modes: best, subway, bus and walk read the router, and bus is neve
 
 test('mode layers: best / subway / bus surfaces by destination; walk has none; missing bus grid is not faked', () => {
   const d = CRIT.commute.destinations[0];
-  const g = (kind, mode) => ({ rows: 2, cols: 2, kind, mode, name: 'Office', destination: { name: 'Office', lat: d.lat, lon: d.lon } });
+  const g = (kind, mode) => ({ rows: 2, cols: 2, kind, mode, name: d.name, destination: { name: d.name, lat: d.lat, lon: d.lon } });
   const layers = { 'commute-office': g('commute', 'transit'), 'commute-office-subway': g('commute-mode', 'subway'), 'commute-office-bus': g('commute-mode', 'bus') };
   assert.equal(commuteLayerKey(layers, d, 'best'), 'commute-office');
   assert.equal(commuteLayerKey(layers, d, 'subway'), 'commute-office-subway');
@@ -179,7 +179,7 @@ test('mode layers: best / subway / bus surfaces by destination; walk has none; m
   assert.equal(commuteLayerKey(layers, d, 'walk'), null);
   delete layers['commute-office-bus'];
   assert.equal(commuteLayerKey(layers, d, 'bus'), null);
-  const noBus = [{ commute: { Office: { minutes: 20, modes: { subway: { minutes: 20 } } } } }];
+  const noBus = [{ commute: { [d.name]: { minutes: 20, modes: { subway: { minutes: 20 } } } } }];
   const opts = Object.fromEntries(modeOptions(layers, noBus, d).map((o) => [o.mode, o]));
   assert.equal(opts.bus.enabled, false);
   assert.equal(opts.walk.layer, null);

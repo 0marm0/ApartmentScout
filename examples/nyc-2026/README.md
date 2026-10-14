@@ -6,7 +6,7 @@ details of the renter have been removed; everything else is as researched.
 **Brief:** a one-bedroom in Manhattan for an October 15 to November 1 move-in. Must have in-unit
 washer/dryer and an elevator; doorman and gym strongly preferred. Budget judged on monthly cost:
 target $5,000, stretch $5,200, absolute $5,450. Door-to-door commute under 30 minutes to an office at
-425 Lexington Avenue, arriving by 9:00.
+Grand Central, arriving by 9:00.
 
 | File | Contents |
 |---|---|
