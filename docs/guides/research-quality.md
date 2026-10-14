@@ -24,6 +24,8 @@ Checks every listing against the [data model](data-model.md): required identity 
 `aliases`), URL schemes (only `http(s)` and relative `media/`, `photos/`, `plans/`, `research/` paths
 without `..`, the same rule the dashboard's `safeUrl` applies), coordinates inside the search area
 (`search.bbox` `[lon0, lat0, lon1, lat1]`, else `search.map_center` with `search.radius_km`, default 25),
+a coordinate or BBL shared by three or more unrelated buildings (`shared_location`: a geocoder fallback, usually
+from listings with a blank address; spellings of one address and units of one tower do not count),
 impossible prices (non-positive, under $300, sale-sized, net above gross, a stated net that disagrees with
 its own concession), future check dates, missing local files and stale ranks on gone listings. A
 listings file may be a bare list or `{"schema_version": 1, "listings": [...]}`; a newer version than the

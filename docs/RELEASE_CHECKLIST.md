@@ -72,8 +72,8 @@ machine but a fresh clone would not ignore it.
 - Rebuild the example dashboard from `examples/nyc-2026` (`apartmentscout build --search examples/nyc-2026`), not
   from a private search.
 - Rebuild the standalone file (`scripts/bundle.sh`, then `apartmentscout build --standalone dist/...`) and run the
-  gate again: it scans `dist/` too. The file inlines MapLibre, three.js and the Geist fonts from `dashboard/vendor/`,
-  so it opens with no network; only map tiles (and the plan tracer's pdf.js) still need one.
+  gate again: it scans `dist/` too. The file inlines MapLibre, three.js, pdf.js and the Geist fonts from `dashboard/vendor/`,
+  so it opens with no network; only map tiles still need one.
 
 ## 6. Notices and attribution
 

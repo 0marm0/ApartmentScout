@@ -101,6 +101,9 @@ def sun_charts(site: dict, face: dict, floor: int, out_dir: Path, stem: str, com
     p = sun_range_chart(site, out_dir / f"{stem}-sun-range.png")
     if p:
         paths.append(p)
+    p = building_heights_chart(site, face, out_dir / f"{stem}-building-heights.png")
+    if p:
+        paths.append(p)
     return paths
 
 
@@ -127,6 +130,57 @@ def sun_range_chart(site: dict, out: Path) -> Path | None:
     ax.set_ylabel("hours per day", color=MUTED)
     ax.set_title("Direct sun on the window, 15th of each month", loc="left", color=INK, fontsize=12)
     ax.legend(fontsize=8, loc="upper left", frameon=False)
+    _style(ax)
+    fig.tight_layout()
+    out.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(out)
+    plt.close(fig)
+    return out
+
+
+def building_heights_chart(site: dict, face: dict | None, out: Path, radius_m: float = 300) -> Path | None:
+    """Roof heights of the buildings around the window against their distance, with the window's eye height.
+
+    Each bar is one building (standing or filed) within ``radius_m``; its height is the roof top relative to the
+    target's ground, the same datum as the eye line, so a roof above the line blocks the view straight out and a
+    roof below it does not. Buildings in front of the window (within 45 degrees of where it faces) are dark,
+    those to the side lighter, those behind it pale. None when nothing is nearby."""
+    from .geo.neighbours import _ang, neighbours, roofs
+    nb = neighbours(site, face, radius_m)
+    rows = nb["rows"]
+    if not rows:
+        return None
+    meta, fut = site.get("bmeta") or [], site.get("future") or []
+    bearing = face["bearing"] if face else (site.get("window") or {}).get("bearing")
+    eye = roofs(site, face).get("eye_m") if site.get("window") else None
+
+    def colour(brg: float) -> str:
+        if bearing is None:
+            return SHADE
+        a = _ang(brg, bearing)
+        return SHADE if a <= 45 else ("#9aaccb" if a <= 90 else "#d3d9e2")
+
+    fig, ax = plt.subplots(figsize=(10, 4.2), dpi=140)
+    xs = [r[1] for r in rows]
+    ax.bar(xs, [r[4] for r in rows], width=max(2.0, radius_m / 90), color=[colour(r[2]) for r in rows],
+           edgecolor=["#b8860b" if r[0] < 0 else "none" for r in rows], linewidth=1.2)
+    if eye is not None:
+        ax.axhline(eye, color=SUN, lw=2, label=f"eye height at the window, floor {site['window']['floor']} ({eye:.0f} m)")
+    tall = sorted((r for r in rows if bearing is None or _ang(r[2], bearing) <= 45), key=lambda r: -r[4])[:4]
+    for b, d, _brg, _h, top in tall:
+        m = (fut[-b - 1] if b < 0 and -b - 1 < len(fut) else meta[b] if 0 <= b < len(meta) else None) or {}
+        name = m.get("name") or m.get("address") or ("filed building" if b < 0 else f"building {b}")
+        ax.annotate(f"{str(name)[:26]}\n{top:.0f} m", (d, top), textcoords="offset points", xytext=(0, 4),
+                    ha="center", fontsize=7, color=INK)
+    ax.set_xlim(0, radius_m)
+    ax.set_xlabel("distance from the window to the nearest wall (m)", color=MUTED)
+    ax.set_ylabel("roof height above the target's ground (m)", color=MUTED)
+    face_txt = f"; the window faces {bearing:.0f} degrees (dark = ahead)" if bearing is not None else ""
+    ax.set_title(f"Building heights within {radius_m:.0f} m{face_txt}", loc="left", color=INK, fontsize=12)
+    if any(r[0] < 0 for r in rows):
+        ax.bar([], [], color="none", edgecolor="#b8860b", linewidth=1.2, label="outlined: filed with the city, not built yet")
+    if eye is not None or any(r[0] < 0 for r in rows):
+        ax.legend(fontsize=8, loc="upper right", frameon=False)
     _style(ax)
     fig.tight_layout()
     out.parent.mkdir(parents=True, exist_ok=True)

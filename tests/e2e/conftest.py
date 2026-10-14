@@ -7,6 +7,9 @@ that server, so map tiles, remote photos and any CDN fail the same way in CI as 
 basemap).
 
     APARTMENTSCOUT_E2E=1 pytest -m e2e tests/e2e -q
+
+APARTMENTSCOUT_E2E_CPU_THROTTLE=<n> slows every page's JavaScript n times (Chromium's CPU throttling), to reproduce a
+slow CI runner locally; 6 is about a GitHub-hosted runner.
 """
 from __future__ import annotations
 
@@ -24,6 +27,7 @@ import pytest
 ROOT = Path(__file__).resolve().parents[2]
 MODE = os.environ.get("APARTMENTSCOUT_E2E", "")
 CI = bool(os.environ.get("CI"))
+THROTTLE = float(os.environ.get("APARTMENTSCOUT_E2E_CPU_THROTTLE") or 1)
 # a real GPU on a Mac; SwiftShader elsewhere (CI), where WebGL may be missing or drop layers
 GPU_ARGS = (["--use-angle=metal", "--ignore-gpu-blocklist", "--enable-gpu"] if sys.platform == "darwin" and not CI
             else ["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"])
@@ -126,6 +130,8 @@ def open_page(browser, base_url: str):
         contexts.append(ctx)
         ctx.route("**/*", lambda r: r.continue_() if r.request.url.startswith((base_url, "data:", "blob:")) else r.abort())
         page = ctx.new_page()
+        if THROTTLE > 1:
+            ctx.new_cdp_session(page).send("Emulation.setCPUThrottlingRate", {"rate": THROTTLE})
         s = Session(page, base_url)
         page.on("pageerror", lambda e: s.errors.append(f"pageerror: {e}"))
 

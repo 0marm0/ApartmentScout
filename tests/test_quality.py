@@ -336,3 +336,26 @@ def test_lint_fee_equal_to_listing_claim_drop():
     L = unit(price={"gross": 4800, "fees_monthly": 100},
              claims=[{"field": "gross", "value": 4900, "source": "portal", "observed_at": "2026-10-01"}])
     assert "fee_is_price_drop" in flagged(L)
+
+
+# --------------------------------------------------------------------------- shared locations
+def test_validate_flags_many_buildings_on_one_coordinate_and_bbl():
+    spot = {"lat": 40.702908, "lon": -74.01398, "bbl": "1000090014", "address": ", New York, NY"}
+    rows = [unit(id=f"b{i}-1a", building=name, **spot) for i, name in enumerate(["Lyra", "MiMA", "70 Pine"])]
+    issues = [i for i in validate(rows, crit(), today=TODAY) if i.code == "shared_location"]
+    assert {i.field for i in issues} == {"lat", "bbl"}
+    assert "3 listings in 3 different buildings" in issues[0].message
+
+
+def test_validate_does_not_flag_one_building_under_several_spellings():
+    spot = {"lat": 40.7477, "lon": -73.9821, "bbl": "1008640028"}
+    rows = [unit(id="k-1", building="The Knox", address="49 East 34th Street, New York, NY", **spot),
+            unit(id="k-2", building="The Knox", address="49 East 34 St, New York, NY", **spot),
+            unit(id="k-3", building="Knox Tower", address="49 East 34 St, New York, NY", **spot)]
+    assert not [i for i in validate(rows, crit(), today=TODAY) if i.code == "shared_location"]
+
+
+def test_validate_two_buildings_on_one_tax_lot_is_fine():
+    rows = [unit(id="w2-1", building="Two Worldwide Plaza", address="350 West 50 St, New York, NY", bbl="1010407501"),
+            unit(id="w3-1", building="Three Worldwide Plaza", address="393 West 49 St, New York, NY", bbl="1010407501")]
+    assert not [i for i in validate(rows, crit(), today=TODAY) if i.code == "shared_location"]

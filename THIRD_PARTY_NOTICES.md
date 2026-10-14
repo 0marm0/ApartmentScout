@@ -10,6 +10,7 @@ screenshots or exports. This file is a summary, not legal advice: the linked ter
 |---|---|---|
 | [MapLibre GL JS](https://github.com/maplibre/maplibre-gl-js) 4.7.1 | Vendored unmodified in `dashboard/vendor/maplibre-gl/` (JS, CSS and `LICENSE.txt`) for the dashboard map; inlined into standalone files | BSD 3-Clause. Copyright (c) 2023 MapLibre contributors; portions (c) Mapbox. |
 | [three.js](https://github.com/mrdoob/three.js) 0.160.0 | Vendored unmodified in `dashboard/vendor/three/` (`three.module.min.js`, the addons `OrbitControls`, `GLTFExporter`, `TextureUtils` and `RectAreaLightUniformsLib`, and `LICENSE`) for Unit 3D and the floor plan studio; inlined into standalone files | MIT. Copyright (c) 2010-2023 three.js authors. |
+| [pdf.js](https://github.com/mozilla/pdf.js) (pdfjs-dist) 4.10.38 | Vendored unmodified in `dashboard/vendor/pdfjs/` (`pdf.min.mjs`, `pdf.worker.min.mjs` and `LICENSE`); the plan tracer imports it only when a PDF plan is chosen; inlined into standalone files | Apache 2.0. Copyright Mozilla Foundation. |
 | [d3-contour](https://github.com/d3/d3-contour) 4.0.2 and [d3-array](https://github.com/d3/d3-array) 3.2.1 | Bundled in `dashboard/vendor/d3-contour.js` for commute contours | ISC. Copyright 2012-2023 Mike Bostock. |
 | [axe-core](https://github.com/dequelabs/axe-core) 4.10.3 (tests only) | Vendored unmodified in `tests/e2e/vendor/axe.min.js` with its `LICENSE`; injected into the dashboard by the browser test suite, never shipped in the dashboard | Mozilla Public License 2.0. Copyright (c) Deque Systems, Inc. Source: the axe-core repository and npm package. |
 | [Playwright](https://github.com/microsoft/playwright-python) (development only) | Browser test suite (`tests/e2e/`) and `scripts/screenshots.py` | Apache 2.0. |
@@ -19,13 +20,13 @@ screenshots or exports. This file is a summary, not legal advice: the linked ter
 The ISC, BSD and MIT licences require their copyright notice and licence text to accompany copies of the
 software. The bundled d3 file keeps its header, and each folder under `dashboard/vendor/` and `tests/e2e/vendor/`
 holds the licence file of what it contains. A standalone dashboard built with `apartmentscout build --standalone`
-inlines MapLibre, three.js and the Geist fonts; keep this file with it when you share it.
+inlines MapLibre, three.js, pdf.js and the Geist fonts; keep this file with it when you share it.
 
 ## Fonts
 
 | Font | How it is used | Licence |
 |---|---|---|
-| [Geist and Geist Mono](https://github.com/vercel/geist-font) 1.7.2 (variable) | Vendored in `dashboard/vendor/fonts/` (`Geist-Variable.woff2`, `GeistMono-Variable.woff2`, `geist.css`, `LICENSE.txt`) for the dashboard and inlined into standalone files; the landing page loads them from Google Fonts | SIL Open Font License 1.1. Copyright (c) 2023 Vercel, in collaboration with basement.studio. |
+| [Geist and Geist Mono](https://github.com/vercel/geist-font) 1.7.2 (variable) | Vendored in `dashboard/vendor/fonts/` (`Geist-Variable.woff2`, `GeistMono-Variable.woff2`, `geist.css`, `LICENSE.txt`) for the dashboard and inlined into standalone files; the landing page serves the same files from `/fonts/` (copied by the Pages workflow), with no Google Fonts request | SIL Open Font License 1.1. Copyright (c) 2023 Vercel, in collaboration with basement.studio. |
 
 ## Maps and imagery
 
@@ -63,4 +64,4 @@ basemap carry the basemap attribution above.
 
 ## pdf.js (Mozilla)
 
-Apache License 2.0. Loaded from cdn.jsdelivr.net (pdfjs-dist 4.10.38) only when a PDF floor plan is opened in the plan tracer. https://github.com/mozilla/pdf.js
+Apache License 2.0. pdfjs-dist 4.10.38 (`pdf.min.mjs` and `pdf.worker.min.mjs`) is vendored unmodified in `dashboard/vendor/pdfjs/` with its `LICENSE`, and loaded only when a PDF floor plan is opened in the plan tracer; standalone files inline it. Copyright Mozilla Foundation. https://github.com/mozilla/pdf.js

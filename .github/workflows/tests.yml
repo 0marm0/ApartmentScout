@@ -20,6 +20,9 @@ jobs:
   e2e:
     # every dashboard view in dark and light at 1440 and 390 px, key interactions and axe-core, in headless Chromium
     # (SwiftShader WebGL; checks that need WebGL skip themselves if it is missing). Tiles and photos are blocked.
+    # Software GL makes opening the map, Unit 3D and the floor plan studio block the page for seconds, so tests wait for
+    # each heavy view to go idle before the next action (see SETTLED_JS in tests/e2e/test_dashboard.py) instead of
+    # leaning on long timeouts. Reproduce a slow runner locally with APARTMENTSCOUT_E2E_CPU_THROTTLE=6.
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -29,6 +32,6 @@ jobs:
           python-version: "3.12"
       - run: pip install -e ".[dev]"
       - run: python -m playwright install --with-deps chromium
-      - run: pytest -m e2e tests/e2e -q -rs
+      - run: pytest -m e2e tests/e2e -q -rs --durations=10   # the slowest tests show where a runner struggles
         env:
           APARTMENTSCOUT_E2E: "1"

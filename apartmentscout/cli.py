@@ -156,8 +156,9 @@ def cmd_commute(args):
     from .commute.run import run_commute
     ws = ws_from(args)
     Ls = _listings(ws)
+    only = [_find(Ls, k)["id"] for k in args.ids] if getattr(args, "ids", None) else None
     run_commute(ws, Ls, ws.criteria(), cell_m=args.cell, log=log,
-                mode_grids=False if getattr(args, "no_mode_grids", False) else None)
+                mode_grids=False if getattr(args, "no_mode_grids", False) else None, only=only)
     save(Ls, ws.listings_path)
 
 
@@ -293,7 +294,7 @@ def cmd_site(args):
                      "sun_hours": st["sun_hours"], "sun_hours_range": {"lo": rng["lo"], "hi": rng["hi"]},
                      "skyline_ahead_deg": st["skyline_ahead_deg"], "open_sky_share": st["open_sky_share"],
                      "sky_view": st.get("sky_view"), "daylight_factor_est": st.get("daylight_factor_est"),
-                     "sun_year": st.get("sun_year")}
+                     "sun_year": st.get("sun_year"), "exposure_source": prov.get("exposure")}
         if st.get("sun_hours_expected"):
             L["site"]["sun_hours_expected"] = st["sun_hours_expected"]
         log(f"  window faces {face['bearing']:.0f} deg at t={w['t']}, floor {w['floor']}"
@@ -356,7 +357,28 @@ def cmd_photos(args):
     if want_cache and example:
         sys.exit("Refusing to save photos inside examples/: the bundled example is committed. "
                  "Run --cache on your own search.")
+    if args.source == "web" and example:
+        sys.exit("Refusing to add listing-page photos inside examples/: they belong to their owners and the bundled "
+                 "example is committed. Run --source web on your own search.")
     t0 = time.monotonic()
+    if args.source == "wikidata":
+        from .photo_sources import Wikidata, add_wikidata_photos
+        log(f"Wikidata building images (credited from Wikimedia Commons): {len(targets)} listings, up to {args.max} each")
+        st = add_wikidata_photos(targets, Wikidata(ws.cache_dir / "photos"), Commons(ws.cache_dir / "photos", refresh=args.refresh),
+                                 limit=args.max, say=log)
+        log(f"  {st['with_photos']}/{st['buildings']} buildings have a Wikidata image; {st['requests']} SPARQL requests, "
+            f"{time.monotonic() - t0:.0f} s")
+        save(Ls, ws.listings_path)
+    if args.source == "web":
+        import requests
+
+        from .photo_sources import PageFetcher, add_web_photos
+        log(f"Listing and building pages: {sum(1 for L in targets if not (L.get('photos') or L.get('photos_local')))} "
+            "listings without photos (plain GETs; a bot check ends that host for this run)")
+        st = add_web_photos(targets, PageFetcher(requests.Session()), limit=args.max, say=log)
+        log(f"  {st['with_photos']}/{st['listings']} listings got images from {st['pages']} pages; "
+            f"{len(st['blocked'])} host(s) blocked; {time.monotonic() - t0:.0f} s")
+        save(Ls, ws.listings_path)
     if args.source in ("commons", "all"):
         api = Commons(ws.cache_dir / "photos", refresh=args.refresh)
         log(f"Wikimedia Commons: {len(targets)} listings, radius {args.radius:g} m, up to {args.max} photos each"
@@ -409,7 +431,7 @@ def cmd_build(args):
 
 def standalone(data_dir: Path, dest: Path) -> Path:
     """One self-contained HTML file: the dashboard, its CSS and JS bundle, every data file and the
-    vendored libraries (MapLibre, three.js and its addons, Geist fonts).
+    vendored libraries (MapLibre, three.js and its addons, pdf.js, Geist fonts).
 
     Works when opened as a file, in app previews and on any static host, with no network except
     map tiles; without tiles the map falls back to a plain background under the local overlays."""
@@ -448,7 +470,7 @@ def standalone(data_dir: Path, dest: Path) -> Path:
 
 
 def _inline_vendor(html: str) -> str:
-    """Inline dashboard/vendor: fonts and MapLibre as <style>/<script>, three.js and its addons as data: URLs in
+    """Inline dashboard/vendor: fonts and MapLibre as <style>/<script>, three.js, its addons and pdf.js as data: URLs in
     the import map (a data: module cannot resolve relative imports, so those are pointed at the import map)."""
     import base64
     import posixpath
@@ -481,6 +503,9 @@ def _inline_vendor(html: str) -> str:
                                f"{posixpath.normpath(posixpath.join(posixpath.dirname(rel), m.group(3)))}{m.group(2)}",
                      f.read_text())
         imports["three/addons/" + rel] = js_url(src)
+    # pdf.js (plan tracer): the library and its worker, only fetched when a PDF plan is opened
+    imports["pdfjs-dist"] = js_url((V / "pdfjs" / "pdf.min.mjs").read_text())
+    imports["pdfjs-dist/worker"] = js_url((V / "pdfjs" / "pdf.worker.min.mjs").read_text())
     imap = json.dumps({"imports": imports}, indent=1)
     return re.sub(r'<script type="importmap">.*?</script>', lambda m: f'<script type="importmap">\n{imap}\n</script>',
                   html, count=1, flags=re.S)
@@ -624,6 +649,9 @@ def main(argv=None):
     s.add_argument("--cell", type=float, default=None, help="grid cell size in metres (default: commute.transit.heat_cell_m or 50)")
     s.add_argument("--no-mode-grids", action="store_true",
                    help="write only the best-of-transit heat grid, not one per mode")
+    s.add_argument("--ids", nargs="+", metavar="ID",
+                   help="re-time only these listings (ids, or unique id fragments); the heat-map layers on disk "
+                        "and every other listing's commute are left as they are")
     s = add("layers", cmd_layers, "city map layers (NYC: 311 noise)")
     s.add_argument("--months", type=int, default=12)
     s.add_argument("--transit-only", action="store_true", help="only rebuild the transit lines layer")
@@ -658,10 +686,13 @@ def main(argv=None):
                    "within 300 m with distance, bearing, height and sources")
     s = add("photos", cmd_photos, "licensed building photos (Wikimedia Commons) and local photo copies")
     s.add_argument("ids", nargs="*")
-    s.add_argument("--source", default="commons", choices=["commons", "local", "all"],
-                   help="commons: look up building photos; local: save existing photos under media/; all: both")
+    s.add_argument("--source", default="commons", choices=["commons", "local", "all", "wikidata", "web"],
+                   help="commons: look up building photos; local: save existing photos under media/; all: both; "
+                        "wikidata: images of named towers from their Wikidata item (credited, licensed); web: for "
+                        "listings with no photos, images from the listing's own page (private searches only)")
     s.add_argument("--radius", type=float, default=60, help="metres around the listing for street photos")
-    s.add_argument("--max", type=int, default=6, help="building photos to keep per listing")
+    s.add_argument("--max", type=int, default=6, help="building photos to keep per listing (wikidata: per building; "
+                   "web: images read per page)")
     s.add_argument("--cache", action="store_true", help="also save photos under <search>/media/ (not for examples)")
     s.add_argument("--refresh", action="store_true", help="ignore cached API responses")
     s = add("score", cmd_score, "score and rank listings")
