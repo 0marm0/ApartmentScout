@@ -82,15 +82,13 @@ def test_image_manifest_gate(tmp_path: Path) -> None:
 
 
 def test_repo_manifest_covers_every_image_with_the_agreed_statuses() -> None:
+    # Owner decision (2026-10-13): every image is public while the repository is private, and hot-linked
+    # listing photo URLs are allowed; the decision is recorded in the manifest's policy block.
     man = json.loads((REPO / rc.MANIFEST).read_text())
-    entries = {Path(e["file"]).name: e["publication_status"] for e in man["images"]}
     assert set(rc.image_files(REPO)) <= {e["file"] for e in man["images"]}
-    assert entries.get("greywood--floor_plan_3d.jpg", "private") == "private"
-    for name, st in entries.items():
-        if name.startswith(("codexeg--", "fitcheck--", "roomtolive--", "layout--")):
-            assert st == "review", name
-        elif name != "greywood--floor_plan_3d.jpg":
-            assert st == "public", name
+    assert all(e["publication_status"] == "public" for e in man["images"])
+    assert man.get("policy", {}).get("listing_photo_urls") == "allowed"
+    assert man["policy"].get("decided") and man["policy"].get("reason")
 
 
 @pytest.mark.skipif(not shutil.which("git"), reason="git not installed")
