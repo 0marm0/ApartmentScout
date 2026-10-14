@@ -154,8 +154,9 @@ def cmd_commute(args):
     from .commute.run import run_commute
     ws = ws_from(args)
     Ls = _listings(ws)
+    only = [_find(Ls, k)["id"] for k in args.ids] if getattr(args, "ids", None) else None
     run_commute(ws, Ls, ws.criteria(), cell_m=args.cell, log=log,
-                mode_grids=False if getattr(args, "no_mode_grids", False) else None)
+                mode_grids=False if getattr(args, "no_mode_grids", False) else None, only=only)
     save(Ls, ws.listings_path)
 
 
@@ -610,6 +611,9 @@ def main(argv=None):
     s.add_argument("--cell", type=float, default=None, help="grid cell size in metres (default: commute.transit.heat_cell_m or 50)")
     s.add_argument("--no-mode-grids", action="store_true",
                    help="write only the best-of-transit heat grid, not one per mode")
+    s.add_argument("--ids", nargs="+", metavar="ID",
+                   help="re-time only these listings (ids, or unique id fragments); the heat-map layers on disk "
+                        "and every other listing's commute are left as they are")
     s = add("layers", cmd_layers, "city map layers (NYC: 311 noise)")
     s.add_argument("--months", type=int, default=12)
     s.add_argument("--transit-only", action="store_true", help="only rebuild the transit lines layer")
