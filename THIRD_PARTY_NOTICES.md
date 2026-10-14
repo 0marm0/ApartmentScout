@@ -26,7 +26,7 @@ inlines MapLibre, three.js, pdf.js and the Geist fonts; keep this file with it w
 
 | Font | How it is used | Licence |
 |---|---|---|
-| [Geist and Geist Mono](https://github.com/vercel/geist-font) 1.7.2 (variable) | Vendored in `dashboard/vendor/fonts/` (`Geist-Variable.woff2`, `GeistMono-Variable.woff2`, `geist.css`, `LICENSE.txt`) for the dashboard and inlined into standalone files; the landing page loads them from Google Fonts | SIL Open Font License 1.1. Copyright (c) 2023 Vercel, in collaboration with basement.studio. |
+| [Geist and Geist Mono](https://github.com/vercel/geist-font) 1.7.2 (variable) | Vendored in `dashboard/vendor/fonts/` (`Geist-Variable.woff2`, `GeistMono-Variable.woff2`, `geist.css`, `LICENSE.txt`) for the dashboard and inlined into standalone files; the landing page serves the same files from `/fonts/` (copied by the Pages workflow), with no Google Fonts request | SIL Open Font License 1.1. Copyright (c) 2023 Vercel, in collaboration with basement.studio. |
 
 ## Maps and imagery
 
