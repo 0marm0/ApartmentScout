@@ -1059,7 +1059,7 @@ function greenRow() {
   const g = site.green;
   if (!g || typeof g !== 'object') return '';
   const c = g.counts || {}, gv = site.study?.green_view, seen = Array.isArray(gv?.green) ? gv.green.slice(0, 3).map((r) => `${esc(r.name || `unnamed ${r.kind}`)} (${Math.round(r.visible_m2)} m², ${Math.round(r.dist_m?.[0] ?? 0)}-${Math.round(r.dist_m?.[1] ?? 0)} m)`).join(', ') : '';
-  return `<dt>Parks and trees</dt><dd>${(c.polys ?? (g.polys || []).length).toLocaleString()} parks, lawns and playgrounds and ${(c.trees ?? (g.trees || []).length / 2).toLocaleString()} mapped trees from ${esc(g.source || 'OpenStreetMap')}${g.fetched ? `, fetched ${esc(g.fetched)}` : ''}. Trees mapped in OpenStreetMap are few, so park and lawn areas also get canopies at about 8-14 m: the picture shows where green lies, not how many trees. Context only: not counted as shade in the sun hours.${seen ? ` From this window, in a ${gv.fov_deg ?? 90}° view: ${seen}.` : ''}</dd>`;
+  return `<dt>Parks and trees</dt><dd>${(c.polys ?? (g.polys || []).length).toLocaleString()} parks, lawns and playgrounds and ${(c.trees ?? (g.trees || []).length / 2).toLocaleString()} mapped trees from ${esc(g.source || 'OpenStreetMap')}${g.fetched ? `, fetched ${esc(g.fetched)}` : ''}. Trees mapped in OpenStreetMap are few, so park and lawn areas also get canopies at about 8-15 m: the picture shows where green lies, not how many trees. Context only: not counted as shade in the sun hours.${seen ? ` From this window, in a ${gv.fov_deg ?? 90}° view: ${seen}.` : ''}</dd>`;
 }
 function safeLink(u) { const v = safeUrl(u); return v && /^https?:/i.test(v) ? `, <a href="${esc(v)}" target="_blank" rel="noopener">source</a>` : ''; }
 

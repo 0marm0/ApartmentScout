@@ -253,10 +253,14 @@ def _make_site(L, crit, cache_dir, floor, bearing, t, radius, streets, future, r
     floor = min(want_floor, max_floor(site))
     panes = panes if panes is not None else listing_panes(L)
     panes = [float(o) for o in panes] if panes and any(abs(float(o)) > 1e-9 for o in panes) else None
-    face = listing_face(faces, face_index if face_index is not None else L.get("window_face"))
+    # explicit command-line choices (--face, then --bearing) beat the listing's window_face / window_t / exposure
+    face = listing_face(faces, face_index)
+    from_listing = face is None and bearing is None
+    if from_listing:
+        face = listing_face(faces, L.get("window_face"))
     if face is None:
         face = face_by_bearing(faces, bearing) if bearing is not None else pick_face(faces, L.get("exposure"))
-    if t is None and L.get("window_t") is not None:
+    if t is None and from_listing and L.get("window_t") is not None:
         t = float(L["window_t"])
     if face:
         c0 = time.perf_counter()

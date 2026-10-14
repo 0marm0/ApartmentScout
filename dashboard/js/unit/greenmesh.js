@@ -51,7 +51,7 @@ export function greenGroup(green, opts = {}) {
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(P), 3));
     geo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(C), 3));
-    const mat = new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2, fog: true });
+    const mat = new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1, fog: true });
     const m = new THREE.Mesh(geo, mat); m.name = 'green-patches'; m.renderOrder = 0; g.add(m);
   }
 
