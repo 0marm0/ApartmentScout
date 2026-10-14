@@ -23,8 +23,22 @@ jobs:
     # Software GL makes opening the map, Unit 3D and the floor plan studio block the page for seconds, so tests wait for
     # each heavy view to go idle before the next action (see SETTLED_JS in tests/e2e/test_dashboard.py) instead of
     # leaning on long timeouts. Reproduce a slow runner locally with APARTMENTSCOUT_E2E_CPU_THROTTLE=6.
+    # Split across parallel runners by file so each shard stays well inside the timeout.
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        shard:
+          - name: views
+            files: tests/e2e/test_dashboard.py
+          - name: decide-and-shell
+            files: tests/e2e/test_decision.py tests/e2e/test_shell_extras.py
+          - name: map-media-results
+            files: tests/e2e/test_map_features.py tests/e2e/test_lightbox.py tests/e2e/test_results_rail.py tests/e2e/test_pdf_tracer.py
+          - name: wizard
+            files: tests/e2e/test_wizard.py
+    name: e2e (${{ matrix.shard.name }})
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -32,6 +46,12 @@ jobs:
           python-version: "3.12"
       - run: pip install -e ".[dev]"
       - run: python -m playwright install --with-deps chromium
-      - run: pytest -m e2e tests/e2e -q -rs --durations=10   # the slowest tests show where a runner struggles
+      - run: pytest -m e2e ${{ matrix.shard.files }} -q -rs --durations=10   # the slowest tests show where a runner struggles
         env:
           APARTMENTSCOUT_E2E: "1"
+      - name: every e2e file belongs to a shard
+        if: matrix.shard.name == 'views'
+        run: |
+          for f in tests/e2e/test_*.py; do
+            grep -q "$f" .github/workflows/tests.yml || { echo "$f is not in any e2e shard"; exit 1; }
+          done
