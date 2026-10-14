@@ -36,7 +36,8 @@ coordinates into `criteria.yaml`.
 
 ## 3. Source, enrich, score
 
-1. Follow `listing-sourcing` to collect candidates into `listings.json`.
+1. Follow `listing-sourcing` to collect candidates into `listings.json`, then
+   `apartmentscout validate && apartmentscout lint` and fix errors and high flags.
 2. `apartmentscout geocode && apartmentscout commute && apartmentscout layers`.
 3. `apartmentscout score` and `apartmentscout report`. Read `shortlist.md` yourself before
    presenting it: check that the top ten make sense and that no unit ranks high only because
@@ -56,6 +57,13 @@ For each shortlisted unit, in this order:
 
 Write findings to `research/<id>.md`, update the listing fields, rescore, rebuild the dashboard.
 
+Drive this with `apartmentscout coverage`: it lists, in priority order, what each finalist is still missing
+or holds only as a stale fact, how far each gap could move the ranking, and the exact questions to send
+(`apartmentscout coverage --id <id>`; the same generator feeds the call sheets and
+`templates/landlord-questions.md`). Say "not a market census" when you report coverage: it describes the
+listings captured, not the market. A finalist is ready to decide on when its coverage row has no missing or
+stale facts.
+
 ## 5. Decide
 
 Use `tour-and-decide` to plan tours (including night visits), compare finalists in the
@@ -65,3 +73,12 @@ dashboard's Compare view, and write the decision memo.
 
 Re-check availability and price of every `shortlist`/`touring` unit at least daily during an
 active search. Record `checked` dates. Mark vanished listings `gone`, never delete them.
+
+- `apartmentscout history diff` shows what changed since the last build (new, relisted, price, concession,
+  status, gone); each build records a snapshot under `history/snapshots/`.
+- Log what other people tell you with `apartmentscout history claim` (see `listing-sourcing`).
+  `apartmentscout history show <id>` gives the availability ladder (potential, conditional, unverified,
+  over_budget, late, rejected, gone, status_dispute), which is separate from the renter's workflow status
+  and never changed by their favourites.
+- Buildings worth watching for new units go under `watchlist:` in `criteria.yaml` with a `reason` and a
+  `trigger` (what would make it worth reopening); see `docs/guides/research-quality.md#watchlist`.
