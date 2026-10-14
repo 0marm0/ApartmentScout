@@ -17,6 +17,8 @@ const waiting = new Set();   // callbacks to run once a result has been applied 
 
 /** 'worker' once the worker holds the data, else 'sync'. Mirrored on <html data-scoring> for tests. */
 export const scoringMode = () => (worker && ready && !off ? 'worker' : 'sync');
+/** A request is in flight or queued (tests wait on this rather than on a fixed delay). */
+export const busy = () => !!sent || queued;
 const publish = () => { document.documentElement.dataset.scoring = scoringMode(); };
 
 const keys = () => DIMS.map(([k]) => k);
