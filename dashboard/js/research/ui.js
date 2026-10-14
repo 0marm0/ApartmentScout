@@ -2,6 +2,7 @@
 import { esc, money, toast } from '../util.js';
 import { thumb as kitThumb } from '../views/table-kit.js';
 import { imagesOf } from '../util.js';
+import { illustration } from '../features/empty.js';   // [feature C] empty-state art
 
 /** Price sparkline: one line, the last point marked; colour says which way the price went. */
 export function sparkline(pts, w = 96, h = 26, { label = '' } = {}) {
@@ -19,7 +20,8 @@ export function sparkline(pts, w = 96, h = 26, { label = '' } = {}) {
 
 /** Empty state with an icon tile, a title, a line of help and an optional command. */
 export function empty(icon, title, body, cmd) {
-  return `<div class="empty rs-empty"><span class="rs-ill" aria-hidden="true">${icon}</span><b>${esc(title)}</b><span>${body}</span>${cmd ? `<code class="rs-cmd">${esc(cmd)}</code>` : ''}</div>`;
+  const kind = { [IC.clock]: 'history', [IC.pulse]: 'history', [IC.image]: 'media', [IC.queue]: 'queue', [IC.eye]: 'watch' }[icon];   // [feature C] a drawn scene for each tab
+  return `<div class="empty rs-empty${kind ? ' has-ill' : ''}">${kind ? illustration(kind) : `<span class="rs-ill" aria-hidden="true">${icon}</span>`}<b>${esc(title)}</b><span>${body}</span>${cmd ? `<code class="rs-cmd">${esc(cmd)}</code>` : ''}</div>`;
 }
 
 /** A note written by the pipeline (plain text with `code` spans), made safe for HTML. */

@@ -35,6 +35,7 @@ import { accessRoutes, entryPoint } from './plan/route.js';
 import { PRODUCT_MAP, productsFor, shoppingList, shoppingCSV, CHECKED } from './plan/products.js';
 import { productFinder, withProduct } from './plan/shop.js';
 import { suggestLayout } from './plan/suggest.js';
+import { planEmpty, missingNotice } from './features/plan-empty.js';   // [feature C] empty state and missing-plan notice
 import { renderOptions } from './plan/options.js';
 
 const st = {
@@ -158,8 +159,11 @@ export async function show(id) {
   if (!ids.length) {
     $('psTitle').textContent='No floor plans yet';
     $('psSub').textContent='Import a complete plan project through Layout, or ask your research agent to prepare one from a dimensioned plan.';
+    planEmpty(true);
     return;
   }
+  planEmpty(false);
+  if (id && id !== 'compare' && !ids.includes(id)) missingNotice('floor plan', id);
   const wantCompare = id === 'compare';
   id = id && ids.includes(id) ? id : st.id || ids[0];
   $('planSel').value = id;

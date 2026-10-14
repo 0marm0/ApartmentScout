@@ -4,6 +4,7 @@
 import { S, on, emit, store, byId, filtered, openDrawer, toggleCompare, toggleSave, isSaved, cost, commuteOf, dests, coverage, score, tierIndex, STATUSES } from './app.js';
 import { $, esc, money, ICONS } from './util.js';
 import { attachSplit, sync as splitSync, shown as splitShown } from './features/split-view.js';   // [features] docked mini map
+import { illustration } from './features/empty.js';   // [feature C] empty-state art
 import { ppsf, groupKey, thumb, tierPill, myTierPill, tri, doorman, isMust, floorText, commuteHTML, scoreBar, statusPill, name, gateFails, costUnknown, label } from './views/table-kit.js';
 
 const saved = store.get('list:ui', null) || {};
@@ -226,7 +227,7 @@ export function init() {
         <details class="colpick" id="lsCols"><summary class="btn"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="2" y="2.5" width="12" height="11" rx="1.5"/><path d="M6 2.5v11M10 2.5v11"/></svg>Columns</summary><div class="menu" id="lsColMenu"></div></details>
       </div></div>
     <div class="panel flush tbl-wrap" id="lsWrap"><table class="grid lst" id="table" aria-label="Listings that match your filters"><thead></thead><tbody></tbody></table>
-      <div class="empty ls-empty" id="lsEmpty" hidden><b>No homes match your filters</b>Loosen a budget tier, the commute limit or a must-have on the left, or include more statuses.</div></div>
+      <div class="empty ls-empty has-ill" id="lsEmpty" hidden>${illustration('filters')}<b>No homes match your filters</b>Loosen a budget tier, the commute limit or a must-have on the left, or include more statuses.</div></div>
   </div>`;
   controls();
   const t = $('table');

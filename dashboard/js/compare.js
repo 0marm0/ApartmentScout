@@ -4,6 +4,7 @@
 import { S, on, byId, cost, commuteOf, dests, toggleCompare, toggleSave, openDrawer, isSaved, pick, score, DIMS } from './app.js';
 import { $, esc, money, moneyShort, safeUrl, ring, unitGlyph, bullets, scoreColor, ICONS, toast, debounce } from './util.js';
 import { modeRoute, ppsf, tierPill, myTierPill, gateFails, gateUnverified, name, thumb, label, isMust, TIERS } from './views/table-kit.js';
+import { illustration } from './features/empty.js';   // [feature C] empty-state art
 
 const LET = ['A', 'B', 'C', 'D'];
 let shown = false, active = -1, opts = [];
@@ -117,9 +118,9 @@ function boardHTML(Ls) {
 
 function emptyHTML() {
   const sugg = suggestions('').slice(0, 4);
-  return `<div class="empty cmp-empty"><b>Nothing to compare yet</b>
+  return `<div class="empty cmp-empty has-ill">${illustration('compare')}<b>Nothing to compare yet</b>
     <span>Add up to four homes with <span class="kbd-i">${ICONS.plus}</span> on the Shortlist, <kbd>c</kbd> in the listing panel, or start from one of these.</span>
-    ${sugg.length ? `<div class="cmp-sugg">${sugg.map((o) => `<button type="button" class="sg" data-add="${esc(o.L.id)}"><span class="th">${thumb(o.L)}</span><span class="sg-t"><b>${name(o.L)}</b><span>${esc(o.why)} · ${money(cost(o.L))}</span></span><span class="sg-s" style="color:${scoreColor(score(o.L))}">${Math.round(score(o.L) ?? 0)}</span></button>`).join('')}</div>
+    ${sugg.length ? `<div class="cmp-sugg">${sugg.map((o) => `<button type="button" class="sg" data-add="${esc(o.L.id)}"><span class="th">${thumb(o.L)}</span><span class="sg-t"><b>${name(o.L)}</b><span>${esc(o.why)} · ${money(cost(o.L))}</span></span><span class="sg-s" style="--c:${scoreColor(score(o.L))}">${Math.round(score(o.L) ?? 0)}</span></button>`).join('')}</div>
     <button type="button" class="btn primary" id="cmpTop">${ICONS.plus}Compare these four</button>` : ''}</div>`;
 }
 
