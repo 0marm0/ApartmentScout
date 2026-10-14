@@ -13,6 +13,7 @@ import datetime as dt
 import json
 import math
 import time
+from collections.abc import Iterable
 from pathlib import Path
 
 import numpy as np
@@ -260,9 +261,14 @@ def city_profile(crit: dict) -> dict:
 
 
 def run_commute(ws, listings: list[dict], crit: dict, cell_m: float | None = None, pad_m: float = 1500,
-                log=print, layers_dir: Path | None = None, mode_grids: bool | None = None) -> list[dict]:
+                log=print, layers_dir: Path | None = None, mode_grids: bool | None = None,
+                only: Iterable[str] | None = None) -> list[dict]:
     """Route every destination; write commute-<dest>.json (best of transit) and, per mode,
     commute-<dest>-<mode>.json; set L["commute"][dest] on every geocoded listing.
+
+    ``only`` (listing ids) re-times just those listings, for example after fixing their coordinates:
+    the walking network and the routing scans are the same, but the heat-map layers on disk are
+    left untouched and the other listings keep the commute they already have.
 
     The grids hold the router's own answer at every cell centre (grid.surface), so a map that
     interpolates between centres stays within a fraction of a minute of the router anywhere."""
@@ -280,6 +286,10 @@ def run_commute(ws, listings: list[dict], crit: dict, cell_m: float | None = Non
     if mode_grids is None:
         mode_grids = bool(tr.get("mode_grids", True))
     day = dt.date.fromisoformat(str(tr.get("service_date") or _next_weekday()))
+    wanted = set(only) if only is not None else None
+    timed = [L for L in listings if wanted is None or L.get("id") in wanted]
+    if wanted is not None and not timed:
+        raise ValueError("none of the requested listing ids exist in this search")
     walker = make_walker(crit)
     model = walk_model(crit)
     snap_m = float(tr.get("walk_snap_m", 60))
@@ -341,7 +351,7 @@ def run_commute(ws, listings: list[dict], crit: dict, cell_m: float | None = Non
         LA, LO = np.meshgrid(la, lo, indexing="ij")
         if fld is not None:
             stamp = graph[3]
-            pts = sorted({(round(L["lat"], 6), round(L["lon"], 6)) for L in listings if L.get("lat") is not None})
+            pts = sorted({(round(L["lat"], 6), round(L["lon"], 6)) for L in timed if L.get("lat") is not None})
             mins, walk_min, near_m, runs, walks = net_surface(fld, profs, stamp, pts)
             R = _NetRouter(net, profs, (d["lat"], d["lon"]), speed, detour, max_access, runs, walks)
             blank = ~np.isfinite(walk_min)  # farther than walk_snap_m from any walkable way
@@ -381,7 +391,7 @@ def run_commute(ws, listings: list[dict], crit: dict, cell_m: float | None = Non
         method = (f"GTFS reverse connection scan + {walking}, the router's answer at each cell centre, averaged "
                   f"over arrivals {min(offsets)}-{max(offsets)} min before arrive_by") if feeds else walking
         for k, vals in grids.items():
-            if k != TRANSIT and not mode_grids:
+            if wanted is not None or (k != TRANSIT and not mode_grids):
                 continue
             m = np.where(blank | ~np.isfinite(vals) | (vals >= 120), np.nan, vals)
             layer = {**base, "mode": k, "modes": sorted(grids), "method": method, "scale": 0.5, "nodata": NODATA,
@@ -396,7 +406,7 @@ def run_commute(ws, listings: list[dict], crit: dict, cell_m: float | None = Non
                 layers.append(layer)
             log(f"    layer {out.name}: {out.stat().st_size / 1024:.0f} KB")
         n, seen = 0, {}
-        for L in listings:
+        for L in timed:
             if L.get("lat") is None:
                 continue
             key = (round(L["lat"], 6), round(L["lon"], 6))
