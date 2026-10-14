@@ -82,6 +82,7 @@ function render() {
     <div class="rs-panel" id="rsPanel" role="tabpanel" aria-labelledby="rsTab-${tab}"></div>
   </div>`;
   const tl = root.querySelector('.rs-tabs');
+  { const on2 = tl.querySelector('.on'); if (on2 && tl.scrollWidth > tl.clientWidth) tl.scrollLeft = on2.offsetLeft - (tl.clientWidth - on2.offsetWidth) / 2; }   // phone: the strip scrolls sideways, keep the open tab on screen
   tl.querySelectorAll('[data-tab]').forEach((b) => b.addEventListener('click', () => go(b.dataset.tab)));
   tl.addEventListener('keydown', (e) => {
     const ks = TABS.map(([k]) => k), i = ks.indexOf(tab);
