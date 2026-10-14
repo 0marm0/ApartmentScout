@@ -56,3 +56,7 @@ Keep the attribution control visible on every published map view and on screensh
 Images in `docs/images/` and `docs/gallery/` are ApartmentScout screenshots and renders. Their publication status
 is recorded in `docs/gallery/manifest.json`; only images marked `public` may be published. Screenshots that show a
 basemap carry the basemap attribution above.
+
+## pdf.js (Mozilla)
+
+Apache License 2.0. Loaded from cdn.jsdelivr.net (pdfjs-dist 4.10.38) only when a PDF floor plan is opened in the plan tracer. https://github.com/mozilla/pdf.js

@@ -12,6 +12,21 @@ The full format is in `docs/guides/floor-plans.md`. Write schema 2; every field 
    (`exact-unit`, `line-tier`, `representative`, `stated-dims`, `photo-estimate`). Copy the printed
    room labels into `provenance.printed` and list everything you guessed in `provenance.estimated`.
    Never copy the plan image, the brokerage's logo or a broker's contact details into the repo.
+   **Trace or write?** When the renter has the plan image or PDF, you have two routes:
+   - *The renter traces it* in the dashboard: Floor plan ▸ **New plan from image** (scale from a
+     printed dimension plus a check dimension, north arrow, rooms, doors, windows, fixtures). Best
+     when the image is clear and the renter wants to check it against the source as they go. Ask
+     them to pick the listing in Details (so the id matches) and to use **Download plan JSON**;
+     save that file as `searches/<name>/plans/<listing-id>.json`, then review it like your own work
+     (step 8) and add layouts. Its `provenance.trace` records the image name, the scale anchors and
+     the check dimension's error; keep it.
+   - *You write the JSON* from the image (steps 2 to 7). Best for clean plans with printed sizes, or
+     when only stated room sizes exist. Do not invent a `provenance.trace` block for your own work;
+     describe how you read the plan in `source` and `provenance.estimated`.
+   Either way, a traced or agent-read plan is not a survey: say so in `source`, and if a trace's
+   `confidence` is `low` (check dimension more than 4% off), ask the renter to re-place the scale
+   anchors before relying on fit checks. To change an existing plan's geometry the renter can use
+   **Edit plan**, which saves a local version and leaves the search file unchanged.
 2. **Read the dimensions** (feet-inches or metres). Use the printed sizes; where one is missing,
    estimate from the drawing's proportions, set `est: true` on that room and say so.
 3. **Lay out rooms** with `+y` pointing out of the main window wall (the top of the drawing) and

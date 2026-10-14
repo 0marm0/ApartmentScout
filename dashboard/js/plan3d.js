@@ -152,6 +152,7 @@ export async function show(id) {
 async function load(id) {
   const raw = projectLibrary[id]?.plan || await loadJSON(`${S.base}/plans/${id}.json`, null);
   st.id = id;
+  if ($('planSel') && $('planSel').value !== id) $('planSel').value = id;   // keep the picker on the plan shown (e.g. after an import)
   try { model = normalisePlan(raw); rawPlan=JSON.parse(JSON.stringify(raw)); } catch (e) {
     model = null;
     $('psTitle').textContent = 'Floor plan';

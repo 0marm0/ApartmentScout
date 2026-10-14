@@ -18,6 +18,9 @@ The **Floor plan** tab opens a studio for that unit:
   furniture casts shadows, so you can see where morning sun lands on the bed;
 - layout presets written into the plan file, and layouts saved per plan in the browser, as a JSON
   file (download and load), as a 3D model (`.glb`, one named node per piece) or as a PNG.
+- a plan tracer (**New plan from image**) that turns a plan image or PDF page into a plan file, and
+  **Edit plan** for corners, doors, windows, ceiling and walls, saved as a local version
+  ([Trace a plan](#trace-a-plan)).
 
 ## The plan file
 
@@ -98,7 +101,7 @@ schema 2 field is optional.
 |---|---|
 | `fixtures` | Things that belong to the unit: `closet`, `wardrobe`, `column`, `ac` / `ptac`, `radiator`, `counter`, `island`, `fridge`, `range`, `sink`, `dishwasher`, `wd`, `tub`, `shower`, `toilet`, `vanity`, `other`. A rectangle (`x`, `y`, `w`, `h`) or a convex `poly`, with `height` and `elev`. `reserve` is the clear depth needed in front (defaults: AC 18 in, closet 24 in, sliding doors 0); the front is the side away from the nearest wall, or set `front` to `+x`, `-x`, `+y`, `-y`. `est: true` marks a guess (AC units default to estimated). Split L-shaped fixtures into rectangles. |
 | `keepout` | Areas furniture should stay out of (a rectangle or `poly`), with `grade` `tight` (default) or `blocked`. |
-| `provenance` | `match` (`exact-unit`, `line-tier`, `representative`, `stated-dims`, `photo-estimate`), `floor_band`, `checked` date, `printed` (labels copied from the plan) and `estimated` (what you guessed). The studio shows these in the Plan tab. |
+| `provenance` | `match` (`exact-unit`, `line-tier`, `representative`, `stated-dims`, `photo-estimate`), `floor_band`, `checked` date, `printed` (labels copied from the plan) and `estimated` (what you guessed). The studio shows these in the Plan tab. `trace` is written by the plan tracer (see [Trace a plan](#trace-a-plan)). |
 | `source` | Free text: where the plan came from and which dimensions were printed or estimated. Keep it honest. |
 
 ### Layout presets
@@ -134,6 +137,85 @@ The catalogue lives in `dashboard/js/plan/catalog.js`, with a cited source for e
 TV viewing distance is graded by the share of your view the screen fills: 28 to 42 degrees is ideal
 (SMPTE recommends at least 30, THX about 40), 20 to 28 is workable, under 20 is too far.
 
+## Trace a plan
+
+**New plan from image** in the Floor plan header opens the plan tracer. Everything happens in the
+browser: the image or PDF is read locally and never uploaded (reading a PDF loads the pdf.js reader,
+pinned, from cdn.jsdelivr.net the first time a PDF is chosen).
+
+1. **Image.** Choose a PNG, JPEG, WebP or PDF (pick the page), or drop it on the canvas. Choose feet
+   or metres before tracing.
+2. **Scale.** Click both ends of a printed dimension line (the longest one, ideally an overall
+   width) and type its length: `14'6"`, `14' 6`, `14 ft 6 in`, `174"`, `4.42 m`, `442 cm`. Then
+   click a second printed dimension, ideally at right angles, and type its length. The tracer shows
+   what it measures at your scale and how far off it is: up to 1.5% is high confidence, up to 4%
+   medium, more is low (re-place the anchors on the dimension line's ends). Re-setting the scale
+   later moves everything already traced with the image.
+3. **North.** Click the tail and tip of the plan's north arrow, or click an outside wall and choose
+   the direction it faces, or type the bearing of the drawing's top. Leave it unknown if you do not
+   know; sun and window bearings need it.
+4. **Rooms.** Click each corner (Enter, a double-click or the first corner closes the outline), or
+   drag a rectangle. Corners snap to existing corners and edges, to 90° and 45° from the previous
+   corner and into line with nearby corners; hold Alt for a free point. Name each room and pick its
+   kind. Walls are derived from room edges: shared edges become one wall.
+5. **Doors and windows.** Click on a wall. Select one to set its width (doors also hinge end A or B,
+   which room the leaf opens into, sliding, pocket, no leaf, or "not drawn", and the front door;
+   windows also sill and head). Drag it along its wall to move it.
+6. **Fixtures.** Pick a kind (closet, column, AC, ...) and drag its rectangle. Closets keep 24 in
+   and AC units 18 in clear in front; AC units are marked estimated.
+7. **Details and save.** Title, plan id (use the listing's id so the studio and Unit 3D attach the
+   plan to that unit), ceiling, wall thickness, floor and how the plan matches the unit. The review
+   lists anything to fix. **Save and open in the studio** stores it in this browser's plan library
+   and opens it straight away; **Download plan JSON** writes plan JSON v2 (`<id>.json`) that an agent
+   can save as `searches/<name>/plans/<id>.json`.
+
+Undo and redo cover every step (Ctrl/Cmd+Z, Shift+Ctrl/Cmd+Z). An unfinished trace is kept in the
+browser and offered again next time (without the image; load the same image to see it underneath).
+
+**Edit plan** opens the current plan in the same editor: drag room corners (shared corners move
+together; Alt-drag to separate them), drag an edge's middle dot to add a corner, change door widths,
+hinges and swings, window sills and heads, fixtures, ceiling height and wall thickness. Saving keeps
+the plan id and stores a labelled local version in the browser plan library ("local project" in the
+plan picker); the search's plan file is never changed, and **Layout ▸ Remove local project override**
+goes back to it. Change the id in Details to save a copy instead.
+
+A traced or edited plan records how it was made in `provenance.trace`:
+
+```json
+"trace": {
+  "by": "user", "tool": "apartmentscout-tracer 1", "mode": "trace", "date": "2026-10-13",
+  "image": "plan.png", "page": 1, "image_px": [1180, 1100], "origin_px": [0, 1100],
+  "scale": 40, "anchors": [[120, 1040], [720, 1040]], "length": 15,
+  "check": {"anchors": [[80, 1000], [80, 520]], "length": 12, "measured": 12, "error_pct": 0},
+  "confidence": "high",
+  "bearing": {"method": "arrow"}
+}
+```
+
+`scale` is image pixels per plan unit, `anchors` and `origin_px` are image pixels (y down; the
+plan origin is the image's bottom-left corner), `length` is in plan units, `confidence` is `high`,
+`medium`, `low` or `unchecked`. An edit writes `"mode": "edit"`, its `label` and up to 20 `changes`.
+`source` also says, in words, that the plan is a tracing and not a survey.
+
+## Same plan in Unit 3D
+
+**Layout ▸ Use this plan in Unit 3D** (and the same button in the tracer's Save step) stores the
+current plan with its furniture as a local plan scenario that the Unit 3D Inside view can use:
+
+```text
+localStorage["as:plan-scenario:<plan id>"] = {
+  "schema": 1, "kind": "apartmentscout-plan-scenario", "id": "<plan id>", "base": "data",
+  "label": "Local plan project", "from": "studio" | "tracer" | "edit", "saved": "<ISO time>",
+  "project": { a complete plan project: "plan" (plan JSON v2), "layout" (furniture, inches), "lighting" }
+}
+```
+
+Read it with `getPlanScenario(id, {base})` from `dashboard/js/plan/scenario-bridge.js`: it validates
+the project with the same strict checks as a project import and returns `{id, base, label, from,
+saved, plan, layout, lighting, model}` (`model` is the normalised plan in inches), or `null` when
+nothing valid is saved for that id or it was saved from another search folder. A scenario applies
+only to the plan id it was saved under, never to a sibling unit.
+
 ## Layout files
 
 **Layout ▸ Save layout file** downloads `<plan id>-layout.json`:
@@ -153,8 +235,9 @@ fixtures) and a `furniture` node holding one group per piece, named `<name> (<re
 
 ## Tests
 
-The normaliser, the fit rules and layout validation are pure ES modules covered by
-`node --test tests/js`.
+The normaliser, the fit rules, layout validation, the tracer geometry (`plan/tracer.js`: lengths,
+scale and check, snapping, polygon area, wall derivation, door and window placement, export) and the
+scenario bridge are pure ES modules covered by `node --test tests/js`.
 
-Agents: the `floor-plan-model` skill explains how to read a plan image into this format and how to
-write layouts.
+Agents: the `floor-plan-model` skill explains how to read a plan image into this format (or hand it
+to the renter to trace) and how to write layouts.
