@@ -38,6 +38,8 @@ included as a worked example.
 | **Building photos** | `apartmentscout photos` finds freely licensed Wikimedia Commons photos of each building under strict matching rules and keeps the author and licence with every image. Without one, the dashboard shows an aerial view of the building. |
 | **Spreadsheet export** | `export --xlsx` writes a workbook whose Weights sheet drives live SCORE and RANK formulas, with outreach, to-verify, upfront-charges and sources sheets. `--csv` too, both guarded against formula injection. |
 | **Agent handoff kit** | `handoff pack / verify / import` moves a search between agents as checksummed packs. Imports append claims, keep conflicts on disk and never let an older claim overwrite a newer fact. |
+| **Decide in the dashboard** | Hover a home to see its commute route, star homes and view only the stars, colour the map by direct sun hours, or dock a map beside the Shortlist. Filter chips, collapsible rail sections, a trade-off pad that previews how a weight preset would re-order the top ten, and rank-change badges. A decision tray, a read-only Share shortlist page and decision memo, and a tour-day planner (leave-by times, calendar file). |
+| **Easy to use** | Undo for every pick, filter and weight change; plain-words search (`⌘K`: "1 bd under 5k within 20 min by subway with w/d"); a searchable shortcut sheet (`?`); a photo lightbox with floor plan beside the photo; blur-up photo loading; compact density, four accents, high contrast, reduced motion and larger text; a first-run tour; a New search wizard (`?new=1`). |
 | **A dashboard you own** | Six tabs: Map, Shortlist (with Tours), Compare, Unit 3D, Floor plan and Research (with Records). Dark first with a light and a system theme, liquid-glass panels over the map, works on a phone. Serve it locally, host it on GitHub Pages, or build one self-contained HTML file. No server code, accounts or API keys. |
 
 ## Quick start
@@ -178,7 +180,7 @@ commute to a Midtown office near Grand Central. The [full gallery](docs/GALLERY.
 <table>
 <tr>
 <td width="50%"><img src="docs/images/research.png" alt="Research queue"><br><sub>Research: the finalist standard, missing and stale facts, the points each listing has at stake and copyable questions for the leasing office</sub></td>
-<td width="50%"><img src="docs/images/research-media.png" alt="Research media gallery"><br><sub>Every image in one place: licensed building photos with author and licence, floor plans and aerial fallbacks</sub></td>
+<td width="50%"><img src="docs/images/research-media.png" alt="Research media gallery"><br><sub>Every image in one place, by listing: scope tabs with counts, a broker-mark filter, credits and floor plans; a click opens the lightbox</sub></td>
 </tr>
 <tr>
 <td><img src="docs/images/tours.png" alt="Tours board"><br><sub>Tours: picks tiered S, A, B, C or Pass, tour times and notes, and a nearest-next route from the office</sub></td>
@@ -223,6 +225,27 @@ Static versions for reports, written by `apartmentscout site --charts`:
 <tr>
 <td width="68%"><img src="docs/images/plan-bird.png" alt="Floor plan studio"><br><sub>2D plan and 3D side by side: ten pieces placed and all clear, bed and sofa TV distances marked ideal, two layout presets written for this plan</sub></td>
 <td width="32%"><img src="docs/images/plan-top.png" alt="Floor plan top down"><br><sub>Top-down at 5 pm on June 21</sub></td>
+</tr>
+</table>
+
+### Deciding and making it yours
+
+<table>
+<tr>
+<td width="50%"><img src="docs/images/map-route-preview.png" alt="Route preview on hover"><br><sub>Hover a card and its route to Grand Central is drawn: walk legs dashed, the subway on its own line, the minutes in a pill</sub></td>
+<td width="50%"><img src="docs/images/list-split-view.png" alt="Shortlist with a docked map"><br><sub>Shortlist split view: a mini map of exactly the rows in the table; hovering a row previews its route</sub></td>
+</tr>
+<tr>
+<td width="50%"><img src="docs/images/tradeoff-pad.png" alt="Trade-off pad with a preset preview"><br><sub>The trade-off pad: point at a preset to see how the top ten would re-order before you apply it</sub></td>
+<td width="50%"><img src="docs/images/map-filter-chips.png" alt="Filter chips"><br><sub>Filter chips for every active filter, one click each to remove</sub></td>
+</tr>
+<tr>
+<td width="50%"><img src="docs/images/palette-plain-words.png" alt="Plain-language search"><br><sub>Ask in plain words: the first row previews what was understood, with a live count, before anything changes</sub></td>
+<td width="50%"><img src="docs/images/lightbox-floor-plan.png" alt="Photo lightbox with the floor plan"><br><sub>The photo lightbox, here with the floor plan beside the photo</sub></td>
+</tr>
+<tr>
+<td width="50%"><img src="docs/images/tour-day-planner.png" alt="Tour-day planner"><br><sub>Tour-day planner: when to leave for each viewing, with buffers and an Add to calendar file</sub></td>
+<td width="50%"><img src="docs/images/share-decision-memo.png" alt="Decision memo"><br><sub>The decision memo: a ranked table, the weights, then a page per home; print it as a PDF</sub></td>
 </tr>
 </table>
 
