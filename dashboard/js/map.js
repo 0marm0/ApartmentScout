@@ -207,9 +207,27 @@ const BAND_INK = {
   light: ['#08775f', '#2aa957', '#94c53c', '#ecd21f', '#e09a17', '#dc6a17', '#c93c1f', '#a11d2f', '#5a1433'],
 };
 /** Fill colour and opacity per band: opaque enough to read as distinct steps; streets and labels draw above them. */
+// Commute band palettes: 'rich' is the default; ?palette=balanced|vivid|earth|cool switches for comparison.
+const PALETTES = {
+  vivid: { ...BAND_INK, a: [0.78, 0.72] },
+  rich: {       // default: between 'balanced' and 'vivid'. Three distinct greens to 15 (deep, mid, light), pale yellow
+                // 15-20, gold 20-25, orange 25-30, then terracotta, red and maroon; neighbours differ by CIE dE ~20-30
+    dark: ['#0a7a5e', '#30b064', '#a8db78', '#f6eb7d', '#eaae3b', '#e67b2e', '#d24e32', '#aa2e3a', '#681e3c'],
+    light: ['#08664e', '#269853', '#8bc45c', '#e9d544', '#dc9e24', '#d76e24', '#c04226', '#982431', '#581832'], a: [0.74, 0.68] },
+  balanced: {   // default. Middle ground: three distinct greens (deep / mid / light sage) to 15, pale yellow 15-20,
+                // gold 20-25, orange 25-30, then terracotta, brick and maroon; neighbours differ by CIE dE ~22-35
+    dark: ['#0a6447', '#2c9d5e', '#a3db8c', '#f3ea94', '#e9b84a', '#e3843d', '#cc5638', '#a3363b', '#66223a'],
+    light: ['#07563d', '#23864f', '#86c46e', '#e6d86a', '#d9a332', '#d27330', '#b8482e', '#902c33', '#571c31'], a: [0.7, 0.64] },
+  earth: {      // closer to the first prototype: muted, earthy
+    dark: ['#2b7a52', '#4f9858', '#86ad5c', '#b8b45c', '#cfa651', '#c98748', '#b96643', '#9c4a40', '#6d3337'],
+    light: ['#22694a', '#418a4c', '#759f4b', '#a8a446', '#be933c', '#b87436', '#a65533', '#8a3d33', '#5e2a2f'], a: [0.7, 0.62] },
+  cool: {       // teal near, warm far
+    dark: ['#0f7b72', '#28a08a', '#7cc5a4', '#d4e1a3', '#efd98a', '#efb877', '#e08a62', '#c35e58', '#8d3f55'],
+    light: ['#0b665e', '#1f8a74', '#5daf87', '#b9c97a', '#e2c459', '#e39c4f', '#cc6e45', '#ad4744', '#792f45'], a: [0.68, 0.6] },
+};
 function bandStyle() {
-  const light = theme() === 'light';
-  return BAND_INK[light ? 'light' : 'dark'].map((col) => ({ col, a: light ? 0.72 : 0.78 }));
+  const light = theme() === 'light', P = PALETTES[new URLSearchParams(location.search).get('palette')] || PALETTES.rich;
+  return P[light ? 'light' : 'dark'].map((col) => ({ col, a: P.a[light ? 1 : 0] }));
 }
 const idwScale = (like) => Math.max(1, Math.round(300 / (like.cell_m || 150)));   // ~300 m cells for listing-based surfaces
 function rentGrid() {
