@@ -14,7 +14,8 @@ import { Layout, includeIndex, flipPlan, nearestScroll, stepIndex } from './virt
 import { morph, parse } from './morph.js';
 
 const GAP = 2, BUFFER = 700, FLIP_MS = 380, FLIP_FAST_MS = 240;
-const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+const mqReduce = matchMedia('(prefers-reduced-motion: reduce)');   // one query object: it is read on every update
+const reduced = () => mqReduce.matches;
 
 let host, topSp, botSp, pad = 4;
 let layout = new Layout({ gap: GAP, estimate: 131 });
@@ -24,7 +25,6 @@ const nodes = new Map();                     // item key -> { el, html }
 let win = [0, 0], raf = 0, mounted = false, cooldownUntil = 0, lastUpdate = 0, focusKey = null, hovered = null;
 
 /** Item shape: { key, id, ids, html: (indexInWindow) => string, wrap } (wrap: several top-level elements, see buildings). */
-const posOf = (key) => index.get(key);
 
 // ------------------------------------------------------------------ DOM nodes
 function create(item, html) {
@@ -87,7 +87,7 @@ function reconcile(a, b, rebuild = true) {
   const keep = new Set();
   for (let i = a; i < b; i++) keep.add(items[i].key);
   const active = document.activeElement, had = host.contains(active) ? active : null;
-  for (const [key, rec] of nodes) if (!keep.has(key)) { rec.el.remove(); nodes.delete(key); if (hovered === key) hovered = null; }
+  for (const [key, rec] of nodes) if (!keep.has(key)) { rec.el.remove(); nodes.delete(key); if (hovered === key) { hovered = null; emit('hover', null); } }
   let ref = topSp.nextSibling;
   const fresh = [];
   for (let i = a; i < b; i++) {
@@ -158,7 +158,7 @@ export function setCardItems(next, { animate = true } = {}) {
       el.animate(frames, { duration: dur, easing: 'cubic-bezier(.2,.8,.2,1)' });
     }
     enter(plan.entering.filter((k) => fresh.includes(k)));
-  } else if (!mounted || animate) enter(fresh, !mounted);
+  } else if (!mounted || animate) enter(fresh);
   mounted = true;
   lastUpdate = t0;
   // a slow update (a big list on a slow device) skips the motion for a moment instead of dropping frames
@@ -166,7 +166,7 @@ export function setCardItems(next, { animate = true } = {}) {
 }
 
 /** Cards that appear (first render, or a filter that adds homes) rise in with a short stagger. */
-function enter(keys, initial = false) {
+function enter(keys) {
   if (reduced() || !keys.length) return;
   const vis = keys.map((k) => nodes.get(k)?.el).filter((el) => el && el.isConnected).slice(0, 14);
   vis.forEach((el, i) => el.animate([{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }], { duration: 320, delay: i * 22, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'backwards' }));
@@ -256,7 +256,7 @@ function focusAt(i, { open = false } = {}) {
 export function initCardList() {
   host = document.getElementById('cards'); if (!host) return;
   host.setAttribute('role', 'feed');
-  host.setAttribute('aria-label', 'Homes, best match first');
+  host.setAttribute('aria-label', 'Homes');
   host.addEventListener('scroll', onScroll, { passive: true });
   let width = host.clientWidth;
   new ResizeObserver(() => {
