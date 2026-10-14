@@ -4,6 +4,7 @@
 import { S, on, emit, store, openSettings, exportPicks } from './app.js';
 import { $ } from './util.js';
 import { openPalette } from './palette.js';
+import { setDensity } from './features/density.js';
 
 // ------------------------------------------------------------------ theme
 const MODES = ['system', 'dark', 'light'];
@@ -92,6 +93,7 @@ export function initShell() {
   menu.addEventListener('click', (e) => {
     const b = e.target.closest('button'); if (!b) return;
     if (b.dataset.themeMode) { setThemeMode(b.dataset.themeMode); return; }   // the menu stays open: see the change, then Esc
+    if (b.dataset.density) { setDensity(b.dataset.density); return; }   // density (results/rail features): the menu stays open too
     setMenu(false);
     if (b.id === 'mnSearch') openSettings();
     else if (b.id === 'mnPicks') exportPicks();

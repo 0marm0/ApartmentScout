@@ -6,6 +6,7 @@ import { S, on, emit, store, filtered, openDrawer, label, cost, commuteOf, loadJ
 import { commuteLayerKey, walkRingMetres } from './criteria.js';
 import { $, esc, money, moneyShort, safeUrl, css, scoreColor, unitGlyph, gridImage, gridValueAt, idwGrid, RAMPS, bullet, aerialHTML, imagesOf, imgFallback } from './util.js';
 import { contours } from '../vendor/d3-contour.js';
+import { hoverTrendHTML } from './features/price-ui.js';   // price-history sparkline in the hover card
 
 const CLUSTER_Z = 12;                                 // below this zoom nearby pins merge into count bubbles
 const UNCL = ['!', ['has', 'point_count']];
@@ -624,7 +625,7 @@ function wire() {
     const im = imagesOf(L), ph = im.own[0] || im.building[0]?.url;
     if (picking) return;
     const cm = commuteOf(L), cml = S.commuteMode === 'best' ? '' : ' ' + MODE_LABEL[S.commuteMode].toLowerCase();
-    popup.setLngLat([L.lon, L.lat]).setHTML(`<div class="hovercard">${ph ? `<img src="${esc(ph)}" alt="" referrerpolicy="no-referrer">` : aerialHTML(L, 236, 118, 18)}<div class="hb"><div class="t">${esc(label(L))}</div><div class="s">${esc(L.neighborhood || '')}${L.sqft ? ' · ' + Math.round(L.sqft) + ' ft²' : ''}</div><div class="p"><b>${money(cost(L))}/mo</b><span>${cm != null ? Math.round(cm) + ' min' + cml + ' · ' : ''}score ${Math.round(score(L) ?? 0)}</span></div></div></div>`).addTo(map);
+    popup.setLngLat([L.lon, L.lat]).setHTML(`<div class="hovercard">${ph ? `<img src="${esc(ph)}" alt="" referrerpolicy="no-referrer">` : aerialHTML(L, 236, 118, 18)}<div class="hb"><div class="t">${esc(label(L))}</div><div class="s">${esc(L.neighborhood || '')}${L.sqft ? ' · ' + Math.round(L.sqft) + ' ft²' : ''}</div><div class="p"><b>${money(cost(L))}/mo</b><span>${cm != null ? Math.round(cm) + ' min' + cml + ' · ' : ''}score ${Math.round(score(L) ?? 0)}</span></div>${hoverTrendHTML(L)}</div></div>`).addTo(map);
   });
   onPins('mouseleave', () => { map.getCanvas().style.cursor = ''; if (hov) hoverState(hov, false); hov = null; popup.remove(); });
   onPins('click', (e) => { if (!picking) openDrawer(e.features[0].id); });
