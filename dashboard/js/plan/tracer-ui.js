@@ -919,7 +919,7 @@ function panel() {
       return `<section class="panel"><h3>Plan image</h3>
         <div class="tr-file">
           <button class="btn primary" type="button" data-act="file">${ic('image')}Choose image or PDF</button>
-          <p class="tr-note">PNG, JPEG, WebP or one page of a PDF. The file stays in this browser and is never uploaded${U.pdf ? '' : '; reading a PDF loads the open-source pdf.js reader from a CDN'}.</p>
+          <p class="tr-note">PNG, JPEG, WebP or one page of a PDF. The file stays in this browser and is never uploaded${U.pdf ? '' : '; reading a PDF uses the open-source pdf.js reader bundled with the dashboard'}.</p>
         </div>
         ${U.img ? `<div class="tr-imgmeta"><span class="mono">${esc(U.img.name)}${U.img.page ? ` · page ${U.img.page}` : ''}</span><span class="mono">${U.img.w} × ${U.img.h} px</span></div>
         ${U.pdf && U.pdf.pages > 1 ? `<div class="row tr-pages"><button class="btn sm" type="button" data-act="page" data-d="-1"${U.pdf.page <= 1 ? ' disabled' : ''}>Previous page</button><span class="mono">Page ${U.pdf.page} of ${U.pdf.pages}</span><button class="btn sm" type="button" data-act="page" data-d="1"${U.pdf.page >= U.pdf.pages ? ' disabled' : ''}>Next page</button></div>` : ''}
