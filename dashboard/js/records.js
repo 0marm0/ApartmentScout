@@ -10,11 +10,19 @@ const SRC_NAMES = { pluto: 'PLUTO tax lots', hpd_violations: 'HPD violations', h
 let current = null, token = 0;
 const cache = new Map();
 
+/** Put the report inside another view's panel (Research > Records). It is created on first use. */
+let ready = false;
+export function mount(host) {
+  if (!ready) { init(); ready = true; }
+  const rec = $('rec');
+  if (rec && rec.parentElement !== host) host.append(rec);
+}
+
 export function init() {
   document.getElementById('view-records').innerHTML = '<div class="view-pad"><div class="rec" id="rec"></div></div>';
   // print: open every collapsed ledger so the report is complete, then restore
-  addEventListener('beforeprint', () => document.querySelectorAll('#view-records details:not([open])').forEach((d) => { d.dataset.wasClosed = '1'; d.open = true; }));
-  addEventListener('afterprint', () => document.querySelectorAll('#view-records details[data-was-closed]').forEach((d) => { d.open = false; delete d.dataset.wasClosed; }));
+  addEventListener('beforeprint', () => document.querySelectorAll('#rec details:not([open])').forEach((d) => { d.dataset.wasClosed = '1'; d.open = true; }));
+  addEventListener('afterprint', () => document.querySelectorAll('#rec details[data-was-closed]').forEach((d) => { d.open = false; delete d.dataset.wasClosed; }));
   document.addEventListener('click', (e) => { if (!e.target.closest?.('.rec-pick')) closePicker(); });
   $('rec').addEventListener('click', (e) => {
     const d = e.target.closest('[data-drawer]'); if (d) { openDrawer(d.dataset.drawer); return; }
@@ -250,7 +258,7 @@ function wirePicker(L) {
   const btn = $('recPickBtn'), pop = $('recPop'), q = $('recQ'), list = $('recList');
   if (!btn) return;
   const items = () => [...list.querySelectorAll('li[data-id]')].filter((li) => !li.hidden);
-  const go = (id) => { closePicker(); if (id) location.hash = '#records/' + id; };
+  const go = (id) => { closePicker(); if (id) location.hash = '#research/records/' + id; };
   let active = -1;
   const mark = (n) => { const it = items(); it.forEach((li, i) => li.classList.toggle('act', i === n)); active = n; it[n]?.scrollIntoView({ block: 'nearest' }); };
   btn.addEventListener('click', () => {

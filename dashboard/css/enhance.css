@@ -27,7 +27,7 @@ img.err { opacity: 0 !important; }
 
 /* ------------------------------------------------------------------ top bar: sliding tab indicator, palette trigger, counters */
 .nav.has-ink { position: relative; }
-.nav-ink { position: absolute; left: 0; top: 3px; bottom: 3px; width: 0; border-radius: 7px; background: var(--surface-3); box-shadow: var(--shadow-1); pointer-events: none;
+.nav-ink { position: absolute; left: 0; top: 3px; bottom: 3px; width: 0; border-radius: var(--r-inner); background: var(--surface-3); box-shadow: var(--shadow-1); pointer-events: none;
   transition: transform var(--t-slow) var(--ease-out), width var(--t-slow) var(--ease-out), opacity var(--t-fast); }
 .nav-ink.instant { transition: none; }
 .nav.has-ink a { z-index: 1; }

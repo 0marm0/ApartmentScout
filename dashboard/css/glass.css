@@ -1,0 +1,85 @@
+/* ApartmentScout liquid glass: the floating panels over the map and the shell's popovers.
+   A translucent tinted surface, a backdrop blur, a 1 px inner highlight on top, a soft outer shadow and a faint
+   edge gradient, in both themes. Tokens (--glass-*) live in tokens.css. Text stays AA because the base alpha is
+   high (see tokens) and secondary ink is lifted inside glass (--ink-3-glass). With prefers-reduced-transparency or
+   no backdrop-filter support every panel falls back to its solid surface. Loaded last. */
+
+/* ------------------------------------------------------------------ the surface */
+.mapstage .float, .menu-pop, .maplibregl-popup-content, .d-bar {
+  --ink-3: var(--ink-3-glass);
+  background: linear-gradient(180deg, var(--glass-tint), transparent 72%), var(--glass-bg);
+  -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-line);
+  box-shadow: inset 0 1px 0 var(--glass-hi), var(--glass-shadow);
+}
+/* faint edge gradient: bright at the top-left rim, a cool tint at the bottom-right, nothing in between */
+.mapstage .float::before, .menu-pop::before, .maplibregl-popup-content::before {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1px; pointer-events: none; z-index: 1;
+  background: linear-gradient(155deg, var(--glass-edge-a), transparent 36%, transparent 64%, var(--glass-edge-b));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); mask-composite: exclude;
+}
+.maplibregl-popup-content { position: relative; border-radius: var(--r-lg) !important; background: linear-gradient(180deg, var(--glass-tint), transparent 72%), var(--glass-bg) !important; box-shadow: inset 0 1px 0 var(--glass-hi), var(--glass-shadow) !important; }
+/* the drawer's sticky header (mini title and section tabs): content scrolls under it */
+.d-bar { background: linear-gradient(180deg, var(--glass-tint), transparent 80%), color-mix(in srgb, var(--surface-1) 84%, transparent); border-width: 1px 0; border-color: var(--glass-line); box-shadow: inset 0 1px 0 var(--glass-hi); }
+.d-bar.stuck { box-shadow: inset 0 1px 0 var(--glass-hi), 0 12px 24px -16px rgba(0, 0, 0, .5); }
+:root[data-theme="light"] .d-bar.stuck { box-shadow: inset 0 1px 0 var(--glass-hi), 0 12px 24px -16px rgba(20, 24, 34, .24); }
+.drawer { box-shadow: inset 0 1px 0 var(--glass-hi), var(--shadow-3); }
+
+/* segmented controls inside glass: the active segment is a brighter pane */
+.mapstage .float .on { box-shadow: inset 0 1px 0 var(--glass-hi), var(--shadow-1); }
+.layer-switch button.on { background: var(--glass-seg); }
+.map-ctl button:hover, .layer-switch button:hover:not(.on) { background: color-mix(in srgb, var(--ink) 7%, transparent); }
+.map-ctl button.on { background: var(--accent-soft); }
+.mapstage .float .seg { background: color-mix(in srgb, var(--ink) 6%, transparent); border-color: var(--glass-line); }
+.mapstage .float .seg button.on { background: var(--glass-seg); }
+.mapstage .float select.sel { background-color: color-mix(in srgb, var(--ink) 6%, transparent); border-color: var(--glass-line); }
+.legend .lines { border-top-color: var(--glass-line); }
+
+/* the legend's long "how this is computed" note folds away by default */
+.legend .src-d { margin-top: 8px; }
+.legend .src-d > summary { cursor: pointer; list-style: none; display: inline-flex; align-items: center; gap: 5px; font-size: var(--fs-2xs); font-weight: 500; color: var(--ink-3); border-radius: var(--r-xs); }
+.legend .src-d > summary::-webkit-details-marker { display: none; }
+.legend .src-d > summary::before { content: ""; width: 5px; height: 5px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: rotate(-45deg); transition: transform var(--t-base) var(--ease-out); }
+.legend .src-d[open] > summary::before { transform: rotate(45deg); }
+.legend .src-d > summary:hover { color: var(--ink); }
+.legend .src-d .src { margin-top: 6px; }
+.legend { padding: 10px 12px; width: 312px; }
+.legend h4 { margin-bottom: 6px; }
+.legend .lines { margin-top: 7px; padding-top: 7px; }
+.legend .cm-seg { margin: 0 0 8px; }
+
+/* hover lift on the mini card; panels settle with the same spring as price tags */
+.mcard.on { transition: opacity var(--t-base) var(--ease-out), transform var(--t-slow) var(--ease-out), border-color var(--t-fast), box-shadow var(--t-base); }
+.mcard.on:hover { transform: translateY(-2px); box-shadow: inset 0 1px 0 var(--glass-hi), var(--glass-shadow), var(--lift); }
+.mcard:active { transform: translateY(0) scale(.992); }
+
+/* ------------------------------------------------------------------ fallbacks */
+@media (prefers-reduced-transparency: reduce) {
+  :root, :root[data-theme="dark"], :root[data-theme="light"] {
+    --glass-bg: var(--surface-1); --glass-tint: transparent; --glass-blur: none; --glass: none; --overlay: var(--surface-1); --ink-3-glass: var(--ink-3);
+  }
+  .mapstage .float, .menu-pop, .maplibregl-popup-content, .d-bar, .media .rank, .save, .hud span { -webkit-backdrop-filter: none; backdrop-filter: none; }
+  .d-bar { background: var(--surface-1); }
+  .maplibregl-popup-content { background: var(--surface-1) !important; }
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  :root, :root[data-theme="dark"], :root[data-theme="light"] { --glass-bg: var(--surface-1); --glass-tint: transparent; --overlay: var(--surface-1); --ink-3-glass: var(--ink-3); }
+  .d-bar { background: var(--surface-1); }
+  .maplibregl-popup-content { background: var(--surface-1) !important; }
+}
+
+/* ------------------------------------------------------------------ map markers: starred homes
+   A starred (saved) home keeps its dark price pill but wears a gold ring and a soft gold glow. The tag is never
+   hidden by decluttering, sits above ordinary tags, and the selected state (accent fill) keeps the ring. */
+.tag-anchor:has(.price-tag.fav) { z-index: 3; }
+/* the score hue is a data colour tuned for the dark ground: on the light pill its number is mixed toward ink (AA); the ring keeps the hue */
+:root[data-theme="light"] .price-tag:not(.sel) > i { color: color-mix(in srgb, var(--c) 38%, var(--ink)); }
+.price-tag.fav { border-color: var(--fav); box-shadow: 0 0 0 1.5px var(--fav), 0 0 16px color-mix(in srgb, var(--fav) 42%, transparent), 0 8px 22px rgba(0, 0, 0, .38), inset 0 1px 0 rgba(255, 255, 255, .08); }
+.price-tag.fav::after { border-right-color: var(--fav); border-bottom-color: var(--fav); }
+:root[data-theme="light"] .price-tag.fav { box-shadow: 0 0 0 1.5px var(--fav), 0 0 14px color-mix(in srgb, var(--fav) 38%, transparent), 0 6px 18px rgba(20, 24, 34, .16); }
+.price-tag.fav:hover, .price-tag.fav.hl { box-shadow: 0 0 0 1.5px var(--fav), 0 0 20px color-mix(in srgb, var(--fav) 55%, transparent), 0 12px 28px rgba(0, 0, 0, .45); }
+.price-tag.fav.sel { border-color: var(--fav); box-shadow: 0 0 0 2px var(--fav), 0 0 0 5px var(--accent-soft), 0 0 20px color-mix(in srgb, var(--fav) 45%, transparent), 0 14px 30px rgba(0, 0, 0, .5); }
+.price-tag.fav.sel::after { border-right-color: var(--fav); border-bottom-color: var(--fav); }
+.price-tag.fav.sel .st { color: var(--accent-ink); }
+.price-tag .st { filter: drop-shadow(0 0 3px color-mix(in srgb, var(--fav) 60%, transparent)); }

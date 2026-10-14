@@ -10,6 +10,9 @@ import { contours } from '../vendor/d3-contour.js';
 const CLUSTER_Z = 12;                                 // below this zoom nearby pins merge into count bubbles
 const UNCL = ['!', ['has', 'point_count']];
 const selFilter = (id) => ['all', UNCL, ['==', ['get', 'id'], id || '']];
+/** Starred homes (saved picks, or flagged favorite in the data): gold tags that are always drawn, and pins that never join a count bubble. */
+const isStar = (L) => isSaved(L.id) || !!L.favorite;
+const hoverState = (id, v) => { if (id != null) for (const source of ['listings', 'starred']) if (map.getSource(source)) map.setFeatureState({ source, id }, { hover: v }); };
 const reduce = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 const layers = {};          // name -> grid json
 let map, popup, markers = [], destMarkers = [], inited = null, active = null, heat = 'commute', vector = true, offline = false, tileOk = false, show3d = false, showLines = true, picking = false;
@@ -289,6 +292,7 @@ function setHeat(k) {
     }
   }
   if (map.getLayer('pins')) map.setPaintProperty('pins', 'circle-color', k === 'commute' ? ['case', ['get', 'fav'], css('--accent'), theme() === 'light' ? '#2b303b' : '#eef1f6'] : ['get', 'col']);
+  if (map.getLayer('pins-s')) map.setPaintProperty('pins-s', 'circle-color', k === 'commute' ? css('--accent') : ['get', 'col']);
   renderLegend(); renderSwitch();
 }
 
@@ -297,11 +301,14 @@ function circle(lon, lat, m, n = 96) {
   const kx = 111320 * Math.cos((lat * Math.PI) / 180), ky = 110574;
   return Array.from({ length: n + 1 }, (_, i) => { const t = (i / n) * 2 * Math.PI; return [lon + (Math.cos(t) * m) / kx, lat + (Math.sin(t) * m) / ky]; });
 }
-function pinData() {
-  return { type: 'FeatureCollection', features: sorted(filtered()).filter((L) => L.lat != null).reverse().map((L) => ({ type: 'Feature', id: L.id,
-    properties: { id: L.id, col: scoreColor(score(L)), sc: score(L) ?? 50, fav: !!(isSaved(L.id) || L.favorite || ['shortlist', 'touring', 'applied'].includes(L.status)), gone: L.status === 'gone' },
+function pinFeatures(star) {
+  return { type: 'FeatureCollection', features: sorted(filtered()).filter((L) => L.lat != null && isStar(L) === star).reverse().map((L) => ({ type: 'Feature', id: L.id,
+    properties: { id: L.id, col: scoreColor(score(L)), sc: score(L) ?? 50, fav: !!(isStar(L) || ['shortlist', 'touring', 'applied'].includes(L.status)), gone: L.status === 'gone' },
     geometry: { type: 'Point', coordinates: [L.lon, L.lat] } })) };
 }
+/** Clustered pins (everything except starred homes) and the always-visible starred pins live in two sources. */
+const pinData = () => pinFeatures(false), starData = () => pinFeatures(true);
+function setPins() { map.getSource('listings')?.setData(pinData()); map.getSource('starred')?.setData(starData()); }
 /** Neighbourhood labels placed at the middle of each neighbourhood's listings (tiles rarely label them at city zoom). */
 function hoodPoints() {
   const g = new Map();
@@ -378,6 +385,16 @@ function addOverlays() {
     'circle-color': heat === 'commute' ? ['case', ['get', 'fav'], css('--accent'), theme() === 'light' ? '#2b303b' : '#eef1f6'] : ['get', 'col'], 'circle-opacity': ['case', ['get', 'gone'], 0.35, 1],
     'circle-stroke-width': ['case', ['boolean', ['feature-state', 'hover'], false], 3, ['get', 'fav'], 2.2, 1.6],
     'circle-stroke-color': ['case', ['boolean', ['feature-state', 'hover'], false], css('--ink'), p.pinLine] } });
+  // starred homes: their own unclustered source, so a count bubble never swallows them at any zoom
+  map.addSource('starred', { type: 'geojson', data: starData(), promoteId: 'id' });
+  map.addLayer({ id: 'pins-s-halo', type: 'circle', source: 'starred', paint: {
+    'circle-radius': ['interpolate', ['linear'], ['zoom'], 11, 9, 15, 17], 'circle-color': css('--fav'), 'circle-blur': 0.8, 'circle-opacity': 0.5 } });
+  map.addLayer({ id: 'pin-sel-s', type: 'circle', source: 'starred', filter: ['==', ['get', 'id'], S.sel || ''], paint: {
+    'circle-radius': 14, 'circle-color': 'rgba(0,0,0,0)', 'circle-stroke-width': 2.5, 'circle-stroke-color': css('--accent'), 'circle-stroke-opacity': 0.9 } });
+  map.addLayer({ id: 'pins-s', type: 'circle', source: 'starred', paint: {
+    'circle-radius': ['interpolate', ['linear'], ['zoom'], 11, 4.5, 15, 9], 'circle-color': heat === 'commute' ? css('--accent') : ['get', 'col'], 'circle-opacity': ['case', ['get', 'gone'], 0.35, 1],
+    'circle-stroke-width': ['case', ['boolean', ['feature-state', 'hover'], false], 3, 2.2],
+    'circle-stroke-color': ['case', ['boolean', ['feature-state', 'hover'], false], css('--ink'), p.pinLine] } });
   const hoods = hoodPoints();
   map.addSource('hoods', { type: 'geojson', data: hoods });
   // one label per neighbourhood: where our listing-placed label exists, hide the basemap's copy of the same name
@@ -397,7 +414,7 @@ function drawTags() {
   let fresh = 0;
   const F = sorted(filtered()).filter((L) => L.lat != null), pick = new Map();
   F.slice(0, 12).forEach((L) => pick.set(L.id, L));
-  F.filter((L) => isSaved(L.id) || L.favorite).forEach((L) => pick.set(L.id, L));
+  F.filter(isStar).forEach((L) => pick.set(L.id, L));
   if (S.sel) { const L = S.listings.find((x) => x.id === S.sel); if (L?.lat != null) pick.set(L.id, L); }
   for (const L of pick.values()) {
     // MapLibre positions a marker by setting `transform` on its root element, so the root stays unstyled and the
@@ -406,7 +423,7 @@ function drawTags() {
     root.className = 'tag-anchor';
     const el = document.createElement('button');
     el.type = 'button';
-    el.className = `price-tag ${S.sel === L.id ? 'sel' : ''} ${isSaved(L.id) || L.favorite ? 'fav' : ''}`;
+    el.className = `price-tag ${S.sel === L.id ? 'sel' : ''} ${isStar(L) ? 'fav' : ''}`;
     el.dataset.id = L.id;
     el.setAttribute('aria-label', `${label(L)}, ${money(cost(L))} a month`);
     el.innerHTML = `<i style="--c:${scoreColor(score(L))}">${Math.round(score(L) ?? 0)}</i>${isSaved(L.id) ? '<svg class="st" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1.6l1.9 4 4.4.5-3.3 3 .9 4.3L8 11.2 4.1 13.4 5 9.1 1.7 6.1l4.4-.5z"/></svg>' : ''}${moneyShort(cost(L))}`;
@@ -421,16 +438,17 @@ function drawTags() {
   declutter();
 }
 /** Hide price tags that collide with a better-ranked tag (the circle pin underneath stays), and all but the
- *  selected tag while pins are clustered. Tags fade and settle rather than blink. */
+ *  selected tag while pins are clustered. Starred and selected tags are placed first: they are never hidden, and
+ *  an ordinary tag yields to them. Tags fade and settle rather than blink. */
 function declutter() {
   const shown = [], low = map.getZoom() < CLUSTER_Z - 0.35;
-  for (const m of markers) {
-    const el = m.getElement(), tag = el.firstElementChild, r = el.getBoundingClientRect(), sel = tag.classList.contains('sel');
-    const hit = low || shown.some((q) => r.left < q.right + 4 && r.right > q.left - 4 && r.top < q.bottom + 3 && r.bottom > q.top - 3);
-    const keep = !hit || sel;
-    el.classList.toggle('hid', !keep);
-    tag.tabIndex = keep ? 0 : -1;
-    if (keep) shown.push(r);
+  const rows = markers.map((m) => { const el = m.getElement(), tag = el.firstElementChild; return { el, tag, r: el.getBoundingClientRect(), fixed: tag.classList.contains('fav') || tag.classList.contains('sel') }; });
+  for (const row of [...rows.filter((x) => x.fixed), ...rows.filter((x) => !x.fixed)]) {
+    const { r } = row;
+    const hide = !row.fixed && (low || shown.some((q) => r.left < q.right + 4 && r.right > q.left - 4 && r.top < q.bottom + 3 && r.bottom > q.top - 3));
+    row.el.classList.toggle('hid', hide);
+    row.tag.tabIndex = hide ? -1 : 0;
+    if (!hide) shown.push(r);
   }
 }
 let pulseRaf = 0;
@@ -441,8 +459,7 @@ function pulse() {
   const step = (t) => {
     if (!map.getLayer('pin-sel') || !S.sel) return;
     const k = ((t - t0) % 1600) / 1600;
-    map.setPaintProperty('pin-sel', 'circle-radius', 11 + k * 12);
-    map.setPaintProperty('pin-sel', 'circle-stroke-opacity', 0.9 * (1 - k));
+    for (const id of ['pin-sel', 'pin-sel-s']) if (map.getLayer(id)) { map.setPaintProperty(id, 'circle-radius', 11 + k * 12); map.setPaintProperty(id, 'circle-stroke-opacity', 0.9 * (1 - k)); }
     pulseRaf = requestAnimationFrame(step);
   };
   pulseRaf = requestAnimationFrame(step);
@@ -538,7 +555,7 @@ function renderLegend() {
         const isLim = (i ? BANDS[i - 1] : 0) < lim && lim <= t;
         return `<span role="listitem" style="display:flex;align-items:center;gap:6px;font:500 var(--fs-2xs) var(--font-mono);font-variant-numeric:tabular-nums;color:${isLim ? 'var(--ink)' : 'var(--ink-2)'};white-space:nowrap"><i style="flex:none;width:18px;height:11px;border-radius:3px;background:${st[i].col};${isLim ? 'box-shadow:0 0 0 1.5px var(--ink)' : 'box-shadow:inset 0 0 0 1px rgba(0,0,0,.18)'}"></i>${isLim ? `<b style="font-weight:650" title="Your ${lim}-minute limit">${bandLabel(i)}</b>` : bandLabel(i)}</span>`;
       }).join('')}</div>
-      <div class="src">${what} on the ${esc(g.feeds?.length ? g.feeds.join(', ') + ' timetable' : 'walking network')}, the router's answer every ${esc(Math.round(g.cell_m || 150))} m, averaged over ${g.arrival_offsets_min?.length || 'several'} arrivals${g.arrival_offsets_min?.length ? ` in the ${Math.max(...g.arrival_offsets_min)} minutes before ${esc(d?.arrive_by || 'arrival')}` : ''}. Each colour is a 5-minute band (10-minute bands past 30); the outlined swatch and the dashed line mark your ${lim}-minute limit. ${g.water_masked ? 'Water and areas' : 'Areas'} beyond walking range of a stop are left clear.</div>`
+      <details class="src-d" ${store.get('legend-src', false) ? 'open' : ''}><summary>How this is computed</summary><div class="src">${what} on the ${esc(g.feeds?.length ? g.feeds.join(', ') + ' timetable' : 'walking network')}, the router's answer every ${esc(Math.round(g.cell_m || 150))} m, averaged over ${g.arrival_offsets_min?.length || 'several'} arrivals${g.arrival_offsets_min?.length ? ` in the ${Math.max(...g.arrival_offsets_min)} minutes before ${esc(d?.arrive_by || 'arrival')}` : ''}. Each colour is a 5-minute band (10-minute bands past 30); the outlined swatch and the dashed line mark your ${lim}-minute limit. ${g.water_masked ? 'Water and areas' : 'Areas'} beyond walking range of a stop are left clear.</div></details>`
       : mode === 'walk' ? `<div class="src">Walking has no timetable surface. The dashed rings are ${ringMinutes().join(', ')} minutes on foot at ${walkKmh()} km/h, straight line with a 1.25 street detour. Cards, filters and columns use the router's walking minutes where it has them, else the same estimate.</div>`
       : `<div class="src">No ${ml} surface for ${esc(d?.name || 'this destination')}${d?._stale ? ' (new or moved in your edited criteria)' : ''}. Run <code>apartmentscout commute</code>${mode === 'bus' ? ' with a bus GTFS feed' : ''} to draw it. Pins, cards and filters use per-listing ${ml} minutes where the router computed them.</div>`}`;
   } else if (heat === 'noise' && g) {
@@ -554,6 +571,7 @@ function renderLegend() {
   $('legend').innerHTML = `<button type="button" class="lg-tog" id="lgTog" aria-expanded="${!min}" aria-controls="legend" title="${min ? 'Show the full legend' : 'Fold the legend'}" aria-label="${min ? 'Show the full legend' : 'Fold the legend'}"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 10l4-4 4 4"/></svg></button>`
     + body + (lineChips && showLines ? `<div class="lines">${lineChips}</div>` : '');
   $('lgTog').addEventListener('click', () => { store.set('legend-min', !min); renderLegend(); $('lgTog')?.focus(); });
+  $('legend').querySelector('.src-d')?.addEventListener('toggle', (e) => store.set('legend-src', e.target.open));
   $('lgDest')?.addEventListener('change', (e) => setCommute({ dest: e.target.value }));
   $('legend').querySelectorAll('#lgMode [data-mode]').forEach((b) => b.addEventListener('click', () => setCommute({ mode: b.dataset.mode })));
 }
@@ -598,17 +616,18 @@ function readout(e) {
 // ------------------------------------------------------------------ lifecycle
 function wire() {
   let hov = null;
-  map.on('mousemove', 'pins', (e) => {
+  const onPins = (type, fn) => { map.on(type, 'pins', fn); map.on(type, 'pins-s', fn); };
+  onPins('mousemove', (e) => {
     const f = e.features[0]; map.getCanvas().style.cursor = 'pointer';
-    if (hov !== f.id) { if (hov) map.setFeatureState({ source: 'listings', id: hov }, { hover: false }); hov = f.id; map.setFeatureState({ source: 'listings', id: hov }, { hover: true }); }
+    if (hov !== f.id) { if (hov) hoverState(hov, false); hov = f.id; hoverState(hov, true); }
     const L = S.listings.find((x) => x.id === f.id); if (!L) return;
     const im = imagesOf(L), ph = im.own[0] || im.building[0]?.url;
     if (picking) return;
     const cm = commuteOf(L), cml = S.commuteMode === 'best' ? '' : ' ' + MODE_LABEL[S.commuteMode].toLowerCase();
     popup.setLngLat([L.lon, L.lat]).setHTML(`<div class="hovercard">${ph ? `<img src="${esc(ph)}" alt="" referrerpolicy="no-referrer">` : aerialHTML(L, 236, 118, 18)}<div class="hb"><div class="t">${esc(label(L))}</div><div class="s">${esc(L.neighborhood || '')}${L.sqft ? ' · ' + Math.round(L.sqft) + ' ft²' : ''}</div><div class="p"><b>${money(cost(L))}/mo</b><span>${cm != null ? Math.round(cm) + ' min' + cml + ' · ' : ''}score ${Math.round(score(L) ?? 0)}</span></div></div></div>`).addTo(map);
   });
-  map.on('mouseleave', 'pins', () => { map.getCanvas().style.cursor = ''; if (hov) map.setFeatureState({ source: 'listings', id: hov }, { hover: false }); hov = null; popup.remove(); });
-  map.on('click', 'pins', (e) => { if (!picking) openDrawer(e.features[0].id); });
+  onPins('mouseleave', () => { map.getCanvas().style.cursor = ''; if (hov) hoverState(hov, false); hov = null; popup.remove(); });
+  onPins('click', (e) => { if (!picking) openDrawer(e.features[0].id); });
   // a count bubble zooms to the level where it splits
   map.on('click', 'clusters', async (e) => {
     if (picking) return;
@@ -627,7 +646,7 @@ function wire() {
   // clicking empty map dismisses the mini card
   map.on('click', (e) => {
     if (picking || !$('mapCard') || $('mapCard').hidden) return;
-    if (!map.queryRenderedFeatures(e.point, { layers: ['pins', 'clusters'].filter((l) => map.getLayer(l)) }).length) hideCard(true);
+    if (!map.queryRenderedFeatures(e.point, { layers: ['pins', 'pins-s', 'clusters'].filter((l) => map.getLayer(l)) }).length) hideCard(true);
   });
   map.on('mousemove', readout);
   map.on('mouseout', () => ($('readout').hidden = true));
@@ -650,9 +669,9 @@ export function init() {
   // Esc with the drawer already closed dismisses the mini card (capture: runs before the shell closes the drawer)
   addEventListener('keydown', (e) => { if (e.key === 'Escape' && !S.sel && $('mapCard') && !$('mapCard').hidden && !document.querySelector('.pl-scrim:not([hidden]), .sheet-scrim.on, .kbd-help')) hideCard(true); }, true);
   addEventListener('hashchange', () => { if (!location.hash.startsWith('#map') && location.hash) hideCard(); });
-  on('filters', () => { if (!map?.getSource('listings')) return; map.getSource('listings').setData(pinData()); drawTags(); if (heat === 'score') setHeat('score'); });
-  on('weights-settled', () => { if (!map?.getSource('listings')) return; map.getSource('listings').setData(pinData()); drawTags(); if (heat === 'score') setHeat('score'); });
-  on('saved', () => { if (map?.getSource('listings')) { map.getSource('listings').setData(pinData()); drawTags(); } });
+  on('filters', () => { if (!map?.getSource('listings')) return; setPins(); drawTags(); if (heat === 'score') setHeat('score'); });
+  on('weights-settled', () => { if (!map?.getSource('listings')) return; setPins(); drawTags(); if (heat === 'score') setHeat('score'); });
+  on('saved', () => { if (map?.getSource('listings')) { setPins(); drawTags(); } });   // a star added or removed anywhere lands here
   on('sort', () => map && drawTags());
   on('commute', () => {
     if (!map) return;
@@ -665,22 +684,25 @@ export function init() {
     if (!vector || customStyle()) { rebuild(); return; }
     PAINT.forEach(([id, prop, key]) => map.getLayer(id) && map.setPaintProperty(id, prop, PAL[theme()][key]));
     if (map.getLayer('pins')) map.setPaintProperty('pins', 'circle-stroke-color', ['case', ['boolean', ['feature-state', 'hover'], false], css('--ink'), PAL[theme()].pinLine]);
-    map.getSource('listings')?.setData(pinData());
+    setPins();
+    if (map.getLayer('pins-s-halo')) map.setPaintProperty('pins-s-halo', 'circle-color', css('--fav'));
+    for (const id of ['pin-sel', 'pin-sel-s']) if (map.getLayer(id)) map.setPaintProperty(id, 'circle-stroke-color', css('--accent'));
+    if (map.getLayer('pins-s')) map.setPaintProperty('pins-s', 'circle-stroke-color', ['case', ['boolean', ['feature-state', 'hover'], false], css('--ink'), PAL[theme()].pinLine]);
     setHeat(heat);
   });
   on('hover', (id) => {
     document.querySelectorAll('.price-tag.hl').forEach((e) => e.classList.remove('hl'));
     if (!map?.getSource('listings')) return;
-    if (init.h) map.setFeatureState({ source: 'listings', id: init.h }, { hover: false });
+    if (init.h) hoverState(init.h, false);
     init.h = id;
-    if (id) { map.setFeatureState({ source: 'listings', id }, { hover: true }); document.querySelector(`.price-tag[data-id="${CSS.escape(id)}"]`)?.classList.add('hl'); }
+    if (id) { hoverState(id, true); document.querySelector(`.price-tag[data-id="${CSS.escape(id)}"]`)?.classList.add('hl'); }
   });
   on('select', ({ id, fly }) => {
     if (id) lastSel = id;
     // a listing opened before the map finished loading (?open=…) is flown to once it has
     if (!map?.loaded()) { pendingFly = id && fly ? id : null; if (!map) return; }
     drawTags();
-    if (map.getLayer('pin-sel')) { map.setFilter('pin-sel', selFilter(id)); pulse(); }
+    if (map.getLayer('pin-sel')) { map.setFilter('pin-sel', selFilter(id)); map.getLayer('pin-sel-s') && map.setFilter('pin-sel-s', ['==', ['get', 'id'], id || '']); pulse(); }
     if (id) hideCard(); else if (lastSel) showCard(lastSel);
     if (fly) flyTo(id);
   });

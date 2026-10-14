@@ -5,6 +5,7 @@ import { $, esc, money, moneyShort, safeUrl, scoreColor, ring, unitGlyph, bullet
 import { COMMUTE_MODES, commuteEntry, modeMinutes, modeOptions, evaluate, applyProfile, profileOf, diffProfile, serverSteps, parseDay, cashFlow, basisLabel } from './criteria.js';
 import { initPalette, openPalette, shareListing, syncTrigger } from './palette.js';
 import { initEnhance } from './enhance.js';
+import { initTheme, flipTheme, initShell, parseRoute, syncSubnav } from './shell.js';
 
 export const store = {
   get(k, d) { try { const v = localStorage.getItem('as:' + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
@@ -277,13 +278,24 @@ function renderKPIs() {
   const noGeo = act.filter((L) => L.lat == null).length;
   const mc = median(F.map((L) => commuteOf(L)));
   const pv = S.preview ? `<div class="kpi pv-banner" role="status"><i aria-hidden="true"></i><b>Browser preview of your edited criteria</b><span class="faint">${S.preview.changes.length} change${S.preview.changes.length === 1 ? '' : 's'} · files unchanged</span><button type="button" class="btn sm" data-pv="edit">Edit</button><button type="button" class="btn sm ghost" data-pv="reset">Reset</button></div>` : '';
-  $('kpis').innerHTML = pv + [
-    [`${S.listings.length}<small>${act.length} active</small>`, 'tracked'], [`${F.length}`, 'match filters'], [`${elig.length}`, 'eligible'],
-    [`${short}`, 'shortlisted'], [`${money(median(F.map(cost)))}`, 'median / mo'], [mc != null ? `${Math.round(mc)}<small>min</small>` : '—', `median${S.commuteMode === 'best' ? '' : ' by ' + MODE_LABEL[S.commuteMode].toLowerCase()} to ${esc(dests()[0] || 'work')}`],
-  ].map(([v, k]) => `<div class="kpi"><span class="v">${v}</span><span class="k">${k}</span></div>`).join('') +
-    (top ? `<div class="kpi"><span class="k">Top match</span><a href="#" data-open="${esc(top.id)}">${esc(label(top))}</a></div>` : '') +
-    `<span class="spacer"></span><span class="gen" title="Listings come from the sources your agent swept; this is not a census of the market.">${S.manifest.generated ? 'Data built ' + esc(S.manifest.generated.slice(0, 10)) : 'No data yet: run apartmentscout build'}${noGeo ? ` · ${noGeo} awaiting coordinates` : ''} · not a market census</span>`;
-  $('kpis').querySelector('[data-open]')?.addEventListener('click', (e) => { e.preventDefault(); openDrawer(e.currentTarget.dataset.open, { fly: true }); });
+  const toDest = esc(dests()[0] || 'work'), byMode = S.commuteMode === 'best' ? '' : ' by ' + MODE_LABEL[S.commuteMode].toLowerCase();
+  // p1 stays on every width; p2 and p3 fold into the "all figures" popover on narrow screens (see shell.css)
+  const items = [
+    ['p2', `${S.listings.length}<small>${act.length} active</small>`, 'tracked'], ['p1 lead', `${F.length}`, 'match filters'], ['p2', `${elig.length}`, 'eligible'],
+    ['p2', `${short}`, 'shortlisted'], ['p1', `${money(median(F.map(cost)))}`, 'median / mo'],
+    ['p1', mc != null ? `${Math.round(mc)}<small>min</small>` : '—', `median${byMode}<span class="to"> to ${toDest}</span>`],
+  ];
+  const built = S.manifest.generated ? 'Data built ' + esc(S.manifest.generated.slice(0, 10)) : 'No data yet: run apartmentscout build';
+  const awaiting = noGeo ? ` · ${noGeo} awaiting coordinates` : '';
+  const topLink = top ? `<a href="#" data-open="${esc(top.id)}">${esc(label(top))}</a>` : '';
+  $('kpis').innerHTML = `<div class="kpi-row">${pv}${items.map(([p, v, k]) => `<div class="kpi ${p}"><span class="v">${v}</span><span class="k">${k}</span></div>`).join('')}` +
+    (top ? `<div class="kpi p3"><span class="k">Top match</span>${topLink}</div>` : '') +
+    `<span class="spacer"></span><span class="gen p3" title="Listings come from the sources your agent swept; this is not a census of the market.">${built}${awaiting}<span class="cen"> · not a market census</span></span></div>` +
+    `<div class="kpi-wrap"><button type="button" class="kpi-more" aria-haspopup="true" aria-expanded="false" aria-controls="kpiPop" aria-label="All figures" title="All figures"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><circle cx="3.5" cy="8" r="1.3"/><circle cx="8" cy="8" r="1.3"/><circle cx="12.5" cy="8" r="1.3"/></svg></button>` +
+    `<div class="kpi-pop menu-pop" id="kpiPop" role="group" aria-label="All figures" hidden>${items.map(([, v, k]) => `<div class="kpi-i"><span class="k">${k}</span><span class="v">${v}</span></div>`).join('')}` +
+    (top ? `<div class="kpi-i"><span class="k">Top match</span><span class="v">${topLink}</span></div>` : '') +
+    `<p class="kpi-note">${built}${awaiting}<br>Listings come from the sources your agent swept; this is not a market census.</p></div></div>`;
+  $('kpis').querySelectorAll('[data-open]').forEach((a) => a.addEventListener('click', (e) => { e.preventDefault(); openDrawer(e.currentTarget.dataset.open, { fly: true }); }));
   $('kpis').querySelector('[data-pv=edit]')?.addEventListener('click', openSettings);
   $('kpis').querySelector('[data-pv=reset]')?.addEventListener('click', () => applyCriteria(null));
 }
@@ -421,7 +433,7 @@ export function cardHTML(L, i = 0) {
       <div class="c-badges">${gate ? `<span class="bdg bad">${esc(GATE_LABEL(gate))}</span>` : ''}${(L.score?.tags || []).map((t) => `<span class="bdg warn">${esc(t)}</span>`).join('')}${sun ? `<span class="bdg sun" title="Modelled direct sun on the window this month">${ICONS.sun}${sun[mi].toFixed(1)} h</span>` : ''}${b.map((x) => `<span class="bdg">${esc(x)}</span>`).join('')}</div>
       <div class="c-acts" role="group" aria-label="Quick actions for ${esc(label(L))}">
         <button type="button" class="qa ${inCmp ? 'on' : ''}" data-cmp="${esc(L.id)}" aria-pressed="${inCmp}" title="${inCmp ? 'In Compare: click to remove' : 'Add to Compare'}" aria-label="${inCmp ? 'Remove from Compare' : 'Add to Compare'}">${inCmp ? ICONS.check : ICONS.plus}<span>${inCmp ? 'Comparing' : 'Compare'}</span></button>
-        ${has('sites') ? `<a class="qa" href="#unit/${esc(L.id)}" title="Unit 3D: the unit in its block, with the sun" aria-label="Open Unit 3D">${ICONS.cube}</a>` : ''}${has('plans') ? `<a class="qa" href="#plan/${esc(L.id)}" title="Floor plan" aria-label="Open the floor plan">${ICONS.plan}</a>` : ''}${has('dossiers') ? `<a class="qa" href="#records/${esc(L.id)}" title="Building records" aria-label="Open the building records">${ICONS.doc}</a>` : ''}</div>
+        ${has('sites') ? `<a class="qa" href="#unit/${esc(L.id)}" title="Unit 3D: the unit in its block, with the sun" aria-label="Open Unit 3D">${ICONS.cube}</a>` : ''}${has('plans') ? `<a class="qa" href="#plan/${esc(L.id)}" title="Floor plan" aria-label="Open the floor plan">${ICONS.plan}</a>` : ''}${has('dossiers') ? `<a class="qa" href="#research/records/${esc(L.id)}" title="Building records" aria-label="Open the building records">${ICONS.doc}</a>` : ''}</div>
     </div></article>`;
 }
 function buildingGroups(F) {
@@ -681,7 +693,7 @@ ${whySection(L)}
       <textarea id="dNote" rows="3" placeholder="What you liked, what to ask, tour impressions" style="width:100%;margin-top:10px">${esc(my.note || '')}</textarea></div>
     <p class="faint" style="font-size:var(--fs-xs);padding:0 20px 18px;margin:0">Last checked ${esc(L.checked || '?')} · <span class="mono">${esc(L.id)}</span>${links.length ? ' · ' + links.map(([k, u]) => `<a href="${esc(u)}" target="_blank" rel="noopener">${esc(k)}</a>`).join(' · ') : ''}</p>
     </div>
-    <div class="d-actions">${hasSite ? `<a class="btn primary" href="#unit/${esc(L.id)}">${ICONS.cube}Unit 3D</a>` : ''}${hasPlan ? `<a class="btn" href="#plan/${esc(L.id)}">${ICONS.plan}Plan</a>` : ''}${hasDos ? `<a class="btn" href="#records/${esc(L.id)}">${ICONS.doc}Records</a>` : ''}<button class="btn ${S.compare.includes(L.id) ? 'primary' : ''}" type="button" id="dCmp">${S.compare.includes(L.id) ? ICONS.check + 'Comparing' : ICONS.plus + 'Compare'}</button>${safeUrl(L.links?.listing) ? `<a class="btn" href="${esc(safeUrl(L.links.listing))}" target="_blank" rel="noopener">Listing ${ICONS.ext}</a>` : ''}</div>`;
+    <div class="d-actions">${hasSite ? `<a class="btn primary" href="#unit/${esc(L.id)}">${ICONS.cube}Unit 3D</a>` : ''}${hasPlan ? `<a class="btn" href="#plan/${esc(L.id)}">${ICONS.plan}Plan</a>` : ''}${hasDos ? `<a class="btn" href="#research/records/${esc(L.id)}">${ICONS.doc}Records</a>` : ''}<button class="btn ${S.compare.includes(L.id) ? 'primary' : ''}" type="button" id="dCmp">${S.compare.includes(L.id) ? ICONS.check + 'Comparing' : ICONS.plus + 'Compare'}</button>${safeUrl(L.links?.listing) ? `<a class="btn" href="${esc(safeUrl(L.links.listing))}" target="_blank" rel="noopener">Listing ${ICONS.ext}</a>` : ''}</div>`;
   $('dCommute')?.querySelectorAll('[data-mode]').forEach((b) => b.addEventListener('click', () => { drawerMode = b.dataset.mode; const y = $('drawer').querySelector('.d-scroll').scrollTop; openDrawer(L.id); $('drawer').querySelector('.d-scroll').scrollTop = y; }));
   $('dClose').addEventListener('click', closeDrawer);
   dw.querySelector('.mt-x').addEventListener('click', closeDrawer);
@@ -718,19 +730,22 @@ export function closeDrawer() {
 
 // ------------------------------------------------------------------ router
 // Views load on first visit, so a slow or blocked CDN (three.js for the 3D views) never blanks the app.
+// Six tabs in the top bar; Tours lives under Shortlist (#list/tours) and Records under Research (#research/records/<id>).
+// The old #tours and #records/<id> links are rewritten to those by parseRoute() (shell.js).
 const VIEWS = { map: () => import('./map.js'), list: () => import('./list.js'), compare: () => import('./compare.js'), unit: () => import('./unit3d.js'),
-  plan: () => import('./plan3d.js').then((m) => (import('./plan/tracer-ui.js').then((t) => t.attach()).catch(() => {}), m)), records: () => import('./records.js'), tours: () => import('./tours.js'), research: () => import('./research.js') };
+  plan: () => import('./plan3d.js').then((m) => (import('./plan/tracer-ui.js').then((t) => t.attach()).catch(() => {}), m)), tours: () => import('./tours.js'), research: () => import('./research.js') };
 const loaded = {};
 async function viewModule(v) {
   if (!loaded[v]) loaded[v] = VIEWS[v]().then((m) => { m.init?.(); return m; });
   return loaded[v];
 }
 async function route() {
-  const [view, arg] = (location.hash.replace('#', '') || 'map').split('/');
-  const v = VIEWS[view] ? view : 'map';
-  S.view = v; document.body.dataset.view = v; document.body.classList.remove('rail-open');
+  const r = parseRoute(), view = r.view, arg = r.arg;
+  const v = VIEWS[view] ? view : 'map', group = VIEWS[view] ? r.group : 'map';
+  S.view = v; document.body.dataset.view = v; document.body.dataset.group = group; document.body.classList.remove('rail-open');
   document.querySelectorAll('.view').forEach((el) => (el.hidden = el.id !== 'view-' + v));
-  document.querySelectorAll('#tabs a').forEach((a) => { a.classList.toggle('on', a.dataset.view === v); a.toggleAttribute('aria-current', a.dataset.view === v); });
+  document.querySelectorAll('#tabs a').forEach((a) => { a.classList.toggle('on', a.dataset.view === group); a.toggleAttribute('aria-current', a.dataset.view === group); });
+  syncSubnav(v);
   if (v !== 'map' && v !== 'list') closeDrawer();
   if (v === 'map' && route.last && route.last !== 'map') renderCards();   // cards may be stale after edits in other views
   route.last = v;
@@ -741,20 +756,7 @@ async function route() {
   }
 }
 
-function setupTheme() {
-  const qs = new URLSearchParams(location.search);
-  document.documentElement.dataset.theme = qs.get('theme') || store.get('theme', null) || 'dark';
-  const flip = () => {
-    document.documentElement.dataset.theme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
-    store.set('theme', document.documentElement.dataset.theme);
-    document.querySelector('meta[name=theme-color]')?.setAttribute('content', getComputedStyle(document.documentElement).getPropertyValue('--ground').trim());
-    emit('theme');
-  };
-  $('themeBtn').addEventListener('click', flip);
-  return flip;
-}
-
-function setupKeys(flipTheme) {
+function setupKeys() {
   const cards = () => [...document.querySelectorAll('#cards .card')];
   addEventListener('keydown', (e) => {
     const tag = e.target.tagName;
@@ -770,12 +772,12 @@ function setupKeys(flipTheme) {
     if (e.key === 's' && S.sel) { toggleSave(S.sel); openDrawer(S.sel); return; }
     if (e.key === 'c' && S.sel) { toggleCompare(S.sel); openDrawer(S.sel); return; }
     if (e.key === 't') { flipTheme(); return; }
-    const views = ['map', 'list', 'compare', 'unit', 'plan', 'records', 'tours', 'research'];
-    if (/^[1-8]$/.test(e.key)) { location.hash = views[+e.key - 1]; return; }
+    const views = ['map', 'list', 'compare', 'unit', 'plan', 'research'];
+    if (/^[1-6]$/.test(e.key)) { location.hash = views[+e.key - 1]; return; }
     if (e.key === '?') {
       const old = document.querySelector('.kbd-help'); if (old) { old.remove(); return; }
       const el = document.createElement('div'); el.className = 'kbd-help'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', 'Keyboard shortcuts');
-      el.innerHTML = `<div class="panel"><h3>Keyboard</h3><dl>${[['⌘K /', 'Search homes, views and actions'], ['j k', 'Next or previous listing'], ['s', 'Save the open listing'], ['c', 'Add it to compare'], ['1–8', 'Switch view'], ['t', 'Light or dark'], ['Esc', 'Close'], ...(S.view === 'plan' ? [['R', 'Turn the selected piece'], ['← →', 'Nudge 1 in (Shift 6 in)'], ['D', 'Duplicate'], ['Del', 'Remove'], ['⌘Z', 'Undo'], ['W A S D', 'Walk mode']] : []), ...(S.view === 'unit' ? [['p', 'Play or pause the day'], [', .', 'Step 15 minutes']] : [])].map(([k, t]) => `<dt>${k.split(' ').map((x) => `<kbd>${x}</kbd>`).join(' ')}</dt><dd style="margin:0">${t}</dd>`).join('')}</dl></div>`;
+      el.innerHTML = `<div class="panel"><h3>Keyboard</h3><dl>${[['⌘K /', 'Search homes, views and actions'], ['j k', 'Next or previous listing'], ['s', 'Save the open listing'], ['c', 'Add it to compare'], ['1–6', 'Switch view'], ['t', 'Light or dark'], ['Esc', 'Close'], ...(S.view === 'plan' ? [['R', 'Turn the selected piece'], ['← →', 'Nudge 1 in (Shift 6 in)'], ['D', 'Duplicate'], ['Del', 'Remove'], ['⌘Z', 'Undo'], ['W A S D', 'Walk mode']] : []), ...(S.view === 'unit' ? [['p', 'Play or pause the day'], [', .', 'Step 15 minutes']] : [])].map(([k, t]) => `<dt>${k.split(' ').map((x) => `<kbd>${x}</kbd>`).join(' ')}</dt><dd style="margin:0">${t}</dd>`).join('')}</dl></div>`;
       el.addEventListener('click', () => el.remove()); document.body.append(el);
     }
   });
@@ -808,7 +810,7 @@ async function boot() {
   }
   $('searchName').textContent = crit.search?.name || 'Your search';
   document.title = crit.search?.name ? `${crit.search.name} · ApartmentScout` : 'ApartmentScout';
-  const flip = setupTheme();
+  initTheme();
   const prof = store.get(searchKey('criteria'), null);
   if (prof) { try { applyCriteria(prof, { quiet: true }); } catch { store.set(searchKey('criteria'), null); S.crit = S.crit0; for (const L of listings) L.score = L._score0; } }
   if (!allDests().some((d) => d.name === S.destName)) S.destName = allDests()[0]?.name || null;
@@ -845,7 +847,8 @@ async function boot() {
   $('groupSeg').querySelectorAll('button').forEach((b) => b.addEventListener('click', () => { S.group = b.dataset.g; $('groupSeg').querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === b)); renderCards(); }));
   $('csvBtn').addEventListener('click', exportCSV);
   $('filtersBtn').addEventListener('click', () => document.body.classList.toggle('rail-open'));
-  setupKeys(flip);
+  setupKeys();
+  initShell(); syncSubnav();
   addEventListener('hashchange', route);
   await route();
   viewModule('map');   // the map keeps pins in sync even while another view is open

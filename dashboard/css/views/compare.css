@@ -19,7 +19,7 @@
 .cl-o { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 6px 8px; border-radius: var(--r-md); cursor: pointer; }
 .cl-o:hover, .cl-o.on { background: var(--surface-2); }
 .cl-o.on { box-shadow: inset 0 0 0 1px var(--accent-line); }
-.cl-o .th, .sg .th { display: block; width: 40px; height: 32px; border-radius: 7px; overflow: hidden; background: var(--surface-3); }
+.cl-o .th, .sg .th { display: block; width: 40px; height: 32px; border-radius: var(--r-inner); overflow: hidden; background: var(--surface-3); }
 .cl-o .th img, .cl-o .th svg, .sg .th img, .sg .th svg { display: block; width: 100%; height: 100%; object-fit: cover; }
 .cl-t, .sg-t { display: flex; flex-direction: column; min-width: 0; }
 .cl-t b, .sg-t b { font-weight: 600; font-size: var(--fs-sm); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -48,7 +48,7 @@
 @keyframes cmpIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 .ch-media { position: relative; aspect-ratio: 16 / 9; border-radius: var(--r-md); overflow: hidden; background: var(--surface-3); }
 .ch-media img, .ch-media svg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
-.ch-let { position: absolute; left: 8px; top: 8px; width: 24px; height: 24px; border-radius: 7px; display: grid; place-items: center; font: 650 var(--fs-sm)/1 var(--font-sans); background: var(--ink); color: var(--ground); box-shadow: var(--shadow-2); }
+.ch-let { position: absolute; left: 8px; top: 8px; width: 24px; height: 24px; border-radius: var(--r-inner); display: grid; place-items: center; font: 650 var(--fs-sm)/1 var(--font-sans); background: var(--ink); color: var(--ground); box-shadow: var(--shadow-2); }
 .ch-btns { position: absolute; right: 8px; top: 8px; display: flex; gap: 5px; }
 .ch-btns button { width: 28px; height: 28px; border-radius: 50%; border: 0; display: grid; place-items: center; cursor: pointer; background: var(--overlay); backdrop-filter: var(--glass); -webkit-backdrop-filter: var(--glass); color: var(--ink-2); transition: color var(--t-fast), transform var(--t-base) var(--ease-spring); }
 .ch-btns button:hover { color: var(--ink); transform: scale(1.08); }

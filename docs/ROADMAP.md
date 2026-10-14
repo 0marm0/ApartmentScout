@@ -26,7 +26,7 @@ the renter makes the calls in a dashboard they own, for any city.
 | Records (NYC) | 10 Open Data datasets: PLUTO, HPD violations and complaints, DOB and ECB, DOB NOW filings, bedbugs, 311 and NYPD. The report labels each item as a report or a finding, and includes noise metrics, ledgers and a print view. |
 | Light and view | Footprints with component buildings (podium, tower, setback), party-wall rejection, light courts, streets, and filed and proposed towers. The day strip names the building blocking the sun. Also included: bay windows, eye height against roofs, a neighbours table, a photo-match overlay, self-checks, source receipts and GLB/PNG export. The relative daylight model (sky view, average daylight factor estimate, possible vs expected sun hours) is labelled "not lux". |
 | Floor plans | Plan JSON v2 with a synced 2D/3D studio, a 23-piece cited catalogue, fit checks, presets, cameras and exports. The plan tracer turns a plan image or PDF into an editable 3D plan. Edited plans flow into the Unit 3D Inside camera. |
-| Dashboard | Eight views (Map, Shortlist, Compare, Unit 3D, Floor plan, Records, Research, Tours), dark and light themes, and an in-app search settings sheet. It runs as a local server, on GitHub Pages or as one standalone HTML file. |
+| Dashboard | Six tabs (Map, Shortlist with Tours, Compare, Unit 3D, Floor plan, Research with Records), system, dark and light themes, and an in-app search settings sheet. It runs as a local server, on GitHub Pages or as one standalone HTML file. |
 | Quality gate | 318 pytest and 107 `node:test` tests. CI runs both, plus the privacy, ignore and photo parts of `scripts/release_check.py`. |
 
 ### Known limits (honest)
