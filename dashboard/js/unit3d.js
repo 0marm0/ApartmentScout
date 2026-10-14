@@ -1,238 +1,469 @@
-// Unit 3D: the listing's building and every neighbour in 3D, the sun for any date and time,
-// the view from the chosen window, a sun-path chart and direct-sun hours for every floor.
-import * as THREE from 'three';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { S, byId, label, loadJSON } from './app.js';
-import { $, esc, css } from './util.js';
-import { DEG, sunPos, zonedMs, angDiff, fmtT, fmtHM, dayTable, prepBuildings, horizonProfile, horizonDir, hAt, litInfo, facesOf, compass } from './sun.js';
+// Unit 3D: the listing's building and every neighbour in 3D, the sun for any date and time, the view from the
+// chosen window, a clickable day strip, a sun-path chart, direct-sun hours for every floor, and the evidence
+// behind each input. Reads sites/<id>.json (v1 or v2; every v2 key is optional).
+import { S, byId, label, loadJSON, on, download } from './app.js';
+import { $, esc, css, toast, ICONS } from './util.js';
+import {
+  DEG, sunPos, zonedMs, zoneAbbr, angDiff, fmtT, prepBuildings, horizonProfile, horizonDir, hAt, litInfo,
+  facesOf, snapOpen, streetAhead, rayBlock, compass, dayStates,
+} from './sun.js';
+import { UnitStage } from './unit/scene.js';
+import { STRIP_FROM, STRIP_TO, STRIP_STEP, stripBar, stripTicks, stateAt, drawPath, heatHTML, monthBandSVG, table } from './unit/charts.js';
 
-let site = null, B = [], T = null, FACES = [], LM = [];
-const st = { id: null, face: 0, t: 0.5, floor: 10, cmp: 20, az: 180, date: '', min: 750, mode: 'orbit', playing: false, fov: 75, yaw: 0, pitch: 8, shadows: true, labels: true, cone: true, ray: true };
-let renderer, scene, orbitCam, winCam, controls, sunL, hemi, marker, band, coneMesh, rayLine, labels = [], groundMat, mats = [];
-let profA = null, profB = null, curSun = null, dirty = true, heatTok = 0, loopOn = false;
+let site = null, B = [], T = null, FACES = [], LM = [], FUT = [], BF = null, stage = null;
+const st = {
+  id: null, face: 0, t: 0.5, floor: 10, cmp: 20, az: 180, date: '', min: 780, mode: 'orbit', playing: false,
+  manual: {}, moved: null, sel: null, first: true,
+};
+let profA = null, profB = null, profF = null, statesA = null, statesB = null, curSun = null, curHit = null, heat = null, heatTok = 0, loopOn = false, lastT = 0;
 const tz = () => site?.timezone || S.crit.search?.timezone || 'America/New_York';
-const FH = () => site?.floor_height_m || 3.2;
+const FH = () => +site?.floor_height_m || 3.2;
+const maxFloor = () => Math.max(2, Math.floor((T.top - Math.max(T.g, 0)) / FH()));
+const MONTHS = 'Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec'.split(' ');
+const MODES = [['orbit', 'Orbit', 'Orbit the block'], ['win', 'Window', 'From the window'], ['plan', 'Plan', 'Street plan, north up'], ['top', 'Top', 'Top down']];
+const PROV = {
+  established: ['Established', 'good'], plan: ['Floor plan', 'good'], listing: ['Listing says', 'accent'], agent: ['Agent says', 'accent'],
+  'photo-landmarks': ['Photo landmarks', 'accent'], model: ['Model', ''], assumed: ['Assumed', 'warn'], inferred: ['Inferred', 'warn'], manual: ['Your setting', ''],
+};
+const HSRC = { roof: 'Measured roof height', 'pluto-floors': 'PLUTO floor count × 3.2 m', 'osm-levels': 'OpenStreetMap levels × 3.2 m', 'osm-height': 'OpenStreetMap height tag', default: 'Default height (unknown)' };
+const DSRC = { 'nyc-footprints': 'NYC Building Footprints', osm: 'OpenStreetMap' };
+const ICON = {
+  shadows: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="5.5"/><path d="M8 2.5a5.5 5.5 0 010 11z" fill="currentColor"/></svg>',
+  labels: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3.5" width="12" height="6.5" rx="2"/><path d="M8 10v3"/></svg>',
+  streets: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 2L3 14M11 2l2 12M8 3v2M8 7.5v2M8 12v1.5"/></svg>',
+  future: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="2 2"><rect x="4" y="2.5" width="8" height="11" rx="1"/></svg>',
+  ray: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="4" r="2"/><path d="M3 13l7-7"/></svg>',
+  cone: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 13L2.5 4.5a8 8 0 0111 0z"/></svg>',
+  target: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 14V5l4-3 4 3v9z"/><path d="M4 9h8" opacity=".6"/></svg>',
+  cam: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 5.5h2.5l1.2-2h4.6l1.2 2H14v7.5H2z"/><circle cx="8" cy="9" r="2.4"/></svg>',
+  play: '<svg viewBox="0 0 16 16" fill="currentColor"><path d="M4.5 3v10l8.5-5z"/></svg>',
+  pause: '<svg viewBox="0 0 16 16" fill="currentColor"><rect x="4" y="3" width="3" height="10" rx="1"/><rect x="9" y="3" width="3" height="10" rx="1"/></svg>',
+  reset: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 8a5 5 0 109-3M12 2v3H9"/></svg>',
+};
 
+// ------------------------------------------------------------------ layout
 export function init() {
-  document.getElementById('view-unit').innerHTML = `<div class="view-pad"><div class="u-grid"> <div class="u-left"> <div class="u-picker"><label for="unitSel">Listing</label><select id="unitSel"></select></div> <div id="stage" class="canvas-stage"><canvas id="gl"></canvas><div class="hud" id="hud"></div></div> <div class="panel" id="timePanel"></div> <div class="panel"><h3>Sun path against the skyline</h3><canvas id="pathCv" class="plot"></canvas><div class="legend-row" id="pathLegend"></div></div> </div> <div class="u-right"> <div class="panel" id="winPanel"></div> <div class="panel" id="sunPanel"></div> <div class="panel" id="seePanel"></div> <div class="panel" id="heatPanel"></div> <div class="panel note" id="unitNotes"></div> </div> </div></div>`;
-  const sel = $('unitSel');
+  const root = document.getElementById('view-unit');
+  root.innerHTML = `<div class="view-pad u-pad">
+    <header class="page-h u-head">
+      <div class="t"><div class="u-eyebrow">Light and view</div><h1 id="uTitle">Unit 3D</h1><div class="u-sub" id="uSub"></div></div>
+      <div class="actions"><label class="u-pick"><span class="sr">Listing</span><select id="unitSel"></select></label><span id="uLinks" class="u-links"></span>
+        <button class="btn" type="button" id="uSnap" title="Download a PNG of the model with a caption">${ICON.cam}Snapshot</button></div>
+    </header>
+    <div class="u-grid" id="uGrid">
+      <div class="u-main">
+        <div id="stage" class="canvas-stage u-stage">
+          <canvas id="gl" tabindex="0" aria-label="3D model of the building and its neighbours. Arrow keys turn the view, plus and minus zoom."></canvas>
+          <div class="u-labels" id="uLabels" aria-hidden="true"></div>
+          <div class="float u-modes" id="uModes" role="group" aria-label="Camera">${MODES.map(([k, t, tip]) => `<button type="button" data-mode="${k}" title="${tip}" aria-pressed="false">${t}</button>`).join('')}</div>
+          <div class="float u-tools" id="uTools" role="group" aria-label="Layers">
+            ${[['shadows', 'Shadows'], ['labels', 'Labels'], ['streets', 'Street names and centrelines'], ['future', 'Proposed buildings'], ['ray', 'Sun ray'], ['cone', 'View cone']].map(([k, t]) => `<button type="button" data-tg="${k}" title="${t}" aria-label="${t}" aria-pressed="false">${ICON[k]}</button>`).join('')}
+            <hr><button type="button" id="uTarget" title="This building: solid" aria-label="This building display: solid">${ICON.target}<i class="u-tmode">S</i></button>
+            <button type="button" id="uHome" title="Reset the camera" aria-label="Reset the camera">${ICON.reset}</button>
+          </div>
+          <button type="button" class="u-compass" id="uCompass" title="North. Click to face north" aria-label="Compass, click to face north"><svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="18.5"/><g id="uNeedle"><path d="M20 5l4 15h-8z" class="n"/><path d="M20 35l4-15h-8z" class="s"/><text x="20" y="4.2" text-anchor="middle">N</text></g></svg></button>
+          <div class="hud u-hud" id="hud" aria-live="polite"></div>
+          <div class="float u-card" id="uCard" hidden></div>
+          <div class="float u-lens" id="uLens" hidden>
+            <div class="field"><label for="uFov">Lens <span class="val" id="uFovV"></span></label><input type="range" id="uFov" min="35" max="110" value="70"></div>
+            <div class="field"><label for="uYaw">Turn <span class="val" id="uYawV"></span></label><input type="range" id="uYaw" min="-90" max="90" value="0"></div>
+            <div class="field"><label for="uPitch">Tilt <span class="val" id="uPitchV"></span></label><input type="range" id="uPitch" min="-15" max="60" value="6"></div>
+          </div>
+          <div class="u-loading" id="uLoad"><span class="skeleton"></span>Building the model…</div>
+        </div>
+        <section class="panel u-time" id="timePanel" aria-label="Date and time"></section>
+      </div>
+      <aside class="u-side">
+        <section class="panel" id="winPanel"></section>
+        <section class="panel" id="sunPanel"></section>
+        <section class="panel" id="seePanel"></section>
+        <section class="panel"><h3>Sun path against the skyline <span id="pathNote"></span></h3><canvas id="pathCv" class="plot u-path" role="img" aria-label="Sun path against the skyline seen from the window"></canvas>
+          <div class="legend-row" id="pathLegend"></div></section>
+        <section class="panel" id="heatPanel"></section>
+        <section class="panel" id="evPanel"></section>
+      </aside>
+    </div></div>`;
   const ids = S.manifest.sites || [];
-  sel.innerHTML = ids.length ? ids.map((id) => `<option value="${esc(id)}">${esc(byId(id) ? label(byId(id)) : id)}</option>`).join('')
-    : '<option>No site models yet: run `apartmentscout site <listing-id>`</option>';
-  sel.addEventListener('change', () => { location.hash = '#unit/' + sel.value; });
+  const sel = $('unitSel');
+  sel.innerHTML = ids.length ? ids.map((id) => { const L = byId(id); return `<option value="${esc(id)}">${esc(L ? label(L) : id)}${L?.floor ? ' · floor ' + Math.round(L.floor) : ''}</option>`; }).join('') : '<option>No site models yet</option>';
+  sel.addEventListener('change', () => { location.hash = '#unit/' + encodeURIComponent(sel.value); });
+  $('uSnap').addEventListener('click', snapshot);
+  on('theme', () => { stage?.setPalette(); if (site) { drawPathChart(); stage.dirty = true; } });
 }
 
 export async function show(id) {
   const ids = S.manifest.sites || [];
-  if (!ids.length) { $('winPanel').innerHTML = '<p>No site models built yet. Run <code>apartmentscout site &lt;listing-id&gt;</code> for a listing, then <code>apartmentscout build</code>.</p>'; return; }
+  if (!ids.length) {
+    $('uGrid').innerHTML = `<div class="empty"><b>No site models yet</b>Run <code>apartmentscout site &lt;listing-id&gt;</code> for a listing, then <code>apartmentscout build</code>.</div>`;
+    $('uSnap').hidden = true; return;
+  }
   id = id && ids.includes(id) ? id : st.id || ids[0];
   $('unitSel').value = id;
   if (id !== st.id) await load(id);
-  resize();
-  if (!loopOn) { loopOn = true; frame(); }
+  stage?.resize(); drawPathChart();
+  if (!loopOn) { loopOn = true; requestAnimationFrame(frame); }
 }
 
+// ------------------------------------------------------------------ load
 async function load(id) {
-  site = await loadJSON(`${S.base}/sites/${id}.json`, null);
-  if (!site) return;
-  st.id = id;
-  B = prepBuildings(site.b);
+  $('uLoad').hidden = false;
+  const data = await loadJSON(`${S.base}/sites/${id}.json`, null);
+  if (!data || !Array.isArray(data.b) || !data.b.length) {
+    $('uLoad').innerHTML = `<div class="empty"><b>This site model could not be read</b>Rebuild it with <code>apartmentscout site ${esc(id)}</code>.</div>`;
+    return;
+  }
+  site = data; st.id = id; st.manual = {}; st.moved = null; st.sel = null; heat = null;
+  B = prepBuildings(site.b, site.holes && typeof site.holes === 'object' ? site.holes : null);
   T = B[site.target] || B[0];
-  FACES = facesOf(T);
-  LM = (site.lm || []).map((l) => ({ name: l[0], idx: l[1], x: l[2], y: l[3], top: l[4] }));
-  const L = byId(id) || {};
-  const qs = new URLSearchParams(location.search);
-  const w = site.window || {};
-  st.face = Math.max(0, FACES.findIndex((f) => f.i === w.face));
-  if (w.face == null) st.face = FACES.reduce((bi, f, i, a) => (f.length > a[bi].length ? i : bi), 0);
-  st.t = w.t ?? 0.5;
-  const maxF = Math.max(2, Math.floor((T.top - T.g) / FH()));
-  st.floor = Math.min(maxF, +(qs.get('floor') || w.floor || L.floor || Math.round(maxF / 2)));
-  st.cmp = Math.min(maxF, Math.max(st.floor + 9, Math.round(maxF * 0.85)));
-  st.az = FACES[st.face]?.bearing ?? 180;
-  st.date = qs.get('date') || (S.crit.search?.move_in?.earliest ? String(S.crit.search.move_in.earliest).slice(0, 10) : new Date().toISOString().slice(0, 10));
-  st.min = +(qs.get('min') || 750);
-  if (qs.get('mode') === 'window') st.mode = 'win';
-  buildScene();
-  buildPanels();
+  FACES = facesOf(T, 8, B);
+  // merge the site file's own party-wall flags (v2)
+  // v2 site files carry the Python party-wall verdict per face; it wins over the browser's own sampling
+  for (const f of site.faces || []) { const g = f && FACES.find((x) => x.i === f.i); if (!g) continue; if (f.shared) g.shared = true; else if (+site.version >= 2) g.shared = false; }
+  if (FACES.every((f) => f.shared)) FACES.forEach((f) => (f.shared = false)); // never leave the picker empty
+  LM = (site.lm || []).filter((l) => Array.isArray(l) && l.length >= 5).map((l) => ({ name: String(l[0]), idx: l[1], x: +l[2], y: +l[3], top: +l[4] }));
+  FUT = (Array.isArray(site.future) ? site.future : []).filter((f) => f && Array.isArray(f.ring) && f.ring.length >= 3 && +f.h > 0);
+  BF = FUT.length ? B.concat(prepBuildings(FUT.map((f) => [+f.h, 0, 1, f.ring.flat()]))) : null;
+  const L = listing(), qs = new URLSearchParams(location.search), w = site.window || {};
+  // facade: the site file's choice unless it is a party wall, else the listing's exposure, else the longest open face
+  const open = FACES.map((f, i) => [f, i]).filter(([f]) => !f.shared);
+  const near = (brg) => open.reduce((best, cur) => { const d = Math.abs(angDiff(cur[0].bearing, brg)), bd = Math.abs(angDiff(best[0].bearing, brg)); return d < bd - 0.5 || (Math.abs(d - bd) <= 0.5 && cur[0].length > best[0].length) ? cur : best; }, open[0]);
+  let fi = FACES.findIndex((f) => f.i === w.face);
+  if (fi >= 0 && FACES[fi].shared) { st.moved = FACES[fi]; fi = near(FACES[fi].bearing)[1]; }
+  if (fi < 0) {
+    const exp = (L.exposure || []).map((e) => ({ N: 0, NNE: 22.5, NE: 45, ENE: 67.5, E: 90, ESE: 112.5, SE: 135, SSE: 157.5, S: 180, SSW: 202.5, SW: 225, WSW: 247.5, W: 270, WNW: 292.5, NW: 315, NNW: 337.5 })[e]).filter((x) => x != null);
+    fi = exp.length ? near(exp[0])[1] : open.reduce((b, c) => (c[0].length > b[0].length ? c : b), open[0])[1];
+  }
+  st.face = fi;
+  st.t = snapOpen(FACES[fi], w.t ?? 0.5);
+  st.az = FACES[fi].bearing;
+  const mf = maxFloor();
+  const qf = st.first ? +qs.get('floor') : NaN;
+  st.floor = Math.max(1, Math.min(mf, Math.round(qf || w.floor || L.floor || mf / 2)));
+  st.cmp = Math.min(mf, Math.max(1, st.floor + 9 > mf ? Math.max(1, st.floor - 9) : st.floor + 9));
+  if (st.first) {
+    const mi = moveIn();
+    st.date = /^\d{4}-\d{2}-\d{2}$/.test(qs.get('date') || '') ? qs.get('date') : mi || new Date().toISOString().slice(0, 10);
+    st.min = clampMin(+(qs.get('min') || 780));
+    const m = qs.get('mode'); st.mode = m === 'window' || m === 'win' ? 'win' : ['plan', 'top', 'orbit'].includes(m) ? m : 'orbit';
+    st.first = false;
+  }
+  header();
+  if (!stage) {
+    stage = new UnitStage($('gl'), $('stage'), $('uLabels'));
+    stage.onCompass = (az) => { const n = $('uNeedle'); if (n) n.setAttribute('transform', `rotate(${-az} 20 20)`); };
+    wireStage();
+    new ResizeObserver(() => { stage.resize(); }).observe($('stage'));
+    new ResizeObserver(() => drawPathChart()).observe($('pathCv').parentElement);
+  }
+  stage.opts.streets = true; stage.opts.future = true;
+  await new Promise((r) => requestAnimationFrame(r)); // let the loading state paint before the heavy build
+  stage.build({ B, T, ti: B.indexOf(T), streets: Array.isArray(site.streets) ? site.streets : [], future: FUT, lm: LM, ownLabel: site.listing?.building || L.building || 'This building' });
+  stage.resize();
+  buildTimePanel(); buildWindowPanel(); evidencePanel(); syncTools();
+  setMode(st.mode, true);
   refreshWindow(true);
+  stage.resetOrbit(false); if (st.mode === 'top') stage.topDown(false);
+  closeCard();
+  $('uLoad').hidden = true;
+}
+const listing = () => byId(st.id) || site?.listing || {};
+const moveIn = () => (S.crit.search?.move_in?.earliest ? String(S.crit.search.move_in.earliest).slice(0, 10) : null);
+const clampMin = (m) => Math.max(STRIP_FROM, Math.min(STRIP_TO - STRIP_STEP, Number.isFinite(m) ? m : 780));
+const ymd = () => st.date.split('-').map(Number);
+
+function header() {
+  const L = listing();
+  $('uTitle').innerHTML = `${esc(L.building || site.listing?.building || L.address || st.id)}${L.unit ? ` <span>${esc(L.unit)}</span>` : ''}`;
+  const links = [];
+  if ((S.manifest.plans || []).includes(st.id)) links.push(`<a class="btn ghost" href="#plan/${esc(st.id)}">${ICONS.plan}Floor plan</a>`);
+  if ((S.manifest.dossiers || []).includes(st.id)) links.push(`<a class="btn ghost" href="#records/${esc(st.id)}">${ICONS.doc}Records</a>`);
+  $('uLinks').innerHTML = links.join('');
+  subline();
+}
+function provenance() {
+  const P = site.provenance && typeof site.provenance === 'object' ? site.provenance : {}, L = listing();
+  return {
+    exposure: st.manual.face || st.manual.az ? 'manual' : P.exposure || L.exposure_source || (L.exposure?.length ? 'listing' : 'assumed'),
+    position: st.manual.pos ? 'manual' : P.window_position || 'assumed',
+    floor: st.manual.floor ? 'manual' : P.floor || (L.floor_inferred ? 'inferred' : L.floor != null ? 'listing' : 'assumed'),
+  };
+}
+const provChip = (k) => { const [t, c] = PROV[k] || [String(k), '']; return `<span class="pill ${c}">${esc(t)}</span>`; };
+function subline() {
+  const L = listing(), p = provenance();
+  $('uSub').innerHTML = `<span class="u-addr">${esc(L.address || site.listing?.address || '')}</span>
+    <span class="u-fact"><b>Floor ${st.floor}</b>${provChip(p.floor)}</span>
+    <span class="u-fact"><b>Faces ${compass(st.az)} ${Math.round(st.az)}°</b>${provChip(p.exposure)}</span>
+    <span class="u-fact"><b>Window position</b>${provChip(p.position)}</span>`;
 }
 
-// ------------------------------------------------------------------ scene
-function buildScene() {
-  const cv = $('gl');
-  if (!renderer) {
-    renderer = new THREE.WebGLRenderer({ canvas: cv, antialias: true, preserveDrawingBuffer: true });
-    renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
-    renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    renderer.outputColorSpace = THREE.SRGBColorSpace;
-    new ResizeObserver(resize).observe($('stage'));
-  }
-  scene = new THREE.Scene();
-  orbitCam = new THREE.PerspectiveCamera(45, 1.6, 2, 9000);
-  winCam = new THREE.PerspectiveCamera(75, 1.6, 0.4, 9000);
-  const cx = (T.bb[0] + T.bb[2]) / 2, cy = (T.bb[1] + T.bb[3]) / 2, h = T.top;
-  const fb = (FACES[st.face]?.bearing ?? 200) * DEG;
-  orbitCam.position.set(cx + Math.sin(fb) * 330 - 120, h + 190, -(cy + Math.cos(fb) * 330));
-  controls?.dispose();
-  controls = new OrbitControls(orbitCam, cv);
-  controls.target.set(cx, h * 0.45, -cy); controls.maxPolarAngle = Math.PI * 0.495; controls.minDistance = 30; controls.maxDistance = 3000; controls.update();
-  controls.addEventListener('change', () => (dirty = true));
-  hemi = new THREE.HemisphereLight(0xdfeaf5, 0x7c7f78, 1.4); scene.add(hemi);
-  sunL = new THREE.DirectionalLight(0xfff3dc, 3); sunL.castShadow = true; sunL.shadow.mapSize.set(4096, 4096);
-  Object.assign(sunL.shadow.camera, { left: -650, right: 650, top: 650, bottom: -650, near: 1, far: 3400 });
-  sunL.shadow.bias = -0.0004; sunL.shadow.normalBias = 0.4; scene.add(sunL); scene.add(sunL.target);
-  sunL.target.position.set(cx, 0, -cy);
-  groundMat = new THREE.MeshStandardMaterial({ color: 0x9ea39b, roughness: 1 });
-  const ground = new THREE.Mesh(new THREE.PlaneGeometry(9000, 9000), groundMat); ground.rotation.x = -Math.PI / 2; ground.position.y = -0.05; ground.receiveShadow = true; scene.add(ground);
-  const matN = new THREE.MeshStandardMaterial({ color: 0xd5d7d1, roughness: 0.92 });
-  const matT = new THREE.MeshStandardMaterial({ color: 0xbac8d6, roughness: 0.6, metalness: 0.1 });
-  const matE = new THREE.MeshStandardMaterial({ color: 0x2f62e8, roughness: 0.6 });
-  mats = [matN, matT, matE, groundMat];
-  const edgeMat = new THREE.LineBasicMaterial({ color: 0x3a423d, transparent: true, opacity: 0.25 });
-  for (const b of B) {
-    const sh = new THREE.Shape();
-    for (let j = 0; j < b.n; j++) { const x = b.p[2 * j], y = b.p[2 * j + 1]; j ? sh.lineTo(x, y) : sh.moveTo(x, y); }
-    const h2 = Math.max(1, b.top - b.g);
-    const geo = new THREE.ExtrudeGeometry(sh, { depth: h2, bevelEnabled: false });
-    const m = new THREE.Mesh(geo, b === T ? matE : (h2 > 120 ? matT : matN));
-    m.rotation.x = -Math.PI / 2; m.position.y = b.g;
-    const d = Math.hypot((b.bb[0] + b.bb[2]) / 2, (b.bb[1] + b.bb[3]) / 2);
-    m.castShadow = d < 950; m.receiveShadow = d < 950;
-    scene.add(m);
-    if (d < 750) { const e = new THREE.LineSegments(new THREE.EdgesGeometry(geo, 25), edgeMat); e.rotation.x = -Math.PI / 2; e.position.y = b.g; scene.add(e); }
-  }
-  const sh = new THREE.Shape(); for (let j = 0; j < T.n; j++) { const x = T.p[2 * j], y = T.p[2 * j + 1]; j ? sh.lineTo(x, y) : sh.moveTo(x, y); }
-  band = new THREE.Mesh(new THREE.ExtrudeGeometry(sh, { depth: FH(), bevelEnabled: false }), new THREE.MeshBasicMaterial({ color: 0xffb43c, transparent: true, opacity: 0.6, depthWrite: false }));
-  band.rotation.x = -Math.PI / 2; band.scale.set(1.006, 1.006, 1); band.position.x = -cx * 0.006; band.position.z = cy * 0.006; scene.add(band);
-  marker = new THREE.Mesh(new THREE.BoxGeometry(5, 2.6, 0.6), new THREE.MeshBasicMaterial({ color: 0xfff2b0 })); scene.add(marker);
-  rayLine = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3(0, 1, 0)]), new THREE.LineBasicMaterial({ color: 0xffb43c })); scene.add(rayLine);
-  labels = [];
-  for (const l of LM) { const s = mkLabel(l.name, Math.round(l.top) + ' m'); s.position.set(l.x, l.top + 14, -l.y); scene.add(s); labels.push(s); }
-  const own = mkLabel(site.listing?.building || 'This building', `${Math.round(T.top - T.g)} m`); own.position.set(cx, T.top + 16, -cy); scene.add(own); labels.push(own);
-  coneMesh = null;
-  dirty = true;
-}
-function mkLabel(text, sub) {
-  const c = document.createElement('canvas'); c.width = 512; c.height = 128; const g = c.getContext('2d');
-  g.fillStyle = 'rgba(14,20,28,.84)'; g.fillRect(0, 0, 512, 128);
-  g.fillStyle = '#f4f7fa'; g.font = '600 40px "IBM Plex Sans", sans-serif'; g.textBaseline = 'middle'; g.fillText(text.slice(0, 22), 18, 46);
-  g.fillStyle = '#b6c2d0'; g.font = '400 30px "IBM Plex Sans", sans-serif'; g.fillText(sub, 18, 96);
-  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
-  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: t, depthTest: false, transparent: true })); s.renderOrder = 10; return s;
-}
-
-function winPos(floor) {
-  const f = FACES[st.face]; if (!f) return { x: 0, y: 0, z: 10, fx: 0, fy: 0 };
-  const x = f.a[0] + (f.b[0] - f.a[0]) * st.t, y = f.a[1] + (f.b[1] - f.a[1]) * st.t;
-  const nx = Math.sin(f.bearing * DEG), ny = Math.cos(f.bearing * DEG);
-  return { x: x + nx * 0.4, y: y + ny * 0.4, z: T.g + (floor - 1) * FH() + 1.6, fx: x, fy: y };
-}
-function sunNow() { const [y, m, d] = st.date.split('-').map(Number); return sunPos(zonedMs(y, m - 1, d, st.min, tz()), site.origin.lat, site.origin.lon); }
-function skyColor(alt) {
-  const n = new THREE.Color(0x0a0f1c), t = new THREE.Color(0xe9a77c), d = new THREE.Color(0xaed4ee);
-  if (alt <= -6) return n; if (alt <= 6) return n.clone().lerp(t, (alt + 6) / 12); if (alt <= 18) return t.clone().lerp(d, (alt - 6) / 12); return d;
-}
-function rebuildCone() {
-  if (coneMesh) { scene.remove(coneMesh); coneMesh.geometry.dispose(); coneMesh = null; }
-  if (!st.cone) return;
-  const w = winPos(st.floor), thC = (90 - st.az) * DEG;
-  coneMesh = new THREE.Mesh(new THREE.CircleGeometry(300, 48, thC - 60 * DEG, 120 * DEG), new THREE.MeshBasicMaterial({ color: 0x3f86d9, transparent: true, opacity: 0.16, side: THREE.DoubleSide, depthWrite: false }));
-  coneMesh.rotation.x = -Math.PI / 2; coneMesh.position.set(w.x, w.z, -w.y); scene.add(coneMesh);
-}
-function updateScene() {
-  const w = winPos(st.floor);
-  marker.position.set(w.fx + Math.sin(st.az * DEG) * 0.25, w.z, -(w.fy + Math.cos(st.az * DEG) * 0.25));
-  marker.rotation.y = Math.PI - st.az * DEG;
-  band.position.y = T.g + (st.floor - 1) * FH();
-  const s = sunNow(); curSun = s;
-  const sd = new THREE.Vector3(Math.sin(s.az * DEG) * Math.cos(s.alt * DEG), Math.sin(s.alt * DEG), -Math.cos(s.az * DEG) * Math.cos(s.alt * DEG));
-  sunL.position.copy(sunL.target.position).addScaledVector(sd, 1600);
-  const up = s.alt > 0;
-  sunL.intensity = up ? Math.min(3.4, 0.7 + Math.sin(Math.max(s.alt, 0) * DEG) * 3.6) : 0;
-  hemi.intensity = up ? 1.1 + Math.min(0.6, s.alt / 60) : 0.45;
-  scene.background = skyColor(s.alt);
-  const lit = up && Math.abs(angDiff(s.az, st.az)) < 90 && s.alt > hAt(profA, s.az);
-  rayLine.geometry.setFromPoints([new THREE.Vector3(w.x, w.z, -w.y), new THREE.Vector3(w.x, w.z, -w.y).addScaledVector(sd, up ? 420 : 0.01)]);
-  rayLine.material.color.set(lit ? 0xffb43c : 0xe05a44); rayLine.visible = st.ray && up;
-  labels.forEach((l) => (l.visible = st.labels));
-  dirty = true;
-  const hud = !up ? ['Night', 'shade'] : Math.abs(angDiff(s.az, st.az)) >= 90 ? ['Sun is behind the window', 'shade'] : lit ? ['Direct sun on the window', 'lit'] : ['Window in shadow', 'shade'];
-  $('hud').innerHTML = `<span>${esc(st.date)} ${fmtT(st.min)}</span><span>Sun ${Math.round(s.az)}° ${compass(s.az)}, ${up ? Math.round(s.alt) + '° up' : 'below horizon'}</span><span class="${hud[1]}">${hud[0]}</span><span>Floor ${st.floor}, facing ${Math.round(st.az)}° ${compass(st.az)}</span>`;
-  return { s, lit, up };
-}
-
-// ------------------------------------------------------------------ panels
-function buildPanels() {
-  const L = byId(st.id) || {};
-  const maxF = Math.max(2, Math.floor((T.top - T.g) / FH()));
-  $('winPanel').innerHTML = `<h3>Window</h3>
-    <div class="field"><label for="uFace">Which facade (the building's outline from city data)</label>
-      <select id="uFace">${FACES.map((f, i) => `<option value="${i}">${Math.round(f.bearing)}° ${compass(f.bearing)} facade, ${Math.round(f.length)} m long</option>`).join('')}</select></div>
-    <div class="row"><div class="field"><label for="uPos">Position along facade <span class="val" id="uPosV"></span></label><input type="range" id="uPos" min="3" max="97" value="${Math.round(st.t * 100)}"></div>
-      <div class="field"><label for="uFloor">Floor <span class="val" id="uFloorV"></span></label><input type="range" id="uFloor" min="2" max="${maxF}" value="${st.floor}"></div></div>
-    <div class="row"><div class="field"><label for="uCmp">Compare with floor <span class="val" id="uCmpV"></span></label><input type="range" id="uCmp" min="2" max="${maxF}" value="${st.cmp}"></div>
-      <div class="field"><label for="uAz">Window faces <span class="val" id="uAzV"></span></label><input type="range" id="uAz" min="0" max="359" value="${Math.round(st.az)}"></div></div>
-    <p class="muted" style="margin:10px 0 0;font-size:12.5px">${site.window ? `Facade chosen from the listing's exposure (${esc((L.exposure || []).join(', '))}).` : 'Exposure unknown: pick the facade the unit is on. Ask the agent for a floor plan with a compass.'} Floor height ${FH()} m.</p>`;
-  $('uFace').value = st.face;
-  $('uFace').addEventListener('change', (e) => { st.face = +e.target.value; st.az = FACES[st.face].bearing; $('uAz').value = Math.round(st.az); refreshWindow(true); });
-  $('uPos').addEventListener('input', (e) => { st.t = +e.target.value / 100; refreshWindow(true); });
-  $('uFloor').addEventListener('input', (e) => { st.floor = +e.target.value; refreshWindow(false); });
-  $('uCmp').addEventListener('input', (e) => { st.cmp = +e.target.value; refreshWindow(false); });
-  $('uAz').addEventListener('input', (e) => { st.az = +e.target.value; refreshWindow(true); });
-
-  const mi = S.crit.search?.move_in?.earliest ? String(S.crit.search.move_in.earliest).slice(0, 10) : null;
-  const y = +(st.date.slice(0, 4));
-  $('timePanel').innerHTML = `<h3>Time and camera</h3>
-    <div class="row"><div class="seg"><button type="button" id="mOrbit">Orbit model</button><button type="button" id="mWin">From the window</button></div>
-      <div class="chips">${[['shadows', 'Shadows'], ['labels', 'Labels'], ['cone', 'View cone'], ['ray', 'Sun ray']].map(([k, t]) => `<button type="button" class="chip ${st[k] ? 'on' : ''}" data-tg="${k}">${t}</button>`).join('')}</div></div>
-    <div class="row"><div class="field" style="flex:0 1 170px"><label for="uDate">Date</label><input type="date" id="uDate" value="${st.date}"></div>
-      <div class="field" style="flex:2 1 260px"><label for="uTime">Time <span class="val" id="uTimeV"></span></label><input type="range" id="uTime" min="300" max="1230" step="5" value="${st.min}"></div>
-      <button class="btn" type="button" id="uPlay">Play day</button></div>
-    <div class="row"><span class="lbl">Jump to</span><div class="seg" id="uQuick">${[[mi, 'Move-in'], [`${y}-12-21`, 'Dec 21'], [`${y}-03-20`, 'Mar 20'], [`${y}-06-21`, 'Jun 21'], [`${y}-09-22`, 'Sep 22']].filter((q) => q[0]).map(([d, t]) => `<button type="button" data-d="${d}">${t}</button>`).join('')}</div></div>
-    <div class="row" id="uWinOnly" ${st.mode === 'win' ? '' : 'hidden'}><div class="field"><label for="uFov">Lens width <span class="val" id="uFovV">${st.fov}°</span></label><input type="range" id="uFov" min="35" max="110" value="${st.fov}"></div>
-      <div class="field"><label for="uYaw">Turn <span class="val" id="uYawV">${st.yaw}°</span></label><input type="range" id="uYaw" min="-90" max="90" value="${st.yaw}"></div>
-      <div class="field"><label for="uPitch">Tilt <span class="val" id="uPitchV">${st.pitch}°</span></label><input type="range" id="uPitch" min="-10" max="50" value="${st.pitch}"></div></div>`;
-  const setMode = (m) => { st.mode = m; $('mOrbit').classList.toggle('on', m === 'orbit'); $('mWin').classList.toggle('on', m === 'win'); $('uWinOnly').hidden = m !== 'win'; dirty = true; };
-  $('mOrbit').addEventListener('click', () => setMode('orbit')); $('mWin').addEventListener('click', () => setMode('win')); setMode(st.mode);
-  $('timePanel').querySelectorAll('[data-tg]').forEach((b) => b.addEventListener('click', () => {
-    const k = b.dataset.tg; st[k] = !st[k]; b.classList.toggle('on', st[k]);
-    if (k === 'shadows') { renderer.shadowMap.enabled = st.shadows; mats.forEach((m) => (m.needsUpdate = true)); }
-    if (k === 'cone') rebuildCone();
-    refreshTime();
+// ------------------------------------------------------------------ stage wiring
+function wireStage() {
+  $('uModes').querySelectorAll('[data-mode]').forEach((b) => b.addEventListener('click', () => setMode(b.dataset.mode)));
+  $('uTools').querySelectorAll('[data-tg]').forEach((b) => b.addEventListener('click', () => {
+    const k = b.dataset.tg; stage.opts[k] = !stage.opts[k]; stage.applyOpts(); syncTools();
+    if (k === 'future' && FUT.length) refreshWindow(false); else refreshTime();
   }));
-  $('uDate').addEventListener('change', (e) => { if (e.target.value) { st.date = e.target.value; refreshTime(); } });
-  $('uTime').addEventListener('input', (e) => { st.min = +e.target.value; refreshTime(); });
-  $('uQuick').querySelectorAll('[data-d]').forEach((b) => b.addEventListener('click', () => { st.date = b.dataset.d; $('uDate').value = st.date; refreshTime(); }));
-  $('uPlay').addEventListener('click', () => { st.playing = !st.playing; $('uPlay').textContent = st.playing ? 'Pause' : 'Play day'; $('uPlay').classList.toggle('primary', st.playing); });
-  for (const [id, k] of [['uFov', 'fov'], ['uYaw', 'yaw'], ['uPitch', 'pitch']]) $(id).addEventListener('input', (e) => { st[k] = +e.target.value; $(id + 'V').textContent = st[k] + '°'; dirty = true; });
-  $('pathLegend').innerHTML = `<span><span class="sw" style="background:var(--shade)"></span>Buildings blocking the sky from this floor</span><span><span class="sw" style="background:var(--sun)"></span>Chosen date</span><span><span class="sw" style="background:var(--muted)"></span>Dec 21, Mar 20, Jun 21</span><span>Dashed: skyline from compare floor</span>`;
-  $('unitNotes').innerHTML = `<h3>How this is modelled</h3>Buildings: ${esc(site.source)} outlines and roof heights, drawn as straight prisms (no setbacks or spires). The window sits ${FH()} m per floor up the facade you pick, 1.6 m above the floor. Direct sun only: no reflections, trees or haze. A window counts as lit when the sun is within 90° of the way it faces and above every building in that direction. Treat it as a strong estimate, then check on a tour at the same time of day.`;
+  $('uTarget').addEventListener('click', () => {
+    const order = ['solid', 'faint', 'hidden']; stage.opts.target = order[(order.indexOf(stage.opts.target) + 1) % 3]; stage.applyOpts(); syncTools();
+  });
+  $('uHome').addEventListener('click', () => { if (st.mode === 'plan') stage.resetPlan(); else if (st.mode === 'top') stage.topDown(true); else if (st.mode === 'win') { setLook(0, 6, 70); } else stage.resetOrbit(true); });
+  $('uCompass').addEventListener('click', faceNorth);
+  for (const [id, k] of [['uFov', 'fov'], ['uYaw', 'yaw'], ['uPitch', 'pitch']]) $(id).addEventListener('input', (e) => { stage.look[k] = +e.target.value; syncLens(); stage.dirty = true; });
+  // click to inspect a building; drag to look around in window mode
+  const cv = $('gl'); let down = null;
+  cv.addEventListener('pointerdown', (e) => { down = { x: e.clientX, y: e.clientY, yaw: stage.look.yaw, pitch: stage.look.pitch, id: e.pointerId }; if (st.mode === 'win') cv.setPointerCapture(e.pointerId); });
+  cv.addEventListener('pointermove', (e) => {
+    if (!down || st.mode !== 'win' || !(e.buttons & 1)) return;
+    const k = 70 / (cv.clientHeight || 500) * (stage.look.fov / 70);
+    setLook(stage.look.fov, down.yaw - (e.clientX - down.x) * k, down.pitch + (e.clientY - down.y) * k);
+  });
+  cv.addEventListener('pointerup', (e) => {
+    if (down && Math.hypot(e.clientX - down.x, e.clientY - down.y) < 5) { const bi = stage.pick(e.clientX, e.clientY); bi == null ? closeCard() : openCard(bi); }
+    down = null;
+  });
+  cv.addEventListener('keydown', onStageKey);
+  addEventListener('keydown', (e) => {
+    if ($('view-unit').hidden || !site) return;
+    const tag = e.target.tagName;
+    if (e.key === 'Escape' && !$('uCard').hidden) { closeCard(); return; }
+    if (['INPUT', 'TEXTAREA', 'SELECT'].includes(tag) || e.metaKey || e.ctrlKey || e.altKey) return;
+    if (e.key === 'p') { togglePlay(); e.preventDefault(); }
+    else if (e.key === ',' || e.key === '.') { setTime(st.min + (e.key === '.' ? 15 : -15)); e.preventDefault(); }
+  });
+}
+function onStageKey(e) {
+  const k = e.key, step = e.shiftKey ? 15 : 5;
+  if (st.mode === 'win') {
+    const L = stage.look;
+    if (k === 'ArrowLeft') setLook(L.fov, L.yaw - step, L.pitch); else if (k === 'ArrowRight') setLook(L.fov, L.yaw + step, L.pitch);
+    else if (k === 'ArrowUp') setLook(L.fov, L.yaw, L.pitch + step); else if (k === 'ArrowDown') setLook(L.fov, L.yaw, L.pitch - step);
+    else if (k === '+' || k === '=') setLook(L.fov - 5, L.yaw, L.pitch); else if (k === '-') setLook(L.fov + 5, L.yaw, L.pitch);
+    else return;
+  } else {
+    const cam = stage.activeCam(), ctl = st.mode === 'plan' ? stage.planControls : stage.controls;
+    if (st.mode === 'plan') {
+      const d = 25 / cam.zoom, mv = { ArrowLeft: [-d, 0], ArrowRight: [d, 0], ArrowUp: [0, -d], ArrowDown: [0, d] }[k];
+      if (mv) { cam.position.x += mv[0]; ctl.target.x += mv[0]; cam.position.z += mv[1]; ctl.target.z += mv[1]; }
+      else if (k === '+' || k === '=') cam.zoom = Math.min(8, cam.zoom * 1.2); else if (k === '-') cam.zoom = Math.max(0.25, cam.zoom / 1.2); else return;
+      cam.updateProjectionMatrix(); ctl.update();
+    } else {
+      const off = cam.position.clone().sub(ctl.target), r = off.length();
+      let th = Math.atan2(off.x, off.z), ph = Math.acos(Math.max(-1, Math.min(1, off.y / r)));
+      if (k === 'ArrowLeft') th -= step * DEG; else if (k === 'ArrowRight') th += step * DEG;
+      else if (k === 'ArrowUp') ph = Math.max(0.02, ph - step * DEG); else if (k === 'ArrowDown') ph = Math.min(Math.PI * 0.49, ph + step * DEG);
+      else if (k === '+' || k === '=' || k === '-') { const f = k === '-' ? 1.15 : 1 / 1.15; off.multiplyScalar(f); cam.position.copy(ctl.target).add(off); ctl.update(); stage.dirty = true; e.preventDefault(); return; }
+      else return;
+      cam.position.set(ctl.target.x + r * Math.sin(ph) * Math.sin(th), ctl.target.y + r * Math.cos(ph), ctl.target.z + r * Math.sin(ph) * Math.cos(th)); ctl.update();
+    }
+  }
+  stage.dirty = true; e.preventDefault();
+}
+function faceNorth() {
+  if (st.mode === 'win') { setLook(stage.look.fov, angDiff(0, st.az), stage.look.pitch); return; }
+  if (st.mode === 'plan') return;
+  const cam = stage.orbitCam, ctl = stage.controls, off = cam.position.clone().sub(ctl.target), r = Math.hypot(off.x, off.z);
+  cam.position.set(ctl.target.x, cam.position.y, ctl.target.z + r); ctl.update(); stage.dirty = true;
+}
+function setLook(fov, yaw, pitch) {
+  stage.look.fov = Math.max(35, Math.min(110, fov)); stage.look.yaw = Math.max(-90, Math.min(90, yaw)); stage.look.pitch = Math.max(-15, Math.min(60, pitch));
+  $('uFov').value = stage.look.fov; $('uYaw').value = stage.look.yaw; $('uPitch').value = stage.look.pitch; syncLens(); stage.dirty = true;
+}
+function syncLens() {
+  const L = stage.look;
+  $('uFovV').textContent = Math.round(L.fov) + '°'; $('uYawV').textContent = (L.yaw > 0 ? '+' : '') + Math.round(L.yaw) + '°'; $('uPitchV').textContent = Math.round(L.pitch) + '°';
+  for (const id of ['uFov', 'uYaw', 'uPitch']) fill($(id));
+}
+function setMode(m, quiet = false) {
+  st.mode = m; stage.setMode(m);
+  $('uModes').querySelectorAll('[data-mode]').forEach((b) => { b.classList.toggle('on', b.dataset.mode === m); b.setAttribute('aria-pressed', String(b.dataset.mode === m)); });
+  $('uLens').hidden = m !== 'win'; $('stage').dataset.mode = m;
+  if (m === 'win') syncLens();
+  if (!quiet) { refreshTime(); syncUrl(); }
+}
+function syncTools() {
+  $('uTools').querySelectorAll('[data-tg]').forEach((b) => {
+    const k = b.dataset.tg, on = !!stage.opts[k];
+    const na = (k === 'streets' && !(site.streets || []).length) || (k === 'future' && !FUT.length);
+    b.classList.toggle('on', on && !na); b.setAttribute('aria-pressed', String(on && !na)); b.disabled = na;
+    if (na) b.title = k === 'streets' ? 'No street centrelines in this site file' : 'No proposed buildings in this site file';
+  });
+  const t = stage.opts.target, nm = { solid: 'solid', faint: 'faint', hidden: 'hidden' }[t];
+  $('uTarget').title = `This building: ${nm} (click to change)`; $('uTarget').setAttribute('aria-label', `This building display: ${nm}`);
+  $('uTarget').querySelector('.u-tmode').textContent = t[0].toUpperCase(); $('uTarget').classList.toggle('on', t !== 'solid');
 }
 
+// ------------------------------------------------------------------ geometry helpers
+function winPos(floor, t = st.t) {
+  const f = FACES[st.face]; if (!f) return { x: 0, y: 0, z: 10, fx: 0, fy: 0 };
+  const x = f.a[0] + (f.b[0] - f.a[0]) * t, y = f.a[1] + (f.b[1] - f.a[1]) * t;
+  const nx = Math.sin(f.bearing * DEG), ny = Math.cos(f.bearing * DEG);
+  return { x: x + nx * 0.4, y: y + ny * 0.4, z: Math.max(T.g, 0) + (floor - 1) * FH() + 1.6, fx: x, fy: y };
+}
+const slabZ = (floor) => Math.max(T.g, 0) + (floor - 1) * FH();
+const sunAt = (min) => { const [y, m, d] = ymd(); return sunPos(zonedMs(y, m - 1, d, min, tz()), site.origin.lat, site.origin.lon); };
+const tableFor = (step = 6) => { const [y, m, d] = ymd(); return table(y, m - 1, d, site.origin.lat, site.origin.lon, tz(), step); };
+
+// ------------------------------------------------------------------ time panel and day strip
+function buildTimePanel() {
+  const mi = moveIn(), y = +st.date.slice(0, 4);
+  const presets = [[mi, 'Move-in'], [`${y}-12-21`, 'Dec 21'], [`${y}-03-20`, 'Mar 20'], [`${y}-06-21`, 'Jun 21'], [`${y}-09-22`, 'Sep 22']].filter((q) => q[0]);
+  $('timePanel').innerHTML = `<div class="u-time-top">
+      <div class="u-clock"><b id="uClock"></b><span id="uDateTxt"></span></div>
+      <div class="u-date-ctl"><input type="date" id="uDate" aria-label="Date" value="${esc(st.date)}">
+        <div class="seg" id="uQuick" role="group" aria-label="Date presets">${presets.map(([d, t]) => `<button type="button" data-d="${esc(d)}">${t}</button>`).join('')}</div></div>
+      <button class="btn" type="button" id="uPlay" aria-pressed="false" title="Play the day (p)">${ICON.play}<span>Play day</span></button>
+    </div>
+    <div class="u-strip">
+      <div class="u-strip-keys"><span id="uKeyA"></span><span id="uKeyB"></span></div>
+      <div class="u-strip-track" id="uStrip" role="slider" tabindex="0" aria-label="Time of day" aria-valuemin="${STRIP_FROM}" aria-valuemax="${STRIP_TO}">
+        <div class="u-strip-bar" id="uBarA"></div><div class="u-strip-bar cmp" id="uBarB"></div>
+        <div class="u-strip-axis">${stripTicks()}</div>
+        <div class="u-strip-cur" id="uCur"><i></i></div>
+      </div>
+    </div>
+    <div class="legend-row u-strip-legend"><span><i class="sw s3"></i>Direct sun on the window</span><span><i class="sw s2"></i>Shaded by buildings</span><span><i class="sw s1"></i>Sun behind the facade</span><span><i class="sw s0"></i>Night</span><span class="faint">Click or drag the strip to set the time. Arrow keys step 5 minutes.</span></div>`;
+  $('uDate').addEventListener('change', (e) => { if (/^\d{4}-\d{2}-\d{2}$/.test(e.target.value)) { st.date = e.target.value; dateChanged(); } });
+  $('uQuick').querySelectorAll('[data-d]').forEach((b) => b.addEventListener('click', () => { st.date = b.dataset.d; $('uDate').value = st.date; dateChanged(); }));
+  $('uPlay').addEventListener('click', togglePlay);
+  const tr = $('uStrip');
+  const fromX = (e) => { const r = tr.getBoundingClientRect(); return STRIP_FROM + Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)) * (STRIP_TO - STRIP_FROM); };
+  tr.addEventListener('pointerdown', (e) => { tr.setPointerCapture(e.pointerId); tr.focus({ preventScroll: true }); setTime(Math.round(fromX(e) / 5) * 5); });
+  tr.addEventListener('pointermove', (e) => { if (tr.hasPointerCapture(e.pointerId)) setTime(Math.round(fromX(e) / 5) * 5); });
+  tr.addEventListener('keydown', (e) => {
+    const d = { ArrowLeft: -5, ArrowDown: -5, ArrowRight: 5, ArrowUp: 5, PageDown: -60, PageUp: 60 }[e.key];
+    if (d) setTime(st.min + (e.shiftKey ? d * 6 : d)); else if (e.key === 'Home') setTime(STRIP_FROM); else if (e.key === 'End') setTime(STRIP_TO - STRIP_STEP); else return;
+    e.preventDefault();
+  });
+}
+function setTime(m) { st.min = clampMin(m); refreshTime(); syncUrlSoon(); }
+function dateChanged() { statesA = statesB = null; refreshStrip(); refreshTime(); if (heat && heat.year !== +st.date.slice(0, 4)) computeHeat(); else drawHeat(); syncUrl(); }
+function togglePlay() {
+  st.playing = !st.playing; lastT = 0;
+  const b = $('uPlay'); b.classList.toggle('primary', st.playing); b.setAttribute('aria-pressed', String(st.playing));
+  b.innerHTML = st.playing ? `${ICON.pause}<span>Pause</span>` : `${ICON.play}<span>Play day</span>`;
+}
+function refreshStrip() {
+  const [y, m, d] = ymd(), o = site.origin;
+  statesA = dayStates(y, m - 1, d, o.lat, o.lon, tz(), profA, st.az, STRIP_FROM, STRIP_TO, STRIP_STEP);
+  statesB = dayStates(y, m - 1, d, o.lat, o.lon, tz(), profB, st.az, STRIP_FROM, STRIP_TO, STRIP_STEP);
+  $('uBarA').innerHTML = stripBar(statesA); $('uBarB').innerHTML = stripBar(statesB);
+  $('uKeyA').textContent = 'Fl ' + st.floor; $('uKeyB').textContent = 'Fl ' + st.cmp;
+}
+
+// ------------------------------------------------------------------ window panel
+function buildWindowPanel() {
+  const mf = maxFloor(), shared = FACES.filter((f) => f.shared).length, streets = site.streets || [];
+  const opts = FACES.map((f, i) => [f, i]).filter(([f]) => !f.shared).sort((a, b) => a[0].bearing - b[0].bearing || b[0].length - a[0].length).map(([f, i]) => {
+    const mid = [(f.a[0] + f.b[0]) / 2, (f.a[1] + f.b[1]) / 2], s = streetAhead(streets, mid[0], mid[1], f.bearing);
+    return `<option value="${i}">${compass(f.bearing)} ${Math.round(f.bearing)}° · ${Math.round(f.length)} m${f.court ? ' · light court' : ''}${s ? ' · ' + esc(s.name) : ''}</option>`;
+  }).join('');
+  $('winPanel').innerHTML = `<h3>Window <span id="uWinProv"></span></h3>
+    <div class="field"><label for="uFace">Facade</label><select id="uFace">${opts}</select></div>
+    ${shared ? `<p class="u-note">${shared} shared wall${shared > 1 ? 's' : ''} hidden: a neighbour is built against ${shared > 1 ? 'them' : 'it'}, so ${shared > 1 ? 'they have' : 'it has'} no windows.</p>` : ''}
+    ${st.moved ? `<p class="u-note warn">The site file put the window on a shared wall (${Math.round(st.moved.bearing)}°). Moved to the nearest open facade.</p>` : ''}
+    <div class="u-sliders">
+      <div class="field"><label for="uPos">Position along facade <span class="val" id="uPosV"></span></label><input type="range" id="uPos" min="2" max="98" value="${Math.round(st.t * 100)}"></div>
+      <div class="field"><label for="uFloor">Floor <span class="val" id="uFloorV"></span></label><input type="range" id="uFloor" min="1" max="${mf}" value="${st.floor}"></div>
+      <div class="field"><label for="uCmp">Compare floor <span class="val" id="uCmpV"></span></label><input type="range" id="uCmp" min="1" max="${mf}" value="${st.cmp}"></div>
+      <div class="field"><label for="uAz">Window faces <span class="val" id="uAzV"></span></label><input type="range" id="uAz" min="0" max="359" value="${Math.round(st.az)}"></div>
+    </div>
+    <div class="u-win-foot"><span class="faint" id="uWinFoot"></span><button type="button" class="btn ghost" id="uWinReset" hidden>${ICON.reset}Back to the listing</button></div>`;
+  $('uFace').value = st.face;
+  $('uFace').addEventListener('change', (e) => { st.face = +e.target.value; st.t = snapOpen(FACES[st.face], st.t); st.az = FACES[st.face].bearing; st.manual.face = true; st.manual.az = false; $('uAz').value = Math.round(st.az); $('uPos').value = Math.round(st.t * 100); refreshWindow(true); });
+  $('uPos').addEventListener('input', (e) => { st.t = snapOpen(FACES[st.face], +e.target.value / 100); st.manual.pos = true; refreshWindow(true); });
+  $('uPos').addEventListener('change', () => { $('uPos').value = Math.round(st.t * 100); fill($('uPos')); });
+  $('uFloor').addEventListener('input', (e) => { st.floor = +e.target.value; st.manual.floor = true; refreshWindow(false); });
+  $('uCmp').addEventListener('input', (e) => { st.cmp = +e.target.value; refreshWindow(false); });
+  $('uAz').addEventListener('input', (e) => { st.az = +e.target.value; st.manual.az = true; refreshWindow(true); });
+  $('uWinReset').addEventListener('click', () => load(st.id));
+}
+function syncWindowPanel() {
+  const f = FACES[st.face];
+  $('uPosV').textContent = Math.round(st.t * 100) + '%'; $('uFloorV').textContent = st.floor; $('uCmpV').textContent = st.cmp; $('uAzV').textContent = `${Math.round(st.az)}° ${compass(st.az)}`;
+  ['uPos', 'uFloor', 'uCmp', 'uAz'].forEach((id) => fill($(id)));
+  const w = winPos(st.floor), s = streetAhead(site.streets, w.fx, w.fy, st.az);
+  $('uWinFoot').textContent = `${Math.round(st.t * f.length)} m along a ${Math.round(f.length)} m facade · eye level ${Math.round(w.z)} m${s ? ` · ${s.name} ${Math.round(s.dist)} m ahead` : ''}`;
+  $('uWinReset').hidden = !(st.manual.face || st.manual.pos || st.manual.floor || st.manual.az);
+  $('uWinProv').innerHTML = provChip(provenance().exposure);
+}
+/** Paint the filled part of a range track (app.css reads --p). */
+function fill(el) { if (!el) return; const p = ((+el.value - +el.min) / ((+el.max - +el.min) || 1)) * 100; el.style.setProperty('--p', p + '%'); }
+
+// ------------------------------------------------------------------ refresh
 function refreshWindow(heavy) {
-  $('uPosV').textContent = Math.round(st.t * 100) + '%'; $('uFloorV').textContent = st.floor; $('uCmpV').textContent = st.cmp; $('uAzV').textContent = Math.round(st.az) + '° ' + compass(st.az);
   const a = winPos(st.floor), b = winPos(st.cmp);
   profA = horizonProfile(B, a.x, a.y, a.z); profB = horizonProfile(B, b.x, b.y, b.z);
-  rebuildCone(); refreshTime(); landmarks();
-  if (heavy || !heatData) computeHeat(); else drawHeat();
+  profF = BF && stage.opts.future ? horizonProfile(BF, a.x, a.y, a.z) : null;
+  stage.setWindow(a, st.az, slabZ(st.floor), slabZ(st.cmp), FH(), `Floor ${st.floor} · ${compass(st.az)}`);
+  syncWindowPanel(); subline(); refreshStrip(); landmarks(); refreshTime();
+  if (heavy || !heat) computeHeat(); else drawHeat();
+  syncUrlSoon();
 }
-function refreshTime() { $('uTimeV').textContent = fmtT(st.min); const info = updateScene(); sunPanel(info); drawPath(); }
+function refreshTime() {
+  if (!site) return;
+  const s = curSun = sunAt(st.min), up = s.alt > 0, front = Math.abs(angDiff(s.az, st.az)) < 90;
+  const w = winPos(st.floor), blockers = stage.opts.future && BF ? BF : B;
+  curHit = up && front ? rayBlock(blockers, w.x, w.y, w.z, s.az, s.alt) : null;
+  const lit = up && front && !curHit;
+  const state = !up ? 'night' : !front ? 'behind' : lit ? 'lit' : 'shade';
+  stage.setSun(s); stage.setRay(state, curHit);
+  // clock, strip cursor
+  const [y, m, d] = ymd(), zn = zoneAbbr(y, m - 1, d, st.min, tz());
+  $('uClock').textContent = fmtT(st.min);
+  $('uDateTxt').textContent = `${new Date(Date.UTC(y, m - 1, d)).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}${zn ? ' · ' + zn : ''}`;
+  const tr = $('uStrip'), frac = (st.min - STRIP_FROM) / (STRIP_TO - STRIP_FROM);
+  $('uCur').style.left = frac * 100 + '%';
+  const msg = { night: 'night', behind: 'sun behind the facade', lit: 'direct sun on the window', shade: 'window shaded by buildings' }[state];
+  tr.setAttribute('aria-valuenow', String(st.min)); tr.setAttribute('aria-valuetext', `${fmtT(st.min)}, ${msg}`);
+  hud(s, state);
+  sunPanel(s, state);
+  drawPathChart();
+}
+function hud(s, state) {
+  const tag = { night: ['Night', 'shade'], behind: ['Sun behind the window', 'shade'], lit: ['Direct sun on the window', 'lit'], shade: ['Window in shadow', 'shade'] }[state];
+  const blk = state === 'shade' && curHit ? bname(curHit.bi, true) : '';
+  $('hud').innerHTML = `<span class="${tag[1]}">${tag[0]}${blk ? ` · ${esc(blk)}` : ''}</span><span>Sun ${Math.round(s.az)}° ${compass(s.az)} · ${s.alt > 0 ? Math.round(s.alt) + '° up' : 'below horizon'}</span><span class="u-hud-x">Floor ${st.floor} · faces ${Math.round(st.az)}° ${compass(st.az)}</span>${st.mode === 'win' ? '<span class="u-hud-x">Drag to look around</span>' : ''}`;
+}
+/** A short name for building bi: address, landmark name, or "a 61 m building". */
+function bname(bi, short = false) {
+  if (bi == null) return '';
+  if (bi === B.indexOf(T)) return listing().building || 'this building';
+  if (bi >= B.length) { const f = FUT[bi - B.length]; return f?.name || 'a proposed building'; }
+  const m = site.bmeta?.[bi], l = LM.find((x) => x.idx === bi);
+  const h = Math.round(B[bi].top - Math.max(B[bi].g, 0));
+  if (l) return l.name; if (m?.address) return short ? m.address.replace(/,.*$/, '') : m.address;
+  return `a ${h} m building`;
+}
 
-function sunPanel(info) {
-  const [y, m, d] = st.date.split('-').map(Number);
-  const tab = dayTable(y, m - 1, d, site.origin.lat, site.origin.lon, tz());
-  const A = litInfo(tab, profA, st.az), Bc = litInfo(tab, profB, st.az), s = info.s;
+function sunPanel(s, state) {
+  const tab = tableFor(6), A = litInfo(tab, profA, st.az), Bc = litInfo(tab, profB, st.az), F = profF ? litInfo(tab, profF, st.az) : null;
+  const [, mo] = ymd(), rng = site.study?.sun_hours_range;
   let why;
-  if (!info.up) why = `The sun is below the horizon at ${fmtT(st.min)}.`;
-  else if (Math.abs(angDiff(s.az, st.az)) >= 90) why = `At ${fmtT(st.min)} the sun is at ${Math.round(s.az)}°, behind a window facing ${Math.round(st.az)}°.`;
-  else { const h = hAt(profA, s.az); why = info.lit ? `At ${fmtT(st.min)} the sun is ${Math.round(s.alt)}° up and clears the buildings in that direction (${Math.round(h)}°).` : `At ${fmtT(st.min)} the sun is ${Math.round(s.alt)}° up but buildings in that direction reach ${Math.round(h)}°, so the window is in shadow.`; }
-  $('sunPanel').innerHTML = `<h3>Sun on this window</h3>
-    <div class="stats"><div class="stat"><div class="k">Sun now</div><div class="v">${info.up ? Math.round(s.alt) + '° up' : 'below horizon'}</div></div>
-      <div class="stat"><div class="k">Direct sun this date, floor ${st.floor}</div><div class="v">${A.min ? fmtHM(A.min) : 'none'}</div></div>
-      <div class="stat"><div class="k">Same date, floor ${st.cmp}</div><div class="v">${Bc.min ? fmtHM(Bc.min) : 'none'}</div></div></div>
-    <p style="margin:10px 0 4px">${why}</p>
-    <p class="muted" style="margin:0">${A.segs.length ? `Floor ${st.floor} gets direct sun ${A.segs.map((q) => fmtT(q[0]) + ' to ' + fmtT(q[1])).join(', ')}.` : `Floor ${st.floor} gets no direct sun on this date.`}</p>`;
+  if (state === 'night') why = `At ${fmtT(st.min)} the sun is below the horizon.`;
+  else if (state === 'behind') why = `At ${fmtT(st.min)} the sun is at ${Math.round(s.az)}° ${compass(s.az)}, behind a window that faces ${Math.round(st.az)}°.`;
+  else if (state === 'lit') why = `At ${fmtT(st.min)} the sun is ${Math.round(s.alt)}° up and clears every building in that direction (skyline ${Math.round(hAt(profA, s.az))}°).`;
+  else why = `At ${fmtT(st.min)} the sun is ${Math.round(s.alt)}° up but ${esc(bname(curHit?.bi))}${curHit ? `, ${Math.round(curHit.dist)} m away,` : ''} blocks it, so the window is in shadow.`;
+  const segs = A.segs.length ? `Floor ${st.floor} gets direct sun ${A.segs.map((q) => `<b>${fmtT(q[0])}</b> to <b>${fmtT(Math.min(q[1], 1439))}</b>`).join(', ')}.` : `Floor ${st.floor} gets no direct sun on this date.`;
+  const lo = rng?.lo?.[mo - 1], hi = rng?.hi?.[mo - 1];
+  const rangeTxt = lo != null && hi != null ? `<div class="u-range"><span class="pill">Range</span><b>${(+lo).toFixed(1)}–${(+hi).toFixed(1)} h</b> on ${MONTHS[mo - 1]} 15 across ${rangeScope(rng)}. The exact window position is the biggest unknown.</div>` : '';
+  const vals = heat?.[st.floor] || (st.floor === site.window?.floor && !st.manual.face && !st.manual.pos && !st.manual.az ? site.study?.sun_hours : null);
+  $('sunPanel').innerHTML = `<h3>Sun on this window <span>${esc(new Date(Date.UTC(...ymd().map((v, i) => (i === 1 ? v - 1 : v)))).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' }))}</span></h3>
+    <div class="metrics ${F ? 'm4' : 'm3'}">
+      <div class="metric"><div class="k">Sun now</div><div class="v">${s.alt > 0 ? Math.round(s.alt) + '°' : '—'}<small>${s.alt > 0 ? compass(s.az) : 'set'}</small></div><div class="s ${state === 'lit' ? 'u-lit' : ''}">${{ night: 'Night', behind: 'Behind facade', lit: 'On the window', shade: 'Blocked' }[state]}</div></div>
+      <div class="metric"><div class="k">Floor ${st.floor}</div><div class="v">${hm(A.min)}</div><div class="s">direct sun today</div></div>
+      <div class="metric"><div class="k">Floor ${st.cmp}</div><div class="v">${hm(Bc.min)}</div><div class="s">${Bc.min > A.min ? '+' + hm(Bc.min - A.min) : Bc.min < A.min ? '−' + hm(A.min - Bc.min) : 'same'}</div></div>
+      ${F ? `<div class="metric"><div class="k">With proposed</div><div class="v">${hm(F.min)}</div><div class="s">${F.min < A.min ? '−' + hm(A.min - F.min) : 'no change'}</div></div>` : ''}
+    </div>
+    <p class="u-why">${why}</p><p class="u-segs">${segs}</p>
+    ${rangeTxt}
+    <div class="u-band-wrap"><div class="label">By month · floor ${st.floor} <span>${rng ? 'bar: this window · band: range' : 'hours on the 15th'}</span></div>${monthBandSVG(vals, rng, mo - 1)}</div>`;
+}
+const hm = (min) => { if (!min) return 'none'; const h = Math.floor(Math.round(min) / 60), m = Math.round(min) % 60; return h && m ? `${h} h ${String(m).padStart(2, '0')} m` : h ? `${h} h` : `${m} m`; };
+function rangeScope(r) {
+  const p = Array.isArray(r.positions) && r.positions.length ? `positions ${Math.round(Math.min(...r.positions) * 100)}–${Math.round(Math.max(...r.positions) * 100)}% along the facade` : 'window positions';
+  const f = Array.isArray(r.floors) && r.floors.length ? `floors ${Math.min(...r.floors)}–${Math.max(...r.floors)}` : 'nearby floors';
+  return `${p} and ${f}`;
 }
 
 function landmarks() {
@@ -242,120 +473,208 @@ function landmarks() {
   const rows = LM.map((l) => {
     const dx = l.x - w.x, dy = l.y - w.y, dist = Math.hypot(dx, dy), az = ((Math.atan2(dx, dy) / DEG) + 360) % 360;
     const block = horizonDir(B, w.x, w.y, w.z, az, l.idx), topA = Math.atan2(l.top - w.z, dist) / DEG;
-    const from = Math.max(0, w.z + dist * Math.tan(block * DEG));
-    const inView = Math.abs(angDiff(az, st.az)) <= 60, behind = Math.abs(angDiff(az, st.az)) >= 90;
-    const res = behind ? '<span class="muted">Behind the window</span>' : topA <= block + 0.2 ? '<span class="hid">Hidden by nearer buildings</span>'
-      : `<span class="ok">${l.top - from > l.top * 0.98 ? 'Whole tower' : 'Top ' + Math.round(l.top - from) + ' m'}</span>${inView ? '' : ' <span class="muted">(off to the side)</span>'}`;
-    return `<tr><td>${esc(l.name)}</td><td class="num">${Math.round(l.top)} m</td><td class="num">${Math.round(az)}°</td><td class="num">${Math.round(dist)} m</td><td>${res}</td></tr>`;
-  }).join('');
-  $('seePanel').innerHTML = `<h3>What the window sees</h3>
-    <div class="stats" style="margin-bottom:10px"><div class="stat"><div class="k">Open sky in a ±60° view</div><div class="v">${Math.round(100 * open / tot)}%</div></div>
-      <div class="stat"><div class="k">Skyline straight ahead</div><div class="v">${Math.round(hAt(profA, st.az))}° up</div></div>
-      <div class="stat"><div class="k">Nearest wall ahead</div><div class="v">${nearestAhead(w)}</div></div></div>
-    <div class="scroll"><table class="mini"><thead><tr><th>Tallest towers in range</th><th>Height</th><th>Bearing</th><th>Distance</th><th>From this floor</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+    const from = Math.max(0, w.z + dist * Math.tan(block * DEG)), off = Math.abs(angDiff(az, st.az));
+    const behind = off >= 90, hidden = !behind && topA <= block + 0.2;
+    l.hidden = behind || hidden;
+    const vis = behind ? ['Behind the window', '', 3] : hidden ? ['Hidden', 'bad', 2] : [l.top - from > l.top * 0.98 ? 'Whole tower' : `Top ${Math.round(l.top - from)} m`, 'good', off > 60 ? 1 : 0];
+    return { l, az, dist, vis, html: `<li class="u-lm${vis[2] >= 2 ? ' off' : ''}"><div><b>${esc(l.name)}</b><span>${Math.round(l.top)} m · ${compass(az)} ${Math.round(az)}° · ${dist >= 1000 ? (dist / 1000).toFixed(1) + ' km' : Math.round(dist) + ' m'}</span></div><span class="pill ${vis[1]}">${vis[0]}${vis[2] === 1 ? ' · to the side' : ''}</span></li>` };
+  }).sort((a, b) => a.vis[2] - b.vis[2] || a.dist - b.dist);
+  const behind = rows.filter((r) => r.vis[2] === 3), nv = rows.filter((r) => r.vis[2] < 2).length, wall = nearestAhead(w), s = streetAhead(site.streets, w.fx, w.fy, st.az);
+  $('seePanel').innerHTML = `<h3>What the window sees <span>${nv} of ${LM.length} landmarks</span></h3>
+    <div class="metrics m3">
+      <div class="metric"><div class="k">Open sky</div><div class="v">${Math.round((100 * open) / tot)}<small>%</small></div><div class="s">in a ±60° view</div></div>
+      <div class="metric"><div class="k">Skyline ahead</div><div class="v">${Math.round(hAt(profA, st.az))}°<small>up</small></div><div class="s">straight out</div></div>
+      <div class="metric"><div class="k">Nearest wall</div><div class="v">${wall ? Math.round(wall.d) + '<small>m</small>' : '—'}</div><div class="s">${wall ? `${Math.round(wall.h)} m tall` : 'clear to the edge'}</div></div>
+    </div>
+    ${s ? `<p class="u-note">Looks onto <b>${esc(s.name)}</b>, ${Math.round(s.dist)} m to the centreline.</p>` : ''}
+    <ul class="u-lms">${rows.filter((r) => r.vis[2] < 3).map((r) => r.html).join('') || (LM.length ? '' : '<li class="faint">No landmark towers in range.</li>')}</ul>
+    ${behind.length ? `<p class="u-note u-behind"><b>Behind the window:</b> ${behind.map((r) => esc(r.l.name)).join(', ')}.</p>` : ''}`;
+  stage.dirty = true;
 }
 function nearestAhead(w) {
   const ux = Math.sin(st.az * DEG), uy = Math.cos(st.az * DEG); let best = 1e9, top = 0;
   for (const b of B) {
     if (b === T) continue;
-    for (let j = 0; j < b.n; j++) {
-      const ax = b.p[2 * j], ay = b.p[2 * j + 1], j2 = (j + 1) % b.n, ex = b.p[2 * j2] - ax, ey = b.p[2 * j2 + 1] - ay;
-      const den = ux * ey - uy * ex; if (Math.abs(den) < 1e-9) continue;
-      const wx = ax - w.x, wy = ay - w.y, t = (wx * ey - wy * ex) / den, s = (wx * uy - wy * ux) / den;
-      if (t > 0.5 && s >= 0 && s <= 1 && t < best && b.top > w.z) { best = t; top = b.top; }
+    for (const p of [b.p, ...(b.holes || [])]) {
+      const n = p.length / 2;
+      for (let j = 0; j < n; j++) {
+        const ax = p[2 * j], ay = p[2 * j + 1], j2 = (j + 1) % n, ex = p[2 * j2] - ax, ey = p[2 * j2 + 1] - ay;
+        const den = ux * ey - uy * ex; if (Math.abs(den) < 1e-9) continue;
+        const wx = ax - w.x, wy = ay - w.y, t = (wx * ey - wy * ex) / den, s = (wx * uy - wy * ux) / den;
+        if (t > 0.5 && s >= 0 && s <= 1 && t < best && b.top > w.z) { best = t; top = b.top - Math.max(b.g, 0); }
+      }
     }
   }
-  return best < 1e9 ? `${Math.round(best)} m (${Math.round(top)} m tall)` : 'none';
+  return best < 1e9 ? { d: best, h: top } : null;
 }
 
-let heatData = null;
+// ------------------------------------------------------------------ heatmap
 function computeHeat() {
-  const tok = ++heatTok; heatData = {};
-  const maxF = Math.max(2, Math.floor((T.top - T.g) / FH()));
-  const y = +st.date.slice(0, 4);
-  const tabs = Array.from({ length: 12 }, (_, m) => dayTable(y, m, 15, site.origin.lat, site.origin.lon, tz()));
-  let fl = 2;
+  const tok = ++heatTok, mf = maxFloor(), y = +st.date.slice(0, 4), o = site.origin;
+  heat = { year: y };
+  const tabs = Array.from({ length: 12 }, (_, m) => table(y, m, 15, o.lat, o.lon, tz(), 6));
+  let fl = 1;
   const step = () => {
     if (tok !== heatTok) return;
     const t0 = performance.now();
-    while (fl <= maxF && performance.now() - t0 < 28) {
-      const w = winPos(fl), prof = horizonProfile(B, w.x, w.y, w.z);
-      heatData[fl] = tabs.map((t) => litInfo(t, prof, st.az).min / 60); fl++;
+    while (fl <= mf && performance.now() - t0 < 24) {
+      const w = winPos(fl), prof = fl === st.floor ? profA : horizonProfile(B, w.x, w.y, w.z);
+      heat[fl] = tabs.map((t) => litInfo(t, prof, st.az).min / 60); fl++;
     }
-    drawHeat(fl <= maxF);
-    if (fl <= maxF) setTimeout(step, 0);
+    drawHeat(fl <= mf);
+    if (fl <= mf) setTimeout(step, 0); else if (curSun) sunPanel(curSun, hudState());
   };
-  step();
+  drawHeat(true); setTimeout(step, 0);
 }
-function drawHeat(busy) {
-  const maxF = Math.max(2, Math.floor((T.top - T.g) / FH()));
-  let h = '<div class="hd"></div>' + 'JFMAMJJASOND'.split('').map((m) => `<div class="hd">${m}</div>`).join('');
-  for (let fl = maxF; fl >= 2; fl--) {
-    const row = heatData?.[fl];
-    h += `<div class="fl">${fl}</div>`;
-    for (let m = 0; m < 12; m++) {
-      if (!row) { h += '<div></div>'; continue; }
-      const v = row[m], pct = Math.round(Math.min(1, v / 9) * 100);
-      h += `<div class="${fl === st.floor ? 'cur' : fl === st.cmp ? 'cmp' : ''}" style="background:color-mix(in srgb, var(--sun) ${pct}%, var(--panel));color:${pct > 55 ? '#1b1200' : 'var(--ink)'}">${v < 0.05 ? '0' : v.toFixed(1)}</div>`;
-    }
+const hudState = () => { const s = curSun; if (!s || s.alt <= 0) return 'night'; if (Math.abs(angDiff(s.az, st.az)) >= 90) return 'behind'; return curHit ? 'shade' : 'lit'; };
+function drawHeat(busy = false) {
+  const mf = maxFloor(), [, mo] = ymd();
+  const first = !$('uHeatBox');
+  if (first) {
+    $('heatPanel').innerHTML = `<h3>Direct sun by floor and month <span id="uHeatNote"></span></h3>
+      <p class="u-note">Hours of direct sun on the 15th of each month at this facade, position and bearing. Click a cell to jump to that floor and month.</p>
+      <div class="u-heat-box" id="uHeatBox"></div>
+      <div class="legend-row"><span><i class="sw u-sw-cur"></i>Your floor</span><span><i class="sw u-sw-cmp"></i>Compare floor</span><span class="u-heat-scale"><i></i>0 h → 9 h</span></div>`;
+    $('uHeatBox').addEventListener('click', (e) => {
+      const c = e.target.closest('[data-fl]'); if (!c) return;
+      st.floor = +c.dataset.fl; st.manual.floor = true; $('uFloor').value = st.floor;
+      if (c.dataset.m != null) { const y = +st.date.slice(0, 4); st.date = `${y}-${String(+c.dataset.m + 1).padStart(2, '0')}-15`; $('uDate').value = st.date; statesA = null; }
+      refreshWindow(false); syncUrl();
+    });
   }
-  $('heatPanel').innerHTML = `<h3>Direct sun by floor and month</h3><p class="muted" style="margin:0 0 8px;font-size:12.5px">Hours per day on the 15th of each month, same facade and position. ${busy ? 'Calculating…' : 'Solid outline: your floor. Dashed: compare floor.'}</p><div class="scroll"><div class="heat">${h}</div></div>`;
+  const box = $('uHeatBox'), keep = box.scrollTop;
+  box.innerHTML = heatHTML(heat, mf, st.floor, st.cmp, mo - 1, busy);
+  $('uHeatNote').textContent = busy ? 'Calculating…' : `${mf} floors`;
+  if (first || box.dataset.floor !== String(st.floor)) {
+    const cur = box.querySelector('.fl.cur'); if (cur) box.scrollTop = Math.max(0, cur.offsetTop - box.clientHeight / 2);
+    box.dataset.floor = String(st.floor);
+  } else box.scrollTop = keep;
 }
 
-function drawPath() {
-  const c = $('pathCv'); const dpr = devicePixelRatio || 1, cw = c.clientWidth || 640;
-  c.width = Math.round(cw * dpr); c.height = Math.round(cw * (cw < 520 ? 0.78 : 0.46) * dpr);
-  const g = c.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0);
-  const W = cw, H = c.height / dpr, fg = css('--ink'), mu = css('--muted'), ln = css('--line'), sun = css('--sun'), sh = css('--shade'), pn = css('--panel');
-  g.fillStyle = pn; g.fillRect(0, 0, W, H);
-  const L0 = 44, R = 12, T0 = 12, Bm = 34, pw = W - L0 - R, ph = H - T0 - Bm, a0 = st.az - 110, a1 = st.az + 110, amax = 75;
-  const X = (a) => L0 + (a - a0) / (a1 - a0) * pw, Y = (al) => T0 + ph - (al / amax) * ph;
-  g.font = `${cw < 520 ? 10 : 11}px "IBM Plex Mono", monospace`; g.textBaseline = 'middle'; g.lineWidth = 1;
-  for (let al = 0; al <= amax; al += 15) { g.strokeStyle = ln; g.beginPath(); g.moveTo(L0, Y(al)); g.lineTo(W - R, Y(al)); g.stroke(); g.fillStyle = mu; g.textAlign = 'right'; g.fillText(al + '°', L0 - 5, Y(al)); }
-  for (let a = Math.ceil(a0 / 30) * 30; a <= a1; a += 30) { const aa = ((a % 360) + 360) % 360; g.strokeStyle = ln; g.beginPath(); g.moveTo(X(a), T0); g.lineTo(X(a), T0 + ph); g.stroke(); g.fillStyle = mu; g.textAlign = 'center'; g.fillText(`${aa}° ${compass(aa)}`, X(a), H - Bm + 15); }
-  g.setLineDash([4, 4]); g.strokeStyle = mu; [st.az - 90, st.az + 90].forEach((a) => { g.beginPath(); g.moveTo(X(a), T0); g.lineTo(X(a), T0 + ph); g.stroke(); }); g.setLineDash([]);
-  const prof = (p, col, fill) => {
-    g.beginPath(); let first = true;
-    for (let a = a0; a <= a1; a += 0.5) { const x = X(a), yy = Y(Math.min(amax, hAt(p, a))); if (first) { g.moveTo(x, T0 + ph); g.lineTo(x, yy); first = false; } else g.lineTo(x, yy); }
-    if (fill) { g.lineTo(X(a1), T0 + ph); g.closePath(); g.fillStyle = col; g.globalAlpha = 0.55; g.fill(); g.globalAlpha = 1; } else { g.strokeStyle = col; g.lineWidth = 1.5; g.setLineDash([5, 4]); g.stroke(); g.setLineDash([]); g.lineWidth = 1; }
-  };
-  prof(profA, sh, true); prof(profB, fg, false);
-  const wrap = (az) => { let a = az; while (a < a0 - 180) a += 360; while (a > a1 + 180) a -= 360; return a; };
-  const mk = (y, mo, d, col, w, hrs) => {
-    const t = dayTable(y, mo, d, site.origin.lat, site.origin.lon, tz()); g.beginPath(); let f = true;
-    for (const [, az, al] of t) { const a = wrap(az); if (a < a0 || a > a1) { f = true; continue; } const x = X(a), yy = Y(Math.min(al, amax)); if (f) { g.moveTo(x, yy); f = false; } else g.lineTo(x, yy); }
-    g.strokeStyle = col; g.lineWidth = w; g.stroke(); g.lineWidth = 1;
-    if (hrs) { g.fillStyle = col; g.textAlign = 'center'; for (const [m, az, al] of t) { if (m % 60) continue; const a = wrap(az); if (a < a0 || a > a1) continue; g.beginPath(); g.arc(X(a), Y(Math.min(al, amax)), 3, 0, 6.3); g.fill(); g.fillText(fmtT(m).replace(':00', ''), X(a), Y(Math.min(al, amax)) - 11); } }
-  };
-  const y = +st.date.slice(0, 4);
-  mk(y, 11, 21, mu, 1.2); mk(y, 2, 20, mu, 1.2); mk(y, 5, 21, mu, 1.2);
-  const [yy, mm, dd] = st.date.split('-').map(Number); mk(yy, mm - 1, dd, sun, 2.6, true);
-  if (curSun && curSun.alt > 0) { const a = wrap(curSun.az); if (a >= a0 && a <= a1) { g.beginPath(); g.arc(X(a), Y(Math.min(curSun.alt, amax)), 7, 0, 6.3); g.fillStyle = sun; g.fill(); g.lineWidth = 2; g.strokeStyle = fg; g.stroke(); g.lineWidth = 1; } }
-  g.strokeStyle = ln; g.strokeRect(L0, T0, pw, ph);
+// ------------------------------------------------------------------ sun path chart
+function drawPathChart() {
+  if (!site || !profA || $('view-unit').hidden) return;
+  drawPath($('pathCv'), { lat: site.origin.lat, lon: site.origin.lon, tz: tz(), date: st.date, az: st.az, profA, profB, profF, sun: curSun });
+  $('pathNote').textContent = `floor ${st.floor}`;
+  $('pathLegend').innerHTML = `<span><i class="sw u-sw-sky"></i>Skyline from floor ${st.floor}</span><span><i class="sw u-sw-cmp2"></i>From floor ${st.cmp}</span><span><i class="sw u-sw-sun"></i>${esc(st.date)} (faint where blocked)</span><span><i class="sw u-sw-ref"></i>Jun 21 · Mar 20 · Dec 21</span>${profF ? '<span><i class="sw u-sw-fut"></i>With proposed buildings</span>' : ''}`;
+}
+
+// ------------------------------------------------------------------ building card
+function openCard(bi) {
+  st.sel = bi; stage.select(bi);
+  const b = bi < B.length ? B[bi] : null; if (!b) return;
+  const m = site.bmeta?.[bi] || null, isT = b === T, h = b.top - Math.max(b.g, 0), w = winPos(st.floor);
+  const cx = (b.bb[0] + b.bb[2]) / 2, cy = (b.bb[1] + b.bb[3]) / 2, dist = Math.hypot(cx - w.x, cy - w.y), az = ((Math.atan2(cx - w.x, cy - w.y) / DEG) + 360) % 360;
+  const lm = LM.find((x) => x.idx === bi), off = Math.abs(angDiff(az, st.az));
+  const title = isT ? (listing().building || 'This building') : lm?.name || m?.address || 'Building';
+  const rows = [
+    ['Roof', `${Math.round(h)} m · ${Math.round(h * 3.281)} ft${Math.abs(b.g) > 1 ? ` <span class="faint">(ground ${b.g > 0 ? '+' : ''}${b.g.toFixed(0)} m)</span>` : ''}`],
+    ['Height from', esc(m?.height_src ? HSRC[m.height_src] || m.height_src : b.eg ? 'Estimated' : 'Roof height in the footprint data')],
+    ['Data', esc(m?.src ? DSRC[m.src] || m.src : site.source || 'Footprints')],
+    m?.address && (lm || isT) ? ['Address', esc(m.address)] : null,
+    m?.bin ? ['BIN', `<span class="mono">${esc(m.bin)}</span>`] : null,
+    m?.bbl ? ['BBL', `<span class="mono">${esc(m.bbl)}</span>`] : null,
+    m?.year ? ['Built', esc(m.year)] : null,
+    !isT ? ['From your window', `${dist >= 1000 ? (dist / 1000).toFixed(1) + ' km' : Math.round(dist) + ' m'} · ${compass(az)} ${Math.round(az)}° · ${off >= 90 ? 'behind the window' : off > 60 ? 'off to the side' : 'in view'}`] : null,
+  ].filter(Boolean);
+  const blocks = curHit && curHit.bi === bi;
+  $('uCard').innerHTML = `<div class="u-card-h"><div><div class="u-eyebrow">${isT ? 'This building' : lm ? 'Landmark' : 'Building'}</div><b>${esc(title)}</b></div><button type="button" class="icon-btn" id="uCardX" aria-label="Close">${ICONS.x}</button></div>
+    ${blocks ? `<div class="u-card-flag">Blocks the sun on your window at ${fmtT(st.min)}</div>` : ''}
+    <dl>${rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl>
+    ${isT ? '<p class="faint u-card-foot">Drawn as its footprint pushed straight up: setbacks and crowns are not modelled.</p>' : ''}`;
+  $('uCard').hidden = false;
+  $('uCardX').addEventListener('click', closeCard);
+}
+function closeCard() { st.sel = null; stage?.select(null); $('uCard').hidden = true; }
+
+// ------------------------------------------------------------------ evidence
+function evidencePanel() {
+  const p = provenance(), L = listing(), P = site.provenance || {};
+  const area = Math.abs((() => { let a = 0; for (let i = 0; i < T.n; i++) { const j = (i + 1) % T.n; a += T.p[2 * i] * T.p[2 * j + 1] - T.p[2 * j] * T.p[2 * i + 1]; } return a / 2; })());
+  const bm = Array.isArray(site.bmeta) ? site.bmeta.filter(Boolean) : [];
+  const count = (k) => bm.reduce((acc, m) => ((acc[m[k] || '?'] = (acc[m[k] || '?'] || 0) + 1), acc), {});
+  const srcs = bm.length ? Object.entries(count('src')).map(([k, n]) => `${n.toLocaleString()} from ${esc(DSRC[k] || k)}`).join(', ') : `${esc(site.source || 'building footprints')}`;
+  const hs = bm.length ? Object.entries(count('height_src')).sort((a, b) => b[1] - a[1]).map(([k, n]) => `${n.toLocaleString()} ${esc((HSRC[k] || k).toLowerCase())}`).join(', ') : null;
+  const ev = [
+    ['Exposure', p.exposure, L.exposure?.length ? `Listing gives ${esc(L.exposure.join(', '))}.` : 'No exposure on the listing: the model starts on the longest open facade.'],
+    ['Window position', p.position, 'Where the unit sits along its facade is rarely published. The model puts the window at the point you choose.'],
+    ['Floor', p.floor, p.floor === 'inferred' ? 'Guessed from the unit number.' : L.floor != null ? `Listing gives floor ${esc(Math.round(L.floor))}.` : 'No floor on the listing.'],
+  ];
+  $('evPanel').innerHTML = `<h3>Assumptions and evidence</h3>
+    <ul class="u-ev">${ev.map(([k, v, t]) => `<li><div class="u-ev-k">${k}${provChip(v)}</div><p>${t}</p></li>`).join('')}</ul>
+    ${P.notes ? `<p class="u-note">${esc(P.notes)}</p>` : ''}
+    <div class="u-caveat"><b>A footprint is not the tower's real shape.</b> Every building is its outline pushed straight up to its roof height: no setbacks, crowns, podiums or bays. ${area > 2500 ? `This building's footprint covers ${Math.round(area).toLocaleString()} m², likely more than one mass on one lot, so use the faint or hidden display to check the window.` : 'Shade from a stepped tower can be overstated.'}</div>
+    <dl class="u-src">
+      <dt>Buildings</dt><dd>${B.length.toLocaleString()} footprints: ${srcs}.</dd>
+      ${hs ? `<dt>Heights</dt><dd>${hs}.</dd>` : ''}
+      ${(site.streets || []).length ? `<dt>Streets</dt><dd>${site.streets.length} centrelines (centre of the road, not the kerb).</dd>` : ''}
+      ${FUT.length ? `<dt>Proposed</dt><dd>${FUT.map((f) => `${esc(f.name || 'Unnamed')} (${Math.round(f.h)} m, ${esc(f.status || 'proposed')}${safeLink(f.url)})`).join('; ')}.</dd>` : ''}
+      <dt>Sun</dt><dd>Standard solar formulas, ${esc(tz())} with daylight saving. Direct sun only: no reflections, trees or haze. A window counts as lit when the sun is within 90° of the way it faces and above every building in that direction.</dd>
+      <dt>Floors</dt><dd>${FH()} m each; eye level 1.6 m above the floor.</dd>
+    </dl>
+    <p class="u-rule">Only a floor plan with a compass, exact-unit photos or the building's own data establish which way a unit faces. Everything else is a working assumption: check it on a visit at the same time of day.</p>`;
+}
+function safeLink(u) { return /^https?:\/\//i.test(String(u || '')) ? `, <a href="${esc(u)}" target="_blank" rel="noopener">source</a>` : ''; }
+
+// ------------------------------------------------------------------ URL sync
+let urlT = 0;
+function syncUrlSoon() { clearTimeout(urlT); urlT = setTimeout(syncUrl, 400); }
+function syncUrl() {
+  if ($('view-unit').hidden || !st.id) return;
+  const qs = new URLSearchParams(location.search);
+  qs.set('date', st.date); qs.set('min', String(Math.round(st.min / 5) * 5)); qs.set('floor', String(st.floor));
+  if (st.mode === 'orbit') qs.delete('mode'); else qs.set('mode', st.mode === 'win' ? 'window' : st.mode);
+  const url = `${location.pathname}?${qs}#unit/${encodeURIComponent(st.id)}`;
+  if (url !== location.pathname + location.search + location.hash) history.replaceState(history.state, '', url);
+}
+
+// ------------------------------------------------------------------ snapshot
+function snapshot() {
+  if (!stage || !site) return;
+  stage.frame(true);
+  const src = $('gl'), w = src.width, h = src.height, k = w / (src.clientWidth || w), cap = Math.round(66 * k);
+  const c = document.createElement('canvas'); c.width = w; c.height = h + cap;
+  const g = c.getContext('2d'); g.drawImage(src, 0, 0);
+  const sans = css('--font-sans') || 'sans-serif';
+  // labels as chips
+  g.textBaseline = 'middle';
+  for (const L of stage.labels) {
+    if (!L.shown) continue;
+    const x = L.sx * k, y = L.sy * k, lw = (L.w || 80) * k, lh = (L.h || 28) * k;
+    if (L.cls === 'street') {
+      g.font = `600 ${9.5 * k}px ${sans}`; g.textAlign = 'left'; g.lineWidth = 3 * k; g.strokeStyle = css('--ground'); g.fillStyle = css('--ink-2');
+      const t = L.el.textContent.toUpperCase(); g.strokeText(t, x, y + lh / 2); g.fillText(t, x, y + lh / 2); continue;
+    }
+    g.fillStyle = L.cls === 'win' ? css('--sun') : css('--overlay') || 'rgba(14,16,21,.8)'; g.strokeStyle = L.cls === 'future' ? css('--warn') : css('--line-strong') || 'rgba(255,255,255,.1)';
+    g.beginPath(); g.roundRect ? g.roundRect(x, y, lw, lh, 7 * k) : g.rect(x, y, lw, lh); g.fill(); g.stroke();
+    const b = L.el.querySelector('b')?.textContent || L.el.textContent, s = L.el.querySelector('span')?.textContent || '';
+    g.fillStyle = L.cls === 'win' ? '#1b1200' : L.cls === 'future' ? css('--warn') : L.cls === 'own' ? css('--accent') : css('--ink'); g.font = `600 ${11 * k}px ${sans}`; g.textAlign = 'left';
+    g.fillText(b, x + 8 * k, s ? y + lh * 0.36 : y + lh / 2);
+    if (s) { g.fillStyle = L.cls === 'win' ? 'rgba(27,18,0,.75)' : css('--ink-2'); g.font = `500 ${10 * k}px ${sans}`; g.fillText(s, x + 8 * k, y + lh * 0.72); }
+  }
+  // caption strip
+  const L = listing(), [y, m, d] = ymd(), zn = zoneAbbr(y, m - 1, d, st.min, tz()), p = provenance();
+  const tab = tableFor(6), A = litInfo(tab, profA, st.az);
+  g.fillStyle = css('--surface-1'); g.fillRect(0, h, w, cap);
+  g.fillStyle = css('--line-strong'); g.fillRect(0, h, w, Math.max(1, k));
+  g.textAlign = 'left'; g.fillStyle = css('--ink'); g.font = `600 ${14 * k}px ${sans}`;
+  const state = { night: 'night', behind: 'sun behind the facade', lit: 'direct sun on the window', shade: 'window in shadow' }[hudState()];
+  g.fillText(`${label(L) || st.id} · floor ${st.floor} · window faces ${Math.round(st.az)}° ${compass(st.az)} · ${new Date(Date.UTC(y, m - 1, d)).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })} ${fmtT(st.min)} ${zn}`, 16 * k, h + 22 * k);
+  g.fillStyle = css('--ink-2'); g.font = `500 ${11.5 * k}px ${sans}`;
+  g.fillText(`${state} · direct sun this date ${hm(A.min)} · exposure: ${(PROV[p.exposure] || [p.exposure])[0].toLowerCase()} · window position: ${(PROV[p.position] || [p.position])[0].toLowerCase()} · ${site.source || 'footprints'} as straight prisms, direct sun only`, 16 * k, h + 45 * k);
+  g.textAlign = 'right'; g.fillStyle = css('--ink-3'); g.font = `600 ${11 * k}px ${sans}`; g.fillText('ApartmentScout', w - 16 * k, h + 22 * k);
+  const name = `${st.id}-floor${st.floor}-${st.date}-${String(Math.floor(st.min / 60)).padStart(2, '0')}${String(st.min % 60).padStart(2, '0')}-${st.mode === 'win' ? 'window' : st.mode}.png`;
+  c.toBlob((blob) => { if (!blob) { toast('Snapshot failed'); return; } download(name, blob, 'image/png'); toast('Snapshot saved'); }, 'image/png');
 }
 
 // ------------------------------------------------------------------ loop
-function resize() {
-  if (!renderer) return;
-  const el = $('stage'), w = el.clientWidth, h = el.clientHeight; if (!w || !h) return;
-  renderer.setSize(w, h, false);
-  for (const c of [orbitCam, winCam]) if (c) { c.aspect = w / h; c.updateProjectionMatrix(); }
-  dirty = true;
-  if (site && profA) drawPath();
-}
-function frame() {
+function frame(t) {
   requestAnimationFrame(frame);
-  if ($('view-unit').hidden || !scene) return;
-  if (st.playing) { st.min += 4; if (st.min > 1230) st.min = 300; $('uTime').value = st.min; refreshTime(); }
-  if (!dirty) return; dirty = false;
-  let cam = orbitCam;
-  if (st.mode === 'win') {
-    const w = winPos(st.floor), az = (st.az + st.yaw) * DEG, pt = st.pitch * DEG;
-    winCam.position.set(w.x, w.z, -w.y); winCam.fov = st.fov; winCam.updateProjectionMatrix();
-    winCam.lookAt(winCam.position.clone().add(new THREE.Vector3(Math.sin(az) * Math.cos(pt), Math.sin(pt), -Math.cos(az) * Math.cos(pt))));
-    cam = winCam;
+  if ($('view-unit').hidden || !stage?.scene) return;
+  if (st.playing) {
+    const dt = lastT ? Math.min(100, t - lastT) : 16; lastT = t;
+    st.min += dt * 0.09; if (st.min >= STRIP_TO - STRIP_STEP) st.min = STRIP_FROM;
+    refreshTime(); syncUrlSoon();
   }
-  for (const l of labels) { if (!l.visible) continue; const d = cam.position.distanceTo(l.position); const sc = Math.max(18, d * (st.mode === 'win' ? 0.15 : 0.19)); l.scale.set(sc, sc / 4, 1); }
-  marker.visible = band.visible = st.mode !== 'win'; if (coneMesh) coneMesh.visible = st.mode !== 'win';
-  renderer.render(scene, cam);
+  stage.frame();
 }
