@@ -490,3 +490,6 @@ button.price-tag { font-family: var(--font-sans); }
 .d-hero .credit a { color: inherit; }
 .hovercard .aerial { width: 100% !important; }
 .d-hero .track img.plan { object-fit: contain; background: #fff; padding: 8px; }
+/* pin the shell rows so hiding the KPI strip never shifts the workspace into its row */
+body { grid-template-columns: minmax(0, 1fr); }
+.topbar { grid-row: 1; } .kpis { grid-row: 2; } .work { grid-row: 3; min-width: 0; }
