@@ -3,182 +3,6 @@
  "about": "Publication status of every image in docs/images and docs/gallery. scripts/release_check.py fails on any image that is missing here, not 'public', or changed since review (sha256). Statuses: public, private (never publish), review (needs a human decision).",
  "images": [
   {
-   "file": "docs/images/chart-sun-by-floor.png",
-   "publication_status": "public",
-   "sha256": "f1eb71e443c649946c5d621f5b3119b9d6ac85bc2dd9001c225872e74f163094",
-   "bytes": 167175,
-   "width": 1120,
-   "height": 1097
-  },
-  {
-   "file": "docs/images/chart-sunpath.png",
-   "publication_status": "public",
-   "sha256": "8d9609dba9978244c8cd2dc2bef9b8b158174823db2c061397bec0a3d715e69b",
-   "bytes": 175070,
-   "width": 1400,
-   "height": 644
-  },
-  {
-   "file": "docs/images/cli.png",
-   "publication_status": "public",
-   "sha256": "8f77267c7fa187cc56b52e6e58c6278ff6ba47903c07019b3e7a716eaa6753dc",
-   "bytes": 156503,
-   "width": 1650,
-   "height": 804
-  },
-  {
-   "file": "docs/images/compare.png",
-   "publication_status": "public",
-   "sha256": "a2dfc1fbd6eb48c97a7abf6ef3ecda67e6d6bae4d77b10acf4e66544a0cc61f3",
-   "bytes": 132461,
-   "width": 1600,
-   "height": 1150
-  },
-  {
-   "file": "docs/images/map-commute-light.png",
-   "publication_status": "public",
-   "sha256": "845d2112cd26b909171712b33b431478b1c94a6908212845c39d352ed36237a9",
-   "bytes": 1208156,
-   "width": 1600,
-   "height": 1000
-  },
-  {
-   "file": "docs/images/map-commute.png",
-   "publication_status": "public",
-   "sha256": "ef0412c08e897845382376c081c6169d3c4b4572a714ae2e69438eea80571ef5",
-   "bytes": 1070062,
-   "width": 1600,
-   "height": 1000
-  },
-  {
-   "file": "docs/images/map-drawer.png",
-   "publication_status": "public",
-   "sha256": "93aa6b7e3e0c0cdfb7eb475f296e3b5d91292dd62d8ad767c358df830e3199d4",
-   "bytes": 832312,
-   "width": 1600,
-   "height": 1000
-  },
-  {
-   "file": "docs/images/map-noise.png",
-   "publication_status": "public",
-   "sha256": "718993e9facecd0706bbf0702c268613b7c038f6c8be7233580df945f6f7eca3",
-   "bytes": 1171732,
-   "width": 1600,
-   "height": 1000
-  },
-  {
-   "file": "docs/images/map-rent.png",
-   "publication_status": "public",
-   "sha256": "cbdd0468364d160b6be074fdba232c879ede9d0575050b2355b864be90637469",
-   "bytes": 1017443,
-   "width": 1600,
-   "height": 1000
-  },
-  {
-   "file": "docs/images/map-score.png",
-   "publication_status": "public",
-   "sha256": "733a7a5bb94d363b2ea104720b5974259127d8e8947e7f19eec88529ea82a589",
-   "bytes": 1031057,
-   "width": 1600,
-   "height": 1000
-  },
-  {
-   "file": "docs/images/mobile-map.png",
-   "publication_status": "public",
-   "sha256": "b775ab78b158a6722a6e60d89fe8fe6367101e0017c86f2ee399156d5090f9e0",
-   "bytes": 433410,
-   "width": 630,
-   "height": 1350
-  },
-  {
-   "file": "docs/images/plan-bird.png",
-   "publication_status": "public",
-   "sha256": "dc98a2818dd8ff86b8e1ea9cce1c8a0316851e5b7b58136b5780490963666d3d",
-   "bytes": 163625,
-   "width": 1600,
-   "height": 1000
-  },
-  {
-   "file": "docs/images/plan-top.png",
-   "publication_status": "public",
-   "sha256": "3e486304cdc44de10760700b7d65f7593bf40abd2eeadc5314b86258808e861c",
-   "bytes": 46431,
-   "width": 920,
-   "height": 576
-  },
-  {
-   "file": "docs/images/records.png",
-   "publication_status": "public",
-   "sha256": "e36ea9ee40540d093c4de34b65cf037009b81fa8051bd042401af4843ebeab4d",
-   "bytes": 277992,
-   "width": 1600,
-   "height": 1500
-  },
-  {
-   "file": "docs/images/shortlist.png",
-   "publication_status": "public",
-   "sha256": "ad251c1cb146ce79ad311e872f99b2ddaab5eca6379c8aceb6203a0a39f030d6",
-   "bytes": 216615,
-   "width": 1600,
-   "height": 1000
-  },
-  {
-   "file": "docs/images/unit-floors.png",
-   "publication_status": "public",
-   "sha256": "685f4da98934bd9bfd59ae9371749f037a0dfcc4882aaabdaa1165ea34170bd5",
-   "bytes": 113660,
-   "width": 635,
-   "height": 629
-  },
-  {
-   "file": "docs/images/unit-maybury.png",
-   "publication_status": "public",
-   "sha256": "eefe9946b70e5c72a12c231bce0d7bd1f5557a83e0ea34e0ac4ccd7059963fb9",
-   "bytes": 142437,
-   "width": 920,
-   "height": 576
-  },
-  {
-   "file": "docs/images/unit-orbit-dec.png",
-   "publication_status": "public",
-   "sha256": "768e80ba5ea43959bc0472425d1609221982cd63503890bb6f5a6e9d836c4680",
-   "bytes": 158502,
-   "width": 920,
-   "height": 576
-  },
-  {
-   "file": "docs/images/unit-orbit.png",
-   "publication_status": "public",
-   "sha256": "6af37554519e7c8e3be500400320acf5b53270a2866494ab9be8b18996a25491",
-   "bytes": 344929,
-   "width": 1600,
-   "height": 1000
-  },
-  {
-   "file": "docs/images/unit-sunpath.png",
-   "publication_status": "public",
-   "sha256": "f953e63bc851a15fbb0f168f30e8f0426b493ae773cf5f59d9f6ed5b451fd79f",
-   "bytes": 38540,
-   "width": 890,
-   "height": 410
-  },
-  {
-   "file": "docs/images/unit-window-12.png",
-   "publication_status": "public",
-   "sha256": "204a7c06d60e7ca52312b6430e3519210db7602d468ff422f202e6fef6995316",
-   "bytes": 23423,
-   "width": 920,
-   "height": 576
-  },
-  {
-   "file": "docs/images/unit-window-21.png",
-   "publication_status": "public",
-   "sha256": "8418c179c454d6e9d46b5fd96d52467fbc6ed293089d1f6d268090d5543a457e",
-   "bytes": 37880,
-   "width": 920,
-   "height": 576
-  },
-  {
    "file": "docs/gallery/codexeg--apartment_preview.jpg",
    "publication_status": "review",
    "sha256": "404e4f00a1b553ba026c014d76b2b097bb98e4c901a526c720b3fe0df97ef9b0",
@@ -831,6 +655,267 @@
    "width": 1280,
    "height": 720,
    "note": "named unit or traced owner plan; review before publishing"
+  },
+  {
+   "file": "docs/images/chart-sun-by-floor.png",
+   "publication_status": "public",
+   "sha256": "f1eb71e443c649946c5d621f5b3119b9d6ac85bc2dd9001c225872e74f163094",
+   "bytes": 167175,
+   "width": 1120,
+   "height": 1097,
+   "note": "ApartmentScout dashboard on the public example data"
+  },
+  {
+   "file": "docs/images/chart-sunpath.png",
+   "publication_status": "public",
+   "sha256": "8d9609dba9978244c8cd2dc2bef9b8b158174823db2c061397bec0a3d715e69b",
+   "bytes": 175070,
+   "width": 1400,
+   "height": 644,
+   "note": "ApartmentScout dashboard on the public example data"
+  },
+  {
+   "file": "docs/images/cli.png",
+   "publication_status": "public",
+   "sha256": "8f77267c7fa187cc56b52e6e58c6278ff6ba47903c07019b3e7a716eaa6753dc",
+   "bytes": 156503,
+   "width": 1650,
+   "height": 804,
+   "note": "ApartmentScout dashboard on the public example data"
+  },
+  {
+   "file": "docs/images/compare.png",
+   "publication_status": "public",
+   "sha256": "002e48f12a88549cf59757c79efa675bf0d224b76cb5f434a2dac375d4677639",
+   "bytes": 505702,
+   "width": 1600,
+   "height": 3548,
+   "note": "ApartmentScout dashboard on the public example data"
+  },
+  {
+   "file": "docs/images/map-3d.png",
+   "publication_status": "public",
+   "sha256": "85d7b599e6327d19dc155e4f1cd810a67c711501a2b3d88b4797a085b602c265",
+   "bytes": 709462,
+   "width": 880,
+   "height": 900,
+   "note": "ApartmentScout dashboard on the public example data"
+  },
+  {
+   "file": "docs/images/map-commute-light.png",
+   "publication_status": "public",
+   "sha256": "6b6ed107765d1f69bbb1169264c19f594cb4715733e38640c5b511edc061b8b4",
+   "bytes": 1168051,
+   "width": 1600,
+   "height": 1000,
+   "note": "ApartmentScout dashboard on the public example data"
+  },
+  {
+   "file": "docs/images/map-commute.png",
+   "publication_status": "public",
+   "sha256": "54bfbf3698d27ea64eb71185cd226ef3b415c8235bf06aac91bc09ecb49f06fd",
+   "bytes": 1137081,
+   "width": 1600,
+   "height": 1000,
+   "note": "ApartmentScout dashboard on the public example data"
+  },
+  {
+   "file": "docs/images/map-drawer-commute.png",
+   "publication_status": "public",
+   "sha256": "2d478656d790e10726a164eefdc338f6e988e5697fec52802670ea73c0215de3",
+   "bytes": 84237,
+   "width": 448,
+   "height": 880,
+   "note": "ApartmentScout dashboard on the public example data"
+  },
+  {
+   "file": "docs/images/map-drawer.png",
+   "publication_status": "public",
+   "sha256": "c56068070dc994bd23f5745cac3b541115885bbf1ea2f9b4d094383e65db5023",
+   "bytes": 1090507,
+   "width": 1600,
+   "height": 1000,
+   "note": "ApartmentScout dashboard on the public example data"
+  },
+  {
+   "file": "docs/images/map-noise.png",
+   "publication_status": "public",
+   "sha256": "5b42b3b20fbc4b560841f85e50d646776ccfaedc5944df29a96052d64796133a",
+   "bytes": 1153454,
+   "width": 1600,
+   "height": 1000,
+   "note": "ApartmentScout dashboard on the public example data"
+  },
+  {
+   "file": "docs/images/map-rent.png",
+   "publication_status": "public",
+   "sha256": "d0c4789d83160b28f931410eb17c6fad134b156ab1d791abf5d7945cb1da950c",
+   "bytes": 1075512,
+   "width": 1600,
+   "height": 1000,
+   "note": "ApartmentScout dashboard on the public example data"
+  },
+  {
+   "file": "docs/images/map-score.png",
+   "publication_status": "public",
+   "sha256": "594c4809a2c50a7fc85c0e7d8bc2a305f9fb3f06865c1b26ac770403440d7031",
+   "bytes": 1060770,
+   "width": 1600,
+   "height": 1000,
+   "note": "ApartmentScout dashboard on the public example data"
+  },
+  {
+   "file": "docs/images/mobile-map.png",
+   "publication_status": "public",
+   "sha256": "7cc278e1683b09a007d9caf183a9b091667a1587f641a91712df2889c9d81e55",
+   "bytes": 607198,
+   "width": 630,
+   "height": 1350,
+   "note": "ApartmentScout dashboard on the public example data"
+  },
+  {
+   "file": "docs/images/plan-bird.png",
+   "publication_status": "public",
+   "sha256": "14368c88550ec981fef5915413db15e51f7a626b7d0607f58a72b4bf30eb4b56",
+   "bytes": 268825,
+   "width": 1600,
+   "height": 1000,
+   "note": "ApartmentScout dashboard on the public example data"
+  },
+  {
+   "file": "docs/images/plan-top.png",
+   "publication_status": "public",
+   "sha256": "db698ca3ee545debcd6be0d127cb7beeff865ac4e0ec0e186ee6d25ad1ee555f",
+   "bytes": 46907,
+   "width": 582,
+   "height": 711,
+   "note": "ApartmentScout dashboard on the public example data"
+  },
+  {
+   "file": "docs/images/records.png",
+   "publication_status": "public",
+   "sha256": "c5e1a9227769a1212b94f7b449d1e8557d4737c8101e65a47febe74659a4c29d",
+   "bytes": 941078,
+   "width": 1600,
+   "height": 5049,
+   "note": "ApartmentScout dashboard on the public example data"
+  },
+  {
+   "file": "docs/images/research-media.png",
+   "publication_status": "public",
+   "sha256": "4f06d45181675df5cb998d297b01780864bf970f373b8c3c21d5a6c7e0a64fdd",
+   "bytes": 662382,
+   "width": 1600,
+   "height": 1000,
+   "note": "ApartmentScout dashboard on the public example data"
+  },
+  {
+   "file": "docs/images/research.png",
+   "publication_status": "public",
+   "sha256": "7cfc1f14c1bb5ced325c181076b25a1ab3f8f3e9c6be26f577d8feb29ab9c261",
+   "bytes": 256559,
+   "width": 1600,
+   "height": 1000,
+   "note": "ApartmentScout dashboard on the public example data"
+  },
+  {
+   "file": "docs/images/shortlist.png",
+   "publication_status": "public",
+   "sha256": "c110c5e914b09aa590a18c721a367554a32875c1c73b59be0daa7a0e4785073d",
+   "bytes": 289862,
+   "width": 1600,
+   "height": 1000,
+   "note": "ApartmentScout dashboard on the public example data"
+  },
+  {
+   "file": "docs/images/tours.png",
+   "publication_status": "public",
+   "sha256": "0f03f5087409c5b96f9240faa482d0e3a31e869b2b28543fe32fe5ebdab4b08c",
+   "bytes": 165134,
+   "width": 1600,
+   "height": 1000,
+   "note": "ApartmentScout dashboard on the public example data"
+  },
+  {
+   "file": "docs/images/unit-floors.png",
+   "publication_status": "public",
+   "sha256": "bdd2b0fed5f5294922b383adc485e0f21ae74986182c7b98f655c91c8ec56bcb",
+   "bytes": 79374,
+   "width": 404,
+   "height": 555,
+   "note": "ApartmentScout dashboard on the public example data"
+  },
+  {
+   "file": "docs/images/unit-inside.png",
+   "publication_status": "public",
+   "sha256": "668129d9bc6d0418b1ec6b84312b3a561cb1ba194547b92e22f376cfef083a57",
+   "bytes": 54867,
+   "width": 1132,
+   "height": 503,
+   "note": "ApartmentScout dashboard on the public example data"
+  },
+  {
+   "file": "docs/images/unit-maybury.png",
+   "publication_status": "public",
+   "sha256": "613f2fb924eda6487e57bd32cfa8ed726c2eb8d792ca4354b4d59f2543c3bdbd",
+   "bytes": 190908,
+   "width": 1132,
+   "height": 503,
+   "note": "ApartmentScout dashboard on the public example data"
+  },
+  {
+   "file": "docs/images/unit-orbit-dec.png",
+   "publication_status": "public",
+   "sha256": "709ec3e5e7923b1e0f2bb1b2aa898e2e7b61db4d0012c2e7be20b6924beaf18a",
+   "bytes": 244166,
+   "width": 1132,
+   "height": 503,
+   "note": "ApartmentScout dashboard on the public example data"
+  },
+  {
+   "file": "docs/images/unit-orbit.png",
+   "publication_status": "public",
+   "sha256": "119cabe37d583568cd476b8522f03128fee795e871cd037b1764aa1489b1b3a0",
+   "bytes": 408332,
+   "width": 1600,
+   "height": 1000,
+   "note": "ApartmentScout dashboard on the public example data"
+  },
+  {
+   "file": "docs/images/unit-plan-view.png",
+   "publication_status": "public",
+   "sha256": "9f57885226506d50b3203ff9408433fb7b966638ecb312397fe923a4f7b1cafc",
+   "bytes": 350765,
+   "width": 1132,
+   "height": 503,
+   "note": "ApartmentScout dashboard on the public example data"
+  },
+  {
+   "file": "docs/images/unit-sunpath.png",
+   "publication_status": "public",
+   "sha256": "647ff408e26716b89ca8ada7647790e3c5cb6b335a45576b3b6a4362a52fd97d",
+   "bytes": 29988,
+   "width": 362,
+   "height": 240,
+   "note": "ApartmentScout dashboard on the public example data"
+  },
+  {
+   "file": "docs/images/unit-window-12.png",
+   "publication_status": "public",
+   "sha256": "d17e0cbd23edccb95fdc0680dcfa67100b694f095de8b979cde74b325604bdb8",
+   "bytes": 80869,
+   "width": 1132,
+   "height": 503,
+   "note": "ApartmentScout dashboard on the public example data"
+  },
+  {
+   "file": "docs/images/unit-window-21.png",
+   "publication_status": "public",
+   "sha256": "ab0ae75065769cbb3792686193eaab3a3cda49468a367f6fbd75a3b3410e8fd6",
+   "bytes": 146248,
+   "width": 1132,
+   "height": 503,
+   "note": "ApartmentScout dashboard on the public example data"
   }
  ]
 }
