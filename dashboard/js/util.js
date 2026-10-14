@@ -240,3 +240,13 @@ export function walkMinutes(lat1, lon1, lat2, lon2, kmh = 4.8, detour = 1.25) {
   const a = Math.sin(dl / 2) ** 2 + Math.cos(lat1 * r) * Math.cos(lat2 * r) * Math.sin(dn / 2) ** 2;
   return (2 * R * Math.asin(Math.sqrt(a)) * detour) / ((kmh * 1000) / 60);
 }
+
+/** A route badge: subway lines as round bullets in their colour, buses and other routes as small pills. */
+export function routeBadge(leg) {
+  if (!leg?.route) return '';
+  if (leg.mode === 'subway' || (LINE_COLORS[leg.route] && leg.mode !== 'bus')) return bullet(leg.route);
+  const sbs = /SBS/.test(leg.route);
+  return `<span class="lp ${sbs ? 'sbs' : ''}" title="${esc(leg.mode || 'route')} ${esc(leg.route)}">${esc(leg.route.replace('-SBS', ''))}${sbs ? '<i>SBS</i>' : ''}</span>`;
+}
+export const legBadges = (legs = [], max = 3) => legs.filter((l) => l.route).slice(0, max).map(routeBadge).join('');
+export const miles = (m) => (m == null ? '' : m < 160 ? `${Math.round(m * 3.28084 / 10) * 10} ft` : `${(m / 1609.34).toFixed(m < 1609 ? 1 : 1)} mi`);

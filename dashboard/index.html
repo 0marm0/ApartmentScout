@@ -20,6 +20,7 @@
 <link rel="stylesheet" href="css/views/plan.css">
 <link rel="stylesheet" href="css/views/records.css">
 <link rel="stylesheet" href="css/views/tours.css">
+<link rel="stylesheet" href="css/views/research.css">
 <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script type="importmap">
 { "imports": {
@@ -42,6 +43,7 @@
     <a href="#unit" data-view="unit">Unit 3D</a>
     <a href="#plan" data-view="plan">Floor plan</a>
     <a href="#records" data-view="records">Records</a>
+    <a href="#research" data-view="research">Research<span class="count" id="queueCount" hidden></span></a>
     <a href="#tours" data-view="tours">Tours<span class="count" id="savedCount" hidden></span></a>
   </nav>
   <div class="top-actions">
@@ -81,6 +83,7 @@
     <section class="view" id="view-plan" aria-label="Floor plan" hidden></section>
     <section class="view" id="view-records" aria-label="Records" hidden></section>
     <section class="view" id="view-tours" aria-label="Tours" hidden></section>
+    <section class="view" id="view-research" aria-label="Research" hidden></section>
     <aside class="drawer" id="drawer" aria-label="Listing details"></aside>
   </div>
 </main>

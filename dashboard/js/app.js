@@ -1,7 +1,7 @@
 // ApartmentScout dashboard core: data loading, shared state, live ranking, filters rail, result cards,
 // listing drawer, saved picks, router, theme and keyboard shortcuts. Views live in their own modules and
 // talk to the core through the exports below and the event bus (on/emit).
-import { $, esc, money, moneyShort, safeUrl, scoreColor, ring, unitGlyph, bullets, bullet, routeNames, ICONS, toast, LINE_COLORS, aerialHTML, imagesOf, walkMinutes } from './util.js';
+import { $, esc, money, moneyShort, safeUrl, scoreColor, ring, unitGlyph, bullets, bullet, routeNames, ICONS, toast, LINE_COLORS, aerialHTML, imagesOf, walkMinutes, routeBadge, legBadges, miles } from './util.js';
 
 export const store = {
   get(k, d) { try { const v = localStorage.getItem('as:' + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
@@ -41,7 +41,8 @@ export function modesOf(L, d = dest()) {
   const subway = m.subway?.minutes ?? (c.mode === 'walk' ? null : c.minutes ?? null);
   const bus = m.bus?.minutes ?? null;
   const opts = [['walk', walk], ['subway', subway], ['bus', bus]].filter(([, v]) => v != null).sort((x, y) => x[1] - y[1]);
-  return { walk, subway, bus, best: opts[0]?.[1] ?? null, bestMode: opts[0]?.[0] ?? null, route: m.transit?.route || m.subway?.route || c.route };
+  return { walk, subway, bus, best: opts[0]?.[1] ?? null, bestMode: opts[0]?.[0] ?? null, route: m.transit?.route || m.subway?.route || c.route,
+    legs: m.transit?.legs || null, modes: m, transit: m.transit?.minutes ?? null };
 }
 export const tierIndex = (L) => (S.crit.budget?.tiers || []).findIndex((t) => t.name === L.score?.budget_tier);
 export const isSaved = (id) => !!S.picks[id]?.saved;
@@ -146,7 +147,9 @@ function exportCSV() {
     ['budget_tier', (L) => L.score?.budget_tier], ['sqft', (L) => L.sqft], ['beds', (L) => L.beds], ['floor', (L) => L.floor], ['exposure', (L) => (L.exposure || []).join(' ')],
     [`commute_${dests()[0] || ''}`, (L) => commuteOf(L)?.toFixed(0)], ['in_unit_wd', (L) => L.amenities?.in_unit_wd], ['doorman', (L) => L.amenities?.doorman], ['gym', (L) => L.amenities?.gym],
     ['saved', (L) => (isSaved(L.id) ? 'yes' : '')], ['my_tier', (L) => pick(L.id).tier], ['my_note', (L) => pick(L.id).note], ['checked', (L) => L.checked], ['listing_url', (L) => safeUrl(L.links?.listing)]];
-  const q = (v) => (v == null ? '' : /[",\n]/.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : String(v));
+  // spreadsheet formula injection: text starting with = + - @ (or tab / CR) is prefixed with an apostrophe
+  const guard = (v) => (typeof v === 'string' && /^[=+\-@\t\r]/.test(v) ? "'" + v : v);
+  const q = (v0) => { const v = guard(v0); return v == null ? '' : /[",\n]/.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : String(v); };
   const rows = sorted(filtered()).map((L) => cols.map(([, f]) => q(f(L))).join(','));
   download(`apartmentscout-${new Date().toISOString().slice(0, 10)}.csv`, [cols.map((c) => c[0]).join(','), ...rows].join('\n'), 'text/csv');
   toast(`Exported ${rows.length} listings`);
@@ -247,7 +250,7 @@ function modesHTML(L) {
   const m = modesOf(L, d);
   if (m.best == null) return '<div class="c-modes"><span class="faint">Commute not computed</span></div>';
   const chip = (k, icon, v, label) => `<span class="mode ${m.bestMode === k ? 'best' : ''} ${v == null ? 'na' : ''}" title="${label}: ${v == null ? 'not computed' : Math.round(v) + ' min door to door'}">${icon}<b>${v == null ? '—' : Math.round(v)}</b></span>`;
-  return `<div class="c-modes">${chip('walk', ICONS.walk, m.walk, 'Walk')}${chip('subway', ICONS.train, m.subway, 'Subway')}${chip('bus', ICONS.bus, m.bus, 'Bus')}<span class="line-bullets">${bullets(m.route, 3)}</span><span class="to">min to ${esc(d.name)}</span></div>`;
+  return `<div class="c-modes">${chip('walk', ICONS.walk, m.walk, 'Walk')}${chip('subway', ICONS.train, m.subway, 'Subway')}${chip('bus', ICONS.bus, m.bus, 'Bus')}<span class="line-bullets">${m.legs ? legBadges(m.legs, 3) : bullets(m.route, 3)}</span><span class="to">min to ${esc(d.name)}</span></div>`;
 }
 function mediaHTML(L, im) {
   if (im.own.length) return `<img src="${esc(im.own[0])}" alt="" loading="lazy" referrerpolicy="no-referrer"><span class="nph">${im.own.length} photo${im.own.length > 1 ? 's' : ''}</span>`;
@@ -316,6 +319,33 @@ function legsHTML(route) {
     return `<div class="leg"><span class="ic walk"></span><span>${esc(seg)}</span><span class="m"></span></div>`;
   }).join('');
 }
+const MODE_META = [['transit', 'Best', ICONS.check], ['subway', 'Subway', ICONS.train], ['bus', 'Bus', ICONS.bus], ['walk', 'Walk', ICONS.walk]];
+let drawerMode = 'transit';
+function legRows(legs) {
+  return legs.map((l) => {
+    if (l.mode === 'walk') return `<div class="leg"><span class="ic walk"></span><span>${l.to === 'destination' ? 'Walk to ' + esc(dest()?.name || 'destination') : 'Walk to ' + esc(l.to)}${l.m ? ` <span class="faint">${miles(l.m)}</span>` : ''}</span><span class="m">${Math.round(l.min)} min</span></div>`;
+    if (l.mode === 'transfer') return `<div class="leg"><span class="ic walk"></span><span>Transfer${l.at ? ' at ' + esc(l.at) : ''}</span><span class="m">${Math.round(l.min)} min</span></div>`;
+    return `<div class="leg ride"><span class="ic">${routeBadge(l)}</span><span>${esc(l.from)} → ${esc(l.to)}${l.board ? ` <span class="faint">${esc(l.board)}–${esc(l.alight)}</span>` : ''}${l.wait ? ` <span class="faint">· wait ${Math.round(l.wait)}</span>` : ''}</span><span class="m">${Math.round(l.min)} min</span></div>`;
+  }).join('');
+}
+function commuteSection(L, d) {
+  if (!d) return '';
+  const c = L.commute?.[d.name], mo = modesOf(L, d);
+  if (!c && mo.walk == null) return '';
+  const M = c?.modes || {};
+  const avail = MODE_META.filter(([k]) => (k === 'walk' ? mo.walk != null : M[k]?.minutes != null || (k === 'transit' && c?.minutes != null)));
+  if (!avail.some(([k]) => k === drawerMode)) drawerMode = avail[0]?.[0] || 'walk';
+  const val = (k) => (k === 'walk' ? mo.walk : k === 'transit' ? (M.transit?.minutes ?? c?.minutes) : M[k]?.minutes);
+  const sel = M[drawerMode] || (drawerMode === 'transit' ? { minutes: c?.minutes, route: c?.route } : null);
+  const live = L.address ? `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(L.address)}&destination=${encodeURIComponent(d.address || `${d.lat},${d.lon}`)}&travelmode=${drawerMode === 'walk' ? 'walking' : 'transit'}` : null;
+  const obs = (L.commute_observations || []).map((o) => `<div class="leg"><span class="ic walk"></span><span>${esc(o.provider || 'Checked')} ${esc(o.mode || '')}${o.departure ? ', ' + esc(o.departure) : ''}</span><span class="m">${esc(o.minutes)} min</span></div>`).join('');
+  const best = Math.min(...avail.map(([k]) => val(k)).filter((v) => v != null));
+  return `<div class="d-sec" id="dCommute"><h3>Commute to ${esc(d.name)} <span>arrive ${esc(d.arrive_by || '')}${sel?.range ? ` · ${Math.round(sel.range[0])}–${Math.round(sel.range[1])} min across departures` : ''}</span></h3>
+    <div class="mode-tiles" role="tablist">${avail.map(([k, n, ic]) => `<button type="button" role="tab" aria-selected="${k === drawerMode}" class="mt ${k === drawerMode ? 'on' : ''} ${val(k) === best ? 'best' : ''}" data-mode="${k}">${ic}<b>${Math.round(val(k))}<small>min</small></b><span>${n}</span></button>`).join('')}</div>
+    <div class="route">${drawerMode === 'walk' ? `<div class="leg"><span class="ic walk"></span><span>Walk the whole way <span class="faint">${miles((M.walk?.m) ?? null)}</span></span><span class="m">${Math.round(mo.walk)} min</span></div>` : sel?.legs ? legRows(sel.legs) : legsHTML(sel?.route || '')}${obs}</div>
+    ${sel?.transfers != null && drawerMode !== 'walk' ? `<div class="faint" style="font-size:var(--fs-xs);margin-top:8px">${sel.transfers ? sel.transfers + ' transfer' + (sel.transfers > 1 ? 's' : '') : 'One-seat ride'} · ${Math.round(sel.walk_min ?? 0)} min walking · ${Math.round(sel.ride_min ?? 0)} min riding${sel.wait_min ? ` · ${Math.round(sel.wait_min)} min waiting` : ''}</div>` : ''}
+    ${live ? `<a class="d-link" href="${esc(live)}" target="_blank" rel="noopener">Check the live route ${ICONS.ext}</a>` : ''}</div>`;
+}
 export function openDrawer(id, opt = {}) {
   const L = byId(id); if (!L) return;
   S.sel = id;
@@ -346,7 +376,7 @@ export function openDrawer(id, opt = {}) {
       <div class="drivers">${dr.slice(0, 3).map((x) => `<span class="pill good">+${x.pts.toFixed(1)} ${esc(x.n)}</span>`).join('')}${dr.slice(-2).filter((x) => x.pts < 0).map((x) => `<span class="pill bad">${x.pts.toFixed(1)} ${esc(x.n)}</span>`).join('')}</div>
       <div class="dims">${DIMS.map(([k, n]) => { const v = s.parts?.[k]; return `<span>${n}</span><span class="bar ${v == null ? 'unk' : ''}"><i style="width:${v ?? 0}%;background:${scoreColor(v)}"></i></span><b>${v == null ? '?' : Math.round(v)}</b>`; }).join('')}</div>
       <div class="coverage"><div class="cov-bar">${Array.from({ length: cov.total }, (_, i) => `<i class="${i < cov.have ? 'on' : ''}"></i>`).join('')}</div><span><b>${cov.have}/${cov.total}</b> key facts evidenced${cov.missing.length ? ` · still need ${esc(cov.missing.slice(0, 4).join(', ').toLowerCase())}${cov.missing.length > 4 ? '…' : ''}` : ''}</span></div></div>
-    ${route ? `<div class="d-sec"><h3>Commute to ${esc(d.name)} <span>${Math.round(commuteOf(L))} min door to door</span></h3><div class="route">${legsHTML(route)}${obs}</div>${live ? `<a class="d-link" href="${esc(live)}" target="_blank" rel="noopener">Check the live route ${ICONS.ext}</a>` : ''}</div>` : ''}
+    ${commuteSection(L, d)}
     ${sun ? `<div class="d-sec"><h3>Direct sun on the window <span>floor ${esc(L.site.floor)}, facing ${Math.round(L.site.bearing)}°</span></h3><div class="sunbars">${sun.map((h, i) => `<div title="${h.toFixed(1)} h"><i style="height:${Math.max(3, (h / 9) * 100)}%"></i><span>${'JFMAMJJASOND'[i]}</span></div>`).join('')}</div><div class="faint" style="font-size:var(--fs-xs);margin-top:8px">Skyline straight ahead ${esc(L.site.skyline_ahead_deg)}° · ${L.site.open_sky_share != null ? Math.round(L.site.open_sky_share * 100) + '% open sky in view' : ''}</div></div>` : ''}
     ${rec.flags?.length ? `<div class="d-sec"><h3>Public records <span>reports, not findings</span></h3>${rec.flags.slice(0, 4).map((x) => `<div class="flag">${esc(x)}</div>`).join('')}</div>` : ''}
     ${rv.summary ? `<div class="d-sec"><h3>Residents say</h3>${ratings ? `<div class="reviews">${ratings}</div>` : ''}<p class="muted" style="margin:0;font-size:var(--fs-sm)">${esc(rv.summary)}</p></div>` : ''}
@@ -357,6 +387,7 @@ export function openDrawer(id, opt = {}) {
     <p class="faint" style="font-size:var(--fs-xs);padding:0 20px 18px;margin:0">Last checked ${esc(L.checked || '?')} · <span class="mono">${esc(L.id)}</span>${links.length ? ' · ' + links.map(([k, u]) => `<a href="${esc(u)}" target="_blank" rel="noopener">${esc(k)}</a>`).join(' · ') : ''}</p>
     </div>
     <div class="d-actions">${hasSite ? `<a class="btn primary" href="#unit/${esc(L.id)}">${ICONS.cube}Unit 3D</a>` : ''}${hasPlan ? `<a class="btn" href="#plan/${esc(L.id)}">${ICONS.plan}Plan</a>` : ''}${hasDos ? `<a class="btn" href="#records/${esc(L.id)}">${ICONS.doc}Records</a>` : ''}<button class="btn ${S.compare.includes(L.id) ? 'primary' : ''}" type="button" id="dCmp">${S.compare.includes(L.id) ? ICONS.check + 'Comparing' : ICONS.plus + 'Compare'}</button>${safeUrl(L.links?.listing) ? `<a class="btn" href="${esc(safeUrl(L.links.listing))}" target="_blank" rel="noopener">Listing ${ICONS.ext}</a>` : ''}</div>`;
+  $('dCommute')?.querySelectorAll('[data-mode]').forEach((b) => b.addEventListener('click', () => { drawerMode = b.dataset.mode; const y = $('drawer').querySelector('.d-scroll').scrollTop; openDrawer(L.id); $('drawer').querySelector('.d-scroll').scrollTop = y; }));
   $('dClose').addEventListener('click', closeDrawer);
   $('dSave').addEventListener('click', () => { toggleSave(L.id); openDrawer(L.id); });
   $('dCmp').addEventListener('click', () => { toggleCompare(L.id); openDrawer(L.id); });
@@ -385,7 +416,7 @@ export function closeDrawer() {
 // ------------------------------------------------------------------ router
 // Views load on first visit, so a slow or blocked CDN (three.js for the 3D views) never blanks the app.
 const VIEWS = { map: () => import('./map.js'), list: () => import('./list.js'), compare: () => import('./compare.js'), unit: () => import('./unit3d.js'),
-  plan: () => import('./plan3d.js'), records: () => import('./records.js'), tours: () => import('./tours.js') };
+  plan: () => import('./plan3d.js'), records: () => import('./records.js'), tours: () => import('./tours.js'), research: () => import('./research.js') };
 const loaded = {};
 async function viewModule(v) {
   if (!loaded[v]) loaded[v] = VIEWS[v]().then((m) => { m.init?.(); return m; });
@@ -433,11 +464,11 @@ function setupKeys(flipTheme) {
     if (e.key === 's' && S.sel) { toggleSave(S.sel); openDrawer(S.sel); return; }
     if (e.key === 'c' && S.sel) { toggleCompare(S.sel); openDrawer(S.sel); return; }
     if (e.key === 't') { flipTheme(); return; }
-    const views = ['map', 'list', 'compare', 'unit', 'plan', 'records', 'tours'];
-    if (/^[1-7]$/.test(e.key)) { location.hash = views[+e.key - 1]; return; }
+    const views = ['map', 'list', 'compare', 'unit', 'plan', 'records', 'tours', 'research'];
+    if (/^[1-8]$/.test(e.key)) { location.hash = views[+e.key - 1]; return; }
     if (e.key === '?') {
       const el = document.createElement('div'); el.className = 'kbd-help';
-      el.innerHTML = `<div class="panel"><h3>Keyboard</h3><dl>${[['/', 'Search listings'], ['j k', 'Next or previous listing'], ['s', 'Save the open listing'], ['c', 'Add it to compare'], ['1–7', 'Switch view'], ['t', 'Light or dark'], ['Esc', 'Close'], ...(S.view === 'plan' ? [['R', 'Turn the selected piece'], ['← →', 'Nudge 1 in (Shift 6 in)'], ['D', 'Duplicate'], ['Del', 'Remove'], ['⌘Z', 'Undo'], ['W A S D', 'Walk mode']] : []), ...(S.view === 'unit' ? [['p', 'Play or pause the day'], [', .', 'Step 15 minutes']] : [])].map(([k, t]) => `<dt>${k.split(' ').map((x) => `<kbd>${x}</kbd>`).join(' ')}</dt><dd style="margin:0">${t}</dd>`).join('')}</dl></div>`;
+      el.innerHTML = `<div class="panel"><h3>Keyboard</h3><dl>${[['/', 'Search listings'], ['j k', 'Next or previous listing'], ['s', 'Save the open listing'], ['c', 'Add it to compare'], ['1–8', 'Switch view'], ['t', 'Light or dark'], ['Esc', 'Close'], ...(S.view === 'plan' ? [['R', 'Turn the selected piece'], ['← →', 'Nudge 1 in (Shift 6 in)'], ['D', 'Duplicate'], ['Del', 'Remove'], ['⌘Z', 'Undo'], ['W A S D', 'Walk mode']] : []), ...(S.view === 'unit' ? [['p', 'Play or pause the day'], [', .', 'Step 15 minutes']] : [])].map(([k, t]) => `<dt>${k.split(' ').map((x) => `<kbd>${x}</kbd>`).join(' ')}</dt><dd style="margin:0">${t}</dd>`).join('')}</dl></div>`;
       el.addEventListener('click', () => el.remove()); document.body.append(el);
     }
   });
