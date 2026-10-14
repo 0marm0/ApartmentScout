@@ -23,6 +23,7 @@ const COLS = [
 ];
 
 export function init() {
+  document.getElementById('view-list').innerHTML = `<div class="view-pad"><div class="page-h"><div class="t"><h1>Shortlist</h1><p>Every listing that matches your filters, sortable on any column.</p></div></div><div class="panel flush table-wrap"><table class="grid" id="table"></table></div></div>`;
   on('filters', () => shown && draw());
   on('compare', () => shown && draw());
 }

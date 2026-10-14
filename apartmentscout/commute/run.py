@@ -27,6 +27,20 @@ def _bbox(listings: list[dict], dests: list[dict], pad_m: float) -> tuple[float,
     return lo0 - dlon, la0 - dlat, lo1 + dlon, la1 + dlat
 
 
+def feed_paths(ws, crit: dict, log=print) -> list[tuple[str, Path]]:
+    """Local paths of the search's GTFS feeds, downloading (or refreshing) them into the cache."""
+    feeds = []
+    for f in ((crit.get("commute") or {}).get("transit") or {}).get("feeds") or []:
+        name = slugify(f.get("name") or "feed")
+        path = Path(f["path"]) if f.get("path") else ws.cache_dir / "gtfs" / f"{name}.zip"
+        if not path.exists() or f.get("url"):
+            if f.get("url"):
+                log(f"  feed {f.get('name')}: {f['url']}")
+                download_feed(f["url"], path)
+        feeds.append((name, path))
+    return feeds
+
+
 def run_commute(ws, listings: list[dict], crit: dict, cell_m: float = 150, pad_m: float = 1500,
                 log=print) -> list[dict]:
     cm = crit.get("commute") or {}
@@ -38,15 +52,7 @@ def run_commute(ws, listings: list[dict], crit: dict, cell_m: float = 150, pad_m
     sa = 60 * tr.get("station_access_min", 2)  # street-to-platform time added to every transit trip
     mask_m = tr.get("heat_mask_m", 1000)  # grid cells farther than this from any stop are left blank
     day = dt.date.fromisoformat(str(tr.get("service_date") or _next_weekday()))
-    feeds = []
-    for f in tr.get("feeds") or []:
-        name = slugify(f.get("name") or "feed")
-        path = Path(f["path"]) if f.get("path") else ws.cache_dir / "gtfs" / f"{name}.zip"
-        if not path.exists() or f.get("url"):
-            if f.get("url"):
-                log(f"  feed {f.get('name')}: {f['url']}")
-                download_feed(f["url"], path)
-        feeds.append((name, path))
+    feeds = feed_paths(ws, crit, log)
     bbox = _bbox(listings, dests, pad_m)
     lon0, lat0, lon1, lat1 = bbox
     dlat = cell_m / 110574

@@ -4,6 +4,7 @@ import { $, esc, css, md } from './util.js';
 
 let current = null;
 export function init() {
+  document.getElementById('view-records').innerHTML = `<div class="view-pad"><div class="u-picker"><label for="recSel">Building</label><select id="recSel"></select></div> <div id="recBody"></div></div>`;
   const ids = S.manifest.dossiers || [];
   $('recSel').innerHTML = ids.length ? ids.map((id) => `<option value="${esc(id)}">${esc(byId(id) ? label(byId(id)) : id)}</option>`).join('') : '<option>No dossiers yet: run `apartmentscout dossier`</option>';
   $('recSel').addEventListener('change', (e) => (location.hash = '#records/' + e.target.value));

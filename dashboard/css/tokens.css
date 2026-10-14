@@ -1,0 +1,86 @@
+/* ApartmentScout design tokens. One place for colour, type, space, radius, elevation and motion.
+   Dark is the native theme; [data-theme="light"] overrides the same names. */
+:root {
+  /* type */
+  --font-sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-2xs: 10.5px; --fs-xs: 11.5px; --fs-sm: 12.5px; --fs-md: 13.5px; --fs-lg: 15px;
+  --fs-xl: 18px; --fs-2xl: 22px; --fs-3xl: 30px; --fs-4xl: 44px;
+  --lh-tight: 1.15; --lh-snug: 1.3; --lh-body: 1.5;
+  --tracking-tight: -0.015em; --tracking-caps: 0.08em;
+
+  /* space (4px grid) and radius */
+  --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 20px; --s-6: 24px; --s-8: 32px; --s-10: 40px;
+  --r-xs: 4px; --r-sm: 6px; --r-md: 10px; --r-lg: 14px; --r-xl: 20px; --r-pill: 999px;
+
+  /* layout */
+  --topbar-h: 56px; --stats-h: 44px; --rail-w: 288px; --list-w: 432px; --drawer-w: 448px;
+
+  /* motion */
+  --ease-out: cubic-bezier(.2, .8, .2, 1);
+  --ease-in-out: cubic-bezier(.65, 0, .35, 1);
+  --ease-spring: cubic-bezier(.34, 1.36, .64, 1);
+  --t-fast: 120ms; --t-base: 200ms; --t-slow: 320ms; --t-page: 420ms;
+
+  /* fixed colours: official subway palette comes from the GTFS feed; these are the brand and data scales */
+  --sun: #f5b547;
+  --score-1: #e5604f; --score-2: #ee9b45; --score-3: #d7c95a; --score-4: #67c68a; --score-5: #2fb383;
+  --band-10: #3be8b5; --band-20: #27c2c4; --band-30: #3a93e0; --band-45: #6a55b8; --band-60: #7d3a72;
+  --tier-1: #3fcf8e; --tier-2: #e8b44c; --tier-3: #ef8a4c; --tier-over: #e5604f;
+
+  /* dark (native) */
+  --ground: #08090c;
+  --surface-1: #0e1015;
+  --surface-2: #13161d;
+  --surface-3: #1a1e27;
+  --surface-hover: #1e2330;
+  --overlay: rgba(14, 16, 21, 0.78);
+  --line: rgba(255, 255, 255, 0.065);
+  --line-strong: rgba(255, 255, 255, 0.11);
+  --ink: #eef1f6;
+  --ink-2: #a9b1bf;
+  --ink-3: #6f7889;
+  --ink-4: #4a5160;
+  --accent: #8b96ff;
+  --accent-strong: #a6aeff;
+  --accent-ink: #0b0d1f;
+  --accent-soft: rgba(139, 150, 255, 0.13);
+  --accent-line: rgba(139, 150, 255, 0.35);
+  --good: #4fd19a; --warn: #f0b04c; --bad: #f2735f;
+  --good-soft: rgba(79, 209, 154, 0.12); --warn-soft: rgba(240, 176, 76, 0.12); --bad-soft: rgba(242, 115, 95, 0.12);
+  --fav: #ffd166;
+  --shadow-1: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-2: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 8px 24px rgba(0, 0, 0, 0.45), 0 2px 6px rgba(0, 0, 0, 0.3);
+  --shadow-3: 0 1px 0 rgba(255, 255, 255, 0.05) inset, 0 24px 64px rgba(0, 0, 0, 0.6), 0 6px 16px rgba(0, 0, 0, 0.35);
+  --glass: blur(18px) saturate(140%);
+  --band-alpha: 0.3;
+  color-scheme: dark;
+}
+
+:root[data-theme="light"] {
+  --ground: #f4f4f1;
+  --surface-1: #ffffff;
+  --surface-2: #fafaf8;
+  --surface-3: #f1f1ed;
+  --surface-hover: #eeeee9;
+  --overlay: rgba(255, 255, 255, 0.82);
+  --line: rgba(20, 24, 34, 0.075);
+  --line-strong: rgba(20, 24, 34, 0.13);
+  --ink: #12151c;
+  --ink-2: #4b5261;
+  --ink-3: #7d8494;
+  --ink-4: #aab0bc;
+  --accent: #4b55e6;
+  --accent-strong: #3a43d0;
+  --accent-ink: #ffffff;
+  --accent-soft: rgba(75, 85, 230, 0.09);
+  --accent-line: rgba(75, 85, 230, 0.32);
+  --good: #13945e; --warn: #b77406; --bad: #cf4630;
+  --good-soft: rgba(19, 148, 94, 0.09); --warn-soft: rgba(183, 116, 6, 0.09); --bad-soft: rgba(207, 70, 48, 0.09);
+  --fav: #e0a100;
+  --shadow-1: 0 1px 2px rgba(20, 24, 34, 0.06);
+  --shadow-2: 0 8px 24px rgba(20, 24, 34, 0.08), 0 2px 6px rgba(20, 24, 34, 0.05);
+  --shadow-3: 0 24px 64px rgba(20, 24, 34, 0.16), 0 6px 16px rgba(20, 24, 34, 0.08);
+  --band-alpha: 0.26;
+  color-scheme: light;
+}

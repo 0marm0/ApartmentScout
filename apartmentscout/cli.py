@@ -22,8 +22,8 @@ import datetime as dt
 import http.server
 import json
 import os
+import re
 import shutil
-import socketserver
 import sys
 import webbrowser
 from pathlib import Path
@@ -154,12 +154,24 @@ def cmd_commute(args):
 def cmd_layers(args):
     ws = ws_from(args)
     crit = ws.criteria()
-    if crit["search"].get("city") != "nyc":
-        log("No built-in city layers for this city yet. See docs/guides/new-city.md to add one.")
-        return
-    from .commute.run import _bbox
-    from .layers import nyc_noise_layer
+    from .commute.run import _bbox, feed_paths
     bbox = list(_bbox(_listings(ws), crit["commute"]["destinations"], 1500))
+    feeds = feed_paths(ws, crit, log=log)
+    if feeds:
+        from .commute.lines import transit_lines
+        pad = 0.01
+        g = transit_lines(feeds, [bbox[0] - pad, bbox[1] - pad, bbox[2] + pad, bbox[3] + pad])
+        out = ws.root / "layers" / "transit-lines.json"
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(json.dumps(g, separators=(",", ":")))
+        n = sum(1 for f in g["features"] if f["properties"]["kind"] == "station")
+        log(f"Transit lines -> {out}  ({len(g['features']) - n} line groups, {n} stations)")
+    if getattr(args, "transit_only", False):
+        return
+    if crit["search"].get("city") != "nyc":
+        log("No built-in city noise layer for this city yet. See docs/guides/new-city.md to add one.")
+        return
+    from .layers import nyc_noise_layer
     nyc_noise_layer(ws, bbox, months=args.months, log=log)
 
 
@@ -271,19 +283,20 @@ def cmd_build(args):
 def standalone(data_dir: Path, dest: Path) -> Path:
     """One self-contained HTML file: the dashboard, its CSS and JS bundle, and every data file.
 
-    Works when opened as a file, in app previews and on any static host. Leaflet, three.js and
+    Works when opened as a file, in app previews and on any static host. MapLibre, three.js and
     fonts still load from public CDNs, and map tiles need an internet connection."""
     bundle = DASH / "dist" / "app.bundle.js"
     if not bundle.exists():
         sys.exit("dashboard/dist/app.bundle.js is missing. Run scripts/bundle.sh (needs Node and esbuild).")
     html = (DASH / "index.html").read_text()
-    css = (DASH / "css" / "app.css").read_text()
     data = {}
     for f in sorted(data_dir.rglob("*.json")):
         data["data/" + f.relative_to(data_dir).as_posix()] = json.loads(f.read_text())
     blob = json.dumps(data, separators=(",", ":"), default=str).replace("</", "<\\/")
     js = bundle.read_text().replace("</script", "<\\/script")
-    html = html.replace('<link rel="stylesheet" href="css/app.css">', f"<style>\n{css}\n</style>")
+    # inline every local stylesheet (tokens, shell and the per-view files) in document order
+    html = re.sub(r'<link rel="stylesheet" href="(css/[^"]+)">',
+                  lambda m: f"<style>\n{(DASH / m.group(1)).read_text()}\n</style>", html)
     html = html.replace('<script type="module" src="js/app.js"></script>',
                         f"<script>window.__AS_DATA__={blob};</script>\n<script type=\"module\">\n{js}\n</script>")
     dest.parent.mkdir(parents=True, exist_ok=True)
@@ -340,7 +353,8 @@ def cmd_serve(args):
     class Quiet(http.server.SimpleHTTPRequestHandler):
         def log_message(self, *a):
             pass
-    with socketserver.TCPServer(("127.0.0.1", args.port), Quiet) as httpd:
+    http.server.ThreadingHTTPServer.allow_reuse_address = True
+    with http.server.ThreadingHTTPServer(("127.0.0.1", args.port), Quiet) as httpd:
         url = f"http://127.0.0.1:{args.port}/"
         log(f"ApartmentScout dashboard at {url}  (Ctrl+C to stop)")
         if not args.no_open:
@@ -384,6 +398,7 @@ def main(argv=None):
     s.add_argument("--cell", type=float, default=150, help="grid cell size in metres")
     s = add("layers", cmd_layers, "city map layers (NYC: 311 noise)")
     s.add_argument("--months", type=int, default=12)
+    s.add_argument("--transit-only", action="store_true", help="only rebuild the transit lines layer")
     s = add("dossier", cmd_dossier, "public building records (NYC built in)")
     s.add_argument("ids", nargs="*")
     s = add("site", cmd_site, "3D site model and sun/view study for one listing")

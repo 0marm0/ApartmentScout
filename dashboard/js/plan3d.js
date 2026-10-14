@@ -13,6 +13,7 @@ const st = { id: null, date: '', min: 720, playing: false, view: 'bird', site: n
 const U = () => (plan?.units === 'm' ? 1 : 0.3048); // plan units -> metres
 
 export function init() {
+  document.getElementById('view-plan').innerHTML = `<div class="view-pad"><div class="u-grid"> <div class="u-left"> <div class="u-picker"><label for="planSel">Floor plan</label><select id="planSel"></select></div> <div id="pstage" class="canvas-stage"><canvas id="pgl"></canvas><div class="hud" id="phud"></div></div> <div class="panel" id="ptimePanel"></div> </div> <div class="u-right"> <div class="panel" id="planInfo"></div> <div class="panel" id="planRooms"></div> <div class="panel note" id="planNotes"></div> </div> </div></div>`;
   const ids = S.manifest.plans || [];
   $('planSel').innerHTML = ids.length ? ids.map((id) => `<option value="${esc(id)}">${esc(byId(id) ? label(byId(id)) : id)}</option>`).join('') : '<option>No floor plans yet: add plans/&lt;listing-id&gt;.json</option>';
   $('planSel').addEventListener('change', (e) => (location.hash = '#plan/' + e.target.value));

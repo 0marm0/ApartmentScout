@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import argparse
 import http.server
-import socketserver
 import threading
 from functools import partial
 from pathlib import Path
@@ -48,8 +47,8 @@ def serve(directory: Path, port: int):
         def log_message(self, *a):
             pass
 
-    socketserver.TCPServer.allow_reuse_address = True
-    httpd = socketserver.TCPServer(("127.0.0.1", port), partial(Quiet, directory=str(directory)))
+    http.server.ThreadingHTTPServer.allow_reuse_address = True
+    httpd = http.server.ThreadingHTTPServer(("127.0.0.1", port), partial(Quiet, directory=str(directory)))
     threading.Thread(target=httpd.serve_forever, daemon=True).start()
     return httpd
 

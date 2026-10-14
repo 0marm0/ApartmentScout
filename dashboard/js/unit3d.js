@@ -14,6 +14,7 @@ const tz = () => site?.timezone || S.crit.search?.timezone || 'America/New_York'
 const FH = () => site?.floor_height_m || 3.2;
 
 export function init() {
+  document.getElementById('view-unit').innerHTML = `<div class="view-pad"><div class="u-grid"> <div class="u-left"> <div class="u-picker"><label for="unitSel">Listing</label><select id="unitSel"></select></div> <div id="stage" class="canvas-stage"><canvas id="gl"></canvas><div class="hud" id="hud"></div></div> <div class="panel" id="timePanel"></div> <div class="panel"><h3>Sun path against the skyline</h3><canvas id="pathCv" class="plot"></canvas><div class="legend-row" id="pathLegend"></div></div> </div> <div class="u-right"> <div class="panel" id="winPanel"></div> <div class="panel" id="sunPanel"></div> <div class="panel" id="seePanel"></div> <div class="panel" id="heatPanel"></div> <div class="panel note" id="unitNotes"></div> </div> </div></div>`;
   const sel = $('unitSel');
   const ids = S.manifest.sites || [];
   sel.innerHTML = ids.length ? ids.map((id) => `<option value="${esc(id)}">${esc(byId(id) ? label(byId(id)) : id)}</option>`).join('')

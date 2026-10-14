@@ -3,7 +3,9 @@ import { S, on, byId, label, cost, commuteOf, toggleCompare, openDrawer, dests }
 import { $, esc, money, scoreColor, css } from './util.js';
 
 let shown = false;
-export function init() { on('compare', () => shown && draw()); on('theme', () => shown && draw()); }
+export function init() {
+  document.getElementById('view-compare').innerHTML = `<div class="view-pad"><div class="compare-head"> <h2>Compare</h2> <p class="muted" id="cmpHint">Pick up to four listings with the ＋ button in the shortlist or the listing panel.</p> </div> <div class="cmp-cards" id="cmpCards"></div> <div class="panel"><h3>Cost against space, every eligible listing</h3><div id="scatter" class="chart"></div></div> <div class="panel"><h3>Score by dimension</h3><div id="dimBars" class="chart"></div></div></div>`;
+ on('compare', () => shown && draw()); on('theme', () => shown && draw()); }
 export function show() { shown = true; draw(); }
 
 const DIMS = [['cost', 'Cost'], ['space', 'Space'], ['commute', 'Commute'], ['amenities', 'Amenities'], ['light_view', 'Light & view'], ['building', 'Building'], ['quiet', 'Quiet']];
