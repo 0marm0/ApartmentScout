@@ -4,6 +4,7 @@ name: Landing page and dashboard demo on GitHub Pages
 #   /tokens.css  dashboard/css/tokens.css (shared design tokens)
 #   /images/     docs/images/*.png (screenshots)
 #   /assets/     dashboard/assets/ (brand icon, favicon)
+#   /fonts/      dashboard/vendor/fonts/ (self-hosted Geist, no Google Fonts)
 #   /demo/       dashboard/ as committed, with its example data
 on:
   push:
@@ -32,11 +33,12 @@ jobs:
           SITE_URL: ${{ steps.pages.outputs.base_url }}
         run: |
           set -euo pipefail
-          rm -rf _site && mkdir -p _site/images _site/assets _site/demo
+          rm -rf _site && mkdir -p _site/images _site/assets _site/fonts _site/demo
           cp landing/index.html landing/landing.css landing/landing.js _site/
           cp dashboard/css/tokens.css _site/tokens.css
           cp docs/images/*.png _site/images/
           cp dashboard/assets/*.svg _site/assets/
+          cp dashboard/vendor/fonts/* _site/fonts/
           cp -R dashboard/. _site/demo/
           # listing photos of the example search (owner cleared; see docs/gallery/manifest.json policy)
           if [ -d examples/nyc-2026/media ]; then cp -R examples/nyc-2026/media _site/demo/media; fi
