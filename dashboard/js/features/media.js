@@ -66,7 +66,7 @@ export function afterDrawerMedia(dw, L, slides) {
   let down = null;
   tr.addEventListener('pointerdown', (e) => { down = [e.clientX, e.clientY]; }, true);
   tr.addEventListener('click', (e) => {
-    if (e.target.tagName !== 'IMG' || !down || Math.hypot(e.clientX - down[0], e.clientY - down[1]) > 6) return;
+    if (!(e.target.tagName === 'IMG' || e.target === tr) || !down || Math.hypot(e.clientX - down[0], e.clientY - down[1]) > 6) return;
     openAt(idx(), e.target);
   });
   tr.addEventListener('keydown', (e) => { if ((e.key === 'Enter' || e.key === ' ') && e.target === tr) { e.preventDefault(); openAt(idx(), tr); } });
