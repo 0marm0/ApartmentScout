@@ -6,6 +6,8 @@ import { COMMUTE_MODES, commuteEntry, modeMinutes, modeOptions, evaluate, applyP
 import { initPalette, openPalette, shareListing, syncTrigger } from './palette.js';
 import { initEnhance } from './enhance.js';
 import { initTheme, flipTheme, initShell, parseRoute, syncSubnav } from './shell.js';
+import { initMedia, cardMediaHTML, afterDrawerMedia, mediaTransition } from './features/media.js';   // photos: lightbox, blur-up, counts
+import { loadPreviews } from './features/lqip.js';
 
 export const store = {
   get(k, d) { try { const v = localStorage.getItem('as:' + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
@@ -405,6 +407,7 @@ function modesHTML(L) {
   return `<div class="c-modes">${chip('walk', ICONS.walk, m.walk, 'Walk')}${chip('subway', ICONS.train, m.subway, 'Subway')}${chip('bus', ICONS.bus, m.bus, 'Bus')}<span class="line-bullets">${m.mode === 'walk' ? '' : m.legs ? legBadges(m.legs, 3) : bullets(m.route, 3)}</span><span class="to">min to ${esc(d.name)}</span></div>`;
 }
 function mediaHTML(L, im) {
+  const fx = cardMediaHTML(L, im); if (fx) return fx;   // features/media.js: ordered photo, blur-up preview, count by group
   if (im.own.length) return `<img src="${esc(im.own[0])}" alt="" loading="lazy" referrerpolicy="no-referrer"${imgFallback(L, 0)}><span class="nph">${im.own.length} photo${im.own.length > 1 ? 's' : ''}</span>`;
   if (im.building.length) return `<img src="${esc(im.building[0].url)}" alt="" loading="lazy" referrerpolicy="no-referrer"><span class="kind">Building</span>`;
   if (L.lat != null) return `${aerialHTML(L, 136, 108, 18)}<span class="kind">Aerial</span>`;
@@ -653,6 +656,7 @@ function drawerChrome(dw) {
 }
 export function openDrawer(id, opt = {}) {
   const L = byId(id); if (!L) return;
+  if (mediaTransition(id, opt, () => openDrawer(id, { ...opt, noVT: true }))) return;   // card photo grows into the hero
   const prevSel = S.sel;
   S.sel = id;
   const s = L.score || {}, p = L.price || {}, am = L.amenities || {}, rv = L.reviews || {}, rec = L.records || {};
@@ -712,6 +716,7 @@ ${whySection(L)}
     $('dCredit').innerHTML = b ? `${page ? `<a href="${esc(page)}" target="_blank" rel="noopener">${esc(b.author || 'Wikimedia Commons')}</a>` : esc(b.author || '')}${b.license ? ' · ' + (lic ? `<a href="${esc(lic)}" target="_blank" rel="noopener">${esc(b.license)}</a>` : esc(b.license)) : ''}` : '';
   };
   if (tr) { credit(0); carousel(tr, slides.length, credit); if (keep?.x) tr.scrollLeft = keep.x; }
+  afterDrawerMedia(dw, L, slides);   // features/media.js: blur-up per slide, full-screen viewer, group captions
   $('drawer').querySelectorAll('a[href^="#"]').forEach((a) => a.addEventListener('click', closeDrawer));
   drawerChrome(dw);
   dw.classList.toggle('fresh', !keep && !reducedMotion());
@@ -788,6 +793,7 @@ function setupKeys() {
 async function boot() {
   const qs = new URLSearchParams(location.search);
   S.base = qs.get('data') || 'data';
+  loadPreviews(getJSON, S.base);   // features/lqip.js: blur-up previews load beside the main data, not inside it
   const [listings, crit, manifest, notes] = await Promise.all([
     getJSON(`${S.base}/listings.json`, []), getJSON(`${S.base}/criteria.json`, {}), getJSON(`${S.base}/manifest.json`, {}), getJSON(`${S.base}/notes.json`, {}),
   ]);
@@ -834,7 +840,7 @@ async function boot() {
   on('compare', () => { bump($('cmpCount'), S.compare.length); syncCompareCards(); });
   emit('compare'); emit('saved');
   // the top-bar search box opens the command palette; the text filter it sets shows here with a clear button
-  initPalette(); initEnhance();
+  initPalette(); initEnhance(); initMedia({ S, loadJSON, openDrawer, label });
   const q = $('q'), openQ = (seed = '') => openPalette(seed || S.filters.q || '');
   q.addEventListener('click', () => openQ());
   q.addEventListener('keydown', (e) => {
