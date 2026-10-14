@@ -15,8 +15,8 @@ from typing import Any
 
 from ..listings import AMENITY_KEYS, STATUSES
 from . import SCHEMA_VERSION
-from .common import (crit_today, building_key, host, in_area, is_active, norm_unit, num, parse_date, search_area,
-                     urls_of)
+from .common import (crit_today, building_key, host, in_area, is_active, norm_address, norm_unit, num, parse_date,
+                     search_area, urls_of)
 
 SEVERITIES = ("error", "warn", "info")
 DOORMAN = {"full-time", "part-time", "virtual", "none"}
@@ -24,6 +24,9 @@ COMPASS = {"N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "
 PHOTO_SCOPES = {"exact-unit", "same-line", "building", "street", "aerial"}
 AVAILABILITY = {"potential", "conditional", "unverified", "over_budget", "late", "rejected", "gone", "status_dispute"}
 LOCAL_PREFIXES = ("media/", "photos/", "plans/", "research/")
+
+# One point (or one tax lot) that this many unrelated buildings share is a geocoder fallback, not a place.
+SHARED_SPOT_BUILDINGS = 3
 
 # (field, low, high, severity outside) -- plausible ranges, not rules of nature
 RANGES = [
@@ -74,6 +77,46 @@ def validate_document(doc: Any) -> list[Issue]:
     elif v > SCHEMA_VERSION:
         out.append(Issue("error", "schema_version_newer", None, "schema_version",
                          f"schema_version {v} is newer than this ApartmentScout understands ({SCHEMA_VERSION}); upgrade"))
+    return out
+
+
+def shared_spots(listings: list[dict], min_buildings: int = SHARED_SPOT_BUILDINGS) -> list[tuple[str, str, list[dict]]]:
+    """(kind, value, listings) for each coordinate or BBL shared by ``min_buildings`` or more unrelated buildings.
+
+    Two listings are one building when they share a normalised street address or a building name, so
+    "49 East 34th Street" and "49 East 34 St" (or twenty units of one tower) never count as several."""
+    def clusters(group: list[dict]) -> int:
+        parent = list(range(len(group)))
+
+        def find(i: int) -> int:
+            while parent[i] != i:
+                parent[i] = parent[parent[i]]
+                i = parent[i]
+            return i
+        seen: dict[tuple[str, str], int] = {}
+        for i, L in enumerate(group):
+            name = re.sub(r"[^a-z0-9]+", " ", str(L.get("building") or "").lower()).strip()
+            keys = [("n", name)] if name else []
+            addr = norm_address(L.get("address"))
+            if addr and re.match(r"^\d", addr):
+                keys.append(("a", addr))
+            for k in keys or [("i", str(i))]:
+                if k in seen:
+                    parent[find(i)] = find(seen[k])
+                else:
+                    seen[k] = i
+        return len({find(i) for i in range(len(group))})
+
+    by_point: dict[tuple[float, float], list[dict]] = defaultdict(list)
+    by_bbl: dict[str, list[dict]] = defaultdict(list)
+    for L in listings:
+        lat, lon = num(L.get("lat")), num(L.get("lon"))
+        if lat is not None and lon is not None:
+            by_point[(round(lat, 5), round(lon, 5))].append(L)
+        if L.get("bbl"):
+            by_bbl[str(L["bbl"])].append(L)
+    out = [("coordinate", f"{k[0]:.5f}, {k[1]:.5f}", g) for k, g in by_point.items() if clusters(g) >= min_buildings]
+    out += [("BBL", k, g) for k, g in by_bbl.items() if clusters(g) >= min_buildings]
     return out
 
 
@@ -261,6 +304,13 @@ def validate(listings: list[dict], crit: dict, root: Path | None = None, today: 
         sc = L.get("score") or {}
         if sc.get("rank") is not None and not is_active(L):
             add("warn", "inactive_ranked", L, "score.rank", f"{L.get('status')} listing still has rank {sc['rank']}: rerun apartmentscout score")
+
+    for kind, value, group in shared_spots(listings):
+        names = sorted({str(L.get("building") or L.get("address") or L.get("id")) for L in group})
+        out.append(Issue("warn", "shared_location", group[0].get("id"), "lat" if kind == "coordinate" else "bbl",
+                         f"{len(group)} listings in {len(names)} different buildings share one {kind} ({value}; "
+                         f"{', '.join(names[:4])}{', ...' if len(names) > 4 else ''}): a geocoder fallback, not a place. "
+                         "Recover each building's address and run apartmentscout geocode --force"))
 
     ranks = sorted(int(L["score"]["rank"]) for L in listings if (L.get("score") or {}).get("rank") is not None)
     if ranks and ranks != list(range(1, len(ranks) + 1)):
