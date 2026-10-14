@@ -272,9 +272,10 @@ select.sel { appearance: none; height: 28px; padding: 0 26px 0 10px; border-radi
 .price-tag.sel::after { border-color: transparent; }
 .price-tag.sel i { color: var(--accent-ink); background: rgba(255,255,255,.22); box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.7); }
 :root[data-theme="light"] .price-tag { box-shadow: 0 6px 18px rgba(20,24,34,.16); }
-.dest-pin { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 11px; background: var(--ink); color: var(--ground); box-shadow: 0 0 0 4px var(--accent-soft), var(--shadow-2); }
-.dest-pin svg { width: 17px; height: 17px; }
-.dest-label { position: absolute; left: 42px; top: 50%; transform: translateY(-50%); white-space: nowrap; font: 600 11.5px/1.2 var(--font-sans); color: var(--ink); text-shadow: 0 0 6px var(--ground), 0 0 3px var(--ground); }
+.dest-mk { position: relative; width: 30px; height: 38px; }
+.dest-pin { width: 30px; height: 38px; filter: drop-shadow(0 2px 3px rgba(0,0,0,.4)); }
+.dest-pin svg { display: block; width: 100%; height: 100%; }
+.dest-label { position: absolute; left: 36px; top: 14px; transform: translateY(-50%); white-space: nowrap; padding: 3px 8px; border-radius: 8px; background: color-mix(in srgb, var(--surface-1) 88%, transparent); border: 1px solid var(--line-strong); box-shadow: var(--shadow-2); font: 600 11.5px/1.2 var(--font-sans); color: var(--ink); }
 .dest-label span { display: block; font-weight: 400; color: var(--ink-2); font-size: 10.5px; }
 .maplibregl-popup-content { background: var(--surface-1) !important; color: var(--ink); border: 1px solid var(--line-strong); border-radius: var(--r-lg) !important; box-shadow: var(--shadow-3) !important; padding: 0 !important; overflow: hidden; font-family: var(--font-sans); }
 .maplibregl-popup-tip { display: none; }
@@ -625,10 +626,9 @@ body { grid-template-columns: minmax(0, 1fr); }
 .legend .src code, .money-note code, .sh-hint code { font-family: var(--font-mono); font-size: .92em; background: var(--surface-3); padding: 0 4px; border-radius: 4px; color: var(--ink-2); }
 .c-modes .mode.on { box-shadow: inset 0 0 0 1px var(--accent-line); }
 .c-modes .mode.on:not(.best) { background: var(--accent-soft); }
-.dest-mk.off { cursor: pointer; opacity: .78; }
-.dest-mk.off .dest-pin { width: 26px; height: 26px; border-radius: 9px; box-shadow: var(--shadow-2); background: var(--surface-1); color: var(--ink); border: 1px solid var(--line-strong); }
-.dest-mk.off .dest-pin svg { width: 14px; height: 14px; }
-.dest-mk.off .dest-label { left: 33px; font-weight: 500; color: var(--ink-2); }
+.dest-mk.off { width: 24px; height: 30px; cursor: pointer; opacity: .8; }
+.dest-mk.off .dest-pin { width: 24px; height: 30px; }
+.dest-mk.off .dest-label { left: 29px; top: 11px; font-weight: 500; color: var(--ink-2); }
 .dest-mk.off:hover { opacity: 1; }
 .pick-hint { left: 50%; top: 60px; transform: translateX(-50%); display: flex; align-items: center; gap: 10px; padding: 6px 6px 6px 14px; border-radius: var(--r-pill); font-size: var(--fs-sm); z-index: 8; white-space: nowrap; }
 .pick-hint b { font-weight: 600; }

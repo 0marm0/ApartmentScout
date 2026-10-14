@@ -356,16 +356,16 @@ function addOverlays() {
     map.addLayer({ id: 'lbl-station', type: 'symbol', source: 'stations', minzoom: 15, layout: { visibility: vis, 'text-field': ['get', 'name'], 'text-font': ['Noto Sans Regular'], 'text-size': 10.5, 'text-offset': [0, 1.1], 'text-anchor': 'top' }, paint: { 'text-color': p.label, 'text-halo-color': p.halo, 'text-halo-width': 1.5 } });
   }
   // zoomed out (below CLUSTER_Z) nearby pins merge into count bubbles ringed by their average score
-  map.addSource('listings', { type: 'geojson', data: pinData(), promoteId: 'id', cluster: true, clusterMaxZoom: CLUSTER_Z - 1, clusterRadius: 44, clusterProperties: { s: ['+', ['get', 'sc']] } });
+  map.addSource('listings', { type: 'geojson', data: pinData(), promoteId: 'id', cluster: true, clusterMaxZoom: CLUSTER_Z - 1, clusterRadius: 36, clusterProperties: { s: ['+', ['get', 'sc']] } });
   const avg = ['/', ['get', 's'], ['get', 'point_count']];
   const avgCol = ['interpolate', ['linear'], avg, 30, css('--score-1'), 50, css('--score-2'), 65, css('--score-3'), 80, css('--score-4'), 95, css('--score-5')];
   map.addLayer({ id: 'cl-halo', type: 'circle', source: 'listings', filter: ['has', 'point_count'], paint: {
-    'circle-radius': ['step', ['get', 'point_count'], 21, 10, 25, 40, 30, 120, 36], 'circle-color': avgCol, 'circle-opacity': 0.16, 'circle-blur': 0.25 } });
+    'circle-radius': ['step', ['get', 'point_count'], 14, 10, 16, 40, 18, 120, 20], 'circle-color': avgCol, 'circle-opacity': 0.16, 'circle-blur': 0.25 } });
   map.addLayer({ id: 'clusters', type: 'circle', source: 'listings', filter: ['has', 'point_count'], paint: {
-    'circle-radius': ['step', ['get', 'point_count'], 14, 10, 17, 40, 21, 120, 25], 'circle-color': p.clusterFill,
-    'circle-stroke-width': ['case', ['boolean', ['feature-state', 'hover'], false], 3, 2], 'circle-stroke-color': avgCol } });
+    'circle-radius': ['step', ['get', 'point_count'], 10, 10, 12, 40, 14, 120, 16], 'circle-color': p.clusterFill,
+    'circle-stroke-width': ['case', ['boolean', ['feature-state', 'hover'], false], 2.5, 1.5], 'circle-stroke-color': avgCol } });
   map.addLayer({ id: 'cl-count', type: 'symbol', source: 'listings', filter: ['has', 'point_count'], layout: {
-    'text-field': ['get', 'point_count_abbreviated'], 'text-font': ['Noto Sans Bold'], 'text-size': ['step', ['get', 'point_count'], 11, 40, 12.5], 'text-allow-overlap': true, 'text-ignore-placement': true },
+    'text-field': ['get', 'point_count_abbreviated'], 'text-font': ['Noto Sans Bold'], 'text-size': ['step', ['get', 'point_count'], 10.5, 40, 11], 'text-allow-overlap': true, 'text-ignore-placement': true },
     paint: { 'text-color': p.clusterInk } });
   map.addLayer({ id: 'pins-halo', type: 'circle', source: 'listings', filter: UNCL, paint: {
     'circle-radius': ['interpolate', ['linear'], ['zoom'], 11, ['case', ['get', 'fav'], 8, 5], 15, ['case', ['get', 'fav'], 16, 12]],
@@ -485,6 +485,8 @@ function hideCard(forget = false) {
   setTimeout(() => { if (!el.classList.contains('on')) el.hidden = true; }, reduce() ? 0 : 220);
 }
 
+/** Map-pin teardrop in the destination green with a filled white briefcase (same artwork as assets/icons/office-pin.svg). */
+const DEST_PIN_SVG = '<svg viewBox="0 0 30 38" aria-hidden="true" focusable="false"><path fill="var(--dest-pin)" stroke="#fff" stroke-width="1.4" stroke-linejoin="round" d="M15 .8C7.6.8 1.8 6.7 1.8 14c0 9.4 13.2 23.2 13.2 23.2S28.2 23.4 28.2 14C28.2 6.7 22.4.8 15 .8Z"/><path fill="#fff" fill-rule="evenodd" d="M11.1 9.7V8.4c0-1.1.9-2 2-2h3.8c1.1 0 2 .9 2 2v1.3h-1.9V8.5c0-.1-.1-.2-.2-.2h-3.6c-.1 0-.2.1-.2.2v1.2Z"/><path fill="#fff" d="M9.7 9.5h10.6c1.2 0 2.2 1 2.2 2.2v7.1c0 1.2-1 2.2-2.2 2.2H9.7c-1.2 0-2.2-1-2.2-2.2v-7.1c0-1.2 1-2.2 2.2-2.2Z"/><path fill="var(--dest-pin)" d="M7.5 14h15v1.3h-15Z"/><rect fill="var(--dest-pin)" x="13.4" y="12.9" width="3.2" height="3.5" rx=".6"/></svg>';
 function addDest() {
   destMarkers.forEach((m) => m.remove()); destMarkers = [];
   const sel = dest();
@@ -492,9 +494,9 @@ function addDest() {
     if (d.lat == null) continue;
     const on2 = d === sel, el = document.createElement('div');
     el.className = `dest-mk ${on2 ? 'on' : 'off'}`;
-    el.innerHTML = `<div class="dest-pin" title="${esc(d.name)}"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="3" y="2" width="10" height="12" rx="1.5"/><path d="M6 5h1M9 5h1M6 8h1M9 8h1M7 14v-3h2v3"/></svg></div><div class="dest-label">${esc(d.name)}${on2 ? `<span>${esc((d.address || '').split(',')[0])}${d.arrive_by ? ' · arrive ' + esc(d.arrive_by) : ''}</span>` : ''}</div>`;
+    el.innerHTML = `<div class="dest-pin" title="${esc(d.name)}">${DEST_PIN_SVG}</div><div class="dest-label">${esc(d.name)}${on2 ? `<span>${esc((d.address || '').split(',')[0])}${d.arrive_by ? ' · arrive ' + esc(d.arrive_by) : ''}</span>` : ''}</div>`;
     if (!on2) { el.title = `Show the commute to ${d.name}`; el.addEventListener('click', (e) => { e.stopPropagation(); if (!picking) setCommute({ dest: d.name }); }); }
-    destMarkers.push(new maplibregl.Marker({ element: el }).setLngLat([d.lon, d.lat]).addTo(map));
+    destMarkers.push(new maplibregl.Marker({ element: el, anchor: 'bottom' }).setLngLat([d.lon, d.lat]).addTo(map));
   }
 }
 /** Let the renter click a spot for a destination; resolves {lat, lon}, or null on Esc / Cancel. */

@@ -30,6 +30,7 @@
 
   /* dark (native) */
   --brand: #12865f;
+  --dest-pin: #085c38;
   --brand-tower: #ffffff;
   --ground: #08090c;
   --surface-1: #0e1015;
@@ -61,6 +62,7 @@
 
 :root[data-theme="light"] {
   --brand: #05583f;
+  --dest-pin: #085c38;
   --brand-tower: #263533;
   --ground: #f4f4f1;
   --surface-1: #ffffff;
