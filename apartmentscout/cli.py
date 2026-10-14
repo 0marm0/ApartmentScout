@@ -503,7 +503,7 @@ def _export(ws: Workspace, out: Path):
                 S["score"] = {**S["score"], "reasons": [{k: v for k, v in r.items() if k != "items"} for r in S["score"]["reasons"]]}
         slim.append(S)
     (out / "listings.json").write_text(json.dumps(slim, separators=(",", ":"), ensure_ascii=False))
-    build_sidecar(slim, ws.root / "media", out, cache_path=ws.cache_dir / "lqip.json", log=log)   # blur-up previews
+    previews = build_sidecar(slim, ws.root / "media", out, cache_path=ws.cache_dir / "lqip.json", log=log)   # blur-up previews
     (out / "criteria.json").write_text(json.dumps(crit, default=str, indent=1))
     for sub in ("layers", "sites", "plans"):
         src = ws.root / sub
@@ -529,7 +529,8 @@ def _export(ws: Workspace, out: Path):
                 "search": crit["search"].get("name"), "layers": sorted(p.name for p in (out / "layers").glob("*.json")) if (out / "layers").exists() else [],
                 "sites": sorted(p.stem for p in (out / "sites").glob("*.json")) if (out / "sites").exists() else [],
                 "plans": sorted(p.stem for p in (out / "plans").glob("*.json")) if (out / "plans").exists() else [],
-                "dossiers": sorted(p.stem for p in ddst.glob("*.json")) if ddst.exists() else []}
+                "dossiers": sorted(p.stem for p in ddst.glob("*.json")) if ddst.exists() else [],
+                "lqip": bool(previews)}
     from .exports import run_all
     manifest["extra"] = run_all(ws, out, log=log)   # history, coverage and other optional data files
     (out / "manifest.json").write_text(json.dumps(manifest, indent=1))
