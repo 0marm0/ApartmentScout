@@ -82,7 +82,7 @@ schema 2 field is optional.
 |---|---|
 | `units` | `ft`, `m` or `in` for every coordinate and height in the file. Furniture sizes in `layouts` (`w`, `d`, `h`) are always inches. |
 | Axes | `+x` to the right of the drawing, `+y` to the top. |
-| `up_bearing` | Compass bearing the top of the drawing (+y) faces, usually the main window wall's outward direction. |
+| `up_bearing` | Compass bearing the top of the drawing (+y) faces. Put the main window wall at the top (large `y`): the 3D views, the "City outside" layer and the Inside view place the plan with +y pointing out of the building. A plan drawn with its windows at the bottom (small `y`) must be rotated 180 degrees (`x -> width - x`, `y -> depth - y`, furniture `rot + 180`) or its windows will face into the building. |
 | `ceiling`, `wall` | Ceiling height and wall thickness (defaults 9 ft and 0.4 ft). |
 
 ### Rooms, walls and openings

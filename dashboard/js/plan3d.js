@@ -861,7 +861,7 @@ function applyCity() {
   if (!ready) return;
   if (!st.city || !onSite) { if (G3.hasCity()) G3.setCity(null); return; }
   const dark = document.documentElement.dataset.theme !== 'light', css = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-  G3.setCity(cityGroup(onSite, { colors: { low: dark ? css('--surface-3') : css('--ink-4'), high: css('--ink-3'), roof: dark ? css('--ink-3') : css('--surface-1'), own: css('--accent'), ground: dark ? css('--surface-1') : css('--surface-3') } }));
+  G3.setCity(cityGroup(onSite, { light: !dark, colors: { low: dark ? css('--surface-3') : css('--ink-4'), high: css('--ink-3'), roof: dark ? css('--ink-3') : css('--surface-1'), own: css('--accent'), ground: dark ? css('--surface-1') : css('--surface-3') } }));
 }
 
 // ------------------------------------------------------------------ frame loop

@@ -13,6 +13,16 @@ description: Build the 3D site model for a unit, work out which way its windows 
   marked. If none exist, use photos or video: identify landmarks visible through the windows
   (named towers in `config/cities/<city>.yaml`), measure their bearing from the building with
   the site model, and infer the facade. State your confidence and the landmarks used.
+- Photos of green or water: when a photo or video from inside shows a park, tree canopy or the river,
+  the site model's `green` block (OpenStreetMap parks and trees, fetched by `apartmentscout site`) and
+  `apartmentscout.geo.sightline.compare_facades` say which facade can see it: for every facade at the
+  unit's eye height it lists the parks in a 90 degree view, where in the frame they sit (left or right
+  of centre, how far below the horizon), what is hidden by neighbours and which tall buildings stand at
+  the frame's edges. Put the label in `exposure_basis` (e.g. `renter photos + park sightline`) and the
+  facades tested in `exposure_evidence`; the site build then keeps the comparison in `sightline`. Check
+  the plan's window layout against it (which wall has the bay, which way the corner window wraps), and
+  keep the confidence honest: OSM maps few trees, terrain is flat in the model and facade colour is not
+  in the data.
 - Record where each came from on the listing, so the model and the dashboard can say so:
   `exposure_source` and `window_position_source` (`listing`, `plan`, `agent`, `photo-landmarks`,
   `model`, `assumed`) and `floor_inferred`. They end up in the site file's `provenance`.

@@ -257,6 +257,18 @@ def cmd_site(args):
     if L.get("lat") is None:
         sys.exit("Listing has no coordinates. Run `apartmentscout geocode` first.")
     city = crit["search"].get("city")
+    if args.green_only:
+        from .geo.site import add_green
+        path = ws.sites_dir / f"{L['id']}.json"
+        if not path.exists():
+            sys.exit(f"No site file for {L['id']}: run `apartmentscout site {L['id']}` first.")
+        site = json.loads(path.read_text())
+        log(f"  parks and trees around {L['id']} (OpenStreetMap)")
+        if not add_green(site, ws.cache_dir / "site", radius=args.radius if args.radius != 600 else None,
+                         refresh=args.refresh, say=log):
+            sys.exit("The site file has no origin: rebuild it with `apartmentscout site`.")
+        path.write_text(json.dumps(site, separators=(",", ":")))
+        return
     log(f"  footprints around {L['id']} ({'NYC Open Data' if city == 'nyc' else 'OpenStreetMap'})")
     lms = (crit.get("landmarks") or []) + (city_profile(city).get("landmarks") or [])
     site, face, timings = make_site(L, crit, cache_dir=ws.cache_dir / "site", floor=args.floor, bearing=args.bearing,
@@ -264,7 +276,8 @@ def cmd_site(args):
                                     future=not args.no_future, refresh=args.refresh, landmarks=lms,
                                     panes=_panes_arg(args), slab_height=args.slab_height,
                                     floor_height=args.floor_height, components=not args.no_components,
-                                    overrides=ws.sites_dir / f"{L['id']}.components.yaml", say=log)
+                                    overrides=ws.sites_dir / f"{L['id']}.components.yaml",
+                                    green=not args.no_green, face_index=args.face, say=log)
     prov = site.get("provenance") or {}
     log(f"  target matched by {prov.get('target') or '?'}; storey height {site['floor_height_m']} m "
         f"({site.get('floor_height_src')})")
@@ -596,10 +609,15 @@ def main(argv=None):
     s.add_argument("--bearing", type=float, help="window facing in degrees if exposure is unknown")
     s.add_argument("--position", type=float, help="window position along the facade, 0..1 (default: middle of "
                    "the facade's open stretch)")
+    s.add_argument("--face", type=int, help="facade by edge index in the site file's faces (overrides --bearing and "
+                   "the listing's exposure; the listing's window_face does the same)")
     s.add_argument("--radius", type=float, default=600)
     s.add_argument("--charts", action="store_true", help="also write PNG charts to research/charts")
     s.add_argument("--no-streets", action="store_true", help="skip street centrelines")
     s.add_argument("--no-future", action="store_true", help="skip filed / permitted new buildings (NYC)")
+    s.add_argument("--no-green", action="store_true", help="skip parks, lawns and trees from OpenStreetMap")
+    s.add_argument("--green-only", action="store_true", help="only add (or refresh) the parks and trees of an "
+                   "existing site file, leaving the rest of it as it is")
     s.add_argument("--no-components", action="store_true", help="keep every building a single prism (skip "
                    "OpenStreetMap building:part podiums / towers; <id>.components.yaml still applies)")
     s.add_argument("--refresh", action="store_true", help="ignore cached downloads")

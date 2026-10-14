@@ -43,6 +43,21 @@ def listing_panes(L: dict) -> list[float] | None:
     return None
 
 
+def listing_face(faces: list[dict], index) -> dict | None:
+    """The open facade with edge index ``index`` (the listing's ``window_face`` or ``--face``), else None.
+
+    Used when two facades share a bearing (a long wall with a step in it) and the choice matters: edge
+    indices count the target footprint's vertices, so they are only stable while the footprint is.
+    """
+    if index is None:
+        return None
+    try:
+        i = int(index)
+    except (TypeError, ValueError):
+        return None
+    return next((f for f in faces if f["i"] == i and not f.get("shared")), None)
+
+
 def calibrate_floor_height(site: dict, floor: int | None, slab_height: float | None = None,
                            floor_height: float | None = None) -> tuple[float, str]:
     """Storey height for the target: manual setting, else roof height / floors, else 3.2 m.
@@ -112,7 +127,11 @@ def provenance(L: dict, face: dict | None, floor_arg: int | None, bearing_arg: f
         fl = "listing"
     else:
         fl = "assumed"
-    return {"exposure": exp, "window_position": pos, "floor": fl, "notes": "; ".join(notes) or None}
+    out = {"exposure": exp, "window_position": pos, "floor": fl, "notes": "; ".join(notes) or None}
+    for key, src in (("basis", "exposure_basis"), ("evidence", "exposure_evidence")):
+        if L.get(src):
+            out[key] = str(L[src])
+    return out
 
 
 def make_site(L: dict, crit: dict, cache_dir: Path | None = None, floor: int | None = None,
@@ -120,15 +139,18 @@ def make_site(L: dict, crit: dict, cache_dir: Path | None = None, floor: int | N
               future: bool = True, refresh: bool = False, landmarks: list | None = None, year: int | None = None,
               panes: list[float] | None = None, slab_height: float | None = None,
               floor_height: float | None = None, components: bool = True, overrides: Path | None = None,
+              green: bool = True, face_index: int | None = None,
               say: Callable[..., None] = lambda *a: None) -> tuple[dict, dict | None, dict]:
     """Build the site JSON. Returns (site, chosen face or None, timings in seconds).
 
     ``components``: split footprints into podium / tower / setback prisms from OpenStreetMap
-    ``building:part`` outlines; ``overrides``: a ``<id>.components.yaml`` with manual components.
+    ``building:part`` outlines; ``overrides``: a ``<id>.components.yaml`` with manual components;
+    ``green``: parks, lawns and trees from OpenStreetMap (drawn in the 3D views, never counted as shade).
     """
     with collect_receipts() as rc:
         site, face, T = _make_site(L, crit, cache_dir, floor, bearing, t, radius, streets, future, refresh,
-                                   landmarks, year, panes, slab_height, floor_height, say, components, overrides)
+                                   landmarks, year, panes, slab_height, floor_height, say, components, overrides, green,
+                                   face_index)
     site["receipts"] = summarise_receipts(rc)
     for r in site["receipts"]:
         if r.get("limit_hit"):
@@ -139,7 +161,7 @@ def make_site(L: dict, crit: dict, cache_dir: Path | None = None, floor: int | N
 
 
 def _make_site(L, crit, cache_dir, floor, bearing, t, radius, streets, future, refresh, landmarks, year, panes,
-               slab_height, floor_height, say, components=True, overrides=None):
+               slab_height, floor_height, say, components=True, overrides=None, green=True, face_index=None):
     city = crit["search"].get("city")
     tz = crit["search"].get("timezone") or "America/New_York"
     year = year or dt.date.today().year
@@ -199,6 +221,16 @@ def _make_site(L, crit, cache_dir, floor, bearing, t, radius, streets, future, r
         except RuntimeError as e:
             say(f"  streets unavailable: {e}")
         T["streets"] = time.perf_counter() - c0
+    if green:
+        c0 = time.perf_counter()
+        try:
+            from .green import fetch_green
+            site["green"] = fetch_green(L["lat"], L["lon"], radius, cache_dir, refresh)
+            gc = site["green"]["counts"]
+            say(f"  green space: {gc['polys']} parks / lawns, {gc['trees']} mapped trees")
+        except RuntimeError as e:
+            say(f"  green space unavailable: {e}")
+        T["green"] = time.perf_counter() - c0
     if future and city == "nyc":
         c0 = time.perf_counter()
         try:
@@ -221,7 +253,11 @@ def _make_site(L, crit, cache_dir, floor, bearing, t, radius, streets, future, r
     floor = min(want_floor, max_floor(site))
     panes = panes if panes is not None else listing_panes(L)
     panes = [float(o) for o in panes] if panes and any(abs(float(o)) > 1e-9 for o in panes) else None
-    face = face_by_bearing(faces, bearing) if bearing is not None else pick_face(faces, L.get("exposure"))
+    face = listing_face(faces, face_index if face_index is not None else L.get("window_face"))
+    if face is None:
+        face = face_by_bearing(faces, bearing) if bearing is not None else pick_face(faces, L.get("exposure"))
+    if t is None and L.get("window_t") is not None:
+        t = float(L["window_t"])
     if face:
         c0 = time.perf_counter()
         tt = window_t(face) if t is None else t
@@ -255,6 +291,13 @@ def _make_site(L, crit, cache_dir, floor, bearing, t, radius, streets, future, r
         wp = window_point(face, tt, floor, site["floor_height_m"])
         site["study"]["blockers"] = main_blockers(sky, wp, face["bearing"], year, lat, lon, tz, panes)
         T["blockers"] = time.perf_counter() - c0
+        if site.get("green") and (site["green"].get("polys") or site["green"].get("trees")):
+            c0 = time.perf_counter()
+            from .sightline import green_view, sightline_block
+            site["study"]["green_view"] = green_view(site, face, tt, floor, site["floor_height_m"])
+            if L.get("exposure_basis"):  # the facade was chosen from what the window sees: keep the comparison
+                site["sightline"] = sightline_block(site, floor, face["bearing"])
+            T["sightline"] = time.perf_counter() - c0
     c0 = time.perf_counter()
     site["roofs"] = roofs(site, face)
     site["neighbours"] = neighbours(site, face)
@@ -271,6 +314,45 @@ def _make_site(L, crit, cache_dir, floor, bearing, t, radius, streets, future, r
                          f"building matched by {match['by'].upper() if match['by'] in ('bin', 'bbl') else match['by']}")
     site["provenance"]["notes"] = "; ".join(filter(None, notes)) or None
     return site, face, T
+
+
+def merge_receipts(site: dict, fresh: list[dict]) -> None:
+    """Fold new per-dataset receipt summaries into ``site["receipts"]`` (same dataset: add calls, rows, queries)."""
+    have = {r.get("dataset"): r for r in site.get("receipts") or []}
+    for r in fresh:
+        old = have.get(r["dataset"])
+        if old is None:
+            site.setdefault("receipts", []).append(r)
+            continue
+        old["calls"] = int(old.get("calls") or 0) + int(r.get("calls") or 0)
+        old["rows"] = int(old.get("rows") or 0) + int(r.get("rows") or 0)
+        old["limit_hit"] = bool(old.get("limit_hit")) or bool(r.get("limit_hit"))
+        old["retrieved"] = max(filter(None, [old.get("retrieved"), r.get("retrieved")]), default=None)
+        old["queries"] = list(old.get("queries") or []) + list(r.get("queries") or [])
+
+
+def add_green(site: dict, cache_dir: Path | None = None, radius: float | None = None, refresh: bool = False,
+              say: Callable[..., None] = lambda *a: None) -> bool:
+    """Add (or refresh) the ``green`` block of an existing site JSON, and the window's ``study.green_view``,
+    without rebuilding anything else. Returns False when the site has no origin."""
+    from .green import fetch_green
+    from .sightline import green_view
+    origin = site.get("origin") or {}
+    if "lat" not in origin or "lon" not in origin:
+        return False
+    r = radius or float((site.get("green") or {}).get("radius_m") or 600)
+    with collect_receipts() as rc:
+        site["green"] = fetch_green(origin["lat"], origin["lon"], r, cache_dir, refresh)
+    merge_receipts(site, summarise_receipts(rc))
+    gc = site["green"]["counts"]
+    say(f"  green space: {gc['polys']} parks / lawns, {gc['trees']} mapped trees")
+    w = site.get("window")
+    if w and site.get("study") is not None:
+        face = next((f for f in target_faces(site) if f["i"] == w.get("face")), None)
+        if face is not None:
+            fh = site.get("floor_height_m", 3.2)
+            site["study"]["green_view"] = green_view(site, face, w["t"], int(w["floor"]), fh)
+    return True
 
 
 def sample_rows(site: dict, face: dict, dates: list[dt.date], step_min: int = 6) -> list[dict]:

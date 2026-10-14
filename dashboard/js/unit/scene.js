@@ -9,6 +9,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { DEG } from '../sun.js';
 import { css, esc } from '../util.js';
 import { heightClass, pickLabels } from './heights.js';
+import { greenGroup, greenColors } from './greenmesh.js';
 
 const isLight = () => document.documentElement.dataset.theme === 'light';
 const col = (name, fb) => { const v = css(name); return new THREE.Color(/^#[0-9a-f]{3,8}$/i.test(v) ? v.slice(0, 7) : fb); };
@@ -126,7 +127,7 @@ export class UnitStage {
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.maxTex = this.renderer.capabilities.maxTextureSize || 4096;
     this.mode = 'orbit'; this.look = { yaw: 0, pitch: 6, fov: 70 }; this.dirty = true; this.tween = null;
-    this.opts = { shadows: true, labels: true, streets: true, future: true, cone: false, ray: true, target: 'solid' };
+    this.opts = { shadows: true, labels: true, streets: true, future: true, green: true, cone: false, ray: true, target: 'solid' };
     this.labels = []; this.pal = palette(); this.onCompass = null;
     this.opts.heights = false;
     // shared facade uniforms (see decorate)
@@ -243,10 +244,19 @@ export class UnitStage {
     // streets and proposed buildings
     this.streets = this.streetMesh(data.streets || []); if (this.streets) scene.add(this.streets);
     this.future = this.futureGroup(data.future || []); if (this.future) scene.add(this.future);
+    this.buildGreen();
     this.buildLabels();
     this.applyOpts(); this.dirty = true;
   }
 
+  /** Parks, lawns and tree canopies from the site file (unit/greenmesh.js); rebuilt on a theme change. */
+  buildGreen() {
+    if (this.greenGrp) { this.scene.remove(this.greenGrp); disposeTree(this.greenGrp); }
+    this.greenGrp = null;
+    if (!this.data.green) return;
+    this.greenGrp = greenGroup(this.data.green, { center: this.cxy, radius: 640, y0: 0, colors: greenColors(this.pal.ground, this.pal.light) });
+    this.greenGrp.visible = this.opts.green; this.scene.add(this.greenGrp);
+  }
   distTo(b) { return Math.hypot((b.bb[0] + b.bb[2]) / 2 - this.cxy[0], (b.bb[1] + b.bb[3]) / 2 - this.cxy[1]); }
   shapeOf(b) {
     const sh = new THREE.Shape();
@@ -470,6 +480,7 @@ export class UnitStage {
     [this.bMat, this.groundMat, this.tMat].forEach((m) => (m.needsUpdate = true));
     if (this.streets) this.streets.visible = o.streets;
     if (this.future) this.future.visible = o.future;
+    if (this.greenGrp) this.greenGrp.visible = o.green;
     this.rings.visible = !!o.heights && this.mode !== 'win' && this.mode !== 'in';
     this.cone.visible = o.cone && this.mode !== 'win';
     const t = this.mode === 'in' ? 'hidden' : o.target;
@@ -489,6 +500,7 @@ export class UnitStage {
     this.cmpBand.material.color.copy(pal.ink); this.coneMat.color.copy(pal.accent);
     if (this.streetMat) { this.streetMat.color.copy(pal.street); this.streetMat.opacity = pal.streetOp; }
     this.ringMat.color.copy(pal.ink); this.facU.uLitCol.value.copy(pal.lit);
+    this.buildGreen();
     this.recolor();
     if (this.lastSun) this.setSun(this.lastSun);
     this.dirty = true;
@@ -808,7 +820,7 @@ export class UnitStage {
     return ids[lo];
   }
   // ---------------------------------------------------------------- export
-  /** Binary glTF of the city, this building, streets, proposed buildings and the apartment shell, with the
+  /** Binary glTF of the city, this building, streets, park and lawn patches, proposed buildings and the apartment shell, with the
    *  model's provenance in the root's userData (extras). Y up, metres, origin at the site origin. */
   async exportGLB(meta = {}) {
     const { GLTFExporter } = await import('three/addons/exporters/GLTFExporter.js');
@@ -819,6 +831,8 @@ export class UnitStage {
     const t = new THREE.Mesh(this.tMesh.geometry, new THREE.MeshStandardMaterial({ color: this.pal.accent, roughness: 0.6 })); t.name = 'this-building';
     root.add(city, t);
     if (this.streets) { const s = new THREE.Mesh(this.streets.geometry, new THREE.MeshStandardMaterial({ color: this.pal.street, roughness: 1 })); s.name = 'streets'; root.add(s); }
+    const gp = this.opts.green ? this.greenGrp?.getObjectByName('green-patches') : null; // parks and lawns; the instanced canopies stay out of the file
+    if (gp) { const g = new THREE.Mesh(gp.geometry, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1, side: THREE.DoubleSide })); g.name = 'green'; root.add(g); }
     if (this.future) { const f = new THREE.Group(); f.name = 'proposed'; this.future.children.forEach((c) => { if (c.isMesh) f.add(new THREE.Mesh(c.geometry, new THREE.MeshStandardMaterial({ color: this.pal.warn, transparent: true, opacity: 0.35 }))); }); root.add(f); }
     if (this.interior) { const a = this.interior.group.clone(); a.visible = true; a.name = 'apartment'; a.traverse((o) => { o.visible = true; }); root.add(a); }
     const w = this.win;

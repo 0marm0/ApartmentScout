@@ -24,7 +24,7 @@ export function planFrame(model) {
 /**
  * Place the plan on its site: the open facade nearest the plan's up bearing, the window position along it,
  * the slab height of the plan's floor. Returns null when the site has no usable open facade.
- * ctx: {B, T, ti, face, az, anchor:[x,y] (window-wall line), slab, fh, frame, toSite(p), toPlanM([x,y])}
+ * ctx: {B, T, ti, face, az, anchor:[x,y] (window-wall line), slab, fh, frame, toSite(p), toPlanM([x,y]), green (site.green or null)}
  */
 export function placePlan(site, model, floor) {
   if (!site?.b?.length || !site.b[site.target]) return null;
@@ -32,7 +32,10 @@ export function placePlan(site, model, floor) {
   const F = canonicalFaces(facesOf(T, 8, B), site.faces || [], site.version), pool = F.filter((f) => !f.shared);
   if (!pool.length) return null;
   const want = model.up_bearing ?? site.window?.bearing ?? 180;
-  const face = pool.reduce((best, f) => (Math.abs(angDiff(f.bearing, want)) < Math.abs(angDiff(best.bearing, want)) - 0.5 || (Math.abs(Math.abs(angDiff(f.bearing, want)) - Math.abs(angDiff(best.bearing, want))) <= 0.5 && f.length > best.length) ? f : best), pool[0]);
+  // the site file's own window facade wins when it points the way the plan does (two facades can share a bearing:
+  // a long wall with a step in it), so Unit 3D and the Floor plan put the window on the same wall
+  const own = pool.find((f) => f.i === site.window?.face);
+  const face = own && Math.abs(angDiff(own.bearing, want)) <= 15 ? own : pool.reduce((best, f) => (Math.abs(angDiff(f.bearing, want)) < Math.abs(angDiff(best.bearing, want)) - 0.5 || (Math.abs(Math.abs(angDiff(f.bearing, want)) - Math.abs(angDiff(best.bearing, want))) <= 0.5 && f.length > best.length) ? f : best), pool[0]);
   const t = snapPosition(face, face.i === site.window?.face ? site.window?.t ?? 0.5 : 0.5, snapOpen) ?? 0.5;
   const az = face.bearing, ux = Math.sin(az * DEG), uy = Math.cos(az * DEG); // outward (plan +y)
   const rx = Math.cos(az * DEG), ry = -Math.sin(az * DEG); // plan +x (to the right looking out)
@@ -45,7 +48,7 @@ export function placePlan(site, model, floor) {
   const frame = planFrame(model);
   const toSite = (p) => { const dx = (p[0] - frame.xc) * M, dy = (p[1] - frame.yw) * M; return [anchor[0] + rx * dx + ux * dy, anchor[1] + ry * dx + uy * dy]; };
   const toPlanM = (q) => { const dx = q[0] - anchor[0], dy = q[1] - anchor[1]; return [dx * rx + dy * ry + frame.xc * M, dx * ux + dy * uy + frame.yw * M]; };
-  return { B, T, ti: B.indexOf(T), face, t, az, ux, uy, rx, ry, anchor, slab, fh, frame, toSite, toPlanM };
+  return { B, T, ti: B.indexOf(T), face, t, az, ux, uy, rx, ry, anchor, slab, fh, frame, toSite, toPlanM, green: site.green || null };
 }
 
 /**
