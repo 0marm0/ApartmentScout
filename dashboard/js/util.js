@@ -1,4 +1,5 @@
 // Shared helpers: formatting, colour ramps, grids, tiny DOM utilities.
+import { imageLists, ownFallback } from './features/photos.js';   // photo ordering lives in features/photos.js
 export const $ = (id) => document.getElementById(id);
 export const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 export const money = (v) => (v == null || isNaN(v) ? '—' : '$' + Math.round(v).toLocaleString());
@@ -226,12 +227,10 @@ export function aerialHTML(L, w = 136, h = 108, z = 18) {
       tiles.push(`<img src="${src.url.replace('{z}', z).replace('{x}', tx).replace('{y}', ty)}" alt="" loading="lazy" referrerpolicy="no-referrer" style="left:${Math.round(tx * T - x0)}px;top:${Math.round(ty * T - y0)}px">`);
   return `<div class="aerial" style="width:${w}px;height:${h}px" title="Aerial view · ${src.credit}">${tiles.join('')}<i class="aerial-mark" aria-hidden="true"></i></div>`;
 }
-/** The best image list for a listing: its own photos first, then licensed building photos. */
+/** The best image list for a listing: its own photos first, then licensed building photos. Each list is in display
+ *  order (exact unit, same line, building; a photo flagged as carrying a broker mark last in its group). */
 export function imagesOf(L) {
-  // local copies first, but only as many as there are; each local copy falls back to its original link (imgFallback)
-  const own = [...(L.photos_local || []), ...(L.photos || []).slice((L.photos_local || []).length)].map(safeUrl).filter(Boolean);
-  const bld = (L.building_photos || []).map((p) => ({ ...p, url: safeUrl(p.url) })).filter((p) => p.url);
-  return { own: [...new Set(own)], building: bld };
+  return imageLists(L);
 }
 
 /** Walking minutes along streets: straight line × detour at walking speed (the same model the router uses). */
@@ -252,8 +251,9 @@ export function routeBadge(leg) {
 export const legBadges = (legs = [], max = 3) => legs.filter((l) => l.route).slice(0, max).map(routeBadge).join('');
 export const miles = (m) => (m == null ? '' : m < 160 ? `${Math.round(m * 3.28084 / 10) * 10} ft` : `${(m / 1609.34).toFixed(m < 1609 ? 1 : 1)} mi`);
 
-/** onerror attribute for an <img>: swap a missing local copy for the listing's original photo link once. */
+/** onerror attribute for an <img>: swap a missing local copy for the listing's original photo link once. `i` indexes
+ *  the listing's own photos in display order (imagesOf(L).own). */
 export function imgFallback(L, i = 0) {
-  const loc = (L.photos_local || [])[i], web = safeUrl((L.photos || [])[i]);
-  return loc && web ? ` onerror="this.onerror=null;this.src='${esc(web)}'"` : '';
+  const web = ownFallback(L, i);
+  return web ? ` onerror="this.onerror=null;this.src='${esc(web)}'"` : '';
 }
