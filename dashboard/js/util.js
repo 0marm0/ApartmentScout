@@ -205,3 +205,27 @@ export const ICONS = {
   doc: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4 1.5h5.5L12.5 4.5v10h-8.5zM9.5 1.5v3h3M6 8h4.5M6 10.5h4.5"/></svg>',
   plan: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="2" y="2" width="12" height="12" rx="1.5"/><path d="M2 8h5V2M10 14V9h4"/></svg>',
 };
+
+// ------------------------------------------------------------------ images for every listing
+/** Aerial tiles: Esri World Imagery (keyless, attribution required). Cities can override with search.aerial_tiles. */
+export function aerialSource() {
+  return { url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', credit: 'Esri, Maxar, Earthstar Geographics', max: 19 };
+}
+/** A w×h aerial view centred on the listing, built from map tiles (no API key). */
+export function aerialHTML(L, w = 136, h = 108, z = 18) {
+  if (L?.lat == null) return '';
+  const src = aerialSource(), n = 2 ** z, T = 256;
+  const px = ((L.lon + 180) / 360) * n * T;
+  const s = Math.sin((L.lat * Math.PI) / 180), py = (0.5 - Math.log((1 + s) / (1 - s)) / (4 * Math.PI)) * n * T;
+  const x0 = px - w / 2, y0 = py - h / 2, tiles = [];
+  for (let tx = Math.floor(x0 / T); tx <= Math.floor((x0 + w) / T); tx++)
+    for (let ty = Math.floor(y0 / T); ty <= Math.floor((y0 + h) / T); ty++)
+      tiles.push(`<img src="${src.url.replace('{z}', z).replace('{x}', tx).replace('{y}', ty)}" alt="" loading="lazy" referrerpolicy="no-referrer" style="left:${Math.round(tx * T - x0)}px;top:${Math.round(ty * T - y0)}px">`);
+  return `<div class="aerial" style="width:${w}px;height:${h}px" title="Aerial view · ${src.credit}">${tiles.join('')}<i class="aerial-mark" aria-hidden="true"></i></div>`;
+}
+/** The best image list for a listing: its own photos first, then licensed building photos. */
+export function imagesOf(L) {
+  const own = [...(L.photos_local || []), ...(L.photos || [])].map(safeUrl).filter(Boolean);
+  const bld = (L.building_photos || []).map((p) => ({ ...p, url: safeUrl(p.url) })).filter((p) => p.url);
+  return { own: [...new Set(own)], building: bld };
+}

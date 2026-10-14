@@ -235,14 +235,22 @@ input[type=range]::-moz-range-thumb { width: 10px; height: 10px; border-radius: 
 
 /* map marker styling */
 .price-tag {
-  display: flex; align-items: center; gap: 5px; padding: 3px 8px 3px 4px; border-radius: var(--r-pill); cursor: pointer;
-  background: var(--surface-1); color: var(--ink); border: 1px solid var(--line-strong); box-shadow: var(--shadow-2);
-  font: 600 11.5px/1 var(--font-sans); font-variant-numeric: tabular-nums; white-space: nowrap;
-  transition: transform var(--t-base) var(--ease-spring), background var(--t-fast);
+  position: relative; display: flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px 0 3px; border-radius: var(--r-pill); cursor: pointer;
+  background: var(--surface-1); color: var(--ink); border: 1px solid var(--line-strong);
+  box-shadow: 0 8px 22px rgba(0,0,0,.38), 0 1px 0 rgba(255,255,255,.06) inset;
+  font: 650 12px/1 var(--font-sans); font-variant-numeric: tabular-nums; letter-spacing: -0.01em; white-space: nowrap;
+  transition: transform var(--t-base) var(--ease-spring), background var(--t-fast), color var(--t-fast), box-shadow var(--t-base);
 }
-.price-tag i { width: 16px; height: 16px; border-radius: 50%; display: grid; place-items: center; font: 700 8.5px/1 var(--font-sans); color: #0b0d12; font-style: normal; }
-.price-tag:hover, .price-tag.sel { transform: scale(1.08); background: var(--accent); color: var(--accent-ink); border-color: transparent; z-index: 5; }
-.price-tag.fav { border-color: var(--fav); }
+.price-tag::after { content: ""; position: absolute; left: 50%; bottom: -5px; width: 8px; height: 8px; margin-left: -4px; background: inherit;
+  border-right: 1px solid var(--line-strong); border-bottom: 1px solid var(--line-strong); transform: rotate(45deg); border-radius: 0 0 2px 0; }
+.price-tag i { display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; font: 700 9.5px/1 var(--font-sans); font-style: normal;
+  color: var(--c); background: color-mix(in srgb, var(--c) 16%, transparent); box-shadow: inset 0 0 0 1.5px var(--c); }
+.price-tag .st { width: 11px; height: 11px; color: var(--fav); margin-left: -2px; }
+.price-tag:hover, .price-tag.hl { transform: translateY(-2px) scale(1.06); z-index: 5; box-shadow: 0 12px 28px rgba(0,0,0,.45), 0 0 0 3px var(--accent-soft); }
+.price-tag.sel { background: var(--accent); color: var(--accent-ink); border-color: transparent; z-index: 6; transform: translateY(-3px) scale(1.1); box-shadow: 0 14px 30px rgba(0,0,0,.5), 0 0 0 4px var(--accent-soft); }
+.price-tag.sel::after { border-color: transparent; }
+.price-tag.sel i { color: var(--accent-ink); background: rgba(255,255,255,.22); box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.7); }
+:root[data-theme="light"] .price-tag { box-shadow: 0 6px 18px rgba(20,24,34,.16); }
 .dest-pin { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 11px; background: var(--ink); color: var(--ground); box-shadow: 0 0 0 4px var(--accent-soft), var(--shadow-2); }
 .dest-pin svg { width: 17px; height: 17px; }
 .dest-label { position: absolute; left: 42px; top: 50%; transform: translateY(-50%); white-space: nowrap; font: 600 11.5px/1.2 var(--font-sans); color: var(--ink); text-shadow: 0 0 6px var(--ground), 0 0 3px var(--ground); }
@@ -455,7 +463,6 @@ canvas.plot { width: 100%; height: auto; display: block; }
 .unit-row .mini-score { font-weight: 650; text-align: right; font-variant-numeric: tabular-nums; }
 .units-more .more { font-size: var(--fs-2xs); padding: 3px 10px; }
 .more-btn { margin: 8px auto 0; }
-.price-tag.hl { transform: scale(1.08); border-color: var(--accent); }
 button.price-tag { font-family: var(--font-sans); }
 .legend .bar { margin: 4px 0 4px; } .legend .ticks { display: flex; justify-content: space-between; font: 500 var(--fs-2xs) var(--font-mono); color: var(--ink-3); }
 .cmdk:focus-within { border-color: var(--accent-line); box-shadow: 0 0 0 3px var(--accent-soft); }
@@ -470,3 +477,16 @@ button.price-tag { font-family: var(--font-sans); }
 .isoticks { display: flex; margin-top: 4px; font: 500 var(--fs-2xs) var(--font-mono); color: var(--ink-3); }
 .isoticks span { flex: 1; text-align: right; padding-right: 1px; }
 .isoticks span.lim { color: var(--ink); font-weight: 600; }
+
+/* aerial fallback images */
+.aerial { position: relative; overflow: hidden; background: var(--surface-3); }
+.aerial img { position: absolute; width: 256px; height: 256px; max-width: none; transform-origin: 0 0; }
+:root:not([data-theme="light"]) .aerial img { filter: brightness(.86) saturate(.9) contrast(1.04); }
+.aerial-mark { position: absolute; left: 50%; top: 50%; width: 18px; height: 18px; margin: -9px 0 0 -9px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 2px rgba(0,0,0,.35), 0 0 0 8px rgba(255,255,255,.12); }
+.media .aerial, .d-hero .aerial { position: absolute; inset: 0; }
+.media .kind, .d-hero .kind { position: absolute; left: 6px; bottom: 6px; font-size: var(--fs-2xs); font-weight: 600; letter-spacing: .02em; padding: 2px 6px; border-radius: 6px; background: rgba(8,9,12,.62); color: #f1f3f7; backdrop-filter: blur(6px); }
+.d-hero .kind { left: 14px; bottom: 12px; font-size: var(--fs-xs); padding: 3px 8px; }
+.d-hero .credit { position: absolute; right: 12px; bottom: 12px; font-size: 10.5px; color: rgba(255,255,255,.85); text-shadow: 0 1px 2px rgba(0,0,0,.6); max-width: 60%; text-align: right; }
+.d-hero .credit a { color: inherit; }
+.hovercard .aerial { width: 100% !important; }
+.d-hero .track img.plan { object-fit: contain; background: #fff; padding: 8px; }

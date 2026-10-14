@@ -1,7 +1,7 @@
 // ApartmentScout dashboard core: data loading, shared state, live ranking, filters rail, result cards,
 // listing drawer, saved picks, router, theme and keyboard shortcuts. Views live in their own modules and
 // talk to the core through the exports below and the event bus (on/emit).
-import { $, esc, money, moneyShort, safeUrl, scoreColor, ring, unitGlyph, bullets, bullet, routeNames, ICONS, toast, LINE_COLORS, COMPASS } from './util.js';
+import { $, esc, money, moneyShort, safeUrl, scoreColor, ring, unitGlyph, bullets, bullet, routeNames, ICONS, toast, LINE_COLORS, aerialHTML, imagesOf } from './util.js';
 
 export const store = {
   get(k, d) { try { const v = localStorage.getItem('as:' + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
@@ -231,8 +231,14 @@ function refreshRailValues() {
 }
 
 // ------------------------------------------------------------------ result cards
+function mediaHTML(L, im) {
+  if (im.own.length) return `<img src="${esc(im.own[0])}" alt="" loading="lazy" referrerpolicy="no-referrer"><span class="nph">${im.own.length} photo${im.own.length > 1 ? 's' : ''}</span>`;
+  if (im.building.length) return `<img src="${esc(im.building[0].url)}" alt="" loading="lazy" referrerpolicy="no-referrer"><span class="kind">Building</span>`;
+  if (L.lat != null) return `${aerialHTML(L, 136, 108, 18)}<span class="kind">Aerial</span>`;
+  return `<div class="glyph">${unitGlyph(L)}</div>`;
+}
 export function cardHTML(L, i = 0) {
-  const ph = (L.photos || []).map(safeUrl).filter(Boolean);
+  const im = imagesOf(L);
   const am = L.amenities || {}, t = tierIndex(L), saved = isSaved(L.id);
   const b = [];
   if (am.in_unit_wd) b.push('W/D');
@@ -244,7 +250,7 @@ export function cardHTML(L, i = 0) {
   const gate = (L.score?.gates || []).find((g) => g.startsWith('fails') || g === 'over_budget');
   const my = pick(L.id).tier;
   return `<article class="card ${S.sel === L.id ? 'sel' : ''}" data-id="${esc(L.id)}" tabindex="0" style="animation-delay:${Math.min(i, 12) * 22}ms">
-    <div class="media">${ph.length ? `<img src="${esc(ph[0])}" alt="" loading="lazy" referrerpolicy="no-referrer"><span class="nph">${ph.length} photo${ph.length > 1 ? 's' : ''}</span>` : `<div class="glyph">${unitGlyph(L)}</div>`}
+    <div class="media">${mediaHTML(L, im)}
       ${L._rank ? `<span class="rank">#${L._rank}</span>` : ''}
       <button type="button" class="save ${saved ? 'on' : ''}" data-save="${esc(L.id)}" aria-pressed="${saved}" aria-label="${saved ? 'Remove from picks' : 'Save to picks'}">${saved ? ICONS.star : ICONS.starO}</button></div>
     <div class="c-body">
@@ -296,7 +302,9 @@ export function openDrawer(id, opt = {}) {
   const L = byId(id); if (!L) return;
   S.sel = id;
   const s = L.score || {}, p = L.price || {}, am = L.amenities || {}, rv = L.reviews || {}, rec = L.records || {};
-  const ph = (L.photos || []).map(safeUrl).filter(Boolean), t = tierIndex(L), d = dest();
+  const im = imagesOf(L), t = tierIndex(L), d = dest();
+  const slides = [...im.own.map((u) => ({ url: u, kind: 'Photo' })), ...im.building.map((b) => ({ url: b.url, kind: 'Building', b })),
+    ...(L.floorplan_images || []).map(safeUrl).filter(Boolean).map((u) => ({ url: u, kind: 'Floor plan', plan: true }))].slice(0, 20);
   const route = L.commute?.[d?.name]?.route || '', sun = L.site?.sun_hours, my = pick(L.id);
   const dr = drivers(L).filter((x) => x.v != null).sort((a, b) => b.pts - a.pts);
   const cov = coverage(L);
@@ -307,7 +315,8 @@ export function openDrawer(id, opt = {}) {
   const obs = (L.commute_observations || []).map((o) => `<div class="leg"><span class="ic walk"></span><span>${esc(o.provider || 'Checked')} ${esc(o.mode || '')}${o.departure ? ', ' + esc(o.departure) : ''}</span><span class="m">${esc(o.minutes)} min</span></div>`).join('');
   const range = s.range && s.range[0] !== s.range[1] ? `range ${Math.round(s.range[0])}–${Math.round(s.range[1])}` : '';
   $('drawer').innerHTML = `<div class="d-scroll">
-    <div class="d-hero">${ph.length ? `<div class="track" id="dTrack">${ph.slice(0, 16).map((u, i) => `<img src="${esc(u)}" alt="Photo ${i + 1} of ${esc(label(L))}" referrerpolicy="no-referrer" ${i > 1 ? 'loading="lazy"' : ''}>`).join('')}</div><div class="shade"></div><span class="count" id="dCount">1 / ${ph.length}</span>` : unitGlyph(L, 448, 232)}
+    <div class="d-hero">${slides.length ? `<div class="track" id="dTrack">${slides.map((x, i) => `<img src="${esc(x.url)}" alt="${esc(x.kind)} ${i + 1} of ${esc(label(L))}" referrerpolicy="no-referrer" class="${x.plan ? 'plan' : ''}" ${i > 1 ? 'loading="lazy"' : ''}>`).join('')}</div><div class="shade"></div><span class="count" id="dCount">1 / ${slides.length}</span><span class="credit" id="dCredit"></span>`
+      : L.lat != null ? `${aerialHTML(L, 448, 232, 19)}<div class="shade"></div><span class="kind">Aerial view${L.floor ? ` · floor ${Math.round(L.floor)}` : ''}${L.exposure?.length ? ' · faces ' + esc(L.exposure.join('/')) : ''}</span>` : unitGlyph(L, 448, 232)}
       <div class="hero-btns"><button type="button" id="dSave" aria-pressed="${!!my.saved}" aria-label="${my.saved ? 'Remove from picks' : 'Save to picks'}" style="${my.saved ? 'color:var(--fav)' : ''}">${my.saved ? ICONS.star : ICONS.starO}</button><button type="button" id="dClose" aria-label="Close">${ICONS.x}</button></div></div>
     <div class="d-head"><div class="t"><h2>${esc(L.building || L.address)} <span>${esc(L.unit || '')}</span></h2><p>${esc(L.address || '')}${L.neighborhood ? ' · ' + esc(L.neighborhood) : ''}</p></div>${ring(score(L), 64, 5)}</div>
     <div class="d-tags">${s.budget_tier ? `<span class="tierpill" style="color:var(${t >= 0 ? TIER_VARS[t] : '--tier-over'});background:var(--surface-3)"><i></i>${esc(s.budget_tier)}</span>` : ''}<span class="pill">${esc(L.status || 'new')}</span>${L.stage ? `<span class="pill">${esc(L.stage)}</span>` : ''}${L.available ? `<span class="pill">Available ${esc(L.available)}</span>` : ''}${L._rank ? `<span class="pill accent">Rank ${L._rank} of ${S.listings.filter((x) => x.score?.eligible).length}</span>` : ''}${(s.gates || []).map((g) => `<span class="pill ${g.startsWith('fails') || g === 'over_budget' ? 'bad' : 'warn'}">${esc({ over_budget: 'Over budget', unknown_cost: 'Cost unknown' }[g] || g.replace(':', ': ').replaceAll('_', ' '))}</span>`).join('')}</div>
@@ -335,7 +344,14 @@ export function openDrawer(id, opt = {}) {
   $('dCmp').addEventListener('click', () => { toggleCompare(L.id); openDrawer(L.id); });
   $('dTier').querySelectorAll('button').forEach((b) => b.addEventListener('click', () => { setPick(L.id, { tier: my.tier === b.dataset.tier ? null : b.dataset.tier, saved: true }); openDrawer(L.id); }));
   $('dNote').addEventListener('change', (e) => setPick(L.id, { note: e.target.value.slice(0, 4000), saved: true }));
-  const tr = $('dTrack'); if (tr) tr.addEventListener('scroll', () => { $('dCount').textContent = `${Math.round(tr.scrollLeft / tr.clientWidth) + 1} / ${ph.length}`; }, { passive: true });
+  const tr = $('dTrack');
+  const credit = (i) => {
+    const x = slides[i]; if (!x) return;
+    $('dCount').textContent = `${i + 1} / ${slides.length}${x.kind !== 'Photo' ? ' · ' + x.kind : ''}`;
+    const b = x.b, page = b && safeUrl(b.page), lic = b && safeUrl(b.license_url);
+    $('dCredit').innerHTML = b ? `${page ? `<a href="${esc(page)}" target="_blank" rel="noopener">${esc(b.author || 'Wikimedia Commons')}</a>` : esc(b.author || '')}${b.license ? ' · ' + (lic ? `<a href="${esc(lic)}" target="_blank" rel="noopener">${esc(b.license)}</a>` : esc(b.license)) : ''}` : '';
+  };
+  if (tr) { credit(0); tr.addEventListener('scroll', () => credit(Math.round(tr.scrollLeft / tr.clientWidth)), { passive: true }); }
   $('drawer').querySelectorAll('a[href^="#"]').forEach((a) => a.addEventListener('click', closeDrawer));
   $('drawer').classList.add('open');
   document.querySelectorAll('.card').forEach((c) => c.classList.toggle('sel', c.dataset.id === id));

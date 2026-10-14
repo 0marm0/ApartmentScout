@@ -1,4 +1,10 @@
-name: Dashboard demo on GitHub Pages
+name: Landing page and dashboard demo on GitHub Pages
+# Published layout (see landing/README.md):
+#   /            landing/ (index.html, landing.css, landing.js)
+#   /tokens.css  dashboard/css/tokens.css (shared design tokens)
+#   /images/     docs/images/*.png (screenshots)
+#   /assets/     dashboard/assets/ (brand icon, favicon)
+#   /demo/       dashboard/ as committed, with its example data
 on:
   push:
     branches: [main]
@@ -18,9 +24,27 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/configure-pages@v5
+      - id: pages
+        uses: actions/configure-pages@v5
+      - name: Assemble the site (static copy, no build tools)
+        env:
+          REPO_URL: ${{ github.server_url }}/${{ github.repository }}
+          SITE_URL: ${{ steps.pages.outputs.base_url }}
+        run: |
+          set -euo pipefail
+          rm -rf _site && mkdir -p _site/images _site/assets _site/demo
+          cp landing/index.html landing/landing.css landing/landing.js _site/
+          cp dashboard/css/tokens.css _site/tokens.css
+          cp docs/images/*.png _site/images/
+          cp dashboard/assets/*.svg _site/assets/
+          cp -R dashboard/. _site/demo/
+          # never publish private or scratch folders, even if they ever get committed
+          rm -rf _site/demo/data-private _site/demo/_mockup
+          sed -i "s#__REPO__#${REPO_URL}#g; s#__SITE__#${SITE_URL}#g" _site/index.html
+          touch _site/.nojekyll
+          find _site -maxdepth 2 | sort
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: dashboard
+          path: _site
       - id: deployment
         uses: actions/deploy-pages@v4

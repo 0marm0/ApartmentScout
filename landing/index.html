@@ -1,0 +1,473 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ApartmentScout: know the apartment before you sign</title>
+<meta name="description" content="An open-source, agent-ready apartment research toolkit. Rank every listing on your own criteria, map door-to-door commutes, read the building's records and see the light from the exact unit.">
+<meta name="theme-color" content="#08090c">
+<meta property="og:type" content="website">
+<meta property="og:title" content="ApartmentScout">
+<meta property="og:description" content="Deep apartment research for you and your AI agent: agent playbooks, a Python CLI and a dashboard you own.">
+<meta property="og:image" content="__SITE__/images/map-commute.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+<script>
+  /* Theme before first paint. Shares the dashboard's key ("as:theme"), so the demo opens in the same theme. */
+  (function () {
+    var t = new URLSearchParams(location.search).get('theme');
+    try { if (!t) t = JSON.parse(localStorage.getItem('as:theme') || 'null'); } catch (e) { /* storage unavailable */ }
+    document.documentElement.dataset.theme = t === 'light' ? 'light' : 'dark';
+    document.documentElement.classList.add('js');
+  })();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="landing.css">
+<link rel="preload" as="image" href="images/map-commute.png" fetchpriority="high">
+<script src="landing.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="nav" id="top">
+  <div class="wrap nav-in">
+    <a class="brand" href="#top" aria-label="ApartmentScout, back to top">
+      <svg width="28" height="28" viewBox="10 10 80 88" aria-hidden="true" class="brand-mark"><defs><clipPath id="brandHole"><circle cx="50" cy="40" r="25"/></clipPath></defs><path d="M50 95C50 95 15.5 57.5 15.5 40A34.5 34.5 0 1 1 84.5 40C84.5 57.5 50 95 50 95ZM75 40A25 25 0 1 1 25 40A25 25 0 1 1 75 40Z" fill="var(--brand)" fill-rule="evenodd"/><path d="M49.25 29L50 16.5L50.75 29ZM48 29H52V36.6H48ZM46 36.6H54V39.2H46ZM44 39.2H56V42.2H44ZM42 42.2H58V47.8H42ZM40 47.8H60V70H40ZM45.3 41.6H46.7V70H45.3ZM49.3 41.6H50.7V70H49.3ZM53.3 41.6H54.7V70H53.3Z" fill="var(--brand-tower)" fill-rule="evenodd" clip-path="url(#brandHole)"/></svg>
+      <span>ApartmentScout</span>
+    </a>
+    <nav class="nav-links" aria-label="Sections">
+      <a href="#features">Features</a>
+      <a href="#how">How it works</a>
+      <a href="#gallery">Gallery</a>
+      <a href="#start">Quick start</a>
+    </nav>
+    <div class="nav-act">
+      <a class="icon-btn" href="__REPO__" aria-label="ApartmentScout on GitHub" title="GitHub">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+      </a>
+      <button class="icon-btn" type="button" id="themeBtn" aria-label="Switch to light theme" title="Light or dark">
+        <svg class="i-moon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M13.5 9.5A5.5 5.5 0 016.5 2.5a5.5 5.5 0 107 7z"/></svg>
+        <svg class="i-sun" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><circle cx="8" cy="8" r="3"/><path d="M8 1.5v1.5M8 13v1.5M1.5 8H3M13 8h1.5M3.4 3.4l1 1M11.6 11.6l1 1M3.4 12.6l1-1M11.6 4.4l1-1"/></svg>
+      </button>
+      <a class="btn primary" href="./demo/"><span class="long">Open the live demo</span><span class="short">Live demo</span></a>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+
+<!-- ================================================================ hero -->
+<section class="hero" aria-labelledby="hero-h">
+  <div class="hero-bg" aria-hidden="true"></div>
+  <div class="wrap hero-copy">
+    <p class="badge"><span class="dot" aria-hidden="true"></span>Open source · MIT · Works with any coding agent</p>
+    <h1 id="hero-h">Know the apartment<br> before you sign.</h1>
+    <p class="lede">Agent playbooks, a Python CLI and a dashboard you own: rank every listing on your own criteria, map door-to-door commutes, read the building's records and see the light from the exact unit.</p>
+    <div class="cta">
+      <a class="btn primary lg" href="./demo/">Open the live demo
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4"/></svg></a>
+      <a class="btn lg" href="#start">Quick start</a>
+    </div>
+    <p class="fine">Python 3.10+ · free public data · no accounts, servers or API keys</p>
+  </div>
+  <div class="wrap hero-shot">
+    <div class="tilt">
+      <figure class="frame hero-frame">
+        <img src="images/map-commute.png" width="1600" height="1000" fetchpriority="high"
+             alt="The ApartmentScout dashboard: a dark map of Manhattan with a door-to-door commute heatmap, scored listing pins, a filter rail and ranked listing cards.">
+      </figure>
+      <figure class="phone hero-phone">
+        <img src="images/mobile-map.png" width="630" height="1350" loading="lazy"
+             alt="The same search on a phone: the map on top and the ranked listings in a bottom sheet.">
+      </figure>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================ proof strip -->
+<section class="proof" aria-label="In the worked example">
+  <div class="wrap">
+    <ul class="proof-row">
+      <li><b class="tnum">732</b><span>listings tracked in the worked example</span></li>
+      <li><b class="tnum">23</b><span>building dossiers from city records</span></li>
+      <li><b>GTFS</b><span>door-to-door commute router built in</span></li>
+      <li><b>NYC</b><span>open data: HPD, DOB, 311, PLUTO</span></li>
+      <li><b class="tnum">0</b><span>API keys, accounts or servers</span></li>
+    </ul>
+  </div>
+</section>
+
+<!-- ================================================================ features -->
+<section class="features" id="features" aria-labelledby="features-h">
+  <div class="wrap">
+    <header class="sec-h">
+      <p class="eyebrow">Features</p>
+      <h2 id="features-h">Everything a careful renter checks,<br> for every listing at once.</h2>
+      <p class="sub">It came out of a real Manhattan search. The questions were the same for every finalist, so the answers became tools.</p>
+    </header>
+
+    <article class="feat" style="--c: var(--band-30)">
+      <div class="feat-copy">
+        <p class="tag"><i aria-hidden="true"></i>Map &amp; commute heat</p>
+        <h3>See every minute of the trip, not a radius.</h3>
+        <p>A built-in transit router turns any city's GTFS feed into door-to-door minutes on a 150 m grid and for every listing, walking legs included. The map shows where your limit really ends.</p>
+        <ul class="ticks">
+          <li>Commute bands under the rivers, labelled in minutes</li>
+          <li>Route bullets and legs for each listing</li>
+          <li>311 noise, rent per ft² and score surfaces</li>
+        </ul>
+        <a class="more" href="./demo/#map">Explore the map <span aria-hidden="true">→</span></a>
+      </div>
+      <figure class="feat-media"><div class="frame">
+        <img src="images/map-drawer.png" width="1600" height="1000" loading="lazy" decoding="async"
+             alt="Listing detail panel over the commute map: monthly cost, score breakdown by dimension, the commute route, public-records flags and resident reviews.">
+      </div></figure>
+    </article>
+
+    <article class="feat flip" style="--c: var(--score-5)">
+      <div class="feat-copy">
+        <p class="tag"><i aria-hidden="true"></i>Rank on your criteria</p>
+        <h3>Your weights. Live re-ranking.</h3>
+        <p>Budget tiers are judged on true monthly cost: net-effective rent plus every fee. Drag a weight and every card and pin re-ranks while you drag. Unknown facts show as uncertainty, never as a guess.</p>
+        <ul class="ticks">
+          <li>Must-haves, preferences and commute limits in one file</li>
+          <li>Each weight shown as its share of the score</li>
+          <li>Why a listing ranks where it does, dimension by dimension</li>
+        </ul>
+        <a class="more" href="./demo/#list">Open the shortlist <span aria-hidden="true">→</span></a>
+      </div>
+      <figure class="feat-media"><div class="frame">
+        <img src="images/shortlist.png" width="1600" height="1000" loading="lazy" decoding="async"
+             alt="Sortable shortlist table with score, monthly cost, budget tier, commute minutes, size and amenities for each listing.">
+      </div></figure>
+    </article>
+
+    <article class="feat" style="--c: var(--warn)">
+      <div class="feat-copy">
+        <p class="tag"><i aria-hidden="true"></i>Building records</p>
+        <h3>Read the building before the lease.</h3>
+        <p>One command pulls the city's records for your shortlist: HPD violations and complaints, DOB and ECB filings, permits on the block, bedbug reports, 311 noise and nearby crime. The agent adds reviews from Google, Yelp, Reddit and more.</p>
+        <ul class="ticks">
+          <li>Sourced dossiers, dated and linked</li>
+          <li>Reports are labelled as reports, not findings</li>
+          <li>Hour-of-day noise profiles per building</li>
+        </ul>
+        <a class="more" href="./demo/#records">Read a dossier <span aria-hidden="true">→</span></a>
+      </div>
+      <figure class="feat-media"><div class="frame">
+        <img src="images/records.png" width="1600" height="1000" loading="lazy" decoding="async"
+             alt="Records dossier for a building: violation and complaint counts, construction permits, 311 noise and a summary of resident reviews.">
+      </div></figure>
+    </article>
+
+    <article class="feat flip" style="--c: var(--sun)">
+      <div class="feat-copy">
+        <p class="tag"><i aria-hidden="true"></i>Light &amp; view in 3D</p>
+        <h3>Will the window see the sky or a wall?</h3>
+        <p>Real footprints and heights around the unit, live sun and shadows for any date and time, and the view from the window itself. Compare floors and exposures in direct-sun hours by month.</p>
+        <ul class="ticks">
+          <li>Sun path against the skyline from the window</li>
+          <li>Direct-sun hours for every floor and month</li>
+          <li>Exposure worked out from listing photos and video</li>
+        </ul>
+        <a class="more" href="./demo/#unit">Open Unit 3D <span aria-hidden="true">→</span></a>
+      </div>
+      <figure class="feat-media stack">
+        <div class="frame">
+          <img src="images/unit-orbit.png" width="1600" height="1000" loading="lazy" decoding="async"
+               alt="3D site model of the blocks around a unit, with real building heights, shadows and a ray from the sun to the window.">
+        </div>
+        <div class="frame inset">
+          <img src="images/unit-window-21.png" width="1600" height="1000" loading="lazy" decoding="async"
+               alt="The view from a 21st-floor window, looking over the rooftops toward Hudson Yards.">
+        </div>
+      </figure>
+    </article>
+
+    <article class="feat" style="--c: var(--accent)">
+      <div class="feat-copy">
+        <p class="tag"><i aria-hidden="true"></i>Floor plans</p>
+        <h3>Walk the plan, with the sun coming in.</h3>
+        <p>A short JSON description of a listing plan becomes a 3D apartment. Sun patches fall through the windows at the right angle for the move-in date, blocked by the buildings across the street.</p>
+        <ul class="ticks">
+          <li>From a plan image, PDF or stated room sizes</li>
+          <li>Any date and time of day</li>
+          <li>Bird's-eye and top-down views</li>
+        </ul>
+        <a class="more" href="./demo/#plan">Open the floor plan <span aria-hidden="true">→</span></a>
+      </div>
+      <figure class="feat-media"><div class="frame">
+        <img src="images/plan-bird.png" width="1600" height="1000" loading="lazy" decoding="async"
+             alt="Bird's-eye 3D floor plan of a one-bedroom apartment with patches of sunlight on the floor.">
+      </div></figure>
+    </article>
+
+    <article class="feat flip" style="--c: var(--tier-1)">
+      <div class="feat-copy">
+        <p class="tag"><i aria-hidden="true"></i>Compare &amp; tours</p>
+        <h3>Finalists side by side, then a decision.</h3>
+        <p>Put finalists next to each other on cost, size, commute, light, records and reviews. Plan tours with night and noise checks, capture what you learn and finish with a decision memo.</p>
+        <ul class="ticks">
+          <li>Best value in each row highlighted</li>
+          <li>Tour checklists and open questions per unit</li>
+          <li>Saved picks export as a file you keep</li>
+        </ul>
+        <a class="more" href="./demo/#compare">Compare finalists <span aria-hidden="true">→</span></a>
+      </div>
+      <figure class="feat-media"><div class="frame">
+        <img src="images/compare.png" width="1600" height="1000" loading="lazy" decoding="async"
+             alt="Compare view with finalist apartments in columns and rows for cost, size, commute, light, building records and reviews.">
+      </div></figure>
+    </article>
+  </div>
+</section>
+
+<!-- ================================================================ agents -->
+<section class="agents" id="agents" aria-labelledby="agents-h">
+  <div class="wrap agents-grid">
+    <div class="agents-copy">
+      <p class="eyebrow">Bring your own agent</p>
+      <h2 id="agents-h">Ask in plain language. The playbooks do the rest.</h2>
+      <p class="sub">Open the repo in Claude Code, Codex, Cursor or any agent that reads <code>AGENTS.md</code>. It interviews you for what is missing, writes your criteria and works through nine stage-by-stage skills. Plain Markdown, so any agent can follow them.</p>
+      <ul class="skills" aria-label="Agent skills">
+        <li><code>apartment-search</code><span>Intake, scoring and the shortlist</span></li>
+        <li><code>listing-sourcing</code><span>Portals, brokers and building sites, de-duplicated</span></li>
+        <li><code>commute-analysis</code><span>Destinations, GTFS feeds and live checks</span></li>
+        <li><code>building-dossier</code><span>Public records, owners and reviews</span></li>
+        <li><code>noise-deep-dive</code><span>311 by hour and side, a night-visit plan</span></li>
+        <li><code>unit-light-and-view</code><span>Exposure, sun hours and the skyline</span></li>
+        <li><code>floor-plan-model</code><span>A listing plan to a 3D model</span></li>
+        <li><code>lease-and-fees</code><span>Net-effective rent, fees and break terms</span></li>
+        <li><code>tour-and-decide</code><span>Tours, comparison and a decision memo</span></li>
+      </ul>
+    </div>
+    <figure class="console" aria-label="Example agent session">
+      <div class="console-bar" aria-hidden="true"><i></i><i></i><i></i><span>ApartmentScout · agent</span></div>
+      <div class="console-body">
+        <p class="you"><span class="who">You</span>I'm moving to Chicago in March. Find me a one-bedroom with in-unit laundry under $2,600 within 30 minutes of the Loop by train, and tell me which buildings have problems.</p>
+        <ol class="run">
+          <li class="done"><b>Read</b> <code>AGENTS.md</code> and asked about move-in date, fees and must-haves</li>
+          <li class="done"><b>Wrote</b> <code>criteria.yaml</code> with budget tiers, the Loop commute and your weights</li>
+          <li class="done"><b>listing-sourcing</b> swept portals and building sites into <code>listings.json</code></li>
+          <li class="done"><b>Ran</b> <code>apartmentscout all</code>: geocode, CTA commute, score, dashboard</li>
+          <li class="live"><b>building-dossier</b> pulling records and reviews for the shortlist</li>
+        </ol>
+        <p class="note">Drafts messages to leasing offices. Never sends them for you.</p>
+      </div>
+      <figcaption class="sr">An illustrative session: the renter's request, then the stages the agent works through.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- ================================================================ how it works -->
+<section class="how" id="how" aria-labelledby="how-h">
+  <div class="wrap">
+    <header class="sec-h">
+      <p class="eyebrow">How it works</p>
+      <h2 id="how-h">Plain files in, a dashboard out.</h2>
+      <p class="sub">Every stage is a CLI command over files in your search folder, so you, your agent or a spreadsheet can step in anywhere.</p>
+    </header>
+    <figure class="flow">
+      <svg viewBox="0 0 1160 330" role="img" aria-labelledby="flow-t flow-d">
+        <title id="flow-t">ApartmentScout pipeline</title>
+        <desc id="flow-d">Listings are geocoded, then fan out to the commute router, building records and the 3D site model. Those results and your criteria feed the score, which builds the dashboard.</desc>
+        <defs>
+          <marker id="arr" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M1 1l6 3-6 3" class="arrow"/></marker>
+        </defs>
+        <g class="edges">
+          <path d="M168 50 C 205 50 205 14 244 14 L 720 14 C 770 14 798 40 798 128" marker-end="url(#arr)"/>
+          <path d="M168 165 L 238 165" marker-end="url(#arr)"/>
+          <path d="M406 165 C 444 165 446 64 486 64" marker-end="url(#arr)"/>
+          <path d="M406 165 L 486 165" marker-end="url(#arr)"/>
+          <path d="M406 165 C 444 165 446 266 486 266" marker-end="url(#arr)"/>
+          <path d="M654 64 C 692 64 692 165 726 165" marker-end="url(#arr)"/>
+          <path d="M654 165 L 726 165" marker-end="url(#arr)"/>
+          <path d="M654 266 C 692 266 692 165 726 165" marker-end="url(#arr)"/>
+          <path d="M894 165 L 978 165" marker-end="url(#arr)"/>
+        </g>
+        <g class="edges flowing" aria-hidden="true">
+          <path d="M168 50 C 205 50 205 14 244 14 L 720 14 C 770 14 798 40 798 128"/>
+          <path d="M168 165 L 238 165"/>
+          <path d="M406 165 C 444 165 446 64 486 64"/>
+          <path d="M406 165 L 486 165"/>
+          <path d="M406 165 C 444 165 446 266 486 266"/>
+          <path d="M654 64 C 692 64 692 165 726 165"/>
+          <path d="M654 165 L 726 165"/>
+          <path d="M654 266 C 692 266 692 165 726 165"/>
+          <path d="M894 165 L 978 165"/>
+        </g>
+        <g class="node" transform="translate(0 16)"><rect width="168" height="68" rx="12"/><circle cx="22" cy="26" r="4" style="fill: var(--accent)"/><text x="34" y="31" class="t">Criteria</text><text x="22" y="52" class="m">criteria.yaml</text></g>
+        <g class="node" transform="translate(0 131)"><rect width="168" height="68" rx="12"/><circle cx="22" cy="26" r="4" style="fill: var(--ink-2)"/><text x="34" y="31" class="t">Listings</text><text x="22" y="52" class="m">import · agent</text></g>
+        <g class="node" transform="translate(238 131)"><rect width="168" height="68" rx="12"/><circle cx="22" cy="26" r="4" style="fill: var(--ink-2)"/><text x="34" y="31" class="t">Geocode</text><text x="22" y="52" class="m">BBL · BIN · lat/lon</text></g>
+        <g class="node" transform="translate(486 30)"><rect width="168" height="68" rx="12"/><circle cx="22" cy="26" r="4" style="fill: var(--band-20)"/><text x="34" y="31" class="t">Commute</text><text x="22" y="52" class="m">GTFS router</text></g>
+        <g class="node" transform="translate(486 131)"><rect width="168" height="68" rx="12"/><circle cx="22" cy="26" r="4" style="fill: var(--warn)"/><text x="34" y="31" class="t">Records</text><text x="22" y="52" class="m">dossier</text></g>
+        <g class="node" transform="translate(486 232)"><rect width="168" height="68" rx="12"/><circle cx="22" cy="26" r="4" style="fill: var(--sun)"/><text x="34" y="31" class="t">Light &amp; view</text><text x="22" y="52" class="m">site · sun model</text></g>
+        <g class="node key" transform="translate(726 131)"><rect width="168" height="68" rx="12"/><circle cx="22" cy="26" r="4" style="fill: var(--score-5)"/><text x="34" y="31" class="t">Score</text><text x="22" y="52" class="m">your weights</text></g>
+        <g class="node out" transform="translate(978 123)"><rect width="182" height="84" rx="14"/><text x="22" y="37" class="t">Dashboard</text><text x="22" y="60" class="m">map · compare · 3D</text></g>
+      </svg>
+    </figure>
+    <ol class="steps">
+      <li><span class="n tnum">01</span><b>Criteria</b><code>criteria.yaml</code><p>Budget tiers, must-haves, commute limits and weights.</p></li>
+      <li><span class="n tnum">02</span><b>Listings</b><code>import</code><p>CSV, JSON or your agent, each fact with a source.</p></li>
+      <li><span class="n tnum">03</span><b>Geocode</b><code>geocode</code><p>Coordinates, plus BBL and BIN in New York.</p></li>
+      <li><span class="n tnum">04</span><b>Commute</b><code>commute</code><p>Door-to-door minutes from the GTFS timetable.</p></li>
+      <li><span class="n tnum">05</span><b>Records</b><code>dossier</code><p>City records and reviews for the shortlist.</p></li>
+      <li><span class="n tnum">06</span><b>Site</b><code>site</code><p>Footprints, heights, sun hours and the view.</p></li>
+      <li><span class="n tnum">07</span><b>Score</b><code>score</code><p>A ranked shortlist on your weights, unknowns shown.</p></li>
+      <li><span class="n tnum">08</span><b>Dashboard</b><code>build</code><p>Static files you serve, host or open as one HTML file.</p></li>
+    </ol>
+  </div>
+</section>
+
+<!-- ================================================================ gallery -->
+<section class="gallery" id="gallery" aria-labelledby="gallery-h">
+  <div class="wrap">
+    <header class="sec-h">
+      <p class="eyebrow">Gallery</p>
+      <h2 id="gallery-h">Every view, from the worked example.</h2>
+      <p class="sub">A Manhattan one-bedroom search from fall 2026 with a commute to an office near Grand Central.</p>
+    </header>
+    <ul class="shots">
+      <li><a class="shot" href="images/map-commute.png" data-view="map"><img src="images/map-commute.png" width="1600" height="1000" loading="lazy" decoding="async" alt="Commute heatmap with listing pins"><span>Map and commute heat</span></a></li>
+      <li><a class="shot" href="images/map-drawer.png" data-view="map"><img src="images/map-drawer.png" width="1600" height="1000" loading="lazy" decoding="async" alt="Listing detail panel"><span>Listing detail</span></a></li>
+      <li><a class="shot" href="images/shortlist.png" data-view="list"><img src="images/shortlist.png" width="1600" height="1000" loading="lazy" decoding="async" alt="Ranked shortlist"><span>Shortlist</span></a></li>
+      <li><a class="shot" href="images/compare.png" data-view="compare"><img src="images/compare.png" width="1600" height="1000" loading="lazy" decoding="async" alt="Finalists compared side by side"><span>Compare</span></a></li>
+      <li><a class="shot" href="images/unit-orbit.png" data-view="unit"><img src="images/unit-orbit.png" width="1600" height="1000" loading="lazy" decoding="async" alt="3D site model with sun and shadows"><span>Unit 3D</span></a></li>
+      <li><a class="shot" href="images/unit-window-21.png" data-view="unit"><img src="images/unit-window-21.png" width="1600" height="1000" loading="lazy" decoding="async" alt="View from a 21st-floor window"><span>The view from the window</span></a></li>
+      <li><a class="shot" href="images/plan-bird.png" data-view="plan"><img src="images/plan-bird.png" width="1600" height="1000" loading="lazy" decoding="async" alt="3D floor plan with sun patches"><span>Floor plan</span></a></li>
+      <li><a class="shot" href="images/records.png" data-view="records"><img src="images/records.png" width="1600" height="1000" loading="lazy" decoding="async" alt="Building records dossier"><span>Building records</span></a></li>
+      <li><a class="shot phone-tile" href="images/mobile-map.png" data-view="map"><img src="images/mobile-map.png" width="630" height="1350" loading="lazy" decoding="async" alt="Phone layout of the map and results"><span>On a phone</span></a></li>
+    </ul>
+  </div>
+  <dialog class="lightbox" id="lightbox" aria-label="Screenshot">
+    <form method="dialog" class="lb-bar">
+      <span id="lbCap"></span>
+      <a class="btn" id="lbDemo" href="./demo/">Open this view in the demo</a>
+      <button class="icon-btn" value="close" aria-label="Close"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg></button>
+    </form>
+    <img id="lbImg" alt="">
+  </dialog>
+</section>
+
+<!-- ================================================================ quick start -->
+<section class="start" id="start" aria-labelledby="start-h">
+  <div class="wrap start-grid">
+    <div>
+      <p class="eyebrow">Quick start</p>
+      <h2 id="start-h">Running in a minute.</h2>
+      <p class="sub">Clone, install and open the worked example. Then start your own search in any city with a GTFS feed.</p>
+      <ul class="reqs">
+        <li>Python 3.10 or newer</li>
+        <li>No API keys, accounts or servers</li>
+        <li>Building-records automation for New York; a short module adds a city</li>
+      </ul>
+    </div>
+    <div class="code-stack">
+      <div class="code">
+        <div class="code-h"><span>Try the worked example</span><button class="copy" type="button" data-copy="c1">Copy</button></div>
+<pre id="c1"><code>git clone __REPO__.git
+cd ApartmentScout
+pip install -e .
+apartmentscout serve --search examples/nyc-2026</code></pre>
+      </div>
+      <div class="code">
+        <div class="code-h"><span>Start your own search</span><button class="copy" type="button" data-copy="c2">Copy</button></div>
+<pre id="c2"><code>apartmentscout init searches/my-search --city nyc
+export APARTMENTSCOUT_SEARCH=searches/my-search
+apartmentscout import my-listings.csv
+apartmentscout all        <span class="c"># geocode, commute, layers, score, build</span>
+apartmentscout dossier    <span class="c"># building records for the shortlist</span>
+apartmentscout serve</code></pre>
+      </div>
+      <div class="code">
+        <div class="code-h"><span>Or one self-contained file</span><button class="copy" type="button" data-copy="c3">Copy</button></div>
+<pre id="c3"><code>apartmentscout build --standalone my-search.html</code></pre>
+      </div>
+      <p class="sr" aria-live="polite" id="copyStatus"></p>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================ privacy -->
+<section class="privacy" id="privacy" aria-labelledby="privacy-h">
+  <div class="wrap">
+    <header class="sec-h">
+      <p class="eyebrow">Privacy &amp; responsible use</p>
+      <h2 id="privacy-h">Your search stays yours.</h2>
+    </header>
+    <ul class="cards4">
+      <li>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="10.5" width="14" height="10" rx="2.5"/><path d="M8.5 10.5V8a3.5 3.5 0 017 0v2.5"/></svg>
+        <h3>Local by default</h3>
+        <p>Searches live in a git-ignored folder. Criteria, notes and saved picks stay on your machine unless you publish them.</p>
+      </li>
+      <li>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v5.5c0 4.3-3 7.8-7 9.5-4-1.7-7-5.2-7-9.5V6l7-3z"/><path d="M9 12l2 2 4-4" stroke-linecap="round"/></svg>
+        <h3>Respect for sites</h3>
+        <p>Agents use official APIs and open data, never solve CAPTCHAs or bypass bot checks, and ask before logging in anywhere.</p>
+      </li>
+      <li>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h10l4 4v12H5z"/><path d="M9 12h6M9 16h4" stroke-linecap="round"/></svg>
+        <h3>Reports, not findings</h3>
+        <p>311 calls, complaints and reviews are allegations. They are counted, dated and labelled that way everywhere.</p>
+      </li>
+      <li>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>
+        <h3>Estimates, checked in person</h3>
+        <p>Commute, sun and score numbers are models. Nothing is sent to a landlord without your say-so; verify the important ones on a visit.</p>
+      </li>
+    </ul>
+  </div>
+</section>
+
+<!-- ================================================================ closing cta -->
+<section class="close" aria-labelledby="close-h">
+  <div class="wrap close-in">
+    <h2 id="close-h">See it on a real search.</h2>
+    <p class="sub">732 Manhattan listings, scored, mapped and researched. Runs in your browser.</p>
+    <div class="cta">
+      <a class="btn primary lg" href="./demo/">Open the live demo
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4"/></svg></a>
+      <a class="btn lg" href="__REPO__">View on GitHub</a>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="foot">
+  <div class="wrap foot-grid">
+    <div class="foot-brand">
+      <p class="brand-row">
+        <svg width="22" height="22" viewBox="10 10 80 88" aria-hidden="true" class="brand-mark"><defs><clipPath id="brandHoleFoot"><circle cx="50" cy="40" r="25"/></clipPath></defs><path d="M50 95C50 95 15.5 57.5 15.5 40A34.5 34.5 0 1 1 84.5 40C84.5 57.5 50 95 50 95ZM75 40A25 25 0 1 1 25 40A25 25 0 1 1 75 40Z" fill="var(--brand)" fill-rule="evenodd"/><path d="M49.25 29L50 16.5L50.75 29ZM48 29H52V36.6H48ZM46 36.6H54V39.2H46ZM44 39.2H56V42.2H44ZM42 42.2H58V47.8H42ZM40 47.8H60V70H40ZM45.3 41.6H46.7V70H45.3ZM49.3 41.6H50.7V70H49.3ZM53.3 41.6H54.7V70H53.3Z" fill="var(--brand-tower)" fill-rule="evenodd" clip-path="url(#brandHoleFoot)"/></svg>
+        <b>ApartmentScout</b>
+      </p>
+      <p>Open source under the MIT licence. Not affiliated with any listing site, landlord or city agency.</p>
+    </div>
+    <nav aria-label="Project">
+      <h3>Project</h3>
+      <ul>
+        <li><a href="./demo/">Live demo</a></li>
+        <li><a href="__REPO__">Source on GitHub</a></li>
+        <li><a href="__REPO__/blob/main/docs/guides/methodology.md">Methodology</a></li>
+        <li><a href="__REPO__/blob/main/docs/guides/new-city.md">Other cities</a></li>
+        <li><a href="__REPO__/blob/main/LICENSE">MIT licence</a></li>
+      </ul>
+    </nav>
+    <div class="credits">
+      <h3>Data</h3>
+      <ul>
+        <li>Map data © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, tiles by <a href="https://openfreemap.org/">OpenFreeMap</a></li>
+        <li>Transit timetables from the <a href="https://new.mta.info/developers">MTA GTFS</a> feeds</li>
+        <li>Building records, 311 and footprints from <a href="https://opendata.cityofnewyork.us/">NYC Open Data</a></li>
+        <li>Fallback basemap © Esri and its data partners</li>
+      </ul>
+      <p class="fine">Data stays under its own terms. Commute, sun and score figures are estimates.</p>
+    </div>
+  </div>
+</footer>
+</body>
+</html>
