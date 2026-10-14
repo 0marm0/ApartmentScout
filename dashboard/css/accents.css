@@ -1,0 +1,56 @@
+/* ApartmentScout accent choices. Iris is the default and lives in tokens.css; jade, amber and rose are token sets
+   for both themes. Each set re-defines only the accent family (--accent, --accent-strong, --accent-ink, --accent-soft,
+   --accent-line) and the two glass values that borrow the accent hue, so every component that uses the tokens follows.
+
+   Contrast (checked by tests/js/accents.test.mjs): the accent is used as text on the page and surfaces, so it must be
+   at least 4.5:1 on --ground and --surface-1/2/3 in its theme; --accent-ink (text on a filled accent) at least 4.5:1
+   on --accent and --accent-strong; --accent-strong (hover and pressed text) at least 4.5:1 on the surfaces; and the
+   secondary ink (--ink-3) at least 4.5:1 on the soft wash over --surface-1 (the selected tier, status chip and so on).
+   The accent is for interaction only. Data colours (score, commute, tiers, sun) never change with it.
+   Set with data-accent on <html> by js/features/comfort.js. Loaded after tokens.css. */
+
+/* ------------------------------------------------------------------ dark */
+:root[data-accent="jade"] {
+  --accent: #34d1a2; --accent-strong: #63e2bd; --accent-ink: #04140f;
+  --accent-soft: rgba(52, 209, 162, 0.10); --accent-line: rgba(52, 209, 162, 0.36);
+  --glass-tint: rgba(52, 209, 162, 0.07); --glass-edge-b: rgba(52, 209, 162, 0.2);
+}
+:root[data-accent="amber"] {
+  --accent: #f2b24a; --accent-strong: #f7c670; --accent-ink: #1c1203;
+  --accent-soft: rgba(242, 178, 74, 0.10); --accent-line: rgba(242, 178, 74, 0.38);
+  --glass-tint: rgba(242, 178, 74, 0.07); --glass-edge-b: rgba(242, 178, 74, 0.2);
+}
+:root[data-accent="rose"] {
+  --accent: #ff7fa1; --accent-strong: #ff9fb9; --accent-ink: #22060f;
+  --accent-soft: rgba(255, 127, 161, 0.12); --accent-line: rgba(255, 127, 161, 0.38);
+  --glass-tint: rgba(255, 127, 161, 0.07); --glass-edge-b: rgba(255, 127, 161, 0.2);
+}
+
+/* ------------------------------------------------------------------ light */
+:root[data-theme="light"][data-accent="jade"] {
+  --accent: #08724f; --accent-strong: #065c43; --accent-ink: #ffffff;
+  --accent-soft: rgba(8, 114, 79, 0.09); --accent-line: rgba(8, 114, 79, 0.32);
+  --glass-tint: rgba(8, 114, 79, 0.06); --glass-edge-b: rgba(8, 114, 79, 0.18);
+}
+:root[data-theme="light"][data-accent="amber"] {
+  --accent: #915500; --accent-strong: #784600; --accent-ink: #ffffff;
+  --accent-soft: rgba(145, 85, 0, 0.09); --accent-line: rgba(145, 85, 0, 0.32);
+  --glass-tint: rgba(145, 85, 0, 0.06); --glass-edge-b: rgba(145, 85, 0, 0.18);
+}
+:root[data-theme="light"][data-accent="rose"] {
+  --accent: #bb2148; --accent-strong: #a01a3b; --accent-ink: #ffffff;
+  --accent-soft: rgba(187, 33, 72, 0.09); --accent-line: rgba(187, 33, 72, 0.32);
+  --glass-tint: rgba(187, 33, 72, 0.06); --glass-edge-b: rgba(187, 33, 72, 0.18);
+}
+
+/* ------------------------------------------------------------------ swatches
+   The settings menu previews every accent whichever one is active, so the values are tokens of their own
+   (--sw-<name> = that accent's --accent, --sw-<name>-ink = its --accent-ink; tests/js/accents.test.mjs keeps them in step). */
+:root {
+  --sw-iris: #8b96ff; --sw-iris-ink: #0b0d1f; --sw-jade: #34d1a2; --sw-jade-ink: #04140f;
+  --sw-amber: #f2b24a; --sw-amber-ink: #1c1203; --sw-rose: #ff7fa1; --sw-rose-ink: #22060f;
+}
+:root[data-theme="light"] {
+  --sw-iris: #4952e2; --sw-iris-ink: #ffffff; --sw-jade: #08724f; --sw-jade-ink: #ffffff;
+  --sw-amber: #915500; --sw-amber-ink: #ffffff; --sw-rose: #bb2148; --sw-rose-ink: #ffffff;
+}
