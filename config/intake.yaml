@@ -299,7 +299,7 @@ steps:
 # The amenity keys the scorer understands (listings.AMENITY_KEYS). Your own keys are fine; they only need to appear
 # in listings too. Labels are what the wizard and the interactive prompt show.
 amenities:
-  - {key: in_unit_wd,    label: In-unit washer/dryer}
+  - {key: in_unit_wd,    label: In-unit W/D}
   - {key: elevator,      label: Elevator}
   - {key: doorman,       label: Doorman}
   - {key: gym,           label: Gym}
