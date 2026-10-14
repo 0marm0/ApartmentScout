@@ -2,12 +2,12 @@
 
 Every view, the drawer, the settings sheet and the command palette open in dark and light at 1440 and 390 px with
 no page errors and no console errors other than the blocked external fetches (tiles, photos). At 390 px nothing may
-stick out past the right edge. axe-core runs on every view: critical violations fail, serious ones are reported.
+stick out past the right edge. axe-core runs on every view: critical AND serious violations fail the build, in both themes and
+in the personalised variants (other accents, high contrast, the largest text).
 """
 from __future__ import annotations
 
 import json
-import warnings
 from pathlib import Path
 
 import pytest
@@ -236,20 +236,52 @@ def _axe(page) -> list[dict]:
     return res
 
 
-@pytest.mark.parametrize("theme", ["dark", "light"])
-def test_accessibility(open_page, theme: str, tmp_path_factory) -> None:
-    s = open_page("#map", theme=theme)
+def _sweep(s, views: list[str]) -> tuple[list[dict], list[dict]]:
     critical, serious = [], []
-    for v in VIEWS + SUBVIEWS:
+    for v in views:
         _show(s, v)
         for x in _axe(s.page):
             (critical if x["impact"] == "critical" else serious if x["impact"] == "serious" else []).append({"view": v, **x})
+    return critical, serious
+
+
+@pytest.mark.parametrize("theme", ["dark", "light"])
+def test_accessibility(open_page, theme: str, tmp_path_factory) -> None:
+    """All six tabs plus Tours and Records: no critical and no serious axe violation, in both themes."""
+    s = open_page("#map", theme=theme)
+    critical, serious = _sweep(s, VIEWS + SUBVIEWS)
     out = tmp_path_factory.mktemp("axe") / f"axe-{theme}.json"
     out.write_text(json.dumps({"critical": critical, "serious": serious}, indent=1))
-    if serious:
-        warnings.warn(f"axe ({theme}): {len(serious)} serious violation(s): "
-                      + "; ".join(f"#{x['view']} {x['id']} x{x['n']}" for x in serious[:12]) + f" (details: {out})")
-    assert not critical, json.dumps(critical, indent=1)
+    assert not critical and not serious, json.dumps({"critical": critical, "serious": serious}, indent=1)
+
+
+# the same sweep on the personalised look: each accent in each theme, high contrast with solid panels, and the largest text
+PERSONAL = [
+    ("dark", {"accent": "jade"}), ("dark", {"accent": "amber"}), ("dark", {"accent": "rose"}),
+    ("light", {"accent": "jade"}), ("light", {"accent": "amber"}), ("light", {"accent": "rose"}),
+    ("dark", {"contrast": True, "transparency": True, "text": "xl"}), ("light", {"contrast": True, "transparency": True, "text": "l", "accent": "rose"}),
+]
+
+
+@pytest.mark.parametrize("theme,prefs", PERSONAL, ids=lambda x: x if isinstance(x, str) else "-".join(f"{k}={v}" for k, v in x.items()))
+def test_accessibility_personalised(browser, base_url: str, theme: str, prefs: dict) -> None:
+    from conftest import Session, allowed_console, build_url
+    ctx = browser.new_context(viewport={"width": 1440, "height": 900}, color_scheme=theme, device_scale_factor=1, reduced_motion="reduce")
+    try:
+        ctx.route("**/*", lambda r: r.continue_() if r.request.url.startswith((base_url, "data:", "blob:")) else r.abort())
+        ctx.add_init_script(f"localStorage.setItem('as:comfort', {json.dumps(json.dumps(prefs))});")
+        page = ctx.new_page()
+        s = Session(page, base_url)
+        page.on("pageerror", lambda e: s.errors.append(f"pageerror: {e}"))
+        page.goto(build_url(base_url, "#map", theme))
+        page.wait_for_function("() => document.querySelector('#cards .card')", timeout=20000)
+        for k, attr in (("accent", "data-accent"), ("text", "data-text")):
+            if k in prefs:
+                assert page.evaluate("(a) => document.documentElement.getAttribute(a)", attr) == prefs[k]
+        critical, serious = _sweep(s, ["map", "list", "compare", "research", "research/records/emerald-green-1211"])
+        assert not critical and not serious, json.dumps({"prefs": prefs, "critical": critical, "serious": serious}, indent=1)
+    finally:
+        ctx.close()
 
 
 # ------------------------------------------------------------------ consolidated navigation, theme, stats strip, starred tags
