@@ -330644,9 +330644,9 @@
    "checked": "2026-10-14"
   },
   "photos": [
+   "https://glenwoodadmin.com/webdav/images/listings/Paramount%20Tower/32E%20Living%20Dining%20v_2.jpg",
    "media/paramount-tower-25e/p-37793b79b9a4.webp",
    "media/paramount-tower-25e/p-114397b39450.webp",
-   "https://glenwoodadmin.com/webdav/images/listings/Paramount%20Tower/32E%20Living%20Dining%20v_2.jpg",
    "https://glenwoodadmin.com/webdav/images/listings/Paramount%20Tower/43H%20Living%20Dining%20%20v_1.jpg",
    "https://glenwoodadmin.com/webdav/images/listings/Paramount%20Tower/33B%20Living%20Dining%20B%20v_2.jpg",
    "https://glenwoodadmin.com/webdav/images/listings/Paramount%20Tower/33B%20Living%20Dining%20B%20v_1.jpg",
@@ -330660,9 +330660,9 @@
    "https://glenwoodadmin.com/webdav/images/listings/Paramount%20Tower/43H%20Kitchen%20v_2.jpg"
   ],
   "photos_local": [
+   "media/paramount-tower-25e/p-57247fc91788.webp",
    "media/paramount-tower-25e/p-37793b79b9a4.webp",
    "media/paramount-tower-25e/p-114397b39450.webp",
-   "media/paramount-tower-25e/p-57247fc91788.webp",
    "media/paramount-tower-25e/p-f2700a9904a6.webp",
    "media/paramount-tower-25e/p-6d98bc306eaa.webp",
    "media/paramount-tower-25e/p-fa08c3c3615d.webp",
@@ -330676,6 +330676,15 @@
    "media/paramount-tower-25e/p-24b372199bdb.webp"
   ],
   "photos_meta": [
+   {
+    "url": "https://glenwoodadmin.com/webdav/images/listings/Paramount%20Tower/32E%20Living%20Dining%20v_2.jpg",
+    "local": "media/paramount-tower-25e/p-57247fc91788.webp",
+    "scope": "same-line",
+    "source": "Glenwood Management (glenwoodnyc.com)",
+    "credit": "Glenwood Management marketing image",
+    "title": "32E living/dining (E line, virtually staged)",
+    "page": "https://www.glenwoodnyc.com/properties/midtown-east/paramount-tower/"
+   },
    {
     "url": "media/paramount-tower-25e/p-37793b79b9a4.webp",
     "local": "media/paramount-tower-25e/p-37793b79b9a4.webp",
@@ -330693,15 +330702,6 @@
     "credit": "Renter's own photo",
     "title": "25E · Bay window corner looking out over the street grid and green tree canopy below",
     "page": null
-   },
-   {
-    "url": "https://glenwoodadmin.com/webdav/images/listings/Paramount%20Tower/32E%20Living%20Dining%20v_2.jpg",
-    "local": "media/paramount-tower-25e/p-57247fc91788.webp",
-    "scope": "same-line",
-    "source": "Glenwood Management (glenwoodnyc.com)",
-    "credit": "Glenwood Management marketing image",
-    "title": "32E living/dining (E line, virtually staged)",
-    "page": "https://www.glenwoodnyc.com/properties/midtown-east/paramount-tower/"
    },
    {
     "url": "https://glenwoodadmin.com/webdav/images/listings/Paramount%20Tower/43H%20Living%20Dining%20%20v_1.jpg",
