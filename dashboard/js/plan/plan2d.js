@@ -32,7 +32,7 @@ export function setModel(m) {
   const b = m.bounds, pad = 30;
   fit = { x: b.x0 - pad, y: -b.y1 - pad, w: b.x1 - b.x0 + 2 * pad, h: b.y1 - b.y0 + 2 * pad };
   vb = { ...fit }; applyVB();
-  svg.innerHTML = staticMarkup(m, 'p2') + '<g id="p2furn"></g><g id="p2over"></g>';
+  svg.innerHTML = staticMarkup(m, 'p2') + '<g id="p2dims"></g><g id="p2route"></g><g id="p2furn"></g><g id="p2over"></g>';
 }
 
 /** Markup for the fixed parts of a plan (rooms, walls, windows, doors, fixtures, labels). */
@@ -79,8 +79,10 @@ function glyph(it) {
   const L = (x1, y1, x2, y2) => `<line class="g-ln" x1="${r1(x1)}" y1="${r1(y1)}" x2="${r1(x2)}" y2="${r1(y2)}"/>`;
   let o = '';
   if (k === 'bed') {
+    const drawers = it.base.storage ? (it.variant === 'foot' ? ['foot'] : it.variant === 'left' ? ['left'] : it.variant === 'right' ? ['right'] : ['left', 'right']) : [];
+    const dm = drawers.map((sd) => sd === 'foot' ? R('g-drw', x + 4, d / 2 - 2, w - 8, 2, 0.5) : R('g-drw', sd === 'left' ? x : x + w - 2, y + 12, 2, d - 18, 0.5)).join('');
     const mw = Math.min(it.base.mattress?.[0] || w - 4, w - 2), pw = mw / 2 - 5;
-    o = R('g-base', x, y, w, d, 3) + R('g-dk', x, y, w, 3.5, 1.5) + R('g-lt', -mw / 2 + 2.5, y + 6, pw, 13, 4) + R('g-lt', 2.5, y + 6, pw, 13, 4) + L(-mw / 2, y + d * 0.42, mw / 2, y + d * 0.42);
+    o = R('g-base', x, y, w, d, 3) + R('g-dk', x, y, w, 3.5, 1.5) + R('g-lt', -mw / 2 + 2.5, y + 6, pw, 13, 4) + R('g-lt', 2.5, y + 6, pw, 13, 4) + L(-mw / 2, y + d * 0.42, mw / 2, y + d * 0.42) + dm;
   } else if (k === 'sofa' || k === 'chair') {
     const flat = it.variant === 'bed';
     o = R('g-base', x, y, w, d, 4) + (flat ? '' : R('g-dk', x, y, w, 9, 3)) + R('g-dk', x, y, 5.5, d, 3) + R('g-dk', x + w - 5.5, y, 5.5, d, 3);
@@ -100,12 +102,21 @@ function glyph(it) {
     o = R('g-base', x, y, w, d, 1) + L(0, y + 1, 0, d / 2) + L(x + 2, d / 2 - 2, x + w - 2, d / 2 - 2);
   } else if (k === 'bookcase') {
     o = R('g-base', x, y, w, d, 1); for (let i = 1; i < 6; i++) o += L(x + (w * i) / 6, y + 1, x + (w * i) / 6, d / 2 - 1);
+  } else if (k === 'rug') {
+    o = it.variant === 'round6' ? `<circle class="g-rug" cx="0" cy="0" r="${r1(w / 2)}"/><circle class="g-rug in" cx="0" cy="0" r="${r1(w / 2 - 4)}"/>` : R('g-rug', x, y, w, d, 1) + R('g-rug in', x + 4, y + 4, w - 8, d - 8, 1);
+  } else if (k === 'art') {
+    o = R('g-art', x, y, w, d, 0.5);
+  } else if (k === 'lamp') {
+    const type = it.base.lamp;
+    o = `<circle class="g-lamp${type === 'pendant' || type === 'ceiling' ? ' hi' : ''}" cx="0" cy="0" r="${r1(w / 2)}"/><circle class="g-lamp-c" cx="0" cy="0" r="${r1(Math.min(2.5, w / 5))}"/>`;
+  } else if (k === 'radiator') {
+    o = R('g-base', x, y, w, d, 1); for (let i = 1; i < Math.round(w / 3); i++) o += L(x + (w * i) / Math.round(w / 3), y + 1, x + (w * i) / Math.round(w / 3), d / 2 - 1);
   } else if (k === 'ac') {
     o = R('g-base', x, y, w, d, 1.5); for (let i = 1; i < 5; i++) o += L(x + 3, y + (d * i) / 5, x + w - 3, y + (d * i) / 5);
   } else o = R('g-base', x, y, w, d, 2);
   return o;
 }
-const SHORT = { 'Queen bed': 'Queen', 'Full bed': 'Full', 'King bed': 'King', 'Dresser, 4 drawers': 'Dresser', 'Dresser, 6 drawers': 'Dresser', 'Sofa, 3 seats': 'Sofa', 'TV 55 in, wall-mounted': 'TV 55', 'TV 65 in, wall-mounted': 'TV 65', 'TV 55 in on a console': 'TV', 'Dining table, 4 seats': 'Dining', 'Round table, 4 seats': 'Dining', 'Dining table, 6 seats': 'Dining', 'Desk and chair': 'Desk', 'AC / heater unit': 'AC', 'Sleeper sofa': 'Sofa bed' };
+const SHORT = { 'Queen storage bed': 'Queen', 'Floor lamp': 'Lamp', 'Table lamp': 'Lamp', 'Pendant light': 'Pendant', 'Ceiling light': 'Light', 'Wall art': 'Art', 'PTAC through-wall unit': 'PTAC', 'Window AC': 'AC', 'Queen bed': 'Queen', 'Full bed': 'Full', 'King bed': 'King', 'Dresser, 4 drawers': 'Dresser', 'Dresser, 6 drawers': 'Dresser', 'Sofa, 3 seats': 'Sofa', 'TV 55 in, wall-mounted': 'TV 55', 'TV 65 in, wall-mounted': 'TV 65', 'TV 55 in on a console': 'TV', 'Dining table, 4 seats': 'Dining', 'Round table, 4 seats': 'Dining', 'Dining table, 6 seats': 'Dining', 'Desk and chair': 'Desk', 'AC / heater unit': 'AC', 'Sleeper sofa': 'Sofa bed' };
 
 /**
  * Redraw everything that moves.
@@ -116,14 +127,43 @@ export function draw(s) {
   const st = s.ev?.items || {};
   svg.querySelector('#p2furn').innerHTML = furnitureMarkup(s.items, st, s.sel);
   svg.querySelector('#p2zones').innerHTML = (s.zones || []).map((z) => `<polygon class="p2-zone z-${z.grade}" points="${pts(z.poly)}"/>`).join('');
-  overlayMarkup(s);
+  svg.querySelector('#p2dims').innerHTML = s.dims === 'all' ? roomDims(model) : '';
+  svg.querySelector('#p2route').innerHTML = routeMarkup(s.routes || []);
+  overlayMarkup(s.dims === 'off' ? { ...s, gaps: [] } : s);
+}
+
+/** Architectural dimension strings for every room: its width along the top and depth down the left side. */
+export function roomDims(m) {
+  let o = '';
+  for (const r of m.rooms) {
+    const xs = r.poly.map((p) => p[0]), ys = r.poly.map((p) => p[1]), x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+    if (x1 - x0 < 36 || y1 - y0 < 36) continue;
+    const approx = r.rect ? '' : '≈ ';
+    const tw = (t) => t.length * 3.5 + 6;
+    const ht = `${approx}${fmtIn(x1 - x0)}`, vt = `${approx}${fmtIn(y1 - y0)}`, yy = y1 - 9, xx = x0 + 9;
+    o += `<g class="p2-dim"><line x1="${r1(x0 + 1)}" y1="${r1(-yy)}" x2="${r1(x1 - 1)}" y2="${r1(-yy)}"/><line x1="${r1(x0 + 1)}" y1="${r1(-yy - 3)}" x2="${r1(x0 + 1)}" y2="${r1(-yy + 3)}"/><line x1="${r1(x1 - 1)}" y1="${r1(-yy - 3)}" x2="${r1(x1 - 1)}" y2="${r1(-yy + 3)}"/>
+      <rect x="${r1((x0 + x1) / 2 - tw(ht) / 2)}" y="${r1(-yy - 4.4)}" width="${r1(tw(ht))}" height="8.8" rx="2"/><text x="${r1((x0 + x1) / 2)}" y="${r1(-yy + 0.2)}">${esc(ht)}</text>
+      <line x1="${r1(xx)}" y1="${r1(-(y1 - 1))}" x2="${r1(xx)}" y2="${r1(-(y0 + 1))}"/><line x1="${r1(xx - 3)}" y1="${r1(-(y1 - 1))}" x2="${r1(xx + 3)}" y2="${r1(-(y1 - 1))}"/><line x1="${r1(xx - 3)}" y1="${r1(-(y0 + 1))}" x2="${r1(xx + 3)}" y2="${r1(-(y0 + 1))}"/>
+      <g transform="translate(${r1(xx)} ${r1(-(y0 + y1) / 2)}) rotate(-90)"><rect x="${r1(-tw(vt) / 2)}" y="-4.4" width="${r1(tw(vt))}" height="8.8" rx="2"/><text x="0" y="0.2">${esc(vt)}</text></g></g>`;
+  }
+  return o;
+}
+/** Walking routes from the entry: a line per route coloured by its grade and a label at the narrowest point. */
+export function routeMarkup(routes) {
+  return routes.filter((r) => r.path?.length > 1).map((r) => {
+    const label = r.pinch && Number.isFinite(r.width) ? `${Math.round(r.width)} in` : '';
+    const tw = label.length * 3.5 + 6, end = r.path[r.path.length - 1];
+    return `<g class="p2-route g-${r.grade}"><polyline points="${pts(r.path)}"/><circle cx="${r1(end[0])}" cy="${r1(-end[1])}" r="3"/>${label ? `<g transform="translate(${r1(r.pinch[0])} ${r1(-r.pinch[1])})"><rect x="${r1(-tw / 2)}" y="-4.6" width="${r1(tw)}" height="9.2" rx="2.5"/><text y="0.2">${esc(label)}</text></g>` : ''}</g>`;
+  }).join('');
 }
 
 /** Markup for furniture pieces, coloured by their check state. */
 export function furnitureMarkup(items, st = {}, sel = null, labels = true) {
-  return items.filter((it) => !it.hidden).map((it) => {
+  // rugs first so furniture draws over them; ceiling lights last
+  const order = (it) => (it.kind === 'rug' ? 0 : it.kind === 'lamp' && it.elev > 40 ? 2 : 1);
+  return items.filter((it) => !it.hidden).sort((a, b) => order(a) - order(b)).map((it) => {
     const g = st[it.id]?.state || 'clear', on = it.id === sel;
-    const small = Math.min(it.w, it.d) < 14 || it.kind === 'tv' && it.mount === 'wall';
+    const small = Math.min(it.w, it.d) < 14 || it.kind === 'tv' && it.mount === 'wall' || it.kind === 'lamp' || it.kind === 'art';
     const name = it.label || SHORT[it.name] || it.name;
     const fs = Math.max(4.5, Math.min(8, Math.min(it.w, it.d) / 3.2));
     return `<g class="p2-it st-${g}${on ? ' sel' : ''}" data-id="${esc(it.id)}" transform="translate(${r1(it.x)} ${r1(-it.y)})"><g transform="rotate(${r1(it.rot)})">${glyph(it)}</g>${!labels || small && !on ? '' : `<text class="g-t" y="${r1(on ? -fs * 0.15 : fs * 0.35)}" font-size="${r1(fs)}">${esc(name)}</text>${on ? `<text class="g-t g-d" y="${r1(fs * 1.1)}" font-size="${r1(fs * 0.8)}">${fmtIn(it.w)} × ${fmtIn(it.d)}</text>` : ''}`}</g>`;

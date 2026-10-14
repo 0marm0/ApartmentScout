@@ -21,7 +21,7 @@ const FIELDS = {
   trace_check: 'anchors length measured error_pct',
   trace_bearing: 'method faces wall',
   layout: 'schema kind plan units items saved',
-  item: 'id ref x y rot w d h elev variant label hidden',
+  item: 'id ref x y rot w d h elev variant label hidden product',
   lighting: 'directSun ambient glazing blinds',
 };
 const fin = (v) => typeof v === 'number' && Number.isFinite(v);

@@ -22,6 +22,10 @@ export const CLEARANCE = {
   dining_chair: { min: 24, preferred: 32, src: 'NKBA kitchen planning: 32 in from table edge to a wall to pull a chair out and sit.' },
   wardrobe_doors: { min: 22, preferred: 30, src: 'Hinged wardrobe doors are about 20-22 in wide; 30 in leaves room to stand at the open door.' },
   ac_front: { min: 12, preferred: 18, src: 'Placeholder: PTAC and window units need open air in front of the grille. 18 in is an estimate, not a manufacturer figure; check the model.' },
+  drawer_pull: { min: 24, preferred: 30, src: 'Storage-bed drawers pull out about 16-18 in; add room to kneel and lift: 24 in is the tight minimum, 30 in comfortable (same planning figure as dresser drawers).' },
+  radiator_front: { min: 4, preferred: 8, src: 'Keep furniture a few inches off a radiator or baseboard heater so warm air can rise; 6-8 in is common guidance, 4 in a tight minimum. An estimate, not a code figure.' },
+  ptac_front: { min: 12, preferred: 18, src: 'Through-wall PTAC units blow out of the top front: keep about 18 in clear in front (manufacturer install guides ask for unobstructed airflow; exact figures vary by model).' },
+  window_ac_front: { min: 12, preferred: 24, src: 'Window AC units throw air into the room: keep the front clear for about 24 in (estimate; check the model\'s manual).' },
   walkway: { min: 30, preferred: 36, src: 'Main walkways: 36 in preferred, 30 in minimum (Time-Saver Standards; ADA route is 36 in).' },
 };
 
@@ -35,9 +39,24 @@ const Z = (side, key, extra = {}) => ({ side, ...CLEARANCE[key], key, ...extra }
 export const MAT = {
   wood: 0xb08a62, woodDark: 0x7b5b3e, oak: 0xc9a77c, fabric: 0x6f7d8c, fabricWarm: 0x8c7a6b, linen: 0xe8e4dc,
   duvet: 0x9fb0c4, pillow: 0xf3f1ec, metal: 0x2e3238, screen: 0x0d0f12, white: 0xeceef0, ac: 0xd6d2c8, green: 0x6b8a7a,
+  rug: 0xa8907a, rugCool: 0x7d8a96, brass: 0xb8955a, shade: 0xf1e6d2, canvas: 0xe9e2d4, frame: 0x2b2a28, radiator: 0xe3e0da,
 };
 
-export const CATEGORIES = [['sleep', 'Sleep'], ['living', 'Living'], ['dining', 'Dining'], ['work', 'Work'], ['storage', 'Storage'], ['climate', 'Climate']];
+// Warm light colours for lamps (correlated colour temperature, approximate sRGB).
+export const LAMP_K = { 2700: 0xffb46b, 3000: 0xffc489, 4000: 0xffe2c0 };
+
+export const CATEGORIES = [['sleep', 'Sleep'], ['living', 'Living'], ['dining', 'Dining'], ['work', 'Work'], ['storage', 'Storage'], ['decor', 'Rugs and art'], ['lighting', 'Lighting'], ['climate', 'Climate']];
+
+// Storage-bed drawer sides. A storage bed keeps the bed's own zones (one free side to get in, the foot)
+// and adds a pull-out zone on every drawer side; each drawer side must be free, they are not "either".
+const BED_ZONES = () => [Z('left', 'bed_side', { group: 'either', mode: 'lane', name: 'Left side' }), Z('right', 'bed_side', { group: 'either', mode: 'lane', name: 'Right side' }), Z('front', 'bed_foot', { mode: 'lane', name: 'Foot' })];
+const DRAWERS = (side) => (side === 'both' ? ['left', 'right'] : [side]).map((s) => Z(s === 'foot' ? 'front' : s, 'drawer_pull', { mode: 'full', name: `Drawers, ${s === 'foot' ? 'foot' : s}`, width: 64 }));
+const storageVariants = () => ({
+  both: { label: 'Drawers on both sides', zones: [...BED_ZONES(), ...DRAWERS('both')] },
+  left: { label: 'Drawers on the left', zones: [...BED_ZONES(), ...DRAWERS('left')] },
+  right: { label: 'Drawers on the right', zones: [...BED_ZONES(), ...DRAWERS('right')] },
+  foot: { label: 'Drawers at the foot', zones: [BED_ZONES()[0], BED_ZONES()[1], Z('front', 'drawer_pull', { mode: 'full', name: 'Drawers, foot', preferred: 30 })] },
+});
 
 export const CATALOG = {
   'queen-bed': {
@@ -57,6 +76,12 @@ export const CATALOG = {
     src: 'King mattress 76 x 80 in (US standard size); frame assumed.',
     zones: [Z('left', 'bed_side', { group: 'either', mode: 'lane', name: 'Left side' }), Z('right', 'bed_side', { group: 'either', mode: 'lane', name: 'Right side' }), Z('front', 'bed_foot', { mode: 'lane', name: 'Foot' })],
     ignore: ['nightstand'], rules: ['no-window-behind'], seats: [['Bed, pillows', 0, 20], ['Bed, foot', 0, -30]],
+  },
+  'queen-storage-bed': {
+    name: 'Queen storage bed', cat: 'sleep', kind: 'bed', storage: true, w: 64, d: 84, h: 40, mattress: [60, 80], color: MAT.fabric, flatpack: true,
+    src: 'Queen storage platform bed, typical 64 x 84 in frame with 4 drawers (about 16-18 in deep). Pick a product in the Shop tab for exact sizes.',
+    variants: storageVariants(), drawers: { count: 4, pull: 18 },
+    zones: [...BED_ZONES(), ...DRAWERS('both')], ignore: ['nightstand'], rules: ['no-window-behind'], seats: [['Bed, pillows', 0, 20], ['Bed, foot', 0, -30]],
   },
   nightstand: { name: 'Nightstand', cat: 'sleep', kind: 'nightstand', w: 18, d: 16, h: 24, color: MAT.wood, src: 'Typical nightstand, 18 x 16 x 24 in.' },
   dresser: {
@@ -129,26 +154,72 @@ export const CATALOG = {
     src: 'Desk 48 x 24 x 30 in (adjustable range 36-84 wide, 18-30 deep); chair pull-out zone 28 in wide.',
     zones: [Z('front', 'desk_chair', { mode: 'full', width: 28, name: 'Chair' })],
   },
+  rug: {
+    name: 'Rug', cat: 'decor', kind: 'rug', flat: true, w: 96, d: 60, h: 0.4, color: MAT.rug,
+    src: 'Area rug, nominal sizes: 5 x 8 ft, 6 x 9 ft, 8 x 10 ft, round 6 ft. Furniture can stand on it.',
+    variants: { '5x8': { label: '5 x 8 ft' }, '6x9': { label: '6 x 9 ft', w: 108, d: 72 }, '8x10': { label: '8 x 10 ft', w: 120, d: 96 }, round6: { label: 'Round, 6 ft', w: 72, d: 72 } },
+  },
+  'wall-art': {
+    name: 'Wall art', cat: 'decor', kind: 'art', mount: 'wall', w: 36, d: 1.5, h: 24, elev: 45, color: MAT.canvas,
+    src: 'Framed print 36 x 24 in. Galleries hang art with its centre at 57 in (eye level); 8-10 in above a sofa back or headboard.',
+    variants: { m: { label: '36 x 24 in' }, s: { label: '24 x 18 in', w: 24, h: 18, elev: 48 }, l: { label: '48 x 36 in', w: 48, h: 36, elev: 39 } },
+    rules: ['solid-wall-behind', 'art-height'],
+  },
+  'floor-lamp': { name: 'Floor lamp', cat: 'lighting', kind: 'lamp', lamp: 'floor', w: 12, d: 12, h: 60, color: MAT.metal, light: { lm: 1100, k: 2700 }, src: 'Floor lamp, about 12 in base and 60 in tall, 1100 lm warm-white (75 W equivalent) bulb.' },
+  'table-lamp': { name: 'Table lamp', cat: 'lighting', kind: 'lamp', lamp: 'table', w: 10, d: 10, h: 20, elev: 24, color: MAT.brass, light: { lm: 800, k: 2700 }, src: 'Table lamp 10 in across, 20 in tall, set on a 24 in nightstand; 800 lm warm-white (60 W equivalent).' },
+  pendant: { name: 'Pendant light', cat: 'lighting', kind: 'lamp', lamp: 'pendant', w: 16, d: 16, h: 12, elev: 66, color: MAT.shade, light: { lm: 1600, k: 2700 }, src: 'Pendant shade 16 in across hung about 30 in above a dining table (66 in to its bottom on an 8-9 ft ceiling); 1600 lm.' },
+  'ceiling-light': { name: 'Ceiling light', cat: 'lighting', kind: 'lamp', lamp: 'ceiling', w: 14, d: 14, h: 4, elev: 100, color: MAT.white, light: { lm: 1600, k: 3000 }, src: 'Flush ceiling fixture 14 in across; set its height to just under the ceiling; 1600 lm.' },
   'ac-unit': {
     name: 'AC / heater unit', cat: 'climate', kind: 'ac', w: 42, d: 10, h: 24, color: MAT.ac, est: true,
     src: 'Placeholder PTAC or through-wall unit, 42 x 10 x 24 in. Measure the real one; its size is an estimate.',
     zones: [Z('front', 'ac_front', { mode: 'full', name: 'Front clearance' })],
+  },
+  ptac: {
+    name: 'PTAC through-wall unit', cat: 'climate', kind: 'ac', w: 42, d: 13.9, h: 16, elev: 0, color: MAT.ac, est: true,
+    src: 'PTAC 42 x 16 in face (industry-standard sleeve size, about 13.9 in deep plus its room cabinet). Measure the real one.',
+    zones: [Z('front', 'ptac_front', { mode: 'full', name: 'Airflow' })],
+  },
+  'window-ac': {
+    name: 'Window AC', cat: 'climate', kind: 'ac', ac: 'window', w: 19, d: 9, h: 13.5, elev: 30, color: MAT.ac, est: true,
+    src: 'Window unit, about 19 in wide, 13.5 in tall; the indoor part is about 9 in deep and sits on the sill (about 30 in up). Check the model and your sill height.',
+    zones: [Z('front', 'window_ac_front', { mode: 'full', name: 'Airflow' })], rules: ['in-window'],
+  },
+  radiator: {
+    name: 'Radiator', cat: 'climate', kind: 'radiator', w: 36, d: 8, h: 24, color: MAT.radiator, est: true,
+    src: 'Cast-iron radiator, about 36 in long, 8 in deep, 24 in tall (typical pre-war NYC). Many buildings have them under windows; measure.',
+    zones: [Z('front', 'radiator_front', { mode: 'full', name: 'Heat clearance' })],
   },
 };
 
 export const refs = () => Object.keys(CATALOG);
 
 // Resolve a layout item ({ref, x, y, rot, w?, d?, h?, variant?, ...}) into a full spec with sizes.
+// Products (plan/products.js) are registered here so resolve() stays pure and test-friendly.
+let PRODUCTS = Object.create(null);
+export function registerProducts(map) { PRODUCTS = Object.assign(Object.create(null), map || {}); }
+export const productOf = (item) => (item?.product && PRODUCTS[item.product]?.ref === item.ref ? PRODUCTS[item.product] : null);
+
+// Resolve a layout item ({ref, x, y, rot, w?, d?, h?, variant?, product?, ...}) into a full spec with sizes.
+// Precedence for sizes: the item's own w/d/h, then the chosen product, then the variant, then the catalogue.
 export function resolve(item, catalog = CATALOG) {
   const c = catalog[item.ref];
   if (!c) return null;
-  const v = (item.variant && c.variants?.[item.variant]) || {};
-  const w = item.w ?? v.w ?? c.w, d = item.d ?? v.d ?? c.d, h = item.h ?? v.h ?? c.h;
+  const p = catalog === CATALOG ? productOf(item) : null;
+  const variant = item.variant || (p?.variant && c.variants?.[p.variant] ? p.variant : null);
+  const v = (variant && c.variants?.[variant]) || {};
+  // a variant the renter picked that differs from the product's own (a sleeper opened as a bed) beats the product's size
+  const pd = p ? (item.variant && item.variant !== p.variant ? {} : p.dims || {}) : {};
+  const w = item.w ?? pd.w ?? v.w ?? c.w, d = item.d ?? pd.d ?? v.d ?? c.d, h = item.h ?? pd.h ?? v.h ?? c.h;
+  // storage-bed drawers of a real product: the pull-out zone is the drawer depth plus about 4 in to grip (min) or 10 in to kneel (preferred)
+  const pull = c.storage && p?.drawers?.pull_in;
+  const zones0 = v.zones || c.zones || [];
+  const zones = pull ? zones0.map((z) => (z.key === 'drawer_pull' ? { ...z, min: Math.max(z.min, Math.round(pull + 4)), preferred: Math.max(z.preferred, Math.round(pull + 10)), src: `${z.src} This product's drawers are ${pull} in deep.` } : z)) : zones0;
   // zones scale with the item; a desk chair zone keeps its own width
   return {
-    ...item, kind: c.kind, cat: c.cat, mount: c.mount, name: item.label || c.name, base: c,
-    w, d, h, elev: item.elev ?? c.elev ?? 0, rot: norm(item.rot || 0),
-    zones: c.zones || [], ignore: c.ignore || [], rules: c.rules || [], seats: c.seats || [], screen: c.screen,
+    ...item, kind: c.kind, cat: c.cat, mount: c.mount, name: item.label || c.name, base: c, product: p ? p.id : undefined, productInfo: p,
+    w, d, h, elev: item.elev ?? v.elev ?? c.elev ?? 0, rot: norm(item.rot || 0), variant: variant || undefined,
+    zones, ignore: c.ignore || [], rules: c.rules || [], seats: c.seats || [], screen: c.screen,
+    flat: !!c.flat, light: c.light || null,
   };
 }
 export const norm = (a) => ((a % 360) + 360) % 360;

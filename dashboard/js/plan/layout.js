@@ -4,7 +4,8 @@
 // Saved layout JSON (schema 1):
 //   {"schema": 1, "kind": "apartmentscout-layout", "plan": "<plan id>", "units": "in",
 //    "items": [{"id": "bed", "ref": "queen-bed", "x": 66, "y": 190, "rot": 270, "w"?, "d"?, "h"?,
-//               "variant"?, "label"?, "hidden"?}]}
+//               "variant"?, "label"?, "hidden"?, "product"?}]}
+// `product` (optional) names an entry of plan/products.js: its real dimensions replace the catalogue's.
 // Positions are inches in the plan frame (+x right, +y toward the top of the drawing); w/d/h are inches.
 import { CATALOG } from './catalog.js';
 
@@ -40,11 +41,13 @@ export function validateLayout(obj, { planId = null, catalog = CATALOG } = {}) {
     if (it.variant != null && !(typeof it.variant === 'string' && c.variants?.[it.variant])) return fail(`${at}: unknown variant "${String(it.variant).slice(0, 30)}"`);
     if (it.label != null && (typeof it.label !== 'string' || it.label.length > 80 || /[<>]/.test(it.label))) return fail(`${at}: label must be plain text up to 80 characters`);
     if (it.hidden != null && typeof it.hidden !== 'boolean') return fail(`${at}: hidden must be true or false`);
+    if (it.product != null && (typeof it.product !== 'string' || !/^[a-z0-9][a-z0-9-]{0,63}$/.test(it.product))) return fail(`${at}: product must be a product id (lowercase letters, digits and -)`);
     const clean = { id: it.id, ref: it.ref, x: round(it.x), y: round(it.y), rot: round(((it.rot || 0) % 360 + 360) % 360) };
     for (const k of ['w', 'd', 'h', 'elev']) if (it[k] != null) clean[k] = round(it[k]);
     if (it.variant) clean.variant = it.variant;
     if (it.label) clean.label = it.label;
     if (it.hidden) clean.hidden = true;
+    if (it.product) clean.product = it.product;
     items.push(clean);
   }
   return { ok: true, layout: { schema: 1, kind: 'apartmentscout-layout', plan: planId || obj.plan || null, units: 'in', items } };
@@ -70,7 +73,7 @@ export function asPreset(items, { k = 12, id = 'my-layout', name = 'My layout', 
 
 function strip(it) {
   const o = { id: it.id, ref: it.ref, x: round(it.x), y: round(it.y), rot: round(it.rot || 0) };
-  for (const k of ['w', 'd', 'h', 'elev', 'variant', 'label', 'hidden']) if (it[k] != null && it[k] !== false) o[k] = typeof it[k] === 'number' ? round(it[k]) : it[k];
+  for (const k of ['w', 'd', 'h', 'elev', 'variant', 'label', 'hidden', 'product']) if (it[k] != null && it[k] !== false) o[k] = typeof it[k] === 'number' ? round(it[k]) : it[k];
   return o;
 }
 const round = (v, n = 1) => Math.round(v * 10 ** n) / 10 ** n;

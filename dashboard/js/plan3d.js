@@ -4,12 +4,19 @@
 // and TV-wall rules), eye-level cameras and a walk mode, wall cut modes, layout presets written by
 // agents, layout save/load, GLB and PNG export, and the real sun through the windows (switched off
 // when the site model says neighbouring buildings block it).
+// Interior pass: real products with a bed finder and a shopping list (Shop tab), walking routes from the
+// front door with a delivery check and a guided eye-level walk (Checks tab), storage beds, rugs, wall art,
+// lamps, radiators and window AC units, Day / Evening / Night lighting with lamp light and window sky glow,
+// room dimension strings, a layout option sheet, a suggested layout for plans without presets, 3D side-by-
+// side plan compare, and 2x / 4K snapshots.
 //
 // Modules: plan/model.js (plan JSON v1/v2 normaliser), plan/catalog.js (furniture sizes and clearances),
 // plan/checks.js (pure fit rules), plan/layout.js (layout file validation), plan/scene3d.js (three.js),
-// plan/plan2d.js (SVG plan). All lengths are inches internally.
+// plan/plan2d.js (SVG plan), plan/route.js (access routes), plan/products.js + plan/shop.js (products, bed
+// finder), plan/suggest.js (suggested layout), plan/options.js (option sheet), plan/compare3d.js (3D compare).
+// All lengths are inches internally.
 import { S, on, byId, label, loadJSON, store } from './app.js';
-import { $, esc, toast } from './util.js';
+import { $, esc, toast, safeUrl } from './util.js';
 import { DEG, sunPos, zonedMs, angDiff, fmtT, prepBuildings, horizonProfile, hAt, facesOf, snapOpen, compass, skyView } from './sun.js';
 import { normalisePlan, fmtIn, pointInPoly } from './plan/model.js';
 import { CATALOG, CATEGORIES, CLEARANCE, TV_FOV, resolve } from './plan/catalog.js';
@@ -24,12 +31,20 @@ import { editFixture, editWindow, editOrientation } from './plan/architecture.js
 import { canonicalFaces, snapPosition } from './unit/scenario.js';
 import { placePlan, windowSkylines, windowBlocked, windowMinutes } from './plan/city.js';
 import { cityGroup } from './plan/citymesh.js';
+import { accessRoutes, entryPoint } from './plan/route.js';
+import { PRODUCT_MAP, productsFor, shoppingList, shoppingCSV, CHECKED } from './plan/products.js';
+import { productFinder, withProduct } from './plan/shop.js';
+import { suggestLayout } from './plan/suggest.js';
+import { renderOptions } from './plan/options.js';
 
 const st = {
   id: null, date: '', min: 720, playing: false, site: null, mode: 'both', view: 'bird', wall: 'cut', tab: 'furniture',
   snap: true, zonesAll: false, sight: true, swings: false,
   directSun: true, ambient: 1, glazing: 0.6, blinds: 'open',
+  dims: 'sel', routes: false, routeKey: null, mood: 'auto', finder: null,
 };
+const held = new Set();
+let routesRes = null, routeT = 0, lastFrame = 0;
 // onSite: the plan placed on its site; winSky: one skyline per plan window (per-window city occlusion)
 let onSite = null, winSky = null, winMin = null, winMinKey = '';
 let winSkyView = null;
@@ -86,9 +101,13 @@ export function init() {
             <button type="button" role="menuitem" data-f="project-load">Import complete plan project…</button>
             <button type="button" role="menuitem" data-f="project-restore">Remove local project override</button>
             <button type="button" role="menuitem" data-f="preset">Copy as plan preset</button>
-            <button type="button" role="menuitem" data-f="compare">Compare with the other plans</button>
+            <button type="button" role="menuitem" data-f="compare">Compare with the other plans, 2D and 3D</button>
+            <button type="button" role="menuitem" data-f="options">Compare the layout options</button>
             <hr><button type="button" role="menuitem" data-f="glb">Export 3D model<span>.glb</span></button>
             <button type="button" role="menuitem" data-f="png">Snapshot of the 3D view<span>.png</span></button>
+            <button type="button" role="menuitem" data-f="png2">High-resolution snapshot<span>2× .png</span></button>
+            <button type="button" role="menuitem" data-f="png4k">Poster snapshot<span>4K .png</span></button>
+            <button type="button" role="menuitem" data-f="csv">Shopping list<span>.csv</span></button>
             <hr><button type="button" role="menuitem" data-f="clear">Clear all furniture</button>
           </div></div>
         <input type="file" id="psFile" accept=".json,application/json" hidden>
@@ -100,6 +119,7 @@ export function init() {
         <div class="ps-panes" id="psPanes" data-mode="both">
           <div class="ps-pane ps-2d" id="p2dWrap">
             <svg id="p2d" role="img" aria-label="Floor plan from above with furniture"></svg>
+            <div class="float ps-dims" id="psDims" role="group" aria-label="Dimensions">${[['sel', 'Selection'], ['all', 'All rooms'], ['off', 'Off']].map(([k, t]) => `<button type="button" data-dm="${k}">${t}</button>`).join('')}</div>
             <div class="ps-corner"><span class="ps-north" id="psNorth" title="North"><i></i>N</span><span>1 square = 1 ft</span></div>
           </div>
           <div class="ps-pane canvas-stage" id="pstage">
@@ -114,7 +134,7 @@ export function init() {
       </div>
       <aside class="ps-side">
         <div class="panel ps-insp" id="psInsp"></div>
-        <div class="seg ps-tabs" id="psTabs" role="tablist">${[['furniture', 'Furniture'], ['checks', 'Checks'], ['light', 'Light'], ['plan', 'Plan']].map(([k, t]) => `<button type="button" role="tab" data-t="${k}">${t}<span class="n" id="psTabN-${k}"></span></button>`).join('')}</div>
+        <div class="seg ps-tabs" id="psTabs" role="tablist">${[['furniture', 'Furniture'], ['checks', 'Checks'], ['shop', 'Shop'], ['light', 'Light'], ['plan', 'Plan']].map(([k, t]) => `<button type="button" role="tab" data-t="${k}">${t}<span class="n" id="psTabN-${k}"></span></button>`).join('')}</div>
         <div class="panel ps-tab" id="psTab" role="tabpanel"></div>
       </aside>
     </div>
@@ -128,6 +148,7 @@ export function init() {
   planOptions();
   $('planSel').addEventListener('change', (e) => (location.hash = '#plan/' + encodeURIComponent(e.target.value)));
   st.mode = isPhone() ? '2d' : 'both';
+  st.mood = ['auto', 'day', 'evening', 'night'].includes(store.get('plan-mood', 'auto')) ? store.get('plan-mood', 'auto') : 'auto';
   bindChrome();
   on('theme', () => { if (!ready) return; G3.retheme(); recompute({ all: true }); applyCity(); });
 }
@@ -190,8 +211,10 @@ async function load(id) {
   st.directSun = light.directSun !== false;
   st.ambient = typeof light.ambient === 'number' && Number.isFinite(light.ambient) ? Math.max(0, Math.min(2, light.ambient)) : 1;
   st.glazing = clampGlazing(light.glazing); st.blinds = blindsOf(light.blinds);
+  if (!model.layouts.length) { try { model.layouts.push(suggestLayout(model)); } catch { /* a plan the placer cannot handle keeps no preset */ } }
   items = v?.ok ? v.layout.items : (model.layouts[0]?.items || []).map((x) => ({ ...x }));
-  undo.length = 0; redo.length = 0; sel = null; cancelCompare(); $('psCompare').hidden = true;
+  undo.length = 0; redo.length = 0; sel = null; cancelCompare(); $('psCompare').hidden = true; st.routeKey = null; st.finder = null; routesRes = null;
+  G3.setMood(st.mood);
   st.activePreset = v?.ok ? null : model.layouts[0]?.id || null;
   head(); setMode(st.mode); setWall(st.wall, true); G3.setView(st.view === 'top' ? 'top' : 'bird'); markCams();
   recompute({ all: true }); sunPanel(); refreshSun();
@@ -247,11 +270,15 @@ function recompute(opts = {}) {
   for (const it of R) G3.setRoomOf(it.id, ev.items[it.id]?.room || '');
   const states = Object.fromEntries(Object.values(ev.items).map((r) => [r.id, r.state]));
   G3.setStatus(states, sel);
+  if (opts.panels === false) { clearTimeout(routeT); routeT = setTimeout(() => { computeRoutes(); overlays(); if (st.tab === 'checks') tab(); }, 260); }
+  else computeRoutes();
   overlays();
   inspector();
   if (opts.panels !== false) tab();
   tabCounts();
 }
+function computeRoutes() { try { routesRes = accessRoutes(model, R); } catch { routesRes = null; } }
+const shownRoutes = () => (routesRes ? routesRes.routes.filter((r) => st.routes || r.key === st.routeKey) : []);
 function overlays() {
   const zones = [], gaps = sel ? gapRays(model, R, sel) : [], sights = [];
   for (const r of Object.values(ev.items)) if (st.zonesAll || r.id === sel) for (const z of r.zones) zones.push(z);
@@ -264,14 +291,16 @@ function overlays() {
     for (const s of list) sights.push({ from: s.from, to: s.at, label: `${(s.dist / 12).toFixed(1)} ft · ${s.tag}` });
   }
   const fl = flash && performance.now() < flashT ? flash : null;
-  P2.draw({ items: R, sel, ev, zones, gaps, sights, flash: fl });
-  G3.setOverlay({ zones, gaps: G3.viewMode() === 'eye' ? [] : gaps, sights: G3.viewMode() === 'eye' ? [] : sights, flash: fl, swings: st.swings ? model.doorways.map((d) => swingPoly(d, 12)).filter(Boolean) : [] });
+  const routes = shownRoutes();
+  P2.draw({ items: R, sel, ev, zones, gaps, sights, flash: fl, routes, dims: st.dims });
+  const eye = G3.viewMode() === 'eye';
+  G3.setOverlay({ zones: eye ? [] : zones, gaps: eye || st.dims === 'off' ? [] : gaps, sights: eye ? [] : sights, flash: fl, swings: st.swings ? model.doorways.map((d) => swingPoly(d, 12)).filter(Boolean) : [], routes: eye ? [] : routes });
 }
 const gradeRank = (g) => ['clear', 'tight', 'blocked'].indexOf(g);
 
 function select(id) {
   if (sel === id) return;
-  sel = id; recompute({ panels: st.tab === 'furniture' });
+  sel = id; recompute({ panels: st.tab === 'furniture' || st.tab === 'shop' });
   if (st.tab === 'furniture') markList();
 }
 function markList() { document.querySelectorAll('#psTab .ps-item').forEach((el) => el.classList.toggle('on', el.dataset.id === sel)); }
@@ -340,6 +369,10 @@ function bindChrome() {
     toast('Imported local plan project. The original search files are unchanged.');
   });
   $('psMode').addEventListener('click', (e) => { const b = e.target.closest('[data-m]'); if (b) setMode(b.dataset.m); });
+  $('psDims').addEventListener('click', (e) => { const b = e.target.closest('[data-dm]'); if (!b) return; st.dims = b.dataset.dm; store.set('plan-dims', st.dims); markDims(); overlays(); });
+  st.dims = ['sel', 'all', 'off'].includes(store.get('plan-dims', 'sel')) ? store.get('plan-dims', 'sel') : 'sel'; markDims();
+  document.addEventListener('keyup', (e) => { held.delete(e.key.toLowerCase()); if (!e.shiftKey) held.delete('shift'); });
+  window.addEventListener('blur', () => held.clear());
   $('psCams').addEventListener('click', (e) => { const b = e.target.closest('[data-v]'); if (b) camera(b.dataset.v); });
   $('psWalls').addEventListener('click', (e) => { const b = e.target.closest('[data-w]'); if (b) setWall(b.dataset.w); });
   $('psTabs').addEventListener('click', (e) => { const b = e.target.closest('[data-t]'); if (b) { st.tab = b.dataset.t; tab(); } });
@@ -364,6 +397,7 @@ function bindChrome() {
   $('psTab').addEventListener('change', tabChange);
   $('psCompare').addEventListener('click', (e) => { if (e.target.closest('[data-cmp=close]')) { cancelCompare(); $('psCompare').hidden = true; } });
 }
+function markDims() { $('psDims').querySelectorAll('[data-dm]').forEach((b) => b.classList.toggle('on', b.dataset.dm === st.dims)); }
 function setMode(m) {
   st.mode = m; $('psPanes').dataset.mode = m;
   $('psMode').querySelectorAll('[data-m]').forEach((b) => b.classList.toggle('on', b.dataset.m === m));
@@ -380,21 +414,10 @@ function markCams() {
     if (b.dataset.v === 'bed') b.disabled = !R.some((x) => x.kind === 'bed' && !x.hidden);
     if (b.dataset.v === 'sofa') b.disabled = !R.some((x) => (x.kind === 'sofa' || x.kind === 'chair') && !x.hidden);
   });
-  const hints = { walk: 'Drag to look · W S or ↑ ↓ to walk · A D to turn · Esc to stop', bed: 'Drag to look around · scroll to move', sofa: 'Drag to look around · scroll to move', door: 'Drag to look around · scroll to move' };
+  const hints = { walk: 'Drag to look · hold W S or ↑ ↓ to walk, A D to turn, Q E to step sideways, Shift to hurry · Esc to stop', tour: 'Walking the route · drag or W A S D to take over · Esc to stop', bed: 'Drag to look around · scroll to move', sofa: 'Drag to look around · scroll to move', door: 'Drag to look around · scroll to move' };
   $('psHint').textContent = hints[st.view] || (isPhone() ? 'Drag a piece to move it · drag the floor to orbit' : 'Drag a piece to move it · drag the floor to orbit · right-drag to pan');
 }
-function entryDoor() {
-  const ds = model.doorways;
-  const d = ds.find((x) => x.kind === 'entry') || ds.find((x) => /front|entry/i.test(x.name)) || ds.find((x) => { const n = [-(x.b[1] - x.a[1]) / x.len, (x.b[0] - x.a[0]) / x.len]; return [1, -1].some((s) => !model.rooms.some((r) => pointInPoly([x.mid[0] + n[0] * s * 18, x.mid[1] + n[1] * s * 18], r.poly))); }) || ds[0];
-  if (!d) return { at: model.rooms[0].label, dir: [0, 1] };
-  const n = [-(d.b[1] - d.a[1]) / d.len, (d.b[0] - d.a[0]) / d.len];
-  const inward = d.swingDir || ([1, -1].map((s) => [n[0] * s, n[1] * s]).find((v) => model.rooms.some((r) => pointInPoly([d.mid[0] + v[0] * 24, d.mid[1] + v[1] * 24], r.poly))) || n);
-  const at = [d.mid[0] + inward[0] * 14, d.mid[1] + inward[1] * 14];
-  // look toward the main room rather than straight ahead, which is often a hallway wall
-  const main = [...model.rooms].filter((r) => r.kind === 'living').sort((a, b) => b.area - a.area)[0] || [...model.rooms].sort((a, b) => b.area - a.area)[0];
-  const v = [main.label[0] - at[0], main.label[1] - at[1]], L = Math.hypot(...v);
-  return { at, dir: L > 24 ? [v[0] / L, v[1] / L] : inward };
-}
+const entryDoor = () => entryPoint(model);
 function camera(v) {
   if (!model) return;
   if (st.mode === '2d') setMode(isPhone() ? '3d' : 'both');
@@ -437,10 +460,18 @@ async function fileAction(f) {
     try { await navigator.clipboard.writeText(txt); toast('Copied. Paste it into "layouts" in the plan file'); } catch { saveBlob(new Blob([txt], { type: 'application/json' }), `${st.id}-preset.json`); }
   } else if (f === 'glb') {
     try { toast('Building the 3D model…'); const buf = await G3.exportGLB(); saveBlob(new Blob([buf], { type: 'model/gltf-binary' }), `${st.id}.glb`); } catch (e) { toast(`Export failed: ${e.message || e}`, 4000); }
-  } else if (f === 'png') {
+  } else if (f === 'png' || f === 'png2' || f === 'png4k') {
     if (st.mode === '2d') { setMode('both'); await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))); }
-    const a = document.createElement('a'); a.href = G3.snapshotPNG(); a.download = `${st.id}-${st.view}.png`; document.body.append(a); a.click(); a.remove();
-  } else if (f === 'clear') mutate(() => { items = []; sel = null; }, 'Cleared. Undo brings it back');
+    const scale = f === 'png' ? 1 : f === 'png2' ? 2 : 3840 / Math.max(1, $('pstage').clientWidth);
+    const a = document.createElement('a'); a.href = G3.snapshotPNG(scale); a.download = `${st.id}-${st.view}${f === 'png' ? '' : f === 'png2' ? '@2x' : '-4k'}.png`; document.body.append(a); a.click(); a.remove();
+  } else if (f === 'csv') {
+    saveBlob(new Blob([shoppingCSV(shoppingList(R), model.title || st.id)], { type: 'text/csv' }), `${st.id}-shopping-list.csv`);
+  } else if (f === 'options') openOptions(); else if (f === 'clear') mutate(() => { items = []; sel = null; }, 'Cleared. Undo brings it back');
+}
+function openOptions() {
+  const el = $('psCompare'); cancelCompare(); el.hidden = false;
+  renderOptions(el, { model, layouts: model.layouts, current: items, onPick: (id) => { applyPreset(id); openOptions(); } });
+  requestAnimationFrame(() => el.scrollIntoView({ behavior: 'smooth', block: 'start' }));
 }
 function openCompare() {
   const el = $('psCompare'); el.hidden = false;
@@ -458,12 +489,9 @@ function keys(e) {
   if (e.metaKey || e.ctrlKey || e.altKey) return;
   const stop = () => { e.preventDefault(); e.stopPropagation(); };
   if (eye) {
-    const step = e.shiftKey ? 24 : 8;
-    if (k === 'w' || k === 'W' || k === 'ArrowUp') { stop(); G3.walk(step); return; }
-    if (k === 's' || k === 'S' || k === 'ArrowDown') { stop(); G3.walk(-step); return; }
-    if (k === 'a' || k === 'A' || k === 'ArrowLeft') { stop(); G3.walk(0, -0.08); return; }
-    if (k === 'd' || k === 'D' || k === 'ArrowRight') { stop(); G3.walk(0, 0.08); return; }
-    if (k === 'Escape') { stop(); camera('bird'); return; }
+    const kk = k.toLowerCase();
+    if (['w', 's', 'a', 'd', 'q', 'e', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(kk)) { stop(); held.add(kk); if (e.shiftKey) held.add('shift'); if (G3.touring()) { G3.stopTour(); st.view = 'walk'; markCams(); } return; }
+    if (k === 'Escape') { stop(); held.clear(); G3.stopTour(); camera('bird'); return; }
   }
   if (k === 'Escape' && sel) { stop(); select(null); return; }
   if (!sel) return;
@@ -529,13 +557,16 @@ function inspector() {
     el.querySelector('.ps-checks').innerHTML = issues + zones;
     return;
   }
+  const prods = productsFor(it.ref), p = it.productInfo;
+  const product = prods.length ? `<div class="field ps-prod-f"><label for="psProd">Product <span>real size</span></label><select id="psProd" data-k="product"><option value="">Generic size (${esc(c.name.toLowerCase())})</option>${prods.map((q) => `<option value="${esc(q.id)}" ${q.id === it.product ? 'selected' : ''}>${esc(q.brand)} · ${esc(shortName(q.name))}${q.price != null ? ` · $${Math.round(q.price)}` : ''}${q.verified ? '' : ' · unverified'}</option>`).join('')}</select></div>` : '';
+  const prodLine = p ? `<p class="ps-prodline">${productLink(p)}<span>${fmtIn(it.w)} × ${fmtIn(it.d)} × ${fmtIn(it.h)}${p.price != null ? ` · $${p.price.toLocaleString('en-US')}` : ''} · ${p.verified ? `checked ${esc(CHECKED)}` : '<span class="warnline">dimensions not confirmed</span>'}</span></p>` : '';
   const variants = c.variants ? `<div class="field"><label for="psVar">Variant</label><select id="psVar" data-k="variant">${Object.entries(c.variants).map(([k, v]) => `<option value="${esc(k)}" ${(it.variant || Object.keys(c.variants)[0]) === k ? 'selected' : ''}>${esc(v.label)}</option>`).join('')}</select></div>` : '';
   el.innerHTML = `<div class="ps-ih"><span class="ps-sw" style="--c:#${(c.color ?? 0x888888).toString(16).padStart(6, '0')}"></span><div class="t"><b>${esc(it.name)}</b><small>${esc(r.room || '')}${c.est ? ' · size estimated' : ''}</small></div>${statePill(r.state)}<button class="icon-btn" type="button" data-a="close" aria-label="Deselect">${IC.x}</button></div>
     <div class="ps-fields" data-id="${esc(it.id)}">
       ${['w', 'd', 'h'].map((k) => `<div class="field"><label for="psF${k}">${{ w: 'Width', d: 'Depth', h: 'Height' }[k]} <span>in</span></label><input type="number" id="psF${k}" data-k="${k}" min="1" max="300" step="0.5" value="${+it[k].toFixed(1)}"></div>`).join('')}
       <div class="field"><label for="psFr">Turn <span>°</span></label><input type="number" id="psFr" data-k="rot" step="15" value="${Math.round(it.rot)}"></div>
-      ${variants}
-    </div>
+      ${variants}${product}${it.elev || ['art', 'lamp', 'tv', 'ac'].includes(it.kind) ? `<div class="field"><label for="psFe">Off floor <span>in</span></label><input type="number" id="psFe" data-k="elev" min="0" max="140" step="0.5" value="${+(it.elev || 0).toFixed(1)}"></div>` : ''}
+    </div>${prodLine}
     <div class="ps-acts">
       <button class="btn" type="button" data-a="rot" title="Turn 90° (R)">${IC.rot}Turn</button>
       <button class="btn" type="button" data-a="dup" title="Duplicate (D)">${IC.dup}Duplicate</button>
@@ -548,6 +579,16 @@ function inspector() {
     <p class="ps-src">${esc(c.src || '')}</p>`;
 }
 const statePill = (s) => `<span class="pill ${PILL[s]} ps-state">${GRADE_TXT[s]}</span>`;
+const shortName = (n) => (n.split(',')[0].length >= 12 ? n.split(',')[0] : n).replace(/\s*-\s*[A-Z][a-z]+ [A-Z][a-z]+$/, '').slice(0, 52);
+const productLink = (p) => { const u = safeUrl(p.url); return u ? `<a href="${esc(u)}" target="_blank" rel="noopener noreferrer">${esc(p.brand)} ${esc(shortName(p.name))}</a>` : `<b>${esc(p.brand)} ${esc(shortName(p.name))}</b>`; };
+/** Swap a placed piece to a real product (or back to the generic size), keeping its back where it was. */
+function useProduct(it, pid) {
+  const p = pid ? PRODUCT_MAP[pid] : null;
+  mutate(() => {
+    if (!p) { delete it.product; delete it.w; delete it.d; delete it.h; return; }
+    const next = withProduct(it, p); for (const k of Object.keys(it)) if (!(k in next)) delete it[k]; Object.assign(it, next);
+  }, p ? `${p.brand} ${shortName(p.name)}: ${fmtIn(resolve(it)?.w || 0)} × ${fmtIn(resolve(it)?.d || 0)}` : 'Back to the generic size');
+}
 function inspClick(e) {
   const b = e.target.closest('button'); if (!b) return;
   if (b.dataset.flash != null) { const x = ev.items[sel]?.issues[+b.dataset.flash]; if (x) flashPoly(x.at || x.zone?.poly || null); return; }
@@ -563,6 +604,8 @@ function inspClick(e) {
 function inspChange(e) {
   const k = e.target.dataset.k; const it = items.find((q) => q.id === sel); if (!k || !it) return;
   if (k === 'variant') { mutate(() => { it.variant = e.target.value; delete it.d; delete it.h; delete it.w; }); return; }
+  if (k === 'product') { useProduct(it, e.target.value); return; }
+  if (k === 'elev') { const v = parseFloat(e.target.value); if (Number.isFinite(v)) mutate(() => { it.elev = Math.max(0, Math.min(140, v)); }); return; }
   const v = parseFloat(e.target.value); if (!Number.isFinite(v)) return;
   mutate(() => { if (k === 'rot') it.rot = ((v % 360) + 360) % 360; else it[k] = Math.max(1, Math.min(300, v)); });
 }
@@ -579,6 +622,7 @@ function tab() {
   const el = $('psTab');
   if (st.tab === 'furniture') el.innerHTML = furnitureTab();
   else if (st.tab === 'checks') el.innerHTML = checksTab();
+  else if (st.tab === 'shop') el.innerHTML = shopTab();
   else if (st.tab === 'light') { el.innerHTML = '<div id="psLight"></div>'; refreshSun(); }
   else { el.innerHTML = planTab() + architecturePanel(); bindArchitecture(); }
   markCams();
@@ -636,7 +680,35 @@ function checksTab() {
   const tv = ev.tv.filter((t) => t.seats.length).length ? `<h3 class="label">TV viewing <span>${esc(TV_FOV.src.split('(')[0].trim())}</span></h3><table class="mini"><thead><tr><th>Seat</th><th class="num">Distance</th><th class="num">View</th><th></th></tr></thead><tbody>${ev.tv.flatMap((t) => t.seats.map((s) => `<tr><td>${esc(s.seat)}<br><small class="faint">${esc(t.name)}</small></td><td class="num">${(s.dist / 12).toFixed(1)} ft</td><td class="num">${Math.round(s.fov)}°${s.off > 20 ? `<br><small class="faint">${Math.round(s.off)}° off</small>` : ''}</td><td><span class="pill ${s.tag === 'ideal' ? 'good' : s.tag === 'too far' ? 'bad' : 'warn'}">${s.tag}</span></td></tr>`)).join('')}</tbody></table><p class="ps-note">Ideal is a screen filling ${TV_FOV.ideal}° to ${TV_FOV.close}° of your view: about ${(48.4 / 2 / Math.tan((TV_FOV.close / 2) * DEG) / 12).toFixed(1)} to ${(48.4 / 2 / Math.tan((TV_FOV.ideal / 2) * DEG) / 12).toFixed(1)} ft for a 55-inch set.</p>` : '';
   const rules = `<details class="ps-rules"><summary>The rules and where the numbers come from</summary><ul>${Object.values(CLEARANCE).map((x) => `<li><b>${x.min}–${x.preferred} in</b> ${esc(x.src)}</li>`).join('')}<li>Headboards should not sit against a window with a sill below the headboard; wall-mounted TVs need a solid wall behind the whole set.</li><li>Furniture in a door's swing blocks it; unknown swings get a 24 in keep-clear on both sides of the doorway.</li></ul></details>`;
   return `<p class="ps-note ps-cm">${c.blocked ? `<b class="no">${c.blocked} blocked</b> · ` : ''}${c.tight ? `<b class="unk">${c.tight} tight</b> · ` : ''}${c.clear} clear. Click a row to show it on the plan.</p>
-    ${roomRows || '<p class="faint">Place some furniture to see the checks.</p>'}${tv}${fx}${rules}`;
+    ${routesBlock()}${roomRows || '<p class="faint">Place some furniture to see the checks.</p>'}${tv}${fx}${rules}`;
+}
+function routesBlock() {
+  const rs = routesRes?.routes || []; if (!rs.length) return '';
+  const pill = (g) => `<span class="pill ${PILL[g]}">${GRADE_TXT[g]}</span>`;
+  return `<h3 class="label">Walking from the front door <span>36 in comfortable, 30 in minimum</span></h3>
+    <label class="tg ps-rt-all ${st.routes ? 'on' : ''}"><input type="checkbox" class="sr" data-opt="routes" ${st.routes ? 'checked' : ''}><span class="switch"></span><span class="lbl">Show every route on the plan</span></label>
+    <ul class="ps-routes">${rs.map((r) => `<li class="${st.routeKey === r.key ? 'on' : ''}"><button type="button" class="ps-rt" data-rt="${esc(r.key)}">${pill(r.grade)}<span><b>${esc(r.label)}</b> ${esc(r.text)}${r.delivery && r.delivery.grade !== 'clear' ? `<br><small class="g-${r.delivery.grade}">${esc(r.delivery.text)}</small>` : ''}</span><span class="num">${r.reachable ? (Number.isFinite(r.width) ? `${Math.round(r.width)} in` : 'open') : '—'}</span></button>${r.reachable && r.path.length > 1 ? `<button type="button" class="icon-btn" data-tour="${esc(r.key)}" title="Walk this route at eye level" aria-label="Walk to ${esc(r.label)}">${IC.play}</button>` : ''}</li>`).join('')}</ul>
+    <p class="ps-note faint">Widest path on a 2 in grid around walls, fixtures and furniture under 30 in (tucked dining chairs count). Door openings are the building's and are listed with deliveries, not counted in the width.</p>`;
+}
+function shopTab() {
+  const list = shoppingList(R), fmt$ = (v) => `$${Math.round(v).toLocaleString('en-US')}`;
+  const beds = R.filter((x) => !x.hidden && x.kind === 'bed'), target = R.find((x) => x.id === st.finder) || (sel && R.find((x) => x.id === sel && productsFor(x.ref).length)) || beds[0];
+  const rows = list.rows.map((r) => `<tr><td><button type="button" class="ps-linkbtn" data-sel="${esc(r.id)}">${esc(r.name)}</button><br><small class="faint">${r.product ? productLink(r.product) : r.options ? `${r.options} product${r.options > 1 ? 's' : ''} to choose from` : 'generic size'}</small></td><td class="num">${fmtIn(r.w)} × ${fmtIn(r.d)}${r.product && !r.product.verified ? '<br><small class="warnline">unconfirmed</small>' : ''}</td><td class="num">${r.price != null ? fmt$(r.price) : '<span class="faint">—</span>'}</td></tr>`).join('');
+  let finder = '';
+  if (target) {
+    const fr = productFinder(model, items, target.id);
+    finder = `<h3 class="label">${target.kind === 'bed' ? 'Bed finder' : 'Product finder'} <span>tried in its spot</span></h3>
+      ${beds.length > 1 || (target.kind !== 'bed' && beds.length) ? `<div class="chips ps-finder-pick">${[...new Map([...beds, target].map((b) => [b.id, b])).values()].map((b) => `<button type="button" class="chip ${b.id === target.id ? 'on' : ''}" data-finder="${esc(b.id)}">${esc(b.name)}</button>`).join('')}</div>` : ''}
+      <ul class="ps-finder">${fr.map((x) => `<li class="${x.product.id === target.product ? 'cur' : ''}"><div class="t"><b>${productLink(x.product)}</b><small>${fmtIn(x.w)} × ${fmtIn(x.d)}${x.product.drawers?.count ? ` · ${x.product.drawers.count} drawers${x.product.drawers.pull_in ? `, ${x.product.drawers.pull_in} in deep` : ''}` : ''}${x.product.price != null ? ` · ${fmt$(x.product.price)}` : ''}${x.product.verified ? '' : ' · <span class="warnline">unconfirmed size</span>'}</small>${x.issues[0] ? `<small class="g-${x.grade}">${esc(x.issues[0])}</small>` : x.where === 'moved' ? '<small class="faint">Fits after moving it within the room</small>' : ''}</div><span class="pill ${PILL[x.grade]}">${x.where === 'moved' && x.grade === 'clear' ? 'Fits moved' : GRADE_TXT[x.grade]}</span>${x.product.id === target.product ? '<span class="pill accent">Chosen</span>' : `<button type="button" class="btn" data-use="${esc(x.product.id)}" data-for="${esc(target.id)}" data-where="${x.where}">Use</button>`}</li>`).join('')}</ul>
+      <p class="ps-note faint">Storage beds need their drawers' depth plus room to kneel on every drawer side. Sizes come from each retailer's product page on ${esc(CHECKED)}; prices change.</p>`;
+  }
+  const chosen = list.rows.filter((r) => r.product).length;
+  return `<div class="metrics ps-shop-m"><div class="metric"><div class="k">Products chosen</div><div class="v">${chosen}<small> of ${list.rows.length}</small></div></div><div class="metric"><div class="k">Priced total</div><div class="v">${list.priced ? fmt$(list.total) : '—'}</div></div></div>
+    ${finder}
+    <h3 class="label">Shopping list <span>pick a product in each piece's inspector</span></h3>
+    <table class="mini ps-shop"><thead><tr><th>Piece</th><th class="num">Size</th><th class="num">Price</th></tr></thead><tbody>${rows || '<tr><td colspan="3" class="faint">Nothing placed yet.</td></tr>'}</tbody></table>
+    <div class="ps-files"><button class="btn" type="button" data-file="csv">${IC.down}Shopping list .csv</button></div>
+    <p class="ps-note faint">Dimensions are the maker's published measurements; prices are a snapshot from ${esc(CHECKED)} and change. No product photos are stored.</p>`;
 }
 function planTab() {
   const pv = model.provenance, L = byId(st.id);
@@ -659,11 +731,29 @@ function tabClick(e) {
   else if (b.dataset.add) addRef(b.dataset.add);
   else if (b.dataset.ck) { select(b.dataset.ck); const x = ev.items[b.dataset.ck]?.issues[+b.dataset.i]; flashPoly(x?.at || x?.zone?.poly || null); }
   else if (b.dataset.file) fileAction(b.dataset.file);
+  else if (b.dataset.rt) { st.routeKey = st.routeKey === b.dataset.rt ? null : b.dataset.rt; overlays(); tab(); }
+  else if (b.dataset.tour) walkRoute(b.dataset.tour);
+  else if (b.dataset.finder) { st.finder = b.dataset.finder; tab(); }
+  else if (b.dataset.use) {
+    const it = items.find((q) => q.id === b.dataset.for), p = PRODUCT_MAP[b.dataset.use]; if (!it || !p) return;
+    if (b.dataset.where === 'moved') { const row = productFinder(model, items, it.id).find((x) => x.product.id === p.id); if (row) mutate(() => { for (const k of Object.keys(it)) if (!(k in row.item)) delete it[k]; Object.assign(it, row.item); }, `${p.brand} ${shortName(p.name)}, moved to fit`); }
+    else useProduct(it, p.id);
+  }
+}
+/** Guided eye-level walk from the front door along an access route. */
+function walkRoute(key) {
+  const r = routesRes?.routes.find((x) => x.key === key); if (!r || r.path.length < 2) return;
+  if (st.mode === '2d') setMode(isPhone() ? '3d' : 'both');
+  st.routeKey = key; st.view = 'tour'; overlays(); markCams();
+  G3.tour([routesRes.start, ...r.path], { onEnd: () => { st.view = 'walk'; markCams(); } });
+  toast(`Walking to the ${r.label.toLowerCase()}: ${r.text.charAt(0).toLowerCase() + r.text.slice(1)}`);
 }
 function tabChange(e) {
   const k = e.target.dataset.opt; if (!k) return;
   st[k] = e.target.checked; e.target.closest('.tg')?.classList.toggle('on', st[k]); overlays();
 }
+function setMood(m) { st.mood = m; store.set('plan-mood', m); G3.setMood(m); document.querySelectorAll('[data-mood]').forEach((b) => { b.classList.toggle('on', b.dataset.mood === m); b.setAttribute('aria-pressed', String(b.dataset.mood === m)); }); refreshSun(); }
+const MOODS = [['auto', 'Auto'], ['day', 'Day'], ['evening', 'Evening'], ['night', 'Night']];
 
 // ------------------------------------------------------------------ sun
 function sunPanel() {
@@ -672,11 +762,13 @@ function sunPanel() {
       <button class="icon-btn ps-play" type="button" id="pPlay" aria-label="Play the day">${IC.play}</button>
       <div class="field ps-date"><label for="pDate">Date</label><input type="date" id="pDate" value="${st.date}"></div>
       <div class="field ps-time"><label for="pTime">Sun at <span class="val" id="pTimeV"></span></label><input type="range" id="pTime" min="300" max="1230" step="5" value="${st.min}"></div>
+      <div class="seg ps-mood" id="pMood" role="group" aria-label="Lights">${MOODS.map(([k, t]) => `<button type="button" data-mood="${k}" class="${st.mood === k ? 'on' : ''}" aria-pressed="${st.mood === k}" title="${k === 'auto' ? 'Day while the sun is up, lamps after dark' : k === 'night' ? 'Lamps on, no daylight' : k === 'evening' ? 'Low daylight and lamps' : 'Daylight, lamps off'}">${t}</button>`).join('')}</div>
       <div class="seg ps-quick" id="pQuick">${[[mi, 'Move-in'], [`${y}-12-21`, 'Dec 21'], [`${y}-03-20`, 'Mar 20'], [`${y}-06-21`, 'Jun 21']].filter((q) => q[0]).map(([d, t]) => `<button type="button" data-d="${d}">${t}</button>`).join('')}</div>
     </div>`;
   $('pDate').addEventListener('change', (e) => { if (e.target.value) { st.date = e.target.value; refreshSun(); } });
   $('pTime').addEventListener('input', (e) => { st.min = +e.target.value; refreshSun(); });
   $('pQuick').addEventListener('click', (e) => { const b = e.target.closest('[data-d]'); if (!b) return; st.date = b.dataset.d; $('pDate').value = st.date; refreshSun(); });
+  $('pMood').addEventListener('click', (e) => { const b = e.target.closest('[data-mood]'); if (b) setMood(b.dataset.mood); });
   $('pPlay').addEventListener('click', () => { st.playing = !st.playing; $('pPlay').innerHTML = st.playing ? IC.pause : IC.play; $('pPlay').classList.toggle('on', st.playing); });
 }
 function refreshSun() {
@@ -696,11 +788,12 @@ function refreshSun() {
   const light = lightState({ bearing:placementKnown?model.up_bearing:null, altitude:s.alt, blocked:!!blocked, directSun:st.directSun, ambient:st.ambient });
   const rel = (s.az - (model.up_bearing ?? 0)) * DEG, ca = Math.cos(s.alt * DEG);
   const gz = glazingScale({ transmittance: st.glazing, blinds: st.blinds });
-  G3.setLighting({ambient:light.ambient, sun:gz.sun});
+  G3.setLighting({ambient:light.ambient, sun:gz.sun, through:gz.through});
   G3.setSun({ x: Math.sin(rel) * ca, y: Math.cos(rel) * ca, up: Math.sin(s.alt * DEG) }, light.directional, up);
   const tv = $('pTimeV'); if (tv) tv.textContent = fmtT(st.min);
   const t = $('pTime'); if (t) t.style.setProperty('--p', `${((st.min - 300) / 930) * 100}%`);
-  $('phud').innerHTML = `<span>${esc(st.date)} ${fmtT(st.min)}</span><span class="${light.directional ? 'lit' : 'shade'}">${!placementKnown ? 'Window placement unresolved · direct sun withheld' : !light.orientationKnown ? 'Orientation unknown · direct sun unresolved' : !up ? 'Night' : blocked ? (perWin ? 'Every window shaded by neighbours' : 'Site observation point shaded') : nBlk ? `Sun blocked at ${nBlk} of ${perWin.length} windows` : !st.directSun ? 'Direct sun hidden in preview' : `Sun ${Math.round(s.alt)}° up, ${compass(s.az)}`}</span>`;
+  const lamps = R.filter((x) => !x.hidden && x.kind === 'lamp').length, mn = G3.moodNow();
+  $('phud').innerHTML = `<span>${esc(st.date)} ${fmtT(st.min)}${mn !== 'day' ? ` · ${mn === 'night' ? 'night' : 'evening'}, ${lamps ? `${lamps} lamp${lamps > 1 ? 's' : ''} on` : 'no lamps placed'}` : ''}</span><span class="${light.directional ? 'lit' : 'shade'}">${!placementKnown ? 'Window placement unresolved · direct sun withheld' : !light.orientationKnown ? 'Orientation unknown · direct sun unresolved' : !up ? 'Night' : blocked ? (perWin ? 'Every window shaded by neighbours' : 'Site observation point shaded') : nBlk ? `Sun blocked at ${nBlk} of ${perWin.length} windows` : !st.directSun ? 'Direct sun hidden in preview' : `Sun ${Math.round(s.alt)}° up, ${compass(s.az)}`}</span>`;
   const el = $('psLight'); if (!el) return;
   if (!el.querySelector('#psLightResults')) {
     el.innerHTML = `<div class="ps-light-controls"><label class="tg"><input id="psDirectSun" type="checkbox"> Show directional sunlight</label>${onSite ? `<label class="tg ps-city-tg"><input id="psCityTg" type="checkbox"> Show the city outside</label>` : ''}<div class="field"><label for="psAmbient">Background light preview <span id="psAmbientValue"></span></label><input id="psAmbient" type="range" min="0" max="2" step="0.05"></div><p class="ps-note faint">Background intensity is a display preference, not measured brightness or lux.</p>
@@ -777,5 +870,11 @@ function frame() {
   if ($('view-plan').hidden || !model) return;
   if (st.playing) { st.min += 3; if (st.min > 1230) st.min = 300; const t = $('pTime'); if (t) t.value = st.min; refreshSun(); }
   if (flash && performance.now() > flashT) { flash = null; overlays(); }
+  const now = performance.now(), dt = Math.min(0.05, (now - (lastFrame || now)) / 1000); lastFrame = now;
+  if (held.size && G3.viewMode() === 'eye') {
+    const h = (k) => held.has(k), v = (h('shift') ? 72 : 36) * dt; // inches per second: a stroll, or a brisk walk
+    const fwd = (h('w') || h('arrowup') ? v : 0) - (h('s') || h('arrowdown') ? v : 0), turn = ((h('d') || h('arrowright') ? 1 : 0) - (h('a') || h('arrowleft') ? 1 : 0)) * 1.6 * dt, side = ((h('e') ? 1 : 0) - (h('q') ? 1 : 0)) * v;
+    if (fwd || turn || side) G3.walk(fwd, turn, side);
+  }
   G3.render();
 }

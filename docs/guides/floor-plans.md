@@ -133,9 +133,33 @@ The catalogue lives in `dashboard/js/plan/catalog.js`, with a cited source for e
 | `dining-4`, `dining-round`, `dining-6` | 48 x 30, 36 round, 60 x 36 | 24-32 to pull out each chair |
 | `desk` | 48 x 24 x 30 | 24-30 chair pull-out |
 | `ac-unit` | 42 x 10 x 24 (placeholder) | 12-18 in front |
+| `queen-storage-bed` (variants `both`, `left`, `right`, `foot`) | 64 x 84 x 40 | the bed's own zones plus 24-30 in on every drawer side (drawer depth + 4 to 10 in with a real product) |
+| `ptac`, `window-ac`, `radiator` | 42 x 13.9 x 16, 19 x 9 x 13.5 on the sill, 36 x 8 x 24 | 12-18 airflow, 12-24 airflow (must sit in a window at sill height), 4-8 heat clearance |
+| `rug` (variants `5x8`, `6x9`, `8x10`, `round6`) | 96 x 60 and up | not an obstacle; tight under a door swing |
+| `wall-art` (variants `s`, `m`, `l`) | 36 x 24 at 45 in up | centre at 57 ± 3 in; 6-12 in above the furniture below; solid wall behind |
+| `floor-lamp`, `table-lamp`, `pendant`, `ceiling-light` | 12 x 60 tall, 10 x 20 at 24 in, 16 at 66 in, 14 at 100 in | a table lamp needs a surface at its height; lamps light the room in Evening and Night |
 
 TV viewing distance is graded by the share of your view the screen fills: 28 to 42 degrees is ideal
-(SMPTE recommends at least 30, THX about 40), 20 to 28 is workable, under 20 is too far.
+(SMPTE recommends at least 30, THX about 40), 20 to 28 is workable, under 20 is too far. The screen
+centre should also sit within 15 degrees above a seated eye (40 in on a sofa, 34 in propped up in bed).
+
+**Products.** `dashboard/js/plan/products.js` lists real products (IKEA, Article, Zinus, Samsung, LG, GE
+and others) with the maker's published size, the product page link, a dated price snapshot and a
+`verified` flag. Choosing one in a piece's inspector (or with **Use** in the Shop tab's bed finder)
+swaps the generic size for the product's, keeps the piece's back where it was and stores
+`"product": "<id>"` on the layout item. The Shop tab totals the priced pieces and exports a CSV.
+
+**Access routes.** The Checks tab walks from the entry door to every bed, the sofa, the desk, the dining
+table, the kitchen and each bathroom (`dashboard/js/plan/route.js`: widest path on a 2 in grid around
+walls, fixtures and furniture lower than 30 in) and grades the narrowest point: 36 in comfortable,
+30 in minimum. Door openings are reported as the delivery check instead (does the piece fit through the
+narrowest door on its route on its side; flat-packed kinds always do). The play button walks the route
+at eye level.
+
+**Plans without presets** get a suggested starting layout (`plan/suggest.js`): a typical kit placed by
+the auto-placer, with a rationale written from the checks. **Layout ▸ Compare the layout options**
+draws every preset side by side with its verdict; **Compare with the other plans** places your layout in
+every plan and shows them side by side in 3D and 2D.
 
 ## Trace a plan
 
@@ -225,13 +249,15 @@ only to the plan id it was saved under, never to a sibling unit.
  "items": [{"id": "bed", "ref": "queen-bed", "x": 238.8, "y": 243.6, "rot": 0}]}
 ```
 
+An item may also carry `"product": "<product id>"` (optional; older files without it load unchanged).
+
 Positions are inches in the plan frame. Loading checks the file strictly (known furniture, unique ids,
 sizes 1-300 in, plain-text labels, at most 150 pieces, at most 1 MB) and refuses it with a reason
 otherwise. The studio also remembers the last layout for each plan in the browser.
 
 **Export 3D model** writes a binary glTF in metres with a `shell` node (floors, walls, glass,
 fixtures) and a `furniture` node holding one group per piece, named `<name> (<ref>)` with
-`userData` `{itemId, ref, room}`.
+`userData` `{itemId, ref, room, product?}`. **Snapshot** PNGs come at screen size, 2x, or 4K wide.
 
 ## Tests
 

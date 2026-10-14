@@ -83,7 +83,7 @@ export function obstacles(model, items) {
   const out = [];
   for (const p of model.pieces) { const poly = piecePoly(p); out.push({ type: 'wall', kind: p.kind === 'sill' ? 'sill' : 'wall', poly, bb: bbox(poly), z0: p.z0, z1: p.z1, label: p.kind === 'sill' ? 'the window sill' : 'a wall', piece: p }); }
   for (const f of model.fixtures) out.push({ type: 'fixture', kind: f.kind, poly: f.poly, bb: bbox(f.poly), z0: f.elev, z1: f.elev + (f.height || model.ceiling), label: f.label || FIX_NAMES[f.kind] || f.kind, fixture: f });
-  for (const it of items) { if (it.hidden) continue; const poly = footprint(it); out.push({ type: 'item', kind: it.kind, id: it.id, poly, bb: bbox(poly), z0: it.elev, z1: it.elev + it.h, label: it.name, item: it }); }
+  for (const it of items) { if (it.hidden || it.flat) continue; const poly = footprint(it); out.push({ type: 'item', kind: it.kind, id: it.id, poly, bb: bbox(poly), z0: it.elev, z1: it.elev + it.h, label: it.name, item: it }); }
   return out;
 }
 export const FIX_NAMES = { closet: 'Closet', wardrobe: 'Built-in wardrobe', column: 'Column', ac: 'AC unit', ptac: 'AC unit', radiator: 'Radiator', counter: 'Counter', island: 'Island', fridge: 'Fridge', range: 'Range', sink: 'Sink', dishwasher: 'Dishwasher', wd: 'Washer/dryer', tub: 'Tub', shower: 'Shower', toilet: 'Toilet', vanity: 'Vanity', other: 'Fixture' };
@@ -178,11 +178,24 @@ export function tvSeats(model, items, tv) {
       const sb = axes(s.rot).b, sf = [-sb[0], -sb[1]];
       const face = Math.acos(Math.max(-1, Math.min(1, (-vx * sf[0] + -vy * sf[1]) / D))) / DEG;
       const f = fov(W, D), tag = viewTag(f);
-      out.push({ seat: name, seatId: s.id, at: p, from: scr, dist: D, fov: f, off, face, tag, grade: tag === 'ideal' && off <= 35 && face <= 50 ? 'clear' : tag === 'too far' ? 'blocked' : 'tight' });
+      const eye = EYE[s.kind] ?? 40, cz = screenCentre(tv), up = Math.atan2(cz - eye, D) / DEG;
+      out.push({ seat: name, seatId: s.id, at: p, from: scr, dist: D, fov: f, off, face, tag, eye, centre: cz, up, grade: tag === 'ideal' && off <= 35 && face <= 50 && up <= TV_UP_MAX ? 'clear' : tag === 'too far' ? 'blocked' : 'tight' });
     }
   }
   return out;
 }
+
+/** Seated eye height (in) by seat kind: sofa and chair about 40 in, propped up in bed about 34 in. */
+export const EYE = { sofa: 40, chair: 40, bed: 34 };
+/** Comfortable upward viewing angle to the screen centre (degrees); above it the neck tilts back. */
+export const TV_UP_MAX = 15;
+/** Height of a TV screen's centre above the floor (in). */
+export function screenCentre(tv) {
+  if (tv.mount === 'wall') return tv.elev + tv.h / 2;
+  const scrW = tv.screen || tv.w; return tv.h + 3 + (scrW * 0.574) / 2;
+}
+/** Gallery rule: art centre at 57 in, give or take 3 in. */
+export const ART_CENTRE = { ideal: 57, tol: 3, aboveMin: 6, aboveMax: 12 };
 
 // ------------------------------------------------------------------ evaluate everything
 const issue = (grade, code, text, extra = {}) => ({ grade, code, text, ...extra });
@@ -198,18 +211,18 @@ export function itemIssues(model, it, obs) {
   if (wallHit) add(issue('blocked', 'wall', wallHit.kind === 'sill' ? 'Runs into the window wall' : 'Runs into a wall', { at: wallHit.poly }));
   // fixtures, then other furniture (height-aware: a wall TV above a low dresser is fine)
   for (const o of obs) if (o.type === 'fixture' && zHit(z0, z1, o.z0, o.z1) && overlaps(fp, o.poly)) add(issue('blocked', 'fixture', `Overlaps the ${o.label.toLowerCase()}`, { at: o.poly }));
-  for (const o of obs) if (o.type === 'item' && o.id !== it.id && zHit(z0, z1, o.z0, o.z1) && overlaps(fp, o.poly)) add(issue('blocked', 'overlap', `Overlaps the ${o.label.toLowerCase()}`, { other: o.id, at: o.poly }));
+  for (const o of obs) if (!it.flat && o.type === 'item' && o.id !== it.id && zHit(z0, z1, o.z0, o.z1) && overlaps(fp, o.poly)) add(issue('blocked', 'overlap', `Overlaps the ${o.label.toLowerCase()}`, { other: o.id, at: o.poly }));
   // outside the rooms
   const inset = footprint({ ...it, w: Math.max(1, it.w - 2), d: Math.max(1, it.d - 2) });
   if (!wallHit && inset.some((p) => !nearRoom(model, p, model.wallT + 0.5))) add(issue('blocked', 'outside', 'Sticks out past the rooms on the plan'));
   // doors
   if (z0 < 80) for (const d of model.doorways) {
     const sw = swingPoly(d);
-    if (sw) { if (overlaps(fp, sw, 1)) add(issue('blocked', 'door', `In the swing of the ${doorName(d, model)}`, { at: sw })); }
-    else if (!['slide', 'pocket', 'none'].includes(d.swing) && overlaps(fp, doorwayPoly(d), 1)) add(issue('tight', 'doorway', `In front of a doorway (${doorName(d, model)})`, { at: doorwayPoly(d) }));
+    if (sw) { if (overlaps(fp, sw, 1)) add(it.flat ? issue('tight', 'door', `Under the swing of the ${doorName(d, model)}: a thick rug can catch the door`, { at: sw }) : issue('blocked', 'door', `In the swing of the ${doorName(d, model)}`, { at: sw })); }
+    else if (!it.flat && !['slide', 'pocket', 'none'].includes(d.swing) && overlaps(fp, doorwayPoly(d), 1)) add(issue('tight', 'doorway', `In front of a doorway (${doorName(d, model)})`, { at: doorwayPoly(d) }));
   }
   // keep-out zones
-  for (const k of model.keepout) if (z0 < 80 && overlaps(fp, k.poly, 1)) add(issue(k.grade, 'keepout', `In the keep-out zone: ${k.name}`, { at: k.poly }));
+  for (const k of model.keepout) if (!it.flat && z0 < 80 && overlaps(fp, k.poly, 1)) add(issue(k.grade, 'keepout', `In the keep-out zone: ${k.name}`, { at: k.poly }));
   // rules
   if (it.rules.includes('no-window-behind')) {
     const n = 9; let hit = false;
@@ -226,6 +239,27 @@ export function itemIssues(model, it, obs) {
       if (model.pieces.some((q) => q.z0 <= z0 + 0.5 && q.z1 >= z1 - 0.5 && segDist(p, q.a, q.b) <= q.t / 2 + 3.5)) ok++;
     }
     if (ok / n < 0.85) add(issue('blocked', 'tv-wall', ok ? 'Needs a solid wall behind it, not glass or an opening' : 'Not against a wall, so it cannot be wall-mounted'));
+  }
+  if (it.rules.includes('art-height')) {
+    const c = z0 + it.h / 2, A = ART_CENTRE;
+    if (Math.abs(c - A.ideal) > A.tol) add(issue('tight', 'art-height', `Centre is ${Math.round(c)} in up; hang art with its centre about ${A.ideal} in (eye level)`));
+    // furniture standing under it: 6-12 in of wall between its top and the frame reads as one group
+    const below = obs.filter((o) => o.type === 'item' && o.id !== it.id && o.z1 <= z0 + 0.5 && o.z1 > 12 && lateralUnder(it, o.item));
+    if (below.length) {
+      const top = Math.max(...below.map((o) => o.z1)), gap = z0 - top, name = below.find((o) => o.z1 === top).label.toLowerCase();
+      if (gap < A.aboveMin) add(issue('tight', 'art-above', `Only ${Math.round(gap)} in above the ${name}; leave ${A.aboveMin}-${A.aboveMax} in`));
+      else if (gap > 18) add(issue('tight', 'art-above', `${Math.round(gap)} in above the ${name}, so it floats; ${A.aboveMin}-${A.aboveMax} in ties them together`));
+    }
+  }
+  if (it.rules.includes('in-window')) {
+    const back = [toWorld(it, -it.w / 4, it.d / 2 + 2), toWorld(it, 0, it.d / 2 + 2), toWorld(it, it.w / 4, it.d / 2 + 2)];
+    const win = model.windows.find((w) => back.every((p) => segDist(p, w.a, w.b) < 5));
+    if (!win) add(issue('blocked', 'in-window', 'A window unit has to sit in a window opening'));
+    else if (Math.abs(z0 - win.sill) > 3) add(issue('tight', 'in-window', `Set its height to the sill: ${Math.round(win.sill)} in (now ${Math.round(z0)} in)`));
+  }
+  if (it.kind === 'lamp' && it.base?.lamp === 'table') {
+    const c = [it.x, it.y], under = obs.find((o) => o.type === 'item' && o.id !== it.id && Math.abs(o.z1 - z0) <= 3 && pointInPoly(c, o.poly));
+    if (!under) add(issue('tight', 'lamp-surface', `Nothing ${Math.round(z0)} in tall under it: put it on a nightstand or table, or change its height`));
   }
   // clearance zones
   const groups = {};
@@ -272,12 +306,22 @@ export function evaluate(model, items) {
   for (const t of tv) {
     if (!t.seats.length) { add(t.id, issue('tight', 'tv-seat', 'No seat faces it in this room')); continue; }
     const best = t.seats.reduce((a, b) => (GRADES.indexOf(a.grade) <= GRADES.indexOf(b.grade) ? a : b));
-    if (best.grade !== 'clear') add(t.id, issue('tight', 'tv-seat', `Best seat (${best.seat.toLowerCase()}) is ${(best.dist / 12).toFixed(1)} ft away, ${best.tag}${best.off > 35 ? `, ${Math.round(best.off)}° off-axis` : ''}`));
+    if (best.grade !== 'clear') add(t.id, issue('tight', 'tv-seat', `Best seat (${best.seat.toLowerCase()}) is ${(best.dist / 12).toFixed(1)} ft away, ${best.tag}${best.off > 35 ? `, ${Math.round(best.off)}° off-axis` : ''}${best.up > TV_UP_MAX ? `, screen centre ${Math.round(best.up)}° above eye level` : ''}`));
+    const high = t.seats.filter((x) => x.up > TV_UP_MAX + 10);
+    if (high.length && high.length === t.seats.length) add(t.id, issue('tight', 'tv-height', `Mounted high: its centre is ${Math.round(high[0].centre)} in up, ${Math.round(high[0].up)}° above a seated eye (${high[0].eye} in) from the ${high[0].seat.toLowerCase()}; ${TV_UP_MAX}° or less is comfortable`));
   }
 
   const counts = { clear: 0, tight: 0, blocked: 0 };
   for (const r of Object.values(res)) { r.state = r.issues.reduce((a, x) => worst(a, x.grade), 'clear'); counts[r.state]++; }
   return { items: res, fixtures, tv, counts };
+}
+
+/** True when furniture `o` stands in front of wall-hung item `it` (within 14 in of its wall, overlapping along it). */
+export function lateralUnder(it, o) {
+  const { r, b } = axes(it.rot), fp = footprint(o);
+  const along = fp.map((p) => (p[0] - it.x) * r[0] + (p[1] - it.y) * r[1]), out = fp.map((p) => -((p[0] - it.x) * b[0] + (p[1] - it.y) * b[1]));
+  const a0 = Math.min(...along), a1 = Math.max(...along), o0 = Math.min(...out);
+  return a1 > -it.w / 2 + 2 && a0 < it.w / 2 - 2 && o0 < 14 + it.d / 2 && Math.max(...out) > -it.d;
 }
 
 /** A fixture as a pseudo-item so its front clearance can be measured like furniture. */
