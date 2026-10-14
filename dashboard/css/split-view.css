@@ -1,0 +1,43 @@
+/* Shortlist split view: the docked mini map beside the table. Tokens only; the map's floating bits reuse the glass panels
+   (the aside carries .mapstage so glass.css styles .float inside it). */
+#view-list.split-on:not([hidden]) { display: flex; }
+#view-list.split-on .list-pad { flex: 1 1 0; min-width: 0; }
+.split-map { position: relative; flex: 0 0 clamp(300px, 34%, 560px); margin: var(--s-4) var(--s-5) var(--s-5) 0; border: 1px solid var(--line-strong); border-radius: var(--r-lg); overflow: hidden; box-shadow: var(--shadow-2); }
+.split-map[hidden] { display: none; }
+.split-canvas { position: absolute; inset: 0; }
+.split-n { top: 10px; left: 10px; padding: 5px 11px; border-radius: var(--r-pill); font-size: var(--fs-xs); color: var(--ink-2); font-variant-numeric: tabular-nums; pointer-events: none; }
+.split-n b { color: var(--ink); font-weight: 650; }
+.split-ctl { top: 10px; right: 10px; padding: 3px; border-radius: var(--r-md); display: flex; }
+.split-ctl button { width: 30px; height: 30px; display: grid; place-items: center; border: 0; background: none; border-radius: var(--r-inner); color: var(--ink-2); cursor: pointer; }
+.split-ctl button:hover { background: var(--surface-3); color: var(--ink); }
+.split-ctl svg { width: 16px; height: 16px; }
+.split-key { left: 10px; bottom: 10px; padding: 4px 10px; border-radius: var(--r-pill); display: flex; align-items: center; gap: 6px; font-size: var(--fs-2xs); color: var(--ink-2); pointer-events: none; }
+.split-key i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+.split-key .d { background: var(--score-4); box-shadow: inset 0 0 0 1.5px rgba(0, 0, 0, .3); }
+.split-key .s { margin-left: 4px; background: var(--fav); box-shadow: 0 0 0 2px color-mix(in srgb, var(--fav) 40%, transparent); }
+.split-map .attrib { z-index: 4; }
+.split-btn svg { width: 15px; height: 15px; }
+.split-btn.on { background: var(--accent-soft); border-color: var(--accent-line); color: var(--accent-strong); }
+.sp-dest { position: relative; width: 13px; height: 13px; pointer-events: none; }
+.sp-dest i { position: absolute; inset: 0; border-radius: 50%; background: var(--dest-pin); border: 2px solid #fff; box-shadow: 0 2px 6px rgba(0, 0, 0, .45); }
+.sp-dest span { position: absolute; left: 19px; top: 50%; transform: translateY(-50%); padding: 2px 7px; border-radius: 7px; background: color-mix(in srgb, var(--surface-1) 90%, transparent); border: 1px solid var(--line-strong); font: 600 10.5px/1.25 var(--font-sans); color: var(--ink); white-space: nowrap; }
+.sp-pulse { width: 0; height: 0; pointer-events: none; }
+.sp-pulse i { position: absolute; left: -20px; top: -20px; width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--accent); opacity: 0; animation: spPulse 1.3s var(--ease-out) infinite; }
+.sp-pulse i + i { animation-delay: .65s; }
+@keyframes spPulse { from { transform: scale(.28); opacity: .95; } to { transform: scale(1); opacity: 0; } }
+.sp-tip .maplibregl-popup-content { min-width: 0; }
+.sp-tip .hovercard { width: 208px; }
+table.lst tbody tr.map-hl td { background: color-mix(in srgb, var(--accent) 11%, var(--surface-1)); }
+table.lst tbody tr.map-hl td:first-child { box-shadow: inset 2px 0 0 var(--accent); }
+table.lst tbody tr.pin-flash td { animation: spFlash 1.6s var(--ease-out); }
+@keyframes spFlash { from { background: color-mix(in srgb, var(--accent) 34%, var(--surface-1)); } }
+@media (prefers-reduced-motion: reduce) {
+  .sp-pulse i { animation: none; opacity: .9; transform: scale(.55); }
+  .sp-pulse i + i { display: none; }
+  table.lst tbody tr.pin-flash td { animation: none; background: color-mix(in srgb, var(--accent) 22%, var(--surface-1)); }
+}
+@media (max-width: 760px) {
+  #view-list.split-on:not([hidden]) { flex-direction: column; }
+  .split-map { order: -1; flex: 0 0 34vh; margin: var(--s-3) var(--s-3) 0; }
+  #view-list.split-on .list-pad { padding-top: var(--s-2); }
+}
