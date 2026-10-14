@@ -127,3 +127,21 @@ def test_run_commute_blanks_water_and_matches_listings(tmp_path, feeds):  # noqa
     # the cell holding a listing is within a cell's walk of the listing's own minutes
     m = listings[1]["commute"]["Office"]["minutes"]
     assert abs(at(listings[1]["lat"], listings[1]["lon"]) - m) < 2.5
+
+
+def test_commute_ids_must_name_listings_in_the_search(tmp_path):
+    import json
+
+    from apartmentscout.cli import main
+    search = tmp_path / "s"
+    main(["init", str(search), "--city", "nyc"])
+    (search / "listings.json").write_text(json.dumps([{"id": "a-1", "building": "A", "unit": "1", "lat": 40.75, "lon": -73.98}]))
+    with pytest.raises(SystemExit) as e:
+        main(["commute", "--search", str(search), "--ids", "nope"])
+    assert "No unique listing matches 'nope'" in str(e.value)
+
+
+def test_run_commute_only_rejects_unknown_ids_before_any_work(tmp_path):
+    from apartmentscout.commute.run import run_commute
+    with pytest.raises(ValueError, match="none of the requested listing ids"):
+        run_commute(None, [{"id": "a-1", "lat": 40.75, "lon": -73.98}], {"commute": {"destinations": []}}, only=["zzz"])
