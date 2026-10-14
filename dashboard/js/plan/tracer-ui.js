@@ -1,6 +1,6 @@
 // Plan tracer and plan editor for the Floor plan studio.
 //
-// "New plan from image": load a local image or one PDF page (pdf.js loads from the CDN only when a PDF
+// "New plan from image": load a local image or one PDF page (the vendored pdf.js loads only when a PDF
 // is chosen; the file itself never leaves the browser), set the scale from a printed dimension and
 // check it against a second one, orient the drawing, trace rooms as polygons with 90/45 degree and
 // corner snapping, place doors and windows on the derived walls, add fixtures, and save plan JSON v2
@@ -20,8 +20,6 @@ import { serialiseProject } from './project.js';
 import { savePlanScenario } from './scenario-bridge.js';
 import * as T from './tracer.js';
 
-const PDFJS_VERSION = '4.10.38';
-const PDFJS_BASE = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${PDFJS_VERSION}/build/`;
 const NS = 'http://www.w3.org/2000/svg';
 const r1 = (v) => Math.round(v * 100) / 100;
 
@@ -641,9 +639,13 @@ async function loadFile(file) {
 let pdfLib = null;
 async function loadPdfJs() {
   if (pdfLib) return pdfLib;
-  const url = `${PDFJS_BASE}pdf.min.mjs`;
-  pdfLib = await import(/* @vite-ignore */ url);
-  pdfLib.GlobalWorkerOptions.workerSrc = `${PDFJS_BASE}pdf.worker.min.mjs`;
+  // pdfjs-dist 4.10.38, vendored in dashboard/vendor/pdfjs/ and named in the page's import map (a data: URL
+  // in the standalone file, where the worker is turned into a blob URL because a worker needs a real URL)
+  const lib = await import('pdfjs-dist');
+  const worker = import.meta.resolve('pdfjs-dist/worker');
+  lib.GlobalWorkerOptions.workerSrc = worker.startsWith('data:')
+    ? URL.createObjectURL(await (await fetch(worker)).blob()) : worker;
+  pdfLib = lib;
   return pdfLib;
 }
 async function renderPdfPage(n) {
