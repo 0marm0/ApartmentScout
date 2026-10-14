@@ -27,7 +27,7 @@ SHOTS = [
     ("map-score", "?layer=score#map", (1600, 1000), [], 3500, None),
     ("map-drawer", "?layer=commute-office&open=emerald-green-1211#map", (1600, 1000), [], 3500, None),
     ("shortlist", "#list", (1600, 1000), [], 1500, None),
-    ("compare", "#compare", (1600, 1150), [], 1500, None),
+    ("compare", "#compare/the-highpoint-condo-31f,the-horizon-35d,townsend-14c,emerald-green-1211", (1600, 1150), [], 2500, None),
     ("unit-orbit", "?date=2026-10-15&min=780#unit/emerald-green-1211", (1600, 1000), [], 9000, None),
     ("unit-window-12", "?date=2026-10-15&min=780&mode=window#unit/emerald-green-1211", (1600, 1000), [], 9000, "#stage"),
     ("unit-window-21", "?date=2026-10-15&min=780&mode=window&floor=21#unit/emerald-green-1211", (1600, 1000), [], 9000, "#stage"),

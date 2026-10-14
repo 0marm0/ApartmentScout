@@ -9,7 +9,7 @@ body {
   font-feature-settings: "ss01", "cv11"; -webkit-font-smoothing: antialiased;
   display: grid; grid-template-rows: var(--topbar-h) auto minmax(0, 1fr); overflow: hidden;
 }
-button, input, select { font: inherit; color: inherit; }
+button, input, select, textarea { font: inherit; color: inherit; }
 a { color: inherit; }
 .num, .tnum { font-variant-numeric: tabular-nums; }
 .mono { font-family: var(--font-mono); font-size: .94em; }
@@ -363,7 +363,7 @@ input[type=range]::-moz-range-thumb { width: 10px; height: 10px; border-radius: 
 .field .val, .field label b { font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
 .row { display: flex; flex-wrap: wrap; gap: var(--s-3) var(--s-4); align-items: flex-end; }
 .row + .row { margin-top: var(--s-3); }
-.input, input[type=search], input[type=text], input[type=date], input[type=number], textarea, select:not(.sel) {
+.input, input[type=search], input[type=text], input[type=date], input[type=datetime-local], input[type=time], input[type=number], textarea, select:not(.sel) {
   height: 32px; padding: 0 10px; border-radius: var(--r-sm); border: 1px solid var(--line); background: var(--surface-2); color: var(--ink); font-size: var(--fs-sm); min-width: 0;
 }
 textarea { height: auto; padding: 8px 10px; line-height: 1.5; resize: vertical; }

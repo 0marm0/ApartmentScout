@@ -380,6 +380,8 @@ async function route() {
   document.querySelectorAll('.view').forEach((el) => (el.hidden = el.id !== 'view-' + v));
   document.querySelectorAll('#tabs a').forEach((a) => { a.classList.toggle('on', a.dataset.view === v); a.toggleAttribute('aria-current', a.dataset.view === v); });
   if (v !== 'map' && v !== 'list') closeDrawer();
+  if (v === 'map' && route.last && route.last !== 'map') renderCards();   // cards may be stale after edits in other views
+  route.last = v;
   try { (await viewModule(v)).show?.(arg ? decodeURIComponent(arg) : null); } catch (e) {
     document.getElementById('view-' + v).innerHTML = `<div class="view-pad"><div class="empty"><b>This view could not load</b>${esc(String(e?.message || e))}<br>Check your connection; the 3D views load three.js from a CDN.</div></div>`;
   }
@@ -405,7 +407,7 @@ function setupKeys(flipTheme) {
     if (e.key === 'Escape') { if (document.querySelector('.kbd-help')) document.querySelector('.kbd-help').remove(); else closeDrawer(); document.body.classList.remove('rail-open'); return; }
     if (['INPUT', 'TEXTAREA', 'SELECT'].includes(tag) || e.metaKey || e.ctrlKey || e.altKey) return;
     if (e.key === '/') { e.preventDefault(); $('q').focus(); return; }
-    if (e.key === 'j' || e.key === 'k') {
+    if ((e.key === 'j' || e.key === 'k') && S.view === 'map') {
       const cs = cards(); if (!cs.length) return;
       const i = cs.findIndex((c) => c.dataset.id === S.sel), n = Math.max(0, Math.min(cs.length - 1, i + (e.key === 'j' ? 1 : -1)));
       openDrawer(cs[i < 0 ? 0 : n].dataset.id, { fly: true }); return;
@@ -446,7 +448,12 @@ async function boot() {
   const flip = setupTheme();
   rescore(); renderRail(); renderKPIs(); renderCards();
   on('filters', (o) => { renderKPIs(); renderCards(); if (!o?.quiet) renderRail(); });
-  on('weights', () => { renderKPIs(); renderCards(); });
+  // weight sliders fire on every pixel: coalesce to one render per frame, and render the full card list once the drag settles
+  let wRaf = 0, wTimer = 0;
+  on('weights', () => {
+    cancelAnimationFrame(wRaf); wRaf = requestAnimationFrame(() => { renderKPIs(); if (S.view === 'map') renderCards(); });
+    clearTimeout(wTimer); wTimer = setTimeout(() => emit('weights-settled'), 220);
+  });
   on('saved', () => { renderCards(); const n = Object.values(S.picks).filter((p) => p.saved).length; $('savedCount').hidden = !n; $('savedCount').textContent = n; });
   on('compare', () => { $('cmpCount').hidden = !S.compare.length; $('cmpCount').textContent = S.compare.length; });
   emit('compare'); emit('saved');

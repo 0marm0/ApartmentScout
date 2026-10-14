@@ -416,7 +416,7 @@ function rebuild() {
 
 export function init() {
   on('filters', () => { if (!map?.getSource('listings')) return; map.getSource('listings').setData(pinData()); drawTags(); if (heat === 'score') setHeat('score'); });
-  on('weights', () => { if (!map?.getSource('listings')) return; map.getSource('listings').setData(pinData()); drawTags(); if (heat === 'score') setHeat('score'); });
+  on('weights-settled', () => { if (!map?.getSource('listings')) return; map.getSource('listings').setData(pinData()); drawTags(); if (heat === 'score') setHeat('score'); });
   on('saved', () => { if (map?.getSource('listings')) { map.getSource('listings').setData(pinData()); drawTags(); } });
   on('sort', () => map && drawTags());
   on('theme', () => {
