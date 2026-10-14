@@ -71,10 +71,10 @@
 @media (max-width: 760px) {
   /* on a phone the row is one line that scrolls sideways; Clear all stays at the right edge */
   .fchips-scroll { flex-wrap: nowrap; max-height: none; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; }
-  .fchip-clear { position: sticky; right: 0; padding-left: 16px; background: linear-gradient(90deg, transparent, var(--surface-1) 14px); }
+  .fchip-clear { position: sticky; right: 0; margin-right: calc(-1 * var(--s-3)); padding: 0 var(--s-3) 0 22px; background: linear-gradient(90deg, transparent, var(--surface-1) 18px); }
 }
 @media (max-width: 760px) {
-  .fchips-scroll { padding: 6px var(--s-3); -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 10px, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(90deg, transparent 0, #000 10px, #000 calc(100% - 28px), transparent); }
+  .fchips-scroll { padding: 6px var(--s-3); }   /* Clear all is sticky at the right and fades what slides under it */
   .fchip { height: 30px; }   /* a finger-sized target */
   .fchip-clear { height: 30px; }
 }
