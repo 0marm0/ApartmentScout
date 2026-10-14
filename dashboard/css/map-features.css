@@ -1,0 +1,60 @@
+/* Map features: route preview labels, the starred-only lens chip, the sun lens (legend, price-tag chip, hover line).
+   Tokens only; solid surfaces for data labels (they are data, not chrome), glass only where the layer switch already is. */
+
+/* ------------------------------------------------------------------ route preview */
+.rt-mk { z-index: 4; width: max-content; pointer-events: none; opacity: 0; transition: opacity var(--t-base) var(--ease-out); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.rt-mk.in { opacity: 1; }
+.rt-mk.off { display: none; }
+.rt-pill { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 12px 0 11px; border-radius: var(--r-pill); background: var(--surface-1); color: var(--ink);
+  border: 1px solid var(--line-strong); box-shadow: var(--shadow-2); font: 500 var(--fs-xs)/1 var(--font-sans); }
+.rt-pill b { font: 650 15px/1 var(--font-sans); letter-spacing: var(--tracking-tight); }
+.rt-pill > span:not(.rt-r):not(.rt-x) { color: var(--ink-3); font-size: var(--fs-2xs); margin-left: -3px; }
+.rt-pill .rt-r { display: inline-flex; align-items: center; gap: 4px; padding-left: 7px; border-left: 1px solid var(--line-strong); }
+.rt-pill .rt-r i { font-style: normal; color: var(--ink-3); font-size: 10px; }
+.rt-pill .rt-x { color: var(--ink-2); font-size: var(--fs-2xs); padding-left: 7px; border-left: 1px solid var(--line-strong); }
+.rt-pill .rt-r + .rt-x { border-left: 0; padding-left: 0; }
+.rt-pill .lb { width: 17px; height: 17px; font-size: 10px; }
+.rt-pill .lp { height: 17px; }
+.rt-badge { display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 7px 0 3px; border-radius: var(--r-pill); background: var(--surface-1); color: var(--ink);
+  border: 1px solid var(--line-strong); box-shadow: var(--shadow-1); font: 600 10.5px/1 var(--font-mono); }
+.rt-badge .lp { height: 15px; }
+.rt-walk { padding: 2px 7px; border-radius: var(--r-pill); background: color-mix(in srgb, var(--surface-1) 88%, transparent); color: var(--ink-2); border: 1px solid var(--line); font: 600 10px/1.2 var(--font-sans); }
+:root[data-theme="light"] .rt-pill { box-shadow: 0 6px 18px rgba(20, 24, 34, .16); }
+
+/* ------------------------------------------------------------------ lens chips in the layer switch */
+.lens-sep { flex: none; align-self: stretch; width: 1px; margin: 5px 4px; background: var(--glass-line, var(--line-strong)); }
+.layer-switch .lens-chip { gap: 5px; }
+.layer-switch .lens-chip svg { width: 13px; height: 13px; flex: none; }
+.layer-switch .lens-chip b { font-weight: 600; font-variant-numeric: tabular-nums; }
+.layer-switch .lens-chip.star svg { color: var(--ink-3); }
+.layer-switch .lens-chip.star.on { color: var(--ink); }
+.layer-switch .lens-chip.star.on svg, .layer-switch .lens-chip.star:hover:not(:disabled) svg { color: var(--fav); }
+.layer-switch .lens-chip.ico { padding: 0 8px; }
+.layer-switch .lens-chip.txt { font-size: var(--fs-2xs); letter-spacing: .02em; padding: 0 9px; }
+.layer-switch .lens-chip:disabled { opacity: .5; cursor: default; }
+.layer-switch .lens-chip:disabled:hover { color: var(--ink-2); background: none; }
+
+/* ------------------------------------------------------------------ sun lens */
+.legend .sun-month { display: flex; align-items: center; gap: 6px; margin: 0 0 9px; }
+.legend .sun-month b { flex: 1; text-align: center; font-size: var(--fs-sm); font-weight: 600; font-variant-numeric: tabular-nums; }
+.legend .sun-month > button:not(.btn) { width: 26px; height: 26px; display: grid; place-items: center; border: 1px solid var(--glass-line, var(--line-strong)); border-radius: var(--r-inner); background: color-mix(in srgb, var(--ink) 6%, transparent); color: var(--ink-2); cursor: pointer; }
+.legend .sun-month > button:not(.btn):hover { color: var(--ink); background: color-mix(in srgb, var(--ink) 11%, transparent); }
+.legend .sun-month svg { width: 14px; height: 14px; }
+.legend .sun-ticks { position: relative; height: 14px; margin-top: 3px; font: 500 var(--fs-2xs) var(--font-mono); color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.legend .sun-ticks span { position: absolute; top: 0; transform: translateX(-50%); }
+.legend .sun-ticks span:first-child { transform: none; }
+.legend .sun-ticks span:last-child { transform: translateX(-100%); }
+.legend .sun-key { display: flex; gap: 8px; align-items: flex-start; margin-top: 9px; font-size: var(--fs-2xs); line-height: 1.4; color: var(--ink-2); }
+.legend .sun-key i { flex: none; width: 12px; height: 12px; margin-top: 1px; border-radius: 50%; opacity: .6; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .25); }
+.legend .sun-key b { font-weight: 600; color: var(--ink); }
+.price-tag .sun-chip { display: inline-flex; align-items: center; gap: 3px; margin-left: 1px; padding-left: 7px; border-left: 1px solid var(--line-strong); font: 650 11px/1 var(--font-sans); font-style: normal; color: var(--ink); }
+.price-tag .sun-chip svg { width: 12px; height: 12px; color: var(--c, var(--sun)); }
+.price-tag .sun-chip.unk { color: var(--ink-3); font-weight: 500; }
+.price-tag .sun-chip.unk svg { color: var(--ink-3); }
+.price-tag.sel .sun-chip, .price-tag.sel .sun-chip svg { color: var(--accent-ink); border-color: rgba(255, 255, 255, .35); }
+.hovercard .sunline { display: flex; align-items: center; gap: 6px; margin-top: 5px; padding-top: 5px; border-top: 1px solid var(--line); font-size: var(--fs-xs); color: var(--ink-2); }
+.hovercard .sunline i { flex: none; width: 9px; height: 9px; border-radius: 50%; background: var(--c); box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .25); }
+.hovercard .sunline b { color: var(--ink); font-variant-numeric: tabular-nums; }
+.hovercard .sunline.unk { color: var(--ink-3); }
+
+@media (prefers-reduced-motion: reduce) { .rt-mk { transition: none; } }
