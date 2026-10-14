@@ -164,8 +164,8 @@ every plan and shows them side by side in 3D and 2D.
 ## Trace a plan
 
 **New plan from image** in the Floor plan header opens the plan tracer. Everything happens in the
-browser: the image or PDF is read locally and never uploaded (reading a PDF loads the pdf.js reader,
-pinned, from cdn.jsdelivr.net the first time a PDF is chosen).
+browser: the image or PDF is read locally and never uploaded (reading a PDF loads the vendored pdf.js
+reader from `dashboard/vendor/pdfjs/` the first time a PDF is chosen; no network is needed).
 
 1. **Image.** Choose a PNG, JPEG, WebP or PDF (pick the page), or drop it on the canvas. Choose feet
    or metres before tracing.

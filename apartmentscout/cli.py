@@ -408,7 +408,7 @@ def cmd_build(args):
 
 def standalone(data_dir: Path, dest: Path) -> Path:
     """One self-contained HTML file: the dashboard, its CSS and JS bundle, every data file and the
-    vendored libraries (MapLibre, three.js and its addons, Geist fonts).
+    vendored libraries (MapLibre, three.js and its addons, pdf.js, Geist fonts).
 
     Works when opened as a file, in app previews and on any static host, with no network except
     map tiles; without tiles the map falls back to a plain background under the local overlays."""
@@ -437,7 +437,7 @@ def standalone(data_dir: Path, dest: Path) -> Path:
 
 
 def _inline_vendor(html: str) -> str:
-    """Inline dashboard/vendor: fonts and MapLibre as <style>/<script>, three.js and its addons as data: URLs in
+    """Inline dashboard/vendor: fonts and MapLibre as <style>/<script>, three.js, its addons and pdf.js as data: URLs in
     the import map (a data: module cannot resolve relative imports, so those are pointed at the import map)."""
     import base64
     import posixpath
@@ -470,6 +470,9 @@ def _inline_vendor(html: str) -> str:
                                f"{posixpath.normpath(posixpath.join(posixpath.dirname(rel), m.group(3)))}{m.group(2)}",
                      f.read_text())
         imports["three/addons/" + rel] = js_url(src)
+    # pdf.js (plan tracer): the library and its worker, only fetched when a PDF plan is opened
+    imports["pdfjs-dist"] = js_url((V / "pdfjs" / "pdf.min.mjs").read_text())
+    imports["pdfjs-dist/worker"] = js_url((V / "pdfjs" / "pdf.worker.min.mjs").read_text())
     imap = json.dumps({"imports": imports}, indent=1)
     return re.sub(r'<script type="importmap">.*?</script>', lambda m: f'<script type="importmap">\n{imap}\n</script>',
                   html, count=1, flags=re.S)
