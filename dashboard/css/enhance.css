@@ -157,6 +157,7 @@ img.err { opacity: 0 !important; }
 .drawer .d-actions .btn { transition: background var(--t-fast), border-color var(--t-fast), transform var(--t-fast) var(--ease-out); }
 
 /* ------------------------------------------------------------------ command palette */
+.pl-scrim[hidden], .mcard[hidden] { display: none; }
 .pl-scrim { position: fixed; inset: 0; z-index: 95; display: flex; justify-content: center; align-items: flex-start; padding: 12vh 12px 12px; background: rgba(4, 5, 8, 0); transition: background var(--t-base) var(--ease-out); }
 .pl-scrim.on { background: rgba(4, 5, 8, .5); }
 :root[data-theme="light"] .pl-scrim.on { background: rgba(20, 24, 34, .28); }

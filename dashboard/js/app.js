@@ -459,7 +459,8 @@ export function renderCards() {
     el.innerHTML = F.slice(0, shown).map(cardHTML).join('') + (F.length > shown ? `<button type="button" class="btn ghost more-btn" id="moreBtn">Show ${Math.min(60, F.length - shown)} more of ${F.length - shown}</button>` : '');
   }
   el.querySelectorAll('.card').forEach((c) => {
-    c.addEventListener('click', (e) => { if (e.target.closest('[data-save], .c-acts')) return; openDrawer(c.dataset.id, { fly: true }); });
+    // composedPath, not closest: the quick-action button re-renders its own content during the click
+    c.addEventListener('click', (e) => { if (e.composedPath().some((n) => n.matches?.('[data-save], .c-acts'))) return; openDrawer(c.dataset.id, { fly: true }); });
     c.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target === c) openDrawer(c.dataset.id, { fly: true, focus: true }); });
     c.addEventListener('mouseenter', () => emit('hover', c.dataset.id));
     c.addEventListener('mouseleave', () => emit('hover', null));
@@ -609,10 +610,13 @@ function drawerChrome(dw) {
     e.preventDefault(); e.stopPropagation();
     const t = $(a.dataset.to); if (!t) return;
     const top = t.id === 'dOverview' ? 0 : t.offsetTop - bar.offsetHeight + 1;
+    pin = t;   // short last sections cannot reach the top: keep the tab that was clicked lit
     sc.scrollTo({ top, behavior: reducedMotion() ? 'auto' : 'smooth' });
-    t.querySelector('h3, h2')?.setAttribute('tabindex', '-1');
+    const h = t.querySelector('h3, h2'); if (h) { h.tabIndex = -1; h.focus({ preventScroll: true }); }
+    spy();
   });
-  let cur = null, raf = 0;
+  let cur = null, raf = 0, pin = null;
+  for (const ev of ['wheel', 'touchstart', 'keydown']) sc.addEventListener(ev, () => { pin = null; }, { passive: true });
   const spy = () => {
     raf = 0;
     const y = sc.scrollTop, stuck = y > 0 && y >= bar.offsetTop - 1;
@@ -621,6 +625,7 @@ function drawerChrome(dw) {
     let on2 = secs[0];
     for (const s of secs) if (s.offsetTop <= line) on2 = s;
     if (sc.scrollTop + sc.clientHeight >= sc.scrollHeight - 2) on2 = secs[secs.length - 1];
+    if (pin) on2 = pin;
     if (on2 !== cur) {
       cur = on2;
       links.forEach((a) => { const m = a.dataset.to === on2?.id; a.classList.toggle('on', m); m ? a.setAttribute('aria-current', 'true') : a.removeAttribute('aria-current'); });

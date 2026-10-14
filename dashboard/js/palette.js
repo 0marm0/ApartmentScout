@@ -95,7 +95,7 @@ function build(q) {
     const top = [...S.listings].filter((L) => L._rank && !seen.has(L.id)).sort((a, b) => a._rank - b._rank).slice(0, rec.length ? 3 : 5);
     for (const L of top) out.push(listingItem(L, 'Top matches'));
   }
-  VIEWS.forEach(([k, n, d], i) => { if (has(n) || has(d) || has(k)) out.push({ group: 'Go to', id: 'v:' + k, icon: IC.view, title: esc(n), sub: esc(d), meta: `${S.view === k ? '<span class="pl-on">Current</span>' : ''}<kbd>${i + 1}</kbd>`, run: () => { location.hash = k; } }); });
+  VIEWS.forEach(([k, n, d], i) => { if (has(n) || has(d) || has(k)) out.push({ group: 'Go to', id: 'v:' + k, name: n, icon: IC.view, title: esc(n), sub: esc(d), meta: `${S.view === k ? '<span class="pl-on">Current</span>' : ''}<kbd>${i + 1}</kbd>`, run: () => { location.hash = k; } }); });
   const sel = S.sel && S.listings.find((L) => L.id === S.sel);
   const acts = [
     sel && ['Save or unsave the open home', isSaved(sel.id) ? 'Remove ' + label(sel) + ' from your picks' : 'Save ' + label(sel) + ' to your picks', ICONS.starO, 's', () => toggleSave(sel.id)],
@@ -108,8 +108,11 @@ function build(q) {
     ['Export the filtered homes as CSV', `${filtered().length} homes`, IC.dl, '', () => $('csvBtn')?.click()],
     ['Keyboard shortcuts', 'Every key the dashboard listens for', IC.key, '?', () => dispatchEvent(new KeyboardEvent('keydown', { key: '?' }))],
   ].filter(Boolean);
-  for (const [n, d, ic, k, run] of acts) if (has(n) || has(d)) out.push({ group: 'Actions', id: 'a:' + n, icon: ic, title: esc(n), sub: esc(d), meta: k ? `<kbd>${esc(k)}</kbd>` : '', run });
-  return out;
+  for (const [n, d, ic, k, run] of acts) if (has(n) || has(d)) out.push({ group: 'Actions', id: 'a:' + n, name: n, icon: ic, title: esc(n), sub: esc(d), meta: k ? `<kbd>${esc(k)}</kbd>` : '', run });
+  // a query that names a view or an action ("compare", "light") puts those commands ahead of the text filter
+  const strong = nq.length >= 3 && out.some((it) => it.name && norm(it.name).split(/\s+/).some((w) => w.startsWith(nq)));
+  const rank = strong ? { 'Go to': 0, Actions: 1, Filter: 2, Homes: 3 } : { Recent: 0, 'Top matches': 1, Filter: 0, Homes: 1, 'Go to': 2, Actions: 3 };
+  return out.map((it, i) => [rank[it.group] ?? 9, i, it]).sort((a, b) => a[0] - b[0] || a[1] - b[1]).map((x) => x[2]);
 }
 function applyFilter(t) {
   const q = $('q'); if (q) q.value = t;
@@ -178,6 +181,7 @@ function onKey(e) {
 }
 function choose(i) {
   const it = items[i]; if (!it) return;
-  close(false);
+  close(true);
+  if (root.contains(document.activeElement)) document.activeElement.blur();
   setTimeout(() => it.run(), 0);
 }
