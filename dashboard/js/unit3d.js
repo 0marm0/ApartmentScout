@@ -147,7 +147,11 @@ async function load(id) {
   }
   site = data; st.id = id; st.manual = {}; st.moved = null; st.sel = null; st.src = null; st.slabOff = null; st.inWin = -1; st.lmSel = new Set(); heat = null; NBR = []; blkRows = [];
   plan = null;
-  if ((S.manifest.plans || []).includes(id)) { try { plan = normalisePlan(await loadJSON(`${S.base}/plans/${id}.json`, null)); } catch { plan = null; } }
+  // an edited plan saved from the Floor plan studio or the tracer ("Use this plan in Unit 3D") wins over the source file
+  let scen = null;
+  try { scen = (await import('./plan/scenario-bridge.js')).getPlanScenario(id, { base: S.base }); } catch { scen = null; }
+  if (scen?.plan) { try { plan = normalisePlan(scen.plan); plan._scenario = scen.label || 'edited plan'; } catch { plan = null; } }
+  else if ((S.manifest.plans || []).includes(id)) { try { plan = normalisePlan(await loadJSON(`${S.base}/plans/${id}.json`, null)); } catch { plan = null; } }
   B = prepBuildings(site.b, site.holes && typeof site.holes === 'object' ? site.holes : null, site.components && typeof site.components === 'object' ? site.components : null);
   T = B[site.target] || B[0];
   FACES = canonicalFaces(facesOf(T, 8, B), site.faces, site.version);
