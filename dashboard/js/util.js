@@ -3,8 +3,9 @@ export const $ = (id) => document.getElementById(id);
 export const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 export const money = (v) => (v == null || isNaN(v) ? '—' : '$' + Math.round(v).toLocaleString());
 export const moneyShort = (v) => (v == null || isNaN(v) ? '—' : v >= 1000 ? '$' + (v / 1000).toFixed(1).replace(/\.0$/, '') + 'k' : '$' + Math.round(v));
-// Only http(s) links from data become hrefs or image sources: agent-written data must never run script.
-export const safeUrl = (u) => (/^https?:\/\//i.test(String(u ?? '').trim()) ? String(u).trim() : null);
+// Only http(s) links, or photos saved inside the search's media/ folder, become hrefs or image sources:
+// agent-written data must never run script.
+export const safeUrl = (u) => { const v = String(u ?? '').trim(); return /^https?:\/\//i.test(v) || /^media\/[\w./-]+$/.test(v) && !v.includes('..') ? v : null; };
 export const mins = (v) => (v == null ? '?' : Math.round(v) + ' min');
 export const yn = (v) => (v === true ? '<span class="yes">yes</span>' : v === false ? '<span class="no">no</span>' : '<span class="unk">?</span>');
 export const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
