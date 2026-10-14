@@ -27,14 +27,14 @@ function points(L, hist, field) {
   const pts = [...byDate].map(([t, v]) => ({ t, v })).sort((a, b) => a.t - b.t);
   // the current price, dated by the last check, when it is newer than everything recorded and differs
   const cur = field === 'gross' ? num(L?.price?.gross) : num(L?.price?.net_effective), at = parseDate(L?.checked);
-  if (pts.length && cur != null && at != null && at > pts[pts.length - 1].t && cur !== pts[pts.length - 1].v) pts.push({ t: at, v: cur });
+  if (pts.length && cur != null && at != null && at > pts[pts.length - 1].t && cur !== pts[pts.length - 1].v) pts.push({ t: at, v: cur, seen: true });
   return pts;
 }
 
 /** Collapse runs of equal prices to the day the price changed; `end` is the last day anything was recorded. */
 function changes(pts) {
   const out = [];
-  for (const p of pts) if (!out.length || out[out.length - 1].v !== p.v) out.push({ t: p.t, v: p.v });
+  for (const p of pts) if (!out.length || out[out.length - 1].v !== p.v) out.push({ t: p.t, v: p.v, seen: !!p.seen });
   return { changes: out, end: pts.length ? pts[pts.length - 1].t : null };
 }
 
@@ -53,7 +53,7 @@ export function priceSeries(L, hist) {
     return {
       measure, pts: ch.map((p) => ({ ...p, date: iso(p.t) })), end: Math.max(end, checked ?? 0),
       first: first.v, last: last.v, prev: prev.v, drop: Math.max(0, prev.v - last.v), rose: Math.max(0, last.v - prev.v),
-      total: first.v - last.v, lastChange: iso(last.t),
+      total: first.v - last.v, lastChange: iso(last.t), lastSeen: !!last.seen,
     };
   }
   return null;
@@ -66,8 +66,10 @@ const fmtDay = (t) => new Date(t).toLocaleDateString('en-US', { month: 'short', 
 export function priceStory(s) {
   const what = s.measure === 'net' ? 'Net-effective rent' : 'Rent';
   const steps = s.pts.map((p) => `${fmtMoney(p.v)} on ${fmtDay(p.t)}`).join(', then ');
-  if (s.drop > 0) return `${what} dropped ${fmtMoney(s.drop)} on ${fmtDay(parseDate(s.lastChange))}: ${steps}.`;
-  if (s.rose > 0) return `${what} rose ${fmtMoney(s.rose)} on ${fmtDay(parseDate(s.lastChange))}: ${steps}.`;
+  // a change found by comparing today's price with the older ones is dated by the check that saw it, not by when it happened
+  const when = `${s.lastSeen ? 'as of' : 'on'} ${fmtDay(parseDate(s.lastChange))}`;
+  if (s.drop > 0) return `${what} dropped ${fmtMoney(s.drop)} ${when}: ${steps}.`;
+  if (s.rose > 0) return `${what} rose ${fmtMoney(s.rose)} ${when}: ${steps}.`;
   return `${what}: ${steps}.`;
 }
 

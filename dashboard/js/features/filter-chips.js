@@ -73,8 +73,11 @@ function remove(id) {
 
 export function initFilterChips() {
   row = $('filterChips'); if (!row) return;
-  row.innerHTML = '<div class="fchips-in"><div class="fchips-scroll" id="fchipScroll"></div><span class="sr" id="fchipStatus" role="status" aria-live="polite"></span></div>';
-  scroller = $('fchipScroll'); status = $('fchipStatus');
+  row.innerHTML = '<div class="fchips-in"><div class="fchips-scroll" id="fchipScroll"></div></div>';
+  scroller = $('fchipScroll');
+  // the live region lives outside the row: the row is inert and hidden when empty, which would silence "No filters active"
+  status = document.createElement('span'); status.className = 'sr'; status.id = 'fchipStatus'; status.setAttribute('role', 'status'); status.setAttribute('aria-live', 'polite');
+  row.after(status);
   clearBtn = document.createElement('button');
   clearBtn.type = 'button'; clearBtn.className = 'fchip-clear'; clearBtn.textContent = 'Clear all'; clearBtn.title = 'Remove every filter and go back to the starting view';
   clearBtn.setAttribute('aria-label', 'Clear all filters');

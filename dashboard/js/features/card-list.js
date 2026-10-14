@@ -13,12 +13,13 @@ import { toast } from '../util.js';
 import { Layout, includeIndex, flipPlan, nearestScroll, stepIndex } from './virtual-model.js';
 import { morph, parse } from './morph.js';
 
-const GAP = 2, BUFFER = 700, FLIP_MS = 380, FLIP_FAST_MS = 240;
+const BUFFER = 700, FLIP_MS = 380, FLIP_FAST_MS = 240;
 const mqReduce = matchMedia('(prefers-reduced-motion: reduce)');   // one query object: it is read on every update
 const reduced = () => mqReduce.matches;
 
 let host, topSp, botSp, pad = 4;
-let layout = new Layout({ gap: GAP, estimate: 131 });
+let layout = new Layout({ gap: 2, estimate: 131 });
+let smoothUntil = 0;                         // a smooth scroll to a card is running: do not fight it with position corrections
 let items = [], index = new Map();           // item key -> position
 let idPos = new Map();                       // listing id (any unit in a group) -> position
 const nodes = new Map();                     // item key -> { el, html }
@@ -62,7 +63,14 @@ function ensureSpacers() {
   topSp = document.createElement('div'); topSp.className = 'vsp vsp-top'; topSp.setAttribute('aria-hidden', 'true');
   botSp = document.createElement('div'); botSp.className = 'vsp vsp-bot'; botSp.setAttribute('aria-hidden', 'true');
   host.append(topSp, botSp);
-  pad = parseFloat(getComputedStyle(host).paddingTop) || 0;
+  readMetrics();
+}
+/** The list's row gap and top padding come from the stylesheet (density changes them): read them, never assume. */
+function readMetrics() {
+  const cs = getComputedStyle(host), gap = parseFloat(cs.rowGap) || 0;
+  pad = parseFloat(cs.paddingTop) || 0;
+  layout.gap = gap;
+  if (topSp) { topSp.style.marginBottom = -gap + 'px'; botSp.style.marginTop = -gap + 'px'; }   // the gap sits between neighbours only
 }
 function setSpacers() {
   topSp.style.height = layout.offset(win[0]) + 'px';
@@ -72,11 +80,13 @@ function setSpacers() {
 function measure() {
   if (!viewH()) return false;   // hidden (another view is open): offsetHeight would be 0
   let changed = false;
-  for (const [key, rec] of nodes) if (layout.measure(key, rec.el.offsetHeight)) changed = true;
+  for (const [key, rec] of nodes) if (layout.measure(key, rec.el.getBoundingClientRect().height)) changed = true;
   return changed;
 }
 function wanted() {
-  let r = layout.range(scrollTop() - pad, viewH(), BUFFER);
+  // after a filter shrinks the list the old scroll position can be past the new end (the browser clamps it later)
+  const top = Math.min(scrollTop(), Math.max(0, layout.total + 2 * pad - viewH()));
+  let r = layout.range(top - pad, viewH(), BUFFER);
   if (focusKey != null && index.has(focusKey)) r = includeIndex(r, index.get(focusKey), items.length);
   return r;
 }
@@ -122,7 +132,7 @@ export function setCardItems(next, { animate = true } = {}) {
     for (const [key, rec] of nodes) first.set(key, rec.el.getBoundingClientRect().top - hr.top + st);
   }
   // 2. new order
-  items = next;
+  items = [...new Map(next.map((it) => [it.key, it])).values()];   // one card per key, whatever the data holds
   index = new Map(items.map((it, i) => [it.key, i]));
   idPos = new Map();
   items.forEach((it, i) => { for (const id of it.ids || [it.id]) idPos.set(id, i); });
@@ -135,7 +145,7 @@ export function setCardItems(next, { animate = true } = {}) {
   if (measure()) {
     layout.relayout();
     const shift = layout.offset(anchor) - before;
-    if (Math.abs(shift) > 0.5 && st0 > 0) host.scrollTop = st0 + shift;
+    if (Math.abs(shift) > 0.5 && st0 > 0 && performance.now() > smoothUntil) host.scrollTop = st0 + shift;
     [a, b] = wanted();
     if (a !== win[0] || b !== win[1]) { reconcile(a, b, false); if (measure()) layout.relayout(); }
   }
@@ -153,7 +163,7 @@ export function setCardItems(next, { animate = true } = {}) {
     const dur = t0 - lastUpdate < 120 ? FLIP_FAST_MS : FLIP_MS;
     for (const m of plan.moves) {
       const el = nodes.get(m.key)?.el; if (!el?.animate) continue;
-      el.getAnimations().forEach((x) => x.cancel());
+      el.getAnimations().forEach((x) => { if (!(x instanceof CSSTransition) && !(x instanceof CSSAnimation)) x.cancel(); });   // ours only, not the hover transitions
       const frames = m.appear ? [{ transform: `translateY(${m.dy}px)`, opacity: 0 }, { transform: 'none', opacity: 1 }] : [{ transform: `translateY(${m.dy}px)` }, { transform: 'none' }];
       el.animate(frames, { duration: dur, easing: 'cubic-bezier(.2,.8,.2,1)' });
     }
@@ -176,6 +186,7 @@ function enter(keys) {
 export function relayoutCardList() {
   if (!host || !items.length) return;
   const st = scrollTop(), at = layout.indexAt(st - pad), intra = st - pad - layout.offset(at);   // keep the card at the top of the view
+  readMetrics();
   layout.clear();
   layout.setKeys(items.map((it) => it.key));
   const [a, b] = wanted();
@@ -196,29 +207,32 @@ export function clearCardList() {
 }
 
 // ------------------------------------------------------------------ scrolling
+function syncWindow() {
+  if (!items.length) return;
+  const [a, b] = wanted();
+  if (a === win[0] && b === win[1]) return;
+  const st = scrollTop();
+  reconcile(a, b, false);
+  if (measure()) {
+    // estimates above the window were off: keep what the reader is looking at where it is
+    const anchor = layout.indexAt(st - pad), before = layout.offset(anchor);
+    layout.relayout();
+    const shift = layout.offset(anchor) - before;
+    if (Math.abs(shift) > 0.5 && performance.now() > smoothUntil) host.scrollTop = st + shift;
+  }
+  setSpacers();
+}
 function onScroll() {
   if (raf) return;
-  raf = requestAnimationFrame(() => {
-    raf = 0;
-    if (!items.length) return;
-    const [a, b] = wanted();
-    if (a === win[0] && b === win[1]) return;
-    const st = scrollTop();
-    reconcile(a, b, false);
-    if (measure()) {
-      // estimates above the window were off: keep what the reader is looking at where it is
-      const anchor = layout.indexAt(st - pad), before = layout.offset(anchor);
-      layout.relayout();
-      const shift = layout.offset(anchor) - before;
-      if (Math.abs(shift) > 0.5) host.scrollTop = st + shift;
-    }
-    setSpacers();
-  });
+  raf = requestAnimationFrame(() => { raf = 0; syncWindow(); });
 }
 
 // ------------------------------------------------------------------ public helpers
 /** Ids of the items in list order (the best unit of each building in Buildings view). */
 export const cardIds = () => items.map((it) => it.id);
+
+/** Position (0-based) of the item that shows a listing id, or undefined. */
+export const cardPos = (id) => idPos.get(id);
 
 /** The card element for a listing id, when it is rendered. */
 export const cardEl = (id) => {
@@ -234,8 +248,10 @@ export function revealCard(id, instant = false) {
   const to = nearestScroll(st, vh, top, h);
   if (Math.abs(to - st) < 1) return;
   const far = Math.abs(to - st) > vh * 3;
-  host.scrollTo({ top: to, behavior: instant || far || reduced() ? 'auto' : 'smooth' });
-  if (instant || far || reduced()) { onScroll(); }
+  const jump = instant || far || reduced();
+  if (!jump) smoothUntil = performance.now() + 900;
+  host.scrollTo({ top: to, behavior: jump ? 'auto' : 'smooth' });
+  if (jump) syncWindow();   // render the target now: callers focus it right away
 }
 
 /** Move keyboard focus to the card at list position i, rendering it first when it is outside the window. */
@@ -278,7 +294,7 @@ export function initCardList() {
     if (!card || e.target !== card || e.altKey || e.ctrlKey || e.metaKey) return;
     if (e.key === 'Enter') { openDrawer(card.dataset.id, { fly: true, focus: true }); return; }
     const i = idPos.get(card.dataset.id);
-    const page = Math.max(1, Math.floor(viewH() / (layout.estimate() + GAP)) - 1);
+    const page = Math.max(1, Math.floor(viewH() / (layout.estimate() + layout.gap)) - 1);
     const to = stepIndex(i ?? -1, e.key, items.length, page);
     if (to < 0) return;
     e.preventDefault(); e.stopPropagation();

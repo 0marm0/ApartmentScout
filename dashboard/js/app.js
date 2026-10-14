@@ -7,7 +7,7 @@ import { initPalette, openPalette, shareListing, syncTrigger } from './palette.j
 import { initEnhance } from './enhance.js';
 import { initTheme, flipTheme, initShell, parseRoute, syncSubnav } from './shell.js';
 // results list and filter rail features (chips, collapsible sections, windowed cards, rank motion, density, price history, worker scoring)
-import { initResults, setCardItems, clearCardList, cardIds, revealCard, decorateRail, railFocus, restoreRailFocus, rescoreWeights, deltaHTML, trendHTML } from './features/results.js';
+import { initResults, setCardItems, clearCardList, cardIds, cardPos, cardEl, revealCard, decorateRail, railFocus, restoreRailFocus, rescoreWeights, deltaHTML, trendHTML } from './features/results.js';
 
 export const store = {
   get(k, d) { try { const v = localStorage.getItem('as:' + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
@@ -716,7 +716,7 @@ ${whySection(L)}
 }
 export function closeDrawer() {
   // focus that was inside the drawer goes back to the card it came from, not to the top of the page
-  if (S.sel && $('drawer').contains(document.activeElement)) document.querySelector(`#cards .card[data-id="${CSS.escape(S.sel)}"]`)?.focus({ preventScroll: true });
+  if (S.sel && $('drawer').contains(document.activeElement)) { revealCard(S.sel, true); cardEl(S.sel)?.focus({ preventScroll: true }); }   // the card may be outside the rendered window
   S.sel = null; $('drawer').classList.remove('open');
   document.querySelectorAll('.card.sel').forEach((c) => c.classList.remove('sel'));
   emit('select', { id: null });
@@ -759,7 +759,7 @@ function setupKeys() {
     if (e.key === '/') { e.preventDefault(); openPalette(); return; }
     if ((e.key === 'j' || e.key === 'k') && S.view === 'map') {
       const cs = cardIds(); if (!cs.length) return;   // the whole list, not only the cards currently rendered
-      const i = cs.indexOf(S.sel), n = Math.max(0, Math.min(cs.length - 1, i + (e.key === 'j' ? 1 : -1)));
+      const i = cardPos(S.sel) ?? -1, n = Math.max(0, Math.min(cs.length - 1, i + (e.key === 'j' ? 1 : -1)));
       openDrawer(cs[i < 0 ? 0 : n], { fly: true }); return;
     }
     if (e.key === 's' && S.sel) { toggleSave(S.sel); openDrawer(S.sel); return; }

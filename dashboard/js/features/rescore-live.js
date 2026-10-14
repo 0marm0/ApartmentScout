@@ -40,7 +40,9 @@ function upload() {
 function request() {
   const { wv, tot } = packWeights(S.weights, keys()), cap = capNow();
   sent = { seq: ++seq, sig: sigNow(), v: version };
-  worker.postMessage({ t: 'score', seq: sent.seq, v: version, w: wv, tot, cap });
+  const mine = sent.seq;
+  try { worker.postMessage({ t: 'score', seq: mine, v: version, w: wv, tot, cap }); } catch { fail(); return; }
+  setTimeout(() => { if (sent && sent.seq === mine) fail(); }, 2000);   // a worker that never answers must not leave the slider waiting
 }
 function flush() {
   const fns = [...waiting]; waiting.clear();
@@ -50,6 +52,7 @@ function flush() {
 function onMessage(e) {
   const m = e.data;
   if (m.t === 'ready') { if (m.v === version) { ready = true; publish(); } return; }
+  if (m.t === 'nodata') { fail(); return; }
   if (m.t !== 'result' || !sent || m.seq !== sent.seq) return;
   const s = sent; sent = null;
   // apply only a result computed for exactly the current weights and data; anything else was overtaken (a preset, a
