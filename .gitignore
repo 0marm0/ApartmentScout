@@ -15,3 +15,8 @@ _reference/
 
 # private Claude Code handoff (names, local paths, private links)
 HANDOFF.md
+
+# local dashboard data for private searches and scratch work
+dashboard/data-private/
+dashboard/_mockup/
+.playwright-cli/

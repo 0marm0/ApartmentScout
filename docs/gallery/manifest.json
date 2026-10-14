@@ -1,0 +1,836 @@
+{
+ "schema": 1,
+ "about": "Publication status of every image in docs/images and docs/gallery. scripts/release_check.py fails on any image that is missing here, not 'public', or changed since review (sha256). Statuses: public, private (never publish), review (needs a human decision).",
+ "images": [
+  {
+   "file": "docs/images/chart-sun-by-floor.png",
+   "publication_status": "public",
+   "sha256": "f1eb71e443c649946c5d621f5b3119b9d6ac85bc2dd9001c225872e74f163094",
+   "bytes": 167175,
+   "width": 1120,
+   "height": 1097
+  },
+  {
+   "file": "docs/images/chart-sunpath.png",
+   "publication_status": "public",
+   "sha256": "8d9609dba9978244c8cd2dc2bef9b8b158174823db2c061397bec0a3d715e69b",
+   "bytes": 175070,
+   "width": 1400,
+   "height": 644
+  },
+  {
+   "file": "docs/images/cli.png",
+   "publication_status": "public",
+   "sha256": "8f77267c7fa187cc56b52e6e58c6278ff6ba47903c07019b3e7a716eaa6753dc",
+   "bytes": 156503,
+   "width": 1650,
+   "height": 804
+  },
+  {
+   "file": "docs/images/compare.png",
+   "publication_status": "public",
+   "sha256": "a2dfc1fbd6eb48c97a7abf6ef3ecda67e6d6bae4d77b10acf4e66544a0cc61f3",
+   "bytes": 132461,
+   "width": 1600,
+   "height": 1150
+  },
+  {
+   "file": "docs/images/map-commute-light.png",
+   "publication_status": "public",
+   "sha256": "845d2112cd26b909171712b33b431478b1c94a6908212845c39d352ed36237a9",
+   "bytes": 1208156,
+   "width": 1600,
+   "height": 1000
+  },
+  {
+   "file": "docs/images/map-commute.png",
+   "publication_status": "public",
+   "sha256": "ef0412c08e897845382376c081c6169d3c4b4572a714ae2e69438eea80571ef5",
+   "bytes": 1070062,
+   "width": 1600,
+   "height": 1000
+  },
+  {
+   "file": "docs/images/map-drawer.png",
+   "publication_status": "public",
+   "sha256": "93aa6b7e3e0c0cdfb7eb475f296e3b5d91292dd62d8ad767c358df830e3199d4",
+   "bytes": 832312,
+   "width": 1600,
+   "height": 1000
+  },
+  {
+   "file": "docs/images/map-noise.png",
+   "publication_status": "public",
+   "sha256": "718993e9facecd0706bbf0702c268613b7c038f6c8be7233580df945f6f7eca3",
+   "bytes": 1171732,
+   "width": 1600,
+   "height": 1000
+  },
+  {
+   "file": "docs/images/map-rent.png",
+   "publication_status": "public",
+   "sha256": "cbdd0468364d160b6be074fdba232c879ede9d0575050b2355b864be90637469",
+   "bytes": 1017443,
+   "width": 1600,
+   "height": 1000
+  },
+  {
+   "file": "docs/images/map-score.png",
+   "publication_status": "public",
+   "sha256": "733a7a5bb94d363b2ea104720b5974259127d8e8947e7f19eec88529ea82a589",
+   "bytes": 1031057,
+   "width": 1600,
+   "height": 1000
+  },
+  {
+   "file": "docs/images/mobile-map.png",
+   "publication_status": "public",
+   "sha256": "b775ab78b158a6722a6e60d89fe8fe6367101e0017c86f2ee399156d5090f9e0",
+   "bytes": 433410,
+   "width": 630,
+   "height": 1350
+  },
+  {
+   "file": "docs/images/plan-bird.png",
+   "publication_status": "public",
+   "sha256": "dc98a2818dd8ff86b8e1ea9cce1c8a0316851e5b7b58136b5780490963666d3d",
+   "bytes": 163625,
+   "width": 1600,
+   "height": 1000
+  },
+  {
+   "file": "docs/images/plan-top.png",
+   "publication_status": "public",
+   "sha256": "3e486304cdc44de10760700b7d65f7593bf40abd2eeadc5314b86258808e861c",
+   "bytes": 46431,
+   "width": 920,
+   "height": 576
+  },
+  {
+   "file": "docs/images/records.png",
+   "publication_status": "public",
+   "sha256": "e36ea9ee40540d093c4de34b65cf037009b81fa8051bd042401af4843ebeab4d",
+   "bytes": 277992,
+   "width": 1600,
+   "height": 1500
+  },
+  {
+   "file": "docs/images/shortlist.png",
+   "publication_status": "public",
+   "sha256": "ad251c1cb146ce79ad311e872f99b2ddaab5eca6379c8aceb6203a0a39f030d6",
+   "bytes": 216615,
+   "width": 1600,
+   "height": 1000
+  },
+  {
+   "file": "docs/images/unit-floors.png",
+   "publication_status": "public",
+   "sha256": "685f4da98934bd9bfd59ae9371749f037a0dfcc4882aaabdaa1165ea34170bd5",
+   "bytes": 113660,
+   "width": 635,
+   "height": 629
+  },
+  {
+   "file": "docs/images/unit-maybury.png",
+   "publication_status": "public",
+   "sha256": "eefe9946b70e5c72a12c231bce0d7bd1f5557a83e0ea34e0ac4ccd7059963fb9",
+   "bytes": 142437,
+   "width": 920,
+   "height": 576
+  },
+  {
+   "file": "docs/images/unit-orbit-dec.png",
+   "publication_status": "public",
+   "sha256": "768e80ba5ea43959bc0472425d1609221982cd63503890bb6f5a6e9d836c4680",
+   "bytes": 158502,
+   "width": 920,
+   "height": 576
+  },
+  {
+   "file": "docs/images/unit-orbit.png",
+   "publication_status": "public",
+   "sha256": "6af37554519e7c8e3be500400320acf5b53270a2866494ab9be8b18996a25491",
+   "bytes": 344929,
+   "width": 1600,
+   "height": 1000
+  },
+  {
+   "file": "docs/images/unit-sunpath.png",
+   "publication_status": "public",
+   "sha256": "f953e63bc851a15fbb0f168f30e8f0426b493ae773cf5f59d9f6ed5b451fd79f",
+   "bytes": 38540,
+   "width": 890,
+   "height": 410
+  },
+  {
+   "file": "docs/images/unit-window-12.png",
+   "publication_status": "public",
+   "sha256": "204a7c06d60e7ca52312b6430e3519210db7602d468ff422f202e6fef6995316",
+   "bytes": 23423,
+   "width": 920,
+   "height": 576
+  },
+  {
+   "file": "docs/images/unit-window-21.png",
+   "publication_status": "public",
+   "sha256": "8418c179c454d6e9d46b5fd96d52467fbc6ed293089d1f6d268090d5543a457e",
+   "bytes": 37880,
+   "width": 920,
+   "height": 576
+  },
+  {
+   "file": "docs/gallery/codexeg--apartment_preview.jpg",
+   "publication_status": "review",
+   "sha256": "404e4f00a1b553ba026c014d76b2b097bb98e4c901a526c720b3fe0df97ef9b0",
+   "bytes": 129750,
+   "width": 1000,
+   "height": 1346,
+   "note": "named unit or traced owner plan; review before publishing"
+  },
+  {
+   "file": "docs/gallery/codexeg--codex-eg1211-apartment-3d.jpg",
+   "publication_status": "review",
+   "sha256": "addc6f83fa83249782dc952eccb004ac90c0c0c54c93c9fa7073defa1346033f",
+   "bytes": 106294,
+   "width": 1600,
+   "height": 1000,
+   "note": "named unit or traced owner plan; review before publishing"
+  },
+  {
+   "file": "docs/gallery/codexeg--codex-eg1211-bedroom-window.jpg",
+   "publication_status": "review",
+   "sha256": "c2b1e1541731365ad698f9302a7895ceadee54082f2c4acf1ac840ca9f476937",
+   "bytes": 115289,
+   "width": 1600,
+   "height": 1000,
+   "note": "named unit or traced owner plan; review before publishing"
+  },
+  {
+   "file": "docs/gallery/codexeg--codex-eg1211-east-candidate.jpg",
+   "publication_status": "review",
+   "sha256": "4281da8e498642025e5deeb00ee176d51218d0af0b4407f9bb862a8a0a51f45d",
+   "bytes": 193001,
+   "width": 1600,
+   "height": 1000,
+   "note": "named unit or traced owner plan; review before publishing"
+  },
+  {
+   "file": "docs/gallery/codexeg--codex-eg1211-living-window.jpg",
+   "publication_status": "review",
+   "sha256": "0272fd03663b7219a5e1a5fc98942bf7ee767a0954af76437e0b04b523962212",
+   "bytes": 117148,
+   "width": 1600,
+   "height": 1000,
+   "note": "named unit or traced owner plan; review before publishing"
+  },
+  {
+   "file": "docs/gallery/codexeg--codex-eg1211-neighborhood.jpg",
+   "publication_status": "review",
+   "sha256": "b866e3b5c9856d4f4cee9f1bed1fb59f8b10781993c0e3b7a4ce10708e6497e8",
+   "bytes": 194368,
+   "width": 1600,
+   "height": 1000,
+   "note": "named unit or traced owner plan; review before publishing"
+  },
+  {
+   "file": "docs/gallery/codexeg--codex-eg1211-street-plan.jpg",
+   "publication_status": "review",
+   "sha256": "e342697b92e8c8625e8984d4eba849bbc27ab53ae7e9d01b65c89529bf91f236",
+   "bytes": 261752,
+   "width": 1600,
+   "height": 1000,
+   "note": "named unit or traced owner plan; review before publishing"
+  },
+  {
+   "file": "docs/gallery/codexeg--codex-eg1211-topdown-unit.jpg",
+   "publication_status": "review",
+   "sha256": "a63e753887fe0fd0568e33d6fb72b17f8ddcc0d018a2d727b81b3dd224e3e190",
+   "bytes": 133505,
+   "width": 1600,
+   "height": 1000,
+   "note": "named unit or traced owner plan; review before publishing"
+  },
+  {
+   "file": "docs/gallery/codexeg--codex-eg1211-winter-floor21.jpg",
+   "publication_status": "review",
+   "sha256": "eaed86dace025b104f6cf112222eee75ce323753a4dc862e968516f7474a314b",
+   "bytes": 192099,
+   "width": 1600,
+   "height": 1000,
+   "note": "named unit or traced owner plan; review before publishing"
+  },
+  {
+   "file": "docs/gallery/codexeg--corrected_street_context.jpg",
+   "publication_status": "review",
+   "sha256": "205ff3743a725d0aba1393bff61da62f9f589453d97115f99a030bc1127b417b",
+   "bytes": 241251,
+   "width": 1000,
+   "height": 1346,
+   "note": "named unit or traced owner plan; review before publishing"
+  },
+  {
+   "file": "docs/gallery/codexeg--surrounding_heights.jpg",
+   "publication_status": "review",
+   "sha256": "64f4aad2ad5a1d3df8d155fb265dba1fdc3d1fcf6b4bfb85f0f00d34fe314dbb",
+   "bytes": 249681,
+   "width": 1800,
+   "height": 1143,
+   "note": "named unit or traced owner plan; review before publishing"
+  },
+  {
+   "file": "docs/gallery/codexeg--view_west_floor12.jpg",
+   "publication_status": "review",
+   "sha256": "4e68597344c0df7106a653065910cf593874b2fbe364eb5e7aee22ed01560759",
+   "bytes": 107775,
+   "width": 999,
+   "height": 1381,
+   "note": "named unit or traced owner plan; review before publishing"
+  },
+  {
+   "file": "docs/gallery/codexeg--view_west_floor21.jpg",
+   "publication_status": "review",
+   "sha256": "a8220f236804acb0ad7f5a432e90312a46de5e476793109088c60a9a9d9a4958",
+   "bytes": 112634,
+   "width": 999,
+   "height": 1381,
+   "note": "named unit or traced owner plan; review before publishing"
+  },
+  {
+   "file": "docs/gallery/codexsite--site-buildings.jpg",
+   "publication_status": "public",
+   "sha256": "e8f00fdb6d6e820f1ce9d22d951b7baf41c7e96fbc3c57edaaab5a5477390b47",
+   "bytes": 170142,
+   "width": 1600,
+   "height": 1000
+  },
+  {
+   "file": "docs/gallery/codexsite--site-my-picks.jpg",
+   "publication_status": "public",
+   "sha256": "5ba23c06d2599360ebd32bb20acb44c5e136e86838e3bacdb00958c061c46241",
+   "bytes": 144317,
+   "width": 1600,
+   "height": 1000
+  },
+  {
+   "file": "docs/gallery/codexsite--site-research-report.jpg",
+   "publication_status": "public",
+   "sha256": "6966576859a7b39b3d5c8d43178639be225b41b0beea5a375cb9d65a1c05175f",
+   "bytes": 91785,
+   "width": 1600,
+   "height": 1000
+  },
+  {
+   "file": "docs/gallery/codexsite--site-shortlist-tours.jpg",
+   "publication_status": "public",
+   "sha256": "9334b2b4b587b1e8e0d92e180d53b9b8e5295892577378ec5a2266564fd52b5d",
+   "bytes": 120870,
+   "width": 1600,
+   "height": 1000
+  },
+  {
+   "file": "docs/gallery/codexsite--site-space-research.jpg",
+   "publication_status": "public",
+   "sha256": "234724604749cca7688ee471d0084574a8e356d58eb430a65b2f66245b4e468e",
+   "bytes": 131294,
+   "width": 1600,
+   "height": 1000
+  },
+  {
+   "file": "docs/gallery/codexsite--site-units-sheet.jpg",
+   "publication_status": "public",
+   "sha256": "6b5ecb9f50d63ee76239a955f68021c7b6d6cfe2ff1b49b8049111566ba2d981",
+   "bytes": 153180,
+   "width": 1600,
+   "height": 1000
+  },
+  {
+   "file": "docs/gallery/commuteheat--commute_heat.jpg",
+   "publication_status": "public",
+   "sha256": "6fa1fd26075fe46de9288b25647794848c74033f63899a88b2ad8b08c9cae65f",
+   "bytes": 34312,
+   "width": 670,
+   "height": 1560
+  },
+  {
+   "file": "docs/gallery/eg1211art--eg1211-dark.jpg",
+   "publication_status": "public",
+   "sha256": "cc3165f0bf04448994541389fc688707d1d4260d3f4bd12aace8f3a9d20d82a9",
+   "bytes": 178962,
+   "width": 1600,
+   "height": 1000
+  },
+  {
+   "file": "docs/gallery/eg1211art--eg1211-floor-month-table.jpg",
+   "publication_status": "public",
+   "sha256": "3b9d309c406eb08232a75ce77e506f486f9e4a33503c4cb404d1bfa79ce633ba",
+   "bytes": 93493,
+   "width": 588,
+   "height": 573
+  },
+  {
+   "file": "docs/gallery/eg1211art--eg1211-full-page.jpg",
+   "publication_status": "public",
+   "sha256": "4db8f408ad108274efe25841e6e362535552a6d50447a5302469a44cbff79042",
+   "bytes": 363699,
+   "width": 1600,
+   "height": 1920
+  },
+  {
+   "file": "docs/gallery/eg1211art--eg1211-jun21-evening.jpg",
+   "publication_status": "public",
+   "sha256": "971c68c0f2ff8e524616b490f5d5f52909536c902d1c7919da843f375de5555b",
+   "bytes": 176934,
+   "width": 1600,
+   "height": 1000
+  },
+  {
+   "file": "docs/gallery/eg1211art--eg1211-stage-dec21.jpg",
+   "publication_status": "public",
+   "sha256": "3c817b54535371e2f48b4bda02eb3a70adb2522d62c99b33e5d95e5cd366e8b3",
+   "bytes": 49439,
+   "width": 835,
+   "height": 523
+  },
+  {
+   "file": "docs/gallery/eg1211art--eg1211-stage-orbit.jpg",
+   "publication_status": "public",
+   "sha256": "47b40d42a65c6d2398872ce723e763c3e6a7adc0ce327eccced8b3b219f9aa63",
+   "bytes": 53570,
+   "width": 835,
+   "height": 523
+  },
+  {
+   "file": "docs/gallery/eg1211art--eg1211-stage-window-floor12.jpg",
+   "publication_status": "public",
+   "sha256": "9ad9cecd5287f69ffcf6c62a8c7e277232cc6544e4c08beb12c77430de888fa9",
+   "bytes": 14627,
+   "width": 835,
+   "height": 523
+  },
+  {
+   "file": "docs/gallery/eg1211art--eg1211-stage-window-floor21.jpg",
+   "publication_status": "public",
+   "sha256": "48c3c0558b7a2aa128b421917f0b69c28c08b0803d6c389a63427220835241e4",
+   "bytes": 20156,
+   "width": 835,
+   "height": 523
+  },
+  {
+   "file": "docs/gallery/eg1211art--eg1211-sunpath-chart.jpg",
+   "publication_status": "public",
+   "sha256": "1c916a5743ec5a67178df60a211b00ee01716f29d2478735e8e1327199e4d81b",
+   "bytes": 40838,
+   "width": 805,
+   "height": 371
+  },
+  {
+   "file": "docs/gallery/fitcheck--fitcheck-49th-angle.jpg",
+   "publication_status": "review",
+   "sha256": "ce19d21bd68d628fff1ed07562ec5cefa8458b38394c3bff0d8550773d6f90d9",
+   "bytes": 156468,
+   "width": 1600,
+   "height": 1000,
+   "note": "named unit or traced owner plan; review before publishing"
+  },
+  {
+   "file": "docs/gallery/fitcheck--fitcheck-49th-top.jpg",
+   "publication_status": "review",
+   "sha256": "c067b6d60aa461cbd10314e15aabb2e7b3d2af57ad38a9a5d4fde34a3890397d",
+   "bytes": 126191,
+   "width": 1600,
+   "height": 1000,
+   "note": "named unit or traced owner plan; review before publishing"
+  },
+  {
+   "file": "docs/gallery/fitcheck--fitcheck-eg620-angle.jpg",
+   "publication_status": "review",
+   "sha256": "bae3a5a5165ea3ccd28dc8772a3bf706cc66dc7ddd7168e60ae770bc54a07ba1",
+   "bytes": 151223,
+   "width": 1600,
+   "height": 1000,
+   "note": "named unit or traced owner plan; review before publishing"
+  },
+  {
+   "file": "docs/gallery/fitcheck--fitcheck-eg620-bedroom.jpg",
+   "publication_status": "review",
+   "sha256": "2ec3c5d9e1038762057260799563a2d07e4ade65cb2bfd82ea10e87888ecab80",
+   "bytes": 137239,
+   "width": 1600,
+   "height": 1000,
+   "note": "named unit or traced owner plan; review before publishing"
+  },
+  {
+   "file": "docs/gallery/fitcheck--fitcheck-eg620-top.jpg",
+   "publication_status": "review",
+   "sha256": "2f447e05f7dfe78941265b79d9d20f545a34195293ccab31761c1b6882f6a1a0",
+   "bytes": 123479,
+   "width": 1600,
+   "height": 1000,
+   "note": "named unit or traced owner plan; review before publishing"
+  },
+  {
+   "file": "docs/gallery/fitcheck--fitcheck-paramount-angle.jpg",
+   "publication_status": "review",
+   "sha256": "b4a27b17e92741747f170bbb2628db7ebc3f95b635ba91a3c7dde55df0764e90",
+   "bytes": 159690,
+   "width": 1600,
+   "height": 1000,
+   "note": "named unit or traced owner plan; review before publishing"
+  },
+  {
+   "file": "docs/gallery/fitcheck--fitcheck-paramount-living.jpg",
+   "publication_status": "review",
+   "sha256": "7ec4294584e46c8e01792e8f89cc3f885541479c7a78ca3fdc83faf807a8c49c",
+   "bytes": 159560,
+   "width": 1600,
+   "height": 1000,
+   "note": "named unit or traced owner plan; review before publishing"
+  },
+  {
+   "file": "docs/gallery/greywood--floor_plan_3d.jpg",
+   "publication_status": "private",
+   "sha256": "09e137105289def65a0e5f2a74c1685124817170a54f9e66a43f797854418ec2",
+   "bytes": 94558,
+   "width": 1192,
+   "height": 830,
+   "note": "listing render"
+  },
+  {
+   "file": "docs/gallery/henry--henry-hall-311.jpg",
+   "publication_status": "public",
+   "sha256": "95930853a05b79c82d9cd7e1a67f7437b6c12c485b379501898afa87624b4ab7",
+   "bytes": 181438,
+   "width": 1600,
+   "height": 1000
+  },
+  {
+   "file": "docs/gallery/henry--henry-hall-due-diligence.jpg",
+   "publication_status": "public",
+   "sha256": "401f4fec4c1d9fa434b503407be055e5a98162c8d90b90883295e38c26085365",
+   "bytes": 1251895,
+   "width": 1600,
+   "height": 5796
+  },
+  {
+   "file": "docs/gallery/henry--henry-hall-unit-neighborhood.jpg",
+   "publication_status": "public",
+   "sha256": "e506989a0b7351abe541e00dec3e4965acb2320359e3bcf373e4d46bcf3c98be",
+   "bytes": 208914,
+   "width": 1600,
+   "height": 1000
+  },
+  {
+   "file": "docs/gallery/knox--knox-light-view-13c.jpg",
+   "publication_status": "public",
+   "sha256": "e01c36e0c39a86b36d21a18af35d04be2b449937fd67d279aff111cae3e4b014",
+   "bytes": 161822,
+   "width": 1600,
+   "height": 1000
+  },
+  {
+   "file": "docs/gallery/knox--knox-light-view-31ab.jpg",
+   "publication_status": "public",
+   "sha256": "a7dd8bb7beaf26659162b032966b0fcfdbc13e9462bdf0ad16bf305ea2a38a8e",
+   "bytes": 158756,
+   "width": 1600,
+   "height": 1000
+  },
+  {
+   "file": "docs/gallery/knox--knox-light-view-4c.jpg",
+   "publication_status": "public",
+   "sha256": "5ad386909276875874204acb5bb43532697d09391330abc576df220a60d1c7e6",
+   "bytes": 158140,
+   "width": 1600,
+   "height": 1000
+  },
+  {
+   "file": "docs/gallery/knox--knox_2026_survey_3d_mobile.jpg",
+   "publication_status": "public",
+   "sha256": "6d303f8c2426e9f5bf6cc528cf6ebe22cf8b4bc108d0d799bef63b24b99708a7",
+   "bytes": 175301,
+   "width": 1500,
+   "height": 1700
+  },
+  {
+   "file": "docs/gallery/knox--knox_2026_true_roof_context_mobile.jpg",
+   "publication_status": "public",
+   "sha256": "adf15782b1fcfcded6f52569384e3803d66bd13cfe30fcf32e15987a74e965b2",
+   "bytes": 224640,
+   "width": 1500,
+   "height": 2050
+  },
+  {
+   "file": "docs/gallery/knox--knox_3d_floor_view_mobile.jpg",
+   "publication_status": "public",
+   "sha256": "18e1817f8ea1bf09c748dfcbd95ee479fcb7e82b83d19080213896309214892f",
+   "bytes": 79053,
+   "width": 1120,
+   "height": 1500
+  },
+  {
+   "file": "docs/gallery/knox--knox_compass_units_mobile.jpg",
+   "publication_status": "public",
+   "sha256": "de361abf1adb9c975192224e0659ab9ace9ceed36c9fc487ecd9f2019ed908a3",
+   "bytes": 142534,
+   "width": 1120,
+   "height": 1810
+  },
+  {
+   "file": "docs/gallery/layout--layout-3d-overview.jpg",
+   "publication_status": "review",
+   "sha256": "aeddbcff3d4155131d628260c3085852703e8401f570c243b51261a4d17a8b09",
+   "bytes": 133885,
+   "width": 1600,
+   "height": 1000,
+   "note": "named unit or traced owner plan; review before publishing"
+  },
+  {
+   "file": "docs/gallery/layout--layout-3d-topdown.jpg",
+   "publication_status": "review",
+   "sha256": "542f86619ec654cb62eed0ef235162fb737a6493a482893ad180ab910873ab1e",
+   "bytes": 117215,
+   "width": 1600,
+   "height": 1000,
+   "note": "named unit or traced owner plan; review before publishing"
+  },
+  {
+   "file": "docs/gallery/layout--layout-bed-in-living-room.jpg",
+   "publication_status": "review",
+   "sha256": "c7dceba8c7ba922bb67e9375f34b468b852aa7529429e1def9590568aa664b53",
+   "bytes": 167782,
+   "width": 1600,
+   "height": 1000,
+   "note": "named unit or traced owner plan; review before publishing"
+  },
+  {
+   "file": "docs/gallery/layout--layout-dark.jpg",
+   "publication_status": "review",
+   "sha256": "895c346456d2283606fcb1c1e156a498a93e68185402be68a9f23bc802664238",
+   "bytes": 164405,
+   "width": 1600,
+   "height": 1000,
+   "note": "named unit or traced owner plan; review before publishing"
+  },
+  {
+   "file": "docs/gallery/layout--layout-from-bed.jpg",
+   "publication_status": "review",
+   "sha256": "6dacc572470a2cfb9a264df11c9aa6251cff2dbdb6d56cfbd750e2641763c855",
+   "bytes": 93108,
+   "width": 1600,
+   "height": 1000,
+   "note": "named unit or traced owner plan; review before publishing"
+  },
+  {
+   "file": "docs/gallery/layout--layout-from-front-door.jpg",
+   "publication_status": "review",
+   "sha256": "42206edc13982a838c36cb5668bab62442efd1f4019d6b2451348427d3b49779",
+   "bytes": 98604,
+   "width": 1600,
+   "height": 1000,
+   "note": "named unit or traced owner plan; review before publishing"
+  },
+  {
+   "file": "docs/gallery/layout--layout-plan-2d.jpg",
+   "publication_status": "review",
+   "sha256": "3596953655ab3d53db1dfe4d33c0a1e01eef6d2ced1f51d12f0b95fd67b4f36d",
+   "bytes": 131004,
+   "width": 1600,
+   "height": 1000,
+   "note": "named unit or traced owner plan; review before publishing"
+  },
+  {
+   "file": "docs/gallery/layout--layout-split.jpg",
+   "publication_status": "review",
+   "sha256": "e0b39a723c6fd7dab761cce0cccacba130b9a5eb5a381890c6ac934eb622d5ed",
+   "bytes": 165046,
+   "width": 1600,
+   "height": 1000,
+   "note": "named unit or traced owner plan; review before publishing"
+  },
+  {
+   "file": "docs/gallery/layout--layout_preview.jpg",
+   "publication_status": "review",
+   "sha256": "770d53b0e9090bbdbdd581543431a44731ee73b1387353c9232109d8e33efff5",
+   "bytes": 131162,
+   "width": 1280,
+   "height": 1120,
+   "note": "named unit or traced owner plan; review before publishing"
+  },
+  {
+   "file": "docs/gallery/layout--queen_primary_options.jpg",
+   "publication_status": "review",
+   "sha256": "e6b92e397b509c012c0aa91c2c810d1ebbc1d0ac129275ffe87b0c889f18665d",
+   "bytes": 68379,
+   "width": 950,
+   "height": 575,
+   "note": "named unit or traced owner plan; review before publishing"
+  },
+  {
+   "file": "docs/gallery/paramount--paramount-comparison.jpg",
+   "publication_status": "public",
+   "sha256": "66a71813459aeab80d313492a1588978bafdee2e0892e8189e9c70006cd38fb4",
+   "bytes": 187284,
+   "width": 1600,
+   "height": 1000
+  },
+  {
+   "file": "docs/gallery/poker--poker-amenities.jpg",
+   "publication_status": "public",
+   "sha256": "15e94ea8e153349128b08317c60314ced3e4e48b227a62f46d7c88b4dfed2584",
+   "bytes": 140543,
+   "width": 1600,
+   "height": 1000
+  },
+  {
+   "file": "docs/gallery/prototype--search-compare.jpg",
+   "publication_status": "public",
+   "sha256": "905e1d37def46b7cb1b1b5de88990b663d3739e7de74ae489209e6028fd288df",
+   "bytes": 198915,
+   "width": 1600,
+   "height": 1000
+  },
+  {
+   "file": "docs/gallery/prototype--search-dark-compare.jpg",
+   "publication_status": "public",
+   "sha256": "6721e1be4499276b9d2cfdfec6b059cd91b4e9d0b875e2c6751d6e8796135a8e",
+   "bytes": 189338,
+   "width": 1600,
+   "height": 1000
+  },
+  {
+   "file": "docs/gallery/prototype--search-dark-tour.jpg",
+   "publication_status": "public",
+   "sha256": "de96448bf77b8d29fe9515e8fadf43c563c70cee2954f42fbebd0876ae1b85cc",
+   "bytes": 217833,
+   "width": 1600,
+   "height": 1000
+  },
+  {
+   "file": "docs/gallery/prototype--search-dark.jpg",
+   "publication_status": "public",
+   "sha256": "72dea7c5f33f4c76bf128e96fdb8ee68d508790076c101902d4ef2fb3fdf4f8e",
+   "bytes": 197082,
+   "width": 1600,
+   "height": 1000
+  },
+  {
+   "file": "docs/gallery/prototype--search-gone-fast.jpg",
+   "publication_status": "public",
+   "sha256": "f5b12d1fa470b436fc971882ab3d58c302bcda6fdf56e5cd84d105aca5d73bea",
+   "bytes": 190113,
+   "width": 1600,
+   "height": 1000
+  },
+  {
+   "file": "docs/gallery/prototype--search-home.jpg",
+   "publication_status": "public",
+   "sha256": "901c89815f71bd2d1042cbe029664e19940eb02d8e5a53ee9635049af3815817",
+   "bytes": 208250,
+   "width": 1600,
+   "height": 1000
+  },
+  {
+   "file": "docs/gallery/prototype--search-my-list.jpg",
+   "publication_status": "public",
+   "sha256": "8f637027e715c277af312c212f750dcf571b094a01e0aa0a565402576e56d53c",
+   "bytes": 194505,
+   "width": 1600,
+   "height": 1000
+  },
+  {
+   "file": "docs/gallery/prototype--search-new.jpg",
+   "publication_status": "public",
+   "sha256": "9673a68ae0a3a4bf90e23f77cfaf4afea175fef7d97671d3fd3f9aad051125d8",
+   "bytes": 215033,
+   "width": 1600,
+   "height": 1000
+  },
+  {
+   "file": "docs/gallery/prototype--search-playbook.jpg",
+   "publication_status": "public",
+   "sha256": "04324a68bb497f17839861cb664cbf5edbaa86395d62f35ead68138bdfd75c2d",
+   "bytes": 243422,
+   "width": 1600,
+   "height": 1000
+  },
+  {
+   "file": "docs/gallery/prototype--search-tour-plan.jpg",
+   "publication_status": "public",
+   "sha256": "a7a0324cf96137ec8fba9186673dde9311b801918f1331b5a74131a4d263b760",
+   "bytes": 231569,
+   "width": 1600,
+   "height": 1000
+  },
+  {
+   "file": "docs/gallery/prototype--search-units.jpg",
+   "publication_status": "public",
+   "sha256": "5b9c520e188395df219664a5440ca86b8b8863d1143f921db15678aa1ba2d737",
+   "bytes": 214754,
+   "width": 1600,
+   "height": 1000
+  },
+  {
+   "file": "docs/gallery/roomtolive--codex-floorplan3d-futon-bedroom.jpg",
+   "publication_status": "review",
+   "sha256": "7d7c831566b91621fc888a5c1a9d535d6c8fbd8733649212d10cf7034ddfcb79",
+   "bytes": 118711,
+   "width": 1600,
+   "height": 1000,
+   "note": "named unit or traced owner plan; review before publishing"
+  },
+  {
+   "file": "docs/gallery/roomtolive--codex-floorplan3d-plan1-overhead.jpg",
+   "publication_status": "review",
+   "sha256": "f0813daf882baaa46c80ef1b80a5193c155725aebd5fdb9964ee61c92208bea7",
+   "bytes": 112374,
+   "width": 1600,
+   "height": 1000,
+   "note": "named unit or traced owner plan; review before publishing"
+  },
+  {
+   "file": "docs/gallery/roomtolive--codex-floorplan3d-plan1.jpg",
+   "publication_status": "review",
+   "sha256": "40e0660404340c607020658a7b57634cf2d38f9ceeffcafd059d170daf538068",
+   "bytes": 120222,
+   "width": 1600,
+   "height": 1000,
+   "note": "named unit or traced owner plan; review before publishing"
+  },
+  {
+   "file": "docs/gallery/roomtolive--codex-floorplan3d-plan2-fullwalls.jpg",
+   "publication_status": "review",
+   "sha256": "973924407dbe11d7312db4d0baab7262ea3f85a7915d2fa2b939c9bc7ab3388b",
+   "bytes": 118333,
+   "width": 1600,
+   "height": 1000,
+   "note": "named unit or traced owner plan; review before publishing"
+  },
+  {
+   "file": "docs/gallery/roomtolive--codex-floorplan3d-plan2.jpg",
+   "publication_status": "review",
+   "sha256": "502638a81fb39dde260035d3b3f362f9d11ce3aaef876946ef1096ac008864da",
+   "bytes": 127635,
+   "width": 1600,
+   "height": 1000,
+   "note": "named unit or traced owner plan; review before publishing"
+  },
+  {
+   "file": "docs/gallery/roomtolive--plan-1-preview.jpg",
+   "publication_status": "review",
+   "sha256": "42e56b8d9c471376605d6dd3bfa49b88d2b49ed13888082579b6943107ca2940",
+   "bytes": 83607,
+   "width": 1280,
+   "height": 720,
+   "note": "named unit or traced owner plan; review before publishing"
+  },
+  {
+   "file": "docs/gallery/roomtolive--plan-2-preview.jpg",
+   "publication_status": "review",
+   "sha256": "d9c2fbfca62c02cbee20c27cf3168a7dd0ac6a49ed4e3eb101ba051e79073ea0",
+   "bytes": 95948,
+   "width": 1280,
+   "height": 720,
+   "note": "named unit or traced owner plan; review before publishing"
+  }
+ ]
+}
