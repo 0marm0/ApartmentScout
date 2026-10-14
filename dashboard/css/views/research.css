@@ -46,7 +46,7 @@
 /* ------------------------------------------------------------------ sub-tabs */
 .rs-tabs { display: flex; gap: 2px; padding: 3px; border-radius: var(--r-md); background: var(--surface-2); border: 1px solid var(--line); margin-bottom: var(--s-4); width: max-content; max-width: 100%; overflow-x: auto; scrollbar-width: none; }
 .rs-tabs::-webkit-scrollbar { display: none; }
-.rs-tabs button { display: inline-flex; align-items: center; gap: 7px; border: 0; background: none; height: 32px; padding: 0 12px; border-radius: 7px; font-size: var(--fs-sm); font-weight: 500; color: var(--ink-2); cursor: pointer; white-space: nowrap; transition: color var(--t-fast), background var(--t-fast); }
+.rs-tabs button { display: inline-flex; align-items: center; gap: 7px; border: 0; background: none; height: 32px; padding: 0 12px; border-radius: var(--r-inner); font-size: var(--fs-sm); font-weight: 500; color: var(--ink-2); cursor: pointer; white-space: nowrap; transition: color var(--t-fast), background var(--t-fast); }
 .rs-tabs button svg { width: 15px; height: 15px; opacity: .75; }
 .rs-tabs button i { font-style: normal; font-size: var(--fs-2xs); font-weight: 600; color: var(--ink-3); font-variant-numeric: tabular-nums; padding: 1px 6px; border-radius: var(--r-pill); background: var(--surface-3); }
 .rs-tabs button:hover { color: var(--ink); }

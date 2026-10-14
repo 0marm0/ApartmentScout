@@ -13,7 +13,7 @@
 .lane > header { display: flex; align-items: center; gap: 8px; padding: 10px 12px 8px; }
 .lane > header span { flex: 1; min-width: 0; font-size: var(--fs-xs); color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .lane > header i { font-style: normal; font-size: var(--fs-xs); font-weight: 600; color: var(--ink-3); font-variant-numeric: tabular-nums; }
-.lt { display: inline-grid; place-items: center; min-width: 26px; height: 22px; padding: 0 6px; border-radius: 7px; font-size: var(--fs-xs); font-weight: 700; color: var(--ink-2); background: var(--surface-3); }
+.lt { display: inline-grid; place-items: center; min-width: 26px; height: 22px; padding: 0 6px; border-radius: var(--r-inner); font-size: var(--fs-xs); font-weight: 700; color: var(--ink-2); background: var(--surface-3); }
 .lt.t-S { color: var(--accent-ink); background: var(--accent); }
 .lt.t-A { color: var(--accent); background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent-line); }
 .lt.t-B, .lt.t-C { color: var(--ink); }

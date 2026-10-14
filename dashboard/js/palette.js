@@ -2,11 +2,13 @@
 // results, switch view, and run the shell's actions (theme, search settings, export, shortcuts, the open
 // listing's save / compare / share). One modal; the query input keeps focus and the options are a listbox.
 import { S, on, store, openDrawer, label, cost, score, isSaved, toggleSave, toggleCompare, setFilter, openSettings, filtered } from './app.js';
+import { flipTheme } from './shell.js';
 import { $, esc, money, ICONS, imagesOf, imgFallback, scoreColor, toast } from './util.js';
 
 const VIEWS = [['map', 'Map', 'Pins, commute surface and price tags'], ['list', 'Shortlist', 'Every home in a sortable table'], ['compare', 'Compare', 'Up to four homes side by side'],
-  ['unit', 'Unit 3D', 'The unit in its block, with the sun'], ['plan', 'Floor plan', 'Plan studio and tracer'], ['records', 'Records', 'Building records and reviews'],
-  ['research', 'Research', 'What to find out next'], ['tours', 'Tours', 'Plan visits and decide']];
+  ['unit', 'Unit 3D', 'The unit in its block, with the sun'], ['plan', 'Floor plan', 'Plan studio and tracer'],
+  ['research', 'Research', 'What to find out next'], ['list/tours', 'Tours', 'Plan visits and decide (under Shortlist)'], ['research/records', 'Records', 'Building records and reviews (under Research)']];
+const hereView = (k) => (k === 'list/tours' ? S.view === 'tours' : k === 'research/records' ? S.view === 'research' && location.hash.startsWith('#research/records') : S.view === k && !(k === 'research' && location.hash.startsWith('#research/records')));
 const IC = {
   view: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="2" y="2.5" width="12" height="11" rx="2"/><path d="M2 6h12"/></svg>',
   filter: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M2.5 3.5h11l-4.2 5v4l-2.6 1.2V8.5z"/></svg>',
@@ -95,14 +97,14 @@ function build(q) {
     const top = [...S.listings].filter((L) => L._rank && !seen.has(L.id)).sort((a, b) => a._rank - b._rank).slice(0, rec.length ? 3 : 5);
     for (const L of top) out.push(listingItem(L, 'Top matches'));
   }
-  VIEWS.forEach(([k, n, d], i) => { if (has(n) || has(d) || has(k)) out.push({ group: 'Go to', id: 'v:' + k, name: n, icon: IC.view, title: esc(n), sub: esc(d), meta: `${S.view === k ? '<span class="pl-on">Current</span>' : ''}<kbd>${i + 1}</kbd>`, run: () => { location.hash = k; } }); });
+  VIEWS.forEach(([k, n, d], i) => { if (has(n) || has(d) || has(k)) out.push({ group: 'Go to', id: 'v:' + k, name: n, icon: IC.view, title: esc(n), sub: esc(d), meta: `${hereView(k) ? '<span class="pl-on">Current</span>' : ''}${i < 6 ? `<kbd>${i + 1}</kbd>` : ''}`, run: () => { location.hash = k; } }); });
   const sel = S.sel && S.listings.find((L) => L.id === S.sel);
   const acts = [
     sel && ['Save or unsave the open home', isSaved(sel.id) ? 'Remove ' + label(sel) + ' from your picks' : 'Save ' + label(sel) + ' to your picks', ICONS.starO, 's', () => toggleSave(sel.id)],
     sel && [S.compare.includes(sel.id) ? 'Remove the open home from Compare' : 'Add the open home to Compare', label(sel), ICONS.plus, 'c', () => toggleCompare(sel.id)],
     sel && ['Copy a link to the open home', 'Opens ' + label(sel) + ' for whoever you send it to', IC.link, '', () => shareListing(sel.id)],
     S.filters.q && ['Clear the text filter', `Now showing homes matching “${S.filters.q}”`, IC.filter, '', () => applyFilter('')],
-    ['Switch to ' + (document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark') + ' theme', 'Light or dark', IC.theme, 't', () => $('themeBtn')?.click()],
+    ['Switch to ' + (document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark') + ' theme', 'Light or dark', IC.theme, 't', () => flipTheme()],
     ['Search settings', 'Budget, must-haves, destinations and weights', IC.gear, '', () => openSettings()],
     innerWidth <= 1180 && ['Filters and ranking weights', 'Open the filter rail', IC.rail, '', () => { if (!['map', 'list'].includes(S.view)) location.hash = 'map'; document.body.classList.add('rail-open'); }],
     ['Export the filtered homes as CSV', `${filtered().length} homes`, IC.dl, '', () => $('csvBtn')?.click()],

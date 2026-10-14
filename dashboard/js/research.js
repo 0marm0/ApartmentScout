@@ -12,11 +12,21 @@ import * as gone from './research/gone.js';
 import * as watch from './research/watch.js';
 import * as media from './research/media.js';
 
+// Records (the building due-diligence report) is the last sub-tab: records.js keeps its own report element and this
+// shim parks it in the panel. #research/records/<id> opens it on that building; #records/<id> redirects here.
+const records = {
+  async render(panel) {
+    const m = await import('./records.js');
+    if (tab !== 'records') return;
+    m.mount(panel);
+    await m.show(recId || undefined);
+  },
+};
 const TABS = [
   ['queue', 'Queue', IC.queue, queue], ['new', 'New & changed', IC.pulse, changes], ['gone', 'Gone fast', IC.clock, gone],
-  ['watch', 'Watchlist', IC.eye, watch], ['media', 'Media', IC.image, media],
+  ['watch', 'Watchlist', IC.eye, watch], ['media', 'Media', IC.image, media], ['records', 'Records', IC.pin, records],
 ];
-let tab = 'queue', ready = null;
+let tab = 'queue', recId = '', ready = null;
 const isOn = () => S.view === 'research';
 
 export function init() {
@@ -27,8 +37,14 @@ export function init() {
 }
 
 export async function show(arg) {
+  const [t, ...rest] = String(arg || '').split('/');
+  recId = t === 'records' ? rest.join('/') : '';
+  arg = t;
   const want = TABS.some(([k]) => k === arg) ? arg : store.get('research-tab', 'queue');
+  const prev = tab;
   tab = TABS.some(([k]) => k === want) ? want : 'queue';
+  // picking another building inside Records swaps the report only: no re-render of the tab strip, scroll stays
+  if (tab === 'records' && prev === 'records' && R.loaded && $('view-research').contains($('rec'))) { (await import('./records.js')).show(recId || undefined); return; }
   store.set('research-tab', tab);
   if (!R.loaded) {
     $('view-research').innerHTML = `<div class="view-pad rs"><div class="page-h"><div class="t"><h1>Research</h1><p>Loading research data…</p></div></div><div class="skeleton" style="height:120px"></div><div class="skeleton" style="height:360px;margin-top:16px"></div></div>`;
@@ -41,7 +57,7 @@ export async function show(arg) {
 function counts(rows) {
   const ev = events(), gr = goneRows(), wr = watchRows();
   const mg = mediaGroups(), m = mg.reduce((a, g) => a + g.items.length, 0);
-  return { queue: rows.length, new: ev.length, gone: gr.length, watch: wr.length, media: m };
+  return { queue: rows.length, new: ev.length, gone: gr.length, watch: wr.length, media: m, records: (S.manifest.dossiers || []).length };
 }
 
 function updateBadge(rows = queueRows()) {
@@ -56,7 +72,9 @@ function render() {
   const rows = queueRows(), sm = coverageSummary(rows), C = counts(rows);
   updateBadge(rows);
   const root = $('view-research');
-  root.innerHTML = `<div class="view-pad rs">
+  const rec = document.getElementById('rec');   // the Records report lives in this view only while its tab is open
+  if (rec && root.contains(rec)) document.querySelector('#view-records .view-pad')?.append(rec);
+  root.innerHTML = `<div class="view-pad rs" data-tab="${tab}">
     <div class="page-h"><div class="t"><h1>Research</h1><p>What to find out next, what changed, what rented and how fast, the buildings worth watching, and every image in one place.</p></div>
       <div class="actions"><span class="rs-built">${S.manifest.generated ? 'Data built ' + esc(fmtDate(S.manifest.generated.slice(0, 10))) : 'No build yet'}</span></div></div>
     ${coverageHTML(sm)}
@@ -79,8 +97,8 @@ function render() {
 }
 function go(k, focus = false) {
   go.focus = focus;
-  if (location.hash !== `#research/${k}`) location.hash = `research/${k}`;
-  else show(k);
+  if (!location.hash.startsWith(`#research/${k}`)) location.hash = `research/${k}`;
+  else show(k === 'records' && recId ? `records/${recId}` : k);
 }
 
 // ------------------------------------------------------------------ coverage header
