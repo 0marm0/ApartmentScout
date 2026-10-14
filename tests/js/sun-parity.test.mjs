@@ -26,8 +26,21 @@ test('direct-sun minutes and lit segments match', () => {
   const B = S.prepBuildings(fx.site.b, fx.site.holes);
   for (const c of fx.lit) {
     const [y, m, d] = c.date.split('-').map(Number);
-    const tab = S.dayTable(y, m - 1, d, fx.lat, fx.lon, fx.tz), r = S.litInfo(tab, S.horizonProfile(B, ...c.point), c.facing);
-    assert.equal(tab.length, c.samples); assert.equal(r.min, c.minutes, c.date); assert.deepEqual(r.segs, c.segs);
+    const panes = Array.isArray(c.panes) ? c.panes : null;
+    const tab = S.dayTable(y, m - 1, d, fx.lat, fx.lon, fx.tz), r = S.litInfo(tab, S.horizonProfile(B, ...c.point), c.facing, fx.step_min ?? 6, panes);
+    assert.equal(tab.length, c.samples); assert.equal(r.min, c.minutes, `${c.date}${panes ? ' panes ' + panes : ''}`); assert.deepEqual(r.segs, c.segs);
+    // bay windows: minutes through each pane on its own, when the fixture records them
+    if (panes && Array.isArray(c.pane_minutes)) assert.deepEqual(r.panes, c.pane_minutes, `${c.date} per pane`);
+  }
+});
+test('bay windows: the fixture carries a multi-pane case once the Python side writes one', (t) => {
+  const bay = (fx.lit || []).filter((c) => Array.isArray(c.panes) && c.panes.length > 1);
+  if (!bay.length) { t.skip('no bay case in tests/fixtures/sun_parity.json yet'); return; }
+  const B = S.prepBuildings(fx.site.b, fx.site.holes);
+  for (const c of bay) {
+    const [y, m, d] = c.date.split('-').map(Number), tab = S.dayTable(y, m - 1, d, fx.lat, fx.lon, fx.tz), prof = S.horizonProfile(B, ...c.point);
+    const flat = S.litInfo(tab, prof, c.facing), bayR = S.litInfo(tab, prof, c.facing, fx.step_min ?? 6, c.panes);
+    assert.ok(bayR.min >= flat.min, `the union over panes never loses sun (${bayR.min} vs ${flat.min})`);
   }
 });
 test('facade faces match', () => {

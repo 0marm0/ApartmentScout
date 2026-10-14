@@ -280,11 +280,47 @@ def test_socrata_cache_and_retry(tmp_path, monkeypatch):
                 raise fetch_mod.requests.HTTPError(f"{self.status_code}", response=self)
 
     seq = [R(503, None), R(200, [{"a": 1}])]
-    monkeypatch.setattr(fetch_mod.requests, "get", lambda *a, **k: calls.append(1) or seq.pop(0))
+
+    def get(url, *a, **k):
+        if "/api/views/" in url:  # dataset metadata for the receipt
+            return R(200, {"rowsUpdatedAt": 1791706679, "name": "Test"})
+        calls.append(1)
+        return seq.pop(0)
+    monkeypatch.setattr(fetch_mod.requests, "get", get)
     monkeypatch.setattr(fetch_mod.time, "sleep", lambda s: None)
-    assert fetch_mod.socrata("abcd-1234", {"$where": "x"}, tmp_path) == [{"a": 1}]
-    assert fetch_mod.socrata("abcd-1234", {"$where": "x"}, tmp_path) == [{"a": 1}]
-    assert len(calls) == 2 and len(list(tmp_path.glob("socrata-abcd-1234-*.json"))) == 1
+    with fetch_mod.collect_receipts() as rc:
+        assert fetch_mod.socrata("abcd-1234", {"$where": "x"}, tmp_path) == [{"a": 1}]
+        assert fetch_mod.socrata("abcd-1234", {"$where": "x"}, tmp_path) == [{"a": 1}]
+    assert len(calls) == 2
+    assert len([p for p in tmp_path.glob("socrata-abcd-1234-*.json") if ".receipt" not in p.name]) == 1
+    # receipts: one fresh, one cache hit, same payload hash; dataset update time from the metadata endpoint
+    assert len(rc) == 2 and rc[0]["sha256"] == rc[1]["sha256"] and rc[1]["cached"] and not rc[0]["cached"]
+    payload = next(p for p in tmp_path.glob("socrata-abcd-1234-*.json") if ".receipt" not in p.name)
+    assert rc[0]["sha256"] == fetch_mod.sha256_bytes(payload.read_bytes())
+    assert rc[0]["rows"] == 1 and rc[0]["rows_updated"].startswith("2026-") and "%24where=x" in rc[0]["url"]
+
+
+def test_receipt_limit_hit_and_summary(tmp_path, monkeypatch):
+    class R:
+        status_code = 200
+
+        def __init__(self, body):
+            self._b = body
+
+        def json(self):
+            return self._b
+
+        def raise_for_status(self):
+            pass
+    monkeypatch.setattr(fetch_mod.requests, "get",
+                        lambda url, *a, **k: R({}) if "/api/views/" in url else R([{"a": 1}, {"a": 2}]))
+    with fetch_mod.collect_receipts() as rc:
+        fetch_mod.socrata("abcd-1234", {"$where": "y", "$limit": 2}, tmp_path)
+        fetch_mod.socrata("abcd-1234", {"$where": "z", "$limit": 10}, tmp_path)
+    assert rc[0]["limit_hit"] is True and rc[1]["limit_hit"] is False
+    (summ,) = fetch_mod.summarise_receipts(rc)
+    assert summ["calls"] == 2 and summ["rows"] == 4 and summ["limit_hit"] is True and len(summ["queries"]) == 2
+    assert "rows_updated" not in summ  # metadata unavailable: key omitted, not guessed
 
 
 def test_make_site_offline_v2(monkeypatch):

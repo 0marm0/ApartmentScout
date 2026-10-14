@@ -19,13 +19,26 @@ Read the recent rows in the JSON, not just the counts:
 - Construction: anything with demolition, new building, vertical enlargement or excavation on the
   block means months of daytime noise. Note the filing dates and the address.
 - Bedbug filings report infested units in the prior year; small counts in big buildings are common.
+- 311 noise: read `noise_311.metrics`, not the raw count. Requests closed as duplicates are removed
+  (`requests_ex_dupes`), `distinct_dates` shows whether it is one bad week or a pattern,
+  `night_share_22_07` and `construction_share` say what kind of noise, `frontage` splits the
+  streets the building faces, and `closure_classes` says how requests ended ("no violation
+  observed" and "gone on arrival" are not "fixed"). The full ledger is in
+  `research/<id>-noise-ledger.csv`. To compare with the renter's current home, run the same query
+  window and filter on both and keep that building's details out of committed files.
+- Receipts: `receipts` lists every dataset queried with rows, whether the row limit was hit, and
+  when the dataset was last updated. A dataset last updated before the event you are judging (a
+  registration renewal, a recent complaint) cannot show it; say so rather than reading absence as
+  a clean record. A limit hit means rows were cut off: narrow the query.
 - Rent stabilisation: check the unit listing, the lease rider and the DHCR rent history (the
   renter can request it). 421-a buildings often have stabilised units with riders that change
   renewal terms.
 
 **Other cities**: find the equivalents on the city open-data portal (code enforcement cases,
 building permits, 311 or service requests, police incidents) and the assessor (year built, units,
-owner). Record dataset names and query URLs in the note so the next run can repeat it. See
+owner). Record dataset names, query URLs, row counts and the dataset's last-updated date in the
+note so the next run can repeat it. Numbers taken from another agent's report must be reproduced
+from a saved query before reuse; mark them "not auditable" otherwise. See
 `docs/guides/new-city.md` to turn a repeatable query into a records module.
 
 ## 2. Ownership and management

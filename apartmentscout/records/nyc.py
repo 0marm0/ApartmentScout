@@ -14,16 +14,32 @@ For one listing it pulls, by BBL/BIN and by distance:
 
 All counts are reports, not proof. The dossier keeps the raw rows so an agent or
 a person can read the actual text before drawing conclusions.
+
+311 noise metrics are built to survive scrutiny: requests closed as explicit duplicates are
+counted and removed (``requests_ex_dupes``), distinct submission dates show whether a count is
+one bad week or a pattern, the night share uses 22:00-06:59, construction noise is separated,
+rates are per 1,000 residential units, counts are split by the street each request names
+(``by_street``, and ``frontage`` for the streets this building faces), and closure texts are
+sorted into classes (duplicate, no violation observed, no access, action taken...), because a
+closed request is not a fixed problem. The full request ledger is written next to the dossier as
+``research/<id>-noise-ledger.csv`` (not shipped to the dashboard).
+
+Every query leaves a receipt (URL, rows, whether ``$limit`` was hit, the dataset's last update,
+sha256 of the response) in ``receipts``.
 """
 from __future__ import annotations
 
 import collections
+import csv
 import datetime as dt
 import json
 import os
+import re
 from pathlib import Path
 
 import requests
+
+from ..geo.fetch import collect_receipts, make_receipt, note_receipt, rows_updated, sha256_bytes, summarise_receipts
 
 BASE = "https://data.cityofnewyork.us/resource/{}.json"
 HEADERS = {"User-Agent": "ApartmentScout/0.1"}
@@ -44,12 +60,107 @@ DATASETS = {
 }
 
 
+_UPDATED: dict[str, str | None] = {}
+
+
 def soql(ds: str, params: dict, limit: int = 50000) -> list[dict]:
     p = dict(params)
     p.setdefault("$limit", limit)
-    r = requests.get(BASE.format(DATASETS.get(ds, ds)), params=p, headers=HEADERS, timeout=120)
+    dataset = DATASETS.get(ds, ds)
+    r = requests.get(BASE.format(dataset), params=p, headers=HEADERS, timeout=120)
     r.raise_for_status()
-    return r.json()
+    rows = r.json()
+    if dataset not in _UPDATED:
+        _UPDATED[dataset] = rows_updated(dataset)
+    note_receipt(make_receipt(dataset, r.url, len(rows), int(p["$limit"]), sha256_bytes(r.content),
+                              rows_updated=_UPDATED[dataset]))
+    return rows
+
+
+# closure texts of 311 noise requests, most specific first (a closed request is not a fixed problem)
+CLOSURE = (("duplicate", ("duplicate",)),
+           ("no-access", ("could not gain access", "unable to gain entry", "no access", "not able to gain")),
+           ("no-violation", ("no evidence of the violation", "observed no", "did not observe", "no violation",
+                             "not observed", "condition was not found", "could not find")),
+           ("gone-on-arrival", ("gone on arrival", "upon arrival", "were gone", "was gone")),
+           ("no-response", ("did not respond", "no response", "could not be reached", "not available")),
+           ("action", ("took action", "summons", "issued", "arrest", "made an arrest", "corrected")),
+           ("warning", ("warning", "warned")),
+           ("referred", ("referred", "another agency", "transferred")))
+NIGHT_HOURS = (22, 23, 0, 1, 2, 3, 4, 5, 6)  # 22:00-06:59
+
+
+def closure_class(text: str | None) -> str:
+    t = (text or "").lower()
+    if not t:
+        return "open-or-blank"
+    for name, keys in CLOSURE:
+        if any(k in t for k in keys):
+            return name
+    return "other"
+
+
+def _street_of(address: str | None) -> str | None:
+    """'49 East 34th Street, New York, NY' -> 'EAST 34 STREET' (the form 311 uses)."""
+    if not address:
+        return None
+    s = str(address).split(",")[0].upper()
+    s = re.sub(r"^\s*[\d-]+[A-Z]?\s+", "", s)
+    s = re.sub(r"(\d+)(ST|ND|RD|TH)\b", r"\1", s)
+    return " ".join(s.split()) or None
+
+
+def _norm_street(s: str | None) -> str:
+    t = re.sub(r"(\d+)(ST|ND|RD|TH)\b", r"\1", str(s or "").upper())
+    for a, b in ((" ST$", " STREET"), (" AVE$", " AVENUE"), (" AV$", " AVENUE"), ("^E ", "EAST "),
+                 ("^W ", "WEST "), (" PL$", " PLACE"), (" BLVD$", " BOULEVARD")):
+        t = re.sub(a, b, t)
+    return " ".join(t.split())
+
+
+def noise_metrics(rows: list[dict], bbl: str, years: float, units: float | None, address: str | None = None) -> dict:
+    """Counts that hold up: duplicates removed, distinct dates, night and construction shares,
+    per-1,000-unit rates, per-street and frontage splits, and closure classes."""
+    key = str(bbl).split(".")[0]
+    at = [r for r in rows if str(r.get("bbl", "")).split(".")[0] == key]
+
+    def block(rs: list[dict]) -> dict:
+        n = len(rs)
+        dup = sum(closure_class(r.get("resolution_description")) == "duplicate" for r in rs)
+        hours = [int(r["created_date"][11:13]) for r in rs if len(r.get("created_date") or "") >= 13]
+        night = sum(h in NIGHT_HOURS for h in hours)
+        cons = sum("construction" in f"{r.get('complaint_type')} {r.get('descriptor')}".lower() for r in rs)
+        return {"requests": n, "explicit_duplicates": dup, "requests_ex_dupes": n - dup,
+                "distinct_dates": len({(r.get("created_date") or "")[:10] for r in rs if r.get("created_date")}),
+                "night_share_22_07": round(night / n, 2) if n else 0.0,
+                "construction_share": round(cons / n, 2) if n else 0.0}
+
+    streets: dict[str, list[dict]] = collections.defaultdict(list)
+    for r in rows:
+        if r.get("street_name"):
+            streets[_norm_street(r["street_name"])].append(r)
+    front = {_norm_street(r.get("street_name")) for r in at if r.get("street_name")}
+    own = _street_of(address)
+    if own:
+        front.add(_norm_street(own))
+    by_street = {k: len(v) for k, v in sorted(streets.items(), key=lambda kv: -len(kv[1]))[:10]}
+    out = {"nearby": block(rows), "at_building": block(at),
+           "by_street": by_street,
+           "frontage": {k: block(streets[k]) for k in sorted(front) if k in streets},
+           "closure_classes": dict(collections.Counter(closure_class(r.get("resolution_description"))
+                                                       for r in rows).most_common())}
+    if units:
+        out["at_building_per_1000_units_yr"] = round(out["at_building"]["requests_ex_dupes"] / units / years * 1000, 1)
+    return out
+
+
+def noise_ledger(rows: list[dict]) -> list[dict]:
+    """One line per 311 noise request (for research/<id>-noise-ledger.csv)."""
+    keep = ("unique_key", "created_date", "closed_date", "complaint_type", "descriptor", "incident_address",
+            "street_name", "bbl", "agency", "resolution_description")
+    out = [{**{k: r.get(k) or "" for k in keep}, "closure_class": closure_class(r.get("resolution_description"))}
+           for r in rows]
+    return sorted(out, key=lambda r: r["created_date"], reverse=True)
 
 
 def _bbl_parts(bbl: str) -> tuple[str, str, str]:
@@ -72,6 +183,16 @@ def build_dossier(L: dict, ws=None, log=print, years: float = 3, radius_noise_m:
         lat, lon = lat or g.get("lat"), lon or g.get("lon")
     if not bbl:
         raise ValueError(f"{L['id']}: no BBL. Run `apartmentscout geocode` (NYC addresses get a BBL).")
+    with collect_receipts() as rc:
+        D = _dossier(L, bbl, bin_, lat, lon, log, years, radius_noise_m, radius_crime_m)
+    D["receipts"] = summarise_receipts(rc)
+    cut = [r["dataset"] for r in D["receipts"] if r.get("limit_hit")]
+    if cut:
+        log(f"    WARNING row limit hit (results cut off): {', '.join(cut)}")
+    return D
+
+
+def _dossier(L: dict, bbl, bin_, lat, lon, log, years: float, radius_noise_m: int, radius_crime_m: int) -> dict:
     boro, block, lot = _bbl_parts(bbl)
     since = _since(years)
     D: dict = {"id": L["id"], "building": L.get("building"), "address": L.get("address"), "bbl": bbl, "bin": bin_,
@@ -158,7 +279,8 @@ def build_dossier(L: dict, ws=None, log=print, years: float = 3, radius_noise_m:
         if lat is None:
             return {"note": "no coordinates"}
         rows = soql("sr311", {"$where": f"within_circle(location,{lat},{lon},{radius_noise_m}) AND complaint_type like 'Noise%' AND created_date >= '{since}'",
-                               "$select": "created_date,complaint_type,descriptor,incident_address,bbl,resolution_description"})
+                               "$select": "unique_key,created_date,closed_date,agency,complaint_type,descriptor,"
+                                          "incident_address,street_name,bbl,resolution_description"})
         at = [r for r in rows if str(r.get("bbl", "")).split(".")[0] == str(bbl).split(".")[0]]
         hours = [0] * 24
         for r in rows:
@@ -173,6 +295,8 @@ def build_dossier(L: dict, ws=None, log=print, years: float = 3, radius_noise_m:
                 "at_building_by_type": dict(collections.Counter(r.get("descriptor") for r in at).most_common(10)),
                 "by_hour": hours, "night_share": round(sum(hours[h] for h in (22, 23, 0, 1, 2, 3, 4, 5)) / max(1, len(rows)), 2),
                 "by_month": _by_month(rows, "created_date"),
+                "metrics": noise_metrics(rows, bbl, years, units, L.get("address")),
+                "_ledger": noise_ledger(rows),
                 "at_building_recent": sorted(at, key=lambda r: r["created_date"], reverse=True)[:40]}
 
     def crime():
@@ -214,6 +338,11 @@ def summarize(D: dict, units: float | None) -> dict:
         flags.append(f"{nz['nearby_per_year']:.0f} noise complaints a year within {nz.get('radius_m')} m")
     if nz.get("night_share", 0) > 0.45:
         flags.append(f"{int(nz['night_share'] * 100)}% of nearby noise complaints are logged 10 pm-6 am")
+    nm = (nz.get("metrics") or {}).get("nearby") or {}
+    if nm.get("requests") and nm.get("explicit_duplicates", 0) >= max(5, 0.15 * nm["requests"]):
+        flags.append(f"{nm['explicit_duplicates']} of {nm['requests']} nearby noise requests were closed as duplicates")
+    if nm.get("construction_share", 0) >= 0.3:
+        flags.append(f"{int(nm['construction_share'] * 100)}% of nearby noise requests are about construction")
     bb = (D.get("bedbugs") or {}).get("filings") or []
     if bb and _f(bb[0].get("infested_dwelling_unit_count")):
         flags.append(f"bedbug filing reports {bb[0]['infested_dwelling_unit_count']} infested unit(s)")
@@ -259,6 +388,22 @@ def to_markdown(D: dict) -> str:
                   f"({nz['nearby_per_year']} a year); {nz['at_building']} logged at this lot. "
                   f"Night share (10 pm-6 am): {int(nz.get('night_share', 0) * 100)}%.", "",
                   "Most common nearby: " + "; ".join(f"{k} ({v})" for k, v in list((nz.get('by_type') or {}).items())[:6]), ""]
+        nm = nz.get("metrics") or {}
+        if nm:
+            a, b = nm.get("nearby") or {}, nm.get("at_building") or {}
+            lines += [f"After removing {a.get('explicit_duplicates', 0)} requests closed as duplicates: "
+                      f"{a.get('requests_ex_dupes')} nearby on {a.get('distinct_dates')} distinct dates, "
+                      f"{b.get('requests_ex_dupes')} at this lot on {b.get('distinct_dates')} dates. "
+                      f"Night (22:00-06:59): {int(a.get('night_share_22_07', 0) * 100)}%. "
+                      f"Construction: {int(a.get('construction_share', 0) * 100)}%."
+                      + (f" {nm['at_building_per_1000_units_yr']} at this lot per 1,000 units a year."
+                         if nm.get("at_building_per_1000_units_yr") is not None else ""), ""]
+            for st, v in (nm.get("frontage") or {}).items():
+                lines.append(f"- {st.title()}: {v['requests_ex_dupes']} requests ({v['distinct_dates']} dates), "
+                             f"night {int(v['night_share_22_07'] * 100)}%")
+            if nm.get("closure_classes"):
+                lines += ["", "How requests were closed: " + ", ".join(f"{k} {v}" for k, v in nm["closure_classes"].items())
+                          + ". Closed is not fixed.", ""]
     co = D.get("construction") or {}
     if "block_filings" in co:
         lines += ["## Construction on the block", "", f"{co['block_filings']} DOB NOW filings on the block in 18 months, "
@@ -270,6 +415,14 @@ def to_markdown(D: dict) -> str:
     if "last_12m" in cr:
         lines += ["## Reported crime nearby", "", f"{cr['last_12m']} NYPD complaints within {cr['radius_m']} m in 12 months. "
                   f"By level: {cr.get('by_level')}. Top: {cr.get('top_offenses')}.", ""]
+    rc = D.get("receipts") or []
+    if rc:
+        lines += ["## Sources", ""]
+        for r in rc:
+            lines.append(f"- {r.get('name') or r['dataset']} ({r['dataset']}): {r['rows']} rows in {r['calls']} "
+                         f"quer{'y' if r['calls'] == 1 else 'ies'}" + (", ROW LIMIT HIT" if r.get("limit_hit") else "")
+                         + (f"; dataset last updated {r['rows_updated'][:10]}" if r.get("rows_updated") else ""))
+        lines.append("")
     lines += ["## Caveats", "", "Complaints and 311 requests are reports, not findings. Counts scale with building size, "
               "and a closed ticket does not mean the problem was fixed. Read the recent rows in the JSON before concluding.", ""]
     return "\n".join(lines)
@@ -305,9 +458,18 @@ def _top(rows, key, n, width):
 
 
 def save_dossier(D: dict, out_dir: Path) -> tuple[Path, Path]:
+    """Write <id>.json and <id>.md; the 311 noise ledger goes to ../<id>-noise-ledger.csv (research/)."""
     out_dir.mkdir(parents=True, exist_ok=True)
+    nz = D.get("noise_311") if isinstance(D.get("noise_311"), dict) else {}
+    ledger = nz.get("_ledger")
+    D = {**D, "noise_311": {k: v for k, v in nz.items() if k != "_ledger"}} if nz else D
     j = out_dir / f"{D['id']}.json"
     m = out_dir / f"{D['id']}.md"
     j.write_text(json.dumps(D, indent=1, default=str))
     m.write_text(to_markdown(D))
+    if ledger:
+        with (out_dir.parent / f"{D['id']}-noise-ledger.csv").open("w", newline="") as f:
+            w = csv.DictWriter(f, fieldnames=list(ledger[0]))
+            w.writeheader()
+            w.writerows(ledger)
     return j, m

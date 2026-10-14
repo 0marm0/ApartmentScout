@@ -41,6 +41,14 @@ commute:
     feeds:
       - name: NYC Subway
         url: https://rrgtfsfeeds.s3.amazonaws.com/gtfs_subway.zip
+        mode: subway
+      - name: NYC Bus Manhattan
+        url: https://rrgtfsfeeds.s3.amazonaws.com/gtfs_m.zip
+        mode: bus
+      - name: MTA Bus Company
+        url: https://rrgtfsfeeds.s3.amazonaws.com/gtfs_busco.zip
+        mode: bus
+        exclude_routes: ["^(BxM|BM|QM|SIM|X)[0-9]"]   # premium-fare express buses
     walk_speed_kmh: 4.8
     max_walk_to_station_m: 1200
     service_date: 2026-10-14   # a normal weekday inside the feed's calendar

@@ -10,7 +10,11 @@ Geometry rules (site JSON v2):
 * target-building facades whose outside lies inside another footprint are party walls
   (``shared``) and are never chosen for the window;
 * the skyline for a point is, per 0.5 degree of azimuth, the highest angle subtended by the first
-  wall crossed in that direction for each building.
+  wall crossed in that direction for each building;
+* a window may have several panes (a bay): ``panes`` are bearing offsets from the facade normal
+  (default ``[0]``; a 45 degree bay is ``[-45, 0, 45]``). The sun is in the room when it is above
+  the skyline at the window and in front of at least one pane (the union over panes). All panes
+  share the window point's skyline.
 """
 from __future__ import annotations
 
@@ -67,18 +71,21 @@ def month_tracks(year: int, lat: float, lon: float, tz: str, day: int = 15) -> l
 
 # --------------------------------------------------------------------------- skyline
 
-def _site_rings(site: dict, include_future: bool = False) -> list[tuple[float, list[tuple[float, float]]]]:
-    """(top, ring) for every wall ring: outer rings, hole rings and (optionally) future buildings."""
+def _site_rings(site: dict, include_future: bool = False) -> list[tuple[float, list[tuple[float, float]], int]]:
+    """(top, ring, owner) for every wall ring: outer rings, hole rings and (optionally) future buildings.
+
+    ``owner`` is the index in ``site["b"]``, or ``-(k + 1)`` for ``site["future"][k]``.
+    """
     out = []
     holes = site.get("holes") or {}
     for i, (top, _g, _t, flat) in enumerate(site["b"]):
-        out.append((top, list(zip(flat[0::2], flat[1::2]))))
+        out.append((top, list(zip(flat[0::2], flat[1::2])), i))
         for h in holes.get(str(i), []):
-            out.append((top, [tuple(p) for p in h]))
+            out.append((top, [tuple(p) for p in h], i))
     if include_future:
-        for f in site.get("future") or []:
+        for k, f in enumerate(site.get("future") or []):
             if f.get("ring") and f.get("h"):
-                out.append((float(f["h"]), [tuple(p) for p in f["ring"]]))
+                out.append((float(f["h"]), [tuple(p) for p in f["ring"]], -(k + 1)))
     return out
 
 
@@ -89,18 +96,20 @@ class Skyline:
     """
 
     def __init__(self, site: dict, include_future: bool = False, chunk: int = 1500):
-        pts, edges, tops = [], [], []
-        for t, ring in _site_rings(site, include_future):
+        pts, edges, tops, owners = [], [], [], []
+        for t, ring, owner in _site_rings(site, include_future):
             p = np.asarray(ring, dtype=float)
             if len(p) < 2:
                 continue
             pts.append(p)
             edges.append(np.roll(p, -1, axis=0) - p)
             tops.append(np.full(len(p), float(t)))
+            owners.append(np.full(len(p), owner, dtype=int))
         P = np.concatenate(pts) if pts else np.zeros((0, 2))
         E = np.concatenate(edges) if edges else np.zeros((0, 2))
         self.ax, self.ay, self.ex, self.ey = P[:, 0], P[:, 1], E[:, 0], E[:, 1]
         self.top = np.concatenate(tops) if tops else np.zeros(0)
+        self.owner = np.concatenate(owners) if owners else np.zeros(0, dtype=int)
         az = np.arange(NB) * 0.5 * RAD
         self.ux, self.uy = np.sin(az)[:, None], np.cos(az)[:, None]
         self.chunk = chunk
@@ -124,6 +133,28 @@ class Skyline:
             best = np.maximum(best, q.max(axis=1))
         return np.degrees(np.arctan(best))
 
+    def blocker(self, px: float, py: float, pz: float, az: float, alt: float) -> tuple[int, float] | None:
+        """The building that hides the sun at (az, alt) from a point: (owner, distance in metres).
+
+        The first wall along the ray whose top is above the sun line, so the nearest of several
+        blockers. ``owner`` follows ``_site_rings`` (negative = a future building). None if clear.
+        """
+        tan_alt = math.tan(max(alt, 0.0) * RAD)
+        m = self.top > pz
+        if not m.any():
+            return None
+        ux, uy = math.sin(az * RAD), math.cos(az * RAD)
+        wx, wy, ex, ey = self.ax[m] - px, self.ay[m] - py, self.ex[m], self.ey[m]
+        den = ux * ey - uy * ex
+        with np.errstate(divide="ignore", invalid="ignore"):
+            t = (wx * ey - wy * ex) / den
+            s = (wx * uy - wy * ux) / den
+            ok = (np.abs(den) >= 1e-9) & (t > 0.01) & (s >= 0) & (s <= 1) & ((self.top[m] - pz) > t * tan_alt)
+        if not ok.any():
+            return None
+        k = int(np.argmin(np.where(ok, t, np.inf)))
+        return int(self.owner[m][k]), float(t[k])
+
 
 def at(profile: np.ndarray, az: float) -> float:
     f = (az % 360) / 0.5
@@ -142,11 +173,22 @@ def at_many(profile: np.ndarray, az: np.ndarray) -> np.ndarray:
     return profile[i] * (1 - w) + profile[j] * w
 
 
-def lit_minutes(track, profile, facing: float, step_min: int = STEP_MIN) -> tuple[int, list[tuple[int, int]]]:
+def pane_facings(facing: float, panes: Sequence[float] | None = None) -> list[float]:
+    """Outward bearings of a window's panes (``panes`` = offsets from the facade normal, default [0])."""
+    return [(facing + float(o)) % 360 for o in (panes if panes else (0,))]
+
+
+def in_front(az: float, facing: float, panes: Sequence[float] | None = None) -> bool:
+    """True when the sun's azimuth is in front of at least one pane (within 90 degrees of its normal)."""
+    return any(abs((az - f + 540) % 360 - 180) < 90 for f in pane_facings(facing, panes))
+
+
+def lit_minutes(track, profile, facing: float, step_min: int = STEP_MIN,
+                panes: Sequence[float] | None = None) -> tuple[int, list[tuple[int, int]]]:
+    """Direct-sun minutes and lit segments for one day; with ``panes`` the union over panes."""
     total, segs, cur = 0, [], None
     for m, az, alt in track:
-        diff = (az - facing + 540) % 360 - 180
-        if abs(diff) < 90 and alt > at(profile, az):
+        if in_front(az, facing, panes) and alt > at(profile, az):
             total += step_min
             if cur is None:
                 cur = [m, m + step_min]
@@ -166,16 +208,23 @@ class _Tracks:
         self.alt = [np.array([h for _, _, h in tr]) for tr in tracks]
         self.step = step_min
 
-    def hours(self, profile: np.ndarray, facing: float) -> list[float]:
+    def hours(self, profile: np.ndarray, facing: float, panes: Sequence[float] | None = None) -> list[float]:
+        """Direct-sun hours per month; with ``panes`` the union over panes."""
         out = []
         for az, alt in zip(self.az, self.alt):
             if not len(az):
                 out.append(0.0)
                 continue
-            diff = (az - facing + 540) % 360 - 180
-            lit = (np.abs(diff) < 90) & (alt > at_many(profile, az))
+            front = np.zeros(len(az), dtype=bool)
+            for f in pane_facings(facing, panes):
+                front |= np.abs((az - f + 540) % 360 - 180) < 90
+            lit = front & (alt > at_many(profile, az))
             out.append(round(int(lit.sum()) * self.step / 60, 2))
         return out
+
+    def hours_by_pane(self, profile: np.ndarray, facing: float, panes: Sequence[float]) -> list[list[float]]:
+        """Direct-sun hours per month through each pane on its own."""
+        return [self.hours(profile, (facing + float(o)) % 360) for o in panes]
 
 
 # --------------------------------------------------------------------------- facades
@@ -331,26 +380,33 @@ def max_floor(site: dict) -> int:
 
 
 def sun_study(site: dict, face: dict, floor: int, tz: str, year: int, t: float | None = None,
-              floors: range | None = None, sky: Skyline | None = None, tracks: _Tracks | None = None) -> dict:
+              floors: range | None = None, sky: Skyline | None = None, tracks: _Tracks | None = None,
+              panes: Sequence[float] | None = None) -> dict:
+    """Sun hours by month at one window (union over ``panes``), the floors table, skyline ahead and
+    open sky share. With more than one pane, ``sun_hours_panes`` holds each pane on its own."""
     lat, lon = site["origin"]["lat"], site["origin"]["lon"]
     t = window_t(face) if t is None else t
     fh = site.get("floor_height_m", 3.2)
     sky = sky or Skyline(site)
     tracks = tracks or _Tracks(month_tracks(year, lat, lon, tz))
     floors = floors or range(2, max_floor(site) + 1)
-    table = {f: tracks.hours(sky.profile(*window_point(face, t, f, fh)), face["bearing"]) for f in floors}
+    table = {f: tracks.hours(sky.profile(*window_point(face, t, f, fh)), face["bearing"], panes) for f in floors}
     prof = sky.profile(*window_point(face, t, floor, fh))
     ahead = at(prof, face["bearing"])
     open_sky = float(np.mean([60 - min(60, at(prof, face["bearing"] + d)) for d in range(-60, 61)]) / 60)
-    return {"face_bearing": face["bearing"], "floor": floor, "t": t,
-            "sun_hours": table.get(floor) or tracks.hours(prof, face["bearing"]),
-            "floors_table": table, "skyline_ahead_deg": round(ahead, 1), "open_sky_share": round(open_sky, 3),
-            "profile": [round(float(v), 1) for v in prof]}
+    out = {"face_bearing": face["bearing"], "floor": floor, "t": t,
+           "sun_hours": table.get(floor) or tracks.hours(prof, face["bearing"], panes),
+           "floors_table": table, "skyline_ahead_deg": round(ahead, 1), "open_sky_share": round(open_sky, 3),
+           "profile": [round(float(v), 1) for v in prof]}
+    if panes and len(panes) > 1:
+        out["sun_hours_panes"] = tracks.hours_by_pane(prof, face["bearing"], panes)
+    return out
 
 
 def sun_hours_range(site: dict, face: dict, floor: int, tz: str, year: int,
                     positions: Sequence[float] = POSITIONS, floor_delta: int = 2,
-                    sky: Skyline | None = None, tracks: _Tracks | None = None) -> dict:
+                    sky: Skyline | None = None, tracks: _Tracks | None = None,
+                    panes: Sequence[float] | None = None) -> dict:
     """Min and max direct-sun hours per month over window positions along the facade and nearby floors.
 
     Positions are fractions of the face's open (non-party-wall) stretch, reported as t along the
@@ -363,7 +419,7 @@ def sun_hours_range(site: dict, face: dict, floor: int, tz: str, year: int,
     t0, t1 = face_span(face)
     ts = [round(t0 + (t1 - t0) * p, 3) for p in positions]
     fl = [f for f in range(floor - floor_delta, floor + floor_delta + 1) if 2 <= f <= max_floor(site)] or [floor]
-    grid = np.array([[tracks.hours(sky.profile(*window_point(face, t, f, fh)), face["bearing"]) for t in ts]
+    grid = np.array([[tracks.hours(sky.profile(*window_point(face, t, f, fh)), face["bearing"], panes) for t in ts]
                      for f in fl])  # floors x positions x 12
     return {"lo": [round(float(v), 2) for v in grid.min(axis=(0, 1))],
             "hi": [round(float(v), 2) for v in grid.max(axis=(0, 1))],
@@ -371,11 +427,67 @@ def sun_hours_range(site: dict, face: dict, floor: int, tz: str, year: int,
 
 
 def future_sun_hours(site: dict, face: dict, floor: int, t: float, tz: str, year: int,
-                     tracks: _Tracks | None = None) -> list[float] | None:
+                     tracks: _Tracks | None = None, panes: Sequence[float] | None = None) -> list[float] | None:
     """Sun hours with filed / under-construction buildings added (None if there are none)."""
     if not site.get("future"):
         return None
     lat, lon = site["origin"]["lat"], site["origin"]["lon"]
     tracks = tracks or _Tracks(month_tracks(year, lat, lon, tz))
     sky = Skyline(site, include_future=True)
-    return tracks.hours(sky.profile(*window_point(face, t, floor, site.get("floor_height_m", 3.2))), face["bearing"])
+    return tracks.hours(sky.profile(*window_point(face, t, floor, site.get("floor_height_m", 3.2))),
+                        face["bearing"], panes)
+
+
+# --------------------------------------------------------------------------- who shades the window
+
+def sample_states(sky: Skyline, point: tuple[float, float, float], facing: float, date: dt.date,
+                  lat: float, lon: float, tz: str, panes: Sequence[float] | None = None,
+                  step_min: int = STEP_MIN) -> list[dict]:
+    """Every ``step_min`` slot of one local day at a window point.
+
+    state: ``night`` (sun below the horizon), ``behind`` (sun behind every pane), ``lit`` or
+    ``shaded``; shaded slots carry ``blocker`` (owner index, see ``_site_rings``) and ``dist`` (m).
+    """
+    z = ZoneInfo(tz)
+    prof = sky.profile(*point)
+    out = []
+    for m in range(0, 1440, step_min):
+        when = dt.datetime(date.year, date.month, date.day, m // 60, m % 60, tzinfo=z)
+        az, alt = sun_position(when, lat, lon)
+        row = {"minute": m, "az": round(az, 2), "alt": round(alt, 2)}
+        if alt <= 0:
+            row["state"] = "night"
+        elif not in_front(az, facing, panes):
+            row["state"] = "behind"
+        elif alt > at(prof, az):
+            row["state"] = "lit"
+        else:
+            row["state"] = "shaded"
+            # the skyline is interpolated between 0.5 degree bins: if the exact ray slips past a
+            # corner, the wall that raised the neighbouring bin is the blocker
+            b0 = math.floor(az / 0.5) * 0.5
+            hit = sky.blocker(*point, az, alt) or sky.blocker(*point, b0, alt) or sky.blocker(*point, b0 + 0.5, alt)
+            if hit is not None:
+                row["blocker"], row["dist"] = hit[0], round(hit[1], 1)
+        out.append(row)
+    return out
+
+
+def main_blockers(sky: Skyline, point: tuple[float, float, float], facing: float, year: int,
+                  lat: float, lon: float, tz: str, panes: Sequence[float] | None = None,
+                  day: int = 15, top: int = 6) -> list[dict]:
+    """Buildings that hide the sun from the window, with minutes shaded on the ``day`` of each month.
+
+    Only slots when the sun is up and in front of a pane count. Sorted by minutes over the year.
+    """
+    tally: dict[int, list[int]] = {}
+    dist: dict[int, float] = {}
+    for mo in range(12):
+        for r in sample_states(sky, point, facing, dt.date(year, mo + 1, day), lat, lon, tz, panes):
+            b = r.get("blocker")
+            if b is None:
+                continue
+            tally.setdefault(b, [0] * 12)[mo] += STEP_MIN
+            dist[b] = min(dist.get(b, math.inf), r["dist"])
+    rows = sorted(tally.items(), key=lambda kv: -sum(kv[1]))[:top]
+    return [{"b": b, "min": mins, "dist": round(dist[b], 1)} for b, mins in rows]

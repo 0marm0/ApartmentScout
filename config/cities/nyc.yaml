@@ -5,14 +5,71 @@ geocoder: nyc                     # NYC Planning Labs GeoSearch (returns BBL/BIN
 buildings: nyc                    # NYC Building Footprints with roof heights
 records: nyc                      # HPD, DOB, ECB, 311, NYPD, PLUTO, bedbugs
 layers: [noise]                   # citywide 311 noise heat layer
+# MTA static GTFS (developer data page: https://new.mta.info/developers). Each feed's mode comes from
+# its route_type, or set `mode: subway | bus | rail | ferry`. Buses are routed (bus-only and subway+bus
+# times) but not drawn on the map. Only the time window before arrive_by and stops near the search are
+# loaded, so the bus feeds add a few seconds, not minutes.
 transit_feeds:
   - name: NYC Subway
     url: https://rrgtfsfeeds.s3.amazonaws.com/gtfs_subway.zip
-  # Add buses or PATH if your commute needs them (large feeds, slower):
-  # - name: Manhattan buses
-  #   url: https://rrgtfsfeeds.s3.amazonaws.com/gtfs_m.zip
-  # - name: PATH
-  #   url: http://data.trilliumtransit.com/gtfs/path-nj-us/path-nj-us.zip
+    mode: subway
+  - name: NYC Bus Manhattan
+    url: https://rrgtfsfeeds.s3.amazonaws.com/gtfs_m.zip
+    mode: bus
+  - name: MTA Bus Company
+    url: https://rrgtfsfeeds.s3.amazonaws.com/gtfs_busco.zip
+    mode: bus
+    exclude_routes: ["^(BxM|BM|QM|SIM|X)[0-9]"]   # premium-fare express buses; drop this line to include them
+  # Other boroughs' local buses, if the search reaches them:
+  # - {name: NYC Bus Brooklyn, url: https://rrgtfsfeeds.s3.amazonaws.com/gtfs_b.zip, mode: bus}
+  # - {name: NYC Bus Bronx, url: https://rrgtfsfeeds.s3.amazonaws.com/gtfs_bx.zip, mode: bus}
+  # - {name: NYC Bus Queens, url: https://rrgtfsfeeds.s3.amazonaws.com/gtfs_q.zip, mode: bus}
+  # - {name: PATH, url: http://data.trilliumtransit.com/gtfs/path-nj-us/path-nj-us.zip, mode: rail}
+# Walking on the street grid: inside the polygon, walking metres = factor x (blend x L1 + (1 - blend) x
+# straight line), with L1 measured along the avenues (bearing_deg east of north) and the streets.
+# Fitted on 208 Manhattan walks (walk MAE 0.6 min against 3.9 for straight x 1.25). Outside the polygon,
+# or between Manhattan and anywhere else, walking is straight line x walk_detour.
+walk_grids:
+  - name: Manhattan
+    bearing_deg: 29
+    factor: 1.01
+    blend: 0.9
+    polygon:   # [lon, lat], along the Hudson shore north, then down the Harlem and East River shores
+      - [-74.0200, 40.7000]
+      - [-74.0195, 40.7090]
+      - [-74.0175, 40.7180]
+      - [-74.0140, 40.7290]
+      - [-74.0115, 40.7400]
+      - [-74.0100, 40.7500]
+      - [-74.0045, 40.7600]
+      - [-73.9960, 40.7720]
+      - [-73.9880, 40.7850]
+      - [-73.9785, 40.8000]
+      - [-73.9650, 40.8200]
+      - [-73.9500, 40.8400]
+      - [-73.9400, 40.8600]
+      - [-73.9300, 40.8750]
+      - [-73.9100, 40.8740]
+      - [-73.9260, 40.8500]
+      - [-73.9330, 40.8330]
+      - [-73.9340, 40.8150]
+      - [-73.9290, 40.8000]
+      - [-73.9330, 40.7920]
+      - [-73.9420, 40.7800]
+      - [-73.9430, 40.7740]
+      - [-73.9495, 40.7680]
+      - [-73.9530, 40.7640]
+      - [-73.9570, 40.7600]
+      - [-73.9615, 40.7560]
+      - [-73.9670, 40.7480]
+      - [-73.9710, 40.7400]
+      - [-73.9720, 40.7300]
+      - [-73.9720, 40.7200]
+      - [-73.9780, 40.7110]
+      - [-73.9900, 40.7075]
+      - [-74.0000, 40.7050]
+      - [-74.0090, 40.7010]
+      - [-74.0150, 40.6990]
 listing_sites: [StreetEasy, Zillow, Apartments.com, RentHop, Corcoran, Compass, building websites]
 review_sites: [Openigloo, Google Maps, Yelp, Reddit r/AskNYC, r/NYCapartments, ApartmentRatings, Birdeye]
 # Names for the tallest towers so the 3D view labels them. Matched within 120 m.

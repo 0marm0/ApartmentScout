@@ -43,10 +43,18 @@ commute:
   transit:
     feeds: []                # add GTFS feeds: - {name: City Metro, url: https://.../gtfs.zip}
     service_date: 2026-11-04 # a normal weekday inside the feed's calendar
+    # each feed may set mode: subway | bus | rail | ferry (else its route_type decides) and
+    # exclude_routes: [regex, ...] to drop routes by short name (e.g. premium express buses)
     walk_speed_kmh: 4.8
-    walk_detour: 1.25
-    station_access_min: 2
+    walk_detour: 1.25            # street distance / straight-line distance (outside any walk grid)
+    # walk_grids: false          # turn off the city profile's street-grid walking (or give your own list:
+    #                            # [{name, bearing_deg, factor, blend, polygon: [[lon, lat], ...]}])
+    station_access_min: 2        # street to subway platform (bus 0.5, rail and ferry 3: set access_min per mode)
+    # access_min: {subway: 2, bus: 0.5, rail: 3, ferry: 3}
+    egress_access: 1             # charge that access time again at the destination end (0 = never)
     max_walk_to_station_m: 1200
+    arrival_offsets_min: [0, 3, 6, 9, 12]   # arrive this much before arrive_by; times are averaged
+    mode_grids: true             # also write one heat grid per mode (commute-<dest>-subway.json, -bus.json)
 
 weights:                     # relative; only the ratios matter
   cost: 25

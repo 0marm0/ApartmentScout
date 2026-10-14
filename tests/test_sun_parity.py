@@ -52,6 +52,15 @@ ZONED = [("2026-03-08", 60), ("2026-03-08", 180), ("2026-11-01", 90), ("2026-07-
 LIT = [{"date": "2026-10-15", "point": [0, -9.6, 14.4], "facing": 0.0},
        {"date": "2026-06-21", "point": [0, -9.6, 14.4], "facing": 0.0},
        {"date": "2026-12-15", "point": [0, -30.4, 30.4], "facing": 180.0}]
+# Bay windows: panes are bearing offsets from the facade normal; lit = sun above the skyline and in front
+# of at least one pane (union). The flat south case shows a bay adds nothing when the flat pane already
+# faces every December sun azimuth; the west case shows the target's own walls still hide the SE sun.
+BAY = [{"date": "2026-06-21", "point": [0, -9.6, 14.4], "facing": 0.0, "panes": [-45, 0, 45]},
+       {"date": "2026-12-15", "point": [-10.4, -20, 30.4], "facing": 270.0, "panes": [-45, 0, 45]},
+       {"date": "2026-12-15", "point": [0, -30.4, 30.4], "facing": 180.0, "panes": [-45, 0, 45]}]
+# Who shades the window: owner = index in site.b of the first wall along the sun ray that rises above it.
+BLOCKERS = [{"point": [0, -9.6, 14.4], "az": 0.0, "alt": 10.0}, {"point": [0, -9.6, 14.4], "az": 0.0, "alt": 20.0},
+            {"point": [0, -9.6, 14.4], "az": 0.0, "alt": 40.0}, {"point": [-10.4, -20, 30.4], "az": 90.0, "alt": 5.0}]
 
 
 def _ms(date: str, minutes: int) -> int:
@@ -72,6 +81,17 @@ def build_fixture() -> dict:
         tr = day_track(dt.date.fromisoformat(c["date"]), LAT, LON, TZ)
         mins, segs = lit_minutes(tr, sky.profile(*c["point"]), c["facing"])
         lit.append({**c, "minutes": mins, "segs": [list(s) for s in segs], "samples": len(tr)})
+    for c in BAY:  # bay cases ride in "lit" with their panes (dashboard/js/sun.js litInfo takes them there)
+        tr = day_track(dt.date.fromisoformat(c["date"]), LAT, LON, TZ)
+        prof = sky.profile(*c["point"])
+        mins, segs = lit_minutes(tr, prof, c["facing"], panes=c["panes"])
+        lit.append({**c, "minutes": mins, "segs": [list(x) for x in segs], "samples": len(tr),
+                    "pane_minutes": [lit_minutes(tr, prof, (c["facing"] + o) % 360)[0] for o in c["panes"]],
+                    "flat_minutes": lit_minutes(tr, prof, c["facing"])[0]})
+    blockers = []
+    for c in BLOCKERS:
+        hit = sky.blocker(*c["point"], c["az"], c["alt"])
+        blockers.append({**c, "owner": hit[0] if hit else None, "dist": round(hit[1], 3) if hit else None})
     faces = [{k: f[k] for k in ("i", "bearing", "length", "shared") if k in f} for f in target_faces(SITE, min_len=8)]
     return {
         "_about": ("Shared fixture for apartmentscout/sun.py and dashboard/js/sun.js. Angles in degrees, azimuth "
@@ -88,6 +108,7 @@ def build_fixture() -> dict:
         "points": pts,
         "profile_court_centre": [round(float(v), 3) for v in full],
         "lit": lit,
+        "blockers": blockers,
         "faces": faces,
         "window_point": {"face_i": faces[0]["i"], "t": 0.5, "floor": 5,
                          "expected": [round(v, 4) for v in window_point(
@@ -148,8 +169,36 @@ def test_fixture_lit_minutes(fx):
     for c in fx["lit"]:
         tr = day_track(dt.date.fromisoformat(c["date"]), fx["lat"], fx["lon"], fx["tz"])
         assert len(tr) == c["samples"]
-        mins, segs = lit_minutes(tr, sky.profile(*c["point"]), c["facing"])
+        mins, segs = lit_minutes(tr, sky.profile(*c["point"]), c["facing"], panes=c.get("panes"))
         assert mins == c["minutes"] and [list(s) for s in segs] == c["segs"], c
+
+
+def test_fixture_bay_windows(fx):
+    """Union over panes: never less than any single pane, and more than the flat pane when a side pane
+    sees sun the flat pane cannot (north face in June, west face in December)."""
+    sky = Skyline(fx["site"])
+    bay = [c for c in fx["lit"] if c.get("panes")]
+    assert len(bay) == 3
+    for c in bay:
+        tr = day_track(dt.date.fromisoformat(c["date"]), fx["lat"], fx["lon"], fx["tz"])
+        prof = sky.profile(*c["point"])
+        mins, segs = lit_minutes(tr, prof, c["facing"], panes=c["panes"])
+        assert mins == c["minutes"] and [list(x) for x in segs] == c["segs"], c
+        assert mins >= max(c["pane_minutes"]) and mins >= c["flat_minutes"]
+    north, west, south = bay
+    assert north["minutes"] > north["flat_minutes"] and west["minutes"] > west["flat_minutes"]
+    assert south["minutes"] == south["flat_minutes"]
+
+
+def test_fixture_blockers(fx):
+    sky = Skyline(fx["site"])
+    for c in fx["blockers"]:
+        hit = sky.blocker(*c["point"], c["az"], c["alt"])
+        assert (hit[0] if hit else None) == c["owner"], c
+        if hit:
+            assert hit[1] == pytest.approx(c["dist"], abs=1e-3)
+    low, high, clear, _ = fx["blockers"]
+    assert low["owner"] == 0 and high["owner"] == 1 and clear["owner"] is None  # nearest wall above the ray wins
 
 
 def test_fixture_faces_and_window_point(fx):

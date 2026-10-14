@@ -12,6 +12,13 @@ Sources:
 
 Inner rings (light courts, courtyards) are kept: they are emitted as ``holes`` and treated as open
 air by the skyline and party-wall tests.
+
+NYC footprint metadata is kept per building (``bmeta``): the footprint ``name`` (296 named towers
+within 1 km of Midtown, e.g. "Empire State Building"; used before the PLUTO address for landmark
+labels), ``geom_src`` (``photogrammetric`` or ``manual``: about 15% of outlines were drawn by hand),
+``edited`` (year the record was last edited: most heights date from the 2017 capture) and ``fcode``
+(feature code: 2100 building, 5100 building under construction, 1003 construction placeholder,
+1006 cantilevered building...). PLUTO ``floors`` is kept so the floor height can be calibrated.
 """
 from __future__ import annotations
 
@@ -29,7 +36,7 @@ LEVEL_M = 3.2
 DEFAULT_H = 10.0
 
 __all__ = ["fetch_nyc", "fetch_osm", "parse_nyc_rows", "parse_osm_elements", "fill_heights", "nyc_pluto",
-           "build_site", "nyc_landmark_names", "point_in_ring"]
+           "build_site", "pick_target", "nyc_landmark_names", "point_in_ring"]
 
 
 # --------------------------------------------------------------------------- geometry parsing
@@ -64,6 +71,31 @@ def _num(v) -> float | None:
     return f if math.isfinite(f) else None
 
 
+def _bin(v) -> str | None:
+    """A real BIN (not a borough "million" placeholder such as 1000000)."""
+    if v in (None, ""):
+        return None
+    s = str(v).split(".")[0].strip()
+    return s if s.isdigit() and len(s) == 7 and s[1:] != "000000" else None
+
+
+def _name(v) -> str | None:
+    """Footprint names worth showing (the dataset also holds junk such as "1")."""
+    s = " ".join(str(v or "").split())
+    return s if len(s) >= 3 and sum(c.isalpha() for c in s) >= 3 else None
+
+
+def _geom_src(v) -> str | None:
+    s = str(v or "").strip().lower()
+    if not s:
+        return None
+    if s.startswith("photogram"):
+        return "photogrammetric"
+    if "manual" in s:
+        return "manual"
+    return s.split()[0]
+
+
 def _bbl(v) -> str | None:
     if v in (None, ""):
         return None
@@ -85,6 +117,12 @@ def parse_nyc_rows(rows: list[dict]) -> list[dict]:
         except (KeyError, ValueError, SyntaxError, TypeError):
             continue
         yr = _num(b.get("construction_year") or b.get("cnstrct_yr"))
+        edited = _year(b.get("last_edited_date") or b.get("lstmoddate"))
+        extra = {k: v for k, v in (("name", _name(b.get("name"))),
+                                   ("geom_src", _geom_src(b.get("geom_source") or b.get("geomsource"))),
+                                   ("edited", edited),
+                                   ("fcode", str(b.get("feature_code") or b.get("feat_code") or "") or None))
+                 if v is not None}
         for poly in polys:
             outer = poly[0]
             if len(outer) < 4:
@@ -97,14 +135,15 @@ def parse_nyc_rows(rows: list[dict]) -> list[dict]:
                 "height_src": "roof" if h_ft is not None else None,
                 "ground": (_num(b.get("ground_elevation")) or 0.0) * FT,
                 "ring": outer, "holes": [h for h in poly[1:] if len(h) >= 4],
-                "year": int(yr) if yr and yr > 1600 else None, "src": "nyc-footprints",
+                "year": int(yr) if yr and yr > 1600 else None, "src": "nyc-footprints", **extra,
             }
     return list(out.values())
 
 
 def fetch_nyc(lat: float, lon: float, radius_m: float = 600, tall_radius_m: float = 3500,
               tall_min_ft: float = 500, cache_dir: Path | None = None, refresh: bool = False) -> list[dict]:
-    sel = "bin,base_bbl,mappluto_bbl,height_roof,ground_elevation,construction_year,the_geom"
+    sel = ("bin,base_bbl,mappluto_bbl,height_roof,ground_elevation,construction_year,name,geom_source,"
+           "last_edited_date,feature_code,the_geom")
     rows: list[dict] = []
     for where in (f"within_circle(the_geom,{lat},{lon},{radius_m})",
                   f"within_circle(the_geom,{lat},{lon},{tall_radius_m}) AND height_roof > {tall_min_ft}"):
@@ -153,6 +192,8 @@ def fill_heights(buildings: list[dict], pluto: dict[str, dict] | None = None,
             b["address"] = p["address"]
         if not b.get("year") and p.get("yearbuilt") and p["yearbuilt"] > 1600:
             b["year"] = int(p["yearbuilt"])
+        if p.get("numfloors") and p["numfloors"] > 0 and not b.get("floors"):
+            b["floors"] = int(round(p["numfloors"]))
     return buildings
 
 
@@ -202,6 +243,7 @@ def parse_osm_elements(els: list[dict], lat: float, lon: float, radius_m: float,
                         "height": h if h is not None else default_h, "height_src": src or "default",
                         "ground": 0.0, "ring": ring, "holes": holes, "name": tags.get("name"),
                         "address": _osm_addr(tags), "year": _year(tags.get("start_date")), "src": "osm",
+                        "floors": int(_num(tags.get("building:levels")) or 0) or None,
                         "estimated_height": h is None})
     return out
 
@@ -255,22 +297,7 @@ def build_site(listing: dict, buildings: list[dict], source: str, landmark_names
             continue
         holes = [h for h in (_local(F, r) for r in b.get("holes") or []) if len(h) >= 3 and abs(ring_area(h)) > 4]
         rows.append((b, clean, holes))
-    # target building: the footprint containing the listing point; otherwise the nearest one
-    # within 45 m that is tall enough to have the listing's floor
-    need = ((listing.get("floor") or 1) - 1) * LEVEL_M + 2
-    target_idx = None
-    for i, (b, pts, _) in enumerate(rows):
-        if point_in_ring(0, 0, pts):
-            target_idx = i
-            break
-    if target_idx is None or rows[target_idx][0]["height"] < need:
-        cands = []
-        for i, (b, pts, _) in enumerate(rows):
-            d = dist_to_ring(0, 0, pts)
-            if d < 45:
-                cands.append((b["height"] < need, d, i))
-        if cands:
-            target_idx = sorted(cands)[0][2]
+    target_idx, how = pick_target(rows, listing)
     g0 = rows[target_idx][0]["ground"] if target_idx is not None else 0
     out, holes_out, meta = [], {}, []
     for i, (b, pts, holes) in enumerate(rows):
@@ -280,8 +307,9 @@ def build_site(listing: dict, buildings: list[dict], source: str, landmark_names
         if holes:
             holes_out[str(i)] = [[[round(x, 1), round(y, 1)] for x, y in h] for h in holes]
         m = {"bin": b.get("bin"), "bbl": b.get("bbl"), "address": b.get("address"), "name": b.get("name"),
-             "year": b.get("year"), "height_src": b.get("height_src") or "default",
-             "src": b.get("src") or ("osm" if str(b.get("id", "")).startswith("osm") else "nyc-footprints")}
+             "year": b.get("year"), "floors": b.get("floors"), "height_src": b.get("height_src") or "default",
+             "src": b.get("src") or ("osm" if str(b.get("id", "")).startswith("osm") else "nyc-footprints"),
+             "geom_src": b.get("geom_src"), "edited": b.get("edited"), "fcode": b.get("fcode")}
         meta.append({k: v for k, v in m.items() if v is not None})
     lm = _landmarks(rows, target_idx, g0, F, landmark_names, named_points)
     site = {"version": 2, "source": source, "origin": {"lat": lat0, "lon": lon0},
@@ -289,7 +317,41 @@ def build_site(listing: dict, buildings: list[dict], source: str, landmark_names
             "floor_height_m": LEVEL_M, "b": out, "lm": lm, "target": target_idx, "bmeta": meta}
     if holes_out:
         site["holes"] = holes_out
+    if target_idx is not None:
+        off = dist_to_ring(0, 0, rows[target_idx][1])
+        site["target_match"] = {"by": how, "point_offset_m": round(off, 1)}
     return site
+
+
+def pick_target(rows: list, listing: dict, near_m: float = 45) -> tuple[int | None, str | None]:
+    """Index of the listing's building among ``rows`` ((building, local ring, holes)) and how it was found.
+
+    1. ``bin``: footprints with the listing's BIN (the tallest when a BIN has several polygons);
+    2. ``bbl``: footprints on the listing's tax lot (the one containing the point, else the tallest);
+    3. ``point``: the footprint containing the geocoded point, if tall enough for the listing's floor;
+    4. ``nearest``: the nearest footprint within ``near_m`` that is tall enough (else the nearest).
+
+    Address points often fall in the street or on a neighbour, so the city's own identifiers win.
+    """
+    lb, ll = _bin(listing.get("bin")), _bbl(listing.get("bbl"))
+    if lb:
+        hits = [i for i, (b, _p, _h) in enumerate(rows) if _bin(b.get("bin")) == lb]
+        if hits:
+            return max(hits, key=lambda i: rows[i][0]["height"]), "bin"
+    if ll:
+        hits = [i for i, (b, _p, _h) in enumerate(rows) if _bbl(b.get("bbl")) == ll]
+        if hits:
+            inside = [i for i in hits if point_in_ring(0, 0, rows[i][1])]
+            return (inside[0] if inside else max(hits, key=lambda i: rows[i][0]["height"])), "bbl"
+    need = ((listing.get("floor") or 1) - 1) * LEVEL_M + 2
+    for i, (b, pts, _) in enumerate(rows):
+        if point_in_ring(0, 0, pts) and b["height"] >= need:
+            return i, "point"
+    cands = sorted((b["height"] < need, dist_to_ring(0, 0, pts), i) for i, (b, pts, _) in enumerate(rows)
+                   if dist_to_ring(0, 0, pts) < near_m)
+    if cands:
+        return cands[0][2], ("point" if cands[0][1] == 0 else "nearest")
+    return None, None
 
 
 def _landmarks(rows, target_idx, g0, F, landmark_names, named_points) -> list:
@@ -322,7 +384,7 @@ def _landmarks(rows, target_idx, g0, F, landmark_names, named_points) -> list:
         cx, cy = centroid(pts)
         if any(math.hypot(cx - lx, cy - ly) < 90 for _, _, lx, ly, _ in lm):
             continue
-        name = named.get(i) or (landmark_names or {}).get(b.get("bbl")) or b.get("address") or b.get("name") \
+        name = named.get(i) or b.get("name") or (landmark_names or {}).get(b.get("bbl")) or b.get("address") \
             or f"{b['height']:.0f} m tower"
         lm.append([name, i, round(cx, 1), round(cy, 1), round(b["height"] + b["ground"] - g0, 1)])
     return lm

@@ -1,4 +1,9 @@
-"""City-wide map layers beyond commute: NYC 311 noise density (more cities can plug in here)."""
+"""City-wide map layers beyond commute: NYC 311 noise density (more cities can plug in here).
+
+The noise layer counts requests per cell, with parallel grids for the night (22:00-06:59, the
+same window as the dossier's ``night_share_22_07``) and for construction noise, so a hot cell can
+be told apart: late-night bars, or a building site working before 7 am.
+"""
 from __future__ import annotations
 
 import datetime as dt
@@ -22,12 +27,13 @@ def nyc_noise_layer(ws, bbox: list[float], months: int = 12, cell_m: float = 150
     rows, cols = int((lat1 - lat0) / dlat) + 1, int((lon1 - lon0) / dlon) + 1
     grid = [0] * (rows * cols)
     night = [0] * (rows * cols)
+    construction = [0] * (rows * cols)
     offset, n = 0, 0
     while True:
         js = None
         for attempt in range(4):
             try:
-                r = requests.get(url, params={"$where": where, "$select": "latitude,longitude,created_date",
+                r = requests.get(url, params={"$where": where, "$select": "latitude,longitude,created_date,descriptor",
                                               "$limit": PAGE, "$offset": offset, "$order": ":id"}, timeout=180)
                 r.raise_for_status()
                 js = r.json()
@@ -46,8 +52,10 @@ def nyc_noise_layer(ws, bbox: list[float], months: int = 12, cell_m: float = 150
             if 0 <= ri < rows and 0 <= ci < cols:
                 grid[ri * cols + ci] += 1
                 h = int(p["created_date"][11:13])
-                if h >= 22 or h < 6:
+                if h >= 22 or h < 7:
                     night[ri * cols + ci] += 1
+                if "construction" in str(p.get("descriptor") or "").lower():
+                    construction[ri * cols + ci] += 1
         n += len(js)
         log(f"    311 noise rows: {n:,}")
         if len(js) < PAGE:
@@ -55,6 +63,7 @@ def nyc_noise_layer(ws, bbox: list[float], months: int = 12, cell_m: float = 150
         offset += PAGE
     layer = {"kind": "noise", "name": "311 noise complaints", "months": months, "since": since,
              "bbox": bbox, "rows": rows, "cols": cols, "cell_m": cell_m, "values": grid, "night": night,
+             "construction": construction, "night_hours": "22:00-06:59",
              "total": n, "generated": dt.datetime.now().isoformat(timespec="seconds"),
              "source": "https://data.cityofnewyork.us/d/erm2-nwe9"}
     (ws.layers_dir / "noise.json").write_text(json.dumps(layer, separators=(",", ":")))

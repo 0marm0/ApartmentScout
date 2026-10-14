@@ -1,5 +1,7 @@
 """Assemble a site model (site JSON v2) for one listing: footprints, facades, streets, future
-buildings, the chosen window, the sun study with its uncertainty range, and provenance."""
+buildings, the chosen window (with bay panes), the calibrated floor height, the sun study with its
+uncertainty range and main blockers, neighbouring roofs, the neighbours table, self-checks, source
+receipts and provenance."""
 from __future__ import annotations
 
 import datetime as dt
@@ -8,9 +10,12 @@ import time
 from pathlib import Path
 from typing import Callable
 
-from ..sun import (Skyline, _Tracks, face_by_bearing, future_sun_hours, max_floor, month_tracks, pick_face,
-                   sun_hours_range, sun_study, target_faces, window_t)
+from ..sun import (Skyline, _Tracks, face_by_bearing, future_sun_hours, main_blockers, max_floor, month_tracks,
+                   pick_face, sample_states, sun_hours_range, sun_study, target_faces, window_point, window_t)
 from .buildings import build_site, fetch_nyc, fetch_osm, fill_heights, nyc_pluto
+from .checks import site_checks
+from .fetch import collect_receipts, summarise_receipts
+from .neighbours import neighbours, roofs
 
 log = logging.getLogger(__name__)
 
@@ -19,6 +24,56 @@ _ALIASES = {"floor-plan": "plan", "floorplan": "plan", "floor-plan-compass": "pl
             "photo": "photo-landmarks", "photos": "photo-landmarks", "video": "photo-landmarks",
             "photo-landmark": "photo-landmarks", "leasing-agent": "agent", "broker": "agent", "email": "agent"}
 FACE_KEYS = ("i", "bearing", "length", "shared", "open", "shared_frac", "shared_h")
+BAY_PANES = (-45.0, 0.0, 45.0)
+FLOOR_H_RANGE = (2.8, 4.2)
+DEFAULT_FLOOR_H = 3.2
+
+
+def listing_panes(L: dict) -> list[float] | None:
+    """Pane offsets from the listing: ``window_panes`` (list of degrees) or ``bay: true``."""
+    v = L.get("window_panes")
+    if isinstance(v, (list, tuple)) and v:
+        try:
+            return [float(x) for x in v]
+        except (TypeError, ValueError):
+            return None
+    if L.get("bay") is True or str(L.get("window_type") or "").lower() == "bay":
+        return list(BAY_PANES)
+    return None
+
+
+def calibrate_floor_height(site: dict, floor: int | None, slab_height: float | None = None,
+                           floor_height: float | None = None) -> tuple[float, str]:
+    """Storey height for the target: manual setting, else roof height / floors, else 3.2 m.
+
+    ``slab_height`` is the listing floor's slab above the target's ground (e.g. from a section
+    drawing or an elevator floor directory); it sets the storey height to slab / (floor - 1).
+    Roof / floors is clamped to 2.8-4.2 m (roof heights include parapets and bulkheads, so it reads
+    a little high); it is used only when the roof height was measured, not itself built from floors.
+    """
+    if floor_height:
+        return float(floor_height), "manual"
+    if slab_height is not None and floor and floor > 1:
+        return slab_height / (floor - 1), "manual"
+    raw = roof_per_floor(site)
+    if raw is not None:
+        lo, hi = FLOOR_H_RANGE
+        ti = site["target"]
+        src = ((site.get("bmeta") or [{}] * (ti + 1))[ti] or {}).get("height_src")
+        return min(hi, max(lo, raw)), ("pluto" if src == "roof" else "osm-levels")
+    return DEFAULT_FLOOR_H, "default"
+
+
+def roof_per_floor(site: dict) -> float | None:
+    """Measured roof height / number of floors for the target, when both are known (else None)."""
+    ti = site.get("target")
+    if ti is None:
+        return None
+    m = (site.get("bmeta") or [{}] * (ti + 1))[ti] or {}
+    nf = m.get("floors")
+    if not nf or nf < 2 or m.get("height_src") not in ("roof", "osm-height"):
+        return None
+    return (site["b"][ti][0] - site["b"][ti][1]) / nf
 
 
 def norm_source(v) -> str | None:
@@ -62,8 +117,24 @@ def provenance(L: dict, face: dict | None, floor_arg: int | None, bearing_arg: f
 def make_site(L: dict, crit: dict, cache_dir: Path | None = None, floor: int | None = None,
               bearing: float | None = None, t: float | None = None, radius: float = 600, streets: bool = True,
               future: bool = True, refresh: bool = False, landmarks: list | None = None, year: int | None = None,
+              panes: list[float] | None = None, slab_height: float | None = None,
+              floor_height: float | None = None,
               say: Callable[..., None] = lambda *a: None) -> tuple[dict, dict | None, dict]:
     """Build the site JSON. Returns (site, chosen face or None, timings in seconds)."""
+    with collect_receipts() as rc:
+        site, face, T = _make_site(L, crit, cache_dir, floor, bearing, t, radius, streets, future, refresh,
+                                   landmarks, year, panes, slab_height, floor_height, say)
+    site["receipts"] = summarise_receipts(rc)
+    for r in site["receipts"]:
+        if r.get("limit_hit"):
+            say(f"  WARNING {r['dataset']} ({r.get('name') or ''}) returned exactly its row limit: "
+                "results are probably cut off")
+    site["checks"] = site_checks(site, face)
+    return site, face, T
+
+
+def _make_site(L, crit, cache_dir, floor, bearing, t, radius, streets, future, refresh, landmarks, year, panes,
+               slab_height, floor_height, say):
     city = crit["search"].get("city")
     tz = crit["search"].get("timezone") or "America/New_York"
     year = year or dt.date.today().year
@@ -79,6 +150,7 @@ def make_site(L: dict, crit: dict, cache_dir: Path | None = None, floor: int | N
         bs = fetch_osm(L["lat"], L["lon"], radius, cache_dir=cache_dir, refresh=refresh)
         site = build_site(L, bs, "OpenStreetMap contributors (ODbL)", None, landmarks)
     T["footprints"] = time.perf_counter() - c0
+    match = site.pop("target_match", None) or {}
     site["timezone"] = tz
     site["generated"] = dt.date.today().isoformat()
     say(f"  {len(site['b'])} buildings, target #{site['target']}, "
@@ -111,25 +183,79 @@ def make_site(L: dict, crit: dict, cache_dir: Path | None = None, floor: int | N
         T["future"] = time.perf_counter() - c0
 
     floor_arg = floor
-    floor = min(floor or int(L.get("floor") or 5), max_floor(site))
+    want_floor = floor or int(L.get("floor") or 5)
+    fh, fh_src = calibrate_floor_height(site, want_floor, slab_height, floor_height)
+    site["floor_height_m"] = round(fh, 2)
+    site["floor_height_src"] = fh_src
+    raw = roof_per_floor(site)
+    if fh_src == "pluto" and raw is not None and abs(raw - fh) > 0.01:
+        site["floor_height_raw"] = round(raw, 2)  # roof / floors before clamping
+    if slab_height is not None:
+        site["slab_m"] = round(float(slab_height), 2)
+    floor = min(want_floor, max_floor(site))
+    panes = panes if panes is not None else listing_panes(L)
+    panes = [float(o) for o in panes] if panes and any(abs(float(o)) > 1e-9 for o in panes) else None
     face = face_by_bearing(faces, bearing) if bearing is not None else pick_face(faces, L.get("exposure"))
     if face:
         c0 = time.perf_counter()
         tt = window_t(face) if t is None else t
         lat, lon = site["origin"]["lat"], site["origin"]["lon"]
         sky, tracks = Skyline(site), _Tracks(month_tracks(year, lat, lon, tz))
-        st = sun_study(site, face, floor, tz, year, t=tt, sky=sky, tracks=tracks)
+        st = sun_study(site, face, floor, tz, year, t=tt, sky=sky, tracks=tracks, panes=panes)
         T["study"] = time.perf_counter() - c0
         c0 = time.perf_counter()
-        rng = sun_hours_range(site, face, floor, tz, year, sky=sky, tracks=tracks)
+        rng = sun_hours_range(site, face, floor, tz, year, sky=sky, tracks=tracks, panes=panes)
         T["range"] = time.perf_counter() - c0
         site["window"] = {"face": face["i"], "bearing": face["bearing"], "floor": floor, "t": tt}
+        if panes:
+            site["window"]["panes"] = panes
         site["study"] = {k: st[k] for k in ("sun_hours", "floors_table", "skyline_ahead_deg", "open_sky_share")}
+        if "sun_hours_panes" in st:
+            site["study"]["sun_hours_panes"] = st["sun_hours_panes"]
         site["study"]["sun_hours_range"] = rng
-        fut = future_sun_hours(site, face, floor, tt, tz, year, tracks)
+        fut = future_sun_hours(site, face, floor, tt, tz, year, tracks, panes)
         if fut is not None and fut != st["sun_hours"]:
             site["study"]["sun_hours_future"] = fut
+        c0 = time.perf_counter()
+        wp = window_point(face, tt, floor, site["floor_height_m"])
+        site["study"]["blockers"] = main_blockers(sky, wp, face["bearing"], year, lat, lon, tz, panes)
+        T["blockers"] = time.perf_counter() - c0
+    c0 = time.perf_counter()
+    site["roofs"] = roofs(site, face)
+    site["neighbours"] = neighbours(site, face)
+    T["context"] = time.perf_counter() - c0
     site["provenance"] = provenance(L, face, floor_arg, bearing, t)
+    notes = [site["provenance"]["notes"]]
     if L.get("floor") is None and floor_arg is None:
-        site["provenance"]["notes"] = "; ".join(filter(None, [site["provenance"]["notes"], f"floor {floor} assumed"]))
+        notes.append(f"floor {floor} assumed")
+    if match.get("by"):
+        site["provenance"]["target"] = match["by"]
+        site["provenance"]["target_offset_m"] = match.get("point_offset_m", 0.0)
+        if match.get("point_offset_m", 0) > 10:
+            notes.append(f"address point is {match['point_offset_m']:.0f} m outside the building; "
+                         f"building matched by {match['by'].upper() if match['by'] in ('bin', 'bbl') else match['by']}")
+    site["provenance"]["notes"] = "; ".join(filter(None, notes)) or None
     return site, face, T
+
+
+def sample_rows(site: dict, face: dict, dates: list[dt.date], step_min: int = 6) -> list[dict]:
+    """Rows for research/<id>-sun-samples.csv: every slot of each date at the site's window, with the
+    blocking building named. Row count = (1440 / step_min) x len(dates)."""
+    w = site["window"]
+    lat, lon, tz = site["origin"]["lat"], site["origin"]["lon"], site.get("timezone") or "America/New_York"
+    sky = Skyline(site)
+    pt = window_point(face, w["t"], w["floor"], site.get("floor_height_m", 3.2))
+    meta = site.get("bmeta") or []
+    out = []
+    for d in dates:
+        for r in sample_states(sky, pt, face["bearing"], d, lat, lon, tz, w.get("panes"), step_min):
+            b = r.get("blocker")
+            m = (meta[b] if b is not None and 0 <= b < len(meta) and meta[b] else {})
+            top = site["b"][b][0] if b is not None and b >= 0 else None
+            out.append({"date": d.isoformat(), "time": f"{r['minute'] // 60:02d}:{r['minute'] % 60:02d}",
+                        "az": r["az"], "alt": r["alt"], "state": r["state"],
+                        "blocker": "" if b is None else ("this building" if b == site.get("target") else
+                                                         (m.get("name") or m.get("address") or f"building #{b}")),
+                        "blocker_bin": m.get("bin") or "", "blocker_top_m": "" if top is None else top,
+                        "blocker_dist_m": r.get("dist", ""), "b": "" if b is None else b})
+    return out

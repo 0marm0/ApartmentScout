@@ -147,27 +147,104 @@ export function rayBlock(B, px, py, pz, azDeg, altDeg, skip = -1) {
   return best;
 }
 
-export function litInfo(tab, prof, facing, step = 6) {
-  let c = 0; const segs = []; let cur = null;
+// ------------------------------------------------------------------ panes (bay windows)
+// A window may have several panes: `panes` are bearing offsets from the facade normal (default [0];
+// a 45 degree bay is [-45, 0, 45]). The sun is in the room when it is above the skyline at the window
+// and in front of at least one pane (the union over panes). Mirrors apartmentscout/sun.py.
+export const BAY = [-45, 0, 45];
+export const paneFacings = (facing, panes = null) => (panes?.length ? panes : [0]).map((o) => (((facing + +o) % 360) + 360) % 360);
+export const inFront = (az, facing, panes = null) => paneFacings(facing, panes).some((f) => Math.abs(angDiff(az, f)) < 90);
+
+/**
+ * Direct-sun minutes and lit segments for one day; with `panes` the union over panes, plus `panes`
+ * (minutes through each pane on its own) and `side` (minutes when only a side pane sees the sun).
+ */
+export function litInfo(tab, prof, facing, step = 6, panes = null) {
+  let c = 0, side = 0; const segs = []; let cur = null;
+  const fs = paneFacings(facing, panes), per = fs.map(() => 0), multi = fs.length > 1;
   for (const [m, az, alt] of tab) {
-    const lit = Math.abs(angDiff(az, facing)) < 90 && alt > hAt(prof, az);
-    if (lit) { c += step; if (!cur) { cur = [m, m + step]; segs.push(cur); } else cur[1] = m + step; } else cur = null;
+    const above = alt > hAt(prof, az);
+    let any = false;
+    for (let i = 0; i < fs.length; i++) if (Math.abs(angDiff(az, fs[i])) < 90) { any = true; if (above) per[i] += step; }
+    const lit = any && above;
+    if (lit) {
+      c += step; if (multi && Math.abs(angDiff(az, facing)) >= 90) side += step;
+      if (!cur) { cur = [m, m + step]; segs.push(cur); } else cur[1] = m + step;
+    } else cur = null;
   }
-  return { min: c, segs };
+  return multi ? { min: c, segs, panes: per, side } : { min: c, segs };
 }
 
 /**
  * The state of a window through one day in `step`-minute slots from `from` to `to`:
- * 0 night, 1 sun behind the facade, 2 sun blocked by buildings, 3 direct sun.
+ * 0 night, 1 sun behind the facade, 2 sun blocked by buildings, 3 direct sun,
+ * 4 direct sun through a side pane only (bay windows: the facade normal does not face the sun).
  */
-export function dayStates(y, mo, d, lat, lon, tz, prof, facing, from = 300, to = 1290, step = 5) {
+export function dayStates(y, mo, d, lat, lon, tz, prof, facing, from = 300, to = 1290, step = 5, panes = null) {
   const n = Math.ceil((to - from) / step), out = new Uint8Array(n);
   for (let k = 0; k < n; k++) {
     const s = sunPos(zonedMs(y, mo, d, from + k * step + step / 2, tz), lat, lon);
-    out[k] = s.alt <= 0 ? 0 : Math.abs(angDiff(s.az, facing)) >= 90 ? 1 : s.alt <= hAt(prof, s.az) ? 2 : 3;
+    if (s.alt <= 0) { out[k] = 0; continue; }
+    if (!inFront(s.az, facing, panes)) { out[k] = 1; continue; }
+    out[k] = s.alt <= hAt(prof, s.az) ? 2 : Math.abs(angDiff(s.az, facing)) < 90 ? 3 : 4;
   }
   return out;
 }
+
+/**
+ * Who shades the window in each slot of a day strip: for every slot in state 2, the index of the
+ * building the sun ray meets first (`rayBlock`), else the building that sets the skyline in that
+ * direction; -1 for slots that are not shaded. `B` may include proposed buildings after the city.
+ * Returns {states, bi: Int32Array, sun: [{az, alt}] per slot}.
+ */
+export function dayBlockers(y, mo, d, lat, lon, tz, B, pt, prof, facing, from = 300, to = 1290, step = 5, panes = null) {
+  const states = dayStates(y, mo, d, lat, lon, tz, prof, facing, from, to, step, panes);
+  const bi = new Int32Array(states.length).fill(-1);
+  for (let k = 0; k < states.length; k++) {
+    if (states[k] !== 2) continue;
+    const s = sunPos(zonedMs(y, mo, d, from + k * step + step / 2, tz), lat, lon);
+    const h = rayBlock(B, pt.x, pt.y, pt.z, s.az, s.alt, pt.skip ?? -1);
+    bi[k] = h ? h.bi : skylineSetter(B, pt.x, pt.y, pt.z, s.az, pt.skip ?? -1);
+  }
+  return { states, bi };
+}
+/** Minutes shaded by each building in a dayBlockers result: Map bi -> minutes. */
+export function blockerMinutes(res, step = 5) {
+  const m = new Map();
+  for (let k = 0; k < res.bi.length; k++) if (res.bi[k] >= 0) m.set(res.bi[k], (m.get(res.bi[k]) || 0) + step);
+  return m;
+}
+/** The building whose wall sets the skyline at azimuth azDeg (largest elevation angle), or -1. */
+export function skylineSetter(B, px, py, pz, azDeg, skip = -1) {
+  const ux = Math.sin(azDeg * DEG), uy = Math.cos(azDeg * DEG);
+  let best = 0, who = -1;
+  for (let bi = 0; bi < B.length; bi++) {
+    if (bi === skip) continue;
+    const b = B[bi], sl = b.top - pz; if (sl <= 0) continue;
+    const r = bbRange(b, px, py, ux, uy); if (!r) continue;
+    if (sl / Math.max(r[0], 0.01) <= best) continue;
+    const t = entryDist(b, px, py, ux, uy);
+    if (t < 1e9 && sl / t > best) { best = sl / t; who = bi; }
+  }
+  return who;
+}
+
+/** Shortest distance from (x, y) to building b's outline (0 inside it). */
+export function distToBuilding(b, x, y) {
+  if (insideBuilding(b, x, y)) return 0;
+  let best = Infinity;
+  for (const p of [b.p, ...(b.holes || [])]) {
+    const n = p.length / 2;
+    for (let j = 0; j < n; j++) {
+      const ax = p[2 * j], ay = p[2 * j + 1], j2 = (j + 1) % n, ex = p[2 * j2] - ax, ey = p[2 * j2 + 1] - ay, L = ex * ex + ey * ey;
+      const t = L ? Math.max(0, Math.min(1, ((x - ax) * ex + (y - ay) * ey) / L)) : 0;
+      best = Math.min(best, Math.hypot(x - ax - ex * t, y - ay - ey * t));
+    }
+  }
+  return best;
+}
+/** Compass bearing from (x0, y0) to (x1, y1) in the local metre frame. */
+export const bearingTo = (x0, y0, x1, y1) => ((Math.atan2(x1 - x0, y1 - y0) / DEG) + 360) % 360;
 
 // ------------------------------------------------------------------ facades
 function signedArea(p) {

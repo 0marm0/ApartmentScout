@@ -3,7 +3,7 @@
     apartmentscout init my-search --city nyc       start a search folder
     apartmentscout import listings.csv             add listings from CSV/JSON
     apartmentscout geocode                         add coordinates (and NYC BBL/BIN)
-    apartmentscout commute                         transit commute grid + per-listing times
+    apartmentscout commute                         commute grids + per-listing times by mode
     apartmentscout layers                          city layers (NYC: 311 noise density)
     apartmentscout dossier <id>|--shortlist        public building records
     apartmentscout site <id> [--floor N]           3D site model + sun and view study
@@ -82,7 +82,10 @@ def cmd_init(args):
         if prof.get("timezone"):
             text = text.replace("timezone: America/New_York", f"timezone: {prof['timezone']}")
         if prof.get("transit_feeds"):
-            feeds = "\n".join(f"      - {{name: {f['name']}, url: {f['url']}}}" for f in prof["transit_feeds"])
+            import yaml
+            # each feed whole (name, url, mode, exclude_routes, map_lines ...), one flow mapping per line
+            feeds = "\n".join("      - " + yaml.safe_dump(dict(f), default_flow_style=True, sort_keys=False,
+                                                          width=10_000).strip() for f in prof["transit_feeds"])
             text = text.replace("    feeds: []                # add GTFS feeds: - {name: City Metro, url: https://.../gtfs.zip}",
                                 "    feeds:\n" + feeds)
     (root / "criteria.yaml").write_text(text)
@@ -148,7 +151,8 @@ def cmd_commute(args):
     from .commute.run import run_commute
     ws = ws_from(args)
     Ls = _listings(ws)
-    run_commute(ws, Ls, ws.criteria(), cell_m=args.cell, log=log)
+    run_commute(ws, Ls, ws.criteria(), cell_m=args.cell, log=log,
+                mode_grids=False if getattr(args, "no_mode_grids", False) else None)
     save(Ls, ws.listings_path)
 
 
@@ -202,7 +206,49 @@ def cmd_dossier(args):
     log(f"Dossiers in {out}")
 
 
+def _panes_arg(args) -> list[float] | None:
+    if getattr(args, "bay", False):
+        return [-45.0, 0.0, 45.0]
+    if getattr(args, "panes", None):
+        try:
+            return [float(x) for x in str(args.panes).split(",") if x.strip()]
+        except ValueError:
+            sys.exit("--panes takes comma-separated bearing offsets in degrees, e.g. -45,0,45")
+    return None
+
+
+def _sample_dates(L: dict, crit: dict, year: int) -> list[dt.date]:
+    """Move-in (listing ``available``, else the search's move_in) plus the solstices and an equinox."""
+    out = []
+    mi = (crit.get("search") or {}).get("move_in")
+    for raw in (L.get("available"), mi.get("earliest") if isinstance(mi, dict) else mi):
+        try:
+            d = dt.date.fromisoformat(str(raw)[:10])
+        except (TypeError, ValueError):
+            continue
+        out.append(d)
+        break
+    for m, d in ((3, 20), (6, 21), (12, 21)):
+        x = dt.date(year, m, d)
+        if x not in out:
+            out.append(x)
+    return out
+
+
+def _write_csv(path: Path, rows: list[dict]) -> None:
+    import csv
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", newline="") as f:
+        if not rows:
+            f.write("")
+            return
+        w = csv.DictWriter(f, fieldnames=list(rows[0]))
+        w.writeheader()
+        w.writerows(rows)
+
+
 def cmd_site(args):
+    from .geo.checks import summary_line
     from .geo.site import make_site
     ws = ws_from(args)
     crit = ws.criteria()
@@ -215,28 +261,92 @@ def cmd_site(args):
     lms = (crit.get("landmarks") or []) + (city_profile(city).get("landmarks") or [])
     site, face, timings = make_site(L, crit, cache_dir=ws.cache_dir / "site", floor=args.floor, bearing=args.bearing,
                                     t=args.position, radius=args.radius, streets=not args.no_streets,
-                                    future=not args.no_future, refresh=args.refresh, landmarks=lms, say=log)
+                                    future=not args.no_future, refresh=args.refresh, landmarks=lms,
+                                    panes=_panes_arg(args), slab_height=args.slab_height,
+                                    floor_height=args.floor_height, say=log)
+    prov = site.get("provenance") or {}
+    log(f"  target matched by {prov.get('target') or '?'}; storey height {site['floor_height_m']} m "
+        f"({site.get('floor_height_src')})")
     if face:
         st, w = site["study"], site["window"]
         rng = st["sun_hours_range"]
         L["site"] = {"file": f"sites/{L['id']}.json", "floor": w["floor"], "bearing": face["bearing"],
                      "sun_hours": st["sun_hours"], "sun_hours_range": {"lo": rng["lo"], "hi": rng["hi"]},
                      "skyline_ahead_deg": st["skyline_ahead_deg"], "open_sky_share": st["open_sky_share"]}
-        log(f"  window faces {face['bearing']:.0f} deg at t={w['t']}, floor {w['floor']}: "
-            f"direct sun h/day by month {st['sun_hours']}")
+        log(f"  window faces {face['bearing']:.0f} deg at t={w['t']}, floor {w['floor']}"
+            + (f", panes {w['panes']}" if w.get("panes") else "") + f": direct sun h/day by month {st['sun_hours']}")
         log(f"  range over facade positions {rng['positions']} and floors {rng['floors']}: "
             f"Dec {rng['lo'][11]}-{rng['hi'][11]} h, Jun {rng['lo'][5]}-{rng['hi'][5]} h")
+        fc = (site.get("roofs") or {}).get("facing") or {}
+        if fc:
+            cl = fc.get("clears_floor")
+            log(f"  view ahead clears the nearby roofs from floor {cl}" if cl else
+                "  view ahead: no floor of this building clears the nearby roofs")
+        meta = site.get("bmeta") or []
+        for b in (st.get("blockers") or [])[:3]:
+            m = meta[b["b"]] if 0 <= b["b"] < len(meta) else {}
+            log(f"  shaded by {m.get('name') or m.get('address') or '#' + str(b['b'])} "
+                f"({b['dist']:.0f} m): {sum(b['min']) / 60:.1f} h over the 12 sample days")
     else:
         L["site"] = {"file": f"sites/{L['id']}.json"}
         log("  exposure unknown or only party walls match: pick the facade in the dashboard (Unit 3D tab) "
             "or pass --bearing.")
+    log(f"  checks: {summary_line(site['checks'])}")
+    for c in site["checks"]:
+        if c["status"] != "pass":
+            log(f"    {c['status'].upper()} {c['id']}: {c['msg']}")
     log("  timings " + ", ".join(f"{k} {v:.1f}s" for k, v in timings.items()))
     (ws.sites_dir / f"{L['id']}.json").write_text(json.dumps(site, separators=(",", ":")))
     save(Ls, ws.listings_path)
+    if args.samples and face:
+        from .geo.site import sample_rows
+        rows = sample_rows(site, face, _sample_dates(L, crit, dt.date.today().year))
+        p = ws.research_dir / f"{L['id']}-sun-samples.csv"
+        _write_csv(p, rows)
+        log(f"  sun samples ({len(rows)} rows) -> {p}")
+    if args.neighbours:
+        from .geo.neighbours import neighbour_records
+        rows = neighbour_records(site, face)
+        p = ws.research_dir / f"{L['id']}-neighbours.csv"
+        _write_csv(p, rows)
+        log(f"  neighbours within 300 m ({len(rows)} rows) -> {p}")
     if args.charts and face:
         from .charts import sun_charts
         for p in sun_charts(site, face, site["window"]["floor"], ws.research_dir / "charts", L["id"]):
             log(f"  chart {p}")
+
+
+def cmd_photos(args):
+    """Building photos from Wikimedia Commons and, for private searches, local copies of photos."""
+    import time
+
+    from .photos import Commons, add_commons_photos, cache_media, coverage, coverage_lines
+    ws = ws_from(args)
+    Ls = _listings(ws)
+    targets = [_find(Ls, k) for k in args.ids] if args.ids else Ls
+    example = (REPO / "examples").resolve() in ws.root.resolve().parents
+    want_cache = args.cache or args.source in ("local", "all")
+    if want_cache and example:
+        sys.exit("Refusing to save photos inside examples/: the bundled example is committed. "
+                 "Run --cache on your own search.")
+    t0 = time.monotonic()
+    if args.source in ("commons", "all"):
+        api = Commons(ws.cache_dir / "photos", refresh=args.refresh)
+        log(f"Wikimedia Commons: {len(targets)} listings, radius {args.radius:g} m, up to {args.max} photos each"
+            + ("" if os.environ.get("APARTMENTSCOUT_CONTACT") else
+               "  (set APARTMENTSCOUT_CONTACT to an email or URL for Wikimedia's faster rate limit)"))
+        st = add_commons_photos(targets, api, radius=args.radius, limit=args.max, say=log)
+        log(f"  {st['with_photos']}/{st['buildings']} buildings have photos; {st['requests']} API requests, "
+            f"{time.monotonic() - t0:.0f} s")
+        save(Ls, ws.listings_path)
+    if want_cache:
+        t1 = time.monotonic()
+        st = cache_media(targets, ws.root, say=log)
+        log(f"  media: {st['downloaded']} downloaded, {st['reused']} reused, {st['skipped_existing']} already "
+            f"saved, {st['failed']} failed; {time.monotonic() - t1:.0f} s -> {ws.root / 'media'}")
+        save(Ls, ws.listings_path)
+    for line in coverage_lines(coverage(Ls)):
+        log(line)
 
 
 def cmd_score(args):
@@ -329,6 +439,8 @@ def _export(ws: Workspace, out: Path):
                 "sites": sorted(p.stem for p in (out / "sites").glob("*.json")) if (out / "sites").exists() else [],
                 "plans": sorted(p.stem for p in (out / "plans").glob("*.json")) if (out / "plans").exists() else [],
                 "dossiers": sorted(p.stem for p in ddst.glob("*.json")) if ddst.exists() else []}
+    from .exports import run_all
+    manifest["extra"] = run_all(ws, out, log=log)   # history, coverage and other optional data files
     (out / "manifest.json").write_text(json.dumps(manifest, indent=1))
 
 
@@ -407,8 +519,10 @@ def main(argv=None):
     s = add("geocode", cmd_geocode, "geocode listings and destinations")
     s.add_argument("--provider", default="auto", choices=["auto", "nyc", "census", "nominatim"])
     s.add_argument("--force", action="store_true")
-    s = add("commute", cmd_commute, "transit commute heatmap and per-listing times")
+    s = add("commute", cmd_commute, "commute heatmaps and per-listing times by mode (walk, subway, bus, best)")
     s.add_argument("--cell", type=float, default=150, help="grid cell size in metres")
+    s.add_argument("--no-mode-grids", action="store_true",
+                   help="write only the best-of-transit heat grid, not one per mode")
     s = add("layers", cmd_layers, "city map layers (NYC: 311 noise)")
     s.add_argument("--months", type=int, default=12)
     s.add_argument("--transit-only", action="store_true", help="only rebuild the transit lines layer")
@@ -425,6 +539,23 @@ def main(argv=None):
     s.add_argument("--no-streets", action="store_true", help="skip street centrelines")
     s.add_argument("--no-future", action="store_true", help="skip filed / permitted new buildings (NYC)")
     s.add_argument("--refresh", action="store_true", help="ignore cached downloads")
+    s.add_argument("--bay", action="store_true", help="the window is a 45 degree bay (panes -45, 0, +45)")
+    s.add_argument("--panes", help="pane bearing offsets from the facade, comma-separated, e.g. -30,0,30")
+    s.add_argument("--slab-height", type=float, help="height of the listing floor's slab above street level in "
+                   "metres (sets the storey height; default: roof height / PLUTO floors)")
+    s.add_argument("--floor-height", type=float, help="storey height in metres (overrides the calibration)")
+    s.add_argument("--samples", action="store_true", help="write research/<id>-sun-samples.csv: every 6 min on "
+                   "move-in day and the solstices, with the building that shades the window")
+    s.add_argument("--neighbours", action="store_true", help="write research/<id>-neighbours.csv: every building "
+                   "within 300 m with distance, bearing, height and sources")
+    s = add("photos", cmd_photos, "licensed building photos (Wikimedia Commons) and local photo copies")
+    s.add_argument("ids", nargs="*")
+    s.add_argument("--source", default="commons", choices=["commons", "local", "all"],
+                   help="commons: look up building photos; local: save existing photos under media/; all: both")
+    s.add_argument("--radius", type=float, default=60, help="metres around the listing for street photos")
+    s.add_argument("--max", type=int, default=6, help="building photos to keep per listing")
+    s.add_argument("--cache", action="store_true", help="also save photos under <search>/media/ (not for examples)")
+    s.add_argument("--refresh", action="store_true", help="ignore cached API responses")
     s = add("score", cmd_score, "score and rank listings")
     s.add_argument("--top", type=int, default=20)
     s = add("report", cmd_report, "write a markdown shortlist report")
@@ -443,6 +574,8 @@ def main(argv=None):
     s.add_argument("--top", type=int, default=20)
     s.add_argument("--out")
     s.add_argument("--standalone", metavar="FILE")
+    from .commands import register_all
+    register_all(add)   # commands that live in apartmentscout/commands/*.py
     args = p.parse_args(argv)
     args.fn(args)
 
