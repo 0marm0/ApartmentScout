@@ -540,7 +540,7 @@ def main(argv=None):
     s.add_argument("--provider", default="auto", choices=["auto", "nyc", "census", "nominatim"])
     s.add_argument("--force", action="store_true")
     s = add("commute", cmd_commute, "commute heatmaps and per-listing times by mode (walk, subway, bus, best)")
-    s.add_argument("--cell", type=float, default=150, help="grid cell size in metres")
+    s.add_argument("--cell", type=float, default=None, help="grid cell size in metres (default: commute.transit.heat_cell_m or 50)")
     s.add_argument("--no-mode-grids", action="store_true",
                    help="write only the best-of-transit heat grid, not one per mode")
     s = add("layers", cmd_layers, "city map layers (NYC: 311 noise)")
@@ -591,7 +591,7 @@ def main(argv=None):
     s = add("all", cmd_all, "geocode, commute, layers, score and build")
     s.add_argument("--provider", default="auto")
     s.add_argument("--force", action="store_true")
-    s.add_argument("--cell", type=float, default=150)
+    s.add_argument("--cell", type=float, default=None)
     s.add_argument("--months", type=int, default=12)
     s.add_argument("--top", type=int, default=20)
     s.add_argument("--out")

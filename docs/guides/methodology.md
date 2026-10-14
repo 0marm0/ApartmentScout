@@ -133,13 +133,34 @@ one minute plus the walk to a stop within 250 m plus the difference in street-to
 stop to a subway platform), plus one minute of slack before the next departure. A ride gets off at
 the stop with the most slack, so it does not overshoot and walk back.
 
-Times are averaged over five arrival times (0, 3, 6, 9 and 12 minutes early) to include typical
-waiting; each listing also gets the min-max `range` and the legs of the median trip (walk, rides with
-board and alight times, transfers, final walk). The result is schedule-based: it ignores delays,
-crowding, bus traffic beyond the timetable and service changes. Grid cells more than 1 km from any
-stop and too far to walk are left blank (rivers, parks, other states). Only trips in the window before
-`arrive_by` and stops within about 3 km of the search are loaded, so the Manhattan bus feeds add a few
-seconds (the 732-listing example routes in about 5 s).
+Times are averaged over eleven arrival times (every 2 minutes from 0 to 20 minutes early;
+`arrival_offsets_min`) so typical waiting is included even on a 10-15 minute bus headway; each
+listing also gets the min-max `range` and the legs of the median trip (walk, rides with board and
+alight times, transfers, final walk). The result is schedule-based: it ignores delays, crowding, bus
+traffic beyond the timetable and service changes. Only trips in the window before `arrive_by` and
+stops within about 3 km of the search are loaded, so the Manhattan bus feeds add a few seconds (the
+732-listing example routes in about 5 s).
+
+**Land and water.** Walking never crosses a river: points and stops are labelled by landmass from
+shoreline-clipped land polygons (NYC: the city's borough boundaries with water excluded, NYC Open
+Data, fetched once into `cache/land/`), and a stop on another landmass is out of walking reach
+(Roosevelt Island cannot walk to a First Avenue bus stop; Long Island City cannot walk to the FDR).
+Bridges are not land, so they do not join landmasses. Points just off the polygons (piers, a stop at
+the water's edge) take the nearest land within 100 m. Set `commute.transit.land` to another GeoJSON
+(or `false`) for other cities; outside the polygons nothing is blocked. The walk-only time is still
+the street-grid estimate and ignores rivers.
+
+**The heat grid** holds the router's own answer at the centre of every 50 m cell
+(`commute.transit.heat_cell_m`), computed the other way round for speed: each stop stamps its walking
+cone onto the cells in range and every cell keeps the best departure per mode set and arrival time,
+which is identical to routing each cell (checked to 1e-11 min) and takes about a second for the
+example's 94,000 cells. Cells over water and cells more than 1 km from any stop and too far to walk
+are blank. Layers store half-minutes as base64 bytes (`values_u8`, 255 = blank; about 125 KB per
+mode). The map draws 5-minute bands (10-minute past 30) as vector polygons contoured from that field
+with linear interpolation between cell centres, and the hover readout interpolates the same way, so
+the colour, the readout and the router agree: within 0.08 min on average (max 0.4) at the 217
+listing points, against 0.66 (max 2.4) for the old 150 m grid whose image was also stretched up to
+100 m out of place at the north and east edges.
 
 Checked against an independent GTFS router on 208 Manhattan buildings to an East Midtown office
 (arrive by 9:00), mean absolute difference in minutes:
@@ -148,6 +169,12 @@ Checked against an independent GTFS router on 208 Manhattan buildings to an East
 |---|---|---|---|---|
 | grid walking (default for NYC) | 0.57 | 0.65 | 0.80 | 0.61 |
 | straight line x 1.25 | 3.91 | 0.84 | 1.02 | 0.79 |
+
+A later re-check (October 2026 feeds, the office point estimated to within about 50 m) gives, for
+any transit, 0.74 with five arrivals and walks across rivers allowed, and 0.64 with eleven arrivals
+and the land model (subway 0.68, bus 0.94); what the map shows at those buildings is 0.63 from the
+new grid against 0.99 from the old one. The largest remaining gap (Roosevelt Island, 6 min) is the
+other router walking across the East River to a Manhattan bus.
 
 Correlation is 0.99 or better and only one trip differs by more than 5 minutes (a bus route choice).
 The two grid factors were fitted on those walks; as an out-of-sample check the walks to and from bus

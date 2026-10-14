@@ -8,14 +8,19 @@ range, plus the legs of the median trip. Walking is always an option inside ever
 """
 from __future__ import annotations
 
+import base64
 import datetime as dt
 import json
 import math
 import time
 from pathlib import Path
 
+import numpy as np
+
 from ..geo import haversine_m
 from ..listings import slugify
+from .grid import GridSpec, surface
+from .land import land_source, load_land
 from .walk import Walker
 from .gtfs import (DEFAULT_ACCESS_S, MODES, Network, access_points, best_from, clock, download_feed, journey,
                    legs_summary, load_network, reverse_scan, route_text, _hhmm)
@@ -91,12 +96,7 @@ def walk_grids(crit: dict) -> list[dict]:
     tr = (crit.get("commute") or {}).get("transit") or {}
     if "walk_grids" in tr:
         return list(tr["walk_grids"] or [])
-    city = (crit.get("search") or {}).get("city")
-    p = CITIES / f"{city}.yaml"
-    if not city or not p.exists():
-        return []
-    import yaml
-    return list((yaml.safe_load(p.read_text()) or {}).get("walk_grids") or [])
+    return list(city_profile(crit).get("walk_grids") or [])
 
 
 def make_walker(crit: dict) -> Walker:
@@ -168,18 +168,41 @@ class _Router:
         return out
 
 
-def _grid(bbox, cell_m):
-    lon0, lat0, lon1, lat1 = bbox
-    dlat = cell_m / 110574
-    dlon = cell_m / (111320 * math.cos(math.radians((lat0 + lat1) / 2)))
-    rows, cols = int((lat1 - lat0) / dlat) + 1, int((lon1 - lon0) / dlon) + 1
-    return rows, cols, dlat, dlon
+DEFAULT_CELL_M = 50
+DEFAULT_OFFSETS = list(range(0, 21, 2))  # arrive 0, 2, ... 20 minutes before arrive_by
+NODATA = 255  # values_u8: half-minutes 0..254, 255 = no value (water, or out of reach of any stop)
 
 
-def run_commute(ws, listings: list[dict], crit: dict, cell_m: float = 150, pad_m: float = 1500,
+def encode_minutes(m: np.ndarray) -> str:
+    """Minutes (NaN = no value) as base64 bytes of half-minutes, row-major from the south-west."""
+    q = np.where(np.isfinite(m), np.clip(np.round(np.nan_to_num(m, nan=0.0) * 2), 0, NODATA - 1), NODATA)
+    return base64.b64encode(q.astype(np.uint8).tobytes()).decode("ascii")
+
+
+def decode_minutes(layer: dict) -> list[float]:
+    """The layer's minutes per cell as floats, -1 where blank (accepts the old `values` list too)."""
+    if "values" in layer:
+        return [float(v) for v in layer["values"]]
+    q = np.frombuffer(base64.b64decode(layer["values_u8"]), dtype=np.uint8)
+    return [-1.0 if v == NODATA else v * float(layer.get("scale", 0.5)) for v in q.tolist()]
+
+
+def city_profile(crit: dict) -> dict:
+    city = (crit.get("search") or {}).get("city")
+    p = CITIES / f"{city}.yaml"
+    if not city or not p.exists():
+        return {}
+    import yaml
+    return yaml.safe_load(p.read_text()) or {}
+
+
+def run_commute(ws, listings: list[dict], crit: dict, cell_m: float | None = None, pad_m: float = 1500,
                 log=print, layers_dir: Path | None = None, mode_grids: bool | None = None) -> list[dict]:
     """Route every destination; write commute-<dest>.json (best of transit) and, per mode,
-    commute-<dest>-<mode>.json; set L["commute"][dest] on every geocoded listing."""
+    commute-<dest>-<mode>.json; set L["commute"][dest] on every geocoded listing.
+
+    The grids hold the router's own answer at every cell centre (grid.surface), so a map that
+    interpolates between centres stays within a fraction of a minute of the router anywhere."""
     cm = crit.get("commute") or {}
     dests = cm.get("destinations") or []
     tr = cm.get("transit") or {}
@@ -187,9 +210,10 @@ def run_commute(ws, listings: list[dict], crit: dict, cell_m: float = 150, pad_m
     detour = tr.get("walk_detour", 1.25)
     max_access = tr.get("max_walk_to_station_m", 1200)
     mask_m = tr.get("heat_mask_m", 1000)  # grid cells farther than this from any stop are left blank
-    offsets = tr.get("arrival_offsets_min", [0, 3, 6, 9, 12])
+    offsets = [int(o) for o in tr.get("arrival_offsets_min", DEFAULT_OFFSETS)]
     window = 60 * int(tr.get("window_min", 150))  # how long before arrive_by a trip may start
     egress_access = float(tr.get("egress_access", 1))  # platform-to-street at the destination end too
+    cell = float(cell_m if cell_m is not None else tr.get("heat_cell_m", DEFAULT_CELL_M))
     if mode_grids is None:
         mode_grids = bool(tr.get("mode_grids", True))
     day = dt.date.fromisoformat(str(tr.get("service_date") or _next_weekday()))
@@ -200,8 +224,10 @@ def run_commute(ws, listings: list[dict], crit: dict, cell_m: float = 150, pad_m
     feeds = feed_specs(ws, crit, log)
     bbox = _bbox(listings, dests, pad_m)
     net_bbox = _pad(bbox, max(max_access, 1000) + 1000)  # stops a little beyond the grid still matter
-    rows, cols, dlat, dlon = _grid(bbox, cell_m)
-    lon0, lat0, _, _ = bbox
+    spec = GridSpec.cover(bbox, cell)
+    land = load_land(land_source(crit, city_profile(crit)), ws.cache_dir, net_bbox, log)
+    if land is not None:
+        log(f"  land: {land.landmasses} landmasses; water cells are blank and walks do not cross rivers")
     out_dir = layers_dir or ws.layers_dir
     out_dir.mkdir(parents=True, exist_ok=True)
     layers = []
@@ -217,6 +243,7 @@ def run_commute(ws, listings: list[dict], crit: dict, cell_m: float = 150, pad_m
             if key not in net_cache:
                 net_cache[key] = load_network(feeds, day, key[0], key[1], speed, detour, bbox=net_bbox, walker=walker,
                                               access_s=_access_cfg(tr), log=log)
+                net_cache[key].set_land(land)
             net = net_cache[key]
             t1 = time.time()
             sets = _mode_sets(net)
@@ -230,37 +257,33 @@ def run_commute(ws, listings: list[dict], crit: dict, cell_m: float = 150, pad_m
             profs = {}
         R = _Router(net, profs, (d["lat"], d["lon"]), speed, detour, max_access, walker)
         t2 = time.time()
-        grids: dict[str, list[int]] = {k: [] for k in ([TRANSIT] + [k for k in profs if k != TRANSIT])}
-        if not profs:
-            grids = {TRANSIT: []}
-        for r in range(rows):
-            la = lat0 + (r + 0.5) * dlat
-            for c in range(cols):
-                lo = lon0 + (c + 0.5) * dlon
-                ws_, _ = R.walk_s(la, lo)
-                acc = R.access(la, lo)
-                if acc is not None and not (acc.dist <= mask_m * detour).any() and \
-                        ws_ / 60 > d.get("max_minutes", 30):
-                    for g in grids.values():
-                        g.append(-1)  # off the network (rivers, parks, other states): leave blank
-                    continue
-                res = R.minutes(la, lo, acc)
-                for k, g in grids.items():
-                    m = sum(x[0] for x in res[k]) / len(res[k]) if k in res else ws_ / 60
-                    g.append(int(round(m)) if m < 120 else -1)
+        la, lo = spec.centres()
+        LA, LO = np.meshgrid(la, lo, indexing="ij")
+        cell_land = land.at(LA, LO) if land is not None else None
+        srf = surface(net, profs, (d["lat"], d["lon"]), spec, max_access, walker, cell_land=cell_land,
+                      stop_land=net.stop_land() if net is not None else None)
+        blank = np.zeros((spec.rows, spec.cols), dtype=bool)
+        if net is not None:  # off the network: far from every stop and too far to walk
+            blank = (srf.walk_min > d.get("max_minutes", 30)) & ~(srf.nearest_stop_m <= mask_m * detour)
+        if land is not None:
+            blank |= ~land.is_land(LA, LO)  # water
+        grids = {k: srf.minutes[k] for k in ([TRANSIT] + [k for k in profs if k != TRANSIT])} if profs \
+            else {TRANSIT: srf.walk_min}
         t3 = time.time()
         base = {"kind": "commute", "name": d["name"],
                 "destination": {k: d.get(k) for k in ("name", "address", "lat", "lon")},
                 "arrive_by": d.get("arrive_by", "09:00"), "service_date": str(day),
                 "feeds": [f.get("name") for f in tr.get("feeds") or []],
-                "bbox": [round(v, 6) for v in bbox], "rows": rows, "cols": cols, "cell_m": cell_m}
-        method = (f"GTFS reverse connection scan + walking, averaged over arrivals "
-                  f"{min(offsets)}-{max(offsets)} min before arrive_by") if feeds else "walking only"
+                "bbox": [round(v, 7) for v in spec.bbox], "rows": spec.rows, "cols": spec.cols, "cell_m": cell,
+                "arrival_offsets_min": offsets, "water_masked": land is not None}
+        method = (f"GTFS reverse connection scan + walking, the router's answer at each cell centre, averaged "
+                  f"over arrivals {min(offsets)}-{max(offsets)} min before arrive_by") if feeds else "walking only"
         for k, vals in grids.items():
             if k != TRANSIT and not mode_grids:
                 continue
-            layer = {**base, "mode": k, "modes": sorted(grids), "method": method, "values": vals,
-                     "generated": dt.datetime.now().isoformat(timespec="seconds")}
+            m = np.where(blank | (vals >= 120), np.nan, vals)
+            layer = {**base, "mode": k, "modes": sorted(grids), "method": method, "scale": 0.5, "nodata": NODATA,
+                     "values_u8": encode_minutes(m), "generated": dt.datetime.now().isoformat(timespec="seconds")}
             suffix = "" if k == TRANSIT else f"-{k}"
             if k != TRANSIT:
                 layer["name"] = f"{d['name']} ({k})"
@@ -279,7 +302,7 @@ def run_commute(ws, listings: list[dict], crit: dict, cell_m: float = 150, pad_m
                 seen[key] = commute_entry(R, L["lat"], L["lon"])
             L.setdefault("commute", {})[d["name"]] = json.loads(json.dumps(seen[key]))
             n += 1
-        log(f"  {d['name']}: grid {rows}x{cols} at {cell_m:.0f} m ({t3 - t2:.1f}s), {n} listings "
+        log(f"  {d['name']}: grid {spec.rows}x{spec.cols} at {cell:.0f} m ({t3 - t2:.1f}s), {n} listings "
             f"at {len(seen)} points ({time.time() - t3:.1f}s); total {time.time() - t0:.1f}s")
     return layers
 

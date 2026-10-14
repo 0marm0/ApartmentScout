@@ -20,7 +20,7 @@ import pytest
 
 from apartmentscout.commute.gtfs import (MODE_BIT, journey, legs_summary, load_network, pretty_stop, reverse_scan,
                                          route_mode, route_text, access_points, best_from)
-from apartmentscout.commute.run import commute_entry, run_commute, _Router
+from apartmentscout.commute.run import commute_entry, decode_minutes, run_commute, _Router
 from apartmentscout.config import Workspace
 
 SPEED, DETOUR = 4.8 / 3.6, 1.25
@@ -200,8 +200,9 @@ def test_run_commute_writes_mode_grids(tmp_path, feeds):
     sub = json.loads((ws.layers_dir / "commute-office-subway.json").read_text())
     best = json.loads((ws.layers_dir / "commute-office.json").read_text())
     assert sub["mode"] == "subway" and sub["kind"] == "commute-mode" and best["kind"] == "commute"
-    assert len(sub["values"]) == sub["rows"] * sub["cols"] == len(best["values"])
-    assert all(b <= s for b, s in zip(best["values"], sub["values"]) if b >= 0 and s >= 0)
+    sv, bv = decode_minutes(sub), decode_minutes(best)
+    assert len(sv) == sub["rows"] * sub["cols"] == len(bv)
+    assert all(b <= s for b, s in zip(bv, sv) if b >= 0 and s >= 0)
     c = listings[0]["commute"]["Office"]
     assert c["modes"]["transit"]["via"] == "mixed"
     assert c["minutes"] < c["modes"]["subway"]["minutes"] < c["modes"]["bus"]["minutes"]

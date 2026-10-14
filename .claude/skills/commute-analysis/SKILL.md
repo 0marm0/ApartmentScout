@@ -17,7 +17,7 @@ description: Set up commute destinations and transit feeds, compute door-to-door
    renter will pay the express fare. Set `service_date` to a normal weekday inside the feeds'
    calendars (the CLI tells you the range if it is wrong).
 3. **Run**: `apartmentscout commute` (about 5 s for 700 listings with subway and Manhattan buses).
-   It writes `layers/commute-<destination>.json` (best of any transit, a 150 m grid), one grid per
+   It writes `layers/commute-<destination>.json` (best of any transit, a 50 m grid), one grid per
    mode (`-subway.json`, `-bus.json`; `--no-mode-grids` skips them) and, on every listing,
    `commute.<destination>`: `minutes`/`route` (best of transit) plus `modes.walk|subway|bus|transit`
    with minutes, a min-max range over arrival times, route text and legs (walk to stop with
@@ -39,3 +39,7 @@ description: Set up commute destinations and transit feeds, compute door-to-door
 
 Driving and cycling are not modelled; use a routing service for those and record the minutes under
 `commute_observations` on the listing.
+
+## Heat grid details
+
+The heat grid is exact at every 50 m cell (the router is evaluated per cell, not interpolated), averaged over 11 arrivals 0 to 20 minutes before `arrive_by`, stored as half-minutes (`values_u8`, base64). A land model (NYC borough boundaries clipped to the shoreline, or `commute.transit.land`) blanks water and stops walks from crossing rivers; set `land: false` to turn it off.

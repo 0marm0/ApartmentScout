@@ -7,13 +7,12 @@ import { commuteLayerKey, walkRingMetres } from './criteria.js';
 import { $, esc, money, moneyShort, safeUrl, css, scoreColor, unitGlyph, gridImage, gridValueAt, idwGrid, RAMPS, bullet, aerialHTML, imagesOf, imgFallback } from './util.js';
 import { contours } from '../vendor/d3-contour.js';
 
-const STEPS = [5, 10, 15, 20, 25, 30, 40, 50, 60];   // isochrone steps in minutes
 const CLUSTER_Z = 12;                                 // below this zoom nearby pins merge into count bubbles
 const UNCL = ['!', ['has', 'point_count']];
 const selFilter = (id) => ['all', UNCL, ['==', ['get', 'id'], id || '']];
 const reduce = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 const layers = {};          // name -> grid json
-let map, popup, markers = [], destMarkers = [], inited = null, active = null, heat = 'commute', vector = true, show3d = false, showLines = true, picking = false;
+let map, popup, markers = [], destMarkers = [], inited = null, active = null, heat = 'commute', vector = true, offline = false, tileOk = false, show3d = false, showLines = true, picking = false;
 /** The surface for the selected destination and mode (null for walk, or when that grid was never computed). */
 const commuteLayer = () => { const k = commuteLayerKey(layers, dest(), S.commuteMode); return k ? layers[k] : null; };
 const hasCommute = () => Object.values(layers).some((g) => /^commute/.test(g?.kind || '')) || (S.crit.commute?.destinations || []).some((d) => d.lat != null);
@@ -77,6 +76,14 @@ function rasterStyle() {
     sources: { base: { type: 'raster', tiles: [base + 'Base/MapServer/tile/{z}/{y}/{x}'], tileSize: 256, maxzoom: 16, attribution }, ref: { type: 'raster', tiles: [base + 'Reference/MapServer/tile/{z}/{y}/{x}'], tileSize: 256, maxzoom: 16 } },
     layers: [{ id: 'bg', type: 'background', paint: { 'background-color': PAL[theme()].land } }, { id: 'esri', type: 'raster', source: 'base' }, { id: 'water', type: 'background', layout: { visibility: 'none' }, paint: { 'background-color': 'rgba(0,0,0,0)' } }, { id: 'esri-ref', type: 'raster', source: 'ref' }] };
 }
+// No tiles at all (offline, behind a proxy, or both tile hosts failing): a plain land colour. Pins, transit lines,
+// rings and the heat layers come from local data and still draw on top; the 'esri-ref' stub keeps heat under them.
+function offlineStyle() {
+  const stub = (id) => ({ id, type: 'background', layout: { visibility: 'none' }, paint: { 'background-color': 'rgba(0,0,0,0)' } });
+  return { version: 8, glyphs: 'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf', sources: {},
+    layers: [{ id: 'bg', type: 'background', paint: { 'background-color': PAL[theme()].land } }, stub('water'), stub('esri-ref')] };
+}
+const baseStyle = () => customStyle() || (offline ? offlineStyle() : vector ? vectorStyle(PAL[theme()]) : rasterStyle());
 function customStyle() {
   const t = S.crit.search?.tiles;
   if (!t) return null;
@@ -84,113 +91,142 @@ function customStyle() {
 }
 
 // ------------------------------------------------------------------ heat surfaces
-/** Commute isochrones: the router grid is interpolated linearly between cell centres, upsampled and contoured in
- *  5-minute steps. Fills are painted to a canvas clipped to the cells the router could reach; contour lines come
- *  back as GeoJSON (lon/lat) so MapLibre can draw them crisply with minute labels along the line. */
-function isochrones(g) {
-  const k = 4, s = 3, { rows, cols } = g, lim = dest()?.max_minutes || 30;
-  const raw = g.values.map((v) => (v == null || v < 0 ? NaN : v));
-  // validity-weighted Gaussian blur (sigma ~0.9 cell) so shapes follow the city, not the 150 m grid
-  const K = [0.054, 0.244, 0.403, 0.244, 0.054];
-  const blur = (src) => {
-    const tmp = new Float64Array(rows * cols), wt = new Float64Array(rows * cols), out = new Float64Array(rows * cols), ow = new Float64Array(rows * cols);
-    for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
-      let a = 0, w = 0;
-      for (let d = -2; d <= 2; d++) { const cc = c + d; if (cc < 0 || cc >= cols) continue; const v = src[r * cols + cc]; if (!isNaN(v)) { a += v * K[d + 2]; w += K[d + 2]; } }
-      tmp[r * cols + c] = a; wt[r * cols + c] = w;
-    }
-    for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
-      let a = 0, w = 0;
-      for (let d = -2; d <= 2; d++) { const rr = r + d; if (rr < 0 || rr >= rows) continue; a += tmp[rr * cols + c] * K[d + 2]; w += wt[rr * cols + c] * K[d + 2]; }
-      out[r * cols + c] = w > 0.05 ? a / w : NaN; ow[r * cols + c] = w;
-    }
-    return out;
-  };
-  // No blur by default: every cell is a router result at its centre, and blurring smears real detail such as
-  // the walk-up pockets around stations. ?smooth=1 applies a light Gaussian for a softer look.
-  let a = new URLSearchParams(location.search).get('smooth') ? blur(raw) : raw.slice();
-  for (let pass = 0; pass < 6; pass++) {   // extend values a few cells past the mask so interpolation at the edge stays sane
-    const b = a.slice();
-    for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
-      const i = r * cols + c; if (!isNaN(a[i])) continue;
-      let sum = 0, n = 0;
-      for (const [dr, dc] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const rr = r + dr, cc = c + dc; if (rr < 0 || cc < 0 || rr >= rows || cc >= cols) continue; const v = a[rr * cols + cc]; if (!isNaN(v)) { sum += v; n++; } }
-      if (n) b[i] = sum / n;
-    }
-    a = b;
+/** Commute layer values: router minutes per cell (row-major from the south-west), -1 where blank. New layers carry
+ *  them as base64 bytes of half-minutes (values_u8, 255 = blank); older ones as a plain `values` list. */
+function decodeLayer(g) {
+  if (!g || g.values || !g.values_u8) return g;
+  const bin = atob(g.values_u8), sc = g.scale || 0.5, nd = g.nodata ?? 255, v = new Float32Array(bin.length);
+  for (let i = 0; i < bin.length; i++) { const q = bin.charCodeAt(i); v[i] = q === nd ? -1 : q * sc; }
+  return { ...g, values: v };
+}
+/** The surface value at a point, interpolated linearly between the four nearest cell centres exactly as the contours
+ *  are, so the readout always agrees with the band under the cursor. null over blank cells (water, off the network). */
+function heatValueAt(g, lat, lon) {
+  const [lo0, la0, lo1, la1] = g.bbox, { rows, cols, values: V } = g;
+  const fy = ((lat - la0) / (la1 - la0)) * rows - 0.5, fx = ((lon - lo0) / (lo1 - lo0)) * cols - 0.5;
+  const rn = Math.round(fy), cn = Math.round(fx);
+  if (rn < 0 || cn < 0 || rn >= rows || cn >= cols || !(V[rn * cols + cn] >= 0)) return null;
+  const r0 = Math.floor(fy), c0 = Math.floor(fx), ty = fy - r0, tx = fx - c0;
+  let s = 0, w = 0;
+  for (const [dr, dc, k] of [[0, 0, (1 - ty) * (1 - tx)], [0, 1, (1 - ty) * tx], [1, 0, ty * (1 - tx)], [1, 1, ty * tx]]) {
+    const r = r0 + dr, c = c0 + dc;
+    if (r < 0 || c < 0 || r >= rows || c >= cols) continue;
+    const v = V[r * cols + c]; if (v >= 0) { s += v * k; w += k; }
   }
-  a = a.map((v) => (isNaN(v) ? 120 : v));
-  const W = cols * k, H = rows * k, up = new Float64Array(W * H), mask = new Float64Array(W * H);
-  const at = (arr, r, c) => arr[Math.max(0, Math.min(rows - 1, r)) * cols + Math.max(0, Math.min(cols - 1, c))];
-  for (let y = 0; y < H; y++) {
-    const fy = (y + 0.5) / k - 0.5, r0 = Math.floor(fy), ty = fy - r0;
-    for (let x = 0; x < W; x++) {
-      const fx = (x + 0.5) / k - 0.5, c0 = Math.floor(fx), tx = fx - c0;
-      const bil = (arr, f) => (f(at(arr, r0, c0)) * (1 - tx) + f(at(arr, r0, c0 + 1)) * tx) * (1 - ty) + (f(at(arr, r0 + 1, c0)) * (1 - tx) + f(at(arr, r0 + 1, c0 + 1)) * tx) * ty;
-      up[y * W + x] = -bil(a, (v) => v);
-      mask[y * W + x] = bil(raw, (v) => (isNaN(v) ? 0 : 1));
-    }
+  return w > 0 ? s / w : null;
+}
+const ringArea = (ring) => { let a = 0; for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) a += (ring[j][0] - ring[i][0]) * (ring[j][1] + ring[i][1]); return a / 2; };
+function inRing([x, y], ring) {
+  let ins = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const [xi, yi] = ring[i], [xj, yj] = ring[j];
+    if ((yi > y) !== (yj > y) && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) ins = !ins;
   }
-  const cv = document.createElement('canvas'); cv.width = W * s; cv.height = H * s;
-  const ctx = cv.getContext('2d');
-  const path = (geom) => { const p = new Path2D(); for (const poly of geom.coordinates) for (const ring of poly) { ring.forEach(([x, y], j) => (j ? p.lineTo(x * s, (H - y) * s) : p.moveTo(x * s, (H - y) * s))); p.closePath(); } return p; };
-  const [clip] = contours().size([W, H]).thresholds([0.5])(mask);
-  const all = contours().size([W, H]).thresholds(STEPS.map((t) => -t))(up);   // d3 sorts thresholds: look each up by value
-  const geoms = STEPS.map((t) => all.find((gg) => gg.value === -t));
-  const pal = stepColors(lim);
-  ctx.save(); ctx.clip(path(clip), 'evenodd');
-  for (let i = STEPS.length - 1; i >= 0; i--) { ctx.fillStyle = pal[i]; ctx.fill(path(geoms[i]), 'evenodd'); }
-  ctx.restore();
-  // contour lines in lon/lat, dropping the stretches that only trace the edge of the reachable area
-  const [lo0, la0, lo1, la1] = g.bbox, inside = (x, y) => { const xi = Math.min(W - 1, Math.max(0, Math.floor(x))), yi = Math.min(H - 1, Math.max(0, Math.floor(y))); return mask[yi * W + xi] > 0.97 && up[yi * W + xi] > -110; };
-  const toLL = ([x, y]) => [+(lo0 + (x / W) * (lo1 - lo0)).toFixed(5), +(la0 + (y / H) * (la1 - la0)).toFixed(5)];
-  const features = [];
-  STEPS.forEach((t, i) => {
-    if (t > 60) return;
-    const runs = [];
-    for (const poly of geoms[i].coordinates) for (const ring of poly) {
-      let cur = [];
-      for (const pt of ring) { if (inside(pt[0], pt[1])) cur.push(toLL(pt)); else { if (cur.length > 3) runs.push(cur); cur = []; } }
-      if (cur.length > 3) runs.push(cur);
-    }
-    if (runs.length) features.push({ type: 'Feature', properties: { t, lim: t === lim, label: t === lim ? `${t} min limit` : `${t} min` }, geometry: { type: 'MultiLineString', coordinates: runs } });
+  return ins;
+}
+/** Rings whose interiors XOR to one band (contour hi minus contour lo, nested level sets) grouped into polygons
+ *  (outer ring + holes) by nesting depth, so MapLibre fills each band once and translucent bands never stack. */
+function bandPolygons(rings) {
+  const R = rings.filter((r) => r.length > 3).map((r) => {
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    for (const [x, y] of r) { if (x < x0) x0 = x; if (y < y0) y0 = y; if (x > x1) x1 = x; if (y > y1) y1 = y; }
+    return { r, b: [x0, y0, x1, y1], p: [(r[0][0] + r[1][0]) / 2, (r[0][1] + r[1][1]) / 2], area: Math.abs(ringArea(r)), depth: 0, parent: null };
   });
-  return { fill: cv.toDataURL(), lines: { type: 'FeatureCollection', features } };
-}
-/** Fill colour per step: a bright-to-deep sequential ramp inside the commute limit, muted and fading beyond it. */
-function stepColors(lim) {
-  // Calibrated on minutes relative to your limit: green to a third, yellow-green at half, olive at two-thirds,
-  // amber-orange approaching the limit, red at and past it. Muted, earthy tones. The minutes themselves were
-  // checked against an independent router (207 buildings, MAE 1.4 min, r 0.985).
-  const stops = [[0, '#1f9a62'], [0.34, '#3fae5b'], [0.5, '#82b44d'], [0.67, '#b4ab43'], [0.84, '#cc893c'], [1, '#c9603a'], [1.34, '#b8483c'], [1.67, '#a13d40'], [2, '#873442']];
-  const light = theme() === 'light';
-  const at = (r) => {
-    if (r <= stops[0][0]) return stops[0][1];
-    for (let i = 1; i < stops.length; i++) if (r <= stops[i][0]) {
-      const [r0, c0] = stops[i - 1], [r1, c1] = stops[i], t = (r - r0) / (r1 - r0);
-      const h = (c, k) => parseInt(c.slice(1 + 2 * k, 3 + 2 * k), 16);
-      return '#' + [0, 1, 2].map((k) => Math.round(h(c0, k) + (h(c1, k) - h(c0, k)) * t).toString(16).padStart(2, '0')).join('');
+  R.sort((a, b) => b.area - a.area);   // a ring can only lie inside a bigger one
+  for (let i = 0; i < R.length; i++) {
+    const a = R[i];
+    for (let j = 0; j < i; j++) {
+      const o = R[j];
+      if (a.p[0] < o.b[0] || a.p[0] > o.b[2] || a.p[1] < o.b[1] || a.p[1] > o.b[3] || !inRing(a.p, o.r)) continue;
+      a.depth++; if (!a.parent || o.area < a.parent.area) a.parent = o;
     }
-    return stops[stops.length - 1][1];
-  };
-  return STEPS.map((t) => hexA(at(t / lim), t <= lim ? (light ? 0.42 : 0.5) : (light ? 0.38 : 0.46)));
+  }
+  const polys = new Map();
+  for (const a of R) if (a.depth % 2 === 0) polys.set(a, [ringArea(a.r) > 0 ? a.r : a.r.slice().reverse()]);   // outers counter-clockwise
+  for (const a of R) if (a.depth % 2 === 1 && polys.has(a.parent)) polys.get(a.parent).push(ringArea(a.r) < 0 ? a.r : a.r.slice().reverse());
+  // drop slivers (a few cm wide, where neighbouring contours squeeze against a blank edge)
+  return [...polys.values()].filter((p) => p.reduce((s, r, k) => s + (k ? -1 : 1) * Math.abs(ringArea(r)), 0) > 0.02);
 }
-const hexA = (h, a) => `rgba(${parseInt(h.slice(1, 3), 16)},${parseInt(h.slice(3, 5), 16)},${parseInt(h.slice(5, 7), 16)},${a})`;
+const BANDS = [5, 10, 15, 20, 25, 30, 40, 50, 120];   // band upper bounds, minutes (the last band reads "50+")
+const LINES = (lim) => BANDS.filter((t) => t <= 50 || t === lim);
+const bandLabel = (i) => (i === 0 ? `≤ ${BANDS[0]}` : i === BANDS.length - 1 ? `${BANDS[i - 1]}+` : `${BANDS[i - 1]}–${BANDS[i]}`);
+const isoCache = new WeakMap();
+/** Commute isochrones as vector polygons: one filled polygon set per 5-minute band (crisp at every zoom) and the
+ *  contour lines between them, in lon/lat. The field is the router's own minutes at each cell centre (no blur); blank
+ *  cells (water, far from any stop) are pushed out of every band after one ring of edge extension, so fills reach the
+ *  shoreline and the basemap's water layer, drawn above, trims them exactly. */
+function isochrones(g) {
+  const lim = dest()?.max_minutes || 30, key = `${lim}`;
+  const hit = isoCache.get(g); if (hit?.key === key) return hit;
+  const { rows, cols, values: V } = g, W = cols + 2, H = rows + 2, BIG = 1e4;
+  const valid = new Uint8Array(W * H), f = new Float64Array(W * H).fill(BIG);
+  for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) { const v = V[r * cols + c]; if (v >= 0) { f[(r + 1) * W + c + 1] = v; valid[(r + 1) * W + c + 1] = 1; } }
+  const ext = f.slice();
+  for (let r = 1; r <= rows; r++) for (let c = 1; c <= cols; c++) {
+    const i = r * W + c; if (valid[i]) continue;
+    let s = 0, n = 0;
+    for (const j of [i - 1, i + 1, i - W, i + W]) if (valid[j]) { s += f[j]; n++; }
+    if (n) ext[i] = s / n;
+  }
+  const neg = Array.from(ext, (v) => -v);
+  const eps = 1e-3, all = contours().size([W, H]).thresholds(BANDS.map((t) => -(t + eps)))(neg);
+  const geom = BANDS.map((t) => all.find((x) => Math.abs(x.value + t + eps) < 1e-9)?.coordinates || []);
+  const [lo0, la0, lo1, la1] = g.bbox, dx = (lo1 - lo0) / cols, dy = (la1 - la0) / rows;
+  const toLL = ([x, y]) => [+(lo0 + (x - 1) * dx).toFixed(6), +(la0 + (y - 1) * dy).toFixed(6)];
+  // group rings in grid units, before rounding to lon/lat: at the blank edge neighbouring contours run a few
+  // centimetres apart and rounding would let them touch
+  const ringsOf = (mp) => mp.flatMap((poly) => poly);
+  const fills = [];
+  BANDS.forEach((t, i) => {
+    const polys = bandPolygons([...ringsOf(geom[i]), ...(i ? ringsOf(geom[i - 1]) : [])]).map((poly) => poly.map((ring) => ring.map(toLL)));
+    if (polys.length) fills.push({ type: 'Feature', properties: { i, t, lo: i ? BANDS[i - 1] : 0 }, geometry: { type: 'MultiPolygon', coordinates: polys } });
+  });
+  // contour lines, minus the stretches that only trace the edge of the blank area
+  const inside = (x, y) => { const c = Math.floor(x - 0.5), r = Math.floor(y - 0.5); return valid[r * W + c] && valid[r * W + c + 1] && valid[(r + 1) * W + c] && valid[(r + 1) * W + c + 1]; };
+  const lines = [];
+  for (const t of LINES(lim)) {
+    const i = BANDS.indexOf(t); if (i < 0) continue;
+    const runs = [];
+    for (const poly of geom[i]) for (const ring of poly) {
+      let cur = [];
+      for (const pt of ring) { if (inside(pt[0], pt[1])) cur.push(toLL(pt)); else { if (cur.length > 2) runs.push(cur); cur = []; } }
+      if (cur.length > 2) runs.push(cur);
+    }
+    if (runs.length) lines.push({ type: 'Feature', properties: { t, lim: t === lim, major: t === lim || t % 10 === 0, label: t === lim ? `${t} min limit` : `${t} min` }, geometry: { type: 'MultiLineString', coordinates: runs } });
+  }
+  const out = { key, fills: { type: 'FeatureCollection', features: fills }, lines: { type: 'FeatureCollection', features: lines } };
+  isoCache.set(g, out);
+  return out;
+}
+// colour: discrete, stepped bands. Each neighbour differs in hue AND lightness (CIE dE 18-29 on both basemaps, still
+// 8+ under simulated deuteranopia) so a 5-minute step is visible at a glance: deep emerald (under 5), bright green,
+// yellow-green, yellow from 15, gold, orange to 30, then red-orange, red and maroon past 50. A data scale like the
+// official subway colours; the light basemap gets slightly deeper inks so yellow still reads on pale land.
+const BAND_INK = {
+  dark: ['#0b8f74', '#35c46a', '#b2dc52', '#faec66', '#eaa52c', '#e8721f', '#d9452d', '#b02638', '#6a1b3d'],
+  light: ['#08775f', '#2aa957', '#94c53c', '#ecd21f', '#e09a17', '#dc6a17', '#c93c1f', '#a11d2f', '#5a1433'],
+};
+/** Fill colour and opacity per band: opaque enough to read as distinct steps; streets and labels draw above them. */
+function bandStyle() {
+  const light = theme() === 'light';
+  return BAND_INK[light ? 'light' : 'dark'].map((col) => ({ col, a: light ? 0.72 : 0.78 }));
+}
+const idwScale = (like) => Math.max(1, Math.round(300 / (like.cell_m || 150)));   // ~300 m cells for listing-based surfaces
 function rentGrid() {
   const like = Object.values(layers).find((g) => g?.rows);
   if (!like) return null;
   const pts = S.listings.filter((x) => x.lat != null && x.sqft && cost(x)).map((x) => ({ lat: x.lat, lon: x.lon, v: cost(x) / x.sqft }));
-  return { ...idwGrid(pts, like, { cellScale: 2, radiusM: 650 }), kind: 'rent' };
+  return { ...idwGrid(pts, like, { cellScale: idwScale(like), radiusM: 650 }), kind: 'rent' };
 }
 function scoreGrid() {
   const like = Object.values(layers).find((g) => g?.rows);
   if (!like) return null;
   const pts = filtered().filter((x) => x.lat != null && score(x) != null).map((x) => ({ lat: x.lat, lon: x.lon, v: score(x) }));
-  return { ...idwGrid(pts, like, { cellScale: 2, radiusM: 600 }), kind: 'score' };
+  return { ...idwGrid(pts, like, { cellScale: idwScale(like), radiusM: 600 }), kind: 'score' };
 }
 const NOISE = (v) => RAMPS.noise.fn(v);
 function heatImages(k) {
-  if (k === 'commute') { const g = commuteLayer(); if (!g) return null; const iso = isochrones(g); return { g, fill: iso.fill, iso: iso.lines, opacity: 1 }; }
+  if (k === 'commute') { const g = commuteLayer(); if (!g) return null; return { g, iso: isochrones(g) }; }
   if (k === 'noise') {
     const g = layers.noise; if (!g) return null;
     const per = 12 / (g.months || 12);
@@ -202,24 +238,36 @@ function heatImages(k) {
 }
 function setHeat(k) {
   heat = k;
-  for (const id of ['heat-labels', 'heat-lines', 'heat']) if (map.getLayer(id)) map.removeLayer(id);
-  for (const id of ['heat', 'heat-lines']) if (map.getSource(id)) map.removeSource(id);
+  for (const id of ['heat-labels', 'heat-lim', 'heat-lines', 'heat-fill', 'heat']) if (map.getLayer(id)) map.removeLayer(id);
+  for (const id of ['heat', 'heat-lines', 'heat-fill']) if (map.getSource(id)) map.removeSource(id);
   active = null;
   const im = heatImages(k);
   if (im) {
     active = im.g;
-    const [lo0, la0, lo1, la1] = im.g.bbox, coordinates = [[lo0, la1], [lo1, la1], [lo1, la0], [lo0, la0]];
     const before = map.getLayer('water') && vector ? 'water' : map.getLayer('esri-ref') ? 'esri-ref' : undefined;
-    map.addSource('heat', { type: 'image', url: im.fill, coordinates });
-    map.addLayer({ id: 'heat', type: 'raster', source: 'heat', paint: { 'raster-opacity': im.opacity, 'raster-resampling': 'linear', 'raster-fade-duration': 0 } }, before);
     if (im.iso) {
-      const light = theme() === 'light', ink = light ? '#1d2230' : '#ffffff';
-      map.addSource('heat-lines', { type: 'geojson', data: im.iso });
-      map.addLayer({ id: 'heat-lines', type: 'line', source: 'heat-lines', layout: { 'line-join': 'round', 'line-cap': 'round' },
-        paint: { 'line-color': ink, 'line-opacity': ['case', ['get', 'lim'], 0.85, 0.22], 'line-width': ['case', ['get', 'lim'], 2, 0.8], 'line-dasharray': ['case', ['get', 'lim'], ['literal', [2.5, 2]], ['literal', [1, 0]]] } }, before);
-      map.addLayer({ id: 'heat-labels', type: 'symbol', source: 'heat-lines', minzoom: 12,
-        layout: { 'symbol-placement': 'line', 'symbol-spacing': 420, 'text-field': ['get', 'label'], 'text-font': ['Noto Sans Bold'], 'text-size': ['case', ['get', 'lim'], 11, 10], 'text-keep-upright': true, 'text-padding': 4 },
-        paint: { 'text-color': ink, 'text-opacity': ['case', ['get', 'lim'], 0.95, 0.6], 'text-halo-color': light ? '#f0efea' : '#0e1116', 'text-halo-width': 1.6 } });
+      // commute: vector bands under the water and the streets, thin contour lines, minute labels on the major ones
+      const light = theme() === 'light', ink = light ? '#1d2230' : '#ffffff', lim = dest()?.max_minutes || 30, st = bandStyle();
+      const byBand = (key) => ['match', ['get', 'i'], ...st.flatMap((x, i) => [i, x[key]]), key === 'a' ? 0 : '#000'];
+      map.addSource('heat-fill', { type: 'geojson', data: im.iso.fills, tolerance: 0.2 });
+      map.addLayer({ id: 'heat-fill', type: 'fill', source: 'heat-fill', paint: { 'fill-color': byBand('col'), 'fill-opacity': byBand('a'), 'fill-antialias': false } }, before);
+      map.addSource('heat-lines', { type: 'geojson', data: im.iso.lines, tolerance: 0.2 });
+      // lines above the streets (which would otherwise hide them in Manhattan's dense grid), below every label;
+      // they stop short of blank cells, so they never cross water
+      const above = vector && map.getLayer('lbl-water') ? 'lbl-water' : before;
+      // (line-dasharray cannot be data-driven, so the dashed limit line is its own layer)
+      map.addLayer({ id: 'heat-lines', type: 'line', source: 'heat-lines', filter: ['!', ['get', 'lim']], layout: { 'line-join': 'round', 'line-cap': 'round' },
+        paint: { 'line-color': ink, 'line-opacity': ['case', ['get', 'major'], light ? 0.34 : 0.3, light ? 0.18 : 0.15],
+          'line-width': ['interpolate', ['linear'], ['zoom'], 11, 0.6, 16, ['case', ['get', 'major'], 1.3, 0.9]] } }, above);
+      map.addLayer({ id: 'heat-lim', type: 'line', source: 'heat-lines', filter: ['get', 'lim'], layout: { 'line-join': 'round' },
+        paint: { 'line-color': ink, 'line-opacity': 0.85, 'line-width': ['interpolate', ['linear'], ['zoom'], 11, 1.5, 16, 2.4], 'line-dasharray': [2.5, 2] } }, above);
+      map.addLayer({ id: 'heat-labels', type: 'symbol', source: 'heat-lines', minzoom: 12, filter: ['get', 'major'],
+        layout: { 'symbol-placement': 'line', 'symbol-spacing': 380, 'text-field': ['get', 'label'], 'text-font': ['Noto Sans Bold'], 'text-size': ['case', ['get', 'lim'], 11, 10], 'text-keep-upright': true, 'text-padding': 4, 'text-max-angle': 35 },
+        paint: { 'text-color': ink, 'text-opacity': ['case', ['get', 'lim'], 0.95, 0.62], 'text-halo-color': light ? '#f0efea' : '#0e1116', 'text-halo-width': 1.6 } }, map.getLayer('line-case') ? 'line-case' : map.getLayer('cl-halo') ? 'cl-halo' : undefined);
+    } else {
+      const [lo0, la0, lo1, la1] = im.g.bbox, coordinates = [[lo0, la1], [lo1, la1], [lo1, la0], [lo0, la0]];
+      map.addSource('heat', { type: 'image', url: im.fill, coordinates });
+      map.addLayer({ id: 'heat', type: 'raster', source: 'heat', paint: { 'raster-opacity': im.opacity, 'raster-resampling': 'linear', 'raster-fade-duration': 0 } }, before);
     }
   }
   if (map.getLayer('pins')) map.setPaintProperty('pins', 'circle-color', k === 'commute' ? ['case', ['get', 'fav'], css('--accent'), theme() === 'light' ? '#2b303b' : '#eef1f6'] : ['get', 'col']);
@@ -312,7 +360,14 @@ function addOverlays() {
     'circle-color': heat === 'commute' ? ['case', ['get', 'fav'], css('--accent'), theme() === 'light' ? '#2b303b' : '#eef1f6'] : ['get', 'col'], 'circle-opacity': ['case', ['get', 'gone'], 0.35, 1],
     'circle-stroke-width': ['case', ['boolean', ['feature-state', 'hover'], false], 3, ['get', 'fav'], 2.2, 1.6],
     'circle-stroke-color': ['case', ['boolean', ['feature-state', 'hover'], false], css('--ink'), p.pinLine] } });
-  map.addSource('hoods', { type: 'geojson', data: hoodPoints() });
+  const hoods = hoodPoints();
+  map.addSource('hoods', { type: 'geojson', data: hoods });
+  // one label per neighbourhood: where our listing-placed label exists, hide the basemap's copy of the same name
+  if (map.getLayer('lbl-hood')) {
+    const ALIAS = { "HELL'S KITCHEN": ['CLINTON'], 'HELLS KITCHEN': ['CLINTON'] };   // OSM's older name for the same place
+    const names = [...new Set(hoods.features.flatMap(({ properties: { n } }) => [n, n.replace(/['’]/g, ''), n.replace(/'/g, '’'), n.replace(/’/g, "'"), ...(ALIAS[n] || [])]))];
+    map.setFilter('lbl-hood', ['all', ['in', ['get', 'class'], ['literal', ['neighbourhood', 'suburb', 'quarter']]], ['!', ['in', ['upcase', ['coalesce', ['get', 'name:latin'], ['get', 'name'], '']], ['literal', names]]]]);
+  }
   map.addLayer({ id: 'lbl-hoods', type: 'symbol', source: 'hoods', minzoom: 11.5, layout: { 'text-field': ['get', 'n'], 'text-font': ['Noto Sans Bold'], 'text-size': ['interpolate', ['linear'], ['zoom'], 12, 10, 15, 13], 'text-letter-spacing': 0.12, 'text-max-width': 8, 'symbol-sort-key': ['-', 0, ['get', 'k']], 'text-padding': 8 },
     paint: { 'text-color': p.hood, 'text-halo-color': p.halo, 'text-halo-width': 1.8 } });
   setHeat(heat);
@@ -455,13 +510,15 @@ function renderLegend() {
   const g = active, d = dest(), lim = d?.max_minutes || 30, mode = S.commuteMode, ml = MODE_LABEL[mode].toLowerCase();
   let body = '';
   if (heat === 'commute') {
-    const pal = stepColors(lim), ds = S.crit.commute?.destinations || [];
+    const st = bandStyle(), ds = S.crit.commute?.destinations || [];
     const what = { best: 'Fastest door-to-door minutes by subway, bus or walking', subway: 'Subway with walking only (no buses)', bus: 'Bus with walking only (no subway)' }[mode];
     body = `<h4>${ds.length > 1 ? `<select class="sel lg-dest" id="lgDest" aria-label="Commute destination">${ds.map((x) => `<option value="${esc(x.name)}" ${x === d ? 'selected' : ''}>To ${esc(x.name)}</option>`).join('')}</select>` : `Door to door to ${esc(d?.name || '')}`} <span>arrive ${esc(d?.arrive_by || '')}</span></h4>
       ${modeSegHTML(d, 'lgMode')}
-      ${g ? `<div class="isobar">${STEPS.map((t, i) => `<i style="background:${pal[i].replace(/[\d.]+\)$/, '1)')};opacity:${t <= lim ? 1 : 0.55}" class="${t === lim ? 'lim' : ''}"></i>`).join('')}</div>
-      <div class="isoticks">${STEPS.map((t) => `<span class="${t === lim ? 'lim' : ''}">${t}</span>`).join('')}</div>
-      <div class="src">${what} on the ${esc(g.feeds?.length ? g.feeds.join(', ') + ' timetable' : 'walking network')}, averaged over several arrivals: green is close, red is past your ${lim}-minute limit (dashed). Water and areas beyond walking range of a stop are left clear.</div>`
+      ${g ? `<div class="isogrid" role="list" aria-label="Door-to-door minutes by colour band" style="display:grid;grid-template-columns:repeat(3,1fr);gap:5px 10px;margin:2px 0 2px">${BANDS.map((t, i) => {
+        const isLim = (i ? BANDS[i - 1] : 0) < lim && lim <= t;
+        return `<span role="listitem" style="display:flex;align-items:center;gap:6px;font:500 var(--fs-2xs) var(--font-mono);font-variant-numeric:tabular-nums;color:${isLim ? 'var(--ink)' : 'var(--ink-2)'};white-space:nowrap"><i style="flex:none;width:18px;height:11px;border-radius:3px;background:${st[i].col};${isLim ? 'box-shadow:0 0 0 1.5px var(--ink)' : 'box-shadow:inset 0 0 0 1px rgba(0,0,0,.18)'}"></i>${isLim ? `<b style="font-weight:650" title="Your ${lim}-minute limit">${bandLabel(i)}</b>` : bandLabel(i)}</span>`;
+      }).join('')}</div>
+      <div class="src">${what} on the ${esc(g.feeds?.length ? g.feeds.join(', ') + ' timetable' : 'walking network')}, the router's answer every ${esc(Math.round(g.cell_m || 150))} m, averaged over ${g.arrival_offsets_min?.length || 'several'} arrivals${g.arrival_offsets_min?.length ? ` in the ${Math.max(...g.arrival_offsets_min)} minutes before ${esc(d?.arrive_by || 'arrival')}` : ''}. Each colour is a 5-minute band (10-minute bands past 30); the outlined swatch and the dashed line mark your ${lim}-minute limit. ${g.water_masked ? 'Water and areas' : 'Areas'} beyond walking range of a stop are left clear.</div>`
       : mode === 'walk' ? `<div class="src">Walking has no timetable surface. The dashed rings are ${ringMinutes().join(', ')} minutes on foot at ${walkKmh()} km/h, straight line with a 1.25 street detour. Cards, filters and columns use the router's walking minutes where it has them, else the same estimate.</div>`
       : `<div class="src">No ${ml} surface for ${esc(d?.name || 'this destination')}${d?._stale ? ' (new or moved in your edited criteria)' : ''}. Run <code>apartmentscout commute</code>${mode === 'bus' ? ' with a bus GTFS feed' : ''} to draw it. Pins, cards and filters use per-listing ${ml} minutes where the router computed them.</div>`}`;
   } else if (heat === 'noise' && g) {
@@ -494,7 +551,7 @@ function renderCtl() {
     if (k === 'fit') fit();
     if (k === 'lines') { showLines = !showLines; for (const id of ['line-case', 'line', 'stations', 'lbl-station']) map.getLayer(id) && map.setLayoutProperty(id, 'visibility', showLines ? 'visible' : 'none'); renderLegend(); }
     if (k === '3d') { show3d = !show3d; map.setLayoutProperty('b3d', 'visibility', show3d ? 'visible' : 'none'); map.easeTo({ pitch: show3d ? 55 : 0, bearing: show3d ? -17 : 0, zoom: show3d ? Math.max(map.getZoom(), 15) : map.getZoom(), duration: 900 }); }
-    if (k === 'base') { vector = !vector; rebuild(); }
+    if (k === 'base') { if (offline) { offline = false; vector = true; } else vector = !vector; rebuild(); }
     renderCtl();
   }));
 }
@@ -508,10 +565,10 @@ function fit() {
 function readout(e) {
   const el = $('readout'), g = active;
   if (!g || !g.rows) { el.hidden = true; return; }
-  const r = gridValueAt(g, e.lngLat.lat, e.lngLat.lng);
+  const r = heat === 'commute' ? { v: heatValueAt(g, e.lngLat.lat, e.lngLat.lng) } : gridValueAt(g, e.lngLat.lat, e.lngLat.lng);
   if (!r || r.v == null || r.v < 0) { el.hidden = true; return; }
   let t;
-  if (heat === 'commute') t = `<b>${Math.round(r.v)} min</b> <span class="faint">${S.commuteMode === 'best' ? 'door to door' : 'by ' + MODE_LABEL[S.commuteMode].toLowerCase()} to ${esc(dest()?.name || g.name)}</span>`;
+  if (heat === 'commute') t = `<i aria-hidden="true" style="display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px;background:${bandStyle()[Math.max(0, BANDS.findIndex((x) => r.v <= x + 1e-3))].col}"></i><b>${Math.round(r.v)} min</b> <span class="faint">${S.commuteMode === 'best' ? 'door to door' : 'by ' + MODE_LABEL[S.commuteMode].toLowerCase()} to ${esc(dest()?.name || g.name)}</span>`;
   else if (heat === 'noise') t = `<b>${Math.round((r.v * 12) / (g.months || 12))}</b> <span class="faint">noise complaints a year in this ${esc(g.cell_m)} m cell${g.night ? ` (${g.night[r.i] ?? 0} at night)` : ''}</span>`;
   else if (heat === 'rent') t = `<b>$${r.v.toFixed(2)}</b> <span class="faint">per ft² a month nearby</span>`;
   else t = `<b>${Math.round(r.v)}</b> <span class="faint">average score nearby</span>`;
@@ -560,10 +617,12 @@ function wire() {
 function onStyle() {
   if (vector) PAINT.forEach(([id, prop, key]) => map.getLayer(id) && map.setPaintProperty(id, prop, PAL[theme()][key]));
   addOverlays(); drawTags();
-  $('attrib').innerHTML = (vector ? '© <a href="https://openfreemap.org" target="_blank" rel="noopener">OpenFreeMap</a> © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>' : 'Tiles © Esri, HERE, Garmin, © OpenStreetMap') + (S.transit ? ' · Transit: agency GTFS' : '');
+  $('attrib').innerHTML = (offline ? 'Basemap offline' : vector ? '© <a href="https://openfreemap.org" target="_blank" rel="noopener">OpenFreeMap</a> © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>' : 'Tiles © Esri, HERE, Garmin, © OpenStreetMap') + (S.transit ? ' · Transit: agency GTFS' : '');
+  if ($('mapOffline')) $('mapOffline').hidden = !offline;
 }
 function rebuild() {
-  map.setStyle(customStyle() || (vector ? vectorStyle(PAL[theme()]) : rasterStyle()));
+  // diff: false so 'style.load' always fires and onStyle re-adds the overlays
+  tileOk = false; map.setStyle(baseStyle(), { diff: false });
   map.once('style.load', onStyle);
 }
 
@@ -617,18 +676,28 @@ async function boot() {
     for (const name of S.manifest.layers || []) {
       if (name.startsWith('transit')) continue;
       const g = await loadJSON(`${S.base}/layers/${name}`, null);
-      if (g) layers[name.replace('.json', '')] = g;
+      if (g) layers[name.replace('.json', '')] = /^commute/.test(g.kind || '') ? decodeLayer(g) : g;
     }
     const want = new URLSearchParams(location.search).get('layer');
     heat = want ? (want.startsWith('commute') ? 'commute' : want) : hasCommute() ? 'commute' : 'none';
-    if (new URLSearchParams(location.search).get('basemap') === 'raster') vector = false;
+    const bm = new URLSearchParams(location.search).get('basemap');
+    if (bm === 'raster') vector = false;
+    if (bm === 'none' || navigator.onLine === false) { offline = true; vector = false; }
     const c = S.crit.search?.map_center, d = dest();
     const center = c ? [c[1], c[0]] : d?.lat != null ? [d.lon, d.lat] : [-73.98, 40.75];
-    map = new maplibregl.Map({ container: 'map', style: customStyle() || (vector ? vectorStyle(PAL[theme()]) : rasterStyle()), center, zoom: S.crit.search?.map_zoom ? S.crit.search.map_zoom - 0.1 : 12.9,
+    map = new maplibregl.Map({ container: 'map', style: baseStyle(), center, zoom: S.crit.search?.map_zoom ? S.crit.search.map_zoom - 0.1 : 12.9,
       minZoom: 9, maxZoom: 18, attributionControl: false, preserveDrawingBuffer: true, dragRotate: true });
     window.__asMap = map;   // for screenshots and debugging
     popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 12, maxWidth: '260px' });
-    map.on('error', (e) => { if (vector && /openfreemap/.test(String(e?.error?.message || e?.sourceId || ''))) { vector = false; rebuild(); renderCtl(); } });
+    // basemap fallbacks: vector tiles -> Esri raster -> plain offline background. A failure after a tile has
+    // loaded is treated as transient; overlay sources (local data) never trigger a switch.
+    map.on('sourcedata', (e) => { if (e.tile && ['omt', 'base'].includes(e.sourceId)) tileOk = true; });
+    map.on('error', (e) => {
+      if (offline || customStyle() || tileOk) return;
+      const what = `${e?.error?.message || ''} ${e?.error?.url || ''} ${e?.sourceId || ''}`;
+      if (vector && /openfreemap|omt/.test(what)) { vector = false; rebuild(); renderCtl(); }
+      else if (!vector && /arcgisonline|\bbase\b|\bref\b/.test(what)) { offline = true; rebuild(); renderCtl(); }
+    });
     map.once('style.load', onStyle);
     map.once('load', () => { if (pendingFly && pendingFly === S.sel) flyTo(pendingFly); pendingFly = null; });
     wire(); renderCtl(); renderSwitch(); addDest();

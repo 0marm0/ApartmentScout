@@ -116,6 +116,30 @@ class Network:
     _np: tuple | None = field(default=None, repr=False)
     walker: Walker = field(default_factory=Walker)
     _areas: np.ndarray | None = field(default=None, repr=False)
+    land: object | None = field(default=None, repr=False)  # land.Land: no walking across water when set
+    _stop_land: np.ndarray | None = field(default=None, repr=False)
+
+    def set_land(self, land) -> None:
+        self.land, self._stop_land = land, None
+
+    def stop_land(self) -> np.ndarray | None:
+        """Landmass label of every stop (0 = unknown), or None without a land model."""
+        if self.land is None:
+            return None
+        if self._stop_land is None:
+            self._stop_land = self.land.at(np.asarray(self.lat, dtype=float), np.asarray(self.lon, dtype=float))
+        return self._stop_land
+
+    def same_land(self, lat: float, lon: float, js: np.ndarray) -> np.ndarray:
+        """Which of the stops js can be walked to from (lat, lon) without crossing water."""
+        sl = self.stop_land()
+        if sl is None or not len(js):
+            return np.ones(len(js), dtype=bool)
+        here = int(self.land.at(lat, lon))
+        if here == 0:
+            return np.ones(len(js), dtype=bool)
+        there = sl[js]
+        return (there == 0) | (there == here)
 
     def areas(self) -> np.ndarray:
         """Walking-grid area of every stop (-1 = none)."""
@@ -385,6 +409,8 @@ def reverse_scan(net: Network, dest_lat: float, dest_lon: float, arrive_by: int,
     ptr: list[tuple | None] = [None] * n
     near = [i for i in range(n) if ok[i] and haversine_m(net.lat[i], net.lon[i], dest_lat, dest_lon) <= max_egress_m]
     if near:
+        near = [i for i, k in zip(near, net.same_land(dest_lat, dest_lon, np.asarray(near))) if k]
+    if near:
         for i, m in zip(near, net.walk_m(dest_lat, dest_lon, np.asarray(near))):
             w = int(m / net.walker.speed_ms + net.stop_access(i) * float(egress_access))
             ld[i] = arrive_by - w
@@ -477,6 +503,7 @@ def access_points(net: Network, lat: float, lon: float, max_access_m: float, wal
     a = np.sin((rlat - phi) / 2) ** 2 + math.cos(phi) * np.cos(rlat) * np.sin((rlon - lam) / 2) ** 2
     d = 2 * 6371008.8 * np.arcsin(np.sqrt(a))
     js = np.nonzero((d <= max_access_m) & (smask > 0))[0]
+    js = js[net.same_land(lat, lon, js)]
     walked = net.walk_m(lat, lon, js)
     return Access(js, walked / net.walker.speed_ms + sacc[js], walked, smask[js])
 
