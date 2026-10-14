@@ -72,11 +72,13 @@ export function includeIndex(range, i, n, max = 60) {
  * FLIP plan: for every rendered item, how far to slide it from where it was to where it is now.
  *  before / after: Map key -> top in px (content coordinates). `before` may include items that were not rendered
  *  (their layout position); `after` holds the rendered ones. view: { top, height } of the scrolled viewport.
- * Items with no visible start or end are skipped (nobody sees them), a move bigger than `maxSlide` is clamped, and
- * items that were not in the old list at all are returned in `entering`.
- * Returns { moves: [{ key, dy, far }], entering: [key] }
+ * Items that nobody sees at either end are skipped. An item that was on screen slides from its true old place
+ * (clamped to a viewport and a bit, so a card leaving for far away does not stretch the scroll area). An item that
+ * arrives from out of sight does not travel through the others: it appears with a short rise (`appear`). Items that
+ * were not in the old list at all are returned in `entering`.
+ * Returns { moves: [{ key, dy, appear }], entering: [key] }
  */
-export function flipPlan(before, after, view, { maxSlide = 520, minMove = 1, reach = 1.25 } = {}) {
+export function flipPlan(before, after, view, { maxSlide = view.height + 120, minMove = 1, reach = 1.25, appear = 40 } = {}) {
   const lo = view.top - view.height * (reach - 1) / 2, hi = view.top + view.height * (1 + (reach - 1) / 2);
   const seen = (y, h = 120) => y + h >= lo && y <= hi;
   const moves = [], entering = [];
@@ -85,9 +87,10 @@ export function flipPlan(before, after, view, { maxSlide = 520, minMove = 1, rea
     if (from == null) { if (seen(to)) entering.push(key); continue; }
     const dy = from - to;
     if (Math.abs(dy) < minMove) continue;
-    if (!seen(from) && !seen(to)) continue;
-    const far = Math.abs(dy) > maxSlide;
-    moves.push({ key, dy: Math.max(-maxSlide, Math.min(maxSlide, dy)), far });
+    const sf = seen(from), st = seen(to);
+    if (!sf && !st) continue;
+    if (!sf) { moves.push({ key, dy: dy > 0 ? appear : -appear, appear: true }); continue; }
+    moves.push({ key, dy: Math.max(-maxSlide, Math.min(maxSlide, dy)), appear: false });
   }
   return { moves, entering };
 }

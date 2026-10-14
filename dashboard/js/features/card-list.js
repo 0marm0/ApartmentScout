@@ -154,7 +154,7 @@ export function setCardItems(next, { animate = true } = {}) {
     for (const m of plan.moves) {
       const el = nodes.get(m.key)?.el; if (!el?.animate) continue;
       el.getAnimations().forEach((x) => x.cancel());
-      const frames = m.far ? [{ transform: `translateY(${m.dy}px)`, opacity: 0.2 }, { transform: 'none', opacity: 1 }] : [{ transform: `translateY(${m.dy}px)` }, { transform: 'none' }];
+      const frames = m.appear ? [{ transform: `translateY(${m.dy}px)`, opacity: 0 }, { transform: 'none', opacity: 1 }] : [{ transform: `translateY(${m.dy}px)` }, { transform: 'none' }];
       el.animate(frames, { duration: dur, easing: 'cubic-bezier(.2,.8,.2,1)' });
     }
     enter(plan.entering.filter((k) => fresh.includes(k)));
@@ -175,8 +175,8 @@ function enter(keys, initial = false) {
 /** Forget every measured height (density, width or font changed) and lay the window out again. */
 export function relayoutCardList() {
   if (!host || !items.length) return;
+  const st = scrollTop(), at = layout.indexAt(st - pad), intra = st - pad - layout.offset(at);   // keep the card at the top of the view
   layout.clear();
-  const st = scrollTop();
   layout.setKeys(items.map((it) => it.key));
   const [a, b] = wanted();
   reconcile(a, b);
@@ -184,7 +184,9 @@ export function relayoutCardList() {
   const r = wanted();
   if (r[0] !== win[0] || r[1] !== win[1]) { reconcile(r[0], r[1], false); if (measure()) layout.relayout(); }
   setSpacers();
-  host.scrollTop = Math.min(st, Math.max(0, host.scrollHeight - host.clientHeight));
+  host.scrollTop = Math.min(layout.offset(at) + intra + pad, Math.max(0, host.scrollHeight - host.clientHeight));
+  const w = wanted();
+  if (w[0] !== win[0] || w[1] !== win[1]) { reconcile(w[0], w[1], false); if (measure()) layout.relayout(); setSpacers(); }
 }
 
 /** Empty the list (the caller shows its own empty state in #cards). */
@@ -259,7 +261,7 @@ export function initCardList() {
   let width = host.clientWidth;
   new ResizeObserver(() => {
     // a new width can cross a breakpoint that resizes the cards: measure again; a new height only changes the window
-    if (host.clientWidth !== width) { width = host.clientWidth; relayoutCardList(); } else onScroll();
+    if (host.clientWidth !== width) { width = host.clientWidth; requestAnimationFrame(relayoutCardList); } else onScroll();   // not in the observer callback itself: that loops
   }).observe(host);
   // card clicks, delegated (composedPath: the quick-action button re-renders its own content during the click)
   host.addEventListener('click', (e) => {

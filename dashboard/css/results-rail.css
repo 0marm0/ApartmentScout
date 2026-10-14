@@ -35,9 +35,11 @@
 .ph.up, .ph-hover.up { --pc: var(--warn); }
 .ph.down .ph-s, .ph.up .ph-s, .ph-hover.down .ph-s, .ph-hover.up .ph-s { color: var(--pc); }
 .ph-d { font: 650 var(--fs-2xs)/1 var(--font-sans); font-variant-numeric: tabular-nums; color: var(--good); background: var(--good-soft); padding: 3px 6px; border-radius: var(--r-pill); white-space: nowrap; }
+:root[data-theme="light"] .ph-d { color: color-mix(in srgb, var(--good) 55%, var(--ink)); }   /* AA on the soft green */
 .ph-hover { display: flex; align-items: center; gap: 10px; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line); font-size: var(--fs-xs); color: var(--ink-3); }
 .ph-hover:not(.down):not(.up) .ph-s { color: var(--ink-3); }
-.ph-hover > span { min-width: 0; }
+.ph-hover .ph-t { min-width: 0; display: flex; flex-direction: column; gap: 3px; align-items: flex-start; }
+.ph-hover .ph-l1 { display: inline-flex; align-items: center; gap: 6px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
 
 /* ------------------------------------------------------------------ active-filter chip row */
 .fchips { display: grid; grid-template-rows: 0fr; background: var(--surface-1); border-bottom: 0 solid var(--line); transition: grid-template-rows 240ms var(--ease-out), border-width 240ms; }
