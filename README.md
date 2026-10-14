@@ -225,7 +225,8 @@ Static versions for reports, written by `apartmentscout site --charts`:
 - 3D site models for 8 shortlisted units and a v2 floor plan with furniture presets for one.
 - Research notes from the deep dives (due diligence, noise ledger, orientation audit).
 
-Listing photos are not included; links point to the original listings.
+- Listing photos for 103 units (web-sized copies with links to the originals) and licensed Wikimedia Commons
+  building photos with credits for 213; the rest show an aerial view.
 
 ## Repository layout
 
@@ -255,7 +256,8 @@ Python file. City profiles with transit feeds and landmark names are very welcom
 - Your searches live in `searches/`, which git ignores. `apartmentscout serve` exports a private search
   into that search's own cache and serves it from there, so personal criteria, notes and saved listing
   photos never land in tracked files.
-- Listing photos belong to their owners: they stay in private searches and are never committed.
+- Photos are a per-search choice: `apartmentscout photos --cache` keeps copies in your search folder, and
+  Commons building photos carry their licence and author. Listing photos belong to their owners.
 - Agents are told to respect site terms: no CAPTCHA solving, no bypassing bot protection, no logging in
   or contacting landlords without your say-so.
 - 311 calls, complaints and reviews are reports, not findings. The dashboard and reports say so.

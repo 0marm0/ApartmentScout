@@ -83,8 +83,7 @@ the apartment.
 
 The one-off tools an agent built during the Manhattan search, kept as design references and as examples
 of what an agent can produce with this workflow. *Each was a prototype built by an agent during the
-search.* Some earlier floor-plan and furniture-fit studies are kept private because they show named units
-or owners' plans.
+search.*
 
 ### First search dashboard
 
@@ -133,6 +132,20 @@ to any listing with a site model.
 <tr><td width="50%"><img src="gallery/eg1211art--eg1211-jun21-evening.jpg" alt="June 21 evening"><br><sub>June 21 evening</sub></td><td></td></tr>
 </table>
 
+### Emerald Green #1211 view and sunlight (Codex)
+
+Codex's reconstruction: official footprints, street centerlines, two candidate window edges, apartment 3D, window views, GLB exports.
+
+<table>
+<tr><td width="50%"><img src="gallery/codexeg--codex-eg1211-neighborhood.jpg" alt="Neighbourhood context with height prisms"><br><sub>Neighbourhood context with height prisms</sub></td><td width="50%"><img src="gallery/codexeg--codex-eg1211-street-plan.jpg" alt="Street and footprint plan"><br><sub>Street and footprint plan</sub></td></tr>
+<tr><td width="50%"><img src="gallery/codexeg--codex-eg1211-apartment-3d.jpg" alt="Apartment 3D"><br><sub>Apartment 3D</sub></td><td width="50%"><img src="gallery/codexeg--codex-eg1211-topdown-unit.jpg" alt="Top-down unit"><br><sub>Top-down unit</sub></td></tr>
+<tr><td width="50%"><img src="gallery/codexeg--codex-eg1211-living-window.jpg" alt="Living-room window view"><br><sub>Living-room window view</sub></td><td width="50%"><img src="gallery/codexeg--codex-eg1211-bedroom-window.jpg" alt="Bedroom window view"><br><sub>Bedroom window view</sub></td></tr>
+<tr><td width="50%"><img src="gallery/codexeg--codex-eg1211-winter-floor21.jpg" alt="Winter, floor 21"><br><sub>Winter, floor 21</sub></td><td width="50%"><img src="gallery/codexeg--codex-eg1211-east-candidate.jpg" alt="Rejected eastern candidate"><br><sub>Rejected eastern candidate</sub></td></tr>
+<tr><td width="50%"><img src="gallery/codexeg--view_west_floor12.jpg" alt="Rendered view west, floor 12"><br><sub>Rendered view west, floor 12</sub></td><td width="50%"><img src="gallery/codexeg--view_west_floor21.jpg" alt="Rendered view west, floor 21"><br><sub>Rendered view west, floor 21</sub></td></tr>
+<tr><td width="50%"><img src="gallery/codexeg--apartment_preview.jpg" alt="Apartment preview render"><br><sub>Apartment preview render</sub></td><td width="50%"><img src="gallery/codexeg--corrected_street_context.jpg" alt="Corrected street context"><br><sub>Corrected street context</sub></td></tr>
+<tr><td width="50%"><img src="gallery/codexeg--surrounding_heights.jpg" alt="Surrounding building heights, 300 m"><br><sub>Surrounding building heights, 300 m</sub></td></tr>
+</table>
+
 ### Knox: what the windows can see
 
 An evidence-labelled view and light model for six Knox one-bedrooms, with obstruction scenarios.
@@ -142,6 +155,48 @@ An evidence-labelled view and light model for six Knox one-bedrooms, with obstru
 <tr><td width="50%"><img src="gallery/knox--knox-light-view-4c.jpg" alt="#4C"><br><sub>#4C</sub></td><td width="50%"><img src="gallery/knox--knox_2026_true_roof_context_mobile.jpg" alt="True roof context"><br><sub>True roof context</sub></td></tr>
 <tr><td width="50%"><img src="gallery/knox--knox_2026_survey_3d_mobile.jpg" alt="3D survey"><br><sub>3D survey</sub></td><td width="50%"><img src="gallery/knox--knox_3d_floor_view_mobile.jpg" alt="3D floor view"><br><sub>3D floor view</sub></td></tr>
 <tr><td width="50%"><img src="gallery/knox--knox_compass_units_mobile.jpg" alt="Compass and unit lines"><br><sub>Compass and unit lines</sub></td><td></td></tr>
+</table>
+
+### Apartment layout studio (Emerald Green #1211)
+
+2D plan and 3D model side by side, drag furniture in either, layout presets, clearances, door swings and bed-to-TV sightlines. 
+
+<table>
+<tr><td width="50%"><img src="gallery/layout--layout-split.jpg" alt="Plan and 3D together"><br><sub>Plan and 3D together</sub></td><td width="50%"><img src="gallery/layout--layout-3d-overview.jpg" alt="3D overview"><br><sub>3D overview</sub></td></tr>
+<tr><td width="50%"><img src="gallery/layout--layout-3d-topdown.jpg" alt="Top down"><br><sub>Top down</sub></td><td width="50%"><img src="gallery/layout--layout-from-bed.jpg" alt="View from the bed"><br><sub>View from the bed</sub></td></tr>
+<tr><td width="50%"><img src="gallery/layout--layout-from-front-door.jpg" alt="View from the front door"><br><sub>View from the front door</sub></td><td width="50%"><img src="gallery/layout--layout-plan-2d.jpg" alt="2D plan with clearances"><br><sub>2D plan with clearances</sub></td></tr>
+<tr><td width="50%"><img src="gallery/layout--layout-bed-in-living-room.jpg" alt="Preset: bed in the living room"><br><sub>Preset: bed in the living room</sub></td><td width="50%"><img src="gallery/layout--layout-dark.jpg" alt="Dark mode, floating-bed preset"><br><sub>Dark mode, floating-bed preset</sub></td></tr>
+<tr><td width="50%"><img src="gallery/layout--layout_preview.jpg" alt="Bedroom TV layout options"><br><sub>Bedroom TV layout options</sub></td><td width="50%"><img src="gallery/layout--queen_primary_options.jpg" alt="Queen bed options"><br><sub>Queen bed options</sub></td></tr>
+</table>
+
+### Floor-plan fit check: three apartments
+
+Three real plans in 3D (Emerald Green 620, Paramount, 49th St) with a furniture kit, AC units and space checks. 
+
+<table>
+<tr><td width="50%"><img src="gallery/fitcheck--fitcheck-eg620-angle.jpg" alt="Emerald Green 620, angle"><br><sub>Emerald Green 620, angle</sub></td><td width="50%"><img src="gallery/fitcheck--fitcheck-eg620-top.jpg" alt="Emerald Green 620, top"><br><sub>Emerald Green 620, top</sub></td></tr>
+<tr><td width="50%"><img src="gallery/fitcheck--fitcheck-eg620-bedroom.jpg" alt="Emerald Green 620, bedroom"><br><sub>Emerald Green 620, bedroom</sub></td><td width="50%"><img src="gallery/fitcheck--fitcheck-paramount-angle.jpg" alt="Paramount, angle"><br><sub>Paramount, angle</sub></td></tr>
+<tr><td width="50%"><img src="gallery/fitcheck--fitcheck-paramount-living.jpg" alt="Paramount, living room"><br><sub>Paramount, living room</sub></td><td width="50%"><img src="gallery/fitcheck--fitcheck-49th-angle.jpg" alt="49th St, angle"><br><sub>49th St, angle</sub></td></tr>
+<tr><td width="50%"><img src="gallery/fitcheck--fitcheck-49th-top.jpg" alt="49th St, top"><br><sub>49th St, top</sub></td></tr>
+</table>
+
+### Room to live (Codex floor-plan 3D)
+
+Two supplied plans with one furniture kit, drag in 3D or overhead, export GLB. 
+
+<table>
+<tr><td width="50%"><img src="gallery/roomtolive--codex-floorplan3d-plan1.jpg" alt="Plan 1 in 3D"><br><sub>Plan 1 in 3D</sub></td><td width="50%"><img src="gallery/roomtolive--codex-floorplan3d-plan1-overhead.jpg" alt="Plan 1 overhead"><br><sub>Plan 1 overhead</sub></td></tr>
+<tr><td width="50%"><img src="gallery/roomtolive--codex-floorplan3d-plan2.jpg" alt="Plan 2 in 3D"><br><sub>Plan 2 in 3D</sub></td><td width="50%"><img src="gallery/roomtolive--codex-floorplan3d-plan2-fullwalls.jpg" alt="Plan 2 with full walls"><br><sub>Plan 2 with full walls</sub></td></tr>
+<tr><td width="50%"><img src="gallery/roomtolive--codex-floorplan3d-futon-bedroom.jpg" alt="Futon in the bedroom preset"><br><sub>Futon in the bedroom preset</sub></td><td width="50%"><img src="gallery/roomtolive--plan-1-preview.jpg" alt="Plan 1 render"><br><sub>Plan 1 render</sub></td></tr>
+<tr><td width="50%"><img src="gallery/roomtolive--plan-2-preview.jpg" alt="Plan 2 render"><br><sub>Plan 2 render</sub></td></tr>
+</table>
+
+### The Greywood 4B
+
+3D floor plan render. 
+
+<table>
+<tr><td width="50%"><img src="gallery/greywood--floor_plan_3d.jpg" alt="3D floor plan"><br><sub>3D floor plan</sub></td></tr>
 </table>
 
 ### Due-diligence reports
