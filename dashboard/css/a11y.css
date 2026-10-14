@@ -1,0 +1,22 @@
+/* ApartmentScout accessibility fixes found by the axe-core sweep (tests/e2e/test_dashboard.py::test_accessibility:
+   every serious violation fails the build, in both themes, on all six tabs). Loaded after the view stylesheets so each
+   rule can stay short. A fix belongs here when it only corrects colour or placement; markup fixes are in the views. */
+
+/* Compare > suggestions: the score is a data colour (the score scale) and the light theme's white card needs it mixed
+   toward ink to reach 4.5:1. compare.js passes the colour as --c. */
+.sg-s { color: var(--c); }
+:root[data-theme="light"] .sg-s { color: color-mix(in srgb, var(--c) 36%, var(--ink)); }
+
+/* Map cards: the sun badge text is --sun on a pale wash in the light theme (1.6:1); the amber text token is AA there. */
+:root[data-theme="light"] .bdg.sun { color: var(--warn); }
+
+/* Research: the count inside the primary "Copy questions" button. Mixing in --ink always moves the chip away from
+   --accent-ink (dark text in the dark theme, white in the light one), so white-on-14%-white no longer erodes the contrast. */
+.rq-cn { background: color-mix(in srgb, var(--ink) 16%, var(--accent)); }
+
+/* Records: the "Dataset" link used to sit inside each ledger's <summary>, which is interactive itself. It is now a sibling
+   of the <details>, laid over the summary's right end (left of the chevron). */
+.rec-led-w { position: relative; min-width: 0; }
+.rec-led-w > .rec-src { position: absolute; top: 14px; right: 46px; line-height: 20px; z-index: 1; }
+@media (max-width: 760px) { .rec-led-w > .rec-src { display: none; } }
+@media print { .rec-led-w > .rec-src { display: none !important; } }

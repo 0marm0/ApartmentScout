@@ -1,0 +1,127 @@
+/* ApartmentScout comfort and personalisation. Everything here keys on data attributes that js/features/comfort.js sets
+   on <html>, always explicitly, from the renter's choice OR the operating system's (so a system-wide preference can
+   never be switched off from the page):
+
+     data-transparency  reduced | full      solid surfaces instead of glass
+     data-contrast      high | normal       stronger ink and borders, thicker focus ring
+     data-motion        reduced | full      no animation or transition
+     data-text          m | l | xl          type scale 1, 1.125, 1.25
+     data-golden        (present)           the golden-hour map tint is on
+
+   Accent sets live in accents.css. Settings menu block, toast action button and the golden-hour overlay are here too.
+   Loaded last so these rules win ties. */
+
+/* ------------------------------------------------------------------ text size */
+:root[data-text="l"] { --ts: 1.125; }
+:root[data-text="xl"] { --ts: 1.25; }
+:root[data-text="l"], :root[data-text="xl"] {
+  --fs-2xs: calc(10.5px * var(--ts)); --fs-xs: calc(11.5px * var(--ts)); --fs-sm: calc(12.5px * var(--ts)); --fs-md: calc(13.5px * var(--ts));
+  --fs-lg: calc(15px * var(--ts)); --fs-xl: calc(18px * var(--ts)); --fs-2xl: calc(22px * var(--ts)); --fs-3xl: calc(30px * var(--ts)); --fs-4xl: calc(44px * var(--ts));
+  --topbar-h: calc(48px * var(--ts)); --stats-h: calc(28px * var(--ts)); --subnav-h: calc(38px * var(--ts));
+}
+
+/* with larger type the one-line rows that were sized for the default scale wrap instead of cutting words off */
+:root[data-text="l"] .c-price, :root[data-text="xl"] .c-price { flex-wrap: wrap; row-gap: 0; white-space: normal; }
+:root[data-text="xl"] .c-modes, :root[data-text="xl"] .c-badges { flex-wrap: wrap; }
+
+/* ------------------------------------------------------------------ reduced transparency
+   The same fallbacks glass.css applies for prefers-reduced-transparency, driven by the attribute so the settings
+   switch gets them too. */
+:root[data-transparency="reduced"], :root[data-transparency="reduced"][data-theme="dark"], :root[data-transparency="reduced"][data-theme="light"] {
+  --glass-bg: var(--surface-1); --glass-tint: transparent; --glass-blur: none; --glass: none; --overlay: var(--surface-1); --ink-3-glass: var(--ink-3);
+}
+:root[data-transparency="reduced"] * { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+:root[data-transparency="reduced"] .d-bar { background: var(--surface-1); }
+:root[data-transparency="reduced"] .maplibregl-popup-content { background: var(--surface-1) !important; }
+:root[data-transparency="reduced"] .pl-scrim.on, :root[data-transparency="reduced"] .wz-scrim.on { background: rgba(4, 5, 8, .72); }
+:root[data-transparency="reduced"][data-theme="light"] .pl-scrim.on, :root[data-transparency="reduced"][data-theme="light"] .wz-scrim.on { background: rgba(20, 24, 34, .5); }
+
+/* ------------------------------------------------------------------ high contrast
+   Ink and hairlines are pushed apart from the ground; glass goes solid (a translucent panel is a contrast risk);
+   links are underlined; the focus ring is thick. Data colours are left alone. */
+:root[data-contrast="high"] {
+  --ink-2: #d9dfea; --ink-3: #bcc4d2; --ink-4: #8f98aa; --ink-3-glass: #c9d0dd;
+  --line: rgba(255, 255, 255, .26); --line-strong: rgba(255, 255, 255, .52); --glass-line: rgba(255, 255, 255, .46);
+  --glass-bg: var(--surface-1); --glass-tint: transparent; --glass-blur: none; --glass: none; --overlay: var(--surface-1);
+  --glass-hi: transparent; --glass-edge-a: transparent; --glass-edge-b: transparent;
+}
+:root[data-theme="light"][data-contrast="high"] {
+  --ink: #000000; --ink-2: #22272f; --ink-3: #363c49; --ink-4: #646b79; --ink-3-glass: #363c49;
+  --line: rgba(20, 24, 34, .34); --line-strong: rgba(20, 24, 34, .66); --glass-line: rgba(20, 24, 34, .55);
+  --glass-bg: var(--surface-1); --glass-tint: transparent; --overlay: var(--surface-1);
+  --glass-hi: transparent; --glass-edge-a: transparent; --glass-edge-b: transparent;
+}
+:root[data-contrast="high"] * { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+:root[data-contrast="high"] :is(.d-bar, .maplibregl-popup-content) { background: var(--surface-1) !important; }
+:root[data-contrast="high"] :is(.btn, .icon-btn, .chip, .tier, .seg, .sel, input, textarea, select, .card, .panel, .menu-pop) { border-color: var(--line-strong); }
+:root[data-contrast="high"] a:not(.btn):not(.qa):not(.brand):not([role="tab"]):not(.nav a):not(.subnav a) { text-decoration: underline; text-underline-offset: 2px; }
+:root[data-contrast="high"] :focus-visible { outline: 3px solid var(--accent-strong); outline-offset: 2px; }
+:root[data-contrast="high"] .menu-pop > button:hover, :root[data-contrast="high"] .menu-pop > button:focus-visible { background: var(--surface-3); }
+
+/* ------------------------------------------------------------------ reduced motion */
+:root[data-motion="reduced"] *, :root[data-motion="reduced"] *::before, :root[data-motion="reduced"] *::after {
+  animation-duration: .001ms !important; animation-delay: 0s !important; animation-iteration-count: 1 !important;
+  transition-duration: .001ms !important; transition-delay: 0s !important; scroll-behavior: auto !important;
+}
+
+/* ------------------------------------------------------------------ settings menu block (accent, comfort, tour) */
+.menu-pop { max-height: calc(100vh - var(--topbar-h) - 24px); max-height: calc(100dvh - var(--topbar-h) - 24px); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; }
+.mn-sub { padding: 0 8px 4px; margin: -2px 0 0; font-size: var(--fs-xs); line-height: 1.4; color: var(--ink-3); }
+.mn-swatches { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; padding: 3px 2px 6px; }
+.mn-swatches button { position: relative; display: grid; justify-items: center; gap: 4px; padding: 7px 0 5px; border: 1px solid transparent; border-radius: var(--r-md); background: none; color: var(--ink-2); font-size: var(--fs-2xs); font-weight: 500; cursor: pointer;
+  transition: background var(--t-fast), border-color var(--t-fast), color var(--t-fast), transform var(--t-fast) var(--ease-out); }
+.mn-swatches button:hover { background: color-mix(in srgb, var(--ink) 6%, transparent); color: var(--ink); }
+.mn-swatches button:active { transform: scale(.97); }
+.mn-swatches button[aria-checked="true"] { border-color: var(--line-strong); background: color-mix(in srgb, var(--ink) 5%, transparent); color: var(--ink); }
+.mn-swatches i { width: 22px; height: 22px; border-radius: 50%; background: var(--sw); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 18%, transparent), inset 0 1px 0 rgba(255, 255, 255, .28); display: grid; place-items: center; }
+.mn-swatches button[aria-checked="true"] i::after { content: ""; width: 9px; height: 5px; border-left: 2px solid var(--sw-ink); border-bottom: 2px solid var(--sw-ink); transform: translateY(-1px) rotate(-45deg); }
+.mn-swatches button:focus-visible, .menu-pop .mn-row:focus-visible { outline-offset: -2px; }
+.mn-swatches [data-accent="iris"] { --sw: var(--sw-iris); --sw-ink: var(--sw-iris-ink); }
+.mn-swatches [data-accent="jade"] { --sw: var(--sw-jade); --sw-ink: var(--sw-jade-ink); }
+.mn-swatches [data-accent="amber"] { --sw: var(--sw-amber); --sw-ink: var(--sw-amber-ink); }
+.mn-swatches [data-accent="rose"] { --sw: var(--sw-rose); --sw-ink: var(--sw-rose-ink); }
+
+.menu-pop .mn-row { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 34px; padding: 5px 8px; border: 0; border-radius: calc(var(--r-lg) - 6px); background: none; color: var(--ink); font-size: var(--fs-sm); text-align: left; cursor: pointer;
+  transition: background var(--t-fast); }
+.menu-pop .mn-row:hover, .menu-pop .mn-row:focus-visible { background: color-mix(in srgb, var(--ink) 7%, transparent); }
+.menu-pop .mn-row svg { width: 15px; height: 15px; flex: none; color: var(--ink-3); }
+.menu-pop .mn-row .t { flex: 1; min-width: 0; display: grid; gap: 1px; }
+.menu-pop .mn-row .t small { font-size: var(--fs-xs); color: var(--ink-3); line-height: 1.3; }
+.menu-pop .mn-row[aria-disabled="true"] { cursor: default; }
+.mn-switch { position: relative; flex: none; width: 30px; height: 18px; border-radius: var(--r-pill); background: var(--surface-3); box-shadow: inset 0 0 0 1px var(--line-strong); transition: background var(--t-base), box-shadow var(--t-base); }
+.mn-switch::after { content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: var(--ink-2); transition: transform var(--t-base) var(--ease-spring), background var(--t-base); }
+[aria-checked="true"] > .mn-switch { background: var(--accent); box-shadow: none; }
+[aria-checked="true"] > .mn-switch::after { transform: translateX(12px); background: var(--accent-ink); }
+.mn-row[aria-disabled="true"] > .mn-switch { opacity: .7; }
+
+.mn-seg.text-size { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.mn-seg.text-size button { font-weight: 600; color: var(--ink-2); }
+.mn-seg.text-size [data-text="m"] { font-size: 12px; }
+.mn-seg.text-size [data-text="l"] { font-size: 14px; }
+.mn-seg.text-size [data-text="xl"] { font-size: 17px; }
+.mn-seg.text-size button[aria-checked="true"] { color: var(--ink); }
+
+/* ------------------------------------------------------------------ toast with an action (Undo) */
+.toast.has-act { display: flex; align-items: center; gap: 12px; padding-right: 8px; white-space: nowrap; max-width: calc(100vw - 24px); }
+.toast.has-act.on { pointer-events: auto; }
+.toast .toast-act { height: 26px; padding: 0 10px; border: 0; border-radius: var(--r-sm); background: color-mix(in srgb, var(--ground) 16%, transparent); color: inherit; font: 600 var(--fs-xs) var(--font-sans); cursor: pointer;
+  transition: background var(--t-fast); }
+.toast .toast-act:hover { background: color-mix(in srgb, var(--ground) 28%, transparent); }
+.toast .toast-act:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.toast kbd { background: transparent; color: inherit; opacity: .72; border-color: color-mix(in srgb, var(--ground) 35%, transparent); }
+.toast .toast-msg { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.toast .toast-act, .toast kbd { flex: none; }
+@media (max-width: 480px) { .toast.has-act { white-space: normal; width: max-content; } .toast kbd { display: none; } }
+
+/* ------------------------------------------------------------------ golden-hour map tint
+   A warm wash that leans in from the side the sun is on, strongest when the sun is low. The script sets --gh (0 to 1)
+   and --gx (where the glow sits). Off unless the switch in the settings menu is on; capped so data colours stay legible. */
+.golden-tint { position: absolute; inset: 0; z-index: 3; pointer-events: none; opacity: var(--gh, 0); transition: opacity 1.2s var(--ease-out);
+  background:
+    radial-gradient(95% 125% at var(--gx, 100%) var(--gy, 40%), color-mix(in srgb, var(--sun) 88%, transparent), color-mix(in srgb, var(--score-2) 30%, transparent) 45%, transparent 74%),
+    linear-gradient(180deg, color-mix(in srgb, var(--score-2) 26%, transparent), transparent 60%);
+  mix-blend-mode: overlay; }
+:root[data-theme="light"] .golden-tint { mix-blend-mode: multiply; background:
+    radial-gradient(95% 125% at var(--gx, 100%) var(--gy, 40%), color-mix(in srgb, var(--sun) 46%, transparent), color-mix(in srgb, var(--score-2) 16%, transparent) 45%, transparent 74%),
+    linear-gradient(180deg, color-mix(in srgb, var(--score-2) 14%, transparent), transparent 60%); }
+.golden-tint[hidden] { display: none; }

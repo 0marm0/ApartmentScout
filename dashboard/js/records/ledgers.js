@@ -17,12 +17,12 @@ function ledger({ id, title, count, shown, D, source, cols, rows, filterable, no
   const body = rows.length
     ? `<div class="scroll rec-scroll"><table class="mini rec-ledger"><thead><tr>${cols.map((c) => `<th class="${c.cls || ''}">${esc(c.h)}</th>`).join('')}</tr></thead><tbody>${rows.map((r) => `<tr ${r.closed ? 'data-closed="1"' : ''}>${r.cells.map((c, i) => `<td class="${cols[i].cls || ''}" data-l="${esc(cols[i].h)}">${c}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`
     : '<p class="muted rec-none">No rows in the window.</p>';
-  return `<details class="panel flush rec-led" id="${id}" data-f="all" ${openByDefault ? 'open' : ''}>
-    <summary><span class="t">${esc(title)}</span><span class="pill">${count}</span><span class="sp"></span>${src ? `<a class="rec-src" href="${esc(src)}" target="_blank" rel="noopener">Dataset ${ICONS.ext}</a>` : ''}<svg class="chev" viewBox="0 0 10 10" width="10" height="10" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M2 3.5l3 3 3-3"/></svg></summary>
+  return `<div class="rec-led-w"><details class="panel flush rec-led" id="${id}" data-f="all" ${openByDefault ? 'open' : ''}>
+    <summary><span class="t">${esc(title)}</span><span class="pill">${count}</span><span class="sp"></span><svg class="chev" viewBox="0 0 10 10" width="10" height="10" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M2 3.5l3 3 3-3"/></svg></summary>
     <div class="rec-led-b">
       <div class="rec-led-bar">${filterable ? '<div class="seg" role="group" aria-label="Filter rows"><button type="button" data-f="all" class="on">All</button><button type="button" data-f="open">Open only</button></div>' : ''}<span class="faint">${shown != null ? esc(shown) : ''}</span></div>
       ${body}${note ? `<p class="rec-note-s">${note}</p>` : ''}
-    </div></details>`;
+    </div></details>${src ? `<a class="rec-src" href="${esc(src)}" target="_blank" rel="noopener">Dataset ${ICONS.ext}</a>` : ''}</div>`;   // [feature C] the link sits beside the summary, not inside it
 }
 
 export function ledgers(M) {

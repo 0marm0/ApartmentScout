@@ -19,6 +19,8 @@ import { buildInterior, genericPlan } from './unit/interior.js';
 import { sectorHeights, sectorOf, applyEdits, HCLASS_LABELS } from './unit/heights.js';
 import { heightMapHTML, sectorChartSVG, sectorTable, renderFloorViews, renderPanorama, renderSeasons } from './unit/studies.js';
 import { normalisePlan } from './plan/model.js';
+import { illustration } from './features/empty.js';   // [feature C] empty-state art
+import { missingNotice } from './features/plan-empty.js';   // [feature C]
 
 let site = null, B0 = [], FUTB = [], edits = new Map(), B = [], T = null, FACES = [], LM = [], FUT = [], BF = null, stage = null, plan = null, interior = null;
 const st = {
@@ -136,9 +138,10 @@ export function init() {
 export async function show(id) {
   const ids = S.manifest.sites || [];
   if (!ids.length) {
-    $('uGrid').innerHTML = `<div class="empty"><b>No site models yet</b>Run <code>apartmentscout site &lt;listing-id&gt;</code> for a listing, then <code>apartmentscout build</code>.</div>`;
+    $('uGrid').innerHTML = `<div class="empty has-ill">${illustration('unit')}<b>No site models yet</b><span>Run <code>apartmentscout site &lt;listing-id&gt;</code> for a listing, then <code>apartmentscout build</code>. Each model shows the block around a home and when the sun reaches its window.</span></div>`;
     $('uSnap').hidden = $('uGlb').hidden = true; return;
   }
+  if (id && !ids.includes(id)) missingNotice('site model', id);   // [feature C]
   id = id && ids.includes(id) ? id : st.id || ids[0];
   $('unitSel').value = id;
   if (id !== st.id) await load(id);

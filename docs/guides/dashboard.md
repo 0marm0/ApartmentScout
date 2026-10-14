@@ -9,7 +9,7 @@ design rules in [the design system](../design/design-system.md).
 ## Views
 
 Every view sits in the same shell: a top bar with the search name, six view tabs, search (`/`) and a settings
-menu (theme: system, dark or light; search settings; CSV export of the filtered listings; picks backup; shortcuts); a
+menu (theme: system, dark or light; search settings; CSV export of the filtered listings; picks backup; shortcuts; accent, comfort settings and the tour); a
 thin stats strip under it (tracked, matching, eligible, shortlisted, median cost and commute, top match; on narrow screens
 the secondary figures fold into an "all figures" popover); and, on the Map and Shortlist, the filter rail.
 
@@ -42,9 +42,32 @@ a listing (for example `#unit/emerald-green-1211` or `#plan/emerald-green-1211`)
 | `t` | Flip light and dark (the settings menu also has System) |
 | `Esc` | Close the lightbox, the drawer or the help |
 
-The Shortlist adds arrow keys, `Enter`, `s` and `c` on the focused row. Unit 3D adds `p` (play or pause
-the day) and `,` `.` (step 15 minutes). The floor plan adds `R` (turn), arrows (nudge 1 in, `Shift` 6 in),
-`D` (duplicate), `Del`, `⌘Z` and `W A S D` in walk mode.
+Press `?` for the cheat sheet: every shortcut, searchable ("undo", "rotate", "compare", "sun"), with the keys of the
+view you are on listed first. The same list, in full:
+
+| Keys | Does | Where |
+|---|---|---|
+| `⌘K` / `Ctrl K`, `/` | Open the command menu: search homes, jump to a view, run an action, or ask in plain words | Everywhere |
+| `?` | The searchable cheat sheet (`Esc` or `?` closes it) | Everywhere |
+| `1`–`6` | Switch tab: Map, Shortlist, Compare, Unit 3D, Floor plan, Research | Everywhere |
+| `g` then `m` `s` `c` `u` `p` `r` `t` | Go to Map, Shortlist, Compare, Unit 3D, Floor plan, Research, Tours (a hint chip lists them while the `g` waits). From a home that has a site model or a plan, `g u` and `g p` open that home | Everywhere |
+| `t` | Flip light and dark (the settings menu also has System) | Everywhere |
+| `⌘Z` / `Ctrl Z`, `⇧⌘Z` / `Ctrl Shift Z` (`Ctrl Y`) | Undo and redo a pick, Compare, filter, weight or commute change; not while typing in a field, and not in the Floor plan, which keeps its own history | Everywhere |
+| `Esc` | Close the open panel, menu, dialog, cheat sheet or tour | Everywhere |
+| `s` | Star the focused or open home | Map, Shortlist |
+| `x` or `c` | Toggle Compare on the focused or open home | Map, Shortlist |
+| `j` / `k` | Next or previous home (opens it on the Map; moves the row on the Shortlist) | Map, Shortlist |
+| `Enter` | Open the focused card or row | Map, Shortlist |
+| `↑` `↓` `Home` `End`, `←` `→` | Move between Shortlist rows, jump to the first or last, fold or unfold a building group | Shortlist |
+| `p`, `,` `.` | Play or pause the day; step the time 15 minutes | Unit 3D |
+| arrows, `+` `−`, `Home` `End` | Orbit or look around (Shift for a bigger step), zoom; jump along the day strip | Unit 3D |
+| `R` / `Shift R`, arrows, `D`, `Del`, `⌘Z` | Turn, nudge (1 in, Shift 6 in), duplicate, remove a furniture piece, undo and redo layout changes | Floor plan |
+| `W` `A` `S` `D` `Q` `E` | Walk and look in the eye-level camera (Shift runs) | Floor plan |
+| `←` `→` `Home` `End` | Move between the research tabs | Research |
+| `↑` `↓` `Enter` `Esc` | Move through, pick from and close the command menu and the Compare and Records pickers | Menus |
+| `←` `→` `Enter` `Esc` | Step through, or skip, the guided tour | Tour |
+
+Chords and `x` ignore the keys while you type in a field and while a dialog, the command menu or the tour is open.
 
 Saved picks, tiers, tour notes, compare, filters and weights are kept in your browser's local storage.
 Use **Back up picks** on the Tours view to keep them as a file, and **Restore** to load them in another
@@ -182,6 +205,73 @@ times); **Copy plan** puts the day on the clipboard as text. Walking uses the da
 4.8 km/h). The subway router does not run in the browser, so a transit hop is an **estimate**, labelled "est.": each home's
 walk to its station from its commute route, a 4 min wait and a straight-line ride at 25 km/h; the faster of walking and that is
 used unless you fix the mode on the hop.
+
+## Undo
+
+Every change to your picks (star, tier, note, tour time), Compare list, filters, ranking weights and commute lens is
+one step on a single undo stack. A toast names the change ("Starred Emerald Green 1211", "Weight: Cost", "Must-have on:
+Gym") with an **Undo** button, and `⌘Z` / `Ctrl Z` does the same (`⇧⌘Z` redoes). Dragging a slider is one step, not sixty;
+a new change after an undo drops the redo list; typing in a text field keeps the browser's own text undo. The command menu
+lists "Undo: ..." and "Redo: ..." while there is something to undo. The stack lives for the visit (a reload starts it
+empty); the values themselves persist as before.
+
+## Ask in plain words
+
+Type a sentence into the command menu (`⌘K`) and the first row is a preview of what it understood, with a live count,
+before anything changes:
+
+```
+2 bd under 5k within 20 min by subway with w/d near grand central
+  ->  Apply: 2 bd · ≤ $5,000 · ≤ 20 min subway to Grand Central · W/D
+      12 of 434 active homes · Enter
+```
+
+| Say | Sets |
+|---|---|
+| `2 bd`, `studio`, `1-2 br`, `2+ beds`, `two bedroom` | Bedrooms (exact, a range, or at least); `2 ba` for baths |
+| `under 5k`, `$4,500 or less`, `over 3k`, `between 3k and 4.5k` | Monthly cost against the amount your budget tiers compare. A price above your highest tier lifts the tier cap so it does not hide what you asked for |
+| `within 20 min`, `by subway`, `by bus`, `walking`, `to grand central` | Commute limit, mode and destination (the commute lens) |
+| `w/d`, `washer dryer`, `doorman`, `gym`, `elevator`, `dishwasher`, `roof deck`, `pets` | The must-have and feature switches |
+| `700 sq ft`, `high floor`, `floor 15+` | Minimum size and floor |
+| `starred`, `price drops` | Saved picks only; homes whose latest recorded price move was down (needs `history.json`; the row says when there is none) |
+| `hell's kitchen`, `murray hill`, a building or street | The text filter, using the spelling in your data |
+| `cheapest`, `closest`, `largest`, `best value` | The sort |
+
+A query is a whole new search: filters it does not mention go back to their defaults, which is also why it is one undo
+step. The constraints the rail has no control for (bedrooms, price, size, floor, baths, price drops) show as chips above
+the results, each with an × that removes it. Words it does not recognise are listed as "not understood" in the preview
+instead of being guessed at, and a phrase it understands but cannot filter on yet (such as `east of 3rd ave`) says so.
+The parser is a pure module (`dashboard/js/features/nlquery.js`) with its own node tests.
+
+## First-run tour
+
+On a first visit in a normal browser the Map shows a five-step tour: the filters, live weights, starring a home,
+Compare and Unit 3D. Each step spotlights its target; `→`/`Enter` go on, `←` goes back, `Esc` or **Skip tour** ends it.
+It is shown once per browser. Restart it from **Take the tour** in the settings menu or the command menu. (Browsers under
+automation never start it by themselves; `?coach=1` forces it.)
+
+Views that can be empty say so with an illustration and the next step: no saved picks (Tours, and the Map's saved-only
+switch), nothing in Compare, no matching homes, no records for a building, no floor plan, no site model, and the empty
+Research tabs. A link to a home that has no plan or site model shows another one and says so.
+
+## Comfort and personalisation
+
+The settings menu has an **Accent** row (Iris, Jade, Amber, Rose), a **Golden-hour map tint** switch and a **Comfort**
+block. They apply through data attributes on `<html>`, are kept per browser and, for the three comfort switches, follow
+your system by default:
+
+| Setting | Attribute | Does |
+|---|---|---|
+| Reduce transparency | `data-transparency="reduced"` | Solid panels instead of glass. On by default when the OS asks (`prefers-reduced-transparency`) |
+| High contrast | `data-contrast="high"` | Stronger ink and borders, solid panels, underlined links, a thicker focus ring (`prefers-contrast: more`) |
+| Reduce motion | `data-motion="reduced"` | No transitions or animations, and the script animations (map easing, drawer) stop too (`prefers-reduced-motion`) |
+| Text size | `data-text="m" "l" "xl"` | The type scale and the bar heights grow 12.5 % and 25 % |
+| Accent | `data-accent` | Swaps the accent family of tokens, in both themes |
+
+A setting the OS already asks for shows as on ("set by your system") and cannot be switched off from the page; the
+renter can only add to it. The golden-hour tint warms the map from the side the sun is on, strongest when it is about
+3 degrees up (it uses the sun position at the map centre, updated every five minutes); it is off by default.
+`?goldenAt=2026-06-21T23:55:00Z` shows the map at a chosen instant.
 
 ## New search wizard
 
