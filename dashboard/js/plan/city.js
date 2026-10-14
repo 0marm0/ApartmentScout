@@ -28,7 +28,7 @@ export function planFrame(model) {
  */
 export function placePlan(site, model, floor) {
   if (!site?.b?.length || !site.b[site.target]) return null;
-  const B = prepBuildings(site.b, site.holes && typeof site.holes === 'object' ? site.holes : null), T = B[site.target] || B[0];
+  const B = prepBuildings(site.b, site.holes && typeof site.holes === 'object' ? site.holes : null, site.components && typeof site.components === 'object' ? site.components : null), T = B[site.target] || B[0];
   const F = canonicalFaces(facesOf(T, 8, B), site.faces || [], site.version), pool = F.filter((f) => !f.shared);
   if (!pool.length) return null;
   const want = model.up_bearing ?? site.window?.bearing ?? 180;

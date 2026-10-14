@@ -14,7 +14,15 @@ Geometry rules (site JSON v2):
 * a window may have several panes (a bay): ``panes`` are bearing offsets from the facade normal
   (default ``[0]``; a 45 degree bay is ``[-45, 0, 45]``). The sun is in the room when it is above
   the skyline at the window and in front of at least one pane (the union over panes). All panes
-  share the window point's skyline.
+  share the window point's skyline;
+* a building may carry ``components`` (site JSON ``"components": {"<b index>": [...]}``): podium,
+  tower, setback and bulkhead prisms, each a ring with ``base_m`` and ``top_m`` above the building's
+  own ground. When present they replace the single footprint prism in every obstruction calculation
+  (skyline, blockers, sun hours, floors table, range). The skyline keeps one obstruction angle per
+  direction, so each component counts from the ground up (``base_m`` is kept for the renderer and
+  the record): the open gap under an overhang is not modelled;
+* diffuse light is a relative model, not photometry: ``sky_view`` weights the visible sky by a CIE
+  standard overcast sky as seen by a vertical window (see ``sky_view`` and ``daylight_factor_est``).
 """
 from __future__ import annotations
 
@@ -71,14 +79,62 @@ def month_tracks(year: int, lat: float, lon: float, tz: str, day: int = 15) -> l
 
 # --------------------------------------------------------------------------- skyline
 
+COMPONENT_KINDS = ("podium", "tower", "setback", "bulkhead")
+
+
+def _ring_ok(ring) -> bool:
+    try:
+        return len(ring) >= 3 and all(len(p) >= 2 and math.isfinite(float(p[0])) and math.isfinite(float(p[1]))
+                                      for p in ring)
+    except (TypeError, ValueError):
+        return False
+
+
+def valid_component(c) -> bool:
+    """A usable component: a ring of >= 3 finite points and 0 <= base_m < top_m."""
+    if not isinstance(c, dict) or not _ring_ok(c.get("ring")):
+        return False
+    try:
+        base, top = float(c.get("base_m") or 0), float(c["top_m"])
+    except (KeyError, TypeError, ValueError):
+        return False
+    return math.isfinite(base) and math.isfinite(top) and 0 <= base < top
+
+
+def components_of(site: dict) -> dict[int, list[dict]]:
+    """Valid components per building index (buildings without any keep their single prism)."""
+    out: dict[int, list[dict]] = {}
+    n = len(site.get("b") or [])
+    for k, lst in (site.get("components") or {}).items():
+        try:
+            i = int(k)
+        except (TypeError, ValueError):
+            continue
+        ok = [c for c in lst or [] if valid_component(c)] if 0 <= i < n else []
+        if ok:
+            out[i] = ok
+    return out
+
+
 def _site_rings(site: dict, include_future: bool = False) -> list[tuple[float, list[tuple[float, float]], int]]:
     """(top, ring, owner) for every wall ring: outer rings, hole rings and (optionally) future buildings.
 
-    ``owner`` is the index in ``site["b"]``, or ``-(k + 1)`` for ``site["future"][k]``.
+    ``owner`` is the index in ``site["b"]``, or ``-(k + 1)`` for ``site["future"][k]``. A building with
+    ``components`` contributes each component's ring (and its own holes) at its own top
+    (ground + ``top_m``) instead of the footprint prism.
     """
     out = []
     holes = site.get("holes") or {}
-    for i, (top, _g, _t, flat) in enumerate(site["b"]):
+    comps = components_of(site)
+    for i, (top, g, _t, flat) in enumerate(site["b"]):
+        if i in comps:
+            for c in comps[i]:
+                ct = float(g) + float(c["top_m"])
+                out.append((ct, [(float(p[0]), float(p[1])) for p in c["ring"]], i))
+                for h in c.get("holes") or []:
+                    if _ring_ok(h):
+                        out.append((ct, [(float(p[0]), float(p[1])) for p in h], i))
+            continue
         out.append((top, list(zip(flat[0::2], flat[1::2])), i))
         for h in holes.get(str(i), []):
             out.append((top, [tuple(p) for p in h], i))
@@ -225,6 +281,100 @@ class _Tracks:
     def hours_by_pane(self, profile: np.ndarray, facing: float, panes: Sequence[float]) -> list[list[float]]:
         """Direct-sun hours per month through each pane on its own."""
         return [self.hours(profile, (facing + float(o)) % 360) for o in panes]
+
+
+# --------------------------------------------------------------------------- diffuse sky (relative model)
+#
+# A vertical window under a CIE standard overcast sky (luminance L(alt) = Lz (1 + 2 sin alt) / 3): the light
+# from a sky patch on the glass goes as L(alt) * cos(incidence) * dOmega with cos(incidence) = cos(alt) cos(d)
+# (d = azimuth off the window normal) and dOmega = cos(alt) dalt dd. Integrated in altitude in closed form:
+#   G(h) = integral_h^90 (1 + 2 sin a) / 3 * cos^2 a da = F(90) - F(h),
+#   F(a) = (a / 2 + sin(2a) / 4 - (2 / 3) cos^3 a) / 3.
+# sky_view = sum over azimuths within FIELD_DEG of a pane normal of cos(d) * G(skyline(az)), divided by the
+# same sum for an unobstructed window: 1.0 = nothing above the horizon in the window's field.
+# It is a relative measure of diffuse sky light, NOT illuminance (lux).
+
+FIELD_DEG = 80.0
+SKY_STEP = 1.0
+DAYLIGHT_DEFAULTS = {"transmittance": 0.6, "glazed_area_m2": 3.0, "room_surface_m2": 88.6, "reflectance": 0.5}
+DAYLIGHT_FORMULA = ("DF_est % = T x Aw x theta / (A x (1 - R^2)) with theta = 90 deg x sky_view (BRE average "
+                    "daylight factor, Littlefair 1988; theta is the visible sky angle); defaults T 0.6, Aw 3.0 m2 "
+                    "glazing, A 88.6 m2 room surfaces (4 x 5 m, 2.7 m ceiling), R 0.5")
+
+
+def _cie_F(a: float) -> float:
+    return (a / 2 + math.sin(2 * a) / 4 - (2 / 3) * math.cos(a) ** 3) / 3
+
+
+_CIE_TOP = _cie_F(math.pi / 2)
+
+
+def _cie_above(h_deg: float) -> float:
+    """CIE-overcast, cosine-weighted sky light on a vertical window from altitudes above h (per radian of azimuth)."""
+    h = min(90.0, max(0.0, float(h_deg))) * RAD
+    return _CIE_TOP - _cie_F(h)
+
+
+def sky_view(profile, facing: float, panes: Sequence[float] | None = None, field: float = FIELD_DEG,
+             step: float = SKY_STEP) -> float:
+    """Visible-sky share for a window (0-1) under a CIE overcast sky, relative to an unobstructed window.
+
+    Azimuths are sampled at the middle of each ``step`` degree bin; one counts when it is within
+    ``field`` degrees of a pane normal and is weighted by the cosine of that angle (the nearest pane).
+    """
+    fs = pane_facings(facing, panes)
+    num = den = 0.0
+    full = _cie_above(0.0)
+    for k in range(int(round(360 / step))):
+        az = (k + 0.5) * step
+        d = min(abs((az - f + 540) % 360 - 180) for f in fs)
+        if d >= field:
+            continue
+        w = math.cos(d * RAD)
+        num += w * _cie_above(at(profile, az))
+        den += w * full
+    return num / den if den else 0.0
+
+
+def daylight_factor_est(sv: float, transmittance: float | None = None, glazed_area_m2: float | None = None,
+                        room_surface_m2: float | None = None, reflectance: float | None = None) -> float:
+    """Indicative average daylight factor (%) from a sky view share: an estimate, never a measurement.
+
+    BRE average daylight factor, T * Aw * theta / (A * (1 - R^2)), with the visible sky angle theta taken
+    as 90 degrees x ``sv``. Defaults (``DAYLIGHT_DEFAULTS``) describe a typical 4 x 5 m room.
+    """
+    d = DAYLIGHT_DEFAULTS
+    T = d["transmittance"] if transmittance is None else transmittance
+    Aw = d["glazed_area_m2"] if glazed_area_m2 is None else glazed_area_m2
+    A = d["room_surface_m2"] if room_surface_m2 is None else room_surface_m2
+    R = d["reflectance"] if reflectance is None else reflectance
+    return T * Aw * 90.0 * max(0.0, min(1.0, sv)) / (A * (1 - R * R))
+
+
+# Percent of possible sunshine by month: NOAA, New York Central Park climate normals 1961-1990.
+SUNSHINE = {
+    "nyc": {"fraction": [0.54, 0.55, 0.57, 0.57, 0.57, 0.57, 0.59, 0.63, 0.59, 0.61, 0.51, 0.48],
+            "place": "New York Central Park",
+            "source": "NOAA climate normals 1961-1990, percent of possible sunshine"},
+}
+DAYS_IN_MONTH = (31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
+
+
+def sunshine(city: str | None) -> dict | None:
+    """Monthly clear-sky probability (sunshine fraction) for a city profile, or None when unknown."""
+    return SUNSHINE.get(str(city or "").lower()) if city else None
+
+
+def expected_sun(possible: Sequence[float], fraction: Sequence[float] | None) -> dict:
+    """Expected direct sun = possible (clear-sky) hours x the month's sunshine fraction, by month and for
+    the year (sum of hours per day x days in each month)."""
+    year_possible = sum(h * n for h, n in zip(possible, DAYS_IN_MONTH))
+    out = {"possible": round(year_possible), "expected": None, "monthly": None}
+    if fraction and len(fraction) == 12:
+        monthly = [round(h * f, 2) for h, f in zip(possible, fraction)]
+        out["monthly"] = monthly
+        out["expected"] = round(sum(h * f * n for h, f, n in zip(possible, fraction, DAYS_IN_MONTH)))
+    return out
 
 
 # --------------------------------------------------------------------------- facades
@@ -390,14 +540,21 @@ def sun_study(site: dict, face: dict, floor: int, tz: str, year: int, t: float |
     sky = sky or Skyline(site)
     tracks = tracks or _Tracks(month_tracks(year, lat, lon, tz))
     floors = floors or range(2, max_floor(site) + 1)
-    table = {f: tracks.hours(sky.profile(*window_point(face, t, f, fh)), face["bearing"], panes) for f in floors}
+    table, light = {}, {}
+    for f in floors:
+        pf = sky.profile(*window_point(face, t, f, fh))
+        table[f] = tracks.hours(pf, face["bearing"], panes)
+        sv = sky_view(pf, face["bearing"], panes)
+        light[f] = [round(sv, 3), round(daylight_factor_est(sv), 2)]
     prof = sky.profile(*window_point(face, t, floor, fh))
     ahead = at(prof, face["bearing"])
     open_sky = float(np.mean([60 - min(60, at(prof, face["bearing"] + d)) for d in range(-60, 61)]) / 60)
+    sv = sky_view(prof, face["bearing"], panes)
     out = {"face_bearing": face["bearing"], "floor": floor, "t": t,
            "sun_hours": table.get(floor) or tracks.hours(prof, face["bearing"], panes),
            "floors_table": table, "skyline_ahead_deg": round(ahead, 1), "open_sky_share": round(open_sky, 3),
-           "profile": [round(float(v), 1) for v in prof]}
+           "sky_view": round(sv, 3), "daylight_factor_est": round(daylight_factor_est(sv), 2),
+           "daylight_floors": light, "profile": [round(float(v), 1) for v in prof]}
     if panes and len(panes) > 1:
         out["sun_hours_panes"] = tracks.hours_by_pane(prof, face["bearing"], panes)
     return out

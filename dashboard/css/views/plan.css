@@ -250,3 +250,14 @@
   .ps-quick { flex: 1 1 100%; }
   .ps-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+/* Light tab: glass and blinds preview, estimated daylight factor */
+.ps-glaze { margin-top: var(--s-3); padding-top: var(--s-3); border-top: 1px solid var(--line); }
+.ps-glaze .label { align-items: center; margin-bottom: var(--s-2); }
+.ps-glaze .label .pill { font-size: var(--fs-2xs); }
+.ps-blinds { margin: var(--s-2) 0 0; }
+.ps-blinds button { flex: 1; }
+.ps-df-h { margin-top: var(--s-4); align-items: center; }
+.ps-df-h .pill { font-size: var(--fs-2xs); }
+table.mini.ps-df td.num b { font-weight: 650; color: var(--ink); }
+#psLightResults { margin-top: var(--s-4); }

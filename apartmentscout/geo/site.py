@@ -10,8 +10,9 @@ import time
 from pathlib import Path
 from typing import Callable
 
-from ..sun import (Skyline, _Tracks, face_by_bearing, future_sun_hours, main_blockers, max_floor, month_tracks,
-                   pick_face, sample_states, sun_hours_range, sun_study, target_faces, window_point, window_t)
+from ..sun import (DAYLIGHT_DEFAULTS, DAYLIGHT_FORMULA, FIELD_DEG, Skyline, _Tracks, expected_sun, face_by_bearing,
+                   future_sun_hours, main_blockers, max_floor, month_tracks, pick_face, sample_states, sun_hours_range,
+                   sun_study, sunshine, target_faces, window_point, window_t)
 from .buildings import build_site, fetch_nyc, fetch_osm, fill_heights, nyc_pluto
 from .checks import site_checks
 from .fetch import collect_receipts, summarise_receipts
@@ -118,12 +119,16 @@ def make_site(L: dict, crit: dict, cache_dir: Path | None = None, floor: int | N
               bearing: float | None = None, t: float | None = None, radius: float = 600, streets: bool = True,
               future: bool = True, refresh: bool = False, landmarks: list | None = None, year: int | None = None,
               panes: list[float] | None = None, slab_height: float | None = None,
-              floor_height: float | None = None,
+              floor_height: float | None = None, components: bool = True, overrides: Path | None = None,
               say: Callable[..., None] = lambda *a: None) -> tuple[dict, dict | None, dict]:
-    """Build the site JSON. Returns (site, chosen face or None, timings in seconds)."""
+    """Build the site JSON. Returns (site, chosen face or None, timings in seconds).
+
+    ``components``: split footprints into podium / tower / setback prisms from OpenStreetMap
+    ``building:part`` outlines; ``overrides``: a ``<id>.components.yaml`` with manual components.
+    """
     with collect_receipts() as rc:
         site, face, T = _make_site(L, crit, cache_dir, floor, bearing, t, radius, streets, future, refresh,
-                                   landmarks, year, panes, slab_height, floor_height, say)
+                                   landmarks, year, panes, slab_height, floor_height, say, components, overrides)
     site["receipts"] = summarise_receipts(rc)
     for r in site["receipts"]:
         if r.get("limit_hit"):
@@ -134,7 +139,7 @@ def make_site(L: dict, crit: dict, cache_dir: Path | None = None, floor: int | N
 
 
 def _make_site(L, crit, cache_dir, floor, bearing, t, radius, streets, future, refresh, landmarks, year, panes,
-               slab_height, floor_height, say):
+               slab_height, floor_height, say, components=True, overrides=None):
     city = crit["search"].get("city")
     tz = crit["search"].get("timezone") or "America/New_York"
     year = year or dt.date.today().year
@@ -156,6 +161,27 @@ def _make_site(L, crit, cache_dir, floor, bearing, t, radius, streets, future, r
     say(f"  {len(site['b'])} buildings, target #{site['target']}, "
         f"{sum(1 for m in site['bmeta'] if m.get('height_src') == 'default')} with default heights, "
         f"{len(site.get('holes') or {})} with courts")
+
+    if components or (overrides is not None and Path(overrides).exists()):
+        c0 = time.perf_counter()
+        from .components import PARTS_RADIUS_M, build_components, fetch_osm_parts
+        parts = None
+        if components:
+            try:
+                parts = fetch_osm_parts(L["lat"], L["lon"], min(radius, PARTS_RADIUS_M), cache_dir, refresh)
+            except RuntimeError as e:
+                say(f"  building parts unavailable: {e}")
+        comps, info = build_components(site, parts, overrides)
+        if comps:
+            site["components"] = comps
+        site["components_info"] = info
+        say(f"  components: {info['buildings']} buildings split from {info['parts']} OSM parts"
+            + (f", {info['manual']} manual" if info.get("manual") else "")
+            + (f" ({info['partial']} partial and {info['height_mismatch']} height mismatches kept as prisms)"
+               if info["partial"] or info["height_mismatch"] else ""))
+        for msg in info.get("problems") or []:
+            say(f"  components file: {msg}")
+        T["components"] = time.perf_counter() - c0
 
     c0 = time.perf_counter()
     faces = target_faces(site)
@@ -209,7 +235,16 @@ def _make_site(L, crit, cache_dir, floor, bearing, t, radius, streets, future, r
         site["window"] = {"face": face["i"], "bearing": face["bearing"], "floor": floor, "t": tt}
         if panes:
             site["window"]["panes"] = panes
-        site["study"] = {k: st[k] for k in ("sun_hours", "floors_table", "skyline_ahead_deg", "open_sky_share")}
+        site["study"] = {k: st[k] for k in ("sun_hours", "floors_table", "skyline_ahead_deg", "open_sky_share",
+                                            "sky_view", "daylight_factor_est", "daylight_floors")}
+        site["study"]["daylight_model"] = {"sky": "CIE standard overcast", "field_deg": FIELD_DEG, **DAYLIGHT_DEFAULTS,
+                                           "formula": DAYLIGHT_FORMULA, "estimate": True}
+        sun_climate = sunshine(city)
+        exp = expected_sun(st["sun_hours"], sun_climate["fraction"] if sun_climate else None)
+        site["study"]["sun_year"] = {"possible": exp["possible"], "expected": exp["expected"]}
+        if exp["monthly"] is not None:
+            site["study"]["sun_hours_expected"] = exp["monthly"]
+            site["study"]["sunshine"] = dict(sun_climate)
         if "sun_hours_panes" in st:
             site["study"]["sun_hours_panes"] = st["sun_hours_panes"]
         site["study"]["sun_hours_range"] = rng

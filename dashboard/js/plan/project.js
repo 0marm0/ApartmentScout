@@ -16,10 +16,13 @@ const FIELDS = {
   fixtures: 'kind label x y w h poly height elev reserve doors front note est',
   keepout: 'name x y w h poly grade',
   layouts: 'id name note items',
-  provenance: 'match floor_band checked printed estimated bedroom_door_drawn wd_drawn',
+  provenance: 'match floor_band checked printed estimated bedroom_door_drawn wd_drawn trace',
+  trace: 'by tool mode date image page image_px origin_px scale anchors length check confidence bearing label changes',
+  trace_check: 'anchors length measured error_pct',
+  trace_bearing: 'method faces wall',
   layout: 'schema kind plan units items saved',
   item: 'id ref x y rot w d h elev variant label hidden',
-  lighting: 'directSun ambient',
+  lighting: 'directSun ambient glazing blinds',
 };
 const fin = (v) => typeof v === 'number' && Number.isFinite(v);
 const own = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
@@ -79,6 +82,29 @@ function strictLayout(layout, id) {
   if (!result.ok) fail(result.error);
   return result.layout;
 }
+// provenance.trace: written by the plan tracer (plan/tracer.js). Plain numbers and short strings only.
+function traceBlock(t) {
+  object(t, 'trace', 'provenance.trace');
+  const num = (v, at) => { if (!fin(v) || Math.abs(v) > 1e6) fail(`provenance.trace.${at} must be a finite number`); };
+  const pt = (p, at) => { if (!Array.isArray(p) || p.length !== 2) fail(`provenance.trace.${at} must be a two-number point`); p.forEach((n) => num(n, at)); };
+  for (const [key, v] of Object.entries(t)) {
+    if (['by', 'tool', 'mode', 'date', 'image', 'confidence', 'label'].includes(key)) text(v, `provenance.trace.${key}`, 160);
+    else if (['scale', 'length'].includes(key)) num(v, key);
+    else if (key === 'page') { if (!Number.isInteger(v) || v < 1 || v > 9999) fail('provenance.trace.page must be a page number'); }
+    else if (['image_px', 'origin_px'].includes(key)) pt(v, key);
+    else if (key === 'anchors') { array(v, 'provenance.trace.anchors', 2); v.forEach((p) => pt(p, key)); }
+    else if (key === 'changes') { array(v, 'provenance.trace.changes', 20); v.forEach((s) => text(s, 'provenance.trace.changes', 160)); }
+    else if (key === 'check') {
+      object(v, 'trace_check', 'provenance.trace.check');
+      for (const [ck, cv] of Object.entries(v)) { if (ck === 'anchors') { array(cv, 'provenance.trace.check.anchors', 2); cv.forEach((p) => pt(p, 'check.anchors')); } else num(cv, `check.${ck}`); }
+    } else if (key === 'bearing') {
+      object(v, 'trace_bearing', 'provenance.trace.bearing');
+      if (own(v, 'method')) text(v.method, 'provenance.trace.bearing.method', 20);
+      if (own(v, 'wall')) text(v.wall, 'provenance.trace.bearing.wall', 60);
+      if (own(v, 'faces') && (!fin(v.faces) || v.faces < 0 || v.faces >= 360)) fail('provenance.trace.bearing.faces must be 0 to less than 360');
+    }
+  }
+}
 function validatePlan(p) {
   object(p, 'plan');
   if (![1, 2].includes(p.schema)) fail('Plan schema must be 1 or 2');
@@ -108,6 +134,7 @@ function validatePlan(p) {
     for (const [key, v] of Object.entries(p.provenance)) {
       if (['printed', 'estimated'].includes(key)) { array(v, key, 20); v.forEach((s) => text(s, key)); }
       else if (['bedroom_door_drawn', 'wd_drawn'].includes(key)) { if (v !== null && typeof v !== 'boolean') fail(`${key} must be boolean or null`); }
+      else if (key === 'trace') traceBlock(v);
       else text(v, key);
     }
   }
@@ -150,6 +177,8 @@ export function parseProject(input, { planId = null } = {}) {
       const l = project.lighting;
       if (own(l, 'directSun') && typeof l.directSun !== 'boolean') fail('lighting.directSun must be boolean');
       if (own(l, 'ambient') && (!fin(l.ambient) || l.ambient < 0 || l.ambient > 2)) fail('lighting.ambient must be from 0 to 2 (display only)');
+      if (own(l, 'glazing') && (!fin(l.glazing) || l.glazing < 0.05 || l.glazing > 1)) fail('lighting.glazing must be a transmittance from 0.05 to 1 (preview only)');
+      if (own(l, 'blinds') && !['open', 'half', 'closed'].includes(l.blinds)) fail('lighting.blinds must be open, half or closed');
     }
     return { ok: true, project, model, layout };
   } catch (e) { return { ok: false, error: e.message || 'Invalid project' }; }

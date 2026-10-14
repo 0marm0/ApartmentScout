@@ -1,6 +1,6 @@
 ---
 name: unit-light-and-view
-description: Build the 3D site model for a unit, work out which way its windows face (including from listing photos and video), and report direct sun hours by month and floor, the skyline the window faces and which landmarks are visible. Use when comparing floors or exposures or checking what a unit's view and light really are.
+description: Build the 3D site model for a unit, work out which way its windows face (including from listing photos and video), and report direct sun hours (possible and expected) by month and floor, the window's sky view and estimated daylight, the skyline the window faces and which landmarks are visible. Use when comparing floors or exposures or checking what a unit's view and light really are.
 ---
 
 # Unit light and view
@@ -42,14 +42,17 @@ apartmentscout site <id> --position 0.25              # window a quarter of the 
 apartmentscout site <id> --bay                        # 45 degree bay (or --panes -30,0,30)
 apartmentscout site <id> --slab-height 34.5           # floor's slab is 34.5 m above the street
 apartmentscout site <id> --samples --neighbours       # CSVs: who shades the window, every building in 300 m
+apartmentscout site <id> --no-components              # every building one prism (skip OSM building parts)
 apartmentscout score && apartmentscout build          # then the Unit 3D tab
 ```
 
 This fetches building footprints and heights (NYC: city footprints, PLUTO for missing heights;
-elsewhere: OpenStreetMap), street centrelines, and in NYC new buildings filed with DOB nearby. It
-writes `sites/<id>.json` (format in `docs/guides/data-model.md`) and adds `site.sun_hours` (direct
-sun hours per day on the 15th of each month), `site.sun_hours_range`, `skyline_ahead_deg` and
-`open_sky_share` to the listing. Downloads are cached in `cache/site/`; `--refresh` fetches again,
+elsewhere: OpenStreetMap), OpenStreetMap `building:part` outlines that split footprints into
+podium / tower / setback components, street centrelines, and in NYC new buildings filed with DOB
+nearby. It writes `sites/<id>.json` (format in `docs/guides/data-model.md`) and adds `site.sun_hours`
+(possible direct sun hours per day on the 15th of each month), `site.sun_hours_range`,
+`skyline_ahead_deg`, `open_sky_share`, `sky_view`, `daylight_factor_est`, `sun_year` and (NYC)
+`sun_hours_expected` to the listing. Downloads are cached in `cache/site/`; `--refresh` fetches again,
 `--no-streets` and `--no-future` skip those layers. With `--charts` it saves a sun-path chart, a
 floor-by-month table and a monthly range chart in `research/charts/`.
 
@@ -79,6 +82,13 @@ Check the run's output before reporting:
   mean the footprint may be stale; `fcode` 5100 is a building under construction.
 - **Light courts.** If the unit faces an interior court, the court is modelled as open air with
   walls (`holes`); say so, and expect little direct sun below the court's roof line.
+- **Components.** The run prints how many buildings were split into podium / tower / setback parts
+  from OpenStreetMap and how many were left whole (parts covering less than 90 % of the footprint,
+  or tops that disagree with the measured roof). When a main blocker (`study.blockers`) is a stepped
+  tower still drawn as one prism, its shade is overstated: if a zoning diagram, section or measured
+  photo gives its setbacks, write `sites/<id>.components.yaml` (format in the data-model guide; every
+  component needs a `source`) and rerun. Do the same for the unit's own building when the window is
+  on a setback; a `window-component` warning means the window sits where the facade steps back.
 
 ## 3. Read and report
 
@@ -89,6 +99,14 @@ floors with the compare slider, and check the floor-by-month table. Report:
   alternatives in the same line, **with the range** (`study.sun_hours_range`): "2 h 10 m in
   December, 1 h 30 m to 3 h depending on where the window sits and two floors either way". If the
   range is wide, the window position matters more than the floor: ask for the plan.
+- Possible and expected sun: `sun_hours` are clear-sky hours; `sun_hours_expected` (NYC) scales them
+  by the month's sunshine share (NOAA Central Park normals), and `sun_year` gives both for the year.
+  Say "about 790 of a possible 1,350 hours a year", not one number.
+- Daylight: `sky_view` (share of an unobstructed window's overcast-sky light) and
+  `daylight_factor_est` (an indicative daylight factor for an assumed room), per floor in
+  `study.daylight_floors`. Use them to compare windows and floors ("floor 20 sees 55 % of the sky,
+  floor 12 34 %"); never quote them as measured light or lux. The Floor plan studio's Light tab gives
+  the estimate per room from the plan's own window sizes, with glazing and blinds as a preview.
 - What fills the view: nearest wall straight ahead (distance, height and address), open sky share,
   which landmarks show (whole tower or just the top), and which street the window faces.
 - Who shades the window and when: the top `study.blockers` (name, distance, months), and for the
@@ -102,10 +120,13 @@ floors with the compare slider, and check the floor-by-month table. Report:
 
 ## Limits to state every time
 
-Buildings are prisms to roof height (no setbacks, crowns or trees); heights marked `default` or
+Buildings are prisms to roof height unless split into components (OpenStreetMap building parts or a
+components file; say which blockers are which), with no crowns or trees; heights marked `default` or
 `osm-levels` are estimates; the window position along the facade is an assumption unless the plan
 shows it (hence the range); future buildings are drawn on their whole lot at the filed height,
 which overstates their shadow, and filings change; party walls are inferred from footprints that
-touch; only direct sun is modelled; bay panes share one skyline point and the bay's projection is
-not modelled; the storey height is roof / floors unless set. Recommend checking at the same time of
+touch; direct sun is geometric (expected hours use monthly sunshine averages, not weather), and sky
+view and the daylight factor are a relative overcast-sky estimate, not lux (Radiance would be the route
+to real photometry; it is not run); bay panes share one skyline point and the bay's projection is not
+modelled; the storey height is roof / floors unless set. Recommend checking at the same time of
 day on a tour.

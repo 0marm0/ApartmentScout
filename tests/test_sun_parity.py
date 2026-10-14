@@ -14,10 +14,11 @@ import math
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
+import numpy as np
 import pytest
 
-from apartmentscout.sun import (NB, Skyline, at, day_track, lit_minutes, sun_position, sun_position_ms,
-                                target_faces, window_point)
+from apartmentscout.sun import (NB, SUNSHINE, Skyline, at, daylight_factor_est, day_track, expected_sun, lit_minutes,
+                                sky_view, sun_position, sun_position_ms, target_faces, window_point)
 
 FIXTURE = Path(__file__).parent / "fixtures" / "sun_parity.json"
 LAT, LON, TZ = 40.7549, -73.984, "America/New_York"
@@ -63,6 +64,40 @@ BLOCKERS = [{"point": [0, -9.6, 14.4], "az": 0.0, "alt": 10.0}, {"point": [0, -9
             {"point": [0, -9.6, 14.4], "az": 0.0, "alt": 40.0}, {"point": [-10.4, -20, 30.4], "az": 90.0, "alt": 5.0}]
 
 
+# Component buildings: a podium (the whole lot, 20 m) with a 20 x 20 m tower to 100 m set back 30 m from the
+# street, south of a target whose window faces south. The footprint's single prism would be 100 m everywhere.
+COMP_SITE = {
+    "version": 2, "origin": {"lat": LAT, "lon": LON}, "floor_height_m": 3.2, "target": 1,
+    "b": [
+        [100, 0, 0, [-30, -70, 30, -70, 30, -10, -30, -10]],
+        [60, 0, 1, [-10, 10, 10, 10, 10, 30, -10, 30]],
+    ],
+    "components": {"0": [
+        {"ring": [[-30, -70], [30, -70], [30, -10], [-30, -10]], "base_m": 0, "top_m": 20, "kind": "podium",
+         "source": "synthetic", "confidence": "high"},
+        {"ring": [[-10, -60], [10, -60], [10, -40], [-10, -40]], "base_m": 20, "top_m": 100, "kind": "tower",
+         "source": "synthetic", "confidence": "high"},
+    ]},
+}
+COMP_POINT = [0, 9.6, 14.4]
+COMP_AZ = [180, 150, 200, 135, 225]
+COMP_LIT = [{"date": "2026-06-21", "point": COMP_POINT, "facing": 180.0},
+            {"date": "2026-03-20", "point": [0, 9.6, 30.4], "facing": 180.0}]
+COMP_BLOCKERS = [{"point": COMP_POINT, "az": 180.0, "alt": 10.0}, {"point": COMP_POINT, "az": 180.0, "alt": 30.0},
+                 {"point": COMP_POINT, "az": 180.0, "alt": 65.0}]
+# Diffuse sky: CIE overcast sky view (relative, 0-1) for a few windows, flat and bay.
+SKY = [{"site": "site", "point": [0, -9.6, 14.4], "facing": 0.0, "panes": None},
+       {"site": "site", "point": [0, -30.4, 30.4], "facing": 180.0, "panes": None},
+       {"site": "site", "point": [-10.4, -20, 30.4], "facing": 270.0, "panes": [-45, 0, 45]},
+       {"site": "comp", "point": COMP_POINT, "facing": 180.0, "panes": None},
+       {"site": "prism", "point": COMP_POINT, "facing": 180.0, "panes": None}]
+POSSIBLE = [3.1, 4.2, 5.0, 6.3, 7.0, 7.4, 7.2, 6.6, 5.6, 4.4, 3.3, 2.9]
+
+
+def _prism(site: dict) -> dict:
+    return {k: v for k, v in site.items() if k != "components"}
+
+
 def _ms(date: str, minutes: int) -> int:
     y, m, d = map(int, date.split("-"))
     t = dt.datetime(y, m, d, minutes // 60, minutes % 60, tzinfo=ZoneInfo(TZ))
@@ -93,6 +128,24 @@ def build_fixture() -> dict:
         hit = sky.blocker(*c["point"], c["az"], c["alt"])
         blockers.append({**c, "owner": hit[0] if hit else None, "dist": round(hit[1], 3) if hit else None})
     faces = [{k: f[k] for k in ("i", "bearing", "length", "shared") if k in f} for f in target_faces(SITE, min_len=8)]
+    csky, psky = Skyline(COMP_SITE), Skyline(_prism(COMP_SITE))
+    comp_prof = csky.profile(*COMP_POINT)
+    comp_lit = []
+    for c in COMP_LIT:
+        tr = day_track(dt.date.fromisoformat(c["date"]), LAT, LON, TZ)
+        m1, s1 = lit_minutes(tr, csky.profile(*c["point"]), c["facing"])
+        m0, _ = lit_minutes(tr, psky.profile(*c["point"]), c["facing"])
+        comp_lit.append({**c, "minutes": m1, "segs": [list(x) for x in s1], "prism_minutes": m0})
+    comp_blk = []
+    for c in COMP_BLOCKERS:
+        hit = csky.blocker(*c["point"], c["az"], c["alt"])
+        comp_blk.append({**c, "owner": hit[0] if hit else None, "dist": round(hit[1], 3) if hit else None})
+    skies = {"site": sky, "comp": csky, "prism": psky}
+    sky_cases = []
+    for c in SKY:
+        sv = sky_view(skies[c["site"]].profile(*c["point"]), c["facing"], c["panes"])
+        sky_cases.append({**c, "sky_view": round(sv, 6), "df": round(daylight_factor_est(sv), 6)})
+    exp = expected_sun(POSSIBLE, SUNSHINE["nyc"]["fraction"])
     return {
         "_about": ("Shared fixture for apartmentscout/sun.py and dashboard/js/sun.js. Angles in degrees, azimuth "
                    "clockwise from north. JS zonedMs takes a 0-based month. Wall edges include hole rings "
@@ -110,6 +163,15 @@ def build_fixture() -> dict:
         "lit": lit,
         "blockers": blockers,
         "faces": faces,
+        "components_site": COMP_SITE,
+        "components_profile": {"point": COMP_POINT, "az": COMP_AZ,
+                               "expected": [round(at(comp_prof, a), 4) for a in COMP_AZ],
+                               "prism": [round(at(psky.profile(*COMP_POINT), a), 4) for a in COMP_AZ]},
+        "components_lit": comp_lit,
+        "components_blockers": comp_blk,
+        "sky": sky_cases,
+        "sunshine": SUNSHINE["nyc"]["fraction"],
+        "expected_sun": {"possible_hours": POSSIBLE, **exp},
         "window_point": {"face_i": faces[0]["i"], "t": 0.5, "floor": 5,
                          "expected": [round(v, 4) for v in window_point(
                              next(f for f in target_faces(SITE) if f["i"] == faces[0]["i"]), 0.5, 5)]},
@@ -209,6 +271,46 @@ def test_fixture_faces_and_window_point(fx):
     wp = fx["window_point"]
     f = next(f for f in faces if f["i"] == wp["face_i"])
     assert list(window_point(f, wp["t"], wp["floor"])) == pytest.approx(wp["expected"], abs=1e-4)
+
+
+def test_fixture_components(fx):
+    """A podium + set-back tower casts less shade than its footprint pushed up to the tower roof."""
+    site = fx["components_site"]
+    sky, prism = Skyline(site), Skyline(_prism(site))
+    c = fx["components_profile"]
+    assert [at(sky.profile(*c["point"]), a) for a in c["az"]] == pytest.approx(c["expected"], abs=1e-3)
+    south = c["az"].index(180)
+    assert c["expected"][south] == pytest.approx(math.degrees(math.atan(85.6 / 49.6)), abs=0.05)  # the tower
+    assert c["prism"][south] == pytest.approx(math.degrees(math.atan(85.6 / 19.6)), abs=0.05)     # the whole lot
+    for lit in fx["components_lit"]:
+        tr = day_track(dt.date.fromisoformat(lit["date"]), fx["lat"], fx["lon"], fx["tz"])
+        mins, segs = lit_minutes(tr, sky.profile(*lit["point"]), lit["facing"])
+        assert mins == lit["minutes"] and [list(x) for x in segs] == lit["segs"]
+        assert lit_minutes(tr, prism.profile(*lit["point"]), lit["facing"])[0] == lit["prism_minutes"]
+        assert lit["minutes"] > lit["prism_minutes"], lit
+    low, mid, high = fx["components_blockers"]
+    assert (low["owner"], low["dist"]) == (0, pytest.approx(19.6, abs=1e-3))   # the podium wall
+    assert (mid["owner"], mid["dist"]) == (0, pytest.approx(49.6, abs=1e-3))   # the tower behind it
+    assert high["owner"] is None                                              # over the tower
+    for b in fx["components_blockers"]:
+        hit = sky.blocker(*b["point"], b["az"], b["alt"])
+        assert (hit[0] if hit else None) == b["owner"]
+
+
+def test_fixture_sky_view(fx):
+    skies = {"site": Skyline(fx["site"]), "comp": Skyline(fx["components_site"]),
+             "prism": Skyline(_prism(fx["components_site"]))}
+    for c in fx["sky"]:
+        sv = sky_view(skies[c["site"]].profile(*c["point"]), c["facing"], c["panes"])
+        assert sv == pytest.approx(c["sky_view"], abs=1e-6) and 0 <= sv <= 1
+        assert daylight_factor_est(sv) == pytest.approx(c["df"], abs=1e-6)
+    comp, prism = fx["sky"][3], fx["sky"][4]
+    assert comp["sky_view"] > prism["sky_view"] + 0.05
+    assert sky_view(np.zeros(NB), 123.0) == pytest.approx(1.0)
+    assert daylight_factor_est(1.0) == pytest.approx(0.6 * 3.0 * 90 / (88.6 * 0.75))
+    e = fx["expected_sun"]
+    assert expected_sun(e["possible_hours"], fx["sunshine"]) == {k: e[k] for k in ("possible", "expected", "monthly")}
+    assert e["expected"] < e["possible"]
 
 
 def test_fixture_is_current():

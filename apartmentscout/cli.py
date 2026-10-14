@@ -263,7 +263,8 @@ def cmd_site(args):
                                     t=args.position, radius=args.radius, streets=not args.no_streets,
                                     future=not args.no_future, refresh=args.refresh, landmarks=lms,
                                     panes=_panes_arg(args), slab_height=args.slab_height,
-                                    floor_height=args.floor_height, say=log)
+                                    floor_height=args.floor_height, components=not args.no_components,
+                                    overrides=ws.sites_dir / f"{L['id']}.components.yaml", say=log)
     prov = site.get("provenance") or {}
     log(f"  target matched by {prov.get('target') or '?'}; storey height {site['floor_height_m']} m "
         f"({site.get('floor_height_src')})")
@@ -272,11 +273,19 @@ def cmd_site(args):
         rng = st["sun_hours_range"]
         L["site"] = {"file": f"sites/{L['id']}.json", "floor": w["floor"], "bearing": face["bearing"],
                      "sun_hours": st["sun_hours"], "sun_hours_range": {"lo": rng["lo"], "hi": rng["hi"]},
-                     "skyline_ahead_deg": st["skyline_ahead_deg"], "open_sky_share": st["open_sky_share"]}
+                     "skyline_ahead_deg": st["skyline_ahead_deg"], "open_sky_share": st["open_sky_share"],
+                     "sky_view": st.get("sky_view"), "daylight_factor_est": st.get("daylight_factor_est"),
+                     "sun_year": st.get("sun_year")}
+        if st.get("sun_hours_expected"):
+            L["site"]["sun_hours_expected"] = st["sun_hours_expected"]
         log(f"  window faces {face['bearing']:.0f} deg at t={w['t']}, floor {w['floor']}"
             + (f", panes {w['panes']}" if w.get("panes") else "") + f": direct sun h/day by month {st['sun_hours']}")
         log(f"  range over facade positions {rng['positions']} and floors {rng['floors']}: "
             f"Dec {rng['lo'][11]}-{rng['hi'][11]} h, Jun {rng['lo'][5]}-{rng['hi'][5]} h")
+        sy = st.get("sun_year") or {}
+        log(f"  sky view {st.get('sky_view')} (CIE overcast, relative), estimated daylight factor "
+            f"{st.get('daylight_factor_est')}% (indicative); direct sun {sy.get('possible')} h a year possible"
+            + (f", about {sy['expected']} h expected with typical cloud" if sy.get("expected") else ""))
         fc = (site.get("roofs") or {}).get("facing") or {}
         if fc:
             cl = fc.get("clears_floor")
@@ -549,6 +558,8 @@ def main(argv=None):
     s.add_argument("--charts", action="store_true", help="also write PNG charts to research/charts")
     s.add_argument("--no-streets", action="store_true", help="skip street centrelines")
     s.add_argument("--no-future", action="store_true", help="skip filed / permitted new buildings (NYC)")
+    s.add_argument("--no-components", action="store_true", help="keep every building a single prism (skip "
+                   "OpenStreetMap building:part podiums / towers; <id>.components.yaml still applies)")
     s.add_argument("--refresh", action="store_true", help="ignore cached downloads")
     s.add_argument("--bay", action="store_true", help="the window is a 45 degree bay (panes -45, 0, +45)")
     s.add_argument("--panes", help="pane bearing offsets from the facade, comma-separated, e.g. -30,0,30")

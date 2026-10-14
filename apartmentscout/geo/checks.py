@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import math
 
+from ..sun import components_of
 from .neighbours import _ang, _bearing, _ring, inside_other, nearest_point, reference_point
 from .shapes import dist_to_ring, point_in_poly
 
@@ -84,6 +85,32 @@ def site_checks(site: dict, face: dict | None = None) -> list[dict]:
         if fut:
             out.append(_c("outside-future", "warn", f"a filed building ({fut[0].get('name') or 'unnamed'}) "
                           "covers the spot just outside the window"))
+
+    # 4b. component buildings: what was split, and whether the window sits on a component at its height
+    comps = components_of(site)
+    info = site.get("components_info") or {}
+    if comps or info:
+        kept = (info.get("partial") or 0) + (info.get("height_mismatch") or 0)
+        msg = (f"{len(comps)} building(s) modelled as components (podium / tower / setback)"
+               + (f"; {kept} with incomplete or conflicting OpenStreetMap parts kept as single prisms" if kept else ""))
+        bad = info.get("problems") or []
+        out.append(_c("components", "warn" if bad else "pass", msg + ("; components file: " + "; ".join(bad[:3])
+                                                                     if bad else "")))
+    if face is not None and w and ti in comps:
+        (x1, y1), (x2, y2) = face["a"], face["b"]
+        ax, ay = x1 + (x2 - x1) * w["t"], y1 + (y2 - y1) * w["t"]
+        b = math.radians(face["bearing"])
+        ix, iy = ax - math.sin(b) * 0.5, ay - math.cos(b) * 0.5
+        z = (w["floor"] - 1) * site.get("floor_height_m", 3.2) + 1.6
+        on = [c for c in comps[ti] if point_in_poly(ix, iy, [tuple(p) for p in c["ring"]])
+              and float(c.get("base_m") or 0) <= z - g <= float(c["top_m"])]
+        if on:
+            out.append(_c("window-component", "pass", f"the window at {z:.0f} m is on the {on[0]['kind']} "
+                          f"({on[0].get('source', 'component')})"))
+        else:
+            out.append(_c("window-component", "warn", f"at {z:.0f} m no component of this building reaches the "
+                          "facade behind the window: the facade steps back there, so the window sits out in the "
+                          "air. Move it to the upper facade (--bearing / --position) or check the components"))
 
     # 5. streets on both sides of the origin (when streets were fetched)
     named = [s for s in site.get("streets") or [] if s.get("name") and len(s.get("pts") or []) >= 2]

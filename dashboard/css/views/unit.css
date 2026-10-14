@@ -78,7 +78,7 @@
   font: 600 9.5px var(--font-sans); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); text-shadow: 0 0 3px var(--ground), 0 0 6px var(--ground), 0 0 1px var(--ground); }
 
 /* building card and window lens */
-.u-card { top: 12px; right: 58px; width: 300px; max-width: calc(100% - 80px); padding: 12px 14px 12px; z-index: 6; animation: rise var(--t-base) var(--ease-out) both; }
+.u-card { top: 12px; right: 58px; width: 300px; max-width: calc(100% - 80px); max-height: calc(100% - 24px); overflow-y: auto; overscroll-behavior: contain; padding: 12px 14px 12px; z-index: 6; animation: rise var(--t-base) var(--ease-out) both; }
 .u-card-h { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
 .u-card-h b { font-size: var(--fs-md); font-weight: 600; line-height: var(--lh-snug); }
 .u-card-h .u-eyebrow { margin-bottom: 2px; }
@@ -349,3 +349,20 @@
   .u-units-h .faint { display: none; }
   .u-clock { min-width: 0; }
 }
+
+/* daylight (relative overcast-sky model) in the sun panel */
+.u-daylight { margin-top: var(--s-4); padding-top: var(--s-3); border-top: 1px solid var(--line); }
+.u-daylight .label { margin-bottom: 6px; }
+.u-daylight .metrics { margin-bottom: 0; }
+.u-daylight .u-note { margin-top: var(--s-2); }
+
+/* building card: the components a building is modelled with */
+.u-card-parts { margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--line); }
+.u-card-parts .label { margin-bottom: 4px; }
+.u-card-parts table.mini { width: 100%; font-size: var(--fs-2xs); }
+.u-card-parts td { padding: 3px 4px; vertical-align: top; }
+.u-card-parts td.num { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.u-card-parts .u-part-src { color: var(--ink-3); overflow-wrap: anywhere; }
+.u-card-parts .u-part-src a { color: var(--ink-2); }
+.u-card-parts .pill { font-size: var(--fs-2xs); }
+.u-card-parts p { margin: 4px 0 0; font-size: var(--fs-2xs); }

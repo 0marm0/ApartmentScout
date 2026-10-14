@@ -143,7 +143,7 @@ export class UnitStage {
 
     // target building in the accent, with solid / faint / hidden display
     this.tMat = new THREE.MeshStandardMaterial({ color: pal.tBase, roughness: 0.62, metalness: 0.05, transparent: true, opacity: 1 });
-    this.tMesh = new THREE.Mesh(this.prism(T), this.tMat); this.tMesh.castShadow = this.tMesh.receiveShadow = true; this.tMesh.userData.bi = data.ti; scene.add(this.tMesh);
+    this.tMesh = new THREE.Mesh(this.solidGeo(T), this.tMat); this.tMesh.castShadow = this.tMesh.receiveShadow = true; this.tMesh.userData.bi = data.ti; scene.add(this.tMesh);
     this.tEdgeMat = new THREE.LineBasicMaterial({ color: pal.accent, transparent: true, opacity: 0.9, depthWrite: false });
     this.tEdges = new THREE.LineSegments(this.edgeGeo([data.ti], true), this.tEdgeMat); scene.add(this.tEdges);
     this.tFoot = new THREE.LineSegments(this.outlineGeo([data.ti], 0.35), new THREE.LineBasicMaterial({ color: pal.accent, transparent: true, opacity: 0.95 })); scene.add(this.tFoot);
@@ -205,6 +205,25 @@ export class UnitStage {
     }
     return geo;
   }
+  /**
+   * The prisms that draw building b: its components (podium, tower, setback, bulkhead; each from its own base to
+   * its own top, the lowest buried like a footprint) when the site file has them, else the footprint prism.
+   */
+  prismsOf(b) {
+    if (!b.parts) return [{ geo: this.prism(b), h: b.top - Math.max(b.g, 0) }];
+    return b.parts.map((q) => ({ geo: this.prism(q, q.base_m <= 0.5 ? Math.min(b.g, 0) - 1.5 : q.base, q.top), h: q.top - Math.max(b.g, 0) }));
+  }
+  /** One geometry for building b (its components merged), for the target mesh. */
+  solidGeo(b) {
+    const list = this.prismsOf(b);
+    if (list.length === 1) return list[0].geo;
+    const P = [], N = [];
+    for (const { geo } of list) { P.push(...geo.attributes.position.array); N.push(...geo.attributes.normal.array); geo.dispose(); }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(P), 3));
+    g.setAttribute('normal', new THREE.BufferAttribute(new Float32Array(N), 3));
+    g.computeBoundingSphere(); return g;
+  }
   /** Unit-height outward-offset walls (no caps) around b, for floor bands. */
   wallsGeo(b, off) {
     const P = [];
@@ -226,17 +245,19 @@ export class UnitStage {
     return mix(this.pal.bLow, this.pal.bHigh, Math.pow(t, 0.85));
   }
   merged(idx, cast) {
-    const { B } = this.data, P = [], N = [], C = [], starts = [], ids = [];
+    const { B } = this.data, P = [], N = [], C = [], H = [], starts = [], ids = [];
     let v = 0;
     for (const i of idx) {
-      const b = B[i], geo = this.prism(b), pos = geo.attributes.position.array, nor = geo.attributes.normal.array;
-      const c = this.heightColor(b.top - Math.max(b.g, 0)), roof = mix(c, this.pal.white, this.pal.light ? 0.25 : 0.08);
       starts.push(v); ids.push(i);
-      for (let k = 0; k < pos.length; k += 3) {
-        P.push(pos[k], pos[k + 1], pos[k + 2]); N.push(nor[k], nor[k + 1], nor[k + 2]);
-        const cc = nor[k + 1] > 0.9 ? roof : c; C.push(cc.r, cc.g, cc.b);
+      for (const { geo, h } of this.prismsOf(B[i])) {
+        const pos = geo.attributes.position.array, nor = geo.attributes.normal.array;
+        const c = this.heightColor(h), roof = mix(c, this.pal.white, this.pal.light ? 0.25 : 0.08);
+        for (let k = 0; k < pos.length; k += 3) {
+          P.push(pos[k], pos[k + 1], pos[k + 2]); N.push(nor[k], nor[k + 1], nor[k + 2]); H.push(h);
+          const cc = nor[k + 1] > 0.9 ? roof : c; C.push(cc.r, cc.g, cc.b);
+        }
+        v += pos.length / 3; geo.dispose();
       }
-      v += pos.length / 3; geo.dispose();
     }
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(P), 3));
@@ -244,22 +265,25 @@ export class UnitStage {
     g.setAttribute('color', new THREE.BufferAttribute(new Float32Array(C), 3));
     g.computeBoundingSphere();
     const m = new THREE.Mesh(g, this.bMat); m.castShadow = cast; m.receiveShadow = true;
-    m.userData.starts = Int32Array.from(starts); m.userData.ids = Int32Array.from(ids);
+    m.userData.starts = Int32Array.from(starts); m.userData.ids = Int32Array.from(ids); m.userData.h = Float32Array.from(H);
     return m;
   }
   /** Roof outlines plus vertical lines at real corners. */
   edgeGeo(idx, all = false) {
     const { B } = this.data, P = [];
     for (const i of idx) {
-      const b = B[i], bot = Math.min(b.g, 0) - 1.5;
-      for (const p of [b.p, ...(b.holes || [])]) {
-        const n = p.length / 2;
-        for (let j = 0; j < n; j++) {
-          const j2 = (j + 1) % n, j0 = (j - 1 + n) % n;
-          const x = p[2 * j], y = p[2 * j + 1], x2 = p[2 * j2], y2 = p[2 * j2 + 1];
-          P.push(x, b.top, -y, x2, b.top, -y2);
-          const a1 = Math.atan2(y - p[2 * j0 + 1], x - p[2 * j0]), a2 = Math.atan2(y2 - y, x2 - x);
-          if (all || Math.abs(((a2 - a1 + 3 * Math.PI) % (2 * Math.PI)) - Math.PI) > 0.4) P.push(x, bot, -y, x, b.top, -y);
+      const B0 = B[i];
+      for (const b of B0.parts || [B0]) {
+        const bot = b === B0 || b.base_m <= 0.5 ? Math.min(B0.g, 0) - 1.5 : b.base;
+        for (const p of [b.p, ...(b.holes || [])]) {
+          const n = p.length / 2;
+          for (let j = 0; j < n; j++) {
+            const j2 = (j + 1) % n, j0 = (j - 1 + n) % n;
+            const x = p[2 * j], y = p[2 * j + 1], x2 = p[2 * j2], y2 = p[2 * j2 + 1];
+            P.push(x, b.top, -y, x2, b.top, -y2);
+            const a1 = Math.atan2(y - p[2 * j0 + 1], x - p[2 * j0]), a2 = Math.atan2(y2 - y, x2 - x);
+            if (all || Math.abs(((a2 - a1 + 3 * Math.PI) % (2 * Math.PI)) - Math.PI) > 0.4) P.push(x, bot, -y, x, b.top, -y);
+          }
         }
       }
     }
@@ -396,11 +420,11 @@ export class UnitStage {
     if (this.streetMat) { this.streetMat.color.copy(pal.street); this.streetMat.opacity = pal.streetOp; }
     // recolour the city
     for (const m of this.city) {
-      const { starts, ids } = m.userData, colA = m.geometry.attributes.color, nor = m.geometry.attributes.normal.array;
-      for (let k = 0; k < ids.length; k++) {
-        const b = this.data.B[ids[k]], c = this.heightColor(b.top - Math.max(b.g, 0)), roof = mix(c, pal.white, pal.light ? 0.25 : 0.08);
-        const end = k + 1 < starts.length ? starts[k + 1] : colA.count;
-        for (let v = starts[k]; v < end; v++) { const cc = nor[v * 3 + 1] > 0.9 ? roof : c; colA.setXYZ(v, cc.r, cc.g, cc.b); }
+      const colA = m.geometry.attributes.color, nor = m.geometry.attributes.normal.array, H = m.userData.h, memo = new Map();
+      for (let v = 0; v < colA.count; v++) {
+        let cr = memo.get(H[v]);
+        if (!cr) { const c = this.heightColor(H[v]); cr = [c, mix(c, pal.white, pal.light ? 0.25 : 0.08)]; memo.set(H[v], cr); }
+        const cc = nor[v * 3 + 1] > 0.9 ? cr[1] : cr[0]; colA.setXYZ(v, cc.r, cc.g, cc.b);
       }
       colA.needsUpdate = true;
     }

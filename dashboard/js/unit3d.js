@@ -9,7 +9,7 @@ import { $, esc, css, toast, ICONS, safeUrl } from './util.js';
 import {
   DEG, sunPos, zonedMs, zoneAbbr, angDiff, fmtT, prepBuildings, horizonProfile, horizonDir, hAt, litInfo,
   facesOf, snapOpen, streetAhead, rayBlock, compass, dayStates, dayBlockers, blockerMinutes, BAY, paneFacings, inFront,
-  distToBuilding, bearingTo,
+  distToBuilding, bearingTo, solidsOf, skyView, daylightFactor, SUNSHINE, expectedSun, FIELD_DEG,
 } from './sun.js';
 import { canonicalFaces, snapPosition, baselineStudyMatches, readScenario, readScenarioExtras, writeScenario, clearScenario } from './unit/scenario.js';
 import { UnitStage } from './unit/scene.js';
@@ -148,7 +148,7 @@ async function load(id) {
   site = data; st.id = id; st.manual = {}; st.moved = null; st.sel = null; st.src = null; st.slabOff = null; st.inWin = -1; st.lmSel = new Set(); heat = null; NBR = []; blkRows = [];
   plan = null;
   if ((S.manifest.plans || []).includes(id)) { try { plan = normalisePlan(await loadJSON(`${S.base}/plans/${id}.json`, null)); } catch { plan = null; } }
-  B = prepBuildings(site.b, site.holes && typeof site.holes === 'object' ? site.holes : null);
+  B = prepBuildings(site.b, site.holes && typeof site.holes === 'object' ? site.holes : null, site.components && typeof site.components === 'object' ? site.components : null);
   T = B[site.target] || B[0];
   FACES = canonicalFaces(facesOf(T, 8, B), site.faces, site.version);
   LM = (site.lm || []).filter((l) => Array.isArray(l) && l.length >= 5).map((l) => ({ name: String(l[0]), idx: l[1], x: +l[2], y: +l[3], top: +l[4] }));
@@ -695,8 +695,28 @@ function sunPanel(s, state) {
     <p class="u-why">${why}</p><p class="u-segs">${segs}</p>
     ${P ? `<p class="u-note">Bay window: the sun counts when it is in front of any of its ${P.length} panes. Each pane on its own: ${A.panes.map((v, i) => `<b>${Math.round(paneFacings(st.az, P)[i])}°</b> ${hm(v)}`).join(' · ')}.</p>` : ''}
     ${rangeTxt}${!baseline && site.study?.sun_hours_range ? '<p class="u-note">The saved uncertainty band belongs to the original window, floor and study year. It is hidden for this edited scenario.</p>' : ''}
+    ${daylightBlock(vals, mo - 1)}
     ${blockersTable(blkRows, dayLbl)}
     <div class="u-band-wrap"><div class="label">By month · floor ${st.floor} <span>${rng ? 'bar: this window · band: range' : 'hours on the 15th'}</span></div>${monthBandSVG(vals, rng, mo - 1)}</div>`;
+}
+/** Sunshine fraction by month for the site's city (the site file's table, else the built-in one), or null. */
+const sunshineFrac = () => { const f = site?.study?.sunshine?.fraction; return Array.isArray(f) && f.length === 12 ? f.map(Number) : SUNSHINE[S.crit.search?.city]?.fraction || null; };
+/**
+ * Diffuse daylight for the current window (relative CIE overcast model, not lux) and possible vs expected direct
+ * sun. `vals`: direct-sun hours on the 15th of each month for this floor (null while it is being computed).
+ */
+function daylightBlock(vals, mi) {
+  const sv = skyView(profA, st.az, panes()), df = daylightFactor(sv), frac = sunshineFrac();
+  const poss = Array.isArray(vals) && vals.length === 12 ? vals : null, yr = poss ? expectedSun(poss, frac) : null;
+  const m = MONTHS[mi], h1 = (v) => (v == null ? '—' : (+v).toFixed(1));
+  const src = site?.study?.sunshine?.place || (frac ? 'New York Central Park' : '');
+  return `<div class="u-daylight"><div class="label">Daylight <span>relative model · not lux</span></div>
+    <div class="metrics m3">
+      <div class="metric"><div class="k">Sky view</div><div class="v">${Math.round(sv * 100)}<small>%</small></div><div class="s">overcast sky, ±${FIELD_DEG}°</div></div>
+      <div class="metric"><div class="k">Daylight factor</div><div class="v">≈${df < 1 ? df.toFixed(2) : df.toFixed(1)}<small>%</small></div><div class="s">estimated, not measured</div></div>
+      <div class="metric"><div class="k">Sun in ${m}</div><div class="v">${h1(poss?.[mi])}<small>h</small></div><div class="s">${frac && poss ? `possible · ≈${h1(poss[mi] * frac[mi])} h expected` : 'possible, clear sky'}</div></div>
+    </div>
+    <p class="u-note"><b>Sky view</b>: share of an unobstructed window's overcast-sky light. <b>Daylight factor</b>: that sky on an assumed 4 × 5 m room with 3 m² of glass; use it to compare windows. ${frac ? `<b>Expected</b>: possible (clear-sky) sun × the ${Math.round(frac[mi] * 100)}% of ${m} daylight that is sunny (${esc(src)}, NOAA normals).` : '<b>Possible</b>: clear-sky direct sun on the 15th.'}${yr ? ` A year: ${yr.possible.toLocaleString()} h possible${yr.expected != null ? `, about ${yr.expected.toLocaleString()} h expected` : ''}.` : ''}</p></div>`;
 }
 const hm = (min) => { if (!min) return 'none'; const h = Math.floor(Math.round(min) / 60), m = Math.round(min) % 60; return h && m ? `${h} h ${String(m).padStart(2, '0')} m` : h ? `${h} h` : `${m} m`; };
 function rangeScope(r) {
@@ -774,15 +794,15 @@ function roofsBlock(w) {
 }
 function nearestAhead(w) {
   const ux = Math.sin(st.az * DEG), uy = Math.cos(st.az * DEG); let best = 1e9, top = 0;
-  for (const b of B) {
-    if (b === T) continue;
-    for (const p of [b.p, ...(b.holes || [])]) {
+  for (const b0 of B) {
+    if (b0 === T) continue;
+    for (const b of solidsOf(b0)) for (const p of [b.p, ...(b.holes || [])]) {
       const n = p.length / 2;
       for (let j = 0; j < n; j++) {
         const ax = p[2 * j], ay = p[2 * j + 1], j2 = (j + 1) % n, ex = p[2 * j2] - ax, ey = p[2 * j2 + 1] - ay;
         const den = ux * ey - uy * ex; if (Math.abs(den) < 1e-9) continue;
         const wx = ax - w.x, wy = ay - w.y, t = (wx * ey - wy * ex) / den, s = (wx * uy - wy * ux) / den;
-        if (t > 0.5 && s >= 0 && s <= 1 && t < best && b.top > w.z) { best = t; top = b.top - Math.max(b.g, 0); }
+        if (t > 0.5 && s >= 0 && s <= 1 && t < best && b.top > w.z) { best = t; top = b.top - Math.max(b0.g, 0); }
       }
     }
   }
@@ -916,14 +936,29 @@ function openCard(bi) {
     blkMin ? ['Takes your sun', `${hm(blkMin.today)} today · ${hm(blkMin.dec)} Dec 15 · ${hm(blkMin.jun)} Jun 15`] : null,
   ].filter(Boolean);
   const blocks = curHit && curHit.bi === bi;
+  const parts = b.parts ? partsBlock(b) : '';
   $('uCard').innerHTML = `<div class="u-card-h"><div><div class="u-eyebrow">${isT ? 'This building' : lm ? 'Landmark' : 'Building'}</div><b>${esc(title)}</b></div><button type="button" class="icon-btn" id="uCardX" aria-label="Close">${ICONS.x}</button></div>
     ${chips.length ? `<div class="u-card-chips">${chips.map(([t, c, tip]) => `<span class="pill ${c}"${tip ? ` title="${esc(tip)}"` : ''}>${esc(t)}</span>`).join('')}</div>` : ''}
     ${blocks ? `<div class="u-card-flag">Blocks the sun on your window at ${fmtT(st.min)}</div>` : ''}
     <dl>${rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl>
-    ${isT ? '<p class="faint u-card-foot">Drawn as its footprint pushed straight up: setbacks and crowns are not modelled.</p>' : ''}`;
+    ${parts}
+    ${isT && !b.parts ? '<p class="faint u-card-foot">Drawn as its footprint pushed straight up: setbacks and crowns are not modelled.</p>' : ''}`;
   $('uCard').hidden = false;
   $('uCardX').addEventListener('click', closeCard);
   $('nbPanel').querySelectorAll('tr[data-bi]').forEach((r) => r.classList.toggle('on', +r.dataset.bi === bi));
+}
+const KIND = { podium: 'Podium', tower: 'Tower', setback: 'Setback', bulkhead: 'Bulkhead' };
+/** The components a building is modelled with: kind, height band, source and confidence. */
+function partsBlock(b) {
+  const list = [...b.parts].sort((p, q) => q.top - p.top), shown = list.slice(0, 6);
+  const srcLink = (q) => {
+    const src = q.source || 'source not recorded', u = safeUrl(q.ref), short = /^osm /i.test(src) ? 'OpenStreetMap' : /^manual/i.test(src) ? 'Your file' : src;
+    return u && /^https?:/i.test(u) ? `<a href="${esc(u)}" target="_blank" rel="noopener" title="${esc(src)}">${esc(short)}</a>` : `<span title="${esc(src)}">${esc(short)}</span>`;
+  };
+  const conf = (c) => (c ? `<span class="pill ${c === 'high' ? 'good' : c === 'low' ? 'warn' : ''}">${esc(c)}</span>` : '');
+  return `<div class="u-card-parts"><div class="label">Modelled as ${b.parts.length} part${b.parts.length > 1 ? 's' : ''} <span>used for shade</span></div>
+    <table class="mini"><tbody>${shown.map((q) => `<tr><td>${KIND[q.kind] || 'Part'}</td><td class="num">${Math.round(q.base_m)}–${Math.round(q.top_m)} m</td><td class="u-part-src">${srcLink(q)}</td><td>${conf(q.confidence)}</td></tr>`).join('')}</tbody></table>
+    ${list.length > shown.length ? `<p class="faint">and ${list.length - shown.length} lower part${list.length - shown.length > 1 ? 's' : ''}</p>` : ''}</div>`;
 }
 function closeCard() { st.sel = null; stage?.select(null); $('uCard').hidden = true; $('nbPanel')?.querySelectorAll('tr.on').forEach((r) => r.classList.remove('on')); }
 
@@ -938,6 +973,9 @@ function evidencePanel() {
   const manualAll = bm.filter((m) => String(m.geom_src || '').toLowerCase().includes('manual')).length;
   const field = NBR.filter((r) => r.view !== 'behind' && !r.future);
   const sector = { n: field.length, manual: field.filter((r) => r.geom === 'manual').length, stale: field.filter((r) => r.stale).length, def: field.filter((r) => r.hsrc === 'default').length };
+  const nParts = B.filter((b) => b.parts).length, ci = site.components_info || {};
+  const nMan = B.filter((b) => b.parts?.some((q) => /^manual/i.test(q.source))).length;
+  const partSrc = nParts ? ` (${nMan ? `${nMan} from your components file, ` : ''}${nParts - nMan} from OpenStreetMap building parts${ci.partial || ci.height_mismatch ? `; ${(ci.partial || 0) + (ci.height_mismatch || 0)} with incomplete or conflicting parts left whole` : ''})` : '';
   const ex = evidenceExtras(site, { sector: bm.length && hasWindow() ? sector : null, staleYears: STALE_YEARS, fh: FH(), floor: st.floor, slab: hasWindow() ? slabZ(st.floor) : null, slabManual: st.slabOff != null });
   const ev = [
     ['Exposure', p.exposure, st.src === 'photo-landmarks' ? `Matched against a photo from the window${st.lmSel.size ? `: ${esc([...st.lmSel].join(', '))}` : ''}.` : L.exposure?.length ? `Listing gives ${esc(L.exposure.join(', '))}.` : 'No exposure on the listing: the model starts on the longest open facade.'],
@@ -949,14 +987,14 @@ function evidencePanel() {
     <ul class="u-ev">${ev.map(([k, v, t]) => `<li><div class="u-ev-k">${k}${provChip(v)}</div><p>${t}</p></li>`).join('')}${ex.notes.join('')}</ul>
     ${P.notes ? `<p class="u-note">${esc(P.notes)}</p>` : ''}
     ${checksBlock(site.checks)}
-    <div class="u-caveat"><b>A footprint is not the tower's real shape.</b> Every building is its outline pushed straight up to its roof height: no setbacks, crowns, podiums or bays. ${area > 2500 ? `This building's footprint covers ${Math.round(area).toLocaleString()} m², likely more than one mass on one lot, so use the faint or hidden display to check the window.` : 'Shade from a stepped tower can be overstated.'}</div>
+    <div class="u-caveat"><b>A footprint is not the tower's real shape.</b> ${nParts ? `${nParts.toLocaleString()} building${nParts > 1 ? 's are' : ' is'} split into podium, tower and setback parts${partSrc}; every other building is its outline pushed straight up to its roof height.` : 'Every building is its outline pushed straight up to its roof height: no setbacks, crowns, podiums or bays.'} ${T.parts ? 'This building is drawn from its parts.' : area > 2500 ? `This building's footprint covers ${Math.round(area).toLocaleString()} m², likely more than one mass on one lot, so use the faint or hidden display to check the window.` : 'Shade from a stepped tower can be overstated.'}</div>
     <dl class="u-src">
       <dt>Buildings</dt><dd>${B.length.toLocaleString()} footprints: ${srcs}${manualAll ? `; ${manualAll.toLocaleString()} outlines mapped by hand` : ''}.</dd>
       ${hs ? `<dt>Heights</dt><dd>${hs}.</dd>` : ''}
       ${ex.rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('')}
       ${(site.streets || []).length ? `<dt>Streets</dt><dd>${site.streets.length} centrelines (centre of the road, not the kerb).</dd>` : ''}
       ${FUT.length ? `<dt>Proposed</dt><dd>${FUT.map((f) => `${esc(f.name || 'Unnamed')} (${Math.round(f.h)} m, ${esc(f.status || 'proposed')}${safeLink(f.url)})`).join('; ')}.</dd>` : ''}
-      <dt>Sun</dt><dd>Standard solar formulas, ${esc(tz())} with daylight saving. Direct sun only: no reflections, trees or haze. A window counts as lit when the sun is within 90° of the way ${st.bay ? 'one of its panes' : 'it'} faces and above every building in that direction.</dd>
+      <dt>Sun</dt><dd>Standard solar formulas, ${esc(tz())} with daylight saving. Direct sun on a clear day: no reflections, trees or haze; “expected” hours scale it by the month's sunshine share. Daylight is a relative overcast-sky model (sky view and an estimated daylight factor), not lux. A window counts as lit when the sun is within 90° of the way ${st.bay ? 'one of its panes' : 'it'} faces and above every building in that direction.</dd>
       ${hasWindow() ? `<dt>Inside</dt><dd>${plan ? `The floor plan (${esc(plan.provenance?.match || 'unverified match')}) sits with its window wall on the facade at the window position, turned to ${Math.round(st.az)}°.` : 'No floor plan for this unit: the Inside view uses a generic 5.5 × 7 m room.'} The rest of this building does not cast shadows into it.</dd>` : ''}
     </dl>
     ${receiptsBlock(site.sources || site.receipts, safeUrl)}
@@ -1010,7 +1048,7 @@ function snapshot() {
   const state = { night: 'night', behind: 'sun behind the facade', lit: 'direct sun on the window', side: 'direct sun through a side pane', shade: 'window in shadow' }[hudState()];
   g.fillText(`${label(L) || st.id} · floor ${st.floor} · window faces ${Math.round(st.az)}° ${compass(st.az)}${st.bay ? ' (bay)' : ''} · ${new Date(Date.UTC(y, m - 1, d)).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })} ${fmtT(st.min)} ${zn}`, 16 * k, h + 22 * k);
   g.fillStyle = css('--ink-2'); g.font = `500 ${11.5 * k}px ${sans}`;
-  g.fillText(`${state} · direct sun this date ${hm(A.min)} · exposure: ${(PROV[p.exposure] || [p.exposure])[0].toLowerCase()} · window position: ${(PROV[p.position] || [p.position])[0].toLowerCase()} · ${site.source || 'footprints'} as straight prisms, direct sun only`, 16 * k, h + 45 * k);
+  g.fillText(`${state} · direct sun this date ${hm(A.min)} · exposure: ${(PROV[p.exposure] || [p.exposure])[0].toLowerCase()} · window position: ${(PROV[p.position] || [p.position])[0].toLowerCase()} · ${site.source || 'footprints'} as ${B.some((b) => b.parts) ? 'prisms and building parts' : 'straight prisms'}, direct sun only`, 16 * k, h + 45 * k);
   g.textAlign = 'right'; g.fillStyle = css('--ink-3'); g.font = `600 ${11 * k}px ${sans}`; g.fillText('ApartmentScout', w - 16 * k, h + 22 * k);
   const name = `${st.id}-floor${st.floor}-${st.date}-${String(Math.floor(st.min / 60)).padStart(2, '0')}${String(st.min % 60).padStart(2, '0')}-${{ win: 'window', in: 'inside' }[st.mode] || st.mode}.png`;
   c.toBlob((blob) => { if (!blob) { toast('Snapshot failed'); return; } download(name, blob, 'image/png'); toast('Snapshot saved'); }, 'image/png');
@@ -1025,7 +1063,7 @@ async function exportGLB() {
     provenance: { exposure: p.exposure, window_position: p.position, floor: p.floor, target: site.provenance?.target || null },
     apartment: interior ? (interior.generic ? 'generic room' : plan?.title || 'floor plan') : null,
     source: site.source || '', site_generated: site.generated || null, exported: new Date().toISOString(),
-    frame: 'metres; glTF Y up; x east, -z north; origin at the site origin', geometry: 'footprints extruded to roof height (no setbacks or crowns)',
+    frame: 'metres; glTF Y up; x east, -z north; origin at the site origin', geometry: B.some((b) => b.parts) ? 'footprints extruded to roof height; buildings with components (OpenStreetMap building parts or a manual file) drawn as stacked prisms' : 'footprints extruded to roof height (no setbacks or crowns)',
   };
   try {
     toast('Building the 3D model…');

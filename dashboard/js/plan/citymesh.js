@@ -31,11 +31,15 @@ export function cityGroup(ctx, opts = {}) {
     const b = ctx.B[i]; if (i === ctx.ti) continue;
     const cx = (b.bb[0] + b.bb[2]) / 2, cy = (b.bb[1] + b.bb[3]) / 2;
     if (Math.hypot(cx - ctx.anchor[0], cy - ctx.anchor[1]) > R) continue;
-    const bottom = Math.min(b.g, 0) + ground - 1, top = b.top + ground;
-    const geo = new THREE.ExtrudeGeometry(shape(b), { depth: Math.max(0.5, top - bottom), bevelEnabled: false, curveSegments: 1 });
-    geo.rotateX(-Math.PI / 2); geo.translate(0, bottom, 0);
-    const t = Math.max(0, Math.min(1, Math.log(Math.max(b.top - Math.max(b.g, 0), 6) / 6) / Math.log(260 / 6)));
-    push(geo, lo.clone().lerp(hi, Math.pow(t, 0.85))); n++;
+    // a building with components (podium, tower, setback) is drawn as its parts, like the obstruction maths
+    for (const q of b.parts || [b]) {
+      const bottom = (q === b || q.base_m <= 0.5 ? Math.min(b.g, 0) - 1 : q.base) + ground, top = q.top + ground;
+      const geo = new THREE.ExtrudeGeometry(shape(q), { depth: Math.max(0.5, top - bottom), bevelEnabled: false, curveSegments: 1 });
+      geo.rotateX(-Math.PI / 2); geo.translate(0, bottom, 0);
+      const t = Math.max(0, Math.min(1, Math.log(Math.max(q.top - Math.max(b.g, 0), 6) / 6) / Math.log(260 / 6)));
+      push(geo, lo.clone().lerp(hi, Math.pow(t, 0.85)));
+    }
+    n++;
   }
   if (P.length) {
     const geo = new THREE.BufferGeometry();

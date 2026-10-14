@@ -163,12 +163,35 @@ elevation per building). A footprint without a roof height takes PLUTO's number 
 2 m, and only when that is missing too a 10 m default. Elsewhere, OpenStreetMap: `height`, else
 `building:levels` x 3.2 m + 2 m, else 10 m. Every building records where its height came from
 (`roof`, `pluto-floors`, `osm-height`, `osm-levels`, `default`) so a guessed blocker is visible as
-one. Each building is a prism from its ground to its roof. Footprint outlines are simplified by
+one. Each building is a prism from its ground to its roof, unless it has components (below). Footprint outlines are simplified by
 dropping vertices within 0.3 m of a straight line, so one wall drawn as several pieces is one facade.
 NYC footprints also carry their own metadata, kept per building: the footprint's name (used before
 the PLUTO address to label landmarks), whether the outline is photogrammetric or was drawn by hand
 (about 15 % in Midtown), the year the record was last edited (most heights are from the 2017 capture,
 so newer towers and demolitions can be missing) and the feature code (5100 = under construction).
+
+**Component buildings.** A footprint carries one roof height, so a 20 m podium under a slim 100 m
+tower is drawn as the whole lot at 100 m, which overstates its shade. A building can instead be a set
+of stacked prisms ("components": podium, tower, setback, bulkhead), each with its own outline, base and
+top. Two sources, both optional and both recorded per component with a confidence:
+
+- OpenStreetMap `building:part` outlines with `height` and `min_height` (or levels x 3.2 m, marked low
+  confidence) within 400 m, read through Overpass with a receipt like every other download. A part
+  belongs to the footprint containing its centroid. A footprint takes its parts only when they cover at
+  least 90 % of it (sampled on a grid) and their tallest top is within max(8 m, 20 %) of the footprint's
+  own roof; otherwise it stays one prism and the reason is counted (in Midtown about half of the
+  buildings with mapped parts pass). Kinds are inferred: tower (reaches 85 % of the top), podium (from
+  the ground to at most half the top), bulkhead (small, short and raised), setback (anything else).
+- `<search>/sites/<id>.components.yaml`, written by hand for the target and the blockers that matter,
+  from a zoning diagram, a section drawing or a measured photo. Every component needs a `source`; a
+  manual entry replaces the OpenStreetMap parts of that building. Format in `apartmentscout/geo/components.py`.
+
+Every obstruction calculation (skyline, blockers, sun hours, the floors table, the range, the sky view
+below) uses the components when a building has them, in Python and in the dashboard alike. The skyline
+keeps one obstruction angle per direction, so a component counts from the ground up: the open gap under
+a cantilever is not modelled, and `base_m` serves the 3D drawing and the record. When the unit's own
+building has components, a `window-component` check warns if no component reaches the facade behind the
+window at its height (the facade steps back there and the window would hang in the air).
 
 **Which building.** The listing's own BIN, then its tax lot (BBL), pick the building before the
 geocoded point does: address points often land in the street or on the neighbour. Only without a
@@ -204,7 +227,7 @@ skyline, so a side pane still cannot see past the building's own walls; how far 
 is not modelled.
 
 **Who shades the window.** When the sun is in front of the window but below the skyline, the model
-follows the sun's ray and names the first building whose roof rises above it. The study lists the
+follows the sun's ray and names the first building whose roof (or component top) rises above it. The study lists the
 main blockers (minutes shaded on the 15th of each month), and `--samples` writes every 6-minute slot
 of the move-in day and the solstices with the blocker's name, BIN, roof and distance.
 
@@ -247,8 +270,58 @@ the query URL, rows returned, whether the row limit was hit, when it was fetched
 itself was last updated, and the sha256 of the cached file. A feed last updated before the date you
 care about cannot show what happened after it.
 
-Not modelled: setbacks, crowns and spires (buildings are prisms to the roof), trees, reflected
-light from glass towers, sky brightness, interior depth (except in the floor-plan view), and weather.
+### Daylight (relative model)
+
+Direct sun says when the sun itself reaches the glass. Most daylight in a city room comes from the sky,
+so every study also reports how much sky a window sees, weighted the way a vertical window receives
+light from an overcast sky. It is a relative model for comparing windows and floors, not lux.
+
+**Sky view.** The CIE standard overcast sky has luminance L(a) = Lz (1 + 2 sin a) / 3 at altitude a
+(three times brighter at the zenith than at the horizon). A sky patch at altitude a and d degrees off
+the window normal lights the glass in proportion to L(a) cos(a) cos(d) dOmega, with
+dOmega = cos(a) da dd. Over altitude the integral has a closed form,
+
+    G(h) = F(90 deg) - F(h),   F(a) = (a/2 + sin(2a)/4 - (2/3) cos^3 a) / 3,
+
+so with the skyline h(az) from the window point:
+
+    sky_view = sum over az within 80 deg of the normal of cos(d) G(h(az))  /  the same sum with h = 0
+
+sampled every 1 degree of azimuth (bin centres). 1.0 means nothing stands above the horizon in the
+window's +/-80 degree field; a continuous wall rising 30 degrees everywhere gives about 0.51 (the low sky
+counts most for a vertical window). A bay takes the union of its panes' fields, each azimuth weighted by
+the nearest pane. Computed for the window and every floor (`study.sky_view`, `daylight_floors`).
+
+**Estimated daylight factor.** The BRE average daylight factor (Littlefair, 1988),
+
+    DF = T x Aw x theta / (A x (1 - R^2))   (%, theta in degrees)
+
+with theta, the visible sky angle seen from the window, taken as 90 degrees x sky view (for a long wall
+parallel to the window this agrees with the BRE construction within a few degrees). Unit 3D and the site
+file use an assumed room: glazing transmittance T = 0.6, Aw = 3 m^2 of glass, A = 88.6 m^2 of room
+surfaces (4 x 5 m, 2.7 m ceiling), reflectance R = 0.5, so an unobstructed window gives about 2.4 %. The
+Floor plan studio's Light tab uses the plan's own room and window sizes (80 % of each opening glazed) and
+lets you change the glazing transmittance and the blinds (open, half = 0.5, closed = 0.1): a preview
+that scales the sun patches and the estimate together. Read DF_est as "this window sees more sky than
+that one", never as a measurement: reflections from facades, the depth and colour of the room, frames,
+dirt and furniture are not in it.
+
+**Possible and expected sun.** Direct sun hours are possible (clear-sky) hours: the sun is up, in
+front of the window and above the skyline. Expected hours on a typical month scale them by the share
+of daylight hours that are sunny in that month: for New York, NOAA's 1961-1990 climate normals for
+Central Park (percent of possible sunshine: 54 % in January, 55, 57, 57, 57, 57, 59, 63 % in August,
+59, 61, 51, 48 % in December). The site file gives both by month and for the year (hours per day on
+the 15th x days in the month). This assumes cloud is independent of the time of day and of the
+direction the window faces; other cities have no table yet, so only possible hours are given.
+
+**Towards real photometry.** Illuminance in lux, glare and annual climate-based metrics need a
+physically based lighting engine with materials, a calibrated room and weather files. The Radiance
+suite (https://www.radiance-online.org/) is the standard route; ApartmentScout does not run it and
+claims none of its results.
+
+Not modelled: crowns and spires except where a building's components describe them, trees, reflected
+light from glass towers, sky brightness beyond the overcast model, interior depth (except in the
+floor-plan view), and weather beyond the monthly sunshine share.
 
 ## Public records (NYC)
 

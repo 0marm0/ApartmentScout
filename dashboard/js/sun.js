@@ -52,20 +52,47 @@ export function dayTable(y, mo, d, lat, lon, tz, step = 6) {
 // ------------------------------------------------------------------ buildings
 const flat = (ring) => (Array.isArray(ring?.[0]) ? ring.flat() : ring || []);
 
+const bboxOf = (p) => {
+  let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+  for (let j = 0; j < p.length / 2; j++) { const x = p[2 * j], y = p[2 * j + 1]; x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+  return [x0, y0, x1, y1];
+};
+export const COMPONENT_KINDS = ['podium', 'tower', 'setback', 'bulkhead'];
 /**
- * Buildings: [{i, top, g, eg, p:[x,y,...], n, bb, holes:[[x,y,...], ...]}].
- * `holes` is the optional site JSON v2 map {"<index>": [ring, ...]} of inner rings (light courts).
+ * One component of a building (site JSON "components"): a prism from ground + base_m to ground + top_m with
+ * its own ring. Returns null for an unusable entry (fewer than 3 finite points, or not 0 <= base_m < top_m).
  */
-export function prepBuildings(raw, holes = null) {
+export function prepPart(c, g = 0) {
+  if (!c || typeof c !== 'object') return null;
+  const p = flat(c.ring), base = +(c.base_m ?? 0), top = +c.top_m;
+  if (p.length < 6 || !p.every(Number.isFinite) || !Number.isFinite(base) || !Number.isFinite(top) || base < 0 || base >= top) return null;
+  const holes = Array.isArray(c.holes) ? c.holes.map(flat).filter((a) => a.length >= 6 && a.every(Number.isFinite)) : [];
+  return {
+    p, n: p.length / 2, bb: bboxOf(p), holes, g, base: g + base, top: g + top, base_m: base, top_m: top,
+    kind: COMPONENT_KINDS.includes(c.kind) ? c.kind : base > 0 ? 'setback' : 'podium',
+    source: typeof c.source === 'string' ? c.source : '', confidence: typeof c.confidence === 'string' ? c.confidence : '', ref: typeof c.ref === 'string' ? c.ref : '',
+  };
+}
+
+/**
+ * Buildings: [{i, top, g, eg, p:[x,y,...], n, bb, holes:[[x,y,...], ...], parts}].
+ * `holes` is the optional site JSON v2 map {"<index>": [ring, ...]} of inner rings (light courts).
+ * `components` is the optional map {"<index>": [{ring, base_m, top_m, kind, source, confidence}, ...]}: when a
+ * building has usable components they replace its single prism in every obstruction calculation (`parts`, else
+ * null). As in apartmentscout/sun.py each part counts from the ground up in the skyline (one angle per direction).
+ */
+export function prepBuildings(raw, holes = null, components = null) {
   return raw.map((r, i) => {
     const p = r[3], n = p.length / 2;
-    let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
-    for (let j = 0; j < n; j++) { const x = p[2 * j], y = p[2 * j + 1]; x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
     const hs = holes && (holes[i] ?? holes[String(i)]);
     const hl = Array.isArray(hs) ? hs.map(flat).filter((a) => a.length >= 6 && a.every(Number.isFinite)) : [];
-    return { i, top: r[0], g: r[1], eg: r[2], p, n, bb: [x0, y0, x1, y1], holes: hl };
+    const cs = components && typeof components === 'object' ? components[i] ?? components[String(i)] : null;
+    const parts = Array.isArray(cs) ? cs.map((c) => prepPart(c, r[1])).filter(Boolean) : [];
+    return { i, top: r[0], g: r[1], eg: r[2], p, n, bb: bboxOf(p), holes: hl, parts: parts.length ? parts : null };
   });
 }
+/** The prisms that stand for building b in obstruction tests: its components, else the footprint itself. */
+export const solidsOf = (b) => b.parts || [b];
 
 /** Point in a flat ring [x,y,x,y,...] (even-odd rule). */
 export function ringContains(p, x, y) {
@@ -116,12 +143,14 @@ function rayMax(B, px, py, pz, az, skip) {
   let best = 0;
   for (let bi = 0; bi < B.length; bi++) {
     if (bi === skip) continue;
-    const b = B[bi], sl = b.top - pz;
-    if (sl <= 0) continue;
-    const r = bbRange(b, px, py, ux, uy); if (!r) continue;
-    if (sl / Math.max(r[0], 0.01) <= best) continue;
-    const tmin = entryDist(b, px, py, ux, uy);
-    if (tmin < 1e9) { const q = sl / tmin; if (q > best) best = q; }
+    for (const b of solidsOf(B[bi])) {
+      const sl = b.top - pz;
+      if (sl <= 0) continue;
+      const r = bbRange(b, px, py, ux, uy); if (!r) continue;
+      if (sl / Math.max(r[0], 0.01) <= best) continue;
+      const tmin = entryDist(b, px, py, ux, uy);
+      if (tmin < 1e9) { const q = sl / tmin; if (q > best) best = q; }
+    }
   }
   return best;
 }
@@ -137,12 +166,14 @@ export function rayBlock(B, px, py, pz, azDeg, altDeg, skip = -1) {
   let best = null;
   for (let bi = 0; bi < B.length; bi++) {
     if (bi === skip) continue;
-    const b = B[bi]; if (b.top <= pz) continue;
-    const r = bbRange(b, px, py, ux, uy); if (!r) continue;
-    if (best && r[0] >= best.dist) continue;
-    const t = entryDist(b, px, py, ux, uy); if (t >= 1e9) continue;
-    const z = pz + t * k;
-    if (z < b.top && (!best || t < best.dist)) best = { bi, dist: t, z };
+    for (const b of solidsOf(B[bi])) {
+      if (b.top <= pz) continue;
+      const r = bbRange(b, px, py, ux, uy); if (!r) continue;
+      if (best && r[0] >= best.dist) continue;
+      const t = entryDist(b, px, py, ux, uy); if (t >= 1e9) continue;
+      const z = pz + t * k;
+      if (z < b.top && (!best || t < best.dist)) best = { bi, dist: t, z, part: B[bi].parts ? b : null };
+    }
   }
   return best;
 }
@@ -220,11 +251,13 @@ export function skylineSetter(B, px, py, pz, azDeg, skip = -1) {
   let best = 0, who = -1;
   for (let bi = 0; bi < B.length; bi++) {
     if (bi === skip) continue;
-    const b = B[bi], sl = b.top - pz; if (sl <= 0) continue;
-    const r = bbRange(b, px, py, ux, uy); if (!r) continue;
-    if (sl / Math.max(r[0], 0.01) <= best) continue;
-    const t = entryDist(b, px, py, ux, uy);
-    if (t < 1e9 && sl / t > best) { best = sl / t; who = bi; }
+    for (const b of solidsOf(B[bi])) {
+      const sl = b.top - pz; if (sl <= 0) continue;
+      const r = bbRange(b, px, py, ux, uy); if (!r) continue;
+      if (sl / Math.max(r[0], 0.01) <= best) continue;
+      const t = entryDist(b, px, py, ux, uy);
+      if (t < 1e9 && sl / t > best) { best = sl / t; who = bi; }
+    }
   }
   return who;
 }
@@ -245,6 +278,51 @@ export function distToBuilding(b, x, y) {
 }
 /** Compass bearing from (x0, y0) to (x1, y1) in the local metre frame. */
 export const bearingTo = (x0, y0, x1, y1) => ((Math.atan2(x1 - x0, y1 - y0) / DEG) + 360) % 360;
+
+// ------------------------------------------------------------------ diffuse sky (relative model, not lux)
+// Mirrors apartmentscout/sun.py: a vertical window under a CIE standard overcast sky, L(alt) ∝ (1 + 2 sin alt) / 3,
+// weighted by cos(incidence) = cos(alt) cos(d) and the solid angle cos(alt) dalt dd. In altitude the integral is
+// closed form: G(h) = F(90°) − F(h), F(a) = (a/2 + sin 2a / 4 − (2/3) cos³a) / 3.
+export const FIELD_DEG = 80;
+export const DAYLIGHT_DEFAULTS = { transmittance: 0.6, glazed_area_m2: 3.0, room_surface_m2: 88.6, reflectance: 0.5 };
+const cieF = (a) => (a / 2 + Math.sin(2 * a) / 4 - (2 / 3) * Math.cos(a) ** 3) / 3;
+const CIE_TOP = cieF(Math.PI / 2);
+/** CIE-overcast, cosine-weighted sky light on a vertical window from altitudes above h degrees. */
+export const cieAbove = (h) => CIE_TOP - cieF(Math.min(90, Math.max(0, +h || 0)) * DEG);
+/**
+ * Visible-sky share for a window (0–1) relative to an unobstructed one: azimuths at the middle of each `step`
+ * degree bin within `field` degrees of a pane normal, weighted by the cosine of that angle (the nearest pane).
+ */
+export function skyView(prof, facing, panes = null, field = FIELD_DEG, step = 1) {
+  const fs = paneFacings(facing, panes), full = cieAbove(0);
+  let num = 0, den = 0;
+  for (let k = 0, n = Math.round(360 / step); k < n; k++) {
+    const az = (k + 0.5) * step;
+    let d = 180; for (const f of fs) d = Math.min(d, Math.abs(angDiff(az, f)));
+    if (d >= field) continue;
+    const w = Math.cos(d * DEG);
+    num += w * cieAbove(hAt(prof, az)); den += w * full;
+  }
+  return den ? num / den : 0;
+}
+/**
+ * Indicative average daylight factor (%): BRE T·Aw·θ / (A·(1 − R²)) with θ = 90° × sky view. An estimate from
+ * assumed room and glazing values (DAYLIGHT_DEFAULTS unless given), never a measurement.
+ */
+export function daylightFactor(sv, o = {}) {
+  const d = DAYLIGHT_DEFAULTS, T = o.transmittance ?? d.transmittance, Aw = o.glazed_area_m2 ?? d.glazed_area_m2, A = o.room_surface_m2 ?? d.room_surface_m2, R = o.reflectance ?? d.reflectance;
+  return (T * Aw * 90 * Math.max(0, Math.min(1, sv))) / (A * (1 - R * R));
+}
+/** Percent of possible sunshine by month (NOAA, New York Central Park, climate normals 1961–1990). */
+export const SUNSHINE = { nyc: { fraction: [0.54, 0.55, 0.57, 0.57, 0.57, 0.57, 0.59, 0.63, 0.59, 0.61, 0.51, 0.48], place: 'New York Central Park', source: 'NOAA climate normals 1961-1990, percent of possible sunshine' } };
+export const DAYS_IN_MONTH = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+/** Expected direct sun = possible (clear-sky) hours × the month's sunshine fraction; yearly sums use days per month. */
+export function expectedSun(possible, fraction = null) {
+  const yp = possible.reduce((a, h, i) => a + h * DAYS_IN_MONTH[i], 0);
+  if (!fraction || fraction.length !== 12) return { possible: Math.round(yp), expected: null, monthly: null };
+  const monthly = possible.map((h, i) => Math.round(h * fraction[i] * 100) / 100);
+  return { possible: Math.round(yp), expected: Math.round(possible.reduce((a, h, i) => a + h * fraction[i] * DAYS_IN_MONTH[i], 0)), monthly };
+}
 
 // ------------------------------------------------------------------ facades
 function signedArea(p) {

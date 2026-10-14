@@ -10,7 +10,7 @@
 // plan/plan2d.js (SVG plan). All lengths are inches internally.
 import { S, on, byId, label, loadJSON, store } from './app.js';
 import { $, esc, toast } from './util.js';
-import { DEG, sunPos, zonedMs, angDiff, fmtT, prepBuildings, horizonProfile, hAt, facesOf, snapOpen, compass } from './sun.js';
+import { DEG, sunPos, zonedMs, angDiff, fmtT, prepBuildings, horizonProfile, hAt, facesOf, snapOpen, compass, skyView } from './sun.js';
 import { normalisePlan, fmtIn, pointInPoly } from './plan/model.js';
 import { CATALOG, CATEGORIES, CLEARANCE, TV_FOV, resolve } from './plan/catalog.js';
 import { evaluate, gapRays, findSpot, roomOf, axes, toWorld, swingPoly, FIX_NAMES } from './plan/checks.js';
@@ -18,7 +18,7 @@ import { parseLayout, validateLayout, serialiseLayout, asPreset, newId, MAX_BYTE
 import * as G3 from './plan/scene3d.js';
 import * as P2 from './plan/plan2d.js';
 import { renderCompare, cancelCompare } from './plan/compare.js';
-import { lightState, windowReach } from './plan/light.js';
+import { lightState, windowReach, glazingScale, roomDaylight, clampGlazing, blindsOf, BLINDS_LABEL, GLAZING_DEFAULT } from './plan/light.js';
 import { parseProject, serialiseProject } from './plan/project.js';
 import { editFixture, editWindow, editOrientation } from './plan/architecture.js';
 import { canonicalFaces, snapPosition } from './unit/scenario.js';
@@ -28,10 +28,11 @@ import { cityGroup } from './plan/citymesh.js';
 const st = {
   id: null, date: '', min: 720, playing: false, site: null, mode: 'both', view: 'bird', wall: 'cut', tab: 'furniture',
   snap: true, zonesAll: false, sight: true, swings: false,
-  directSun: true, ambient: 1,
+  directSun: true, ambient: 1, glazing: 0.6, blinds: 'open',
 };
 // onSite: the plan placed on its site; winSky: one skyline per plan window (per-window city occlusion)
 let onSite = null, winSky = null, winMin = null, winMinKey = '';
+let winSkyView = null;
 let model = null, rawPlan = null, projectLibrary = Object.create(null), siteProf = null, items = [], R = [], ev = null, sel = null, flash = null, flashT = 0, loop = false, ready = false;
 const undo = [], redo = [];
 const isPhone = () => matchMedia('(max-width: 760px)').matches;
@@ -164,7 +165,7 @@ async function load(id) {
   if ((S.manifest.sites || []).includes(id)) {
     const site = await loadJSON(`${S.base}/sites/${id}.json`, null);
     if (site?.b?.length && site.b[site.target]) {
-      const B = prepBuildings(site.b, site.holes && typeof site.holes === 'object' ? site.holes : null), T = B[site.target] || B[0];
+      const B = prepBuildings(site.b, site.holes && typeof site.holes === 'object' ? site.holes : null, site.components && typeof site.components === 'object' ? site.components : null), T = B[site.target] || B[0];
       const F = canonicalFaces(facesOf(T,8,B),site.faces||[],site.version);
       const pool = F.filter((f) => !f.shared);
       st.site=site;
@@ -187,6 +188,7 @@ async function load(id) {
   const light = projectLibrary[id]?.lighting || store.get(`plan-light.${S.base}.${id}`, {});
   st.directSun = light.directSun !== false;
   st.ambient = typeof light.ambient === 'number' && Number.isFinite(light.ambient) ? Math.max(0, Math.min(2, light.ambient)) : 1;
+  st.glazing = clampGlazing(light.glazing); st.blinds = blindsOf(light.blinds);
   items = v?.ok ? v.layout.items : (model.layouts[0]?.items || []).map((x) => ({ ...x }));
   undo.length = 0; redo.length = 0; sel = null; cancelCompare(); $('psCompare').hidden = true;
   st.activePreset = v?.ok ? null : model.layouts[0]?.id || null;
@@ -204,12 +206,14 @@ function head() {
 }
 
 // ------------------------------------------------------------------ state changes
-const snapshot = () => JSON.stringify({items,plan:rawPlan,siteProfile:siteProf?Array.from(siteProf):null,lighting:{directSun:st.directSun,ambient:st.ambient}});
+/** The Light tab's settings as stored with the plan (display preview values, never measured photometry). */
+const lightingOf = () => ({ directSun: st.directSun, ambient: st.ambient, glazing: st.glazing, blinds: st.blinds });
+const snapshot = () => JSON.stringify({items,plan:rawPlan,siteProfile:siteProf?Array.from(siteProf):null,lighting:lightingOf()});
 function checkpoint() { undo.push(snapshot()); if (undo.length > 80) undo.shift(); redo.length = 0; markUndo(); }
 function persist() {
   store.set(key(st.id), serialiseLayout(st.id, items));
   if(projectLibrary[st.id]) {
-    const project=serialiseProject(rawPlan,items,{directSun:st.directSun,ambient:st.ambient});
+    const project=serialiseProject(rawPlan,items,lightingOf());
     try{saveProjectLibrary(Object.assign(Object.create(null),projectLibrary,{[st.id]:project}));}
     catch(e){toast('Browser project could not be saved. Export a complete project backup.',6000);}
   }
@@ -226,9 +230,9 @@ function doUndo(back = true) {
     if(st.site && siteProf)placeOnSite(st.site,model.floor||byId(st.id)?.floor||5);
     else dropPlacement();
   }
-  if(saved.lighting) {st.directSun=saved.lighting.directSun;st.ambient=saved.lighting.ambient;}
+  if(saved.lighting) {st.directSun=saved.lighting.directSun;st.ambient=saved.lighting.ambient;st.glazing=clampGlazing(saved.lighting.glazing);st.blinds=blindsOf(saved.lighting.blinds);}
   if (sel && !items.some((x) => x.id === sel)) sel = null;
-  if(projectLibrary[st.id])projectLibrary[st.id]=serialiseProject(rawPlan,items,{directSun:st.directSun,ambient:st.ambient});
+  if(projectLibrary[st.id])projectLibrary[st.id]=serialiseProject(rawPlan,items,lightingOf());
   persist(); markUndo(); recompute({ all: true });
   refreshSun();head();
 }
@@ -413,7 +417,7 @@ async function fileAction(f) {
   if (!model) return;
   if (f === 'save') saveBlob(new Blob([JSON.stringify(serialiseLayout(st.id, items), null, 2)], { type: 'application/json' }), `${st.id}-layout.json`);
   else if(f==='project-save') {
-    try { const project=serialiseProject(rawPlan,items,{directSun:st.directSun,ambient:st.ambient});saveBlob(new Blob([JSON.stringify(project,null,2)],{type:'application/json'}),`${st.id}-project.json`); }
+    try { const project=serialiseProject(rawPlan,items,lightingOf());saveBlob(new Blob([JSON.stringify(project,null,2)],{type:'application/json'}),`${st.id}-project.json`); }
     catch(e) { toast(`Project export failed: ${e.message || e}`,5000); }
   }
   else if(f==='project-restore') {
@@ -597,7 +601,7 @@ function bindArchitecture() {
     try {
       const values={};for(const el of $('psArchFields').querySelectorAll('[data-arch]')){if(el.value.trim()==='')throw Error('Enter a value for each dimension.');values[el.dataset.arch]=+el.value;}
       const [kind,index]=target.value.split(':');const edited=kind==='fx'?editFixture(rawPlan,+index,values):kind==='win'?editWindow(rawPlan,+index,values):editOrientation(rawPlan,values.bearing);
-      const project=serialiseProject(edited,items,{directSun:st.directSun,ambient:st.ambient});
+      const project=serialiseProject(edited,items,lightingOf());
       saveProjectLibrary(Object.assign(Object.create(null),projectLibrary,{[st.id]:project}));
       checkpoint();rawPlan=project.plan;model=normalisePlan(rawPlan);
       G3.setModel(model);G3.setWallMode(st.wall);P2.setModel(model);
@@ -690,15 +694,22 @@ function refreshSun() {
   const placementKnown=!st.site||!!siteProf;
   const light = lightState({ bearing:placementKnown?model.up_bearing:null, altitude:s.alt, blocked:!!blocked, directSun:st.directSun, ambient:st.ambient });
   const rel = (s.az - (model.up_bearing ?? 0)) * DEG, ca = Math.cos(s.alt * DEG);
-  G3.setLighting({ambient:light.ambient});
+  const gz = glazingScale({ transmittance: st.glazing, blinds: st.blinds });
+  G3.setLighting({ambient:light.ambient, sun:gz.sun});
   G3.setSun({ x: Math.sin(rel) * ca, y: Math.cos(rel) * ca, up: Math.sin(s.alt * DEG) }, light.directional, up);
   const tv = $('pTimeV'); if (tv) tv.textContent = fmtT(st.min);
   const t = $('pTime'); if (t) t.style.setProperty('--p', `${((st.min - 300) / 930) * 100}%`);
   $('phud').innerHTML = `<span>${esc(st.date)} ${fmtT(st.min)}</span><span class="${light.directional ? 'lit' : 'shade'}">${!placementKnown ? 'Window placement unresolved · direct sun withheld' : !light.orientationKnown ? 'Orientation unknown · direct sun unresolved' : !up ? 'Night' : blocked ? (perWin ? 'Every window shaded by neighbours' : 'Site observation point shaded') : nBlk ? `Sun blocked at ${nBlk} of ${perWin.length} windows` : !st.directSun ? 'Direct sun hidden in preview' : `Sun ${Math.round(s.alt)}° up, ${compass(s.az)}`}</span>`;
   const el = $('psLight'); if (!el) return;
   if (!el.querySelector('#psLightResults')) {
-    el.innerHTML = `<div class="ps-light-controls"><label class="tg"><input id="psDirectSun" type="checkbox"> Show directional sunlight</label>${onSite ? `<label class="tg ps-city-tg"><input id="psCityTg" type="checkbox"> Show the city outside</label>` : ''}<div class="field"><label for="psAmbient">Background light preview <span id="psAmbientValue"></span></label><input id="psAmbient" type="range" min="0" max="2" step="0.05"></div><p class="ps-note faint">Background intensity is a display preference, not measured brightness or lux.</p></div><div id="psLightResults"></div>`;
-    const saveLight=()=>{store.set(`plan-light.${S.base}.${st.id}`,{directSun:st.directSun,ambient:st.ambient});if(projectLibrary[st.id])persist();refreshSun();};
+    el.innerHTML = `<div class="ps-light-controls"><label class="tg"><input id="psDirectSun" type="checkbox"> Show directional sunlight</label>${onSite ? `<label class="tg ps-city-tg"><input id="psCityTg" type="checkbox"> Show the city outside</label>` : ''}<div class="field"><label for="psAmbient">Background light preview <span id="psAmbientValue"></span></label><input id="psAmbient" type="range" min="0" max="2" step="0.05"></div><p class="ps-note faint">Background intensity is a display preference, not measured brightness or lux.</p>
+      <div class="ps-glaze"><div class="label">Glass and blinds <span class="pill">Preview</span></div>
+        <div class="field"><label for="psGlazing">Glazing transmittance <span id="psGlazingValue"></span></label><input id="psGlazing" type="range" min="0.05" max="1" step="0.05" aria-describedby="psGlazeNote"></div>
+        <div class="seg ps-blinds" id="psBlinds" role="group" aria-label="Blinds">${Object.entries(BLINDS_LABEL).map(([k, t]) => `<button type="button" data-b="${k}" aria-pressed="false">${t}</button>`).join('')}</div>
+        <p class="ps-note faint" id="psGlazeNote">Assumed: ${GLAZING_DEFAULT} is typical double glazing; half blinds pass about half the light, closed about a tenth. Scales the sun patches and the daylight estimate; not a material model.</p></div></div><div id="psLightResults"></div>`;
+    const saveLight=()=>{store.set(`plan-light.${S.base}.${st.id}`,lightingOf());if(projectLibrary[st.id])persist();refreshSun();};
+    $('psGlazing').oninput=e=>{st.glazing=clampGlazing(+e.target.value);saveLight();};
+    $('psBlinds').onclick=e=>{const b=e.target.closest('[data-b]');if(!b)return;st.blinds=blindsOf(b.dataset.b);saveLight();};
     $('psDirectSun').onchange=e=>{st.directSun=e.target.checked;saveLight();};
     $('psAmbient').oninput=e=>{st.ambient=+e.target.value;saveLight();};
     $('psCityTg')?.addEventListener('change', (e) => { st.city = e.target.checked; store.set(`plan-city.${S.base}`, st.city); applyCity(); });
@@ -708,6 +719,10 @@ function refreshSun() {
   $('psDirectSun').disabled=!light.orientationKnown;
   $('psAmbient').value=st.ambient;
   $('psAmbientValue').textContent=st.ambient.toFixed(2)+'×';
+  $('psGlazing').value=st.glazing; $('psGlazingValue').textContent=st.glazing.toFixed(2);
+  $('psGlazing').style.setProperty('--p', `${((st.glazing - 0.05) / 0.95) * 100}%`);
+  $('psBlinds').querySelectorAll('[data-b]').forEach((b) => { const on = b.dataset.b === st.blinds; b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); });
+  const sky = windowSky(), rooms = sky ? roomDaylight(model, sky, { transmittance: st.glazing, blinds: st.blinds }) : [];
   const rows = model.windows.map((w, wi) => {
     const reach=windowReach({bearing:w.bearing,sunAzimuth:s.az,altitude:s.alt,head:w.head,orientationKnown:light.orientationKnown,blocked:perWin ? perWin[wi] : !!blocked});
     const status={'orientation-unknown':'Orientation unresolved',night:'Night','site-blocked':perWin ? 'Shaded by neighbours' : 'Site observation point shaded',behind:'Sun behind this wall',unresolved:'Window dimensions unresolved'}[reach.state];
@@ -717,9 +732,28 @@ function refreshSun() {
   $('psLightResults').innerHTML = `<p class="ps-sunline">${esc(st.date)} at ${fmtT(st.min)}: sun ${Math.round(s.az)}° ${compass(s.az)}, ${up ? Math.round(s.alt) + '° up' : 'below the horizon'}.</p>
     ${!light.orientationKnown ? `<p class="ps-note">${!placementKnown ? 'The city model does not resolve a valid window observation point for this edited plan. Re-establish its placement before interpreting sunlight.' : 'Confirm the plan orientation to enable directional sunlight. No north-facing assumption is applied.'}</p>` : ''}
     <table class="mini"><thead><tr><th>Window</th><th class="num">Faces</th><th>Geometric estimate</th>${winSky ? '<th class="num">Sun today</th>' : ''}</tr></thead><tbody>${rows}</tbody></table>
-    <p class="ps-note faint">${winSky ? `Each window has its own skyline from the city model: the plan's window wall is placed on the ${Math.round(onSite.az)}° facade at the site's window position, floor ${esc(model.floor || byId(st.id)?.floor || '?')}, so a neighbour in front of one window shades only that window. Where the unit sits along the facade is an assumption.` : siteProf ? 'Neighbour shading uses one assumed observation point from the city model. It does not resolve each individual window or a multi-facade apartment.' : 'No resolved neighbouring-window observation point is available for this plan.'} Floor reach is an unoccluded projection from window-head height, not actual room penetration. Walls and furniture can intercept it. Rendered shadows are approximate; glazing, clouds, diffuse daylight and reflections are not simulated.</p>`;
+    ${daylightTable(rooms, sky)}
+    <p class="ps-note faint">${winSky ? `Each window has its own skyline from the city model: the plan's window wall is placed on the ${Math.round(onSite.az)}° facade at the site's window position, floor ${esc(model.floor || byId(st.id)?.floor || '?')}, so a neighbour in front of one window shades only that window. Where the unit sits along the facade is an assumption.` : siteProf ? 'Neighbour shading uses one assumed observation point from the city model. It does not resolve each individual window or a multi-facade apartment.' : 'No resolved neighbouring-window observation point is available for this plan.'} Floor reach is an unoccluded projection from window-head height, not actual room penetration. Walls and furniture can intercept it. Rendered shadows are approximate. Glass and blinds are preview multipliers, the daylight factor is an overcast-sky estimate, and clouds, reflections and real photometry are not simulated.</p>`;
 }
 
+/** Sky view (CIE overcast, relative) per plan window: its own skyline when placed on the site, else the one assumed point. */
+function windowSky() {
+  if (!model || (st.site && !siteProf)) return null;
+  if (winSky && winSky.length === model.windows.length) {
+    if (winSkyView?.src !== winSky) winSkyView = { src: winSky, v: model.windows.map((w, i) => (winSky[i] ? skyView(winSky[i].prof, w.bearing) : null)) };
+    return winSkyView.v;
+  }
+  if (siteProf && model.up_bearing != null) return model.windows.map((w) => skyView(siteProf, w.bearing));
+  return null;
+}
+function daylightTable(rooms, sky) {
+  if (!sky) return '<p class="ps-note faint">No city model for this plan, so its sky view and daylight are unknown.</p>';
+  if (!rooms.length) return '';
+  const gz = glazingScale({ transmittance: st.glazing, blinds: st.blinds });
+  return `<h3 class="label ps-df-h">Estimated daylight factor <span class="pill">Preview</span></h3>
+    <table class="mini ps-df"><thead><tr><th>Room</th><th class="num">Glass</th><th class="num" title="Share of an unobstructed window's overcast-sky light">Sky view</th><th class="num">DF est.</th></tr></thead><tbody>${rooms.map((r) => `<tr><td>${esc(r.room)}</td><td class="num">${r.glazed_m2.toFixed(1)} m²</td><td class="num" title="visible sky angle ${Math.round(r.theta)}°">${Math.round((r.theta / 90) * 100)}%</td><td class="num"><b>${r.df < 1 ? r.df.toFixed(2) : r.df.toFixed(1)}%</b></td></tr>`).join('')}</tbody></table>
+    <p class="ps-note faint">Average daylight factor (BRE formula T·Aw·θ / A(1 − R²)) from this plan's room and window sizes, the sky each window sees under an overcast sky (θ = 90° × sky view), ${Math.round(gz.through * 100)}% of light through glass and blinds, 80% of each opening glazed, reflectance 0.5. For comparing rooms and settings: not a measurement, not lux.${winSky ? '' : ' One assumed observation point stands in for every window.'}</p>`;
+}
 // ------------------------------------------------------------------ the plan on its site (per-window skylines, city outside)
 const up_ = (s) => s.alt > 0;
 const hmShort = (min) => { if (!min) return 'none'; const h = Math.floor(min / 60), mm = Math.round(min % 60); return h && mm ? `${h} h ${String(mm).padStart(2, '0')}` : h ? `${h} h` : `${mm} m`; };

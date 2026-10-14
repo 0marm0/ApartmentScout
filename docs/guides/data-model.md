@@ -152,7 +152,7 @@ Three optional fields. See [photos](photos.md) for sources, licences and privacy
    "page": "https://commons.wikimedia.org/wiki/File:Example.jpg",
    "title": "Example Tower from the west", "author": "Jane Doe",
    "license": "CC BY-SA 4.0", "license_url": "https://creativecommons.org/licenses/by-sa/4.0",
-   "source": "Wikimedia Commons", "scope": "building", "distance_m": 42,
+   "source": "Wikimedia Commons", "scope": "building", "distance_m": 42, "year": 2023,
    "width": 960, "height": 1280, "local": "media/the-unit-507/960px-Example-5e6f7a8b.jpg"}
 ]
 ```
@@ -167,7 +167,10 @@ Three optional fields. See [photos](photos.md) for sources, licences and privacy
 | `building_photos[].author`, `license`, `license_url` | string | Plain-text credit. Show `author` and `license` with every image. |
 | `building_photos[].source` | string | `Wikimedia Commons`, or where an agent found it (`Building website`, ...). |
 | `building_photos[].scope` | enum | How close the photo is to the unit: `exact-unit`, `same-line` (same tier on another floor), `building`, `street` (the block, not this building), `aerial`. |
+| `building_photos[].title` | string | The file's title, for alt text. |
 | `building_photos[].distance_m` | number | Camera position to the listing, metres (Commons only). |
+| `building_photos[].year` | number | Year taken when Commons records it; show it, buildings change. |
+| `building_photos[].width`, `height` | number | Size of `url` in pixels. |
 | `building_photos[].local` | string | Saved copy under `media/`, private searches only. |
 
 ## Commute
@@ -271,6 +274,10 @@ files (without the newer keys) still load.
   "listing": {"id": "emerald-green-1211", "floor": 12, "exposure": ["SSW"], "...": "..."},
   "b": [[77.0, 0.0, 1, [x0, y0, x1, y1, "..."]], "..."],
   "holes": {"17": [[[x, y], "..."]]},
+  "components": {"668": [{"ring": [[x, y], "..."], "base_m": 0.0, "top_m": 40.0, "kind": "podium",
+                          "source": "osm way 123456", "confidence": "medium",
+                          "ref": "https://www.openstreetmap.org/way/123456", "cover": 0.97}, "..."]},
+  "components_info": {"parts": 207, "buildings": 14, "partial": 12, "height_mismatch": 2, "radius_m": 400},
   "bmeta": [{"bin": "1087840", "bbl": "1007610043", "address": "320 West 38 Street", "year": 2007, "floors": 28,
              "height_src": "roof", "src": "nyc-footprints", "geom_src": "photogrammetric", "edited": 2017,
              "fcode": "2100"}, "..."],
@@ -285,7 +292,13 @@ files (without the newer keys) still load.
             "skyline_ahead_deg": 33.8, "open_sky_share": 0.28,
             "sun_hours_range": {"lo": [12], "hi": [12], "positions": [0.2, 0.5, 0.8], "floors": [10, 11, 12, 13, 14]},
             "sun_hours_future": [12 numbers], "sun_hours_panes": [[12], [12], [12]],
-            "blockers": [{"b": 276, "min": [12 minute counts], "dist": 46.3}]},
+            "blockers": [{"b": 276, "min": [12 minute counts], "dist": 46.3}],
+            "sky_view": 0.336, "daylight_factor_est": 0.82, "daylight_floors": {"2": [0.21, 0.51], "...": "..."},
+            "daylight_model": {"sky": "CIE standard overcast", "field_deg": 80, "transmittance": 0.6,
+                               "glazed_area_m2": 3.0, "room_surface_m2": 88.6, "reflectance": 0.5,
+                               "formula": "...", "estimate": true},
+            "sun_year": {"possible": 1350, "expected": 789}, "sun_hours_expected": [12 numbers],
+            "sunshine": {"fraction": [12 numbers], "place": "New York Central Park", "source": "NOAA ..."}},
   "roofs": {"radius_m": 150, "from": "window", "floor_height_m": 3.21, "eye_offset_m": 1.6, "top_floor": 23,
             "floor": 12, "eye_m": 36.9,
             "facing": {"bearing": 208.8, "half": 45, "rows": [[b, dist, top, clears_floor], "..."], "clears_floor": 18},
@@ -313,6 +326,8 @@ files (without the newer keys) still load.
 |---|---|
 | `b` | Buildings: `[top, ground, is_target, flat outer ring]`. Rings are simplified (vertices within 0.3 m of a straight line are dropped), so a straight wall is one edge. |
 | `holes` | Inner rings (light courts, courtyards) by building index. Their edges are walls; a point inside a hole is open air. |
+| `components` | Optional stacked prisms by building index that replace that building's single prism in every obstruction calculation (skyline, blockers, sun hours, floors table, range, sky view) and in the 3D views. Each: `ring` (local metres), `base_m` and `top_m` (metres above the building's own ground), `kind` (`podium`, `tower`, `setback`, `bulkhead`), `source` (`osm way <id>` / `osm relation <id>` for OpenStreetMap `building:part` outlines, `manual: ...` from `sites/<id>.components.yaml`), `confidence` (`high`, `medium`, `low`: OSM heights from levels are low), optional `ref` (link), `cover` (share of the footprint the OSM parts cover) and `holes`. The skyline counts each component from the ground up (one obstruction angle per direction); `base_m` is for drawing and the record. |
+| `components_info` | What the component step did: OSM `parts` read, `buildings` split, footprints left whole because their parts cover less than 90 % (`partial`) or disagree with the roof height by more than max(8 m, 20 %) (`height_mismatch`), the query `radius_m`, `manual` buildings from the components file and any `problems` reading it. |
 | `bmeta` | Per building, aligned with `b`; unknown keys are omitted. `height_src`: `roof` (NYC photogrammetry), `pluto-floors` (PLUTO floors x 3.2 m + 2 m), `osm-height`, `osm-levels` (levels x 3.2 m + 2 m) or `default` (10 m, nothing known). `src`: `nyc-footprints` or `osm`. `name`: the footprint's own name (e.g. "Empire State Building"; preferred over the PLUTO address for landmark labels) or the OSM name. `floors`: PLUTO number of floors (OSM: `building:levels`). NYC only: `geom_src` (`photogrammetric` or `manual`: a hand-drawn outline), `edited` (year the record was last edited; most heights date from 2017) and `fcode` (feature code: `2100` building, `5100` building under construction, `1003` construction placeholder, `1006` cantilevered, `1000`-`1005` minor structures). |
 | `floor_height_m`, `floor_height_src` | Storey height used for eye heights and floor numbers. `pluto`: target roof height / PLUTO floors, clamped to 2.8-4.2 m (`floor_height_raw` holds the unclamped ratio when clamping happened; a `storey` check warns); `osm-levels` likewise from OSM; `manual`: `--floor-height`, or `--slab-height` (the listing floor's slab above street level, kept in `slab_m`) divided by floor - 1; `default`: 3.2 m. Version 1 files have no source and use 3.2 m. |
 | `faces` | Target facades (edges of 8 m or more) with outward `bearing`. `shared: true` marks a party wall: points 0.5 to 1.5 m outside it fall inside another footprint (`shared_h` is that neighbour's roof). A partly shared face carries `open: [t0, t1]`, its longest unobstructed stretch. Shared faces are never picked for the window. |
@@ -321,17 +336,33 @@ files (without the newer keys) still load.
 | `study.sun_hours_range` | Lowest and highest monthly hours over window positions 20 / 50 / 80 % along the open stretch (`positions`, as `t`) and floors f-2 to f+2 (`floors`): the uncertainty from not knowing exactly where the window is. |
 | `study.sun_hours_future` | Hours with `future` buildings added, when they change anything. |
 | `study.sun_hours_panes` | With several panes: hours through each pane alone (same order as `window.panes`). `sun_hours` is the union: the sun counts when it is above the skyline and in front of any pane. |
+| `study.sky_view`, `study.daylight_factor_est`, `study.daylight_floors` | Diffuse daylight, a relative model and not lux: `sky_view` (0-1) is the window's visible sky weighted by a CIE overcast sky and the cosine on the glass, over +/-80 degrees of its normal, relative to an unobstructed window; `daylight_factor_est` is an indicative average daylight factor in % for an assumed room (`daylight_model`: BRE formula T x Aw x theta / (A (1 - R^2)) with theta = 90 degrees x sky view). `daylight_floors` gives `[sky_view, daylight_factor_est]` for every floor. See the methodology guide. |
+| `study.sun_hours_expected`, `study.sun_year`, `study.sunshine` | `sun_hours` are possible (clear-sky) hours. `sun_hours_expected` scales them by the month's sunshine fraction (`sunshine`: NOAA Central Park normals 1961-1990 for NYC; absent for other cities); `sun_year` sums possible and expected hours over the year (hours on the 15th x days in the month; `expected` null without a climatology). |
 | `study.blockers` | The buildings that shade the window: `b` (index into `b`/`bmeta`; the target itself when the sun is around the corner of its own walls), minutes shaded on the 15th of each month (`min`, only while the sun is up and in front of a pane) and the nearest distance along the sun ray (`dist`, m). Top 6 by minutes over the year. |
 | `roofs` | Eye height against neighbouring roofs within 150 m of the window. `facing`: the window's sector (bearing +/- 45 degrees) with up to 8 nearest buildings as `[b, dist, top, clears_floor]` (`b` < 0 = `future[-b - 1]`) and `clears_floor`, the lowest floor whose eye height (slab + 1.6 m) is above all of them (null when even `top_floor` is not). `sectors`: eight 45 degree sectors with the 6 nearest `[b, dist, top]`, `max_top` and its `clears_floor`. Bearings point at the nearest part of each footprint. |
 | `neighbours` | Every building within 300 m of the window (or the origin), nearest first: `[b, dist, bearing, h, top]` (distance to the footprint's nearest point, bearing to that point, own height and roof relative to the target's ground). Names, floors and sources stay in `bmeta`. `apartmentscout site <id> --neighbours` writes the full table to `research/<id>-neighbours.csv`. |
-| `checks` | Self-checks on the built model, each `{"id", "status": "pass" \| "warn" \| "fail", "msg"}`: `origin` (address point within 15 m of the target), `ground` (target ground is 0), `storey` (clamped storey height), `anchor` (window anchor 0.2 m inside the target), `outside` (open air 0.5-1.5 m outside the window), `outside-future`, `streets` (named streets on opposite sides within 150 m), `future-overlap`, `heights` (more than 25 % guessed heights in front of the window warns) and `limits` (a download hit its row limit). Printed by `apartmentscout site`. |
+| `checks` | Self-checks on the built model, each `{"id", "status": "pass" \| "warn" \| "fail", "msg"}`: `origin` (address point within 15 m of the target), `ground` (target ground is 0), `storey` (clamped storey height), `anchor` (window anchor 0.2 m inside the target), `outside` (open air 0.5-1.5 m outside the window), `outside-future`, `streets` (named streets on opposite sides within 150 m), `future-overlap`, `heights` (more than 25 % guessed heights in front of the window warns), `limits` (a download hit its row limit), `components` (how many buildings were split; warns on problems in the components file) and `window-component` (the unit's own building has components: warns when none reaches the facade behind the window at its height). Printed by `apartmentscout site`. |
 | `receipts` | One entry per dataset read: `calls`, `rows`, `limit_hit` (a query returned exactly its `$limit`, so rows were probably cut off), `retrieved`, `rows_updated` (the dataset's own last update, from Socrata metadata; for Overpass the OSM base timestamp) and per query the first 16 hex of the payload's sha256 and the URL when short. Full receipts sit next to the cache as `<cache>/site/*.receipt.json`. |
 | `streets` | Street centrelines within the site radius (`width_m` = roadbed width where known). |
 | `future` | New buildings filed with or permitted by NYC DOB that are not standing yet. `status`: `proposed`, `permit` (plans approved), `under-construction` (work permit issued), `complete` (not yet in the footprints). `ring_src`: `tax-lot` (the whole lot, an upper bound) or `point` (location only). |
 | `provenance` | Where `exposure`, `window_position` (`listing`, `plan`, `agent`, `photo-landmarks`, `model`, `assumed`) and `floor` (`listing`, `inferred`, `assumed`) came from. Filled from the listing's `exposure_source`, `window_position_source` and `floor_inferred`. `target`: how the building was matched (`bin` = the listing's BIN, `bbl` = its tax lot, `point` = the footprint containing the geocoded point, `nearest` = the nearest tall-enough footprint within 45 m); `target_offset_m`: how far the address point lies outside that footprint (over 10 m adds a note). |
 
 The listing gets a summary in `site`: file, floor, bearing, `sun_hours`, `sun_hours_range` (`lo`, `hi`),
-`skyline_ahead_deg` and `open_sky_share`.
+`skyline_ahead_deg`, `open_sky_share`, `sky_view`, `daylight_factor_est`, `sun_year` and, where a sunshine
+table exists, `sun_hours_expected`.
+
+Manual components live next to the site file as `sites/<id>.components.yaml` and are read on every
+`apartmentscout site <id>` (`--no-components` skips only the OpenStreetMap parts):
+
+```yaml
+lonlat: false                # true: rings and "at" are [lon, lat]
+buildings:
+  - select: target           # or {bin: "1012345"}, {bbl: "1008350001"}, {b: 12}, {at: [x, y]}
+    components:
+      - {kind: podium, ring: footprint, base_m: 0, top_m: 24, source: "DOB zoning diagram, job 123", confidence: high}
+      - {kind: tower, ring: [[-10, -60], [10, -60], [10, -40], [-10, -40]], base_m: 24, top_m: 140,
+         source: "DOB zoning diagram, job 123"}
+```
 
 `apartmentscout site <id> --samples` writes `research/<id>-sun-samples.csv`: every 6 minutes of the move-in
 day (listing `available`, else `search.move_in.earliest`) and of Mar 20, Jun 21 and Dec 21, with sun azimuth

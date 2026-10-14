@@ -40,6 +40,9 @@ test('invalid imports fail without mutating the source project', () => {
     p => { p.layout.items[0].x = 6000; },
     p => { p.lighting.ambient = 3; },
     p => { p.lighting.lux = 500; },
+    p => { p.lighting.glazing = 1.5; },
+    p => { p.lighting.glazing = '0.6'; },
+    p => { p.lighting.blinds = 'venetian'; },
     p => { p.plan.source = '<script>'; },
     p => { p.plan.layouts = [{ items: [{ ref: 'queen-bed', x: '2', y: 3 }] }]; },
   ];
@@ -71,4 +74,10 @@ test('geometry units preserve equivalent feet, metres and inches', () => {
     assert.equal(r.ok, true, r.error);
     assert.ok(Math.abs(r.model.bounds.x1 - 168) < 0.0001);
   }
+});
+
+test('glass and blinds preview settings round-trip with the project', () => {
+  const r = parseProject(serialiseProject(plan, items, { directSun: true, ambient: 1, glazing: 0.45, blinds: 'half' }));
+  assert.equal(r.ok, true, r.error);
+  assert.deepEqual(r.project.lighting, { directSun: true, ambient: 1, glazing: 0.45, blinds: 'half' });
 });

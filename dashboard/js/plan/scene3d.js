@@ -83,7 +83,7 @@ export function setModel(m) { model = m; colors = themeColors(); buildShell(); f
 export function setWallMode(m) { wallMode = m; if (model) buildShell(); }
 export function retheme() { colors = themeColors(); if (model) { buildShell(); rebuildAllItems(); } }
 let lastItems = [];
-let lighting = { ambient: 1 };
+let lighting = { ambient: 1, sun: 1 };
 // per-window city shade: an invisible shadow caster fills the opening of every window a neighbour blocks
 let shades = [], shadeState = [];
 export function setWindowShade(blocked = []) {
@@ -112,6 +112,8 @@ export function setCity(group) {
 export const hasCity = () => !!city;
 export function setLighting(options = {}) {
   if (Number.isFinite(options.ambient)) lighting.ambient = Math.max(0, Math.min(2, options.ambient));
+  // glazing x blinds preview: scales the direct-sun patches only (plan/light.js glazingScale)
+  if (Number.isFinite(options.sun)) lighting.sun = Math.max(0, Math.min(2, options.sun));
   dirty = true;
 }
 
@@ -246,7 +248,7 @@ export function setSun(dir, on, up) {
   if (!model) return;
   const v = new THREE.Vector3(dir.x, dir.up, -dir.y).normalize();
   sunL.position.copy(sunL.target.position).addScaledVector(v, 60);
-  sunL.intensity = on ? 3.6 + 4 * Math.max(0, dir.up) : 0;
+  sunL.intensity = on ? (3.6 + 4 * Math.max(0, dir.up)) * lighting.sun : 0;
   hemi.intensity = (up ? colors.hemiDay : colors.hemiNight) * lighting.ambient;
   amb.intensity = (up ? 0.45 : 0.3) * lighting.ambient;
   scene.background = (up ? colors.bg : colors.night).clone();
