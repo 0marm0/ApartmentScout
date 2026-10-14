@@ -69,33 +69,37 @@ def _find(listings, key):
 
 
 # --------------------------------------------------------------------------- commands
-def cmd_init(args):
+def cmd_init(args, input_fn=None):
+    """Create a search folder: the commented template, a criteria file you wrote or downloaded (--criteria), or the
+    answers to the intake questionnaire (--interactive; falls back to the template when stdin is not a terminal)."""
+    from .intake import Quit, init_search, interview, render_criteria
     root = Path(args.path).resolve()
     if (root / "criteria.yaml").exists() and not args.force:
         sys.exit(f"{root} already has a criteria.yaml (use --force to overwrite).")
-    root.mkdir(parents=True, exist_ok=True)
-    src = REPO / "config" / "criteria.example.yaml"
-    text = src.read_text()
-    if args.city:
-        text = text.replace("city: generic", f"city: {args.city}")
-        prof = city_profile(args.city)
-        if prof.get("timezone"):
-            text = text.replace("timezone: America/New_York", f"timezone: {prof['timezone']}")
-        if prof.get("transit_feeds"):
-            import yaml
-            # each feed whole (name, url, mode, exclude_routes, map_lines ...), one flow mapping per line
-            feeds = "\n".join("      - " + yaml.safe_dump(dict(f), default_flow_style=True, sort_keys=False,
-                                                          width=10_000).strip() for f in prof["transit_feeds"])
-            text = text.replace("    feeds: []                # add GTFS feeds: - {name: City Metro, url: https://.../gtfs.zip}",
-                                "    feeds:\n" + feeds)
-    (root / "criteria.yaml").write_text(text)
-    (root / "research").mkdir(exist_ok=True)
-    (root / "plans").mkdir(exist_ok=True)
-    if not (root / "listings.json").exists():
-        save([], root / "listings.json")
-    with (root / "listings.template.csv").open("w") as f:
-        f.write(",".join(CSV_TEMPLATE_COLUMNS) + "\n")
-    log(f"Created {root}\n  1. Edit criteria.yaml (budget, must-haves, commute addresses).\n"
+    text = None
+    if args.criteria:
+        try:
+            text = Path(args.criteria).read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError) as e:
+            sys.exit(f"Cannot read {args.criteria}: {e}")
+    elif args.interactive:
+        if input_fn is None and not (sys.stdin.isatty() and sys.stdout.isatty()):
+            log("Not a terminal, so there is nothing to ask: using the template. "
+                "Edit criteria.yaml, or answer config/intake.yaml's questions with your agent.")
+        else:
+            try:
+                answers = interview(input_fn or input, log)
+            except (Quit, KeyboardInterrupt):
+                sys.exit("\nStopped before the end of the questions; nothing was written.")
+            if args.city:
+                answers.setdefault("search", {})["city"] = args.city
+            text = render_criteria(answers, "Written by apartmentscout init --interactive.")
+    try:
+        city = init_search(root, args.city, text, force=args.force)
+    except ValueError as e:
+        sys.exit(f"criteria.yaml has problems, nothing was written:\n{e}")
+    log(f"Created {root} (city: {city})\n  1. {'Review' if text else 'Edit'} criteria.yaml (budget, must-haves, commute addresses);"
+        f" `apartmentscout criteria --check {root / 'criteria.yaml'}` validates it.\n"
         f"  2. Add listings: `apartmentscout import listings.csv` or ask your agent to research them.\n"
         f"  3. `apartmentscout all --search {root}` then `apartmentscout serve --search {root}`.")
 
@@ -575,6 +579,10 @@ def main(argv=None):
     s.add_argument("path")
     s.add_argument("--city", default=None, help="nyc enables NYC Open Data modules")
     s.add_argument("--force", action="store_true")
+    s.add_argument("--criteria", metavar="FILE", help="start from this criteria.yaml (for example one downloaded from "
+                   "the dashboard's New search wizard); it is validated and the city's transit feeds are added if missing")
+    s.add_argument("--interactive", action="store_true", help="answer the intake questionnaire (config/intake.yaml) "
+                   "on the terminal; without a terminal this writes the template")
     s.set_defaults(fn=cmd_init)
     s = add("import", cmd_import, "import listings from CSV or JSON")
     s.add_argument("file")
