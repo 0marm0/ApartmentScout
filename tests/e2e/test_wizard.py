@@ -383,3 +383,16 @@ def test_served_server_rejects_what_the_page_missed(served) -> None:
       return [x.status, await x.json()]; }""")
     assert r[0] == 422 and "sizes must rise" in " ".join(r[1]["errors"])
     assert (searches / "mine" / "criteria.yaml").read_text() == before
+
+
+def test_an_untouched_wizard_leaves_no_draft_behind(open_page) -> None:
+    s = _open(open_page)
+    pg = s.page
+    pg.keyboard.press("Escape")
+    pg.wait_for_function("() => !document.querySelector('.wz-scrim.on')")
+    kept = pg.evaluate("() => Object.keys(localStorage).filter((k) => k.startsWith('as:wizard')).map((k) => localStorage.getItem(k)).filter((v) => v !== 'null')")
+    assert kept == [], "nothing was typed, so nothing is kept"
+    pg.evaluate("async () => (await import('/js/app.js')).openWizard({ mode: 'new' })")
+    pg.wait_for_selector(WIZARD)
+    assert "unfinished draft" not in pg.inner_text(".wz-main")
+    assert not s.take()

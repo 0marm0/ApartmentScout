@@ -30,16 +30,15 @@ export async function openWizard({ mode = 'new', step = 0, fresh = false } = {})
   const ctx = M.contextOf(S.crit0, api?.cities?.map(toCity));
   const saved = fresh ? null : store.get(draftKey(mode), null);
   let draft, resumed = false;
-  if (saved?.draft && saved.v === 1) {
-    const base = mode === 'edit' ? M.draftFromCriteria(S.crit0, ctx) : M.blankDraft(ctx);
-    draft = Object.assign(base, saved.draft); resumed = true; step = step || saved.step || 0;
-  } else if (mode === 'edit') draft = M.draftFromCriteria(S.crit0, ctx);
+  if (mode === 'edit') draft = M.draftFromCriteria(S.crit0, ctx);
   else {
     const cur = S.crit0.search?.city, known = ctx.cities.some((c) => c.id === cur);
     draft = M.blankDraft(ctx, { city: known ? cur : 'generic' });
     if (S.crit0.search?.map_center && known) draft.map_center = [...S.crit0.search.map_center];
   }
-  W = { mode, draft, step: Math.min(step, ORDER.length - 1), reached: saved?.reached || 0, touched: new Set(), attempted: new Set(), api, ctx, result: null, busy: false, resumed, serverErrors: [] };
+  const base = JSON.stringify(draft);   // what an untouched wizard holds; a draft equal to it is not worth keeping
+  if (saved?.draft && saved.v === 1) { draft = Object.assign(draft, saved.draft); resumed = true; step = step || saved.step || 0; }
+  W = { mode, draft, base, step: Math.min(step, ORDER.length - 1), reached: saved?.reached || 0, touched: new Set(), attempted: new Set(), api, ctx, result: null, busy: false, resumed, serverErrors: [] };
   W.reached = Math.max(W.reached, W.step);
   lastFocus = document.activeElement;
   document.body.classList.remove('rail-open');
@@ -68,7 +67,7 @@ function close() {
   lastFocus?.focus?.();
   if (W && !W.result && isDirty()) toast('Draft saved. Open New search to continue where you left off.');
 }
-const isDirty = () => JSON.stringify(W.draft) !== JSON.stringify(W.mode === 'edit' ? M.draftFromCriteria(S.crit0, W.ctx) : M.blankDraft(W.ctx, { city: W.draft.city }));
+const isDirty = () => JSON.stringify(W.draft) !== W.base;
 
 // ------------------------------------------------------------------ derived
 const stepId = () => ORDER[W.step];
@@ -187,6 +186,7 @@ function scheduleSave() {
 function flushSave() {
   clearTimeout(saveTimer);
   if (!W || W.result?.kind === 'created') return;
+  if (!isDirty()) { store.set(draftKey(W.mode), null); return; }
   store.set(draftKey(W.mode), { v: 1, draft: W.draft, step: W.step, reached: W.reached, at: Date.now() });
   const s = $('wzSaved'); if (s && W.step < ORDER.length) { s.textContent = 'Draft saved'; s.classList.add('show'); clearTimeout(savedTimer); savedTimer = setTimeout(() => s.classList.remove('show'), 1400); }
 }
