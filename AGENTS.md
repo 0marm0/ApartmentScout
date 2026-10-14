@@ -78,6 +78,7 @@ apartmentscout dossier [id ...]                   # NYC public records (default:
 apartmentscout site <id> --floor 12 --charts      # 3D site model, sun and view study
 apartmentscout score                              # score and rank
 apartmentscout report                             # shortlist.md
+apartmentscout share --picks picks.json --out shortlist.html   # read-only shortlist page; --memo for the decision memo
 apartmentscout build && apartmentscout serve      # dashboard at http://127.0.0.1:8765
 apartmentscout all                                # geocode, commute, layers, score, build
 ```

@@ -49,6 +49,76 @@ Saved picks, tiers, tour notes, compare, filters and weights are kept in your br
 Use **Back up picks** on the Tours view to keep them as a file, and **Restore** to load them in another
 browser.
 
+## Deciding: five tools for the last mile
+
+Code: `dashboard/js/features/` (one module per tool, pure logic in the `*-model.js` files, tested with `node --test tests/js`).
+
+### Since your last visit
+
+A pill at the left of the stats strip ("3 new · 2 price drops · 1 gone") that opens a list of the changes, each a link to the
+home. The browser remembers the day it last saw this search (per search, written when you leave the page); the page compares
+**recorded** facts only: events and price history in `history.json`, a listing's `listed_at`, and `checked` dates. Nothing is
+inferred, so with no recorded change the pill is not drawn at all (the committed example has none; it appears after builds
+that keep snapshots, `apartmentscout history snapshot`). Price drops and rises compare the last price on or before your
+visit with the latest; a home that is now gone or rejected is never announced as new. *Mark as seen* moves the baseline to today.
+A reload in the same tab keeps the baseline; a first visit has none.
+
+### Decision tray
+
+A slim dock at the bottom of the stage with the Compare picks (up to four, lettered like the Compare columns): photo, price,
+score and a remove button each. **Drag** a card, a map price tag, a Shortlist row or a tour card onto it; drop on a slot to put it
+there (when the tray is full, the home under the drop is replaced); drag the slots, or press <kbd>Alt</kbd> + arrows on one, to
+reorder; <kbd>Delete</kbd> removes. *Compare* opens the Compare view with one click. It is the same list as the Compare toggle
+(`S.compare`), so the cards, the tab counter and Compare stay in step and it survives a reload. It collapses to a pill when empty,
+when you fold it, and on a phone (tap the pill to open it as a sheet); it makes room beside the open drawer and lifts the map
+legend above it.
+
+### Trade-off pad
+
+In the Ranking weights section of the rail: a triangle whose corners are **Cost, Commute and Space** (or, with *Top three*,
+your three heaviest weights). Drag the one dot (or use the arrow keys: up gives the top corner a notch, left and right trade
+the bottom two) and the three weights trade off against each other while their total, and every other weight, stay as they
+are. It writes the **same integer weights the sliders hold** (a corner stops at the slider maximum, 40), so cards, pins and
+scores re-rank live exactly as when you drag a slider; the *Pad / Sliders* switch puts the sliders one click away and both stay
+in step. Presets are rings on the pad: point at one to see how the top ten would re-order (arrows, "new", who falls out), click
+to apply it through the rail's own preset select.
+
+### Share shortlist and decision memo
+
+*Share shortlist* (under the Shortlist and Tours tabs, and in the settings menu) downloads one read-only, self-contained HTML
+of your saved picks (Pass left out): a map of the homes with the subway lines, a ranked list, and per home the photos, price
+(estimated fees marked), size, commute, the reasons it ranks where it does with the points under your weights, and, folded,
+the money split into documented and estimated, light and view, building and interior grades and open questions. The arrow
+next to it opens the options: **Decision memo** (opens the same page on its print layout; choose *Save as PDF*), the memo as a
+file, *Include my notes* (off by default: a shared page does not carry your notes unless you tick it; tour times never leave)
+and photos (embedded thumbnails inside a 900 KB budget, links past it, or none). The memo is a document: a ranked table, the
+weights, then a page per home with photos, money, commute legs, light and view, grades, open questions and your notes.
+
+The command line makes the same page from the picks backup, using the same template (`dashboard/share/snapshot.html`):
+
+```bash
+apartmentscout share --picks picks.json --out shortlist.html            # cards, map, reasons
+apartmentscout share --picks picks.json --out memo.html --memo --notes  # opens as the memo, with your notes
+```
+
+`picks.json` is what **Back up picks** writes (it carries your weights, so the CLI ranks the way you saw it) or a plain list of
+listing ids; without `--picks` it uses the shortlist, touring and applied listings. Saved local photos become small embedded
+thumbnails (`--photo-budget KB`, `--no-photos`). Only the fields named in the template's `as-schema` block are copied; the
+browser and CLI builders share that block, and a test builds the same payload with each and compares.
+
+### Tour-day planner
+
+At the top of Shortlist > Tours: choose a day, a start time and where you set off from (your destination or the first stop). The
+saved picks, grouped by building, become a timeline: when to **leave by**, the hop between stops (walk or transit), a viewing
+time (25 min, plus 10 per extra unit) and a **buffer** after each stop, all adjustable per stop. Drag the grip (or use the
+arrows) to reorder; *Shortest walk* and *By booked time* re-order for you. A time typed in a stop's *Booked* field is the
+pick's tour time: the stop waits for it if you are early and is flagged "Late by N min" if the day's plan cannot reach it.
+**Add to calendar (.ics)** writes one event per stop (the address as location, an alarm at the leave-by time, floating local
+times); **Copy plan** puts the day on the clipboard as text. Walking uses the dashboard's model (straight line × 1.25 at
+4.8 km/h). The subway router does not run in the browser, so a transit hop is an **estimate**, labelled "est.": each home's
+walk to its station from its commute route, a 4 min wait and a straight-line ride at 25 km/h; the faster of walking and that is
+used unless you fix the mode on the hop.
+
 ## New search wizard
 
 A step-by-step dialog for starting a search (or editing every criterion of the open one) with manual controls. It
