@@ -63,6 +63,7 @@ apartmentscout photos                                  # licensed building photo
 apartmentscout site <listing-id> --floor 12 --charts   # 3D site model, sun and view
 apartmentscout export --xlsx my-search.xlsx            # workbook with live weights and ranks
 apartmentscout handoff pack out.zip --to codex         # hand the search to another agent
+apartmentscout share --picks picks.json --out shortlist.html   # a read-only page (or --memo) of your saved picks
 apartmentscout serve                                   # open the dashboard
 apartmentscout build --standalone my-search.html       # or one self-contained file you can double-click
 ```
