@@ -224,7 +224,6 @@ Static versions for reports, written by `apartmentscout site --charts`:
 - 23 building dossiers from NYC Open Data.
 - 3D site models for 8 shortlisted units and a v2 floor plan with furniture presets for one.
 - Research notes from the deep dives (due diligence, noise ledger, orientation audit).
-
 - Listing photos for 103 units (web-sized copies with links to the originals) and licensed Wikimedia Commons
   building photos with credits for 213; the rest show an aerial view.
 
