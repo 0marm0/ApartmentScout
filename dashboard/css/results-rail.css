@@ -1,0 +1,167 @@
+/* Results list and filter rail features: the active-filter chip row, collapsible rail sections, the windowed card
+   list and its rank-change badges, the Comfortable / Compact density setting, and price-history sparklines.
+   Loaded after glass.css; tokens only. Scripts: dashboard/js/features/. */
+
+/* ------------------------------------------------------------------ windowed card list */
+#cards { position: relative; overflow-anchor: none; }
+/* entrance and re-rank motion is driven by card-list.js (Web Animations), not by a CSS animation on every re-render */
+#cards .card { animation: none; }
+.vsp { flex: none; pointer-events: none; }
+.vsp-top { margin-bottom: -2px; }   /* the list's 2px gap sits between neighbours only: the spacers must not add one */
+.vsp-bot { margin-top: -2px; }
+.vgroup { display: flex; flex-direction: column; gap: 2px; }
+
+/* ------------------------------------------------------------------ rank-change badge (cards and the Shortlist table) */
+.media .rk-d {
+  position: absolute; z-index: 1; left: 6px; top: 29px; font: 600 var(--fs-2xs)/1 var(--font-mono); font-variant-numeric: tabular-nums; padding: 3px 6px; border-radius: 6px;
+  background: color-mix(in srgb, var(--surface-1) 92%, transparent); color: var(--good); box-shadow: var(--shadow-1);
+  animation: rkIn 300ms var(--ease-out) both; transition: opacity 220ms var(--ease-out);
+}
+.rk-d.down { color: var(--bad); }
+.rk-d.out { opacity: 0; }
+@keyframes rkIn { from { opacity: 0; transform: translateY(-3px) scale(.92); } to { opacity: 1; transform: none; } }
+.lst .c-rank .rk-d { display: inline-block; margin-left: 5px; font: 600 var(--fs-2xs)/1 var(--font-mono); font-variant-numeric: tabular-nums; color: var(--good); animation: rkIn 300ms var(--ease-out) both; transition: opacity 220ms; }
+.lst .c-rank .rk-d.down { color: var(--bad); }
+.lst .c-rank .rk-d.out { opacity: 0; }
+
+/* ------------------------------------------------------------------ price history */
+.c-sub { display: flex; align-items: center; gap: 8px; text-overflow: clip; }
+.c-sub .t { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ph { margin-left: auto; flex: none; display: inline-flex; align-items: center; gap: 6px; color: var(--ink-3); }
+.ph-s { display: block; overflow: visible; flex: none; }
+.ph-s path { fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linejoin: round; stroke-linecap: round; opacity: .9; }
+.ph-s circle { fill: currentColor; }
+.ph.down, .ph-hover.down { --pc: var(--good); }
+.ph.up, .ph-hover.up { --pc: var(--warn); }
+.ph.down .ph-s, .ph.up .ph-s, .ph-hover.down .ph-s, .ph-hover.up .ph-s { color: var(--pc); }
+.ph-d { font: 650 var(--fs-2xs)/1 var(--font-sans); font-variant-numeric: tabular-nums; color: var(--good); background: var(--good-soft); padding: 3px 6px; border-radius: var(--r-pill); white-space: nowrap; }
+.ph-hover { display: flex; align-items: center; gap: 10px; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line); font-size: var(--fs-xs); color: var(--ink-3); }
+.ph-hover:not(.down):not(.up) .ph-s { color: var(--ink-3); }
+.ph-hover > span { min-width: 0; }
+
+/* ------------------------------------------------------------------ active-filter chip row */
+.fchips { display: grid; grid-template-rows: 0fr; background: var(--surface-1); border-bottom: 0 solid var(--line); transition: grid-template-rows 240ms var(--ease-out), border-width 240ms; }
+.fchips.has { grid-template-rows: 1fr; border-bottom-width: 1px; }
+.fchips-in { min-height: 0; overflow: hidden; }
+.fchips-scroll { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 7px var(--s-3); max-height: 104px; overflow-y: auto; scrollbar-width: none; scroll-padding: 0 var(--s-3); }
+.fchips-scroll::-webkit-scrollbar { display: none; }
+.fchip {
+  flex: none; display: inline-flex; align-items: center; gap: 6px; height: 26px; max-width: 240px; padding: 0 9px 0 10px; border-radius: var(--r-pill); border: 1px solid var(--accent-line);
+  background: var(--accent-soft); color: var(--ink); font-size: var(--fs-xs); font-weight: 500; line-height: 1; cursor: pointer; white-space: nowrap;
+  transition: background var(--t-fast), border-color var(--t-fast), opacity 190ms var(--ease-out), transform 190ms var(--ease-out), max-width 190ms var(--ease-out), padding 190ms var(--ease-out), margin 190ms var(--ease-out);
+}
+.fchip .fc-l { overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
+.fchip .fc-dot { width: 7px; height: 7px; border-radius: 50%; flex: none; }
+.fchip .fc-dot[hidden] { display: none; }
+.fchip svg { flex: none; color: var(--ink-3); transition: color var(--t-fast), transform var(--t-fast) var(--ease-out); }
+.fchip:hover { background: color-mix(in srgb, var(--accent) 18%, transparent); border-color: var(--accent); }
+.fchip:hover svg { color: var(--ink); transform: scale(1.15); }
+.fchip:active { transform: scale(.97); }
+.fchip:focus-visible, .fchip-clear:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.fchip.enter { animation: chipIn 220ms var(--ease-out) both; }
+.fchip.leaving { opacity: 0; transform: scale(.9); max-width: 0; padding-left: 0; padding-right: 0; margin-right: -6px; border-width: 0; pointer-events: none; }
+@keyframes chipIn { from { opacity: 0; transform: scale(.88) translateX(-4px); } to { opacity: 1; transform: none; } }
+.fchip-clear {
+  flex: none; margin-left: auto; padding: 0 2px 0 8px; height: 26px; border: 0; background: none;
+  color: var(--ink-2); font-size: var(--fs-xs); font-weight: 500; cursor: pointer; white-space: nowrap; border-radius: var(--r-sm); transition: color var(--t-fast);
+}
+.fchip-clear:hover { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
+@media (max-width: 760px) {
+  /* on a phone the row is one line that scrolls sideways; Clear all stays at the right edge */
+  .fchips-scroll { flex-wrap: nowrap; max-height: none; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; }
+  .fchip-clear { position: sticky; right: 0; padding-left: 16px; background: linear-gradient(90deg, transparent, var(--surface-1) 14px); }
+}
+@media (max-width: 760px) {
+  .fchips-scroll { padding: 6px var(--s-3); -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 10px, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(90deg, transparent 0, #000 10px, #000 calc(100% - 28px), transparent); }
+  .fchip { height: 30px; }   /* a finger-sized target */
+  .fchip-clear { height: 30px; }
+}
+
+/* ------------------------------------------------------------------ collapsible rail sections */
+.rail .sec-h { position: relative; gap: 10px; }
+.rail .sec-h h3 { flex: none; }
+.sec-tg {
+  display: inline-flex; align-items: center; gap: 6px; padding: 2px 4px 2px 0; margin: -2px 0; border: 0; border-radius: var(--r-xs); background: none; color: inherit;
+  font: inherit; letter-spacing: inherit; text-transform: inherit; cursor: pointer; text-align: left;
+}
+.sec-tg::after { content: ""; position: absolute; inset: -8px calc(-1 * var(--s-4)) -6px; }   /* the whole heading row is the hit area */
+.sec-tg svg { flex: none; color: var(--ink-3); transition: transform 240ms var(--ease-out), color var(--t-fast); }
+.sec-tg:hover { color: var(--ink); }
+.sec-tg:hover svg { color: var(--ink); }
+.sec-tg:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.sec.collapsed .sec-tg svg { transform: rotate(-90deg); }
+.rail .sec-h .reset { position: relative; z-index: 1; margin-left: auto; }
+.sec-sum {
+  flex: 1; min-width: 0; text-align: right; font-size: var(--fs-xs); color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums;
+  opacity: 0; transform: translateY(-2px); transition: opacity 200ms var(--ease-out), transform 200ms var(--ease-out); pointer-events: none;
+}
+.sec.collapsed .sec-sum { opacity: 1; transform: none; }
+.sec.collapsed .sec-h > :not(h3):not(.sec-sum) { display: none; }   /* reset buttons and the destination picker wait until it opens */
+.sec-body { display: grid; grid-template-rows: 1fr; transition: grid-template-rows 260ms var(--ease-out); }
+.sec-in { min-height: 0; overflow: hidden; padding: 3px; margin: -3px; transition: opacity 200ms var(--ease-out); }   /* 3px room so focus rings are not clipped */
+.sec.collapsed .sec-body { grid-template-rows: 0fr; }
+.sec.collapsed .sec-in { opacity: 0; }
+.sec .sec-h { transition: margin-bottom 260ms var(--ease-out); }
+.sec.collapsed .sec-h { margin-bottom: 0; }
+.rail .sec { transition: padding-bottom 260ms var(--ease-out); }
+.rail .sec.collapsed { padding-bottom: 9px; }
+.rail .sec.collapsed .sec-in { visibility: hidden; transition: opacity 200ms var(--ease-out), visibility 0s linear 260ms; }
+/* the search card keeps its own look inside the first section */
+.rail .search-sec { padding-top: 10px; }
+
+/* ------------------------------------------------------------------ settings menu: density control */
+.mn-seg.mn-seg-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+/* ------------------------------------------------------------------ density: Compact */
+html[data-density="compact"] .rail .sec { padding: 7px var(--s-3) 9px; }
+html[data-density="compact"] .rail .sec-h { margin-bottom: 5px; min-height: 18px; }
+html[data-density="compact"] .rail .sec.collapsed { padding-bottom: 7px; }
+html[data-density="compact"] .rail .srch-row { padding: 6px 9px 6px 10px; }
+html[data-density="compact"] .tier { padding: 3px 9px; }
+html[data-density="compact"] .tiers { gap: 4px; }
+html[data-density="compact"] .hist { height: 20px; }
+html[data-density="compact"] .tg { padding: 2px; gap: 9px; }
+html[data-density="compact"] .toggles { gap: 0; }
+html[data-density="compact"] .chip { height: 24px; padding: 0 9px; }
+html[data-density="compact"] .weights { gap: 2px; }
+html[data-density="compact"] .w-note { display: none; }
+html[data-density="compact"] .rail .preset { margin-bottom: 4px; }
+
+html[data-density="compact"] .cards { gap: 0; padding-top: 2px; }
+html[data-density="compact"] .card { grid-template-columns: 92px minmax(0, 1fr); gap: 9px; padding: 5px 6px; border-radius: var(--r-md); }
+html[data-density="compact"] .media { width: 92px; height: 76px; border-radius: 8px; }
+html[data-density="compact"] .media .nph, html[data-density="compact"] .media .kind { display: none; }
+html[data-density="compact"] .media .rank { left: 4px; top: 4px; padding: 3px 5px; }
+html[data-density="compact"] .media .rk-d { left: 4px; top: 25px; }
+html[data-density="compact"] .media .save { right: 3px; top: 3px; width: 22px; height: 22px; }
+html[data-density="compact"] .c-title { font-size: var(--fs-sm); }
+html[data-density="compact"] .c-top .ring { width: 30px; height: 30px; }
+html[data-density="compact"] .c-top .ring svg { margin: -4px; transform: rotate(-90deg) scale(.79); }   /* the 38px arc, scaled into 30px */
+html[data-density="compact"] .c-top .ring b { font-size: 11px; }
+html[data-density="compact"] .c-body { gap: 0; }
+html[data-density="compact"] .c-price { margin-top: 0; line-height: 1.2; }
+html[data-density="compact"] .c-price b { font-size: var(--fs-md); }
+html[data-density="compact"] .c-sub { line-height: 1.3; }
+html[data-density="compact"] .c-sub .ph-s { display: none; }
+/* fewer badges: the first two (a failing gate or warning comes first, then sun, then the amenities) */
+html[data-density="compact"] .c-badges { margin-top: 1px; }
+html[data-density="compact"] .c-badges .bdg:nth-child(n+3) { display: none; }
+html[data-density="compact"] .bdg { height: 18px; }
+html[data-density="compact"] .units-more { margin-left: 108px; }
+html[data-density="compact"] .unit-row { padding: 3px 10px; }
+/* the card height changes, so the list re-measures (card-list.js relayoutCardList) */
+
+html[data-density="compact"] table.grid td { padding-top: 5px; padding-bottom: 5px; }
+html[data-density="compact"] table.mini th, html[data-density="compact"] table.mini td { padding-top: 4px; padding-bottom: 4px; }
+
+@media (max-width: 1360px) { html[data-density="compact"] .card { grid-template-columns: 84px minmax(0, 1fr); } html[data-density="compact"] .media { width: 84px; height: 72px; } html[data-density="compact"] .units-more { margin-left: 100px; } }
+@media (max-width: 760px) { html[data-density="compact"] .card { grid-template-columns: 84px minmax(0, 1fr); } html[data-density="compact"] .media { width: 84px; height: 72px; } html[data-density="compact"] .units-more { margin-left: 100px; } }
+
+/* ------------------------------------------------------------------ reduced motion and transparency */
+@media (prefers-reduced-motion: reduce) {
+  .fchips, .sec-body, .sec-in, .sec-tg svg, .sec-sum, .rail .sec, .sec .sec-h { transition: none !important; }
+  .fchip.enter, .media .rk-d, .lst .c-rank .rk-d { animation: none !important; }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .media .rk-d { background: var(--surface-1); }
+}
