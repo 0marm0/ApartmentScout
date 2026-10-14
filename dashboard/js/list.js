@@ -1,8 +1,9 @@
 // Shortlist: every filtered listing as one dense, sortable table, ranked live by the renter's weights.
 // Units or buildings (building rows expand to their units), two densities, a column picker and keyboard
 // row navigation. Rows render in chunks, one animation frame at a time, so 700+ listings stay smooth.
-import { S, on, store, byId, filtered, openDrawer, toggleCompare, toggleSave, isSaved, cost, commuteOf, dests, coverage, score, tierIndex, STATUSES } from './app.js';
+import { S, on, emit, store, byId, filtered, openDrawer, toggleCompare, toggleSave, isSaved, cost, commuteOf, dests, coverage, score, tierIndex, STATUSES } from './app.js';
 import { $, esc, money, ICONS } from './util.js';
+import { attachSplit, sync as splitSync, shown as splitShown } from './features/split-view.js';   // [features] docked mini map
 import { ppsf, groupKey, thumb, tierPill, myTierPill, tri, doorman, isMust, floorText, commuteHTML, scoreBar, statusPill, name, gateFails, costUnknown, label } from './views/table-kit.js';
 
 const saved = store.get('list:ui', null) || {};
@@ -135,6 +136,7 @@ function draw(lite = false) {
   t.hidden = !n;
   const body = t.tBodies[0], FIRST = lite ? 40 : 90, CHUNK = 140;
   body.innerHTML = html.slice(0, FIRST).join('');
+  splitSync(lite);   // [features] the docked map follows the rows
   let i = FIRST;
   if (lite) return;   // while a weight slider moves, only the visible top re-renders; the rest follows when it settles
   const pump = () => {
@@ -202,6 +204,16 @@ function syncCompare() {
   });
 }
 
+/** [features] Everything the docked mini map needs from the table: rows in table order, and a way to reach a row. */
+const tableIds = () => filtered().sort(comparator()).map((L) => L.id);
+const rowFor = (id) => rowsEls().find((r) => r.dataset.id === id && !r.classList.contains('group')) || null;
+async function reveal(id) {
+  let tr = rowFor(id);
+  if (!tr && st.group === 'buildings') { const L = byId(id); if (L) { st.open.add(groupKey(L)); draw(); } }
+  for (let i = 0; i < 45 && !tr; i++) { await new Promise((r) => requestAnimationFrame(r)); tr = rowFor(id); }   // rows render in chunks
+  return tr;
+}
+
 export function init() {
   $('view-list').innerHTML = `<div class="view-pad list-pad">
     <div class="page-h"><div class="t"><h1>Shortlist <span id="lsCount"></span></h1>
@@ -263,6 +275,14 @@ export function init() {
   document.addEventListener('click', (e) => { const d = $('lsCols'); if (d?.open && !d.contains(e.target)) d.open = false; });
   $('lsCols').addEventListener('keydown', (e) => { if (e.key === 'Escape') { e.stopPropagation(); $('lsCols').open = false; $('lsCols').querySelector('summary').focus(); } });
 
+  // [features] hovering or focusing a row says which home it is: the docked map pulses its pin and previews its route
+  let hovRow = null;
+  const tell = (id) => { if (id !== hovRow) emit('hover', (hovRow = id)); };
+  t.tBodies[0].addEventListener('mouseover', (e) => tell(e.target.closest('tr.r')?.dataset.id || null));
+  t.tBodies[0].addEventListener('mouseleave', () => tell(null));
+  t.tBodies[0].addEventListener('focusin', (e) => tell(e.target.closest('tr.r')?.dataset.id || null));
+  t.tBodies[0].addEventListener('focusout', (e) => { if (!e.relatedTarget?.closest?.('tr.r')) tell(null); });
+  attachSplit({ ids: tableIds, reveal, focusRow, rowFor });
   on('filters', schedule);
   on('weights', scheduleLite);
   on('compare', () => active() && syncCompare());
@@ -277,4 +297,5 @@ export function init() {
 export function show() {
   shown = true;
   draw();
+  splitShown();
 }
