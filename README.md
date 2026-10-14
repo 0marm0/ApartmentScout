@@ -212,6 +212,31 @@ Static versions for reports, written by `apartmentscout site --charts`:
 ![Records due-diligence report](docs/images/records.png)
 <sub>A due-diligence report for one building: PLUTO facts, record and street-noise scores, a "What matters" table with evidence and practical significance, monthly timelines of 311 and official records, noise by hour, ledgers and the research notes.</sub>
 
+### More screens
+
+<table>
+<tr>
+<td width="50%"><img src="docs/images/map-bus.png" alt="Commute by bus"><br><sub>Switch the commute lens to bus, subway, walk or best: heat map, pins, cards and tables follow</sub></td>
+<td width="50%"><img src="docs/images/settings.png" alt="Search settings"><br><sub>Edit budget tiers, must-haves, move-in window and destinations in the app, with a preview before you apply</sub></td>
+</tr>
+<tr>
+<td><img src="docs/images/drawer-money.png" alt="Money breakdown"><br><sub>Every month, at signing and over the lease, with unknown fees left unknown</sub></td>
+<td><img src="docs/images/unit-daylight.png" alt="Daylight panel"><br><sub>Sun on the window: blockers, possible vs expected hours, sky view and an estimated daylight factor</sub></td>
+</tr>
+<tr>
+<td><img src="docs/images/unit-light-theme.png" alt="Unit 3D in light theme"><br><sub>Unit 3D in the light theme, June evening</sub></td>
+<td><img src="docs/images/plan-light-tab.png" alt="Floor plan light tab"><br><sub>Floor plan light: per-window sun, glass and blinds, daylight per room</sub></td>
+</tr>
+<tr>
+<td><img src="docs/images/plan-tracer.png" alt="Plan tracer"><br><sub>Trace a new plan from an image or PDF</sub></td>
+<td><img src="docs/images/compare-light.png" alt="Compare in light theme"><br><sub>Compare, light theme</sub></td>
+</tr>
+<tr>
+<td><img src="docs/images/map-light-drawer.png" alt="Light theme map"><br><sub>Light theme with a listing open</sub></td>
+<td align="center"><img src="docs/images/mobile-drawer.png" alt="Phone drawer" width="260"> <img src="docs/images/mobile-unit.png" alt="Phone Unit 3D" width="260"><br><sub>On a phone</sub></td>
+</tr>
+</table>
+
 ## The example search
 
 [`examples/nyc-2026`](examples/nyc-2026) is a real search, lightly anonymised:

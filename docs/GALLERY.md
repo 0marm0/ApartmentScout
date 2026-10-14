@@ -79,6 +79,17 @@ the apartment.
 <tr><td><img src="images/cli.png" alt="CLI output"><br><sub><code>commute</code>, <code>site</code> and <code>score</code> on the example search</sub></td></tr>
 </table>
 
+### More screens
+
+<table>
+<tr><td width="50%"><img src="images/map-bus.png" alt="Bus lens"><br><sub>Commute lens: bus</sub></td><td width="50%"><img src="images/map-walk.png" alt="Walk lens"><br><sub>Commute lens: walk rings</sub></td></tr>
+<tr><td><img src="images/settings.png" alt="Search settings"><br><sub>Search settings</sub></td><td><img src="images/drawer-money.png" alt="Money"><br><sub>Money: every month, at signing, over the lease</sub></td></tr>
+<tr><td><img src="images/unit-daylight.png" alt="Daylight"><br><sub>Daylight and blockers</sub></td><td><img src="images/unit-light-theme.png" alt="Unit 3D light"><br><sub>Unit 3D, light theme</sub></td></tr>
+<tr><td><img src="images/plan-light-tab.png" alt="Plan light"><br><sub>Floor plan light tab</sub></td><td><img src="images/plan-tracer.png" alt="Tracer"><br><sub>Plan tracer</sub></td></tr>
+<tr><td><img src="images/compare-light.png" alt="Compare light"><br><sub>Compare, light theme</sub></td><td><img src="images/map-light-drawer.png" alt="Map light"><br><sub>Map, light theme</sub></td></tr>
+<tr><td><img src="images/mobile-drawer.png" alt="Phone drawer" width="300"><br><sub>Phone: listing panel</sub></td><td><img src="images/mobile-unit.png" alt="Phone unit" width="300"><br><sub>Phone: Unit 3D</sub></td></tr>
+</table>
+
 ## Earlier tools from the search
 
 The one-off tools an agent built during the Manhattan search, kept as design references and as examples

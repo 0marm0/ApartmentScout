@@ -52,6 +52,22 @@ SHOTS = [
     ("research-media", "#research/media", (1600, 1000), [], 6000, None),
     ("tours", "#tours", (1600, 1000), [("eval", PICKS), ("eval", "location.reload()")], 4000, None),
     ("mobile-map", "?layer=commute#map", (420, 900), [], 9000, None),
+    # newer features
+    ("map-bus", "?mode=bus#map", (1600, 1000), [], 9000, None),
+    ("map-walk", "?mode=walk#map", (1600, 1000), [], 9000, "#view-map"),
+    ("map-light-drawer", "?theme=light&open=townsend-14c#map", (1600, 1000), [], 9000, None),
+    ("drawer-money", "?open=the-greywood-4b#map", (1600, 1000),
+     [("eval", "document.querySelector('#drawer .d-scroll').scrollTop = 300")], 9000, "#drawer"),
+    ("settings", "#map", (1600, 1000), [("click", "#searchSwitch")], 7000, None),
+    ("unit-daylight", "?date=2026-10-15&min=780#unit/emerald-green-1211", (1600, 1000),
+     [("eval", "document.getElementById('sunPanel').scrollIntoView()")], 10000, "#sunPanel"),
+    ("unit-light-theme", "?theme=light&date=2026-06-21&min=1080#unit/the-maybury-2204", (1600, 1000), [], 10000, None),
+    ("plan-light-tab", "?date=2026-10-15&pmin=690#plan/emerald-green-1211", (1600, 1000), [("click", "#psTabs [data-t=light]")], 8000, None),
+    ("plan-tracer", "#plan/emerald-green-1211", (1600, 1000), [("click", "#trNewBtn")], 8000, None),
+    ("research-gone", "#research/gone", (1600, 1000), [], 4000, None),
+    ("compare-light", "?theme=light#compare/the-highpoint-condo-31f,the-horizon-35d,townsend-14c,emerald-green-1211", (1600, 1000), [], 4000, None),
+    ("mobile-drawer", "?open=the-corinthian-9i#map", (420, 900), [], 9000, None),
+    ("mobile-unit", "?date=2026-10-15&min=780#unit/emerald-green-1211", (420, 900), [], 10000, None),
 ]
 
 
