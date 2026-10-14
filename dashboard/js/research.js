@@ -101,7 +101,7 @@ function coverageHTML(sm) {
     <div class="rs-cov-top">
       <div class="rs-meter">
         <div class="label">Finalist standard <span>${sm.derived ? 'estimated in the browser' : 'from coverage.json'}</span></div>
-        <div class="rs-meter-v"><b>${pct}<small>%</small></b><span><b>${sm.complete.toLocaleString()}</b> of ${sm.total.toLocaleString()} homes still in play have every fact a finalist needs</span></div>
+        <div class="rs-meter-v"><b>${pct}<small>%</small></b><span><b>${sm.complete.toLocaleString()}</b> of ${sm.total.toLocaleString()} homes still in play have every fact a finalist needs${sm.finalists != null ? ` · ${sm.finalists.toLocaleString()} finalist${sm.finalists === 1 ? '' : 's'}` : ''}</span></div>
         <div class="rs-bar" role="meter" aria-label="Homes with every finalist fact" aria-valuemin="0" aria-valuemax="${sm.total}" aria-valuenow="${sm.complete}"><i style="width:${pct}%"></i></div>
       </div>
       <div class="metrics rs-m">
@@ -115,6 +115,6 @@ function coverageHTML(sm) {
       <div class="rs-more-b"><div class="rs-facts">${facts}</div>
         <div class="scroll rs-src"><table class="mini"><thead><tr><th>Source</th><th class="n">Listings</th><th>Last checked</th></tr></thead><tbody>${src || '<tr><td colspan="3" class="faint">No sources recorded</td></tr>'}</tbody></table></div></div>
     </details>
-    <p class="rs-census">Counts cover the listings your agent captured from these sources. <b>This is not a market census:</b> units that were never captured do not appear, so a short list here does not mean a thin market.${sm.derived ? ' Without <span class="mono">coverage.json</span> these numbers are estimated from listings.json.' : ''}</p>
+    <p class="rs-census">${sm.claim ? esc(sm.claim) : 'Counts cover the listings your agent captured from these sources. <b>This is not a market census:</b> units that were never captured do not appear, so a short list here does not mean a thin market.'}${sm.derived ? ' Without <span class="mono">coverage.json</span> these numbers are estimated from listings.json.' : ''}</p>
   </section>`;
 }
