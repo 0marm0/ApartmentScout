@@ -330132,7 +330132,7 @@
   "features": {
    "interior": "Glenwood lists 9-foot ceilings, bay and corner windows, granite kitchens and marble baths; a full-size washer and vented dryer in most apartments (not drawn on this line's plan).",
    "windows": "Angled bay windows in the bedroom and living room (line plan).",
-   "view": "Renter saw the unit and signed: excellent open view, a reason they accepted no in-unit W/D. Direction not recorded."
+   "view": "Renter saw the unit and signed: excellent open view, a reason they accepted no in-unit W/D. The renter's own photos and videos from inside show tree canopy (a park) below and in front of the bedroom bay window and, to a degree, from the living-room window. Direction ESE (119 degrees), read from those photos and a park sightline check, not stated by any source."
   },
   "reviews": {
    "risk": "Thin review sample; traffic noise check",
@@ -330145,7 +330145,9 @@
     }
    ]
   },
-  "exposure": null,
+  "exposure": [
+   "ESE"
+  ],
   "links": {
    "listing": "https://streeteasy.com/building/paramount-tower",
    "secondary": "https://www.glenwoodnyc.com/properties/midtown-east/paramount-tower/",
@@ -330173,7 +330175,7 @@
    "source": "Glenwood E-line plan for floors 3-27 (PM3-27E), traced at printed room sizes; interior footprint estimate, not an advertised size. Printed rooms: living 23'0\" x 12'5\", bedroom 16'6\" x 11'4\", kitchen 7'9\" x 7'2\" (528 sq ft).",
    "checked": "2026-10-14"
   },
-  "notes": "Signed. Lease terms from the renter: ,995 gross, 7/month fees. No in-unit washer/dryer: the renter accepted that for the space and the view, so it is scored but does not gate this unit out. Plan: Glenwood's E-line drawing for floors 3-27. Window direction is not stated on any source.",
+  "notes": "Signed. Lease terms from the renter: $4,995 gross, $37/month fees. No in-unit washer/dryer: the renter accepted that for the space and the view, so it is scored but does not gate this unit out. Plan: Glenwood's E-line drawing for floors 3-27. Window direction (ESE, 119 degrees) is inferred from the renter's photos and a park sightline check (site file, sightline), not stated by any source.",
   "checked": "2026-10-14",
   "sources": [
    "https://glenwoodadmin.com/webdav/images/floorplans/paramount/PM3-27E.jpg",
@@ -330280,13 +330282,13 @@
   },
   "score": {
    "version": "2.1",
-   "overall": 78.0,
+   "overall": 78.4,
    "parts": {
     "cost": 81.4,
     "space": 44.2,
     "commute": 100.0,
     "amenities": 73.3,
-    "light_view": 88.1,
+    "light_view": 90.6,
     "building": 93.7,
     "interior": 79.0,
     "quiet": 46.0,
@@ -330302,8 +330304,8 @@
    },
    "confidence": 100,
    "range": [
-    77.4,
-    78.6
+    77.8,
+    79.0
    ],
    "monthly_cost": 5032.0,
    "budget_tier": "Stretch",
@@ -330350,12 +330352,11 @@
     },
     {
      "dim": "light_view",
-     "pts": 5.7,
-     "text": "+6 light & view: floor 24?; unit photos: view 5/5 (open skyline with park canopy below (renter's photos from the unit)), light 5/5",
+     "pts": 6.1,
+     "text": "+6 light & view: 3D sun study: 6.2 h of direct sun a day on average, 3.2 h in Dec-Jan; unit photos: view 5/5 (open skyline with park canopy below (renter's photos from the unit)), light 5/5",
      "items": [
-      "floor 24 (+19, inferred from the unit number)",
-      "listing says 'excellent' (+6)",
-      "listing says 'open view' (+6)",
+      "annual mean 6.2 h x 11",
+      "winter 3.2 h x 4",
       "unit photos: view 5/5 (open skyline with park canopy below (renter's photos from the unit)), light 5/5"
      ]
     },
@@ -330818,7 +330819,85 @@
    "evidence": "Renter's photos 1-2 show the 25E bedroom bay and its view; Glenwood same-building photos 3-14 (virtually staged) show granite, stainless GE appliances, white cabinets, parquet and bay windows.",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
-  }
+  },
+  "exposure_evidence": "Facades tested at floor 25 (eye 76 m, 90-degree view, straight sight lines over the site's walls; see the sightline block): NNE 28 (the 39th Street end): no mapped green in view and 43% of the frame blocked above 30 degrees, 633 3rd Avenue 129 m away. SSW 209: 67% of the frame blocked above 30 degrees by 240 East 38th Street (115 m, 48 m away), only a playground sliver at the left edge; this is also why the old SSW guess contradicts \"excellent open view\". WNW 299: no green (a lawn at the foot of the tower), 605 3rd Avenue (159 m) 74 m away on the right. ESE 119 (the long east side): the open side (mean obstruction 11 degrees, nothing above 30) and the only one with green in the frame: a lawn 213-322 m out, 31-39 degrees right of centre and 13-19 degrees below the horizon, Slifka Park and St. Vartan Park's playground at the right edge, St. Vartan Park itself at 62-65 degrees right. About 5,000 of the 6,100 m2 of green that the 25th floor can see anywhere around the tower lies at 135-195 degrees (south-east); the rest is a few small lawns within 140 m at 30-105 degrees, and nothing at all to the west or north-west. So a facade that shows the renter's canopy must be on the east or south side. The E-line plan's bedroom corner window wraps to the right of the living-room bay (panes at 119, 164 and 209 degrees), which puts the unit at the south end of the east side: the bedroom's angled pane looks over the lawns and parks, the bay's left edge meets Churchill Apartments (tan brick, 1967, 114 m) and, just past its right edge, 240 East 38th Street (2012, 115 m) stands 48 m away at 209 degrees. Confidence: likely. The facade and the park match the photos; facade material, terrain and unmapped trees are not in the data and the position along the facade is an assumption. Check with a compass at the window.",
+  "window_t": 0.55,
+  "site": {
+   "file": "sites/paramount-tower-25e.json",
+   "floor": 25,
+   "bearing": 118.7,
+   "sun_hours": [
+    3.4,
+    4.4,
+    6.5,
+    7.9,
+    8.0,
+    8.5,
+    8.5,
+    7.8,
+    7.3,
+    5.7,
+    3.3,
+    3.1
+   ],
+   "sun_hours_range": {
+    "lo": [
+     3.1,
+     4.0,
+     5.7,
+     6.8,
+     6.4,
+     5.8,
+     6.0,
+     6.8,
+     6.2,
+     5.1,
+     3.3,
+     3.0
+    ],
+    "hi": [
+     3.9,
+     6.3,
+     8.1,
+     9.8,
+     9.6,
+     9.8,
+     10.0,
+     9.4,
+     9.4,
+     7.1,
+     4.3,
+     3.8
+    ]
+   },
+   "skyline_ahead_deg": 9.8,
+   "open_sky_share": 0.856,
+   "sky_view": 0.657,
+   "daylight_factor_est": 1.6,
+   "sun_year": {
+    "possible": 2266,
+    "expected": 1303
+   },
+   "sun_hours_expected": [
+    1.84,
+    2.42,
+    3.7,
+    4.5,
+    4.56,
+    4.84,
+    5.01,
+    4.91,
+    4.31,
+    3.48,
+    1.68,
+    1.49
+   ]
+  },
+  "window_type": "bay",
+  "window_face": 1,
+  "exposure_source": "photo-landmarks",
+  "exposure_basis": "renter photos + park sightline",
+  "window_position_source": "assumed"
  },
  {
   "id": "paramount-tower-9j",

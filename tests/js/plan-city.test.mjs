@@ -47,3 +47,15 @@ test('only the window with the tower in front loses its sun', () => {
 test('a site without an open facade gives no placement', () => {
   assert.equal(placePlan({ ...site, faces: [0, 1, 2, 3].map((i) => ({ i, shared: true })) }, plan, 4), null);
 });
+
+test('two facades with the same bearing: the site file\'s own window facade is the one the plan sits on', () => {
+  // a south wall with a 3 m step: a 15 m stretch at y = 0 and a longer 25 m stretch at y = -3, both facing 180 degrees
+  const stepped = [60, 0, 0, [-20, 0, -20, 20, 20, 20, 20, -3, -5, -3, -5, 0]];
+  const mk = (face) => ({ version: 2, target: 0, b: [stepped], faces: [], floor_height_m: 3, window: { face, t: 0.5 } });
+  assert.equal(placePlan(mk(null), plan, 4).face.i, 3, 'without a choice the longer stretch wins');
+  const own = placePlan(mk(5), plan, 4);
+  assert.equal(own.face.i, 5, 'the stretch the site file chose wins when it points the way the plan does');
+  assert.equal(Math.round(own.az), 180);
+  // a window facade that points elsewhere does not drag the plan onto a wall it does not face
+  assert.equal(placePlan(mk(1), plan, 4).face.i, 3);
+});
