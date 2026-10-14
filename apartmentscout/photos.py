@@ -624,7 +624,8 @@ def merge_building_photos(existing: list[dict] | None, commons: list[dict]) -> l
     keep = [p for p in (existing or []) if isinstance(p, dict) and p.get("source") != SOURCE]
     order = {s: i for i, s in enumerate(SCOPES)}
     keep.sort(key=lambda p: order.get(p.get("scope"), len(SCOPES)))
-    return keep + commons
+    have = {p.get("page") for p in keep if p.get("page")}      # e.g. the same file already added from Wikidata
+    return keep + [p for p in commons if not (p.get("page") and p["page"] in have)]
 
 
 def add_commons_photos(listings: list[dict], api: Commons, radius: float = 60, limit: int = 6,

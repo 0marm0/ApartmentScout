@@ -355,7 +355,28 @@ def cmd_photos(args):
     if want_cache and example:
         sys.exit("Refusing to save photos inside examples/: the bundled example is committed. "
                  "Run --cache on your own search.")
+    if args.source == "web" and example:
+        sys.exit("Refusing to add listing-page photos inside examples/: they belong to their owners and the bundled "
+                 "example is committed. Run --source web on your own search.")
     t0 = time.monotonic()
+    if args.source == "wikidata":
+        from .photo_sources import Wikidata, add_wikidata_photos
+        log(f"Wikidata building images (credited from Wikimedia Commons): {len(targets)} listings, up to {args.max} each")
+        st = add_wikidata_photos(targets, Wikidata(ws.cache_dir / "photos"), Commons(ws.cache_dir / "photos", refresh=args.refresh),
+                                 limit=args.max, say=log)
+        log(f"  {st['with_photos']}/{st['buildings']} buildings have a Wikidata image; {st['requests']} SPARQL requests, "
+            f"{time.monotonic() - t0:.0f} s")
+        save(Ls, ws.listings_path)
+    if args.source == "web":
+        import requests
+
+        from .photo_sources import PageFetcher, add_web_photos
+        log(f"Listing and building pages: {sum(1 for L in targets if not (L.get('photos') or L.get('photos_local')))} "
+            "listings without photos (plain GETs; a bot check ends that host for this run)")
+        st = add_web_photos(targets, PageFetcher(requests.Session()), limit=args.max, say=log)
+        log(f"  {st['with_photos']}/{st['listings']} listings got images from {st['pages']} pages; "
+            f"{len(st['blocked'])} host(s) blocked; {time.monotonic() - t0:.0f} s")
+        save(Ls, ws.listings_path)
     if args.source in ("commons", "all"):
         api = Commons(ws.cache_dir / "photos", refresh=args.refresh)
         log(f"Wikimedia Commons: {len(targets)} listings, radius {args.radius:g} m, up to {args.max} photos each"
@@ -651,10 +672,13 @@ def main(argv=None):
                    "within 300 m with distance, bearing, height and sources")
     s = add("photos", cmd_photos, "licensed building photos (Wikimedia Commons) and local photo copies")
     s.add_argument("ids", nargs="*")
-    s.add_argument("--source", default="commons", choices=["commons", "local", "all"],
-                   help="commons: look up building photos; local: save existing photos under media/; all: both")
+    s.add_argument("--source", default="commons", choices=["commons", "local", "all", "wikidata", "web"],
+                   help="commons: look up building photos; local: save existing photos under media/; all: both; "
+                        "wikidata: images of named towers from their Wikidata item (credited, licensed); web: for "
+                        "listings with no photos, images from the listing's own page (private searches only)")
     s.add_argument("--radius", type=float, default=60, help="metres around the listing for street photos")
-    s.add_argument("--max", type=int, default=6, help="building photos to keep per listing")
+    s.add_argument("--max", type=int, default=6, help="building photos to keep per listing (wikidata: per building; "
+                   "web: images read per page)")
     s.add_argument("--cache", action="store_true", help="also save photos under <search>/media/ (not for examples)")
     s.add_argument("--refresh", action="store_true", help="ignore cached API responses")
     s = add("score", cmd_score, "score and rank listings")
