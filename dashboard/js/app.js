@@ -233,7 +233,7 @@ export function setPick(id, patch) {
 }
 export function toggleSave(id) { setPick(id, { saved: !isSaved(id) }); toast(isSaved(id) ? 'Saved to your picks' : 'Removed from your picks'); }
 export function exportPicks() {
-  download(`apartmentscout-picks-${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify({ version: 1, search: S.crit.search?.name, picks: S.picks }, null, 1), 'application/json');
+  download(`apartmentscout-picks-${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify({ version: 1, search: S.crit.search?.name, picks: S.picks, weights: S.weights }, null, 1), 'application/json');
 }
 export async function importPicks(file) {
   try {
