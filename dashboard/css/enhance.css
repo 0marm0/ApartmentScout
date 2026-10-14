@@ -252,3 +252,22 @@ img.err { opacity: 0 !important; }
 .kbd-help .panel { animation: rise var(--t-slow) var(--ease-out); }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 .toast { display: flex; align-items: center; gap: 8px; }
+
+/* ------------------------------------------------------------------ drawer entrance, phone pull-to-close */
+.drawer.pulling { transition: none; }
+.drawer.fresh .d-head .ring svg circle + circle { animation: ringIn 820ms var(--ease-out) 120ms backwards; }
+@keyframes ringIn { from { stroke-dasharray: 0 999; } }
+.drawer.fresh .d-head, .drawer.fresh .d-tags, .drawer.fresh .d-bar, .drawer.fresh .d-sec { animation: rise var(--t-slow) var(--ease-out) backwards; }
+.drawer.fresh .d-tags { animation-delay: 40ms; } .drawer.fresh .d-bar { animation-delay: 70ms; }
+.drawer.fresh .d-sec { animation-delay: 100ms; }
+.d-head h2:focus { outline: none; }
+.d-head h2:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; border-radius: var(--r-xs); }
+
+/* ------------------------------------------------------------------ shared controls: calmer state changes everywhere */
+.seg button { transition: background var(--t-fast), color var(--t-fast), box-shadow var(--t-fast); }
+.tier, .chip, .tg, .srch-row, .layer-switch button, .map-ctl button, .mt { transition: background var(--t-fast), border-color var(--t-fast), color var(--t-fast), transform var(--t-fast) var(--ease-out); }
+.tier:active, .layer-switch button:active, .map-ctl button:active, .mt:active, .srch-row:active { transform: scale(.985); }
+.kpis .gen { min-width: 0; overflow: hidden; text-overflow: ellipsis; flex: 0 1 auto; padding-left: 12px; }
+@media (max-width: 760px) {
+  .kpis { -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent); }
+}

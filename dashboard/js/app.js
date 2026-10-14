@@ -460,7 +460,7 @@ export function renderCards() {
   }
   el.querySelectorAll('.card').forEach((c) => {
     c.addEventListener('click', (e) => { if (e.target.closest('[data-save], .c-acts')) return; openDrawer(c.dataset.id, { fly: true }); });
-    c.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target === c) openDrawer(c.dataset.id, { fly: true }); });
+    c.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target === c) openDrawer(c.dataset.id, { fly: true, focus: true }); });
     c.addEventListener('mouseenter', () => emit('hover', c.dataset.id));
     c.addEventListener('mouseleave', () => emit('hover', null));
   });
@@ -694,6 +694,8 @@ ${whySection(L)}
   if (tr) { credit(0); carousel(tr, slides.length, credit); if (keep?.x) tr.scrollLeft = keep.x; }
   $('drawer').querySelectorAll('a[href^="#"]').forEach((a) => a.addEventListener('click', closeDrawer));
   drawerChrome(dw);
+  dw.classList.toggle('fresh', !keep && !reducedMotion());
+  if (opt.focus) requestAnimationFrame(() => { const h = dw.querySelector('.d-head h2'); h.tabIndex = -1; h.focus({ preventScroll: true }); });
   if (keep) dw.querySelector('.d-scroll').scrollTop = keep.y;
   $('drawer').classList.add('open');
   document.querySelectorAll('.card').forEach((c) => c.classList.toggle('sel', c.dataset.id === id));
@@ -701,6 +703,8 @@ ${whySection(L)}
   emit('select', { id, fly: opt.fly });
 }
 export function closeDrawer() {
+  // focus that was inside the drawer goes back to the card it came from, not to the top of the page
+  if (S.sel && $('drawer').contains(document.activeElement)) document.querySelector(`#cards .card[data-id="${CSS.escape(S.sel)}"]`)?.focus({ preventScroll: true });
   S.sel = null; $('drawer').classList.remove('open');
   document.querySelectorAll('.card.sel').forEach((c) => c.classList.remove('sel'));
   emit('select', { id: null });

@@ -12,6 +12,48 @@ export function initEnhance() {
   kpiCountUp();
   navIndicator();
   cardPhotos();
+  sheetSwipe();
+  skipLink();
+}
+
+function skipLink() {
+  document.querySelector('.skip')?.addEventListener('click', (e) => {
+    e.preventDefault();   // the hash is the router's: focus the first result instead of navigating
+    if (!['map', 'list'].includes(document.body.dataset.view)) location.hash = 'map';
+    requestAnimationFrame(() => document.querySelector('#cards .card, #view-list [tabindex="0"]')?.focus());
+  });
+}
+
+// ------------------------------------------------------------------ phone: pull the listing sheet down to close it
+function sheetSwipe() {
+  const dw = $('drawer'); if (!dw) return;
+  let s = null;
+  const phone = () => matchMedia('(max-width: 760px)').matches;
+  dw.addEventListener('touchstart', (e) => {
+    const sc = dw.querySelector('.d-scroll');
+    if (!phone() || !dw.classList.contains('open') || e.touches.length !== 1 || (sc && sc.scrollTop > 0)) { s = null; return; }
+    s = { x: e.touches[0].clientX, y: e.touches[0].clientY, dy: 0, on: false };
+  }, { passive: true });
+  dw.addEventListener('touchmove', (e) => {
+    if (!s) return;
+    const dx = e.touches[0].clientX - s.x, dy = e.touches[0].clientY - s.y;
+    if (!s.on) {
+      if (Math.abs(dy) < 8 && Math.abs(dx) < 8) return;
+      if (dy <= 0 || Math.abs(dx) > Math.abs(dy)) { s = null; return; }   // upward scroll or a sideways photo swipe
+      s.on = true; dw.classList.add('pulling');
+    }
+    e.preventDefault();
+    s.dy = dy;
+    dw.style.transform = `translateY(${Math.max(0, dy)}px)`;
+  }, { passive: false });
+  const end = () => {
+    if (!s?.on) { s = null; return; }
+    const far = s.dy > Math.min(140, innerHeight * 0.18);
+    dw.classList.remove('pulling'); dw.style.transform = '';
+    s = null;
+    if (far) dw.querySelector('#dClose')?.click();
+  };
+  dw.addEventListener('touchend', end); dw.addEventListener('touchcancel', end);
 }
 
 // ------------------------------------------------------------------ images: fade in on load, placeholder on error
