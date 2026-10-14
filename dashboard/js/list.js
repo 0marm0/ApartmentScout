@@ -5,6 +5,8 @@ import { S, on, emit, store, byId, filtered, openDrawer, toggleCompare, toggleSa
 import { $, esc, money, ICONS } from './util.js';
 import { attachSplit, sync as splitSync, shown as splitShown } from './features/split-view.js';   // [features] docked mini map
 import { illustration } from './features/empty.js';   // [feature C] empty-state art
+import { getDensity, setDensity, onDensity } from './features/density.js';
+import { deltaHTML } from './features/rank-ui.js';
 import { ppsf, groupKey, thumb, tierPill, myTierPill, tri, doorman, isMust, floorText, commuteHTML, scoreBar, statusPill, name, gateFails, costUnknown, label } from './views/table-kit.js';
 
 const saved = store.get('list:ui', null) || {};
@@ -22,7 +24,7 @@ const tri3 = (v) => (v === true ? 2 : v === false ? 0 : 1);
 const DOOR = { 'full-time': 3, 'part-time': 2, virtual: 1.5, none: 0 };
 const COLS = [
   { k: 'act', h: '<span class="sr">Save and compare</span>', fixed: true, cell: actCell },
-  { k: 'rank', h: '#', label: 'Rank', n: true, sort: (L) => L._rank, dir: 1, cell: (L) => (L._rank ? `<span class="rk">${L._rank}</span>` : '<span class="faint" title="Not eligible: fails a hard requirement">—</span>') },
+  { k: 'rank', h: '#', label: 'Rank', n: true, sort: (L) => L._rank, dir: 1, cell: (L) => (L._rank ? `<span class="rk">${L._rank}</span>${deltaHTML(L.id)}` : '<span class="faint" title="Not eligible: fails a hard requirement">—</span>') },
   { k: 'thumb', h: '<span class="sr">Photo</span>', label: 'Photo', cell: (L) => `<span class="th">${thumb(L)}</span>` },
   { k: 'name', h: 'Listing', fixed: true, sort: (L) => label(L).toLowerCase(), dir: 1, cell: nameCell },
   { k: 'hood', h: 'Area', label: 'Area', sort: (L) => (L.neighborhood || '').toLowerCase() || null, dir: 1, cell: (L) => (L.neighborhood ? `<span class="hood">${esc(L.neighborhood)}</span>` : '<span class="faint">—</span>') },
@@ -216,6 +218,8 @@ async function reveal(id) {
 }
 
 export function init() {
+  st.density = getDensity();   // the global density setting (settings menu) drives the table too, and follows these buttons
+  onDensity((d) => { st.density = d; if ($('table')) { persist(); controls(); $('table').className = `grid lst ${d}`; } });
   $('view-list').innerHTML = `<div class="view-pad list-pad">
     <div class="page-h"><div class="t"><h1>Shortlist <span id="lsCount"></span></h1>
       <p>Ranked live by your weights. Click a row for the full picture; <kbd>↑</kbd> <kbd>↓</kbd> move, <kbd>Enter</kbd> opens, <kbd>s</kbd> saves, <kbd>c</kbd> compares.</p></div>
@@ -266,7 +270,7 @@ export function init() {
     step(e.key === 'j' ? 1 : -1, true);
   }, true);
   $('lsGroup').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; st.group = b.dataset.g; persist(); controls(); draw(); });
-  $('lsDensity').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; st.density = b.dataset.d; persist(); controls(); $('table').className = `grid lst ${st.density}`; });
+  $('lsDensity').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; st.density = b.dataset.d; persist(); controls(); $('table').className = `grid lst ${st.density}`; setDensity(st.density); });
   $('lsColMenu').addEventListener('change', (e) => {
     const k = e.target.dataset.col; if (!k) return;
     e.target.checked ? st.hidden.delete(k) : st.hidden.add(k);

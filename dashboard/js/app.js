@@ -10,6 +10,8 @@ import { initMedia, cardMediaHTML, afterDrawerMedia, mediaTransition } from './f
 import { loadPreviews } from './features/lqip.js';
 import './features/comfort.js';   // [feature C] comfort + accent attributes on <html> apply at import, before first paint
 import { cardsEmpty } from './features/empty.js';   // [feature C]
+// results list and filter rail features (chips, collapsible sections, windowed cards, rank motion, density, price history, worker scoring)
+import { initResults, setCardItems, clearCardList, cardIds, cardPos, cardEl, revealCard, decorateRail, railFocus, restoreRailFocus, rescoreWeights, deltaHTML, trendHTML } from './features/results.js';
 
 export const store = {
   get(k, d) { try { const v = localStorage.getItem('as:' + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
@@ -20,7 +22,7 @@ export const ACTIVE = ['new', 'researching', 'shortlist', 'touring', 'applied'];
 export const STATUSES = [['new', 'New'], ['researching', 'Researching'], ['shortlist', 'Shortlist'], ['touring', 'Touring'], ['applied', 'Applied'], ['rejected', 'Rejected'], ['gone', 'Gone']];
 export const DIMS = [['cost', 'Cost'], ['space', 'Space'], ['commute', 'Commute'], ['amenities', 'Amenities'], ['light_view', 'Light & view'], ['building', 'Building'], ['interior', 'Interior'], ['quiet', 'Quiet']];
 export const TIER_VARS = ['--tier-1', '--tier-2', '--tier-3'];
-const FEATURES = [
+export const FEATURES = [
   ['in_unit_wd', 'In-unit washer/dryer'], ['elevator', 'Elevator'], ['doorman', 'Full-time doorman'], ['gym', 'Gym'],
   ['floor10', 'Floor 10 or higher'], ['sized', 'Size known'], ['light', 'Light model'], ['dishwasher', 'Dishwasher'], ['roof_deck', 'Roof deck'], ['pets', 'Pets allowed'],
 ];
@@ -319,6 +321,7 @@ function hist(values, lo, hi, bins, cut) {
 }
 const pct = (v, lo, hi) => `--p:${((v - lo) / (hi - lo)) * 100}%`;
 function renderRail() {
+  const keepFocus = railFocus($('rail'));   // results/rail features: the rebuild below must not drop keyboard focus
   const tiers = S.crit.budget?.tiers || [], f = S.filters;
   const act = S.listings.filter((L) => f.status.includes(L.status || 'new'));
   const cnt = (fn) => act.filter(fn).length;
@@ -360,7 +363,7 @@ function renderRail() {
   R.querySelectorAll('[data-tg]').forEach((el) => tg(el, () => { const s = new Set(S.filters.toggles), k = el.dataset.tg; s.has(k) ? s.delete(k) : s.add(k); setFilter('toggles', [...s]); }));
   R.querySelectorAll('[data-saved]').forEach((el) => tg(el, () => setFilter('savedOnly', !S.filters.savedOnly)));
   R.querySelectorAll('[data-st]').forEach((b) => b.addEventListener('click', () => { const s = new Set(S.filters.status), k = b.dataset.st; s.has(k) ? s.delete(k) : s.add(k); setFilter('status', [...s]); }));
-  R.querySelectorAll('[data-w]').forEach((r) => r.addEventListener('input', () => { S.weights[r.dataset.w] = +r.value; store.set('weights', S.weights); rescore(); refreshRailValues(); emit('weights'); }));
+  R.querySelectorAll('[data-w]').forEach((r) => r.addEventListener('input', () => { S.weights[r.dataset.w] = +r.value; store.set('weights', S.weights); refreshRailValues(); rescoreWeights(); }));
   R.querySelectorAll('[data-w]').forEach((r) => r.addEventListener('change', () => renderRail()));
   R.querySelector('[data-reset=weights]').addEventListener('click', () => { S.weights = { ...(S.crit.weights || {}) }; S.preset = S.crit.scoring?.preset || null; store.set('weights', null); store.set('preset', null); rescore(); renderRail(); emit('weights'); emit('weights-settled'); });
   R.querySelector('[data-reset=tiers]')?.addEventListener('click', () => { S.filters.over = false; setFilter('tiers', (S.filters.over || !(S.filters.tiers || []).length) ? tiers.map((_, i) => i) : []); });
@@ -380,6 +383,7 @@ function renderRail() {
     download('weights.yaml', `# paste into criteria.yaml\n${S.preset ? `scoring:\n  preset: ${S.preset}\n` : ''}weights:\n${DIMS.map(([k]) => `  ${k}: ${S.weights[k] || 0}`).join('\n')}\n`, 'text/yaml');
   });
   emit('rail');   // [features/tradeoff.js] the rail was rebuilt: features that add a block to it re-attach
+  decorateRail(R); restoreRailFocus(R, keepFocus);   // results/rail features: collapsible sections, keep focus
 }
 const BASIS_RAIL = { monthly_cost: 'Monthly cost, net of concessions', net: 'Net-effective rent (fees left out)', gross: 'Gross rent in a paid month, plus known fees' };
 /** The amount budget tiers compare: the scorer's budget_amount (by basis), else the monthly cost. */
@@ -444,11 +448,11 @@ export function cardHTML(L, i = 0) {
   const my = pick(L.id).tier, inCmp = S.compare.includes(L.id), has = (k) => (S.manifest[k] || []).includes(L.id);
   return `<article class="card ${S.sel === L.id ? 'sel' : ''} ${inCmp ? 'cmp' : ''}" data-id="${esc(L.id)}" tabindex="0" aria-label="${esc(label(L))}, ${esc(money(cost(L)))} a month${score(L) != null ? ', score ' + Math.round(score(L)) : ''}" style="animation-delay:${Math.min(i, 12) * 22}ms">
     <div class="media">${mediaHTML(L, im)}
-      ${L._rank ? `<span class="rank">#${L._rank}</span>` : ''}
+      ${L._rank ? `<span class="rank">#${L._rank}</span>${deltaHTML(L.id)}` : ''}
       <button type="button" class="save ${saved ? 'on' : ''}" data-save="${esc(L.id)}" aria-pressed="${saved}" aria-label="${saved ? 'Remove from picks' : 'Save to picks'}">${saved ? ICONS.star : ICONS.starO}</button></div>
     <div class="c-body">
       <div class="c-top"><div style="min-width:0;flex:1"><div class="c-title">${esc(L.building || L.address)} <span>${esc(L.unit || '')}</span>${my ? ` <span class="pill accent">${esc(my)}</span>` : ''}</div>
-        <div class="c-sub">${esc(L.neighborhood || '')}${L.sqft ? ' · ' + Math.round(L.sqft) + ' ft²' : ''}${L.beds != null ? ' · ' + (L.beds ? L.beds + ' bd' : 'Studio') : ''}</div></div>${ring(score(L))}</div>
+        <div class="c-sub"><span class="t">${esc(L.neighborhood || '')}${L.sqft ? ' · ' + Math.round(L.sqft) + ' ft²' : ''}${L.beds != null ? ' · ' + (L.beds ? L.beds + ' bd' : 'Studio') : ''}</span>${trendHTML(L)}</div></div>${ring(score(L))}</div>
       <div class="c-price"><b>${money(cost(L))}</b><span class="per">/mo${L.score?.cost?.fees_estimate ? ' <abbr title="Includes estimated fees: no fee sheet yet">est.</abbr>' : ''}</span>${L.price?.gross && cost(L) && Math.abs(L.price.gross - cost(L)) > 5 ? `<span class="gross">${money(L.price.gross)} gross</span>` : ''}
         ${L.score?.budget_tier ? `<span class="tierpill" style="color:var(${t >= 0 ? TIER_VARS[t] : '--tier-over'})"><i></i>${esc(L.score.budget_tier)}</span>` : ''}</div>
       ${modesHTML(L)}
@@ -463,7 +467,7 @@ function buildingGroups(F) {
   for (const L of F) { const k = (L.building || L.address || L.id).toLowerCase(); (g.get(k) || g.set(k, []).get(k)).push(L); }
   return [...g.values()].map((units) => ({ units: sorted(units), best: sorted(units)[0] }));
 }
-function resetFilters() {
+export function resetFilters() {
   Object.assign(S.filters, { q: '', toggles: [], savedOnly: false, maxCommute: 75, status: [...ACTIVE], over: false, nl: null, tiers: (S.crit.budget?.tiers || []).map((_, i) => i) });
   if ($('q')) $('q').value = '';
   saveFilters(); syncTrigger(); emit('filters');
@@ -478,34 +482,22 @@ function syncCompareCards() {
     b.innerHTML = `${on2 ? ICONS.check : ICONS.plus}<span>${on2 ? 'Comparing' : 'Compare'}</span>`;
   });
 }
-let shown = 60;
+const unitsMoreHTML = (g) => (g.units.length > 1 ? `<div class="units-more">${g.units.slice(1, 3).map((u) => `<button type="button" class="unit-row" data-open="${esc(u.id)}"><span>${esc(u.unit || label(u))}</span><span class="faint">${u.sqft ? Math.round(u.sqft) + ' ft²' : ''}</span><b>${money(cost(u))}</b><span class="mini-score" style="color:${scoreColor(score(u))}">${Math.round(score(u) ?? 0)}</span></button>`).join('')}${g.units.length > 3 ? `<span class="faint more">+ ${g.units.length - 3} more units</span>` : ''}</div>` : '');
 export function renderCards() {
   const F = sorted(filtered()), el = $('cards');
   $('listTitle').innerHTML = `${F.length} ${S.group === 'buildings' ? 'homes in ' + new Set(F.map((L) => L.building)).size + ' buildings' : 'homes'} <span>· ${S.sort === 'match' ? 'ranked by your weights' : 'sorted'}</span>`;
   if (!F.length) {
+    clearCardList();
     el.innerHTML = cardsEmpty({ q: S.filters.q, savedOnly: S.filters.savedOnly, hasPicks: Object.values(S.picks).some((p) => p.saved) });   // [feature C] illustrated empty state
     $('resetFilters').addEventListener('click', resetFilters); return;
   }
+  // the windowed card list (features/card-list.js) renders only the cards in view, keyed by listing, and animates re-ranks
   if (S.group === 'buildings') {
     const G = buildingGroups(F).sort((a, b) => SORTS[S.sort](a.best, b.best));
-    el.innerHTML = G.slice(0, shown).map((g, i) => cardHTML(g.best, i) + (g.units.length > 1 ? `<div class="units-more">${g.units.slice(1, 3).map((u) => `<button type="button" class="unit-row" data-open="${esc(u.id)}"><span>${esc(u.unit || label(u))}</span><span class="faint">${u.sqft ? Math.round(u.sqft) + ' ft²' : ''}</span><b>${money(cost(u))}</b><span class="mini-score" style="color:${scoreColor(score(u))}">${Math.round(score(u) ?? 0)}</span></button>`).join('')}${g.units.length > 3 ? `<span class="faint more">+ ${g.units.length - 3} more units</span>` : ''}</div>` : '')).join('');
+    setCardItems(G.map((g) => ({ key: 'g:' + g.best.id, id: g.best.id, ids: g.units.map((u) => u.id), wrap: true, html: () => cardHTML(g.best) + unitsMoreHTML(g) })));
   } else {
-    el.innerHTML = F.slice(0, shown).map(cardHTML).join('') + (F.length > shown ? `<button type="button" class="btn ghost more-btn" id="moreBtn">Show ${Math.min(60, F.length - shown)} more of ${F.length - shown}</button>` : '');
+    setCardItems(F.map((L) => ({ key: L.id, id: L.id, html: () => cardHTML(L) })));
   }
-  el.querySelectorAll('.card').forEach((c) => {
-    // composedPath, not closest: the quick-action button re-renders its own content during the click
-    c.addEventListener('click', (e) => { if (e.composedPath().some((n) => n.matches?.('[data-save], .c-acts'))) return; openDrawer(c.dataset.id, { fly: true }); });
-    c.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target === c) openDrawer(c.dataset.id, { fly: true, focus: true }); });
-    c.addEventListener('mouseenter', () => emit('hover', c.dataset.id));
-    c.addEventListener('mouseleave', () => emit('hover', null));
-  });
-  el.querySelectorAll('[data-save]').forEach((b) => b.addEventListener('click', () => toggleSave(b.dataset.save)));
-  el.querySelectorAll('[data-cmp]').forEach((b) => b.addEventListener('click', () => {
-    const id = b.dataset.cmp, was = S.compare.includes(id); toggleCompare(id);
-    toast(was ? 'Removed from Compare' : `Added to Compare · ${S.compare.length} of 4`);
-  }));
-  el.querySelectorAll('[data-open]').forEach((b) => b.addEventListener('click', () => openDrawer(b.dataset.open, { fly: true })));
-  $('moreBtn')?.addEventListener('click', () => { shown += 60; renderCards(); });
 }
 
 // ------------------------------------------------------------------ drawer
@@ -741,12 +733,12 @@ ${whySection(L)}
   if (keep) dw.querySelector('.d-scroll').scrollTop = keep.y;
   $('drawer').classList.add('open');
   document.querySelectorAll('.card').forEach((c) => c.classList.toggle('sel', c.dataset.id === id));
-  document.querySelector(`.card[data-id="${CSS.escape(id)}"]`)?.scrollIntoView({ block: 'nearest', behavior: opt.instant ? 'auto' : 'smooth' });
+  revealCard(id, !!opt.instant);   // scrolls the windowed list, also to a card that is not rendered yet
   emit('select', { id, fly: opt.fly });
 }
 export function closeDrawer() {
   // focus that was inside the drawer goes back to the card it came from, not to the top of the page
-  if (S.sel && $('drawer').contains(document.activeElement)) document.querySelector(`#cards .card[data-id="${CSS.escape(S.sel)}"]`)?.focus({ preventScroll: true });
+  if (S.sel && $('drawer').contains(document.activeElement)) { revealCard(S.sel, true); cardEl(S.sel)?.focus({ preventScroll: true }); }   // the card may be outside the rendered window
   S.sel = null; $('drawer').classList.remove('open');
   document.querySelectorAll('.card.sel').forEach((c) => c.classList.remove('sel'));
   emit('select', { id: null });
@@ -781,7 +773,6 @@ async function route() {
 }
 
 function setupKeys() {
-  const cards = () => [...document.querySelectorAll('#cards .card')];
   addEventListener('keydown', (e) => {
     const tag = e.target.tagName;
     if ((e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey && e.key.toLowerCase() === 'k') { e.preventDefault(); openPalette(); return; }
@@ -789,9 +780,9 @@ function setupKeys() {
     if ((['INPUT', 'TEXTAREA', 'SELECT'].includes(tag) && !e.target.readOnly) || e.target.isContentEditable || e.metaKey || e.ctrlKey || e.altKey) return;
     if (e.key === '/') { e.preventDefault(); openPalette(); return; }
     if ((e.key === 'j' || e.key === 'k') && S.view === 'map') {
-      const cs = cards(); if (!cs.length) return;
-      const i = cs.findIndex((c) => c.dataset.id === S.sel), n = Math.max(0, Math.min(cs.length - 1, i + (e.key === 'j' ? 1 : -1)));
-      openDrawer(cs[i < 0 ? 0 : n].dataset.id, { fly: true }); return;
+      const cs = cardIds(); if (!cs.length) return;   // the whole list, not only the cards currently rendered
+      const i = cardPos(S.sel) ?? -1, n = Math.max(0, Math.min(cs.length - 1, i + (e.key === 'j' ? 1 : -1)));
+      openDrawer(cs[i < 0 ? 0 : n], { fly: true }); return;
     }
     if (e.key === 's' && S.sel) { toggleSave(S.sel); openDrawer(S.sel); return; }
     if (e.key === 'c' && S.sel) { toggleCompare(S.sel); openDrawer(S.sel); return; }
@@ -802,7 +793,7 @@ function setupKeys() {
       if (!dispatchEvent(new CustomEvent('as:cheatsheet', { cancelable: true }))) return;   // [feature C] the searchable cheat sheet (features/keys.js) answers this; the list below is the fallback
       const old = document.querySelector('.kbd-help'); if (old) { old.remove(); return; }
       const el = document.createElement('div'); el.className = 'kbd-help'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', 'Keyboard shortcuts');
-      el.innerHTML = `<div class="panel"><h3>Keyboard</h3><dl>${[['⌘K /', 'Search homes, views and actions'], ['j k', 'Next or previous listing'], ['s', 'Save the open listing'], ['c', 'Add it to compare'], ['1–6', 'Switch view'], ['t', 'Light or dark'], ['Esc', 'Close'], ...(S.view === 'plan' ? [['R', 'Turn the selected piece'], ['← →', 'Nudge 1 in (Shift 6 in)'], ['D', 'Duplicate'], ['Del', 'Remove'], ['⌘Z', 'Undo'], ['W A S D', 'Walk mode']] : []), ...(S.view === 'unit' ? [['p', 'Play or pause the day'], [', .', 'Step 15 minutes']] : [])].map(([k, t]) => `<dt>${k.split(' ').map((x) => `<kbd>${x}</kbd>`).join(' ')}</dt><dd style="margin:0">${t}</dd>`).join('')}</dl></div>`;
+      el.innerHTML = `<div class="panel"><h3>Keyboard</h3><dl>${[['⌘K /', 'Search homes, views and actions'], ['j k', 'Next or previous listing'], ...(S.view === 'map' ? [['↑ ↓ Home End', 'Move through the result cards']] : []), ['s', 'Save the open listing'], ['c', 'Add it to compare'], ['1–6', 'Switch view'], ['t', 'Light or dark'], ['Esc', 'Close'], ...(S.view === 'plan' ? [['R', 'Turn the selected piece'], ['← →', 'Nudge 1 in (Shift 6 in)'], ['D', 'Duplicate'], ['Del', 'Remove'], ['⌘Z', 'Undo'], ['W A S D', 'Walk mode']] : []), ...(S.view === 'unit' ? [['p', 'Play or pause the day'], [', .', 'Step 15 minutes']] : [])].map(([k, t]) => `<dt>${k.split(' ').map((x) => `<kbd>${x}</kbd>`).join(' ')}</dt><dd style="margin:0">${t}</dd>`).join('')}</dl></div>`;
       el.addEventListener('click', () => el.remove()); document.body.append(el);
     }
   });
@@ -844,7 +835,7 @@ async function boot() {
   $('searchSwitch').setAttribute('aria-haspopup', 'menu'); $('searchSwitch').setAttribute('aria-expanded', 'false');
   for (const id of ['searchSwitch', 'searchMenuBtn']) $(id)?.addEventListener('click', async () => (await import('./onboarding.js')).openSearchMenu($(id)));
   renderSearchSwitch();
-  rescore(); renderRail(); renderKPIs(); renderCards();
+  rescore(); initResults(); renderRail(); renderKPIs(); renderCards();
   on('filters', (o) => { renderKPIs(); renderCards(); if (!o?.quiet) renderRail(); });
   // weight sliders fire on every pixel: coalesce to one render per frame, and render the full card list once the drag settles
   let wRaf = 0, wTimer = 0;
@@ -887,5 +878,5 @@ async function boot() {
 }
 boot();
 // [feature C] seams for ./features/*: the rail redraw and the feature list the filters offer
-export { renderRail, FEATURES };
+export { renderRail };
 

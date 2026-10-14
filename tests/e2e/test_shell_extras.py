@@ -44,7 +44,7 @@ def _toast(pg) -> str:
 def test_star_shows_an_undo_toast_and_the_button_undoes_it(op) -> None:
     s = op("#map")
     pg = s.page
-    pg.click("#cards .card:nth-child(1) .save")
+    pg.click("#cards .card:nth-child(1 of .card) .save")
     pg.wait_for_selector("#toast.on .toast-act", timeout=5000)
     assert _toast(pg).startswith("Starred "), _toast(pg)
     assert len(_saved(pg)) == 1
@@ -57,9 +57,9 @@ def test_star_shows_an_undo_toast_and_the_button_undoes_it(op) -> None:
 def test_cmd_z_and_shift_cmd_z_walk_the_stack(op) -> None:
     s = op("#map")
     pg = s.page
-    pg.click("#cards .card:nth-child(1) .save")
-    pg.hover("#cards .card:nth-child(2)")   # the quick actions appear on hover
-    pg.click("#cards .card:nth-child(2) [data-cmp]")
+    pg.click("#cards .card:nth-child(1 of .card) .save")
+    pg.hover("#cards .card:nth-child(2 of .card)")   # the quick actions appear on hover
+    pg.click("#cards .card:nth-child(2 of .card) [data-cmp]")
     pg.wait_for_function("() => __undo.size === 2")
     assert len(_saved(pg)) == 1 and pg.evaluate("() => JSON.parse(localStorage.getItem('as:compare') || '[]').length") == 1
     pg.keyboard.press("Control+z")
@@ -80,9 +80,9 @@ def test_cmd_z_and_shift_cmd_z_walk_the_stack(op) -> None:
 def test_undo_does_not_steal_the_key_from_a_text_field(op) -> None:
     s = op("#map")
     pg = s.page
-    pg.click("#cards .card:nth-child(1) .save")
+    pg.click("#cards .card:nth-child(1 of .card) .save")
     pg.wait_for_function("() => __undo.size === 1")
-    pg.click("#cards .card:nth-child(1)")
+    pg.click("#cards .card:nth-child(1 of .card)")
     pg.wait_for_selector("#dNote")
     pg.click("#dNote")
     pg.keyboard.type("quiet side")
@@ -279,7 +279,7 @@ def test_the_cheat_sheet_opens_searches_and_closes(op) -> None:
 def test_x_and_s_act_on_the_focused_card(op) -> None:
     s = op("#map")
     pg = s.page
-    pg.focus("#cards .card:nth-child(2)")
+    pg.focus("#cards .card:nth-child(2 of .card)")
     cid = pg.evaluate("() => document.activeElement.dataset.id")
     pg.keyboard.press("x")
     pg.wait_for_function("(id) => JSON.parse(localStorage.getItem('as:compare') || '[]').includes(id)", arg=cid)

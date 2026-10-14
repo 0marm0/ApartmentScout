@@ -132,13 +132,13 @@ def test_tray_collects_dragged_homes_and_reorders_them(open_page) -> None:
     assert "Drag homes here" in s.page.locator("#tray").inner_text()
     ids = s.page.eval_on_selector_all("#cards .card", "cs => cs.slice(0, 4).map(c => c.dataset.id)")
     for i in range(3):
-        s.page.drag_and_drop(f"#cards .card:nth-child({i + 1})", "#tray")
+        s.page.drag_and_drop(f"#cards .card:nth-child({i + 1} of .card)", "#tray")
         s.page.wait_for_timeout(250)
     assert compare_ids(s) == ids[:3]
     assert s.page.locator("#tray .td-slot.filled").count() == 3
     assert s.page.locator("#cmpCount").inner_text() == "3"
     # drop the fourth on slot A: it goes first, the others shift
-    s.page.drag_and_drop("#cards .card:nth-child(4)", "#tray .td-slot[data-slot='0']")
+    s.page.drag_and_drop("#cards .card:nth-child(4 of .card)", "#tray .td-slot[data-slot='0']")
     s.page.wait_for_timeout(250)
     assert compare_ids(s) == [ids[3], ids[0], ids[1], ids[2]]
     # drag slot D onto slot A: reorder, no duplicate
@@ -146,7 +146,7 @@ def test_tray_collects_dragged_homes_and_reorders_them(open_page) -> None:
     s.page.wait_for_timeout(250)
     assert compare_ids(s) == [ids[2], ids[3], ids[0], ids[1]]
     # a fifth home replaces the one under the drop
-    s.page.drag_and_drop("#cards .card:nth-child(5)", "#tray .td-slot[data-slot='1']")
+    s.page.drag_and_drop("#cards .card:nth-child(5 of .card)", "#tray .td-slot[data-slot='1']")
     s.page.wait_for_timeout(250)
     five = s.page.eval_on_selector_all("#cards .card", "cs => cs[4].dataset.id")
     got = compare_ids(s)
@@ -173,7 +173,8 @@ def test_tray_takes_a_dragged_map_tag_and_a_table_row(open_page, webgl) -> None:
     s.page.drag_and_drop(".price-tag[data-id]:visible >> nth=0", "#tray")
     s.page.wait_for_timeout(300)
     assert compare_ids(s) == [tag_id]
-    after = s.page.locator(f'.price-tag[data-id="{tag_id}"]').first.bounding_box()
+    s.page.wait_for_selector(f'.price-tag[data-id="{tag_id}"]:visible', timeout=SLOW)   # tags are redrawn after the drop
+    after = s.page.locator(f'.price-tag[data-id="{tag_id}"]:visible').first.bounding_box()
     assert abs(after["x"] - before["x"]) < 2 and abs(after["y"] - before["y"]) < 2 + 40, "dragging a tag must not pan the map"
     s.page.evaluate("location.hash = 'list'")
     s.page.wait_for_selector("#table tbody tr.r[data-id]", timeout=SLOW)
@@ -188,7 +189,7 @@ def test_tray_stays_in_step_with_the_compare_toggle_and_survives_a_reload(open_p
     s = open_page("#map")
     s.page.wait_for_selector("#tray .tray-pill", state="visible", timeout=SLOW)
     for n in (1, 2):                                  # the quick actions show on hover
-        card = s.page.locator(f"#cards .card:nth-child({n})")
+        card = s.page.locator(f"#cards .card:nth-child({n} of .card)")
         card.hover()
         card.locator("[data-cmp]").click()
     assert s.page.locator("#tray .td-slot.filled").count() == 2

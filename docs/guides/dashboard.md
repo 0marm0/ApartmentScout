@@ -42,6 +42,9 @@ a listing (for example `#unit/emerald-green-1211` or `#plan/emerald-green-1211`)
 | `t` | Flip light and dark (the settings menu also has System) |
 | `Esc` | Close the lightbox, the drawer or the help |
 
+| `Esc` | Close the drawer or the help |
+| `↑` `↓` `Home` `End` `Page Up` `Page Down` | On a focused result card: move through the whole list (with the drawer open they also open the neighbour) |
+
 Press `?` for the cheat sheet: every shortcut, searchable ("undo", "rotate", "compare", "sun"), with the keys of the
 view you are on listed first. The same list, in full:
 
@@ -69,7 +72,7 @@ view you are on listed first. The same list, in full:
 
 Chords and `x` ignore the keys while you type in a field and while a dialog, the command menu or the tour is open.
 
-Saved picks, tiers, tour notes, compare, filters and weights are kept in your browser's local storage.
+Saved picks, tiers, tour notes, compare, filters, weights, density and which rail sections are collapsed are kept in your browser's local storage.
 Use **Back up picks** on the Tours view to keep them as a file, and **Restore** to load them in another
 browser.
 
@@ -273,6 +276,55 @@ renter can only add to it. The golden-hour tint warms the map from the side the 
 3 degrees up (it uses the sun position at the map centre, updated every five minutes); it is off by default.
 `?goldenAt=2026-06-21T23:55:00Z` shows the map at a chosen instant.
 
+## Results list and filter rail
+
+The results column and the filter rail are built for hundreds of homes and for hands that keep adjusting. The code
+is in `dashboard/js/features/` and `dashboard/css/results-rail.css`; `features/results.js` wires it into the shell.
+
+**Active filters.** A row of chips above the results shows every filter that differs from the starting view: the
+budget cap (or "Any price"), the commute limit with its mode, each must-have or feature switch, a status set other than
+the five active ones, the text search and saved picks only. One click on a chip removes that filter; **Clear all**
+returns to the starting view. The row follows the rail, the search box and the command palette, and the rail follows a
+chip, because both read the same filter state. It is hidden when nothing is filtered, wraps on a desktop and scrolls
+sideways on a phone, and the arrow keys move between chips. Homes without a computed commute stay in the list when a
+commute limit is set; the chip's tooltip says so.
+
+**Collapsible rail sections.** Search, Budget, Commute, Must-haves and features, Status and Weights each have a heading
+button (`aria-expanded`, Enter or Space toggles, the arrow keys, Home and End move between headings). A collapsed
+section shows a one-line summary of its setting (for example "≤ $5,200", "≤ 30 min · Subway", "3 on", "Active" or the
+two largest weights) and its controls leave the tab order. The height animates; which sections are collapsed is kept in
+this browser (`localStorage`, with a safe fallback when storage is blocked). Keyboard focus also survives the rail's
+rebuild after every filter change, so a switch toggled with the space bar keeps focus.
+
+**Rank changes.** When weights, edited criteria or the commute lens change the ranking, the cards that stay on screen
+slide to their new places (a FLIP animation on transforms, so it stays at 60 fps), and a small ▲3 or ▼2 badge fades in
+beside the "#rank" of every home whose rank moved. The badge is measured from where the ranking stood when the renter
+started adjusting, so a long drag shows the net move, and it fades out after four quiet seconds. The same badges appear
+in the Shortlist table's rank column. Filters and sorting move the cards without badges, because the rank numbers do not
+change. The motion is skipped under `prefers-reduced-motion` (the badges still appear), and for a moment after any
+update that took more than 9 ms, so a slow device drops the animation instead of frames.
+
+**Density.** The settings menu has Comfortable and Compact. Compact shrinks the card photo, trims the badge row to two,
+drops the photo count and the sparkline but keeps the price, score, commute and drop chip, tightens the rail, and
+tightens every table (the Shortlist's own density buttons follow the setting and change it). It is remembered per
+browser; `?density=compact` wins for one page load.
+
+**Price history.** A card shows a tiny step-line sparkline and, when the latest recorded change was a drop, a "↓ $150"
+chip; the map's hover card shows a larger sparkline with its dates. The prices come from the listing's own
+`price_history` and from `history.json` (`apartmentscout build` writes it from snapshots and dated claims); today's
+price is added as the last point only when it differs from the newest recorded one and the listing has a check date.
+Gross rent is plotted; net-effective prices are used only when no two gross prices exist, and the two are never mixed.
+With no history, a single price or an unchanged price, nothing is drawn: there is no trend line to invent.
+
+**Big searches.** Only the cards in view (plus a buffer) are in the page, with spacers for the rest, so 700 or 7,000
+homes scroll and re-rank as smoothly as 20. Opening a listing, `j` / `k` and the arrow keys reach cards that are not
+rendered yet; each card carries `aria-posinset` and `aria-setsize`, and the list is a `role="feed"`. While a weight
+slider moves, the scores and the four rankings are computed in a Web Worker and applied when they come back; the
+results are identical to the main-thread `rescore()`, which remains the fallback. The worker is built from a `blob:`
+URL (not a module file), so it starts from the standalone file opened as `file://` too; if a worker cannot start, or
+fails its startup check, or the search has fewer than 150 homes, scoring simply runs on the main thread. `?worker=0`
+forces that path. `document.documentElement.dataset.scoring` says which one is running.
+
 ## New search wizard
 
 A step-by-step dialog for starting a search (or editing every criterion of the open one) with manual controls. It
@@ -362,6 +414,8 @@ URL options:
 | `?theme=light` / `?theme=dark` | Start in a theme |
 | `?layer=commute` / `noise` / `rent` / `score` / `sun` / `none` | Start on a map layer |
 | `?basemap=raster` | Use the raster fallback basemap instead of vector tiles |
+| `?density=compact` / `comfortable` | Start in a density (the settings menu remembers the renter's choice) |
+| `?worker=0` | Re-score on the main thread instead of in a Web Worker (for comparing or debugging) |
 | `?open=<listing-id>` | Open a listing in the drawer |
 | `?new=1` / `?wizard=edit` | Open the New search wizard (or edit the open search); `&step=3` picks the step |
 | Unit 3D: `?date=2026-12-21&min=750&floor=21&mode=window` | Date, minutes after midnight, floor and camera (`orbit`, `window`, `inside`, `plan`, `top`) |

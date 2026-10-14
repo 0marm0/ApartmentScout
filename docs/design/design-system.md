@@ -14,6 +14,13 @@ reference for the dashboard and the landing page. The tokens live in `dashboard/
 5. **One shell.** Every view lives inside the same top bar, stats strip, rail and drawer.
 6. **Compact first.** Chrome is thin: a 48 px top bar and a 28 px stats subline. Settings (theme, export, shortcuts) live in one menu, not as loose buttons.
 
+## Density
+
+Two densities, set once in the settings menu and applied by `html[data-density]`: **Comfortable** (the default
+above) and **Compact**, which shrinks card photos (136 to 92 px, 84 on narrow layouts), shows two badges instead of
+four, tightens rail sections and table rows, and keeps the numbers that decide a home: price, score, commute. Every
+component that has a compact form reads the attribute; none keeps its own density state.
+
 ## Type
 
 | Token | Use |
@@ -112,6 +119,13 @@ Each is on when the OS asks **or** the renter chose it: a page never switches of
 
 Map moves use `easeTo` at 700 ms. The golden-hour tint (opt-in) is a warm wash at `z-index: 3` over the map whose opacity (`--gh`, 0 to about 0.55) and glow side (`--gx`, `--gy`) come from the sun position; it uses `--sun` and `--score-2` only. Interactive controls lift 0.5 px on hover, press to 0.985 and show a 2 px accent ring on keyboard focus. Everything respects `prefers-reduced-motion`.
 
+Re-ranking uses FLIP: cards measure where they were, take the new order, and animate from the old position with a
+transform only (`--ease-out`, 380 ms, 240 ms when changes arrive faster than every 120 ms), then leave no inline style
+behind. Entering cards rise 6 px with the stagger above; chips scale in and out in 190 ms. All of it is skipped under
+reduced motion, and by a cooldown after any slow update.
+
+Map moves use `easeTo` at 700 ms. Interactive controls lift 0.5 px on hover, press to 0.985 and show a 2 px accent ring on keyboard focus. Everything respects `prefers-reduced-motion`.
+
 ## App shell
 
 ```
@@ -162,6 +176,16 @@ the results column) inside the same shell.
   `--fav` for stars and `--sun` for light), a title, one line of help and the next action. Scenes: picks, compare, records,
   plan, unit, filters, media, history, queue, watch.
 - **Weight slider.** Re-ranks every card and pin while dragging; shows each weight as a share of 100%.
+- **Filter chip.** A pill in the accent soft fill (the "on" look of a chip) for each active filter, with a × that is
+  the whole target: one click removes it. The row sits under the results header, collapses to nothing when empty,
+  wraps on a desktop and scrolls sideways on a phone (30 px chips, edge fade). "Clear all" is a quiet text button.
+- **Section disclosure.** Rail sections are headings with a chevron button; collapsed, the section shows its current
+  setting as a one-line summary in `--ink-2` and its controls leave the tab order. Body height animates with grid rows
+  (1fr to 0fr), never with measured pixel heights.
+- **Rank-delta badge.** ▲3 in `--good` or ▼2 in `--bad` on a solid `--surface-1` chip beside the rank, with the arrow
+  and the number carrying the meaning (never colour alone) and a spoken form ("Moved up 3 places").
+- **Price trend.** A 44 × 16 step-line sparkline (the price holds until it changes) in `--ink-3`, `--good` after a drop
+  or `--warn` after a rise, and a `--good-soft` "↓ $150" chip for the latest drop. Drawn only from recorded prices.
 - **Histogram slider.** Distribution of the current results behind the range, out-of-range bars greyed.
 
 ## Accessibility
