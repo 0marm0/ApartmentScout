@@ -105,6 +105,7 @@
      "amenities": 15.0,
      "light_view": 10.0,
      "building": 10.0,
+     "interior": 0.0,
      "quiet": 5.0,
      "move_date": 0.0,
      "renewal_risk": 0.0,
@@ -112,16 +113,17 @@
     }
    },
    "biggest-and-nicest": {
-    "version": 2,
+    "version": 3,
     "label": "Biggest and nicest",
     "description": "Space first, then light, finishes and service; cost only through the budget gate.",
     "weights": {
      "cost": 3.0,
-     "space": 35.0,
+     "space": 30.0,
      "commute": 7.0,
-     "amenities": 20.0,
+     "amenities": 15.0,
      "light_view": 20.0,
      "building": 10.0,
+     "interior": 10.0,
      "quiet": 5.0,
      "move_date": 0.0,
      "renewal_risk": 0.0,
@@ -139,6 +141,7 @@
      "amenities": 10.0,
      "light_view": 5.0,
      "building": 5.0,
+     "interior": 0.0,
      "quiet": 0.0,
      "move_date": 5.0,
      "renewal_risk": 5.0,
@@ -156,6 +159,7 @@
      "amenities": 10.0,
      "light_view": 5.0,
      "building": 5.0,
+     "interior": 0.0,
      "quiet": 0.0,
      "move_date": 0.0,
      "renewal_risk": 0.0,
@@ -189,6 +193,10 @@
     "Building"
    ],
    [
+    "interior",
+    "Interior"
+   ],
+   [
     "quiet",
     "Quiet"
    ],
@@ -209,15 +217,25 @@
  },
  "weights": {
   "cost": 20,
-  "space": 25,
-  "commute": 15,
-  "amenities": 15,
-  "light_view": 10,
-  "building": 10,
+  "space": 15,
+  "commute": 10,
+  "amenities": 5,
+  "light_view": 15,
+  "building": 15,
+  "interior": 15,
   "quiet": 5,
   "move_date": 0,
   "renewal_risk": 0,
   "transit_access": 0
  },
- "favorites_first": true
+ "favorites_first": true,
+ "building_ratings": {
+  "Paramount Tower": 5.0,
+  "The Knox": 5.0,
+  "Emerald Green": 5.0,
+  "The Corinthian": 5.0,
+  "Orion Condominium": 5.0,
+  "Mercedes House": 5.0,
+  "The Horizon": 2.0
+ }
 }

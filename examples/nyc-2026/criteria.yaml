@@ -62,11 +62,12 @@ scoring:
 # Relative weights. They are normalised, so only the ratios matter.
 weights:
   cost: 20
-  space: 25
-  commute: 15
-  amenities: 15
-  light_view: 10
-  building: 10              # resident reviews and public-record risk
+  space: 15
+  commute: 10
+  amenities: 5
+  light_view: 15            # sun model plus the view and light the unit's own photos show
+  building: 15              # your building ratings, then quality (age, height, service, amenities, stars), then records
+  interior: 15              # finishes, renovation and appliances from the unit's photos or wording
   quiet: 5
   move_date: 0              # fit with the move-in window (0 = shown, not ranked)
   renewal_risk: 0           # renewal shock after a deep first-lease concession
@@ -74,3 +75,14 @@ weights:
 
 # Optional: hand-set favourites always float to the top of the shortlist view.
 favorites_first: true
+
+# Your own 1-5 rating of buildings you know (5 = love it, 1 = avoid). It leads the building score.
+# Matched by building name; add buildings as you tour them.
+building_ratings:
+  Paramount Tower: 5
+  The Knox: 5
+  Emerald Green: 5
+  The Corinthian: 5
+  Orion Condominium: 5
+  Mercedes House: 5
+  The Horizon: 2
