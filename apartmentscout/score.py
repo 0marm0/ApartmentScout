@@ -1,25 +1,58 @@
-"""Criteria-driven scoring.
+"""Criteria-driven scoring (version 2).
 
-Every listing gets seven 0-100 dimension scores. Unknown dimensions count as a
-neutral 50 in the overall score and are reported in ``confidence`` (share of the
-weight that is known) and ``range`` (the overall score if every unknown turned
-out worst or best), so missing facts neither inflate nor sink a listing.
+Every listing gets one 0-100 score per dimension (``DIMENSIONS``). Unknown dimensions count as a
+neutral 50 in the overall score and are reported in ``confidence`` (share of the weight that is
+known) and ``range`` (the overall score if every unknown turned out worst or best, and every
+estimated input sat at the far end of its own range), so missing facts neither inflate nor sink a
+listing.
 
-Gates are separate from the score: a listing can score well and still fail a
-must-have or the hard budget cap. The dashboard shows both.
+Gates are separate from the score: a listing can score well and still fail a must-have or the hard
+budget cap. Three ranks answer three questions:
+
+- ``ranks.fit``: how good is this home, whatever its status (gone and over-budget homes included);
+- ``ranks.action`` (also ``rank``): which homes can I act on, best first (eligible only);
+- ``ranks.budget``: the best homes inside the first budget tier.
+
+Every dimension carries a plain-language reason (``reasons``) with the points it adds or removes
+against a neutral listing under the current weights, so the ranking can always be explained.
 """
 from __future__ import annotations
 
+import datetime as dt
 import re
+from dataclasses import dataclass, field
 from typing import Any
 
-from .listings import monthly_cost
+from .config import DIMENSION_LABELS
+from .listings import (cost_model, is_studio, normalise_laundry, normalise_service, parse_date,
+                       price_per_sqft, size_info)
+
+SCORE_VERSION = "2.0"
 
 GOOD_EXPOSURE = {"S": 20, "SSW": 20, "SSE": 18, "SW": 16, "SE": 16, "W": 10, "E": 10,
                  "WSW": 13, "ESE": 13, "WNW": 4, "ENE": 4, "NW": 0, "NE": 0, "N": -10,
                  "NNW": -8, "NNE": -8}
 
-DIMENSIONS = ["cost", "space", "commute", "amenities", "light_view", "building", "quiet"]
+DIMENSIONS = list(DIMENSION_LABELS)
+EXACT_SCOPES = {"exact-unit", "exact_unit", "exact", "unit", "this-unit"}
+SERVICE_LEVEL = {"full-time": 1, "part-time": 0.6, "virtual": 0.35, "none": 0}
+AMENITY_NAMES = {"in_unit_wd": "in-unit W/D", "elevator": "elevator", "doorman": "doorman", "gym": "gym",
+                 "pool": "pool", "roof_deck": "roof deck", "outdoor_space": "private outdoor space",
+                 "dishwasher": "dishwasher", "central_ac": "central air", "pets": "pets allowed",
+                 "parking": "parking", "bike_room": "bike room", "package_room": "package room",
+                 "lounge": "lounge", "coworking": "coworking", "game_room": "game room"}
+WALK_LINES_MIN = 10        # transit access counts lines within this walk
+
+
+@dataclass
+class Part:
+    """One dimension: 0-100 value (None = unknown), a one-line summary and itemised evidence."""
+
+    value: float | None
+    summary: str
+    items: list[str] = field(default_factory=list)
+    range: tuple[float, float] | None = None
+    flags: list[str] = field(default_factory=list)
 
 
 def _lin(x: float, x0: float, y0: float, x1: float, y1: float) -> float:
@@ -29,6 +62,20 @@ def _lin(x: float, x0: float, y0: float, x1: float, y1: float) -> float:
         return y1
     return y0 + (y1 - y0) * (x - x0) / (x1 - x0)
 
+
+def _money(x: float | None) -> str:
+    return "?" if x is None else f"${x:,.0f}"
+
+
+def _day(d: dt.date) -> str:
+    return f"{d:%b} {d.day}"
+
+
+def _clamp(x: float) -> float:
+    return max(0.0, min(100.0, x))
+
+
+# ---------------------------------------------------------------------- cost
 
 def budget_tier(cost: float | None, crit: dict) -> str | None:
     if cost is None:
@@ -58,25 +105,158 @@ def score_cost(cost: float | None, crit: dict) -> float | None:
     return max(0.0, _lin(cost, hi, 35, hi * 1.15, 0))
 
 
-def score_space(L: dict, crit: dict) -> float | None:
-    u = crit.get("unit", {})
-    sq = L.get("sqft")
-    if not sq:
-        return None
+def _tier_phrase(cm: dict, crit: dict) -> str:
+    rows = cm.get("headroom") or []
+    inside = [r for r in rows if r["room"] >= 0]
+    if inside:
+        r = inside[0]
+        return f"inside {r['tier']} ({_money(r['room'])} headroom)" if r["tier"] != "Hard cap" else \
+            f"under the hard cap ({_money(r['room'])} headroom)"
+    if rows:
+        r = rows[-1]
+        return f"over the {_money(r['max'])} cap by {_money(-r['room'])}"
+    return ""
+
+
+def part_cost(cm: dict, crit: dict) -> Part:
+    amount = cm.get("budget_amount")
+    if amount is None:
+        return Part(None, "monthly cost unknown, counted as neutral", flags=["cost_unknown"])
+    v = score_cost(amount, crit)
+    rent = cm.get("rent") or {}
+    items: list[str] = []
+    flags: list[str] = []
+    basis = rent.get("basis")
+    if basis == "computed":
+        items.append(f"net {_money(rent['net'])}: {_money(rent['gross'])} gross with {rent['free_months']:g} of "
+                     f"{rent['lease_months']:g} months free")
+    elif basis == "stated":
+        items.append(f"net {_money(rent['net'])} as stated by the source")
+    elif basis == "conditional":
+        ill = ", ".join(f"{_money(x['net'])} on {x['lease_months']:g} months" for x in rent.get("illustrations") or [])
+        items.append(f"ranked on the {_money(rent['gross'])} paid-month rent: the free months come without a "
+                     f"lease term (net would be {ill})")
+        flags.append("net_conditional")
+    elif basis == "gross":
+        items.append(f"gross rent {_money(rent['gross'])}, no concession")
+    if cm.get("fees_known"):
+        f = cm.get("fees_monthly")
+        fee_txt = f"{_money(f[0])}-{_money(f[1])}" if isinstance(f, list) else _money(f)
+        items.append(f"monthly fees {fee_txt}" if f else "monthly fees: none")
+    else:
+        items.append("monthly fees unknown: not added, not assumed")
+        flags.append("fees_unknown")
+    if cm.get("one_time_spread"):
+        items.append(f"one-time fees add {_money(cm['one_time_spread'])}/mo over the lease")
+    conc = cm.get("concession") or {}
+    if conc.get("excluded"):
+        items.append(f"concession not applied: {conc['excluded']}")
+    for n in conc.get("notes") or []:
+        items.append(f"concession condition: {n}")
+    for a in cm.get("assumptions") or []:
+        items.append(a)
+        if "lease term" in a:
+            flags.append("lease_term_assumed")
+    if cm.get("dispute"):
+        items.append("sources disagree; ranked on the higher price: " +
+                     "; ".join(f"{s['label']} {_money(s['monthly'])}" for s in cm["scenarios"]))
+        flags.append("price_dispute")
+    lo, hi = (cm.get("monthly_range") or [None, None])[:2]
+    rng = None
+    if lo is not None and (lo != amount or (hi is not None and hi != amount)):
+        best = score_cost(lo, crit)
+        worst = score_cost(hi, crit) if hi is not None else v
+        rng = (round(min(worst, v), 1), round(max(best, v), 1))
+    summ = f"{_money(amount)}/mo first-lease equivalent"
+    tp = _tier_phrase(cm, crit)
+    if tp:
+        summ += ", " + tp
+    if not cm.get("fees_known"):
+        summ += ", fees unknown"
+    if basis == "conditional":
+        summ += ", free months need a lease term"
+    if cm.get("dispute"):
+        summ += ", sources disagree"
+    return Part(v, summ, items, rng, flags)
+
+
+# ---------------------------------------------------------------------- space
+
+def _space_value(sq: float, u: dict) -> float:
     f, g, gr = u.get("sqft_floor", 450), u.get("sqft_good", 750), u.get("sqft_great", 1050)
-    s = _lin(sq, f, 0, g, 50) if sq < g else _lin(sq, g, 50, gr, 100)
+    return _lin(sq, f, 0, g, 50) if sq < g else _lin(sq, g, 50, gr, 100)
+
+
+def part_space(L: dict, crit: dict) -> Part:
+    u = crit.get("unit", {})
+    si = size_info(L)
+    if not si:
+        return Part(None, "size unknown, counted as neutral")
+    v = _space_value(si["sqft"], u)
+    lo, hi = (_space_value(x, u) for x in si["range"])
+    items: list[str] = []
+    flags: list[str] = []
+    if si["exact"]:
+        summ = f"{si['sqft']:,} ft² ({si['label']})"
+    else:
+        summ = f"~{si['range'][0]:,}-{si['range'][1]:,} ft² ({si['label']})"
+        items.append(f"scored at the {si['sqft']:,} ft² middle; the range is kept in the score range")
+        flags.append("size_estimated")
+        if not si["ppsf_ok"]:
+            items.append("no $/ft² from a ratio estimate")
+            flags.append("size_proxy")
     beds = L.get("beds")
-    if beds is not None and beds < u.get("min_beds", 0):
-        s *= 0.5
-    return s
+    if beds is None and is_studio(L):
+        beds = 0
+        flags.append("studio_from_text")
+    min_beds = u.get("min_beds", 0)
+    if beds is not None and beds < min_beds:
+        v, lo, hi = v * 0.5, lo * 0.5, hi * 0.5
+        items.append(f"{'studio' if beds == 0 else f'{beds:g} bedroom'}, below your {min_beds}-bedroom minimum: halved")
+        summ += ", below the bedroom minimum"
+    return Part(v, summ, items, (round(lo, 1), round(hi, 1)) if (lo, hi) != (v, v) else None, flags)
 
 
-def score_commute(L: dict, crit: dict) -> float | None:
+# ---------------------------------------------------------------------- commute
+
+def _rides(route: str) -> list[str]:
+    return [s.strip() for s in route.split("→") if s.strip() and not s.strip().startswith("walk")]
+
+
+def _mode_phrase(entry: dict, city: str | None) -> str:
+    modes = entry.get("modes") or {}
+    via = entry.get("via") or (modes.get("transit") or {}).get("via")
+    route = str(entry.get("route") or "")
+    if not via:
+        rides = _rides(route)
+        if entry.get("mode") == "walk" or (route.startswith("walk") and not rides):
+            via = "walk"
+        elif rides:
+            buses = [r for r in rides if r.startswith("bus ")]
+            rail = "subway" if city == "nyc" else "transit"
+            via = "bus" if len(buses) == len(rides) else ("mixed" if buses else rail)
+    return {"walk": "on foot", "mixed": "by transit", None: "", "": ""}.get(via, f"by {via}")
+
+
+def _transfers(entry: dict) -> int | None:
+    t = entry.get("transfers")
+    if t is None:
+        t = ((entry.get("modes") or {}).get("transit") or {}).get("transfers")
+    if t is None and entry.get("route"):
+        rides = _rides(str(entry["route"]))
+        t = max(0, len(rides) - 1) if rides else None
+    return t
+
+
+def part_commute(L: dict, crit: dict) -> Part:
     dests = crit.get("commute", {}).get("destinations") or []
     cm = L.get("commute") or {}
+    city = (crit.get("search") or {}).get("city")
     tot, wsum = 0.0, 0.0
+    items: list[tuple[float, str]] = []
     for d in dests:
-        m = (cm.get(d["name"]) or {}).get("minutes")
+        e = cm.get(d["name"]) or {}
+        m = e.get("minutes")
         if m is None:
             continue
         mx = d.get("max_minutes", 30)
@@ -84,11 +264,37 @@ def score_commute(L: dict, crit: dict) -> float | None:
         w = d.get("weight", 1.0)
         tot += s * w
         wsum += w
-    return tot / wsum if wsum else None
+        phrase = " ".join(x for x in (f"{m:.0f} min to {d['name']}", _mode_phrase(e, city)) if x)
+        items.append((w, phrase + (f" (limit {mx})" if m > mx else "")))
+    if not wsum:
+        return Part(None, "commute not computed, counted as neutral")
+    summ = max(items, key=lambda x: x[0])[1]
+    if len(items) > 1:
+        summ += f" (+{len(items) - 1} more)"
+    return Part(tot / wsum, summ, [t for _, t in items])
 
 
-def score_amenities(L: dict, crit: dict) -> tuple[float | None, list[str], list[str]]:
-    am = L.get("amenities") or {}
+# ---------------------------------------------------------------------- amenities
+
+def _amenity_value(k: str, v: Any, flags: list[str]) -> Any:
+    """Free-text amenity values through the wording normalisers (flagged when it changes anything)."""
+    if isinstance(v, str):
+        if k == "doorman" and v not in SERVICE_LEVEL:
+            flags.append("service_wording")
+            return normalise_service(v)
+        if k == "in_unit_wd":
+            flags.append("service_wording")
+            return normalise_laundry(v)
+        if k != "doorman":
+            t = v.strip().lower()
+            return True if t.startswith(("yes", "true")) else False if t.startswith(("no", "false")) else None
+    return v
+
+
+def part_amenities(L: dict, crit: dict) -> tuple[Part, list[str], list[str]]:
+    raw = L.get("amenities") or {}
+    flags: list[str] = []
+    am = {k: _amenity_value(k, v, flags) for k, v in raw.items()}
     fails, unknown = [], []
     for k in crit.get("must_have", []):
         v = am.get(k)
@@ -96,130 +302,450 @@ def score_amenities(L: dict, crit: dict) -> tuple[float | None, list[str], list[
             fails.append(k)
         elif v is None:
             unknown.append(k)
-    pts, tot, known = 0.0, 0.0, 0
-    for keys, w in ((crit.get("must_have", []), 3), (crit.get("strongly_prefer", []), 2),
-                    (crit.get("nice_to_have", []), 1)):
+    pts, tot, known, have, wanted = 0.0, 0.0, 0, 0, 0
+    items: list[str] = []
+    for keys, w, tag in ((crit.get("must_have", []), 3, "must-have"), (crit.get("strongly_prefer", []), 2, "strong"),
+                         (crit.get("nice_to_have", []), 1, "nice")):
         for k in keys:
             v = am.get(k)
+            name = AMENITY_NAMES.get(k, k.replace("_", " "))
             tot += w
+            wanted += 1
             if v is None:
                 pts += w * 0.5
+                items.append(f"{name} unknown ({tag}, counted half)")
                 continue
             known += 1
             if k == "doorman":
-                pts += w * {"full-time": 1, "part-time": 0.6, "virtual": 0.35, "none": 0}.get(v, 0.5)
+                lvl = SERVICE_LEVEL.get(v, 0.5)
+                pts += w * lvl
+                have += lvl > 0
+                items.append(f"doorman: {v if isinstance(v, str) else 'yes'} ({tag})")
             else:
                 pts += w * (1 if v else 0)
+                have += bool(v)
+                items.append(f"{'has' if v else 'no'} {name} ({tag})")
     if not tot or not known:
-        return None, fails, unknown
-    return 100 * pts / tot, fails, unknown
+        return Part(None, "amenities unknown, counted as neutral", items, flags=sorted(set(flags))), fails, unknown
+    summ = f"{have} of {wanted} wanted amenities confirmed"
+    if fails:
+        summ += "; missing must-have: " + ", ".join(AMENITY_NAMES.get(k, k) for k in fails)
+    elif unknown:
+        summ += "; unverified must-have: " + ", ".join(AMENITY_NAMES.get(k, k) for k in unknown)
+    return Part(100 * pts / tot, summ, items, flags=sorted(set(flags))), fails, unknown
 
 
-def score_light(L: dict) -> float | None:
+# ---------------------------------------------------------------------- light and view
+
+def _scope_ok(L: dict, key: str) -> bool:
+    sc = L.get("features_scope", L.get("evidence_scope"))
+    if isinstance(sc, dict):
+        sc = sc.get(key, sc.get("default"))
+    return sc is None or str(sc).lower() in EXACT_SCOPES
+
+
+def part_light(L: dict) -> Part:
     sun = (L.get("site") or {}).get("sun_hours")
     if sun:
-        # annual mean and winter (Dec/Jan) direct sun hours from the 3D model
         mean = sum(sun) / len(sun)
         winter = (sun[11] + sun[0]) / 2
-        return min(100.0, mean * 11 + winter * 4)
+        return Part(min(100.0, mean * 11 + winter * 4),
+                    f"3D sun study: {mean:.1f} h of direct sun a day on average, {winter:.1f} h in Dec-Jan",
+                    [f"annual mean {mean:.1f} h x 11", f"winter {winter:.1f} h x 4"])
     exp = L.get("exposure") or []
     floor = L.get("floor")
-    text = " ".join(str(v) for v in (L.get("features") or {}).values()).lower()
+    feats = L.get("features") or {}
+    flags: list[str] = []
+    items: list[str] = []
+    texts = []
+    for k, v in feats.items():
+        if _scope_ok(L, k):
+            texts.append(str(v))
+        else:
+            flags.append("visual_not_exact")
+    text = " ".join(texts).lower()
+    if "visual_not_exact" in flags:
+        items.append("view and light wording that comes from building or representative media is not scored")
     if not exp and floor is None and not text:
-        return None
+        return Part(None, "light and view unknown, counted as neutral", items, flags=sorted(set(flags)))
     s = 45.0
+    bits = []
     if exp:
-        s += max(GOOD_EXPOSURE.get(str(e).upper(), 0) for e in exp)
+        best = max(GOOD_EXPOSURE.get(str(e).upper(), 0) for e in exp)
+        s += best
+        items.append(f"{'/'.join(exp)} exposure ({best:+g})")
+        bits.append(f"{'/'.join(exp)} exposure")
         if len(exp) > 1:
-            s += 8  # corner unit
+            s += 8
+            items.append("corner unit (+8)")
     if floor is not None:
-        s += min(20.0, floor * 0.8)
+        f_pts = min(20.0, floor * 0.8)
+        s += f_pts
+        inferred = bool(L.get("floor_inferred"))
+        if inferred:
+            flags.append("floor_inferred")
+        items.append(f"floor {floor:g} ({f_pts:+.0f}{', inferred from the unit number' if inferred else ''})")
+        bits.append(f"floor {floor:g}{'?' if inferred else ''}")
     for word, pts in (("panoram", 12), ("skyline", 8), ("river", 8), ("park view", 8), ("sunny", 6),
                       ("excellent", 6), ("bright", 5), ("open view", 6), ("courtyard", -4),
                       ("airshaft", -12), ("brick wall", -12), ("facade", -6), ("dark", -8)):
         if word in text:
             s += pts
-    return max(0.0, min(100.0, s))
+            items.append(f"listing says '{word}' ({pts:+d})")
+    summ = ", ".join(bits) if bits else "from listing wording only"
+    return Part(_clamp(s), summ, items, flags=sorted(set(flags)))
 
 
-def score_building(L: dict) -> float | None:
-    vals = []
+# ---------------------------------------------------------------------- building and quiet
+
+def part_building(L: dict) -> Part:
+    vals: list[float] = []
+    items: list[str] = []
     rv = L.get("reviews") or {}
     if rv.get("risk_score") is not None:
         vals.append(float(rv["risk_score"]))
+        items.append(f"review risk score {float(rv['risk_score']):.0f}")
     for r in rv.get("ratings") or []:
         m = re.search(r"(\d(?:\.\d)?)\s*/\s*5", str(r.get("value", "")))
         if m:
-            vals.append((float(m.group(1)) - 1) / 4 * 100)
+            x = (float(m.group(1)) - 1) / 4 * 100
+            vals.append(x)
+            items.append(f"{r.get('label') or 'rating'} {m.group(1)}/5 ({x:.0f})")
     rec = L.get("records") or {}
     if rec.get("risk_score") is not None:
         vals.append(float(rec["risk_score"]))
-    return sum(vals) / len(vals) if vals else None
+        items.append(f"public records {float(rec['risk_score']):.0f}")
+    if not vals:
+        return Part(None, "no reviews or records yet, counted as neutral")
+    v = sum(vals) / len(vals)
+    return Part(v, f"reviews and records average {v:.0f} ({len(vals)} source{'s' if len(vals) > 1 else ''})", items)
 
 
-def score_quiet(L: dict) -> float | None:
+def part_quiet(L: dict) -> Part:
     rec = L.get("records") or {}
     if rec.get("noise_score") is not None:
-        return float(rec["noise_score"])
+        v = float(rec["noise_score"])
+        return Part(v, f"street-noise score {v:.0f} from public records", [f"records noise score {v:.0f}"])
     rv = " ".join(str(v) for v in (L.get("reviews") or {}).values() if isinstance(v, str)).lower()
     if not rv:
-        return None
+        return Part(None, "noise unknown, counted as neutral")
     s = 60.0
+    items = []
     for w, p in (("noise", -12), ("thin wall", -10), ("loud", -8), ("quiet", 10), ("construction", -6),
                  ("truck", -5), ("nightlife", -6), ("bar", -3)):
         if w in rv:
             s += p
-    return max(0.0, min(100.0, s))
+            items.append(f"reviews mention '{w}' ({p:+d})")
+    return Part(_clamp(s), "from review wording" + (f": {len(items)} noise signals" if items else ", nothing flagged"),
+                items)
 
 
-def score_listing(L: dict, crit: dict) -> dict[str, Any]:
-    cost = monthly_cost(L)
-    am, fails, unknown = score_amenities(L, crit)
-    parts = {
-        "cost": score_cost(cost, crit),
-        "space": score_space(L, crit),
-        "commute": score_commute(L, crit),
+# ---------------------------------------------------------------------- move date
+
+def part_move_date(L: dict, crit: dict, today: dt.date) -> tuple[Part, str | None]:
+    """100 inside the move-in window; early availability costs overlap rent, late leaves a gap."""
+    mi = (crit.get("search") or {}).get("move_in") or {}
+    earliest, latest = parse_date(mi.get("earliest")), parse_date(mi.get("latest"))
+    if not earliest and not latest:
+        return Part(None, "no move-in window in the criteria"), None
+    avail = parse_date(L.get("available"), today)
+    if avail is None:
+        return Part(None, "availability unknown, counted as neutral"), None
+    earliest = earliest or latest
+    latest = latest or earliest
+    when = "now" if str(L.get("available") or "").strip().lower().startswith(("now", "immediate")) else _day(avail)
+    window = f"{_day(earliest)}-{_day(latest)}"
+    if avail < earliest:
+        early = (earliest - avail).days
+        v = 100.0 if early <= 14 else _lin(early, 14, 100, 45, 40) if early <= 45 else _lin(early, 45, 40, 90, 0)
+        note = ", landlords often hold that long" if early <= 14 else ", expect to pay overlapping rent"
+        return Part(v, f"available {when}, {early} days before your earliest move-in{note}",
+                    [f"move-in window {window}"]), None
+    if avail > latest:
+        late = (avail - latest).days
+        v = _lin(late, 0, 100, 14, 50) if late <= 14 else _lin(late, 14, 50, 30, 0)
+        gate = "fails:move_date" if mi.get("hard") else "move_date:after_window"
+        return Part(v, f"available {when}, {late} days after your latest move-in", [f"move-in window {window}"]), gate
+    return Part(100.0, f"available {when}, inside your {window} window"), None
+
+
+# ---------------------------------------------------------------------- renewal risk
+
+def part_renewal(cm: dict) -> Part:
+    """Deep first-lease concessions usually renew from the gross: 100 - 9 x concession %."""
+    rent = cm.get("rent") or {}
+    gross = rent.get("gross")
+    if gross is None:
+        return Part(None, "gross rent unknown, counted as neutral")
+    net = rent.get("net")
+    if rent.get("basis") == "conditional" and rent.get("illustrations"):
+        net = min(x["net"] for x in rent["illustrations"])
+    conc = cm.get("concession") or {}
+    if net is None or net >= gross or (conc and not conc.get("applies", True)):
+        return Part(100.0, "no concession: renewal starts from the rent you pay")
+    pct = 100 * (gross - net) / gross
+    v = max(0.0, 100 - 9 * pct)
+    return Part(v, f"renewal likely priced from the {_money(gross)} gross, {pct:.0f}% above the {_money(net)} net",
+                [f"concession worth {pct:.1f}% of the rent (score 100 - 9 x {pct:.1f})"])
+
+
+# ---------------------------------------------------------------------- transit access
+
+def _split_lines(v: Any) -> list[str]:
+    if isinstance(v, (list, tuple)):
+        return [str(x).strip() for x in v if str(x).strip()]
+    s = str(v or "").strip()
+    if not s:
+        return []
+    if re.search(r"[,/;\s]", s):
+        return [x for x in re.split(r"[,/;\s]+", s) if x]
+    return list(s) if len(s) <= 6 and s.isalnum() else [s]
+
+
+def part_transit_access(L: dict, crit: dict) -> Part:
+    """Distinct lines within a 10-minute walk, a one-seat ride to the main destination, a close station."""
+    st = L.get("stations") or []
+    if not st:
+        return Part(None, "nearby stations not mapped, counted as neutral")
+    lines: list[str] = []
+    nearest = None
+    for s in st:
+        if isinstance(s, (list, tuple)) and len(s) >= 3:      # compact form: [walk minutes, name, lines]
+            s = {"walkMinutes": s[0], "name": s[1], "lines": s[2]}
+        if not isinstance(s, dict):
+            continue
+        wm = s.get("walkMinutes", s.get("walk_min"))
+        if not isinstance(wm, (int, float)):
+            continue
+        nearest = wm if nearest is None else min(nearest, wm)
+        if wm <= WALK_LINES_MIN:
+            for ln in _split_lines(s.get("lines")):
+                if ln not in lines:
+                    lines.append(ln)
+    dests = crit.get("commute", {}).get("destinations") or []
+    one_seat = None
+    if dests:
+        main = max(dests, key=lambda d: d.get("weight", 1.0))
+        e = (L.get("commute") or {}).get(main["name"]) or {}
+        t = _transfers(e) if e else None
+        rides_known = bool(_rides(str(e.get("route") or ""))) or bool((e.get("modes") or {}).get("transit"))
+        if t is not None and rides_known:
+            one_seat = (t == 0, main["name"])
+    v = min(70.0, 14.0 * len(lines))
+    items = [f"{len(lines)} line{'s' if len(lines) != 1 else ''} within a {WALK_LINES_MIN}-min walk"
+             + (f": {', '.join(lines)}" if lines else "") + f" (+{min(70, 14 * len(lines))})"]
+    summ = items[0].split(" (+")[0]
+    if one_seat and one_seat[0]:
+        v += 20
+        items.append(f"one-seat ride to {one_seat[1]} (+20)")
+        summ += f"; one-seat ride to {one_seat[1]}"
+    if nearest is not None and nearest <= 5:
+        v += 10
+        items.append(f"nearest station {nearest:g} min away (+10)")
+    return Part(min(100.0, v), summ, items)
+
+
+# ---------------------------------------------------------------------- legacy single-value helpers
+
+def score_space(L: dict, crit: dict) -> float | None:
+    return part_space(L, crit).value
+
+
+def score_commute(L: dict, crit: dict) -> float | None:
+    return part_commute(L, crit).value
+
+
+def score_amenities(L: dict, crit: dict) -> tuple[float | None, list[str], list[str]]:
+    p, fails, unknown = part_amenities(L, crit)
+    return p.value, fails, unknown
+
+
+def score_light(L: dict) -> float | None:
+    return part_light(L).value
+
+
+def score_building(L: dict) -> float | None:
+    return part_building(L).value
+
+
+def score_quiet(L: dict) -> float | None:
+    return part_quiet(L).value
+
+
+# ---------------------------------------------------------------------- one listing
+
+def _today(crit: dict, today: dt.date | None) -> dt.date:
+    if today:
+        return today
+    return parse_date((crit.get("scoring") or {}).get("as_of")) or dt.date.today()
+
+
+def _signed(pts: float) -> str:
+    r = round(pts)
+    return f"+{r}" if r > 0 else (str(r) if r < 0 else "0")
+
+
+def score_listing(L: dict, crit: dict, today: dt.date | None = None) -> dict[str, Any]:
+    today = _today(crit, today)
+    cm = cost_model(L, crit, today)
+    cost = cm.get("budget_amount")
+    am, fails, unknown = part_amenities(L, crit)
+    move, move_gate = part_move_date(L, crit, today)
+    parts_full: dict[str, Part] = {
+        "cost": part_cost(cm, crit),
+        "space": part_space(L, crit),
+        "commute": part_commute(L, crit),
         "amenities": am,
-        "light_view": score_light(L),
-        "building": score_building(L),
-        "quiet": score_quiet(L),
+        "light_view": part_light(L),
+        "building": part_building(L),
+        "quiet": part_quiet(L),
+        "move_date": move,
+        "renewal_risk": part_renewal(cm),
+        "transit_access": part_transit_access(L, crit),
     }
+    parts = {k: p.value for k, p in parts_full.items()}
     w = crit["weights"]
     wtot = sum(w.get(k, 0) for k in DIMENSIONS) or 1
     known_w = sum(w.get(k, 0) for k in DIMENSIONS if parts[k] is not None)
-    lo = sum(w.get(k, 0) * (parts[k] if parts[k] is not None else 0) for k in DIMENSIONS) / wtot
-    hi = sum(w.get(k, 0) * (parts[k] if parts[k] is not None else 100) for k in DIMENSIONS) / wtot
-    # Unknown dimensions count as a neutral 50 in the point estimate, so missing facts neither
-    # help nor sink a listing; `range` shows how far the truth could move it.
+
+    def bound(k: str, end: int) -> float:
+        p = parts_full[k]
+        if p.value is None:
+            return 100.0 * end
+        return p.range[end] if p.range else p.value
+
+    lo = sum(w.get(k, 0) * bound(k, 0) for k in DIMENSIONS) / wtot
+    hi = sum(w.get(k, 0) * bound(k, 1) for k in DIMENSIONS) / wtot
+    # Unknown dimensions count as a neutral 50 in the point estimate, so missing facts neither help nor
+    # sink a listing; `range` shows how far the truth could move it.
     overall = (sum(w.get(k, 0) * (parts[k] if parts[k] is not None else 50) for k in DIMENSIONS) / wtot) if known_w else None
+    active = L.get("status") not in ("gone", "rejected")
     gates = []
     hard = crit.get("budget", {}).get("hard_max")
     if cost is not None and hard and cost > hard:
         gates.append("over_budget")
     if fails:
         gates.append("fails:" + ",".join(fails))
+    if move_gate == "fails:move_date":
+        gates.append(move_gate)
     if unknown:
         gates.append("unverified:" + ",".join(unknown))
     if cost is None:
         gates.append("unknown_cost")
-    eligible = not any(g.startswith(("over_budget", "fails")) for g in gates) and L.get("status") not in ("gone", "rejected")
+    elif active:
+        if not cm.get("fees_known"):
+            gates.append("unverified:fees")
+        if (cm.get("rent") or {}).get("basis") == "conditional":
+            gates.append("unverified:lease_term")
+        if (cm.get("concession") or {}).get("excluded"):
+            gates.append("concession:not_applied")
+        if cm.get("dispute"):
+            gates.append("price_dispute")
+    if active and move_gate == "move_date:after_window":
+        gates.append(move_gate)
+    checked = parse_date(L.get("checked"))
+    stale_days = int((crit.get("scoring") or {}).get("stale_days") or 21)
+    if active and checked and (today - checked).days > stale_days:
+        gates.append(f"stale:checked_{(today - checked).days}_days_ago")
+    eligible = not any(g.startswith(("over_budget", "fails")) for g in gates) and active
+
+    reasons = []
+    flags: set[str] = set()
+    for k in DIMENSIONS:
+        p = parts_full[k]
+        flags.update(p.flags)
+        pts = 0.0 if p.value is None else (p.value - 50) * w.get(k, 0) / wtot
+        # text = "<signed points> <label>: <summary>"; the dashboard rebuilds the prefix for live weights
+        r = {"dim": k, "pts": round(pts, 1), "text": f"{_signed(pts)} {DIMENSION_LABELS[k].lower()}: {p.summary}"}
+        if p.items and p.items != [p.summary]:
+            r["items"] = p.items
+        reasons.append(r)
+    if L.get("floor_inferred"):
+        flags.add("floor_inferred")
+    confidence = round(100 * known_w / wtot)
+    tags = []
+    if confidence < 60:
+        tags.append("thin data")
+    if cm.get("dispute") or L.get("conflicts"):
+        tags.append("source conflict")
+    ppsf = price_per_sqft(L, cm.get("monthly"))
     return {
+        "version": SCORE_VERSION,
         "overall": round(overall, 1) if overall is not None else None,
         "parts": {k: (round(v, 1) if v is not None else None) for k, v in parts.items()},
-        "confidence": round(100 * known_w / wtot),
+        "part_ranges": {k: list(p.range) for k, p in parts_full.items() if p.range},
+        "confidence": confidence,
         "range": [round(lo, 1), round(hi, 1)],
-        "monthly_cost": cost,
+        "monthly_cost": cm.get("monthly"),
         "budget_tier": budget_tier(cost, crit),
         "gates": gates,
         "eligible": eligible,
+        "reasons": reasons,
+        "flags": sorted(flags),
+        "tags": tags,
+        "ppsf": ppsf,
+        "cost": _compact_cost(cm),
+        "preset": (crit.get("scoring") or {}).get("preset"),
     }
 
 
-def score_all(listings: list[dict], crit: dict) -> list[dict]:
+def _compact_cost(cm: dict) -> dict:
+    """The money model without empty keys or values repeated elsewhere, to keep listings.json small."""
+    out = {}
+    for k, v in cm.items():
+        if v in (None, [], {}, False) and k not in ("fees_known",):
+            continue
+        if k == "budget_amount" and v == cm.get("monthly"):
+            continue
+        if k == "renewal_base" and v == (cm.get("rent") or {}).get("gross"):
+            continue
+        if k == "headroom":
+            v = {r["tier"]: r["room"] for r in v}
+        if isinstance(v, dict) and k != "headroom":
+            v = {kk: vv for kk, vv in v.items() if vv not in (None, [], {}, False)}
+        out[k] = v
+    return out
+
+
+# ---------------------------------------------------------------------- ranking
+
+def _key(L: dict) -> tuple:
+    s = L["score"]
+    mc = s.get("monthly_cost")
+    return (-s["overall"], -s.get("confidence", 0), mc if mc is not None else float("inf"), str(L.get("id")))
+
+
+def _building_key(L: dict) -> str:
+    return str(L.get("bin") or "").split(".")[0] or str(L.get("building") or L.get("address") or L.get("id")).lower()
+
+
+def score_all(listings: list[dict], crit: dict, today: dt.date | None = None) -> list[dict]:
+    """Score every listing and write ``rank`` (= ``ranks.action``) and ``ranks`` (fit / action / budget /
+    building). Ties break on confidence, then lower cost, then id."""
+    today = _today(crit, today)
     for L in listings:
-        L["score"] = score_listing(L, crit)
-    ranked = sorted((L for L in listings if L["score"]["eligible"] and L["score"]["overall"] is not None),
-                    key=lambda L: -L["score"]["overall"])
-    for i, L in enumerate(ranked, 1):
+        L["score"] = score_listing(L, crit, today)
+    scored = [L for L in listings if L["score"]["overall"] is not None]
+    for L in listings:
+        L["score"]["ranks"] = {"fit": None, "action": None, "budget": None, "building": None}
+        L["score"].pop("rank", None)
+    for i, L in enumerate(sorted(scored, key=_key), 1):
+        L["score"]["ranks"]["fit"] = i
+    action = sorted((L for L in scored if L["score"]["eligible"]), key=_key)
+    for i, L in enumerate(action, 1):
+        L["score"]["ranks"]["action"] = i
         L["score"]["rank"] = i
+    tiers = crit.get("budget", {}).get("tiers") or []
+    cap = tiers[0]["max"] if tiers else crit.get("budget", {}).get("hard_max")
+    if cap:
+        pool = [L for L in action if (L["score"]["cost"].get("budget_amount", L["score"]["monthly_cost"])
+                                      or float("inf")) <= cap]
+        for i, L in enumerate(pool, 1):
+            L["score"]["ranks"]["budget"] = i
+    best: dict[str, dict] = {}
+    for L in action:
+        best.setdefault(_building_key(L), L)
+    order = {k: i for i, k in enumerate(best, 1)}
+    for L in listings:
+        L["score"]["ranks"]["building"] = order.get(_building_key(L))
     return listings

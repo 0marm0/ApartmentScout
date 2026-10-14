@@ -56,6 +56,16 @@ commute:
     arrival_offsets_min: [0, 3, 6, 9, 12]   # arrive this much before arrive_by; times are averaged
     mode_grids: true             # also write one heat grid per mode (commute-<dest>-subway.json, -bus.json)
 
+# Scoring recipe. Presets (named, versioned weight sets): balanced, biggest-and-nicest,
+# cheapest-good-enough, shortest-commute, or your own under `presets:`. `weights:` below then adjusts
+# the preset key by key; delete it to use the preset as is.
+scoring:
+  preset: balanced
+  stale_days: 21             # listings checked longer ago than this get a "stale" gate (never a lower score)
+  # as_of: 2026-11-01        # score against this date instead of today (move date, stale checks, offers)
+  # presets:
+  #   my-mix: {cost: 30, space: 30, commute: 20, amenities: 10, light_view: 10, move_date: 5}
+
 weights:                     # relative; only the ratios matter
   cost: 25
   space: 20
@@ -64,6 +74,9 @@ weights:                     # relative; only the ratios matter
   light_view: 10
   building: 5
   quiet: 5
+  move_date: 0               # newer dimensions, off unless you weight them
+  renewal_risk: 0
+  transit_access: 0
 
 favorites_first: true
 # landmarks: [[Name, lat, lon], ...]   # optional names for towers in the 3D view

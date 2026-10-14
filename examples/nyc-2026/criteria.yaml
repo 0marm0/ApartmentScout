@@ -53,6 +53,12 @@ commute:
     max_walk_to_station_m: 1200
     service_date: 2026-10-14   # a normal weekday inside the feed's calendar
 
+# Scoring recipe: a named preset (balanced, biggest-and-nicest, cheapest-good-enough,
+# shortest-commute), adjusted key by key by `weights:` below.
+scoring:
+  preset: balanced
+  stale_days: 21            # re-check listings older than this; the gate never lowers the score
+
 # Relative weights. They are normalised, so only the ratios matter.
 weights:
   cost: 20
@@ -62,6 +68,9 @@ weights:
   light_view: 10
   building: 10              # resident reviews and public-record risk
   quiet: 5
+  move_date: 0              # fit with the move-in window (0 = shown, not ranked)
+  renewal_risk: 0           # renewal shock after a deep first-lease concession
+  transit_access: 0         # lines within a 10-minute walk, one-seat ride
 
 # Optional: hand-set favourites always float to the top of the shortlist view.
 favorites_first: true
