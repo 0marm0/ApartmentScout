@@ -17,6 +17,8 @@ apartmentscout photos gotham-west-536       # just these listings (the whole bui
 apartmentscout photos --radius 40 --max 4   # tighter street radius, fewer photos per listing
 apartmentscout photos --cache               # also save photos under <search>/media/ (private searches)
 apartmentscout photos --source local        # only save photos, no Commons lookup
+apartmentscout photos --source wikidata     # images of named towers from their Wikidata item
+apartmentscout photos --source web          # listings with no photos: images from the listing's own page
 ```
 
 Each run prints coverage: listings with listing photos, with building photos (of the building itself
@@ -62,6 +64,26 @@ clients it cannot identify only 10 requests a minute: two requests and about 12 
 215-building example took 43 minutes the first time and a second on every rerun. Set
 `APARTMENTSCOUT_CONTACT` to an email address or a URL where you can be reached and it is added to the
 User-Agent, which raises the limit to 200 a minute.
+
+## More sources: Wikidata and listing pages
+
+**`--source wikidata`** asks Wikidata (one SPARQL query per building, cached under `<search>/cache/photos/`)
+for buildings with an image (P18) within 250 m. An item counts only when its label or an alias matches
+the building's name, or its street address is this house number on this street. The item's image is then
+read from Commons with its author and licence, and written to `building_photos` with
+`source: "Wikidata / Wikimedia Commons"` and the item in `wikidata`. A file Commons already gave
+the building is not repeated, a rerun replaces only the Wikidata entries, and `--max` caps the images per
+building. These are licensed and credited like any Commons photo, so they may be used in the example search.
+
+**`--source web`** is for private searches only. For each listing that has no `photos`, it does a plain GET of
+the listing's own page (`links.listing`, then `links.secondary`) and reads the social-card
+(`og:image`, `twitter:image`) and gallery images, skipping logos, icons, agents' headshots, maps and
+thumbnails. A page whose URL names the unit stores its images in `photos`; a building, availability or
+search page stores them in `building_photos` (`scope: building`, "private research copy"), because they
+do not show this unit. A host that answers with a bot check or a block is reported once and not asked
+again in that run; the command never solves CAPTCHAs, logs in or works around protection. Open the page
+yourself and save what you want. Like `--cache`, it refuses to run inside `examples/`, because the images
+belong to their owners.
 
 ## Licences and attribution
 

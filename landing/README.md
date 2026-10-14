@@ -10,7 +10,7 @@ accent stays the tokens' `--accent`.
 | File | What it is |
 |---|---|
 | `index.html` | The page: nav, hero, proof strip, features, agents, how it works, gallery, quick start, privacy, footer |
-| `landing.css` | Page styles. Only token colours (and `color-mix` of them), Geist from Google Fonts |
+| `landing.css` | Page styles. Only token colours (and `color-mix` of them), self-hosted Geist (`fonts/`) |
 | `landing.js` | Glass nav on scroll, theme toggle, copy buttons, gallery lightbox. The page works without it |
 
 ## How the site is assembled
@@ -23,6 +23,7 @@ accent stays the tokens' `--accent`.
 | `/tokens.css` | `dashboard/css/tokens.css` |
 | `/images/*.png` | `docs/images/*.png` |
 | `/assets/*.svg` | `dashboard/assets/*.svg` (brand icon, favicon) |
+| `/fonts/` | `dashboard/vendor/fonts/` (Geist and Geist Mono, `geist.css` and the OFL licence): the page makes no request to Google Fonts |
 | `/demo/` | `dashboard/` as committed, with its example data |
 
 It then replaces two placeholders in `index.html`: `__REPO__` becomes the repository URL
@@ -41,11 +42,12 @@ To turn it on: in the repository's settings, under Pages, set the source to **Gi
 Run the same copy step into a scratch folder and serve it:
 
 ```bash
-rm -rf /tmp/as-site && mkdir -p /tmp/as-site/images /tmp/as-site/assets /tmp/as-site/demo
+rm -rf /tmp/as-site && mkdir -p /tmp/as-site/images /tmp/as-site/assets /tmp/as-site/fonts /tmp/as-site/demo
 cp landing/index.html landing/landing.css landing/landing.js /tmp/as-site/
 cp dashboard/css/tokens.css /tmp/as-site/tokens.css
 cp docs/images/*.png /tmp/as-site/images/
 cp dashboard/assets/*.svg /tmp/as-site/assets/
+cp dashboard/vendor/fonts/* /tmp/as-site/fonts/
 git ls-files dashboard | sed 's#^dashboard/##' | (cd dashboard && xargs -I{} rsync -R {} /tmp/as-site/demo/)
 python -m http.server 8000 --directory /tmp/as-site --bind 127.0.0.1
 ```
