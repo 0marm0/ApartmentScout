@@ -3,6 +3,8 @@
 // talk to the core through the exports below and the event bus (on/emit).
 import { $, esc, money, moneyShort, safeUrl, scoreColor, ring, unitGlyph, bullets, bullet, routeNames, ICONS, toast, LINE_COLORS, aerialHTML, imagesOf, imgFallback, routeBadge, legBadges, miles } from './util.js';
 import { COMMUTE_MODES, commuteEntry, modeMinutes, modeOptions, evaluate, applyProfile, profileOf, diffProfile, serverSteps, parseDay, cashFlow, basisLabel } from './criteria.js';
+import { initPalette, openPalette, shareListing, syncTrigger } from './palette.js';
+import { initEnhance } from './enhance.js';
 
 export const store = {
   get(k, d) { try { const v = localStorage.getItem('as:' + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
@@ -405,8 +407,8 @@ export function cardHTML(L, i = 0) {
   const sun = L.site?.sun_hours, mi = new Date().getMonth();
   const c = commuteOf(L), route = L.commute?.[dests()[0]]?.route;
   const gate = (L.score?.gates || []).find((g) => g.startsWith('fails') || g === 'over_budget');
-  const my = pick(L.id).tier;
-  return `<article class="card ${S.sel === L.id ? 'sel' : ''}" data-id="${esc(L.id)}" tabindex="0" style="animation-delay:${Math.min(i, 12) * 22}ms">
+  const my = pick(L.id).tier, inCmp = S.compare.includes(L.id), has = (k) => (S.manifest[k] || []).includes(L.id);
+  return `<article class="card ${S.sel === L.id ? 'sel' : ''} ${inCmp ? 'cmp' : ''}" data-id="${esc(L.id)}" tabindex="0" aria-label="${esc(label(L))}, ${esc(money(cost(L)))} a month${score(L) != null ? ', score ' + Math.round(score(L)) : ''}" style="animation-delay:${Math.min(i, 12) * 22}ms">
     <div class="media">${mediaHTML(L, im)}
       ${L._rank ? `<span class="rank">#${L._rank}</span>` : ''}
       <button type="button" class="save ${saved ? 'on' : ''}" data-save="${esc(L.id)}" aria-pressed="${saved}" aria-label="${saved ? 'Remove from picks' : 'Save to picks'}">${saved ? ICONS.star : ICONS.starO}</button></div>
@@ -417,6 +419,9 @@ export function cardHTML(L, i = 0) {
         ${L.score?.budget_tier ? `<span class="tierpill" style="color:var(${t >= 0 ? TIER_VARS[t] : '--tier-over'})"><i></i>${esc(L.score.budget_tier)}</span>` : ''}</div>
       ${modesHTML(L)}
       <div class="c-badges">${gate ? `<span class="bdg bad">${esc(GATE_LABEL(gate))}</span>` : ''}${(L.score?.tags || []).map((t) => `<span class="bdg warn">${esc(t)}</span>`).join('')}${sun ? `<span class="bdg sun" title="Modelled direct sun on the window this month">${ICONS.sun}${sun[mi].toFixed(1)} h</span>` : ''}${b.map((x) => `<span class="bdg">${esc(x)}</span>`).join('')}</div>
+      <div class="c-acts" role="group" aria-label="Quick actions for ${esc(label(L))}">
+        <button type="button" class="qa ${inCmp ? 'on' : ''}" data-cmp="${esc(L.id)}" aria-pressed="${inCmp}" title="${inCmp ? 'In Compare: click to remove' : 'Add to Compare'}" aria-label="${inCmp ? 'Remove from Compare' : 'Add to Compare'}">${inCmp ? ICONS.check : ICONS.plus}<span>${inCmp ? 'Comparing' : 'Compare'}</span></button>
+        ${has('sites') ? `<a class="qa" href="#unit/${esc(L.id)}" title="Unit 3D: the unit in its block, with the sun" aria-label="Open Unit 3D">${ICONS.cube}</a>` : ''}${has('plans') ? `<a class="qa" href="#plan/${esc(L.id)}" title="Floor plan" aria-label="Open the floor plan">${ICONS.plan}</a>` : ''}${has('dossiers') ? `<a class="qa" href="#records/${esc(L.id)}" title="Building records" aria-label="Open the building records">${ICONS.doc}</a>` : ''}</div>
     </div></article>`;
 }
 function buildingGroups(F) {
@@ -424,11 +429,29 @@ function buildingGroups(F) {
   for (const L of F) { const k = (L.building || L.address || L.id).toLowerCase(); (g.get(k) || g.set(k, []).get(k)).push(L); }
   return [...g.values()].map((units) => ({ units: sorted(units), best: sorted(units)[0] }));
 }
+function resetFilters() {
+  Object.assign(S.filters, { q: '', toggles: [], savedOnly: false, maxCommute: 75, status: [...ACTIVE], over: false, tiers: (S.crit.budget?.tiers || []).map((_, i) => i) });
+  if ($('q')) $('q').value = '';
+  saveFilters(); syncTrigger(); emit('filters');
+}
+/** Compare toggles from anywhere update the cards in place (no re-render, so hover and scroll stay put). */
+function syncCompareCards() {
+  document.querySelectorAll('#cards .card').forEach((c) => {
+    const on2 = S.compare.includes(c.dataset.id), b = c.querySelector('[data-cmp]');
+    c.classList.toggle('cmp', on2); if (!b) return;
+    b.classList.toggle('on', on2); b.setAttribute('aria-pressed', on2);
+    b.title = on2 ? 'In Compare: click to remove' : 'Add to Compare'; b.setAttribute('aria-label', on2 ? 'Remove from Compare' : 'Add to Compare');
+    b.innerHTML = `${on2 ? ICONS.check : ICONS.plus}<span>${on2 ? 'Comparing' : 'Compare'}</span>`;
+  });
+}
 let shown = 60;
 export function renderCards() {
   const F = sorted(filtered()), el = $('cards');
   $('listTitle').innerHTML = `${F.length} ${S.group === 'buildings' ? 'homes in ' + new Set(F.map((L) => L.building)).size + ' buildings' : 'homes'} <span>· ${S.sort === 'match' ? 'ranked by your weights' : 'sorted'}</span>`;
-  if (!F.length) { el.innerHTML = `<div class="empty" style="margin:16px"><b>No homes match</b>Loosen a filter on the left, or include more statuses.</div>`; return; }
+  if (!F.length) {
+    el.innerHTML = `<div class="empty cards-empty"><svg class="empty-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="M3.5 6h17l-6.5 7.5V19l-4 1.5v-7z"/></svg><b>No homes match</b><span>${S.filters.q ? `Nothing matches “${esc(S.filters.q)}” with these filters. ` : ''}Loosen a filter on the left, or include more statuses.</span><button type="button" class="btn sm" id="resetFilters">Reset filters</button></div>`;
+    $('resetFilters').addEventListener('click', resetFilters); return;
+  }
   if (S.group === 'buildings') {
     const G = buildingGroups(F).sort((a, b) => SORTS[S.sort](a.best, b.best));
     el.innerHTML = G.slice(0, shown).map((g, i) => cardHTML(g.best, i) + (g.units.length > 1 ? `<div class="units-more">${g.units.slice(1, 3).map((u) => `<button type="button" class="unit-row" data-open="${esc(u.id)}"><span>${esc(u.unit || label(u))}</span><span class="faint">${u.sqft ? Math.round(u.sqft) + ' ft²' : ''}</span><b>${money(cost(u))}</b><span class="mini-score" style="color:${scoreColor(score(u))}">${Math.round(score(u) ?? 0)}</span></button>`).join('')}${g.units.length > 3 ? `<span class="faint more">+ ${g.units.length - 3} more units</span>` : ''}</div>` : '')).join('');
@@ -436,12 +459,16 @@ export function renderCards() {
     el.innerHTML = F.slice(0, shown).map(cardHTML).join('') + (F.length > shown ? `<button type="button" class="btn ghost more-btn" id="moreBtn">Show ${Math.min(60, F.length - shown)} more of ${F.length - shown}</button>` : '');
   }
   el.querySelectorAll('.card').forEach((c) => {
-    c.addEventListener('click', (e) => { if (e.target.closest('[data-save]')) return; openDrawer(c.dataset.id, { fly: true }); });
-    c.addEventListener('keydown', (e) => { if (e.key === 'Enter') openDrawer(c.dataset.id, { fly: true }); });
+    c.addEventListener('click', (e) => { if (e.target.closest('[data-save], .c-acts')) return; openDrawer(c.dataset.id, { fly: true }); });
+    c.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target === c) openDrawer(c.dataset.id, { fly: true }); });
     c.addEventListener('mouseenter', () => emit('hover', c.dataset.id));
     c.addEventListener('mouseleave', () => emit('hover', null));
   });
   el.querySelectorAll('[data-save]').forEach((b) => b.addEventListener('click', () => toggleSave(b.dataset.save)));
+  el.querySelectorAll('[data-cmp]').forEach((b) => b.addEventListener('click', () => {
+    const id = b.dataset.cmp, was = S.compare.includes(id); toggleCompare(id);
+    toast(was ? 'Removed from Compare' : `Added to Compare · ${S.compare.length} of 4`);
+  }));
   el.querySelectorAll('[data-open]').forEach((b) => b.addEventListener('click', () => openDrawer(b.dataset.open, { fly: true })));
   $('moreBtn')?.addEventListener('click', () => { shown += 60; renderCards(); });
 }
@@ -477,7 +504,7 @@ function commuteSection(L, d) {
   const live = L.address ? `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(L.address)}&destination=${encodeURIComponent(d.address || `${d.lat},${d.lon}`)}&travelmode=${drawerMode === 'walk' ? 'walking' : 'transit'}` : null;
   const obs = (L.commute_observations || []).map((o) => `<div class="leg"><span class="ic walk"></span><span>${esc(o.provider || 'Checked')} ${esc(o.mode || '')}${o.departure ? ', ' + esc(o.departure) : ''}</span><span class="m">${esc(o.minutes)} min</span></div>`).join('');
   const best = Math.min(...avail.map(([k]) => val(k)).filter((v) => v != null));
-  return `<div class="d-sec" id="dCommute"><h3>Commute to ${esc(d.name)} <span>arrive ${esc(d.arrive_by || '')}${sel?.range ? ` · ${Math.round(sel.range[0])}–${Math.round(sel.range[1])} min across departures` : ''}</span></h3>
+  return `<div class="d-sec" id="dCommute" data-tab="Commute"><h3>Commute to ${esc(d.name)} <span>arrive ${esc(d.arrive_by || '')}${sel?.range ? ` · ${Math.round(sel.range[0])}–${Math.round(sel.range[1])} min across departures` : ''}</span></h3>
     <div class="mode-tiles" role="tablist">${avail.map(([k, n, ic]) => `<button type="button" role="tab" aria-selected="${k === drawerMode}" class="mt ${k === drawerMode ? 'on' : ''} ${val(k) === best ? 'best' : ''}" data-mode="${k}">${ic}<b>${Math.round(val(k))}<small>min</small></b><span>${n}</span></button>`).join('')}</div>
     <div class="route">${drawerMode === 'walk' ? `<div class="leg"><span class="ic walk"></span><span>Walk the whole way <span class="faint">${miles((M.walk?.m) ?? null)}</span></span><span class="m">${Math.round(mo.walk)} min</span></div>` : sel?.legs ? legRows(sel.legs) : legsHTML(sel?.route || '')}${obs}</div>
     ${sel?.transfers != null && drawerMode !== 'walk' ? `<div class="faint" style="font-size:var(--fs-xs);margin-top:8px">${sel.transfers ? sel.transfers + ' transfer' + (sel.transfers > 1 ? 's' : '') : 'One-seat ride'} · ${Math.round(sel.walk_min ?? 0)} min walking · ${Math.round(sel.ride_min ?? 0)} min riding${sel.wait_min ? ` · ${Math.round(sel.wait_min)} min waiting` : ''}</div>` : ''}
@@ -498,7 +525,7 @@ function moneySection(L) {
   const feeTxt = mo.fees == null ? unk : Array.isArray(mo.fees) ? `${money(mo.fees[0])}–${money(mo.fees[1])}` : mo.fees ? money(mo.fees) : 'None';
   const bb = S.crit.budget?.basis || 'monthly_cost';
   const cn = c.concession_needed, cnT = cn && Object.entries(cn).filter(([k, v]) => /^\d+$/.test(k) && v?.rent_only_ask != null && v.rent_only_ask > 0);
-  return `<div class="d-sec"><h3>Money <span>${c.rent?.lease_months ? Math.round(c.rent.lease_months) + '-month lease' : 'lease term unknown'}</span></h3>
+  return `<div class="d-sec" id="dMoney" data-tab="Money"><h3>Money <span>${c.rent?.lease_months ? Math.round(c.rent.lease_months) + '-month lease' : 'lease term unknown'}</span></h3>
     <div class="money"><div><div class="k">Monthly cost</div><div class="v big">${money(c.monthly ?? cost(L))}${open ? '<small class="plus">+ fees?</small>' : ''}</div></div>
       <div><div class="k">Gross rent</div><div class="v">${money(c.rent?.gross ?? p.gross)}</div></div>
       <div><div class="k">${c.rent?.basis === 'conditional' ? 'Net (if eligible)' : 'Paid month'}</div><div class="v">${money(c.rent?.basis === 'conditional' ? c.rent?.illustrations?.[0]?.net : c.paid_month ?? p.gross)}</div></div></div>
@@ -526,12 +553,87 @@ function moneySection(L) {
 function whySection(L) {
   const s = L.score || {}, R = reasons(L), cov = coverage(L);
   const range = s.range && s.range[0] !== s.range[1] ? `range ${Math.round(s.range[0])}–${Math.round(s.range[1])}` : '';
-  return `<div class="d-sec"><h3>Why it ranks here <span>${s.confidence ?? 0}% of weight known${range ? ' · ' + range : ''}</span></h3>
+  return `<div class="d-sec" id="dWhy" data-tab="Why"><h3>Why it ranks here <span>${s.confidence ?? 0}% of weight known${range ? ' · ' + range : ''}</span></h3>
     <div class="reasons">${R.map((r) => { const v = s.parts?.[r.dim]; return `<details class="rsn"><summary><b class="${r.pts > 0.05 ? 'pos' : r.pts < -0.05 ? 'neg' : 'zero'}">${r.pts > 0.05 ? '+' : r.pts < -0.05 ? '−' : ''}${Math.abs(r.pts).toFixed(1)}</b><span class="lab">${esc(r.label)}</span><span class="txt">${esc(r.sentence)}</span><span class="bar ${v == null ? 'unk' : ''}"><i style="width:${v ?? 0}%;background:${scoreColor(v)}"></i></span></summary>${r.items?.length ? `<ul>${r.items.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>` : ''}</details>`; }).join('')}</div>
     <div class="coverage"><div class="cov-bar">${Array.from({ length: cov.total }, (_, i) => `<i class="${i < cov.have ? 'on' : ''}"></i>`).join('')}</div><span><b>${cov.have}/${cov.total}</b> key facts evidenced${cov.missing.length ? ` · still need ${esc(cov.missing.slice(0, 4).join(', ').toLowerCase())}${cov.missing.length > 4 ? '…' : ''}` : ''}</span></div></div>`;
 }
+const SHARE_ICON = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M6.8 9.2a3 3 0 004.2 0l2-2a3 3 0 00-4.2-4.2l-.9.9M9.2 6.8a3 3 0 00-4.2 0l-2 2a3 3 0 004.2 4.2l.9-.9"/></svg>';
+const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+/** Drawer photo carousel: scroll-snap track (touch swipes natively), arrows, dots, arrow keys and mouse drag. */
+function carousel(tr, n, onIndex) {
+  const idx = () => Math.round(tr.scrollLeft / Math.max(1, tr.clientWidth));
+  const go = (i) => tr.scrollTo({ left: Math.max(0, Math.min(n - 1, i)) * tr.clientWidth, behavior: reducedMotion() ? 'auto' : 'smooth' });
+  const prev = $('dPrev'), next = $('dNext'), dots = [...($('dDots')?.children || [])];
+  let last = -1;
+  const sync = () => {
+    const i = idx(); if (i === last) return; last = i;
+    onIndex(i);
+    if (prev) prev.disabled = i <= 0;
+    if (next) next.disabled = i >= n - 1;
+    dots.forEach((d, j) => d.classList.toggle('on', j === i));
+  };
+  tr.addEventListener('scroll', sync, { passive: true });
+  prev?.addEventListener('click', () => go(idx() - 1));
+  next?.addEventListener('click', () => go(idx() + 1));
+  tr.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { e.preventDefault(); e.stopPropagation(); go(idx() + (e.key === 'ArrowRight' ? 1 : -1)); }
+  });
+  // mouse drag: scroll-snap only follows touch and trackpads, so a mouse gets a drag with a snap on release
+  let drag = null;
+  tr.addEventListener('pointerdown', (e) => { if (e.pointerType !== 'mouse' || e.button !== 0 || n < 2) return; drag = { x: e.clientX, l: tr.scrollLeft, moved: false }; tr.setPointerCapture(e.pointerId); });
+  tr.addEventListener('pointermove', (e) => {
+    if (!drag) return;
+    const dx = e.clientX - drag.x;
+    if (!drag.moved && Math.abs(dx) > 4) { drag.moved = true; tr.classList.add('dragging'); }
+    if (drag.moved) tr.scrollLeft = drag.l - dx;
+  });
+  const end = (e) => {
+    if (!drag) return;
+    const d = drag; drag = null; tr.classList.remove('dragging');
+    if (!d.moved) return;
+    const dx = e.clientX - d.x, i0 = Math.round(d.l / tr.clientWidth);
+    go(Math.abs(dx) > tr.clientWidth * 0.12 ? i0 + (dx < 0 ? 1 : -1) : i0);
+  };
+  tr.addEventListener('pointerup', end); tr.addEventListener('pointercancel', end);
+  sync();
+}
+/** Sticky section bar: a compact header (name, price, score) appears once the title scrolls away, and the
+ *  section tabs jump to and follow Overview, Money, Why, Commute, Light, Records and Notes. */
+function drawerChrome(dw) {
+  const sc = dw.querySelector('.d-scroll'), bar = $('dBar'), nav = $('dTabs');
+  const secs = [...dw.querySelectorAll('[data-tab]')];
+  nav.innerHTML = secs.map((s) => `<a href="#${s.id}" data-to="${s.id}">${esc(s.dataset.tab)}</a>`).join('');
+  const links = [...nav.querySelectorAll('a')];
+  nav.addEventListener('click', (e) => {
+    const a = e.target.closest('a'); if (!a) return;
+    e.preventDefault(); e.stopPropagation();
+    const t = $(a.dataset.to); if (!t) return;
+    const top = t.id === 'dOverview' ? 0 : t.offsetTop - bar.offsetHeight + 1;
+    sc.scrollTo({ top, behavior: reducedMotion() ? 'auto' : 'smooth' });
+    t.querySelector('h3, h2')?.setAttribute('tabindex', '-1');
+  });
+  let cur = null, raf = 0;
+  const spy = () => {
+    raf = 0;
+    const y = sc.scrollTop, stuck = y > 0 && y >= bar.offsetTop - 1;
+    bar.classList.toggle('stuck', stuck);
+    const line = y + bar.offsetHeight + 24;
+    let on2 = secs[0];
+    for (const s of secs) if (s.offsetTop <= line) on2 = s;
+    if (sc.scrollTop + sc.clientHeight >= sc.scrollHeight - 2) on2 = secs[secs.length - 1];
+    if (on2 !== cur) {
+      cur = on2;
+      links.forEach((a) => { const m = a.dataset.to === on2?.id; a.classList.toggle('on', m); m ? a.setAttribute('aria-current', 'true') : a.removeAttribute('aria-current'); });
+      const a = links.find((x) => x.classList.contains('on'));
+      if (a && nav.scrollWidth > nav.clientWidth) nav.scrollTo({ left: a.offsetLeft - 24, behavior: 'auto' });
+    }
+  };
+  sc.addEventListener('scroll', () => { if (!raf) raf = requestAnimationFrame(spy); }, { passive: true });
+  spy();
+}
 export function openDrawer(id, opt = {}) {
   const L = byId(id); if (!L) return;
+  const prevSel = S.sel;
   S.sel = id;
   const s = L.score || {}, p = L.price || {}, am = L.amenities || {}, rv = L.reviews || {}, rec = L.records || {};
   const im = imagesOf(L), t = tierIndex(L), d = dest();
@@ -546,20 +648,29 @@ export function openDrawer(id, opt = {}) {
   const live = d && L.address ? `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(L.address)}&destination=${encodeURIComponent(d.address || `${d.lat},${d.lon}`)}&travelmode=transit` : null;
   const obs = (L.commute_observations || []).map((o) => `<div class="leg"><span class="ic walk"></span><span>${esc(o.provider || 'Checked')} ${esc(o.mode || '')}${o.departure ? ', ' + esc(o.departure) : ''}</span><span class="m">${esc(o.minutes)} min</span></div>`).join('');
   const range = s.range && s.range[0] !== s.range[1] ? `range ${Math.round(s.range[0])}–${Math.round(s.range[1])}` : '';
-  $('drawer').innerHTML = `<div class="d-scroll">
-    <div class="d-hero">${slides.length ? `<div class="track" id="dTrack">${slides.map((x, i) => `<img src="${esc(x.url)}" alt="${esc(x.kind)} ${i + 1} of ${esc(label(L))}" referrerpolicy="no-referrer" class="${x.plan ? 'plan' : ''}" ${i > 1 ? 'loading="lazy"' : ''}${x.kind === 'Photo' ? imgFallback(L, i) : ''}>`).join('')}</div><div class="shade"></div><span class="count" id="dCount">1 / ${slides.length}</span><span class="credit" id="dCredit"></span>`
+  // re-rendering the open listing (save, compare, tier, commute mode) keeps the reader's place
+  const dw = $('drawer'), keep = prevSel === id && dw.classList.contains('open') ? { y: dw.querySelector('.d-scroll')?.scrollTop || 0, x: $('dTrack')?.scrollLeft || 0 } : null;
+  const many = slides.length > 1;
+  dw.setAttribute('aria-label', `Details for ${label(L)}`);
+  dw.innerHTML = `<div class="d-scroll">
+    <div class="d-hero">${slides.length ? `<div class="track" id="dTrack" tabindex="0" role="group" aria-roledescription="carousel" aria-label="Photos of ${esc(label(L))}${many ? ': arrow keys move between them' : ''}">${slides.map((x, i) => `<img src="${esc(x.url)}" alt="${esc(x.kind)} ${i + 1} of ${slides.length}, ${esc(label(L))}" referrerpolicy="no-referrer" draggable="false" class="${x.plan ? 'plan' : ''}" ${i > 1 ? 'loading="lazy"' : ''}${x.kind === 'Photo' ? imgFallback(L, i) : ''}>`).join('')}</div><div class="shade"></div>
+        ${many ? `<button type="button" class="h-nav prev" id="dPrev" aria-label="Previous photo" disabled><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M10 3L5 8l5 5"/></svg></button><button type="button" class="h-nav next" id="dNext" aria-label="Next photo"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 3l5 5-5 5"/></svg></button>
+        ${slides.length <= 12 ? `<div class="h-dots" id="dDots" aria-hidden="true">${slides.map((_, i) => `<i class="${i ? '' : 'on'}"></i>`).join('')}</div>` : ''}` : ''}
+        <span class="count" id="dCount" aria-live="polite">1 / ${slides.length}</span><span class="credit" id="dCredit"></span>`
       : L.lat != null ? `${aerialHTML(L, 448, 232, 19)}<div class="shade"></div><span class="kind">Aerial view${L.floor ? ` · floor ${Math.round(L.floor)}` : ''}${L.exposure?.length ? ' · faces ' + esc(L.exposure.join('/')) : ''}</span>` : unitGlyph(L, 448, 232)}
-      <div class="hero-btns"><button type="button" id="dSave" aria-pressed="${!!my.saved}" aria-label="${my.saved ? 'Remove from picks' : 'Save to picks'}" style="${my.saved ? 'color:var(--fav)' : ''}">${my.saved ? ICONS.star : ICONS.starO}</button><button type="button" id="dClose" aria-label="Close">${ICONS.x}</button></div></div>
-    <div class="d-head"><div class="t"><h2>${esc(L.building || L.address)} <span>${esc(L.unit || '')}</span></h2><p>${esc(L.address || '')}${L.neighborhood ? ' · ' + esc(L.neighborhood) : ''}</p></div>${ring(score(L), 64, 5)}</div>
+      <div class="hero-btns"><button type="button" id="dShare" aria-label="Copy a link to this home" title="Copy a link to this home">${SHARE_ICON}</button><button type="button" id="dSave" aria-pressed="${!!my.saved}" aria-label="${my.saved ? 'Remove from picks' : 'Save to picks'}" title="${my.saved ? 'Saved: click to remove (s)' : 'Save to picks (s)'}" class="${my.saved ? 'on' : ''}">${my.saved ? ICONS.star : ICONS.starO}</button><button type="button" id="dClose" aria-label="Close" title="Close (Esc)">${ICONS.x}</button></div></div>
+    <div class="d-head" id="dOverview" data-tab="Overview"><div class="t"><h2>${esc(L.building || L.address)} <span>${esc(L.unit || '')}</span></h2><p>${esc(L.address || '')}${L.neighborhood ? ' · ' + esc(L.neighborhood) : ''}</p></div>${ring(score(L), 64, 5)}</div>
     <div class="d-tags">${L._ranks?.fit ? `<span class="pill accent" title="Fit ranks quality on your weights; Action adds the must-haves; Budget keeps your first tier">Fit #${L._ranks.fit}${L._ranks.action ? ` · Action #${L._ranks.action}` : ''}${L._ranks.budget ? ` · Budget #${L._ranks.budget}` : ''}</span>` : ''}${s.budget_tier ? `<span class="tierpill" style="color:var(${t >= 0 ? TIER_VARS[t] : '--tier-over'});background:var(--surface-3)"><i></i>${esc(s.budget_tier)}</span>` : ''}<span class="pill">${esc(L.status || 'new')}</span>${L.stage ? `<span class="pill">${esc(L.stage)}</span>` : ''}${L.available ? `<span class="pill">Available ${esc(L.available)}</span>` : ''}${(s.gates || []).map((g) => `<span class="pill ${g.startsWith('fails') || g === 'over_budget' ? 'bad' : 'warn'}">${esc(GATE_LABEL(g))}</span>`).join('')}${(s.tags || []).map((t) => `<span class="pill warn">${esc(t)}</span>`).join('')}</div>
+    <div class="d-bar" id="dBar"><div class="d-mini" aria-hidden="true"><span class="mt-t"><b>${esc(L.building || L.address)}</b> ${esc(L.unit || '')}</span><span class="mt-p">${money(cost(L))}<small>/mo</small></span><i class="mt-s" style="--c:${scoreColor(score(L))}">${score(L) == null ? '?' : Math.round(score(L))}</i><button type="button" class="mt-x" tabindex="-1" aria-hidden="true">${ICONS.x}</button></div>
+      <nav class="d-tabs" id="dTabs" aria-label="Sections"></nav></div>
 ${moneySection(L)}
 ${whySection(L)}
     ${commuteSection(L, d)}
-    ${sun ? `<div class="d-sec"><h3>Direct sun on the window <span>floor ${esc(L.site.floor)}, facing ${Math.round(L.site.bearing)}°</span></h3><div class="sunbars">${sun.map((h, i) => `<div title="${h.toFixed(1)} h possible${L.site.sun_hours_expected?.[i] != null ? ` · ${(+L.site.sun_hours_expected[i]).toFixed(1)} h expected on a typical month` : ''}"><i style="height:${Math.max(3, (h / 9) * 100)}%"></i><span>${'JFMAMJJASOND'[i]}</span></div>`).join('')}</div><div class="faint" style="font-size:var(--fs-xs);margin-top:8px">Hours of possible (clear-sky) direct sun on the 15th${L.site.sun_year?.expected != null ? ` · a year: ${Number(L.site.sun_year.possible).toLocaleString()} h possible, about ${Number(L.site.sun_year.expected).toLocaleString()} h expected with typical cloud` : ''}</div><div class="faint" style="font-size:var(--fs-xs);margin-top:4px">Skyline straight ahead ${esc(L.site.skyline_ahead_deg)}° · ${L.site.open_sky_share != null ? Math.round(L.site.open_sky_share * 100) + '% open sky in view' : ''}${L.site.sky_view != null ? ` · sky view ${Math.round(L.site.sky_view * 100)}% (overcast sky)` : ''}${L.site.daylight_factor_est != null ? ` · estimated daylight factor ≈${esc(L.site.daylight_factor_est)}%, not measured` : ''}</div></div>` : ''}
-    ${rec.flags?.length ? `<div class="d-sec"><h3>Public records <span>reports, not findings</span></h3>${rec.flags.slice(0, 4).map((x) => `<div class="flag">${esc(x)}</div>`).join('')}</div>` : ''}
-    ${rv.summary ? `<div class="d-sec"><h3>Residents say</h3>${ratings ? `<div class="reviews">${ratings}</div>` : ''}<p class="muted" style="margin:0;font-size:var(--fs-sm)">${esc(rv.summary)}</p></div>` : ''}
-    ${L.notes ? `<div class="d-sec"><h3>Open questions</h3><p class="muted" style="margin:0;font-size:var(--fs-sm)">${esc(L.notes)}</p></div>` : ''}
-    <div class="d-sec"><h3>Your notes <span>kept in this browser</span></h3>
+    ${sun ? `<div class="d-sec" id="dLight" data-tab="Light"><h3>Direct sun on the window <span>floor ${esc(L.site.floor)}, facing ${Math.round(L.site.bearing)}°</span></h3><div class="sunbars">${sun.map((h, i) => `<div title="${h.toFixed(1)} h possible${L.site.sun_hours_expected?.[i] != null ? ` · ${(+L.site.sun_hours_expected[i]).toFixed(1)} h expected on a typical month` : ''}"><i style="height:${Math.max(3, (h / 9) * 100)}%"></i><span>${'JFMAMJJASOND'[i]}</span></div>`).join('')}</div><div class="faint" style="font-size:var(--fs-xs);margin-top:8px">Hours of possible (clear-sky) direct sun on the 15th${L.site.sun_year?.expected != null ? ` · a year: ${Number(L.site.sun_year.possible).toLocaleString()} h possible, about ${Number(L.site.sun_year.expected).toLocaleString()} h expected with typical cloud` : ''}</div><div class="faint" style="font-size:var(--fs-xs);margin-top:4px">Skyline straight ahead ${esc(L.site.skyline_ahead_deg)}° · ${L.site.open_sky_share != null ? Math.round(L.site.open_sky_share * 100) + '% open sky in view' : ''}${L.site.sky_view != null ? ` · sky view ${Math.round(L.site.sky_view * 100)}% (overcast sky)` : ''}${L.site.daylight_factor_est != null ? ` · estimated daylight factor ≈${esc(L.site.daylight_factor_est)}%, not measured` : ''}</div></div>` : ''}
+    ${rec.flags?.length ? `<div class="d-sec" id="dRecords" data-tab="Records"><h3>Public records <span>reports, not findings</span></h3>${rec.flags.slice(0, 4).map((x) => `<div class="flag">${esc(x)}</div>`).join('')}</div>` : ''}
+    ${rv.summary ? `<div class="d-sec" ${rec.flags?.length ? '' : 'id="dRecords" data-tab="Records"'}><h3>Residents say</h3>${ratings ? `<div class="reviews">${ratings}</div>` : ''}<p class="muted" style="margin:0;font-size:var(--fs-sm)">${esc(rv.summary)}</p></div>` : ''}
+    ${L.notes ? `<div class="d-sec" id="dNotes" data-tab="Notes"><h3>Open questions</h3><p class="muted" style="margin:0;font-size:var(--fs-sm)">${esc(L.notes)}</p></div>` : ''}
+    <div class="d-sec" ${L.notes ? '' : 'id="dNotes" data-tab="Notes"'}><h3>Your notes <span>kept in this browser</span></h3>
       <div class="seg" id="dTier" role="group" aria-label="Your tier">${['S', 'A', 'B', 'C', 'Pass'].map((x) => `<button type="button" data-tier="${x}" class="${my.tier === x ? 'on' : ''}">${x}</button>`).join('')}</div>
       <textarea id="dNote" rows="3" placeholder="What you liked, what to ask, tour impressions" style="width:100%;margin-top:10px">${esc(my.note || '')}</textarea></div>
     <p class="faint" style="font-size:var(--fs-xs);padding:0 20px 18px;margin:0">Last checked ${esc(L.checked || '?')} · <span class="mono">${esc(L.id)}</span>${links.length ? ' · ' + links.map(([k, u]) => `<a href="${esc(u)}" target="_blank" rel="noopener">${esc(k)}</a>`).join(' · ') : ''}</p>
@@ -567,6 +678,8 @@ ${whySection(L)}
     <div class="d-actions">${hasSite ? `<a class="btn primary" href="#unit/${esc(L.id)}">${ICONS.cube}Unit 3D</a>` : ''}${hasPlan ? `<a class="btn" href="#plan/${esc(L.id)}">${ICONS.plan}Plan</a>` : ''}${hasDos ? `<a class="btn" href="#records/${esc(L.id)}">${ICONS.doc}Records</a>` : ''}<button class="btn ${S.compare.includes(L.id) ? 'primary' : ''}" type="button" id="dCmp">${S.compare.includes(L.id) ? ICONS.check + 'Comparing' : ICONS.plus + 'Compare'}</button>${safeUrl(L.links?.listing) ? `<a class="btn" href="${esc(safeUrl(L.links.listing))}" target="_blank" rel="noopener">Listing ${ICONS.ext}</a>` : ''}</div>`;
   $('dCommute')?.querySelectorAll('[data-mode]').forEach((b) => b.addEventListener('click', () => { drawerMode = b.dataset.mode; const y = $('drawer').querySelector('.d-scroll').scrollTop; openDrawer(L.id); $('drawer').querySelector('.d-scroll').scrollTop = y; }));
   $('dClose').addEventListener('click', closeDrawer);
+  dw.querySelector('.mt-x').addEventListener('click', closeDrawer);
+  $('dShare').addEventListener('click', () => shareListing(L.id));
   $('dSave').addEventListener('click', () => { toggleSave(L.id); openDrawer(L.id); });
   $('dCmp').addEventListener('click', () => { toggleCompare(L.id); openDrawer(L.id); });
   $('dTier').querySelectorAll('button').forEach((b) => b.addEventListener('click', () => { setPick(L.id, { tier: my.tier === b.dataset.tier ? null : b.dataset.tier, saved: true }); openDrawer(L.id); }));
@@ -578,8 +691,10 @@ ${whySection(L)}
     const b = x.b, page = b && safeUrl(b.page), lic = b && safeUrl(b.license_url);
     $('dCredit').innerHTML = b ? `${page ? `<a href="${esc(page)}" target="_blank" rel="noopener">${esc(b.author || 'Wikimedia Commons')}</a>` : esc(b.author || '')}${b.license ? ' · ' + (lic ? `<a href="${esc(lic)}" target="_blank" rel="noopener">${esc(b.license)}</a>` : esc(b.license)) : ''}` : '';
   };
-  if (tr) { credit(0); tr.addEventListener('scroll', () => credit(Math.round(tr.scrollLeft / tr.clientWidth)), { passive: true }); }
+  if (tr) { credit(0); carousel(tr, slides.length, credit); if (keep?.x) tr.scrollLeft = keep.x; }
   $('drawer').querySelectorAll('a[href^="#"]').forEach((a) => a.addEventListener('click', closeDrawer));
+  drawerChrome(dw);
+  if (keep) dw.querySelector('.d-scroll').scrollTop = keep.y;
   $('drawer').classList.add('open');
   document.querySelectorAll('.card').forEach((c) => c.classList.toggle('sel', c.dataset.id === id));
   document.querySelector(`.card[data-id="${CSS.escape(id)}"]`)?.scrollIntoView({ block: 'nearest', behavior: opt.instant ? 'auto' : 'smooth' });
@@ -610,7 +725,9 @@ async function route() {
   if (v === 'map' && route.last && route.last !== 'map') renderCards();   // cards may be stale after edits in other views
   route.last = v;
   try { (await viewModule(v)).show?.(arg ? decodeURIComponent(arg) : null); } catch (e) {
-    document.getElementById('view-' + v).innerHTML = `<div class="view-pad"><div class="empty"><b>This view could not load</b>${esc(String(e?.message || e))}<br>Check your connection; the 3D views load three.js from a CDN.</div></div>`;
+    loaded[v]?.catch(() => delete loaded[v]);   // a failed import is tried again on the next visit (or Retry)
+    document.getElementById('view-' + v).innerHTML = `<div class="view-pad"><div class="empty view-err" role="alert"><svg class="empty-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="M12 3.5l9.5 16.5h-19z"/><path d="M12 10v4.5M12 17.2v.3"/></svg><b>This view could not load</b><span>Check your connection: the 3D views load three.js from a CDN.</span><code class="mono">${esc(String(e?.message || e))}</code><button type="button" class="btn sm" data-retry>Try again</button></div></div>`;
+    document.querySelector(`#view-${v} [data-retry]`)?.addEventListener('click', () => { document.getElementById('view-' + v).innerHTML = ''; route(); });
   }
 }
 
@@ -631,9 +748,10 @@ function setupKeys(flipTheme) {
   const cards = () => [...document.querySelectorAll('#cards .card')];
   addEventListener('keydown', (e) => {
     const tag = e.target.tagName;
+    if ((e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey && e.key.toLowerCase() === 'k') { e.preventDefault(); openPalette(); return; }
     if (e.key === 'Escape') { if (document.querySelector('.kbd-help')) document.querySelector('.kbd-help').remove(); else closeDrawer(); document.body.classList.remove('rail-open'); return; }
-    if (['INPUT', 'TEXTAREA', 'SELECT'].includes(tag) || e.metaKey || e.ctrlKey || e.altKey) return;
-    if (e.key === '/') { e.preventDefault(); $('q').focus(); return; }
+    if ((['INPUT', 'TEXTAREA', 'SELECT'].includes(tag) && !e.target.readOnly) || e.target.isContentEditable || e.metaKey || e.ctrlKey || e.altKey) return;
+    if (e.key === '/') { e.preventDefault(); openPalette(); return; }
     if ((e.key === 'j' || e.key === 'k') && S.view === 'map') {
       const cs = cards(); if (!cs.length) return;
       const i = cs.findIndex((c) => c.dataset.id === S.sel), n = Math.max(0, Math.min(cs.length - 1, i + (e.key === 'j' ? 1 : -1)));
@@ -645,8 +763,9 @@ function setupKeys(flipTheme) {
     const views = ['map', 'list', 'compare', 'unit', 'plan', 'records', 'tours', 'research'];
     if (/^[1-8]$/.test(e.key)) { location.hash = views[+e.key - 1]; return; }
     if (e.key === '?') {
-      const el = document.createElement('div'); el.className = 'kbd-help';
-      el.innerHTML = `<div class="panel"><h3>Keyboard</h3><dl>${[['/', 'Search listings'], ['j k', 'Next or previous listing'], ['s', 'Save the open listing'], ['c', 'Add it to compare'], ['1–8', 'Switch view'], ['t', 'Light or dark'], ['Esc', 'Close'], ...(S.view === 'plan' ? [['R', 'Turn the selected piece'], ['← →', 'Nudge 1 in (Shift 6 in)'], ['D', 'Duplicate'], ['Del', 'Remove'], ['⌘Z', 'Undo'], ['W A S D', 'Walk mode']] : []), ...(S.view === 'unit' ? [['p', 'Play or pause the day'], [', .', 'Step 15 minutes']] : [])].map(([k, t]) => `<dt>${k.split(' ').map((x) => `<kbd>${x}</kbd>`).join(' ')}</dt><dd style="margin:0">${t}</dd>`).join('')}</dl></div>`;
+      const old = document.querySelector('.kbd-help'); if (old) { old.remove(); return; }
+      const el = document.createElement('div'); el.className = 'kbd-help'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', 'Keyboard shortcuts');
+      el.innerHTML = `<div class="panel"><h3>Keyboard</h3><dl>${[['⌘K /', 'Search homes, views and actions'], ['j k', 'Next or previous listing'], ['s', 'Save the open listing'], ['c', 'Add it to compare'], ['1–8', 'Switch view'], ['t', 'Light or dark'], ['Esc', 'Close'], ...(S.view === 'plan' ? [['R', 'Turn the selected piece'], ['← →', 'Nudge 1 in (Shift 6 in)'], ['D', 'Duplicate'], ['Del', 'Remove'], ['⌘Z', 'Undo'], ['W A S D', 'Walk mode']] : []), ...(S.view === 'unit' ? [['p', 'Play or pause the day'], [', .', 'Step 15 minutes']] : [])].map(([k, t]) => `<dt>${k.split(' ').map((x) => `<kbd>${x}</kbd>`).join(' ')}</dt><dd style="margin:0">${t}</dd>`).join('')}</dl></div>`;
       el.addEventListener('click', () => el.remove()); document.body.append(el);
     }
   });
@@ -693,10 +812,25 @@ async function boot() {
     cancelAnimationFrame(wRaf); wRaf = requestAnimationFrame(() => { renderKPIs(); if (S.view === 'map') renderCards(); });
     clearTimeout(wTimer); wTimer = setTimeout(() => emit('weights-settled'), 220);
   });
-  on('saved', () => { renderCards(); const n = Object.values(S.picks).filter((p) => p.saved).length; $('savedCount').hidden = !n; $('savedCount').textContent = n; });
-  on('compare', () => { $('cmpCount').hidden = !S.compare.length; $('cmpCount').textContent = S.compare.length; });
+  // tab counters pulse when they change, so a save or compare from a card visibly lands in its tab
+  const bump = (el, n) => { if (el.textContent !== String(n) && !el.hidden && n) { el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump'); } el.hidden = !n; el.textContent = n; };
+  on('saved', () => { renderCards(); bump($('savedCount'), Object.values(S.picks).filter((p) => p.saved).length); });
+  on('compare', () => { bump($('cmpCount'), S.compare.length); syncCompareCards(); });
   emit('compare'); emit('saved');
-  $('q').addEventListener('input', (e) => setFilter('q', e.target.value));
+  // the top-bar search box opens the command palette; the text filter it sets shows here with a clear button
+  initPalette(); initEnhance();
+  const q = $('q'), openQ = (seed = '') => openPalette(seed || S.filters.q || '');
+  q.addEventListener('click', () => openQ());
+  q.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === 'ArrowDown') { e.preventDefault(); openQ(); }
+    else if (e.key.length === 1 && !e.metaKey && !e.ctrlKey && !e.altKey) { e.preventDefault(); openPalette(e.key); }
+    else if ((e.key === 'Backspace' || e.key === 'Delete') && S.filters.q) { q.value = ''; setFilter('q', ''); syncTrigger(); }
+  });
+  $('qClear')?.addEventListener('click', (e) => { e.stopPropagation(); q.value = ''; setFilter('q', ''); syncTrigger(); });
+  $('plBtn')?.addEventListener('click', () => openQ());
+  const mac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
+  document.querySelectorAll('.cmdk kbd, #plBtn kbd').forEach((k) => (k.textContent = mac ? '⌘K' : 'Ctrl K'));
+  syncTrigger();
   $('sortSel').addEventListener('change', (e) => { S.sort = e.target.value; renderCards(); emit('sort'); });
   $('groupSeg').querySelectorAll('button').forEach((b) => b.addEventListener('click', () => { S.group = b.dataset.g; $('groupSeg').querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === b)); renderCards(); }));
   $('csvBtn').addEventListener('click', exportCSV);

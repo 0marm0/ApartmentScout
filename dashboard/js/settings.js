@@ -18,7 +18,16 @@ export function openSettings() {
     root = document.createElement('div');
     root.className = 'sheet-scrim'; root.id = 'critSheet';
     root.addEventListener('mousedown', (e) => { if (e.target === root) close(); });
-    root.addEventListener('keydown', (e) => { if (e.key === 'Escape') { e.stopPropagation(); close(); } }, true);
+    root.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') { e.stopPropagation(); close(); return; }
+      if (e.key !== 'Tab') return;
+      // the sheet is modal: Tab and Shift+Tab cycle inside it
+      const f = [...root.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')].filter((x) => !x.disabled && x.offsetParent !== null);
+      if (!f.length) return;
+      const first = f[0], last = f[f.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }, true);
     document.body.append(root);
   }
   root.hidden = false; root.classList.remove('picking');
