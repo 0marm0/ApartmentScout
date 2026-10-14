@@ -64,7 +64,8 @@ nearby. It writes `sites/<id>.json` (format in `docs/guides/data-model.md`) and 
 `skyline_ahead_deg`, `open_sky_share`, `sky_view`, `daylight_factor_est`, `sun_year` and (NYC)
 `sun_hours_expected` to the listing. Downloads are cached in `cache/site/`; `--refresh` fetches again,
 `--no-streets` and `--no-future` skip those layers. With `--charts` it saves a sun-path chart, a
-floor-by-month table and a monthly range chart in `research/charts/`.
+floor-by-month table, a monthly range chart and a building-heights chart (roof heights within 300 m against
+their distance, with the window's eye height) in `research/charts/`.
 
 The run prints how the building was matched (BIN, tax lot, point or nearest), the storey height
 used and where it came from, the main blockers and the floor from which the view ahead clears the
