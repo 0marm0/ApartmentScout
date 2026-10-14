@@ -1,0 +1,47 @@
+/* ApartmentScout empty states: the illustrations from js/features/empty.js. Hairline strokes, flat surface fills, one
+   accent detail, gold for stars and --sun for light, so a scene reads in both themes without a single raw colour. */
+.empty.has-ill { gap: 8px; padding: var(--s-8) var(--s-6) var(--s-6); }
+.empty.has-ill .empty-act { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 6px; }
+.empty.has-ill .empty-act .btn { margin-top: 0; }
+.ill { width: 184px; max-width: 100%; height: auto; color: var(--ink-4); overflow: visible; margin-bottom: 4px; }
+.ill * { vector-effect: non-scaling-stroke; }
+.ill .g { fill: color-mix(in srgb, var(--ink) 8%, transparent); }
+.ill .card { fill: var(--surface-2); stroke: var(--line-strong); stroke-width: 1.4; }
+.ill .ghost { fill: var(--surface-1); stroke: var(--line-strong); stroke-width: 1.2; stroke-dasharray: 3 4; }
+.ill .photo { fill: var(--surface-3); }
+.ill .hill { fill: color-mix(in srgb, var(--ink) 11%, var(--surface-3)); }
+.ill .sun { fill: var(--sun); }
+.ill .sun.big { fill: color-mix(in srgb, var(--sun) 88%, transparent); }
+.ill .ray { stroke: var(--sun); stroke-width: 1.6; stroke-linecap: round; }
+.ill .bar { fill: var(--ink-4); }
+.ill .bar.soft { fill: var(--line-strong); }
+.ill .bar.acc { fill: var(--accent); }
+.ill .badge { fill: var(--surface-1); stroke: var(--line-strong); stroke-width: 1.4; }
+.ill .badge.acc { fill: var(--accent-soft); stroke: var(--accent-line); }
+.ill .star { fill: none; stroke: var(--fav); stroke-width: 1.7; stroke-linejoin: round; }
+.ill .slot { fill: none; stroke: var(--accent-line); stroke-width: 1.4; stroke-dasharray: 4 4; stroke-linecap: round; }
+.ill .plus { stroke: var(--accent); stroke-width: 2; stroke-linecap: round; }
+.ill .fold { fill: none; stroke: var(--line-strong); stroke-width: 1.4; stroke-linejoin: round; }
+.ill .lens { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 2; }
+.ill .lensin { fill: var(--surface-1); }
+.ill .handle { stroke: var(--accent); stroke-width: 3; stroke-linecap: round; }
+.ill .mark { stroke: var(--ink-3); stroke-width: 2; stroke-linecap: round; }
+.ill .wall { fill: none; stroke: var(--ink-3); stroke-width: 2.2; stroke-linejoin: round; stroke-linecap: round; }
+.ill .wall.thin { stroke: var(--ink-4); stroke-width: 1.4; }
+.ill .door { fill: none; stroke: var(--accent); stroke-width: 1.4; stroke-dasharray: 3 3; }
+.ill .win { fill: none; stroke: var(--ink-4); stroke-width: 2; stroke-linecap: round; }
+.ill .win.glass { stroke: var(--sun); stroke-width: 3; }
+.ill .lit { fill: none; stroke: var(--sun); stroke-width: 2.4; stroke-linecap: round; }
+.ill .piece { fill: var(--surface-3); stroke: var(--line-strong); stroke-width: 1.2; }
+.ill .piece.acc { fill: var(--accent-soft); stroke: var(--accent-line); }
+.ill .dim { fill: none; stroke: var(--ink-4); stroke-width: 1.1; stroke-linecap: round; }
+.ill .dot { fill: var(--ink-4); }
+.ill .dot.acc { fill: var(--accent); }
+@media (prefers-reduced-motion: no-preference) {
+  .empty.has-ill .ill { animation: illIn var(--t-page) var(--ease-out) both; }
+  @keyframes illIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+}
+
+/* Floor plan with no plans: the card takes the place of the panes */
+.ps-empty[hidden] { display: none; }
+.ps-empty .empty { min-height: 380px; align-content: center; }
