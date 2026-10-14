@@ -6,6 +6,8 @@ import { COMMUTE_MODES, commuteEntry, modeMinutes, modeOptions, evaluate, applyP
 import { initPalette, openPalette, shareListing, syncTrigger } from './palette.js';
 import { initEnhance } from './enhance.js';
 import { initTheme, flipTheme, initShell, parseRoute, syncSubnav } from './shell.js';
+import './features/comfort.js';   // [feature C] comfort + accent attributes on <html> apply at import, before first paint
+import { cardsEmpty } from './features/empty.js';   // [feature C]
 
 export const store = {
   get(k, d) { try { const v = localStorage.getItem('as:' + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
@@ -23,7 +25,7 @@ const FEATURES = [
 
 export const S = {
   listings: [], crit: {}, manifest: {}, notes: {}, base: 'data',
-  filters: { q: '', tiers: null, over: false, maxCommute: 75, toggles: [], status: ACTIVE, savedOnly: false },
+  filters: { q: '', tiers: null, over: false, maxCommute: 75, toggles: [], status: ACTIVE, savedOnly: false, nl: null },
   weights: {}, compare: store.get('compare', []), picks: store.get('picks', {}),
   sel: null, sort: 'match', group: 'units', view: 'map', listeners: {},
   // commute lens shared by the map surface, pins, cards, filters, KPIs, Shortlist and Compare: mode + destination
@@ -197,6 +199,8 @@ function featureOk(L, k) {
   if (k === 'doorman') return am.doorman === 'full-time';
   return am[k] === true;
 }
+/** [feature C] Extra filter predicates `(listing, filters) => boolean`; the plain-language search registers one for S.filters.nl. */
+export const EXTRA_FILTERS = [];
 export function filtered() {
   const f = S.filters, q = f.q.trim().toLowerCase(), cap = tierCap(), st = new Set(f.status);
   return S.listings.filter((L) => {
@@ -206,6 +210,7 @@ export function filtered() {
     if (cap != null && (budgetAmt(L) == null || budgetAmt(L) > cap)) return false;
     if (f.maxCommute < 75 && commuteOf(L) != null && commuteOf(L) > f.maxCommute) return false;
     for (const k of f.toggles) if (!featureOk(L, k)) return false;
+    for (const fn of EXTRA_FILTERS) if (!fn(L, f)) return false;
     return true;
   });
 }
@@ -444,7 +449,7 @@ function buildingGroups(F) {
   return [...g.values()].map((units) => ({ units: sorted(units), best: sorted(units)[0] }));
 }
 function resetFilters() {
-  Object.assign(S.filters, { q: '', toggles: [], savedOnly: false, maxCommute: 75, status: [...ACTIVE], over: false, tiers: (S.crit.budget?.tiers || []).map((_, i) => i) });
+  Object.assign(S.filters, { q: '', toggles: [], savedOnly: false, maxCommute: 75, status: [...ACTIVE], over: false, nl: null, tiers: (S.crit.budget?.tiers || []).map((_, i) => i) });
   if ($('q')) $('q').value = '';
   saveFilters(); syncTrigger(); emit('filters');
 }
@@ -463,7 +468,7 @@ export function renderCards() {
   const F = sorted(filtered()), el = $('cards');
   $('listTitle').innerHTML = `${F.length} ${S.group === 'buildings' ? 'homes in ' + new Set(F.map((L) => L.building)).size + ' buildings' : 'homes'} <span>· ${S.sort === 'match' ? 'ranked by your weights' : 'sorted'}</span>`;
   if (!F.length) {
-    el.innerHTML = `<div class="empty cards-empty"><svg class="empty-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="M3.5 6h17l-6.5 7.5V19l-4 1.5v-7z"/></svg><b>No homes match</b><span>${S.filters.q ? `Nothing matches “${esc(S.filters.q)}” with these filters. ` : ''}Loosen a filter on the left, or include more statuses.</span><button type="button" class="btn sm" id="resetFilters">Reset filters</button></div>`;
+    el.innerHTML = cardsEmpty({ q: S.filters.q, savedOnly: S.filters.savedOnly, hasPicks: Object.values(S.picks).some((p) => p.saved) });   // [feature C] illustrated empty state
     $('resetFilters').addEventListener('click', resetFilters); return;
   }
   if (S.group === 'buildings') {
@@ -777,6 +782,7 @@ function setupKeys() {
     const views = ['map', 'list', 'compare', 'unit', 'plan', 'research'];
     if (/^[1-6]$/.test(e.key)) { location.hash = views[+e.key - 1]; return; }
     if (e.key === '?') {
+      if (!dispatchEvent(new CustomEvent('as:cheatsheet', { cancelable: true }))) return;   // [feature C] the searchable cheat sheet (features/keys.js) answers this; the list below is the fallback
       const old = document.querySelector('.kbd-help'); if (old) { old.remove(); return; }
       const el = document.createElement('div'); el.className = 'kbd-help'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', 'Keyboard shortcuts');
       el.innerHTML = `<div class="panel"><h3>Keyboard</h3><dl>${[['⌘K /', 'Search homes, views and actions'], ['j k', 'Next or previous listing'], ['s', 'Save the open listing'], ['c', 'Add it to compare'], ['1–6', 'Switch view'], ['t', 'Light or dark'], ['Esc', 'Close'], ...(S.view === 'plan' ? [['R', 'Turn the selected piece'], ['← →', 'Nudge 1 in (Shift 6 in)'], ['D', 'Duplicate'], ['Del', 'Remove'], ['⌘Z', 'Undo'], ['W A S D', 'Walk mode']] : []), ...(S.view === 'unit' ? [['p', 'Play or pause the day'], [', .', 'Step 15 minutes']] : [])].map(([k, t]) => `<dt>${k.split(' ').map((x) => `<kbd>${x}</kbd>`).join(' ')}</dt><dd style="margin:0">${t}</dd>`).join('')}</dl></div>`;
@@ -858,5 +864,9 @@ async function boot() {
   viewModule('map');   // the map keeps pins in sync even while another view is open
   import('./onboarding.js').then((m) => m.initOnboarding()).catch(() => {});   // empty state, ?new=1
   if (qs.get('open')) openDrawer(qs.get('open'), { fly: true, instant: true });
+  import('./features/extras.js').then((m) => m.initExtras()).catch((e) => console.warn('feature extras unavailable', e));   // [feature C] undo, chords, cheat sheet, plain-language search, coach marks, settings
 }
 boot();
+// [feature C] seams for ./features/*: the rail redraw and the feature list the filters offer
+export { renderRail, FEATURES };
+

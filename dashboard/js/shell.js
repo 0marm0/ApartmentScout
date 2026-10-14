@@ -92,6 +92,7 @@ export function initShell() {
   menu.addEventListener('click', (e) => {
     const b = e.target.closest('button'); if (!b) return;
     if (b.dataset.themeMode) { setThemeMode(b.dataset.themeMode); return; }   // the menu stays open: see the change, then Esc
+    if (b.hasAttribute('data-keep')) return;   // [feature C] accent, comfort switches and text size also keep the menu open
     setMenu(false);
     if (b.id === 'mnSearch') openSettings();
     else if (b.id === 'mnPicks') exportPicks();

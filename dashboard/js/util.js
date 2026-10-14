@@ -120,9 +120,22 @@ export function md(src) {
 
 
 // ------------------------------------------------------------------ shared visual pieces
-export function toast(msg, ms = 2200) {
+export function toast(msg, ms = 2200, action = null) {
   const el = document.getElementById('toast'); if (!el) return;
   el.textContent = msg; el.classList.add('on');
+  // [feature C: undo] an optional button ({ label, run, hint }) that stays reachable while the pointer rests on the toast
+  el.classList.toggle('has-act', !!action);
+  el.onmouseenter = el.onmouseleave = null;
+  if (action) {
+    el.textContent = '';
+    el.append(Object.assign(document.createElement('span'), { className: 'toast-msg', textContent: msg }));
+    const b = Object.assign(document.createElement('button'), { type: 'button', className: 'toast-act', textContent: action.label });
+    b.addEventListener('click', () => { clearTimeout(toast.t); el.classList.remove('on'); action.run(); });
+    el.append(b);
+    if (action.hint) el.append(Object.assign(document.createElement('kbd'), { textContent: action.hint }));
+    el.onmouseenter = () => clearTimeout(toast.t);
+    el.onmouseleave = () => { toast.t = setTimeout(() => el.classList.remove('on'), 1600); };
+  }
   clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove('on'), ms);
 }
 

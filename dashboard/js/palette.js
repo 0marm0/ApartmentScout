@@ -4,6 +4,8 @@
 import { S, on, store, openDrawer, label, cost, score, isSaved, toggleSave, toggleCompare, setFilter, openSettings, filtered, openWizard } from './app.js';
 import { flipTheme } from './shell.js';
 import { $, esc, money, ICONS, imagesOf, imgFallback, scoreColor, toast } from './util.js';
+import { nlItem } from './features/nlsearch.js';   // [feature C] plain-language search row
+import { extraActions } from './features/palette-actions.js';   // [feature C] undo, redo, tour, cheat sheet
 
 const VIEWS = [['map', 'Map', 'Pins, commute surface and price tags'], ['list', 'Shortlist', 'Every home in a sortable table'], ['compare', 'Compare', 'Up to four homes side by side'],
   ['unit', 'Unit 3D', 'The unit in its block, with the sun'], ['plan', 'Floor plan', 'Plan studio and tracer'],
@@ -86,6 +88,7 @@ function build(q) {
   const out = [], t = q.trim(), nq = norm(t);
   const has = (s) => !nq || norm(s).includes(nq);
   if (t) {
+    const ask = nlItem(t); if (ask) out.push(ask);   // [feature C]
     const n = S.listings.filter((L) => `${L.building} ${L.unit} ${L.address} ${L.neighborhood}`.toLowerCase().includes(t.toLowerCase())).length;
     out.push({ group: 'Filter', id: 'filter', icon: IC.filter, title: `Show the homes matching <q>${esc(t)}</q>`, sub: n ? `${n} home${n === 1 ? '' : 's'} by name, address or neighbourhood` : 'No home matches: the list would be empty', meta: '<kbd>↵</kbd>',
       run: () => applyFilter(t) });
@@ -110,11 +113,12 @@ function build(q) {
     innerWidth <= 1180 && ['Filters and ranking weights', 'Open the filter rail', IC.rail, '', () => { if (!['map', 'list'].includes(S.view)) location.hash = 'map'; document.body.classList.add('rail-open'); }],
     ['Export the filtered homes as CSV', `${filtered().length} homes`, IC.dl, '', () => $('csvBtn')?.click()],
     ['Keyboard shortcuts', 'Every key the dashboard listens for', IC.key, '?', () => dispatchEvent(new KeyboardEvent('keydown', { key: '?' }))],
+    ...extraActions(),   // [feature C]
   ].filter(Boolean);
   for (const [n, d, ic, k, run] of acts) if (has(n) || has(d)) out.push({ group: 'Actions', id: 'a:' + n, name: n, icon: ic, title: esc(n), sub: esc(d), meta: k ? `<kbd>${esc(k)}</kbd>` : '', run });
   // a query that names a view or an action ("compare", "light") puts those commands ahead of the text filter
   const strong = nq.length >= 3 && out.some((it) => it.name && norm(it.name).split(/\s+/).some((w) => w.startsWith(nq)));
-  const rank = strong ? { 'Go to': 0, Actions: 1, Filter: 2, Homes: 3 } : { Recent: 0, 'Top matches': 1, Filter: 0, Homes: 1, 'Go to': 2, Actions: 3 };
+  const rank = strong ? { Ask: -1, 'Go to': 0, Actions: 1, Filter: 2, Homes: 3 } : { Ask: -1, Recent: 0, 'Top matches': 1, Filter: 0, Homes: 1, 'Go to': 2, Actions: 3 };
   return out.map((it, i) => [rank[it.group] ?? 9, i, it]).sort((a, b) => a[0] - b[0] || a[1] - b[1]).map((x) => x[2]);
 }
 function applyFilter(t) {
@@ -135,7 +139,7 @@ export function openPalette(initial = '') {
     root = document.createElement('div');
     root.className = 'pl-scrim'; root.hidden = true;
     root.innerHTML = `<div class="pl" role="dialog" aria-modal="true" aria-label="Command menu">
-      <div class="pl-in">${IC.search}<input id="plQ" type="text" role="combobox" aria-expanded="true" aria-controls="plList" aria-autocomplete="list" autocomplete="off" spellcheck="false" placeholder="Search homes, views and actions"><kbd>esc</kbd></div>
+      <div class="pl-in">${IC.search}<input id="plQ" type="text" role="combobox" aria-expanded="true" aria-controls="plList" aria-autocomplete="list" autocomplete="off" spellcheck="false" placeholder="Search homes, or ask: 2 bd under 5k by subway"><kbd>esc</kbd></div>
       <div class="pl-list" id="plList" role="listbox" aria-label="Results"></div>
       <div class="pl-foot"><span><kbd>↑</kbd><kbd>↓</kbd> move</span><span><kbd>↵</kbd> open</span><span><kbd>esc</kbd> close</span><span class="sp"></span><span>${S.listings.length} homes</span></div></div>`;
     document.body.append(root);

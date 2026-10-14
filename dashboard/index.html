@@ -24,6 +24,12 @@
 <link rel="stylesheet" href="css/views/research.css">
 <link rel="stylesheet" href="css/shell.css">
 <link rel="stylesheet" href="css/glass.css">
+<link rel="stylesheet" href="css/accents.css">
+<link rel="stylesheet" href="css/empty.css">
+<link rel="stylesheet" href="css/nlsearch.css">
+<link rel="stylesheet" href="css/cheatsheet.css">
+<link rel="stylesheet" href="css/coach.css">
+<link rel="stylesheet" href="css/comfort.css">
 <script src="vendor/maplibre-gl/maplibre-gl.js"></script>
 <script type="importmap">
 { "imports": {
@@ -69,6 +75,30 @@
         <hr>
         <button type="button" role="menuitem" id="mnPalette"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5L14 14"/></svg><span>Search or jump to</span><kbd>⌘K</kbd></button>
         <button type="button" role="menuitem" id="mnKeys"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><rect x="1.5" y="4" width="13" height="8.5" rx="1.8"/><path d="M4 7h1M7 7h1M10 7h2M4.5 10h7"/></svg><span>Keyboard shortcuts</span><kbd>?</kbd></button>
+        <!-- [feature C: personalisation and comfort] accent, golden-hour tint, comfort switches, text size and the tour. Wired in js/features/settings-menu.js; data-keep keeps the menu open while you choose. -->
+        <hr>
+        <div class="mn-h" id="mnAccLbl">Accent</div>
+        <div class="mn-swatches" role="group" aria-labelledby="mnAccLbl">
+          <button type="button" role="menuitemradio" aria-checked="true" data-keep data-accent="iris" title="Iris"><i></i>Iris</button>
+          <button type="button" role="menuitemradio" aria-checked="false" data-keep data-accent="jade" title="Jade"><i></i>Jade</button>
+          <button type="button" role="menuitemradio" aria-checked="false" data-keep data-accent="amber" title="Amber"><i></i>Amber</button>
+          <button type="button" role="menuitemradio" aria-checked="false" data-keep data-accent="rose" title="Rose"><i></i>Rose</button>
+        </div>
+        <button type="button" role="menuitemcheckbox" aria-checked="false" data-keep class="mn-row" id="mnGolden"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><circle cx="8" cy="8" r="2.8"/><path d="M8 1.5v1.6M8 12.9v1.6M1.5 8h1.6M12.9 8h1.6M3.4 3.4l1.1 1.1M11.5 11.5l1.1 1.1M3.4 12.6l1.1-1.1M11.5 4.5l1.1-1.1"/></svg><span class="t">Golden-hour map tint<small id="mnGoldenSub">Warms the map as the sun gets low</small></span><i class="mn-switch" aria-hidden="true"></i></button>
+        <hr>
+        <div class="mn-h" id="mnComfLbl">Comfort</div>
+        <button type="button" role="menuitemcheckbox" aria-checked="false" data-keep class="mn-row" id="mnTransp" data-comfort="transparency"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="M8 2.2l5.6 3.1L8 8.4 2.4 5.3z"/><path d="M2.4 8.1L8 11.2l5.6-3.1M2.4 10.8L8 13.9l5.6-3.1"/></svg><span class="t">Reduce transparency<small>Solid panels instead of glass</small></span><i class="mn-switch" aria-hidden="true"></i></button>
+        <button type="button" role="menuitemcheckbox" aria-checked="false" data-keep class="mn-row" id="mnContrast" data-comfort="contrast"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><circle cx="8" cy="8" r="5.6"/><path d="M8 2.4a5.6 5.6 0 010 11.2z" fill="currentColor"/></svg><span class="t">High contrast<small>Stronger text and borders</small></span><i class="mn-switch" aria-hidden="true"></i></button>
+        <button type="button" role="menuitemcheckbox" aria-checked="false" data-keep class="mn-row" id="mnMotion" data-comfort="motion"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="M1.8 8c1.4-3.2 2.9-3.2 4.2 0s2.9 3.2 4.2 0 2.1-2.2 4-1"/></svg><span class="t">Reduce motion<small>No sliding, fading or easing</small></span><i class="mn-switch" aria-hidden="true"></i></button>
+        <div class="mn-h" id="mnTextLbl">Text size</div>
+        <div class="mn-seg text-size" role="group" aria-labelledby="mnTextLbl">
+          <button type="button" role="menuitemradio" aria-checked="true" data-keep data-text="m" aria-label="Default text size" title="Default">A</button>
+          <button type="button" role="menuitemradio" aria-checked="false" data-keep data-text="l" aria-label="Large text" title="Large">A</button>
+          <button type="button" role="menuitemradio" aria-checked="false" data-keep data-text="xl" aria-label="Larger text" title="Larger">A</button>
+        </div>
+        <hr>
+        <button type="button" role="menuitem" id="mnTour"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M8 7.2v3.6M8 5.2v.1"/></svg><span>Take the tour</span></button>
+        <!-- end [feature C] -->
       </div>
     </div>
   </div>
