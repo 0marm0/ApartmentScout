@@ -47,10 +47,10 @@ SHOTS = [
     ("unit-maybury", "?date=2026-06-21&min=1170&mode=window#unit/the-maybury-2204", (1600, 1000), [], 10000, "#stage"),
     ("plan-bird", "?date=2026-10-15&pmin=780#plan/emerald-green-1211", (1600, 1000), [], 8000, None),
     ("plan-top", "?date=2026-06-21&pmin=1020#plan/emerald-green-1211", (1600, 1000), [("click", "[data-v=top]")], 8000, "#pstage"),
-    ("records", "#records/emerald-green-1211", (1600, 1000), [("tall", "#view-records")], 4000, None),
+    ("records", "#research/records/emerald-green-1211", (1600, 1000), [("tall", "#view-research")], 4000, None),
     ("research", "#research/queue", (1600, 1000), [], 4000, None),
     ("research-media", "#research/media", (1600, 1000), [], 6000, None),
-    ("tours", "#tours", (1600, 1000), [("eval", PICKS), ("eval", "location.reload()")], 4000, None),
+    ("tours", "#list/tours", (1600, 1000), [("eval", PICKS), ("eval", "location.reload()")], 4000, None),
     ("mobile-map", "?layer=commute#map", (420, 900), [], 9000, None),
     # newer features
     ("map-bus", "?mode=bus#map", (1600, 1000), [], 9000, None),

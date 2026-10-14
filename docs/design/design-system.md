@@ -12,6 +12,7 @@ reference for the dashboard and the landing page. The tokens live in `dashboard/
 3. **Numbers first.** Prices and minutes are the largest type on a card, set in tabular figures so columns line up.
 4. **Show uncertainty.** Unknown facts look unknown (hatched bars, "?" compass, "Exposure unknown"), never like zero.
 5. **One shell.** Every view lives inside the same top bar, stats strip, rail and drawer.
+6. **Compact first.** Chrome is thin: a 48 px top bar and a 28 px stats subline. Settings (theme, export, shortcuts) live in one menu, not as loose buttons.
 
 ## Type
 
@@ -28,8 +29,7 @@ reference for the dashboard and the landing page. The tokens live in `dashboard/
 
 **Surfaces (dark).** `--ground #08090c` (page), `--surface-1 #0e1015` (bars, rail, drawer),
 `--surface-2 #13161d` (inputs, tiles), `--surface-3 #1a1e27` (raised chips, tracks).
-Borders are hairlines: `--line` 6.5% white, `--line-strong` 11% white. Floating panels use
-`--overlay` with an 18 px backdrop blur.
+Borders are hairlines: `--line` 6.5% white, `--line-strong` 11% white. Floating panels use liquid glass (below).
 
 **Ink.** `--ink` for primary text, `--ink-2` for secondary, `--ink-3` for labels, `--ink-4` for disabled and glyph strokes.
 
@@ -55,8 +55,20 @@ separate mask. The light theme swaps the same layer paints.
 
 - 4 px grid: `--s-1` 4 … `--s-10` 40.
 - Radius: 6 (badges and inputs), 10 (tiles, buttons), 14 (cards, floating panels), 20 (drawer), pill.
+- Inner radius: a segment inside a 10 px control with 3 px padding is `--r-inner` (7 px), the outer radius minus the padding.
 - Elevation: `--shadow-1` for pressed or selected segments, `--shadow-2` for floating map panels and
   price tags, `--shadow-3` for the drawer and popovers. In dark mode each adds a 1 px inner top highlight.
+
+## Liquid glass
+
+Floating panels over the map (layer switch, legend, map controls, mini card, readout, hover card), the settings
+menu and the stats popover, and the drawer's sticky header are glass: a tinted translucent surface
+(`--glass-bg` over `--glass-tint`), a 22 px backdrop blur with saturation (`--glass-blur`), a 1 px inner highlight on
+the top edge (`--glass-hi`), a soft outer shadow (`--glass-shadow`) and a faint edge gradient (`--glass-edge-a` at the
+top-left rim, `--glass-edge-b` at the bottom-right). Both themes have their own values. The base alpha is high (0.80 dark,
+0.84 light) so text keeps AA over the brightest commute colours, and secondary ink inside glass is lifted
+(`--ink-3-glass`). With `prefers-reduced-transparency` or without `backdrop-filter` every panel is its solid
+surface. Price tags stay solid: they are data, not chrome. Rules live in `dashboard/css/glass.css`.
 
 ## Motion
 
@@ -69,13 +81,13 @@ separate mask. The light theme swaps the same layer paints.
 | `--ease-out` | `cubic-bezier(.2,.8,.2,1)` | Default |
 | `--ease-spring` | `cubic-bezier(.34,1.36,.64,1)` | Switch knobs, price-tag hover, save star |
 
-Map moves use `easeTo` at 700 ms. Everything respects `prefers-reduced-motion`.
+Map moves use `easeTo` at 700 ms. Interactive controls lift 0.5 px on hover, press to 0.985 and show a 2 px accent ring on keyboard focus. Everything respects `prefers-reduced-motion`.
 
 ## App shell
 
 ```
-┌ top bar 56: brand · search switcher · view tabs · search (/) · export · theme ───────────────┐
-├ stats strip 44: tracked · match filters · eligible · shortlisted · median $/mo · median min · top match ┤
+┌ top bar 48: brand · search switcher · 6 tabs · search (/) · settings menu ───────────────────┐
+├ stats strip 28: tracked · match filters · eligible · shortlisted · median $/mo · median min · top match ┤
 ├ rail 288 ──────┬ results 432 ──────────┬ stage (map or view) ───────────────┬ drawer 448 (floats) ┤
 │ budget tiers   │ count + sort          │ layer switch          map controls │ photos / unit glyph │
 │ cost histogram │ photo cards           │                                    │ title, score ring   │
@@ -86,9 +98,10 @@ Map moves use `easeTo` at 700 ms. Everything respects `prefers-reduced-motion`.
 └────────────────┴───────────────────────┴────────────────────────────────────┴ action bar ─────────┘
 ```
 
-Below 1180 px the rail becomes a sheet behind a Filters button; below 760 px the map sits on top and
-the results become a bottom sheet. Shortlist, Compare, Unit 3D, Floor plan, Records and Tours replace
-the stage (and, where they need the width, the results column) inside the same shell.
+Below 1180 px the rail becomes a sheet behind a Filters button and the secondary stats fold into an "all figures"
+popover; below 760 px the map sits on top and the results become a bottom sheet. Shortlist (with Tours as a sub-tab),
+Compare, Unit 3D, Floor plan and Research (with Records as a sub-tab) replace the stage (and, where they need the width,
+the results column) inside the same shell.
 
 ## Components
 
@@ -99,7 +112,8 @@ the stage (and, where they need the width, the results column) inside the same s
   lit in `--sun`, and a compass with the window exposure as sun wedges, or "?" when unknown.
 - **Score ring.** 38 px on cards, 64 px in the drawer; arc in the score scale, number in 650 weight.
 - **Price tag.** Map marker for the top twelve and saved listings: score dot + short price; tags that
-  collide with a better-ranked tag hide, the pin stays.
+  collide with a better-ranked tag hide, the pin stays. A starred home wears a gold ring and glow, is never hidden by
+  decluttering, never joins a cluster bubble and draws above the other tags.
 - **Drawer.** Floating card with photo carousel or hero glyph, sticky action bar (Unit 3D, Records,
   Compare, Listing).
 - **Weight slider.** Re-ranks every card and pin while dragging; shows each weight as a share of 100%.

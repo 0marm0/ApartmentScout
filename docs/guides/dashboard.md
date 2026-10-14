@@ -8,9 +8,10 @@ design rules in [the design system](../design/design-system.md).
 
 ## Views
 
-Every view sits in the same shell: a top bar with the search name, view tabs, search (`/`), a CSV export of the
-filtered listings and the theme button; a stats strip (tracked, matching, eligible, shortlisted, median cost and commute, top
-match); and, on the Map and Shortlist, the filter rail.
+Every view sits in the same shell: a top bar with the search name, six view tabs, search (`/`) and a settings
+menu (theme: system, dark or light; search settings; CSV export of the filtered listings; picks backup; shortcuts); a
+thin stats strip under it (tracked, matching, eligible, shortlisted, median cost and commute, top match; on narrow screens
+the secondary figures fold into an "all figures" popover); and, on the Map and Shortlist, the filter rail.
 
 | # | View | What it shows |
 |---|---|---|
@@ -19,11 +20,12 @@ match); and, on the Map and Shortlist, the filter rail.
 | 3 | **Compare** | Up to four listings in lettered columns with grouped rows (money, space, commute, building, light, score), the best value in each row marked, unknowns never counted as the worst, a cost-against-space scatter with the value frontier and a per-dimension chart. Deep link: `#compare/id,id`. |
 | 4 | **Unit 3D** | The unit's building and its neighbours from the site model. Orbit, Window, Inside (the floor plan's rooms at the real slab height), north-up Plan and Top cameras; layer toggles; a day strip comparing your floor with a compare floor and naming the building that shades the window; bay windows; proposed and filed buildings; what the window sees; sun path against the skyline; sun hours by floor and month; units in the building; assumptions and sources; PNG snapshot and GLB export. |
 | 5 | **Floor plan** | The studio for a plan JSON: synced 2D plan and 3D (Both / 2D / 3D), sun patches through each window, furniture from a cited catalogue with drag, snap, rotate, duplicate and undo, fit checks graded clear / tight / blocked, TV viewing distances, layout presets, eye-level cameras and walk mode, layout save and load, PNG and GLB export, and a side-by-side plan comparison. See [floor plans](floor-plans.md). |
-| 6 | **Records** | A due-diligence report per building: PLUTO facts, record and street-noise scores, a generated "What matters" table with severity and report/finding labels, timelines, 311 by hour and category, collapsible ledgers linked to the raw rows, and the research notes. Prints cleanly. |
-| 7 | **Tours** | Saved picks on a tier board (S, A, B, C, Pass) by drag or buttons, tour times and notes, a nearest-next visiting order with walking minutes, a Google Maps route, printable call sheets, and picks backup and restore. |
-| 8 | **Research** | The finalist standard and coverage gaps, then tabs: a priority queue (missing and stale facts, lint flags, score swing, copyable questions), new and changed listings, gone fast, the building watchlist and a media gallery of every image with its credit. Deep links: `#research/queue`, `new`, `gone`, `watch`, `media`. See [research quality](research-quality.md). |
+| 6 | **Research > Records** | A due-diligence report per building: PLUTO facts, record and street-noise scores, a generated "What matters" table with severity and report/finding labels, timelines, 311 by hour and category, collapsible ledgers linked to the raw rows, and the research notes. Prints cleanly. Deep links: `#research/records/<id>` (the old `#records/<id>` redirects here). |
+| 7 | **Shortlist > Tours** | Saved picks on a tier board (S, A, B, C, Pass) by drag or buttons, tour times and notes, a nearest-next visiting order with walking minutes, a Google Maps route, printable call sheets, and picks backup and restore. Deep link: `#list/tours` (the old `#tours` redirects here). |
+| 8 | **Research** | The finalist standard and coverage gaps, then tabs: a priority queue (missing and stale facts, lint flags, score swing, copyable questions), new and changed listings, gone fast, the building watchlist and a media gallery of every image with its credit. Deep links: `#research/queue`, `new`, `gone`, `watch`, `media`, `records`. See [research quality](research-quality.md). |
 
-The number is the keyboard shortcut. Views load on first visit; `#<view>/<listing-id>` opens a view on
+The tabs are Map, Shortlist, Compare, Unit 3D, Floor plan and Research; Tours is a sub-tab of Shortlist and Records a
+sub-tab of Research. The numbered rows above are the sections, not the shortcuts (`1` to `6` are the tabs). Views load on first visit; `#<view>/<listing-id>` opens a view on
 a listing (for example `#unit/emerald-green-1211` or `#plan/emerald-green-1211`).
 
 ## Keyboard
@@ -35,8 +37,8 @@ a listing (for example `#unit/emerald-green-1211` or `#plan/emerald-green-1211`)
 | `j` / `k` | Next or previous listing on the Map (opens it in the drawer) |
 | `s` | Save the open listing to your picks |
 | `c` | Add the open listing to Compare |
-| `1`–`8` | Switch view (Map, Shortlist, Compare, Unit 3D, Floor plan, Records, Tours, Research) |
-| `t` | Light or dark theme |
+| `1`–`6` | Switch tab (Map, Shortlist, Compare, Unit 3D, Floor plan, Research) |
+| `t` | Flip light and dark (the settings menu also has System) |
 | `Esc` | Close the drawer or the help |
 
 The Shortlist adds arrow keys, `Enter`, `s` and `c` on the focused row. Unit 3D adds `p` (play or pause

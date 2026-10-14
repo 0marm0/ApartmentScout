@@ -38,7 +38,7 @@ included as a worked example.
 | **Building photos** | `apartmentscout photos` finds freely licensed Wikimedia Commons photos of each building under strict matching rules and keeps the author and licence with every image. Without one, the dashboard shows an aerial view of the building. |
 | **Spreadsheet export** | `export --xlsx` writes a workbook whose Weights sheet drives live SCORE and RANK formulas, with outreach, to-verify, upfront-charges and sources sheets. `--csv` too, both guarded against formula injection. |
 | **Agent handoff kit** | `handoff pack / verify / import` moves a search between agents as checksummed packs. Imports append claims, keep conflicts on disk and never let an older claim overwrite a newer fact. |
-| **A dashboard you own** | Eight views: Map, Shortlist, Compare, Unit 3D, Floor plan, Records, Research and Tours. Dark first with a light theme, works on a phone. Serve it locally, host it on GitHub Pages, or build one self-contained HTML file. No server code, accounts or API keys. |
+| **A dashboard you own** | Six tabs: Map, Shortlist (with Tours), Compare, Unit 3D, Floor plan and Research (with Records). Dark first with a light and a system theme, liquid-glass panels over the map, works on a phone. Serve it locally, host it on GitHub Pages, or build one self-contained HTML file. No server code, accounts or API keys. |
 
 ## Quick start
 
