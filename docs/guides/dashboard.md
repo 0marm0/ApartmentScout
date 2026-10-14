@@ -47,11 +47,75 @@ Saved picks, tiers, tour notes, compare, filters and weights are kept in your br
 Use **Back up picks** on the Tours view to keep them as a file, and **Restore** to load them in another
 browser.
 
+## New search wizard
+
+A step-by-step dialog for starting a search (or editing every criterion of the open one) with manual controls. It
+asks the questions in [`config/intake.yaml`](../../config/intake.yaml), in that order, so it matches what an agent
+or `apartmentscout init --interactive` asks, and it writes the same `criteria.yaml`.
+
+**Open it** from the search switcher in the top bar (*New search*, *Edit all criteria*, *Search settings*, and any
+other search in the searches folder when the page is served), from the folder button in the top bar on narrow
+screens, from the command palette (`⌘K`, "New search"), from the empty state when no data or no listings are
+loaded, or with `?new=1` / `?wizard=edit` (add `&step=3` to jump to a step).
+
+| Step | Sets |
+|---|---|
+| Basics | `search.name`, `search.city` (profiles in `config/cities/`), `search.timezone`, `search.map_center`, `search.move_in` |
+| Places | `commute.destinations`: name, address, a pin placed by clicking the map (or typed coordinates), arrive-by, longest trip, weight, usual mode |
+| Money | `budget.basis` (how fees count), `budget.tiers`, `budget.hard_max`; a target rent fills sensible tiers |
+| Home | `unit.min_beds` and the floor / good / great square feet that score 0 / 50 / 100 |
+| Amenities | `must_have`, `strongly_prefer`, `nice_to_have` from the amenity keys, plus your own keys |
+| Building and interior | Importance (not, somewhat, very, essential) of a luxury building, renovated interior, new appliances, view, light and quiet. Each answer sets the weight of its dimension and they add up (`interior` counts toward `building` until the scorer has that dimension). Also an optional `building_ratings` map, building name to 1-5, to add to as you go |
+| Weights | `scoring.preset` and `weights`: pick a preset, then adjust sliders that show each dimension's live share of the total. The dimensions are read from the loaded data (`scoring.dimensions`), so new ones appear without a change here |
+| Review | The criteria.yaml, a diff against the open search, the command lines, and the actions below |
+
+Every field is checked as you type, with the message under the field; *Next* will not move on while the step has
+a problem. `Esc` closes, `Enter` in a field goes to the next step, the arrow keys move inside a choice group, and
+`Tab` stays inside the dialog. On a phone it becomes a full-height sheet with a progress bar. A half-finished draft is
+kept in your browser's local storage and offered again the next time you open the wizard.
+
+**What the Review step can do depends on where the page is served from:**
+
+| | Served by `apartmentscout serve` | GitHub Pages, a standalone file, any static server |
+|---|---|---|
+| New search | *Create search* makes `searches/<folder>/` (same as `init`) and can switch the dashboard to it | Download `criteria-<name>.yaml`, copy it, or copy the commands |
+| Edit all criteria | *Save criteria.yaml* writes the open search's file (old one kept in `backups/`), then *Re-score now* runs score and build with progress | Download or copy; apply the file by hand |
+| Preview | *Apply as preview* re-ranks the loaded data in this browser with the new criteria (when the city matches the open search); files stay unchanged | The same |
+
+Saving rewrites `criteria.yaml` from the wizard's fields: anything the wizard does not ask about (transit feeds, tiles,
+landmarks, custom presets) is carried over, but comments in the old file are not, which is what the backup is for.
+
+### Local API
+
+`apartmentscout serve` adds a small JSON API for the wizard. It exists only for the page this process serves:
+
+- it listens on `127.0.0.1` only, refuses requests whose `Host` is not that address (or `localhost`) on its own port and
+  any with another site's `Origin`, and answers no CORS preflight;
+- every call needs the per-run random token the server writes into the page (`<meta name="as-token">`) in an
+  `X-AS-Token` header; the page has no token when it is served any other way, so the controls never appear there;
+- everything written is validated first with the same rules as `apartmentscout criteria --check` (and so as
+  `config.load_criteria`); problems come back as a list and nothing is written;
+- writes stay inside the open search folder (`criteria.yaml`, `backups/`, keeping the newest 30) or create one new
+  folder directly under the searches folder, named with lowercase letters, digits and hyphens. Existing folders are
+  never overwritten. The bundled `examples/` searches are read-only.
+
+| Call | Does |
+|---|---|
+| `GET /api/session` | Open search, `can_save`, other searches, city profiles |
+| `GET /api/criteria`, `POST /api/criteria` | Read, or validate and save, the open search's `criteria.yaml` |
+| `POST /api/validate` | Validate YAML text without writing |
+| `POST /api/searches`, `POST /api/searches/activate` | Create a search folder from criteria, or switch the dashboard to one |
+| `POST /api/rescore`, `GET /api/jobs/<id>` | Score and rebuild in a background thread; poll for progress |
+
+`--no-api` serves the files only; `--searches-dir DIR` (or `$APARTMENTSCOUT_SEARCHES`) says where new searches go
+(default: the folder holding the open search when it is called `searches`, else `./searches`).
+
 ## Run it
 
 ```bash
 apartmentscout serve --search searches/my-search      # builds, serves and opens the browser
 apartmentscout serve --port 8800 --no-open
+apartmentscout serve --no-api                         # files only: no save, create or re-score from the page
 ```
 
 **Private searches stay out of the repo.** For the bundled example, `serve` exports into
@@ -73,6 +137,7 @@ URL options:
 | `?layer=commute` / `noise` / `rent` / `score` / `none` | Start on a map layer |
 | `?basemap=raster` | Use the raster fallback basemap instead of vector tiles |
 | `?open=<listing-id>` | Open a listing in the drawer |
+| `?new=1` / `?wizard=edit` | Open the New search wizard (or edit the open search); `&step=3` picks the step |
 | Unit 3D: `?date=2026-12-21&min=750&floor=21&mode=window` | Date, minutes after midnight, floor and camera (`orbit`, `window`, `inside`, `plan`, `top`) |
 | Floor plan: `?date=2026-06-21&pmin=1020` | Date and minutes after midnight for the sun |
 

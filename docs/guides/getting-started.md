@@ -30,7 +30,12 @@ apartmentscout init searches/my-search --city nyc     # or leave --city off outs
 export APARTMENTSCOUT_SEARCH=searches/my-search       # or pass --search to every command
 ```
 
-Edit `searches/my-search/criteria.yaml`: budget tiers, must-haves, commute destinations and modes,
+You do not have to hand-edit the file. Add `--interactive` to answer the same questions on the terminal, pass a
+file you made elsewhere with `--criteria answers.yaml`, or run `apartmentscout serve` and use the dashboard's
+**New search** wizard (see [the dashboard guide](dashboard.md#new-search-wizard)). `apartmentscout criteria --check
+searches/my-search/criteria.yaml` validates any of them.
+
+To edit by hand: `searches/my-search/criteria.yaml` holds budget tiers, must-haves, commute destinations and modes,
 a weight preset and any weights you want to change. See [criteria](../../config/criteria.example.yaml)
 for every option and the [methodology](methodology.md) for what each weight does. `searches/` is
 git-ignored, so the folder stays on your machine.

@@ -51,7 +51,7 @@ pip install -e .                                       # ".[xlsx]" adds the work
 apartmentscout serve --search examples/nyc-2026
 
 # start your own search
-apartmentscout init searches/my-search --city nyc      # leave off --city outside New York
+apartmentscout init searches/my-search --city nyc      # leave off --city outside New York; add --interactive to be asked
 export APARTMENTSCOUT_SEARCH=searches/my-search
 # edit searches/my-search/criteria.yaml, then add listings (CSV, JSON or your agent)
 apartmentscout import my-listings.csv
@@ -71,6 +71,24 @@ Requires Python 3.10+. Everything built in uses free public data: NYC Open Data,
 OpenStreetMap, Wikimedia Commons and transit agencies' GTFS feeds.
 
 ![The CLI: commute router, site model and the ranked top ten](docs/images/cli.png)
+
+## Start a new search
+
+Three ways in, one `criteria.yaml`. They ask the same questions in the same order
+([`config/intake.yaml`](config/intake.yaml): each has a why, a default and the key it sets), so you can mix them.
+
+- **In the app.** Run `apartmentscout serve`, open the search switcher in the top bar and choose *New search*
+  (also `?new=1`, and the search box's *New search* command). A step-by-step wizard sets the basics, places (click
+  the map to drop a pin), money, home size, amenities, building and interior taste, and ranking weights, checks
+  every field as you type, keeps a draft if you close it, and ends in a review with the criteria.yaml and a diff
+  against the search you have open. Served locally it creates the search folder or saves `criteria.yaml` for you
+  (the old file is backed up) and can re-score in place; on GitHub Pages or a standalone file it downloads or
+  copies the file and the commands instead.
+- **With an agent.** Ask it to start a search: it follows the same questionnaire, shows you what it heard, and
+  writes the file with `apartmentscout init searches/<name> --criteria answers.yaml`.
+- **In the terminal.** `apartmentscout init searches/my-search --city nyc --interactive` asks the questions with
+  defaults you can accept with Enter. Anywhere: `apartmentscout criteria --check criteria.yaml` validates a file and
+  prints a summary.
 
 ## Use it with an AI agent
 

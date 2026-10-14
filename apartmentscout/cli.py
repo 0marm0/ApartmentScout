@@ -1,6 +1,7 @@
 """ApartmentScout command line.
 
-    apartmentscout init my-search --city nyc       start a search folder
+    apartmentscout init my-search --city nyc       start a search folder (--interactive asks, --criteria FILE starts from a file)
+    apartmentscout criteria --check [FILE]         validate criteria.yaml and print a summary
     apartmentscout import listings.csv             add listings from CSV/JSON
     apartmentscout geocode                         add coordinates (and NYC BBL/BIN)
     apartmentscout commute                         commute grids + per-listing times by mode
