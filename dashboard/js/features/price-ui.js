@@ -33,9 +33,10 @@ export function trendHTML(L) {
 export function hoverTrendHTML(L) {
   const s = trendOf(L); if (!s) return '';
   const p = sparkPath(s, 96, 24, 3), chip = dropChip(s);
-  const moved = s.drop > 0 || s.rose > 0 ? `changed ${day(s.pts[s.pts.length - 1].t)}` : '';
-  const span = s.pts.length > 2 ? `${s.pts.length} prices since ${day(s.pts[0].t)}` : `since ${day(s.pts[0].t)}`;
-  return `<div class="ph-hover ${toneOf(s)}" title="${esc(priceStory(s))}"><svg class="ph-s" width="96" height="24" viewBox="0 0 96 24" aria-hidden="true"><path d="${p.d}"/><circle cx="${p.x}" cy="${p.y}" r="2.4"/></svg><span>${chip ? `<b class="ph-d">${esc(chip)}</b> ` : ''}<span class="faint">${esc([moved, span].filter(Boolean).join(' · '))}</span></span></div>`;
+  const when = day(s.pts[s.pts.length - 1].t);
+  const l1 = chip ? `<b class="ph-d">${esc(chip)}</b> ${esc(when)}` : s.rose > 0 ? `Rose $${Math.round(s.rose).toLocaleString('en-US')} · ${esc(when)}` : '';
+  const l2 = s.pts.length > 2 ? `${s.pts.length} prices since ${day(s.pts[0].t)}` : `Since ${day(s.pts[0].t)}`;
+  return `<div class="ph-hover ${toneOf(s)}" title="${esc(priceStory(s))}"><svg class="ph-s" width="96" height="24" viewBox="0 0 96 24" aria-hidden="true"><path d="${p.d}"/><circle cx="${p.x}" cy="${p.y}" r="2.4"/></svg><span class="ph-t">${l1 ? `<span class="ph-l1">${l1}</span>` : ''}<span class="faint">${esc(l2)}</span></span></div>`;
 }
 
 /** Load history.json's price history (only when the build wrote it) and re-render the list once. */

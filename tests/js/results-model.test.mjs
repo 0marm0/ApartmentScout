@@ -244,7 +244,7 @@ test('includeIndex keeps a focused item rendered while it is near the window and
   assert.deepEqual(includeIndex([20, 30], null, 100), [20, 30]);
 });
 
-test('flip plan: visible movers slide, far and invisible ones are clamped or skipped, new ones enter', () => {
+test('flip plan: visible movers slide, unseen ones are skipped or just appear, new ones enter', () => {
   const before = new Map([['a', 0], ['b', 133], ['c', 266], ['far', 9000], ['gone', 400]]);
   const after = new Map([['b', 0], ['a', 133], ['c', 266], ['far', 9133], ['new', 399], ['jump', 133 * 2 + 3000]]);
   const p = flipPlan(before, after, { top: 0, height: 870 });
@@ -254,9 +254,16 @@ test('flip plan: visible movers slide, far and invisible ones are clamped or ski
   assert.equal(byKey.c, undefined, 'did not move');
   assert.equal(byKey.far, undefined, 'off-screen before and after');
   assert.deepEqual(p.entering, ['new']);
-  // a visible item arriving from far away is clamped
+  // a card arriving from far away does not fly through the others: it appears with a short rise
   const q = flipPlan(new Map([['m', 6000]]), new Map([['m', 100]]), { top: 0, height: 870 });
-  assert.equal(q.moves[0].dy, 520); assert.equal(q.moves[0].far, true);
+  assert.deepEqual(q.moves, [{ key: 'm', dy: 40, appear: true }]);
+  const r = flipPlan(new Map([['m', -4000]]), new Map([['m', 100]]), { top: 0, height: 870 });
+  assert.deepEqual(r.moves, [{ key: 'm', dy: -40, appear: true }]);
+  // a card that was on screen and leaves for far away slides out, clamped to about a viewport
+  const l = flipPlan(new Map([['m', 100]]), new Map([['m', 9000]]), { top: 0, height: 870 });
+  assert.equal(l.moves.length, 1);
+  assert.equal(l.moves[0].appear, false);
+  assert.equal(l.moves[0].dy, -990);
 });
 
 test('nearest scroll and keyboard stepping', () => {
