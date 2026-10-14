@@ -131,6 +131,8 @@ function wireDrag() {
     const id = src?.dataset.id, L = id && byId(id);
     if (!L) return;
     dragId = id; dragFrom = slot ? +slot.dataset.slot : null;
+    // MapLibre cancels dragstart on its marker elements: a price tag's drag is handled here, in the capture phase, and goes no further
+    if (src.classList.contains('price-tag')) e.stopPropagation();
     try {
       e.dataTransfer.setData(MIME, id); e.dataTransfer.setData('text/plain', id);
       e.dataTransfer.effectAllowed = slot ? 'move' : 'copyMove';
@@ -139,12 +141,12 @@ function wireDrag() {
     // the tray renders while the drag is in the air; a slot being dragged is not re-rendered (that would cancel the drag)
     if (dragFrom != null) document.body.classList.add('dragging-home');
     else requestAnimationFrame(() => { if (dragId) arm(true); });
-  });
+  }, true);
   document.addEventListener('dragend', () => { dragId = null; dragFrom = null; clearOver(); if (el) arm(false); });
   el.addEventListener('dragover', (e) => {
     if (!dragId) return;
     e.preventDefault();
-    e.dataTransfer.dropEffect = dragFrom != null ? 'move' : 'copy';
+    e.dataTransfer.dropEffect = dragFrom != null || e.dataTransfer.effectAllowed === 'move' ? 'move' : 'copy';   // a tour card allows only a move
     clearOver();
     const s = slotAt(e);
     if (!s) { el.classList.add('over'); return; }

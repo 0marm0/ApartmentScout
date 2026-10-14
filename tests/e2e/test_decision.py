@@ -162,6 +162,28 @@ def test_tray_collects_dragged_homes_and_reorders_them(open_page) -> None:
     assert not s.take()
 
 
+def test_tray_takes_a_dragged_map_tag_and_a_table_row(open_page, webgl) -> None:
+    if not webgl:
+        pytest.skip("no WebGL in this browser: the map draws no price tags")
+    s = open_page("#map")
+    s.page.wait_for_selector(".price-tag[data-id]:visible", timeout=SLOW)
+    s.page.wait_for_selector("#tray .tray-pill", state="visible", timeout=SLOW)
+    tag = s.page.locator(".price-tag[data-id]:visible").first
+    tag_id, before = tag.get_attribute("data-id"), tag.bounding_box()
+    s.page.drag_and_drop(".price-tag[data-id]:visible >> nth=0", "#tray")
+    s.page.wait_for_timeout(300)
+    assert compare_ids(s) == [tag_id]
+    after = s.page.locator(f'.price-tag[data-id="{tag_id}"]').first.bounding_box()
+    assert abs(after["x"] - before["x"]) < 2 and abs(after["y"] - before["y"]) < 2 + 40, "dragging a tag must not pan the map"
+    s.page.evaluate("location.hash = 'list'")
+    s.page.wait_for_selector("#table tbody tr.r[data-id]", timeout=SLOW)
+    row_id = s.page.locator("#table tbody tr.r[data-id]").nth(2).get_attribute("data-id")
+    s.page.drag_and_drop("#table tbody tr.r[data-id] >> nth=2", "#tray")
+    s.page.wait_for_timeout(300)
+    assert compare_ids(s) == [tag_id, row_id]
+    assert not s.take()
+
+
 def test_tray_stays_in_step_with_the_compare_toggle_and_survives_a_reload(open_page) -> None:
     s = open_page("#map")
     s.page.wait_for_selector("#tray .tray-pill", state="visible", timeout=SLOW)
