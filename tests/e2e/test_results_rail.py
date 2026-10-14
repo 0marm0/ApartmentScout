@@ -351,6 +351,102 @@ def test_changing_density_keeps_the_card_you_were_looking_at(open_page) -> None:
     assert not s.take()
 
 
+@pytest.mark.parametrize("density", ["comfortable", "compact"])
+def test_cards_do_not_shift_when_the_window_moves(open_page, density: str) -> None:
+    """The window maths (gap, padding) must match the rendered pixels in both densities: a card keeps its place while others come and go."""
+    s = open_page(f"?density={density}#map")
+    p = s.page
+    p.evaluate("() => { document.getElementById('cards').scrollTop = 3000; }")
+    p.wait_for_timeout(300)
+    drift = p.evaluate("""async () => {
+      const h = document.getElementById('cards'), raf = () => new Promise((r) => requestAnimationFrame(r));
+      const pick = h.querySelectorAll('.card')[6], id = pick.dataset.id, out = [];
+      let last = pick.getBoundingClientRect().top;
+      for (let i = 0; i < 24; i++) {
+        h.scrollTop += 61;                               // crosses card boundaries, so the window start moves repeatedly
+        await raf(); await raf();
+        const c = h.querySelector(`.card[data-id="${id}"]`);
+        if (!c) break;
+        const t = c.getBoundingClientRect().top;
+        out.push(Math.abs((last - t) - 61)); last = t;
+      }
+      return out;
+    }""")
+    assert drift and max(drift) < 1.5, drift
+    assert not s.take()
+
+
+def test_a_list_that_shrinks_while_scrolled_far_down_is_not_left_blank(open_page) -> None:
+    s = open_page("#map")
+    p = s.page
+    p.evaluate("() => { document.getElementById('cards').scrollTop = 6000; }")
+    p.wait_for_timeout(300)
+    p.evaluate("async () => (await import('/js/app.js')).setFilter('q', 'paramount')")
+    p.wait_for_timeout(500)
+    visible = p.evaluate("""() => { const h = document.getElementById('cards'), hr = h.getBoundingClientRect();
+      return [...h.querySelectorAll('.card')].filter((c) => { const r = c.getBoundingClientRect(); return r.bottom > hr.top && r.top < hr.bottom; }).length; }""")
+    assert visible >= 1
+    assert not s.take()
+
+
+def test_a_saved_tier_that_the_search_no_longer_has_does_not_break_the_page(browser, base_url: str) -> None:
+    ctx = browser.new_context(viewport={"width": 1440, "height": 900}, reduced_motion="reduce")
+    ctx.route("**/*", lambda r: r.continue_() if r.request.url.startswith((base_url, "data:", "blob:")) else r.abort())
+    ctx.add_init_script("localStorage.setItem('as:filters2', JSON.stringify({ q: '', tiers: [7], over: false, maxCommute: 75, toggles: [], status: ['new'], savedOnly: false }))")
+    page = ctx.new_page()
+    errors: list[str] = []
+    page.on("pageerror", lambda e: errors.append(str(e)))
+    page.goto(base_url + "/")
+    page.wait_for_function("() => document.querySelector('#rail [data-w]') && document.getElementById('listTitle').textContent", timeout=T)
+    assert page.locator("#filterChips.has").count() == 1       # the status chip, and no crash over tier 7
+    ctx.close()
+    assert not errors, errors
+
+
+def test_the_filter_announcement_survives_the_row_being_hidden(open_page) -> None:
+    s = open_page("#map")
+    p = s.page
+    p.evaluate("async () => (await import('/js/app.js')).setFilter('savedOnly', true)")
+    p.wait_for_selector("#filterChips.has", timeout=T)
+    p.evaluate("async () => (await import('/js/app.js')).setFilter('savedOnly', false)")
+    p.wait_for_function("() => !document.querySelector('#filterChips.has')", timeout=T)
+    assert p.locator("#fchipStatus").inner_text() == "No filters active"
+    assert p.evaluate("() => !document.getElementById('filterChips').contains(document.getElementById('fchipStatus'))")
+    assert not s.take()
+
+
+def test_closing_the_drawer_returns_focus_to_a_card_that_was_scrolled_away(open_page) -> None:
+    s = open_page("#map")
+    p = s.page
+    lid = p.evaluate("async () => (await import('/js/features/card-list.js')).cardIds()[3]")
+    p.locator(f'#cards .card[data-id="{lid}"]').click()
+    p.wait_for_selector("#drawer.open", timeout=T)
+    p.locator("#drawer .d-scroll").focus() if p.locator("#drawer .d-scroll[tabindex]").count() else p.locator("#dClose").focus()
+    p.evaluate("() => { document.getElementById('cards').scrollTop = 20000; }")
+    p.wait_for_timeout(300)
+    assert p.locator(f'#cards .card[data-id="{lid}"]').count() == 0
+    p.locator("#dClose").click()
+    p.wait_for_function("(id) => document.activeElement?.dataset?.id === id", arg=lid, timeout=T)
+    assert not s.take()
+
+
+def test_j_in_buildings_view_continues_from_a_unit_opened_inside_a_building(open_page) -> None:
+    s = open_page("#map")
+    p = s.page
+    p.locator('#groupSeg [data-g="buildings"]').click()
+    p.wait_for_selector("#cards .unit-row", timeout=T)
+    row = p.locator("#cards .unit-row").first
+    uid = row.get_attribute("data-open")
+    row.click()
+    p.wait_for_function("async (id) => (await import('/js/app.js')).S.sel === id", arg=uid, timeout=T)
+    pos = p.evaluate("async (id) => (await import('/js/features/card-list.js')).cardPos(id)", uid)
+    nxt = p.evaluate("async (i) => (await import('/js/features/card-list.js')).cardIds()[i + 1]", pos)
+    p.mouse.click(1000, 62)
+    p.keyboard.press("j")
+    p.wait_for_function("async (id) => (await import('/js/app.js')).S.sel === id", arg=nxt, timeout=T)
+    assert not s.take()
+
+
 def test_buildings_view_is_windowed_too(open_page) -> None:
     s = open_page("#map")
     p = s.page

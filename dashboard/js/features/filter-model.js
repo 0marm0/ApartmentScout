@@ -13,7 +13,7 @@ const sortedNums = (a) => [...a].sort((x, y) => x - y);
 /** The budget cap the filters imply, or null for "any price": all tiers off, or the Over tile on, means no cap. */
 export function budgetCap(filters, tiers) {
   if (filters.over) return null;
-  const sel = filters.tiers || [];
+  const sel = (filters.tiers || []).filter((i) => tiers[i]);   // saved filters can name a tier this search no longer has
   if (!sel.length) return null;
   return Math.max(...sel.map((i) => tiers[i]?.max ?? 0));
 }
@@ -22,7 +22,7 @@ export function budgetCap(filters, tiers) {
 export function budgetChanged(filters, tiers) {
   if (!tiers.length) return false;
   if (filters.over) return true;
-  return !same(sortedNums(filters.tiers || []), tiers.map((_, i) => i));
+  return !same(sortedNums((filters.tiers || []).filter((i) => tiers[i])), tiers.map((_, i) => i));
 }
 
 /** Compact status label: one name, two names, "All statuses", or a count with the full list in the tooltip. */
@@ -43,11 +43,11 @@ export function activeChips(ctx) {
   const { filters: f, tiers, statuses, defaultStatus, features, money, commute } = ctx;
   const out = [];
   if (budgetChanged(f, tiers)) {
-    const cap = budgetCap(f, tiers), sel = f.tiers || [];
+    const cap = budgetCap(f, tiers), sel = (f.tiers || []).filter((i) => tiers[i]);
     if (cap == null) out.push({ id: 'budget', kind: 'budget', label: 'Any price', title: f.over ? 'Budget: any price, including homes over your cap' : 'Budget: no price cap' });
     else {
       const top = sel.reduce((a, i) => ((tiers[i]?.max ?? 0) >= (tiers[a]?.max ?? 0) ? i : a), sel[0]);
-      const one = sel.length === 1 ? `${tiers[top].name} ` : '';
+      const one = sel.length === 1 ? `${tiers[top]?.name} ` : '';
       out.push({ id: 'budget', kind: 'budget', tier: top, label: `${one}≤ ${money(cap)}`, title: `Budget: monthly cost at most ${money(cap)}${sel.length > 1 ? ` (${sel.length} tiers selected)` : ''}` });
     }
   }

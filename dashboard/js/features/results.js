@@ -7,7 +7,7 @@
 //   - live re-scoring in a Web Worker            (rescore-live.js, rescore-core.js)
 // See docs/guides/dashboard.md for what each one does for the renter.
 import { initDensity, onDensity } from './density.js';
-import { initCardList, relayoutCardList, setCardItems, clearCardList, cardIds, revealCard } from './card-list.js';
+import { initCardList, relayoutCardList, setCardItems, clearCardList, cardIds, cardPos, cardEl, revealCard } from './card-list.js';
 import { initRailSections, decorateRail, railFocus, restoreRailFocus } from './rail-sections.js';
 import { initFilterChips } from './filter-chips.js';
 import { initRankDeltas, deltaHTML } from './rank-ui.js';
@@ -15,7 +15,7 @@ import { initPriceHistory, trendHTML } from './price-ui.js';
 import { initRescoreLive, rescoreWeights } from './rescore-live.js';
 
 // what app.js uses
-export { setCardItems, clearCardList, cardIds, revealCard, decorateRail, railFocus, restoreRailFocus, rescoreWeights, deltaHTML, trendHTML };
+export { setCardItems, clearCardList, cardIds, cardPos, cardEl, revealCard, decorateRail, railFocus, restoreRailFocus, rescoreWeights, deltaHTML, trendHTML };
 
 /** Called once from boot(), after the first scoring and before the first render. */
 export function initResults() {

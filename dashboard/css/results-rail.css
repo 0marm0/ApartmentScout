@@ -7,8 +7,7 @@
 /* entrance and re-rank motion is driven by card-list.js (Web Animations), not by a CSS animation on every re-render */
 #cards .card { animation: none; }
 .vsp { flex: none; pointer-events: none; }
-.vsp-top { margin-bottom: -2px; }   /* the list's 2px gap sits between neighbours only: the spacers must not add one */
-.vsp-bot { margin-top: -2px; }
+/* the spacers' negative margins cancel the list's row gap; card-list.js sets them from the computed gap (it differs by density) */
 .vgroup { display: flex; flex-direction: column; gap: 2px; }
 
 /* ------------------------------------------------------------------ rank-change badge (cards and the Shortlist table) */
@@ -20,7 +19,8 @@
 .rk-d.down { color: var(--bad); }
 .rk-d.out { opacity: 0; }
 @keyframes rkIn { from { opacity: 0; transform: translateY(-3px) scale(.92); } to { opacity: 1; transform: none; } }
-.lst .c-rank .rk-d { display: inline-block; margin-left: 5px; font: 600 var(--fs-2xs)/1 var(--font-mono); font-variant-numeric: tabular-nums; color: var(--good); animation: rkIn 300ms var(--ease-out) both; transition: opacity 220ms; }
+.lst td.c-rank { position: relative; padding-right: 36px; }   /* room for the badge, so the ranks stay in one column whether or not one is showing */
+.lst .c-rank .rk-d { position: absolute; right: 7px; top: 50%; margin-top: -5px; font: 600 var(--fs-2xs)/1 var(--font-mono); font-variant-numeric: tabular-nums; color: var(--good); animation: rkIn 300ms var(--ease-out) both; transition: opacity 220ms; }
 .lst .c-rank .rk-d.down { color: var(--bad); }
 .lst .c-rank .rk-d.out { opacity: 0; }
 
