@@ -51,7 +51,7 @@ function rowHTML(g, r) {
   else right = `<span class="vp-v">${esc(dayText(r.date))}</span>`;
   const label = `${esc(nameOf(r))}${sub ? ` <small>${sub}</small>` : ''}`;
   return r.L
-    ? `<li><a href="#" class="vp-row" data-open="${esc(r.id)}"><span class="vp-n">${label}</span><span class="vp-r">${right}</span></a></li>`
+    ? `<li><a href="#" class="vp-row" data-home="${esc(r.id)}"><span class="vp-n">${label}</span><span class="vp-r">${right}</span></a></li>`
     : `<li><span class="vp-row static"><span class="vp-n">${esc(r.id)} <small>no longer in your data</small></span><span class="vp-r">${right}</span></span></li>`;
 }
 function popHTML() {
@@ -101,8 +101,8 @@ function wire() {
   strip.addEventListener('click', (e) => {
     if (e.target.closest('.visit-pill')) { e.stopPropagation(); setOpen(popEl()?.hidden !== false, e.detail === 0); return; }
     const pop = e.target.closest('.visit-pop'); if (!pop) return;
-    const a = e.target.closest('[data-open]');
-    if (a) { e.preventDefault(); setOpen(false); openDrawer(a.dataset.open, { fly: true }); return; }
+    const a = e.target.closest("[data-home]");
+    if (a) { e.preventDefault(); setOpen(false); openDrawer(a.dataset.home, { fly: true }); return; }
     if (e.target.closest('a[href^="#"]')) { setOpen(false); return; }
     if (e.target.closest('[data-seen]')) markSeen();
   });
