@@ -182,3 +182,107 @@ def test_wikidata_cache_round_trip(tmp_path):
     assert wd.select("SELECT 1") == [{"item": {"value": "x"}}]
     assert wd.select("SELECT 1") == [{"item": {"value": "x"}}]
     assert S.n == 1
+
+
+
+# --------------------------------------------------------------------------- applying the sources
+def test_merge_source_photos_replaces_only_its_own_and_skips_duplicates():
+    commons = {"url": "https://u/1.jpg", "page": "https://commons/File:A.jpg", "source": "Wikimedia Commons", "scope": "building"}
+    agent = {"url": "https://u/2.jpg", "source": "Building website", "scope": "exact-unit"}
+    old_wd = {"url": "https://u/old.jpg", "page": "https://commons/File:Old.jpg", "source": PS.WIKIDATA_SOURCE, "scope": "building"}
+    dup = {"url": "https://u/3.jpg", "page": "https://commons/File:A.jpg", "source": PS.WIKIDATA_SOURCE, "scope": "building"}
+    new = {"url": "https://u/4.jpg", "page": "https://commons/File:B.jpg", "source": PS.WIKIDATA_SOURCE, "scope": "building"}
+    got = PS.merge_source_photos([commons, old_wd, agent], [dup, new], PS.WIKIDATA_SOURCE)
+    assert got == [agent, commons, new]          # other sources kept (best scope first), old Wikidata entry replaced, dup dropped
+
+
+def test_commons_merge_does_not_repeat_a_file_wikidata_already_added():
+    wd = {"url": "https://u/3.jpg", "page": "https://commons/File:A.jpg", "source": PS.WIKIDATA_SOURCE, "scope": "building"}
+    commons = {"url": "https://u/1.jpg", "page": "https://commons/File:A.jpg", "source": P.SOURCE, "scope": "building"}
+    other = {"url": "https://u/5.jpg", "page": "https://commons/File:C.jpg", "source": P.SOURCE, "scope": "street"}
+    assert P.merge_building_photos([wd], [commons, other]) == [wd, other]
+
+
+class FakeWD:
+    requests = 0
+
+    def select(self, q):
+        self.requests += 1
+        return [binding("Q1", "VIA 57 West", "VIA_57_West.jpg", -73.9929, 40.7713)]
+
+
+class FakeCommons:
+    def _image_props(self):
+        return {}
+
+    def query(self, params):
+        return {"query": {"pages": [{"title": "File:VIA 57 West.jpg", "imageinfo": [{
+            "mime": "image/jpeg", "width": 2000, "height": 1500, "thumburl": "https://upload.wikimedia.org/v.jpg",
+            "descriptionurl": "https://commons.wikimedia.org/wiki/File:VIA_57_West.jpg", "extmetadata": {}}]}]}}
+
+
+def test_add_wikidata_photos_writes_credited_entries_to_every_unit_of_the_building():
+    a = {"id": "via-613", "building": "VIA 57 West", "unit": "613", "address": "625 West 57th Street, New York, NY",
+         "lat": 40.7714, "lon": -73.9930}
+    b = {**a, "id": "via-215", "unit": "215"}
+    far = {"id": "other-1", "building": "Elsewhere Tower", "unit": "1", "address": "1 Nowhere Street, New York, NY",
+           "lat": 40.70, "lon": -74.0}
+    wd = FakeWD()
+    st = PS.add_wikidata_photos([a, b, far], wd, FakeCommons(), limit=2, say=lambda *_: None)
+    assert a["building_photos"] == b["building_photos"] and a["building_photos"][0]["source"] == PS.WIKIDATA_SOURCE
+    assert a["building_photos"][0]["wikidata"].endswith("Q1")
+    assert "building_photos" not in far
+    assert st["buildings"] == 2 and st["with_photos"] == 1 and wd.requests == 2
+
+
+PAGE = ('<head><meta property="og:image" content="https://cdn.example.com/hero.jpg"></head>'
+        '<body><img src="/g/kitchen.jpg" width="1200" height="800"></body>')
+
+
+def test_add_web_photos_unit_page_goes_to_photos_and_building_page_to_building_photos():
+    unit_page = "https://www.example-building.com/units/613"
+    bldg_page = "https://www.example-building.com/availability/"
+    s = FakeSession({unit_page: FakeResponse(200, PAGE), bldg_page: FakeResponse(200, PAGE)})
+    unit = {"id": "u613", "building": "Example", "unit": "613", "links": {"listing": unit_page}}
+    bldg = {"id": "u9", "building": "Example", "unit": "9B", "links": {"listing": bldg_page}}
+    has = {"id": "u1", "unit": "1A", "photos": ["https://x/p.jpg"], "links": {"listing": unit_page}}
+    st = PS.add_web_photos([unit, bldg, has], PS.PageFetcher(s, pause=0), limit=5, say=lambda *_: None)
+    assert unit["photos"] == ["https://cdn.example.com/hero.jpg", "https://www.example-building.com/g/kitchen.jpg"]
+    assert "building_photos" not in unit
+    assert "photos" not in bldg
+    e = bldg["building_photos"][0]
+    assert e["source"] == PS.WEB_SOURCE and e["scope"] == "building" and e["page"] == bldg_page and "private" in e["license"]
+    assert has["photos"] == ["https://x/p.jpg"]                      # listings with photos are left alone
+    assert s.calls == [unit_page, bldg_page]                         # and not fetched
+    assert st["with_photos"] == 2 and st["blocked"] == {}
+
+
+def test_add_web_photos_reports_a_blocked_host_once_and_does_not_retry():
+    s = FakeSession({"https://blocked.example/a/1": FakeResponse(403, ""), "https://blocked.example/a/2": FakeResponse(403, "")})
+    rows = [{"id": f"b{i}", "unit": str(i), "links": {"listing": f"https://blocked.example/a/{i}"}} for i in (1, 2)]
+    said = []
+    st = PS.add_web_photos(rows, PS.PageFetcher(s, pause=0), say=said.append)
+    assert s.calls == ["https://blocked.example/a/1"] and list(st["blocked"]) == ["blocked.example"]
+    assert st["with_photos"] == 0 and "photos" not in rows[0] and len([m for m in said if "blocked.example" in m]) == 1
+
+
+def test_cli_photos_web_is_refused_inside_examples_and_wikidata_runs(tmp_path, monkeypatch):
+    import json
+    from pathlib import Path
+
+    from apartmentscout.cli import main
+    root = Path(__file__).resolve().parent.parent / "examples" / "nyc-2026"
+    with pytest.raises(SystemExit) as e:
+        main(["photos", "--search", str(root), "--source", "web"])
+    assert "examples" in str(e.value)
+
+    search = tmp_path / "s"
+    main(["init", str(search), "--city", "nyc"])
+    L = {"id": "via-613", "building": "VIA 57 West", "unit": "613", "address": "625 West 57th Street, New York, NY",
+         "lat": 40.7714, "lon": -73.9930, "status": "researching"}
+    (search / "listings.json").write_text(json.dumps([L]))
+    monkeypatch.setattr(PS, "Wikidata", lambda *a, **k: FakeWD())
+    monkeypatch.setattr(P, "Commons", lambda *a, **k: FakeCommons())
+    main(["photos", "--search", str(search), "--source", "wikidata"])
+    saved = json.loads((search / "listings.json").read_text())
+    assert saved[0]["building_photos"][0]["source"] == PS.WIKIDATA_SOURCE

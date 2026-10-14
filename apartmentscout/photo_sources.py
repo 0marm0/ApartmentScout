@@ -314,3 +314,100 @@ def wikidata_photos(target: Target, wd: Wikidata, commons: Commons, limit: int =
             if e:
                 out.append(e)
     return out
+
+
+# --------------------------------------------------------------------------- applying the sources to listings
+_ORDER = {s: i for i, s in enumerate(("exact-unit", "same-line", "building", "street", "aerial"))}
+
+
+def merge_source_photos(existing: list[dict] | None, new: list[dict], source: str) -> list[dict]:
+    """``building_photos`` after a run of one source: entries from other sources are kept, this source's
+    previous entries are replaced, and a new entry for a file already present (by its page or URL) is dropped."""
+    keep = [p for p in (existing or []) if isinstance(p, dict) and p.get("source") != source]
+    have = {u for p in keep for u in (p.get("page"), p.get("url")) if u}
+    fresh = [p for p in new if not ({p.get("page"), p.get("url")} - {None, ""}) & have]
+    keep.sort(key=lambda p: _ORDER.get(p.get("scope"), len(_ORDER)))
+    return keep + fresh
+
+
+def add_wikidata_photos(listings: list[dict], wd: Wikidata, commons: Any, limit: int = 2,
+                        say=print) -> dict[str, int]:
+    """Look up every building once on Wikidata and add its images to ``building_photos`` (licensed, credited)."""
+    from .photos import group_key, targets_for
+    targets = targets_for(listings)
+    found: dict[str, list[dict]] = {}
+    for i, (k, t) in enumerate(targets.items(), 1):
+        try:
+            found[k] = wikidata_photos(t, wd, commons, limit)
+        except (requests.RequestException, RuntimeError, ValueError) as e:
+            say(f"  [{i}/{len(targets)}] {t.label}: skipped ({e})")
+            continue
+        say(f"  [{i}/{len(targets)}] {t.label}: {len(found[k])} Wikidata image(s)")
+    for L in listings:
+        if L.get("lat") is None or L.get("lon") is None:
+            continue
+        k = group_key(L)
+        if k in found:
+            merged = merge_source_photos(L.get("building_photos"), found[k], WIKIDATA_SOURCE)
+            if merged:
+                L["building_photos"] = merged
+    return {"buildings": len(targets), "with_photos": sum(1 for v in found.values() if v),
+            "requests": wd.requests}
+
+
+def _has_photos(L: dict) -> bool:
+    return bool(L.get("photos") or L.get("photos_local"))
+
+
+def _names_unit(L: dict, url: str) -> bool:
+    """True when the page URL names this listing's unit (a unit page); building and availability pages do not."""
+    unit = re.sub(r"[^a-z0-9]+", "", str(L.get("unit") or "").lower()).lstrip("0")
+    parts = urllib.parse.urlsplit(url)
+    where = (parts.path + "?" + parts.query).lower()
+    return bool(unit) and bool(re.search(rf"(?<![a-z0-9])0*{re.escape(unit)}(?![a-z0-9])", where))
+
+
+def add_web_photos(listings: list[dict], fetcher: PageFetcher, limit: int = 8, say=print) -> dict[str, Any]:
+    """For listings with no photos, read the listing's own page(s) for gallery images.
+
+    Images from a page that names the unit go to ``photos``; images from a building, availability or
+    search page go to ``building_photos`` (scope ``building``, private research copy). A host that
+    answers with a bot challenge is reported once and skipped: ask the renter to open the page."""
+    cache: dict[str, list[str]] = {}
+    stats: dict[str, Any] = {"listings": 0, "with_photos": 0, "pages": 0, "blocked": {}}
+    for L in listings:
+        if _has_photos(L):
+            continue
+        links = L.get("links") or {}
+        pages = [u.strip() for u in (links.get("listing"), links.get("secondary"))
+                 if isinstance(u, str) and re.match(r"^https?://", u.strip(), re.I)]
+        pages = list(dict.fromkeys(pages))
+        if not pages:
+            continue
+        stats["listings"] += 1
+        for url in pages:
+            if url not in cache:
+                try:
+                    cache[url] = page_images(fetcher.get(url), url, limit)
+                    stats["pages"] += 1
+                except Blocked as e:
+                    cache[url] = []
+                    host = urllib.parse.urlsplit(url).netloc.lower()
+                    if host not in stats["blocked"]:
+                        stats["blocked"][host] = str(e)
+                        say(f"  {host}: {e}. Not retried; open the page yourself and save the photos you want.")
+            imgs = cache[url]
+            if not imgs:
+                continue
+            if _names_unit(L, url):
+                L["photos"] = list(imgs)
+            else:
+                entries = [{"url": u, "source": WEB_SOURCE, "title": f"{L.get('building') or 'Building'} · building image",
+                            "author": None, "license": "Building website image; private research copy",
+                            "license_url": None, "page": url, "scope": "building", "year": None} for u in imgs]
+                L["building_photos"] = merge_source_photos(L.get("building_photos"), entries, WEB_SOURCE)
+            stats["with_photos"] += 1
+            say(f"  {L.get('building') or ''} {L.get('unit') or ''}".rstrip()
+                + f": {len(imgs)} image(s) from {urllib.parse.urlsplit(url).netloc}")
+            break
+    return stats
