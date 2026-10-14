@@ -731,7 +731,7 @@ export function closeDrawer() {
 }
 
 // ------------------------------------------------------------------ router
-// Views load on first visit, so a slow or blocked CDN (three.js for the 3D views) never blanks the app.
+// Views load on first visit, so one that fails to load (a missing or blocked script) never blanks the app.
 // Six tabs in the top bar; Tours lives under Shortlist (#list/tours) and Records under Research (#research/records/<id>).
 // The old #tours and #records/<id> links are rewritten to those by parseRoute() (shell.js).
 const VIEWS = { map: () => import('./map.js'), list: () => import('./list.js'), compare: () => import('./compare.js'), unit: () => import('./unit3d.js'),
@@ -753,7 +753,7 @@ async function route() {
   route.last = v;
   try { (await viewModule(v)).show?.(arg ? decodeURIComponent(arg) : null); } catch (e) {
     loaded[v]?.catch(() => delete loaded[v]);   // a failed import is tried again on the next visit (or Retry)
-    document.getElementById('view-' + v).innerHTML = `<div class="view-pad"><div class="empty view-err" role="alert"><svg class="empty-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="M12 3.5l9.5 16.5h-19z"/><path d="M12 10v4.5M12 17.2v.3"/></svg><b>This view could not load</b><span>Check your connection: the 3D views load three.js from a CDN.</span><code class="mono">${esc(String(e?.message || e))}</code><button type="button" class="btn sm" data-retry>Try again</button></div></div>`;
+    document.getElementById('view-' + v).innerHTML = `<div class="view-pad"><div class="empty view-err" role="alert"><svg class="empty-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="M12 3.5l9.5 16.5h-19z"/><path d="M12 10v4.5M12 17.2v.3"/></svg><b>This view could not load</b><span>A script this view needs did not load. Reload the page, or try again; if you opened a copy of the dashboard, check that its vendor/ and js/ folders came with it.</span><code class="mono">${esc(String(e?.message || e))}</code><button type="button" class="btn sm" data-retry>Try again</button></div></div>`;
     document.querySelector(`#view-${v} [data-retry]`)?.addEventListener('click', () => { document.getElementById('view-' + v).innerHTML = ''; route(); });
   }
 }
