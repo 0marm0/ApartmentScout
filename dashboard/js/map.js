@@ -2,12 +2,16 @@
 // subway lines, contour-band commute heat (masked by water and by the router's no-data cells),
 // noise / rent / score surfaces, score-coloured pins, price tags and hover cards.
 // Falls back to Esri raster tiles when vector tiles are switched off or fail.
-import { S, on, filtered, openDrawer, label, cost, commuteOf, loadJSON, dest, score, isSaved, sorted, setCommute, modeSegHTML, MODE_LABEL } from './app.js';
+import { S, on, emit, store, filtered, openDrawer, label, cost, commuteOf, loadJSON, dest, score, isSaved, sorted, setCommute, modeSegHTML, MODE_LABEL } from './app.js';
 import { commuteLayerKey, walkRingMetres } from './criteria.js';
-import { $, esc, money, moneyShort, safeUrl, css, scoreColor, unitGlyph, gridImage, gridValueAt, idwGrid, RAMPS, bullet, aerialHTML, imagesOf } from './util.js';
+import { $, esc, money, moneyShort, safeUrl, css, scoreColor, unitGlyph, gridImage, gridValueAt, idwGrid, RAMPS, bullet, aerialHTML, imagesOf, imgFallback } from './util.js';
 import { contours } from '../vendor/d3-contour.js';
 
 const STEPS = [5, 10, 15, 20, 25, 30, 40, 50, 60];   // isochrone steps in minutes
+const CLUSTER_Z = 12;                                 // below this zoom nearby pins merge into count bubbles
+const UNCL = ['!', ['has', 'point_count']];
+const selFilter = (id) => ['all', UNCL, ['==', ['get', 'id'], id || '']];
+const reduce = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 const layers = {};          // name -> grid json
 let map, popup, markers = [], destMarkers = [], inited = null, active = null, heat = 'commute', vector = true, show3d = false, showLines = true, picking = false;
 /** The surface for the selected destination and mode (null for walk, or when that grid was never computed). */
@@ -17,9 +21,11 @@ const walkKmh = () => S.crit.commute?.transit?.walk_speed_kmh || 4.8;
 
 const PAL = {
   dark: { land: '#0e1116', park: '#0f1915', water: '#070b11', building: '#141820', buildingLine: '#1a1f29', minor: '#171b23', major: '#1f2530', motor: '#272e3b',
-    label: '#5f6878', hood: '#a3acbb', halo: '#0e1116', waterLabel: '#34506d', rail: '#1d222b', station: '#e9edf3', stationLine: '#0e1116', ring: '#c9cfda', pinLine: '#0b0d12', caseOp: 0.55 },
+    label: '#5f6878', hood: '#a3acbb', halo: '#0e1116', waterLabel: '#34506d', rail: '#1d222b', station: '#e9edf3', stationLine: '#0e1116', ring: '#c9cfda', pinLine: '#0b0d12', caseOp: 0.55,
+    clusterFill: '#0e1015', clusterInk: '#eef1f6' },
   light: { land: '#f0efea', park: '#dfe9d5', water: '#c6d8e6', building: '#e4e2dc', buildingLine: '#d8d5ce', minor: '#ffffff', major: '#ffffff', motor: '#fbeecb',
-    label: '#717784', hood: '#5d6370', halo: '#f0efea', waterLabel: '#6c8ba6', rail: '#d9d7d0', station: '#ffffff', stationLine: '#2b303b', ring: '#3a4150', pinLine: '#ffffff', caseOp: 0.12 },
+    label: '#717784', hood: '#5d6370', halo: '#f0efea', waterLabel: '#6c8ba6', rail: '#d9d7d0', station: '#ffffff', stationLine: '#2b303b', ring: '#3a4150', pinLine: '#ffffff', caseOp: 0.12,
+    clusterFill: '#ffffff', clusterInk: '#12151c' },
 };
 const PAINT = [
   ['bg', 'background-color', 'land'], ['park', 'fill-color', 'park'], ['park2', 'fill-color', 'park'], ['water', 'fill-color', 'water'], ['waterway', 'line-color', 'water'],
@@ -28,7 +34,7 @@ const PAINT = [
   ['lbl-road', 'text-color', 'label'], ['lbl-road', 'text-halo-color', 'halo'], ['lbl-hood', 'text-color', 'hood'], ['lbl-hood', 'text-halo-color', 'halo'], ['lbl-hoods', 'text-color', 'hood'], ['lbl-hoods', 'text-halo-color', 'halo'],
   ['lbl-water', 'text-color', 'waterLabel'], ['stations', 'circle-color', 'station'], ['stations', 'circle-stroke-color', 'stationLine'],
   ['lbl-station', 'text-color', 'label'], ['lbl-station', 'text-halo-color', 'halo'], ['walk-rings', 'line-color', 'ring'], ['lbl-rings', 'text-color', 'label'], ['lbl-rings', 'text-halo-color', 'halo'],
-  ['line-case', 'line-opacity', 'caseOp'],
+  ['line-case', 'line-opacity', 'caseOp'], ['clusters', 'circle-color', 'clusterFill'], ['cl-count', 'text-color', 'clusterInk'],
 ];
 const theme = () => (document.documentElement.dataset.theme === 'light' ? 'light' : 'dark');
 
@@ -227,7 +233,7 @@ function circle(lon, lat, m, n = 96) {
 }
 function pinData() {
   return { type: 'FeatureCollection', features: sorted(filtered()).filter((L) => L.lat != null).reverse().map((L) => ({ type: 'Feature', id: L.id,
-    properties: { id: L.id, col: scoreColor(score(L)), fav: !!(isSaved(L.id) || L.favorite || ['shortlist', 'touring', 'applied'].includes(L.status)), gone: L.status === 'gone' },
+    properties: { id: L.id, col: scoreColor(score(L)), sc: score(L) ?? 50, fav: !!(isSaved(L.id) || L.favorite || ['shortlist', 'touring', 'applied'].includes(L.status)), gone: L.status === 'gone' },
     geometry: { type: 'Point', coordinates: [L.lon, L.lat] } })) };
 }
 /** Neighbourhood labels placed at the middle of each neighbourhood's listings (tiles rarely label them at city zoom). */
@@ -283,14 +289,25 @@ function addOverlays() {
     map.addLayer({ id: 'stations', type: 'circle', source: 'stations', minzoom: 12.5, layout: { visibility: vis }, paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 12.5, 1.8, 16, 4.5], 'circle-color': p.station, 'circle-stroke-color': p.stationLine, 'circle-stroke-width': 1.2 } });
     map.addLayer({ id: 'lbl-station', type: 'symbol', source: 'stations', minzoom: 15, layout: { visibility: vis, 'text-field': ['get', 'name'], 'text-font': ['Noto Sans Regular'], 'text-size': 10.5, 'text-offset': [0, 1.1], 'text-anchor': 'top' }, paint: { 'text-color': p.label, 'text-halo-color': p.halo, 'text-halo-width': 1.5 } });
   }
-  map.addSource('listings', { type: 'geojson', data: pinData(), promoteId: 'id' });
-  map.addLayer({ id: 'pins-halo', type: 'circle', source: 'listings', paint: {
+  // zoomed out (below CLUSTER_Z) nearby pins merge into count bubbles ringed by their average score
+  map.addSource('listings', { type: 'geojson', data: pinData(), promoteId: 'id', cluster: true, clusterMaxZoom: CLUSTER_Z - 1, clusterRadius: 44, clusterProperties: { s: ['+', ['get', 'sc']] } });
+  const avg = ['/', ['get', 's'], ['get', 'point_count']];
+  const avgCol = ['interpolate', ['linear'], avg, 30, css('--score-1'), 50, css('--score-2'), 65, css('--score-3'), 80, css('--score-4'), 95, css('--score-5')];
+  map.addLayer({ id: 'cl-halo', type: 'circle', source: 'listings', filter: ['has', 'point_count'], paint: {
+    'circle-radius': ['step', ['get', 'point_count'], 21, 10, 25, 40, 30, 120, 36], 'circle-color': avgCol, 'circle-opacity': 0.16, 'circle-blur': 0.25 } });
+  map.addLayer({ id: 'clusters', type: 'circle', source: 'listings', filter: ['has', 'point_count'], paint: {
+    'circle-radius': ['step', ['get', 'point_count'], 14, 10, 17, 40, 21, 120, 25], 'circle-color': p.clusterFill,
+    'circle-stroke-width': ['case', ['boolean', ['feature-state', 'hover'], false], 3, 2], 'circle-stroke-color': avgCol } });
+  map.addLayer({ id: 'cl-count', type: 'symbol', source: 'listings', filter: ['has', 'point_count'], layout: {
+    'text-field': ['get', 'point_count_abbreviated'], 'text-font': ['Noto Sans Bold'], 'text-size': ['step', ['get', 'point_count'], 11, 40, 12.5], 'text-allow-overlap': true, 'text-ignore-placement': true },
+    paint: { 'text-color': p.clusterInk } });
+  map.addLayer({ id: 'pins-halo', type: 'circle', source: 'listings', filter: UNCL, paint: {
     'circle-radius': ['interpolate', ['linear'], ['zoom'], 11, ['case', ['get', 'fav'], 8, 5], 15, ['case', ['get', 'fav'], 16, 12]],
     'circle-color': ['case', ['get', 'fav'], css('--accent'), '#000'], 'circle-blur': 0.9,
     'circle-opacity': ['case', ['get', 'fav'], 0.45, theme() === 'light' ? 0.12 : 0.4] } });
-  map.addLayer({ id: 'pin-sel', type: 'circle', source: 'listings', filter: ['==', ['get', 'id'], S.sel || ''], paint: {
+  map.addLayer({ id: 'pin-sel', type: 'circle', source: 'listings', filter: selFilter(S.sel), paint: {
     'circle-radius': 14, 'circle-color': 'rgba(0,0,0,0)', 'circle-stroke-width': 2.5, 'circle-stroke-color': css('--accent'), 'circle-stroke-opacity': 0.9 } });
-  map.addLayer({ id: 'pins', type: 'circle', source: 'listings', paint: {
+  map.addLayer({ id: 'pins', type: 'circle', source: 'listings', filter: UNCL, paint: {
     'circle-radius': ['interpolate', ['linear'], ['zoom'], 11, ['case', ['get', 'fav'], 4, 2.6], 15, ['case', ['get', 'fav'], 9, 6.5]],
     'circle-color': heat === 'commute' ? ['case', ['get', 'fav'], css('--accent'), theme() === 'light' ? '#2b303b' : '#eef1f6'] : ['get', 'col'], 'circle-opacity': ['case', ['get', 'gone'], 0.35, 1],
     'circle-stroke-width': ['case', ['boolean', ['feature-state', 'hover'], false], 3, ['get', 'fav'], 2.2, 1.6],
@@ -300,8 +317,11 @@ function addOverlays() {
     paint: { 'text-color': p.hood, 'text-halo-color': p.halo, 'text-halo-width': 1.8 } });
   setHeat(heat);
 }
+let tagIds = new Set();      // tags on the map before this redraw: only new ones animate in
 function drawTags() {
   markers.forEach((m) => m.remove()); markers = [];
+  const before = tagIds; tagIds = new Set();
+  let fresh = 0;
   const F = sorted(filtered()).filter((L) => L.lat != null), pick = new Map();
   F.slice(0, 12).forEach((L) => pick.set(L.id, L));
   F.filter((L) => isSaved(L.id) || L.favorite).forEach((L) => pick.set(L.id, L));
@@ -318,19 +338,25 @@ function drawTags() {
     el.setAttribute('aria-label', `${label(L)}, ${money(cost(L))} a month`);
     el.innerHTML = `<i style="--c:${scoreColor(score(L))}">${Math.round(score(L) ?? 0)}</i>${isSaved(L.id) ? '<svg class="st" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1.6l1.9 4 4.4.5-3.3 3 .9 4.3L8 11.2 4.1 13.4 5 9.1 1.7 6.1l4.4-.5z"/></svg>' : ''}${moneyShort(cost(L))}`;
     el.addEventListener('click', (e) => { e.stopPropagation(); if (!picking) openDrawer(L.id); });
+    el.addEventListener('mouseenter', () => emit('hover', L.id));
+    el.addEventListener('mouseleave', () => emit('hover', null));
+    if (!before.has(L.id) && !reduce()) { el.classList.add('enter'); el.style.animationDelay = `${Math.min(fresh++, 14) * 28}ms`; }
+    tagIds.add(L.id);
     root.append(el);
     markers.push(new maplibregl.Marker({ element: root, anchor: 'bottom', offset: [0, -6] }).setLngLat([L.lon, L.lat]).addTo(map));
   }
   declutter();
 }
-/** Hide price tags that collide with a better-ranked tag; the circle pin underneath stays. */
+/** Hide price tags that collide with a better-ranked tag (the circle pin underneath stays), and all but the
+ *  selected tag while pins are clustered. Tags fade and settle rather than blink. */
 function declutter() {
-  const shown = [];
+  const shown = [], low = map.getZoom() < CLUSTER_Z - 0.35;
   for (const m of markers) {
-    const el = m.getElement(), r = el.getBoundingClientRect();
-    const hit = shown.some((q) => r.left < q.right + 4 && r.right > q.left - 4 && r.top < q.bottom + 3 && r.bottom > q.top - 3);
-    const keep = !hit || el.classList.contains('sel');
-    el.style.visibility = keep ? '' : 'hidden';
+    const el = m.getElement(), tag = el.firstElementChild, r = el.getBoundingClientRect(), sel = tag.classList.contains('sel');
+    const hit = low || shown.some((q) => r.left < q.right + 4 && r.right > q.left - 4 && r.top < q.bottom + 3 && r.bottom > q.top - 3);
+    const keep = !hit || sel;
+    el.classList.toggle('hid', !keep);
+    tag.tabIndex = keep ? 0 : -1;
     if (keep) shown.push(r);
   }
 }
@@ -348,6 +374,44 @@ function pulse() {
   };
   pulseRaf = requestAnimationFrame(step);
 }
+// ------------------------------------------------------------------ mini card: the last opened home stays on the map after the drawer closes
+let lastSel = null, pendingFly = null;
+function flyTo(id) {
+  const L = id && S.listings.find((x) => x.id === id);
+  if (L?.lat != null && S.view === 'map') map.easeTo({ center: [L.lon, L.lat], zoom: Math.max(map.getZoom(), 14.2), padding: { right: innerWidth > 760 ? 460 : 0, bottom: innerWidth > 760 ? 0 : innerHeight * 0.5 }, duration: reduce() ? 0 : 700 });
+}
+function showCard(id) {
+  const L = id && S.listings.find((x) => x.id === id);
+  let el = $('mapCard');
+  if (!L || S.view !== 'map') { hideCard(); return; }
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'mapCard'; el.className = 'float mcard'; el.hidden = true;
+    el.setAttribute('role', 'region'); el.setAttribute('aria-label', 'Last opened home');
+    $('view-map').append(el);
+    el.addEventListener('click', (e) => {
+      if (e.target.closest('[data-x]')) { hideCard(true); return; }
+      if (lastSel) openDrawer(lastSel, { fly: !!e.target.closest('[data-fly]') });
+    });
+  }
+  const im = imagesOf(L), ph = im.own[0] || im.building[0]?.url, sv = score(L), cm = commuteOf(L);
+  const cml = S.commuteMode === 'best' ? '' : ' by ' + MODE_LABEL[S.commuteMode].toLowerCase();
+  el.innerHTML = `<div class="mc-ph">${ph ? `<img src="${esc(ph)}" alt="" referrerpolicy="no-referrer"${im.own[0] ? imgFallback(L, 0) : ''}>` : L.lat != null ? aerialHTML(L, 88, 88, 18) : `<div class="glyph">${unitGlyph(L, 88, 88)}</div>`}</div>
+    <div class="mc-b"><div class="mc-t">${esc(L.building || L.address)} <span>${esc(L.unit || '')}</span></div>
+      <div class="mc-s">${esc([L.neighborhood, L.sqft ? Math.round(L.sqft) + ' ft²' : null, cm != null ? `${Math.round(cm)} min${cml} to ${dest()?.name || 'work'}` : null].filter(Boolean).join(' · '))}</div>
+      <div class="mc-p"><b>${money(cost(L))}</b><span>/mo</span><i class="mc-sc" style="--c:${scoreColor(sv)}">${sv == null ? '?' : Math.round(sv)}</i></div>
+      <div class="mc-a"><button type="button" class="btn sm primary">Details</button><button type="button" class="btn sm ghost" data-fly>Show on map</button></div></div>
+    <button type="button" class="icon-btn sm mc-x" data-x aria-label="Dismiss" title="Dismiss (Esc)"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg></button>`;
+  el.hidden = false;
+  requestAnimationFrame(() => el.classList.add('on'));
+}
+function hideCard(forget = false) {
+  const el = $('mapCard'); if (forget) lastSel = null;
+  if (!el || el.hidden) return;
+  el.classList.remove('on');
+  setTimeout(() => { if (!el.classList.contains('on')) el.hidden = true; }, reduce() ? 0 : 220);
+}
+
 function addDest() {
   destMarkers.forEach((m) => m.remove()); destMarkers = [];
   const sel = dest();
@@ -385,6 +449,7 @@ function renderSwitch() {
   $('layerSwitch').innerHTML = opts.map(([k, t, c]) => `<button type="button" class="${heat === k ? 'on' : ''}" data-layer="${k}" aria-pressed="${heat === k}"><i style="background:${c}"></i>${t}</button>`).join('');
   $('layerSwitch').querySelectorAll('[data-layer]').forEach((b) => b.addEventListener('click', () => setHeat(b.dataset.layer)));
 }
+const legendMin = () => store.get('legend-min', null) ?? innerWidth < 1180;
 function renderLegend() {
   const lineChips = (S.transit?.features || []).filter((f) => f.properties.kind === 'line').flatMap((f) => f.properties.routes.filter((r) => r.length < 3)).map(bullet).join('');
   const g = active, d = dest(), lim = d?.max_minutes || 30, mode = S.commuteMode, ml = MODE_LABEL[mode].toLowerCase();
@@ -406,7 +471,12 @@ function renderLegend() {
   } else if (heat === 'score') {
     body = `<h4>Average score nearby <span>with your weights</span></h4><div class="bar" style="height:8px;border-radius:2px;background:${RAMPS.score.css}"></div><div class="ticks"><span>30</span><span>50</span><span>65</span><span>80</span><span>95</span></div>`;
   } else body = `<h4>Listings <span>pins coloured by score</span></h4><div class="bar" style="height:8px;border-radius:2px;background:${RAMPS.score.css}"></div><div class="ticks"><span>30</span><span>50</span><span>65</span><span>80</span><span>95</span></div>`;
-  $('legend').innerHTML = body + (lineChips && showLines ? `<div class="lines">${lineChips}</div>` : '');
+  // the legend folds to its title and scale (default on narrow screens); the choice is remembered
+  const min = legendMin();
+  $('legend').classList.toggle('min', min);
+  $('legend').innerHTML = `<button type="button" class="lg-tog" id="lgTog" aria-expanded="${!min}" aria-controls="legend" title="${min ? 'Show the full legend' : 'Fold the legend'}" aria-label="${min ? 'Show the full legend' : 'Fold the legend'}"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 10l4-4 4 4"/></svg></button>`
+    + body + (lineChips && showLines ? `<div class="lines">${lineChips}</div>` : '');
+  $('lgTog').addEventListener('click', () => { store.set('legend-min', !min); renderLegend(); $('lgTog')?.focus(); });
   $('lgDest')?.addEventListener('change', (e) => setCommute({ dest: e.target.value }));
   $('legend').querySelectorAll('#lgMode [data-mode]').forEach((b) => b.addEventListener('click', () => setCommute({ mode: b.dataset.mode })));
 }
@@ -462,6 +532,26 @@ function wire() {
   });
   map.on('mouseleave', 'pins', () => { map.getCanvas().style.cursor = ''; if (hov) map.setFeatureState({ source: 'listings', id: hov }, { hover: false }); hov = null; popup.remove(); });
   map.on('click', 'pins', (e) => { if (!picking) openDrawer(e.features[0].id); });
+  // a count bubble zooms to the level where it splits
+  map.on('click', 'clusters', async (e) => {
+    if (picking) return;
+    const f = e.features[0], src = map.getSource('listings');
+    let z = map.getZoom() + 1.5;
+    try { z = await src.getClusterExpansionZoom(f.properties.cluster_id); } catch { /* keep the fallback zoom */ }
+    map.easeTo({ center: f.geometry.coordinates, zoom: Math.min(z + 0.25, 16), duration: reduce() ? 0 : 650 });
+  });
+  let hc = null;
+  map.on('mousemove', 'clusters', (e) => {
+    map.getCanvas().style.cursor = 'pointer';
+    const id = e.features[0].id;
+    if (hc !== id) { if (hc != null) map.setFeatureState({ source: 'listings', id: hc }, { hover: false }); hc = id; if (id != null) map.setFeatureState({ source: 'listings', id }, { hover: true }); }
+  });
+  map.on('mouseleave', 'clusters', () => { map.getCanvas().style.cursor = ''; if (hc != null) map.setFeatureState({ source: 'listings', id: hc }, { hover: false }); hc = null; });
+  // clicking empty map dismisses the mini card
+  map.on('click', (e) => {
+    if (picking || !$('mapCard') || $('mapCard').hidden) return;
+    if (!map.queryRenderedFeatures(e.point, { layers: ['pins', 'clusters'].filter((l) => map.getLayer(l)) }).length) hideCard(true);
+  });
   map.on('mousemove', readout);
   map.on('mouseout', () => ($('readout').hidden = true));
   let raf = 0;
@@ -478,13 +568,16 @@ function rebuild() {
 }
 
 export function init() {
+  // Esc with the drawer already closed dismisses the mini card (capture: runs before the shell closes the drawer)
+  addEventListener('keydown', (e) => { if (e.key === 'Escape' && !S.sel && $('mapCard') && !$('mapCard').hidden && !document.querySelector('.pl-scrim:not([hidden]), .sheet-scrim.on, .kbd-help')) hideCard(true); }, true);
+  addEventListener('hashchange', () => { if (!location.hash.startsWith('#map') && location.hash) hideCard(); });
   on('filters', () => { if (!map?.getSource('listings')) return; map.getSource('listings').setData(pinData()); drawTags(); if (heat === 'score') setHeat('score'); });
   on('weights-settled', () => { if (!map?.getSource('listings')) return; map.getSource('listings').setData(pinData()); drawTags(); if (heat === 'score') setHeat('score'); });
   on('saved', () => { if (map?.getSource('listings')) { map.getSource('listings').setData(pinData()); drawTags(); } });
   on('sort', () => map && drawTags());
   on('commute', () => {
     if (!map) return;
-    refreshRings(); addDest();
+    refreshRings(); addDest(); if ($('mapCard') && !$('mapCard').hidden) showCard(lastSel);
     if (heat === 'commute' && map.getSource('listings')) setHeat('commute'); else renderLegend();
     renderSwitch();
   });
@@ -504,11 +597,13 @@ export function init() {
     if (id) { map.setFeatureState({ source: 'listings', id }, { hover: true }); document.querySelector(`.price-tag[data-id="${CSS.escape(id)}"]`)?.classList.add('hl'); }
   });
   on('select', ({ id, fly }) => {
-    if (!map) return;
+    if (id) lastSel = id;
+    // a listing opened before the map finished loading (?open=…) is flown to once it has
+    if (!map?.loaded()) { pendingFly = id && fly ? id : null; if (!map) return; }
     drawTags();
-    if (map.getLayer('pin-sel')) { map.setFilter('pin-sel', ['==', ['get', 'id'], id || '']); pulse(); }
-    const L = id && S.listings.find((x) => x.id === id);
-    if (L?.lat != null && fly && S.view === 'map') map.easeTo({ center: [L.lon, L.lat], zoom: Math.max(map.getZoom(), 14.2), padding: { right: innerWidth > 760 ? 460 : 0, bottom: innerWidth > 760 ? 0 : innerHeight * 0.5 }, duration: 700 });
+    if (map.getLayer('pin-sel')) { map.setFilter('pin-sel', selFilter(id)); pulse(); }
+    if (id) hideCard(); else if (lastSel) showCard(lastSel);
+    if (fly) flyTo(id);
   });
 }
 
@@ -535,6 +630,7 @@ async function boot() {
     popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 12, maxWidth: '260px' });
     map.on('error', (e) => { if (vector && /openfreemap/.test(String(e?.error?.message || e?.sourceId || ''))) { vector = false; rebuild(); renderCtl(); } });
     map.once('style.load', onStyle);
+    map.once('load', () => { if (pendingFly && pendingFly === S.sel) flyTo(pendingFly); pendingFly = null; });
     wire(); renderCtl(); renderSwitch(); addDest();
   }
 }
