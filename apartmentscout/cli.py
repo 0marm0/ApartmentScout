@@ -292,7 +292,7 @@ def cmd_site(args):
                      "sun_hours": st["sun_hours"], "sun_hours_range": {"lo": rng["lo"], "hi": rng["hi"]},
                      "skyline_ahead_deg": st["skyline_ahead_deg"], "open_sky_share": st["open_sky_share"],
                      "sky_view": st.get("sky_view"), "daylight_factor_est": st.get("daylight_factor_est"),
-                     "sun_year": st.get("sun_year")}
+                     "sun_year": st.get("sun_year"), "exposure_source": prov.get("exposure")}
         if st.get("sun_hours_expected"):
             L["site"]["sun_hours_expected"] = st["sun_hours_expected"]
         log(f"  window faces {face['bearing']:.0f} deg at t={w['t']}, floor {w['floor']}"
