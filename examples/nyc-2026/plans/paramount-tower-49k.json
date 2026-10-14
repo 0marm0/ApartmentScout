@@ -1,0 +1,130 @@
+{
+ "schema": 2,
+ "id": "paramount-tower-49k",
+ "title": "Paramount Tower #49K (K line)",
+ "units": "in",
+ "source": "Traced from Glenwood's K-line plan for floors 3-52 (https://glenwoodadmin.com/webdav/images/floorplans/paramount/PM3-52K.jpg), scaled from the printed room sizes (1.72 px per inch). A tracing, not a survey.",
+ "provenance": {
+  "match": "line-tier",
+  "floor_band": "3-52",
+  "checked": "2026-10-14",
+  "printed": [
+   "Bedroom 16'-4\" x 11'-5\"",
+   "Living room 21'-10\" x 12'-4\"",
+   "Kitchen 8'-1\" x 7'-2\""
+  ],
+  "estimated": [
+   "Scale from printed room sizes (1.72 px per inch)",
+   "AC units: assumed through-wall units; size and place unverified",
+   "Window sill and head heights",
+   "Door swings not drawn on the plan",
+   "Compass: no north arrow on the plan; drawing top assumed to face 29 degrees (the 39th Street side), so this line's windows are an assumption"
+  ],
+  "bedroom_door_drawn": true,
+  "wd_drawn": false
+ },
+ "ceiling": 108,
+ "wall": 5,
+ "up_bearing": 29,
+ "floor": 49,
+ "rooms": [
+  {
+   "name": "Bedroom",
+   "kind": "bedroom",
+   "poly": [[0.0, 356.5], [7.5, 356.5], [7.5, 382.0], [82.5, 382.0], [113.5, 350.5], [140.5, 350.5], [140.5, 182.0], [78.0, 182.0], [78.0, 154.0], [0.0, 154.0]],
+   "stated": "16'4\" x 11'5\""
+  },
+  {
+   "name": "Linen closet",
+   "kind": "closet",
+   "poly": [[25.5, 154.0], [56.5, 154.0], [56.5, 107.5], [25.5, 107.5]]
+  },
+  {
+   "name": "Bath",
+   "kind": "bath",
+   "poly": [[25.0, 107.5], [95.5, 107.5], [95.5, 0.0], [25.0, 0.0]]
+  },
+  {
+   "name": "Foyer",
+   "kind": "hall",
+   "poly": [[78.0, 182.0], [140.5, 182.0], [140.5, 126.5], [200.0, 126.5], [200.0, 0.0], [138.5, 0.0], [138.5, 107.5], [95.5, 107.5], [56.5, 107.5], [56.5, 154.0], [78.0, 154.0]]
+  },
+  {
+   "name": "Closet",
+   "kind": "closet",
+   "poly": [[95.5, 107.5], [138.5, 107.5], [138.5, 79.5], [95.5, 79.5]]
+  },
+  {
+   "name": "Coat closet",
+   "kind": "closet",
+   "poly": [[111.5, 79.5], [138.5, 79.5], [138.5, 0.0], [111.5, 0.0]]
+  },
+  {
+   "name": "Living room",
+   "kind": "living",
+   "poly": [[140.5, 350.5], [153.5, 350.5], [186.0, 382.0], [254.0, 382.0], [288.0, 348.5], [293.5, 348.5], [293.5, 126.5], [200.0, 126.5], [140.5, 126.5]],
+   "stated": "21'10\" x 12'4\""
+  },
+  {
+   "name": "Kitchen",
+   "kind": "kitchen",
+   "poly": [[200.0, 126.5], [263.5, 126.5], [263.5, 112.0], [293.5, 112.0], [293.5, 0.0], [200.0, 0.0]],
+   "stated": "8'1\" x 7'2\""
+  }
+ ],
+ "windows": [
+  {"room": "Bedroom", "x1": 7.5, "y1": 382.0, "x2": 82.5, "y2": 382.0, "sill": 20, "head": 94},
+  {"room": "Bedroom", "x1": 82.5, "y1": 382.0, "x2": 113.5, "y2": 350.5, "sill": 20, "head": 94},
+  {"room": "Living room", "x1": 153.5, "y1": 350.5, "x2": 186.0, "y2": 382.0, "sill": 20, "head": 94},
+  {"room": "Living room", "x1": 186.0, "y1": 382.0, "x2": 254.0, "y2": 382.0, "sill": 20, "head": 94},
+  {"room": "Living room", "x1": 254.0, "y1": 382.0, "x2": 288.0, "y2": 348.5, "sill": 20, "head": 94}
+ ],
+ "doors": [
+  {"x1": 139.5, "y1": 0.0, "x2": 178.0, "y2": 0.0, "hinge": "b", "room": "Foyer", "name": "front door", "kind": "entry", "swing": "in"},
+  {"x1": 85.0, "y1": 182.0, "x2": 117.5, "y2": 182.0, "hinge": "b", "room": "Bedroom", "name": "bedroom door", "swing": "in"},
+  {"x1": 60.5, "y1": 107.5, "x2": 89.5, "y2": 107.5, "hinge": "b", "room": "Bath", "name": "bath door", "swing": "in"},
+  {"x1": 56.5, "y1": 148.5, "x2": 56.5, "y2": 112.0, "name": "linen closet bifold", "swing": "none"},
+  {"x1": 102.5, "y1": 107.5, "x2": 131.5, "y2": 107.5, "hinge": "a", "name": "closet door", "swing": "+y"},
+  {"x1": 138.5, "y1": 75.0, "x2": 138.5, "y2": 5.0, "name": "coat closet bifold", "swing": "none"}
+ ],
+ "open_walls": [
+  {"x1": 140.5, "y1": 151.5, "x2": 140.5, "y2": 126.5},
+  {"x1": 140.5, "y1": 126.5, "x2": 200.0, "y2": 126.5},
+  {"x1": 200.0, "y1": 126.5, "x2": 263.5, "y2": 126.5},
+  {"x1": 200.0, "y1": 82.0, "x2": 200.0, "y2": 44.0}
+ ],
+ "fixtures": [
+  {"kind": "column", "label": "Pier", "x": 117.5, "y": 328.5, "w": 23.0, "h": 22.0},
+  {"kind": "column", "label": "Pier", "x": 140.5, "y": 328.5, "w": 14.5, "h": 22.0},
+  {"kind": "closet", "label": "Bedroom closets", "x": 2.5, "y": 155.0, "w": 73.0, "h": 29.5, "reserve": 24, "doors": "bifold", "front": "+y"},
+  {"kind": "closet", "label": "Hall closet", "x": 122.0, "y": 154.0, "w": 16.5, "h": 24.0, "reserve": 18, "doors": "hinged", "front": "-x"},
+  {"kind": "counter", "label": "Counter, sink and dishwasher", "x": 201.5, "y": 83.0, "w": 90.0, "h": 29.0},
+  {"kind": "counter", "label": "Breakfast ledge", "x": 201.5, "y": 112.0, "w": 62.0, "h": 13.5, "height": 42},
+  {"kind": "fridge", "label": "Fridge", "x": 203.0, "y": 1.5, "w": 33.5, "h": 41.0},
+  {"kind": "counter", "label": "Counter", "x": 236.5, "y": 1.5, "w": 19.5, "h": 35.0},
+  {"kind": "range", "label": "Range", "x": 256.0, "y": 1.5, "w": 34.0, "h": 35.0},
+  {"kind": "toilet", "label": "Toilet", "x": 30.0, "y": 74.0, "w": 29.5, "h": 25.5},
+  {"kind": "vanity", "label": "Vanity", "x": 29.0, "y": 42.5, "w": 21.5, "h": 29.0},
+  {"kind": "tub", "label": "Tub", "x": 28.0, "y": 4.0, "w": 64.0, "h": 34.0},
+  {"kind": "ac", "label": "Bedroom AC", "x": 24.5, "y": 372.0, "w": 42.0, "h": 10.0, "height": 24, "reserve": 18, "est": true, "note": "Assumed through-wall heating/cooling unit under the window; size and place unverified."},
+  {"kind": "ac", "label": "Living room AC", "x": 199.0, "y": 372.0, "w": 41.5, "h": 10.0, "height": 24, "reserve": 18, "est": true, "note": "Assumed through-wall heating/cooling unit under the window; size and place unverified."}
+ ],
+ "layouts": [
+  {
+   "id": "bed-outside-wall",
+   "name": "Bed on the outside wall, floating sofa",
+   "note": "Headboard on the solid outside wall, 65-inch TV on the partition; the sofa floats so the living-room TV is about 9 ft away and a 4-seat table sits by the kitchen.",
+   "items": [
+    {"id": "bed", "ref": "queen-bed", "x": 45, "y": 270, "rot": 270},
+    {"id": "nightstand-1", "ref": "nightstand", "x": 11.5, "y": 229, "rot": 270},
+    {"id": "nightstand-2", "ref": "nightstand", "x": 11.5, "y": 311, "rot": 270},
+    {"id": "tv-bed", "ref": "tv-65", "x": 136.25, "y": 262, "rot": 90},
+    {"id": "dresser", "ref": "dresser", "x": 127.65, "y": 314, "rot": 90},
+    {"id": "sofa", "ref": "sofa-3", "x": 178, "y": 250, "rot": 270},
+    {"id": "coffee", "ref": "coffee-table", "x": 226, "y": 250, "rot": 270},
+    {"id": "tv", "ref": "tv-65", "x": 289.25, "y": 250, "rot": 90},
+    {"id": "dining", "ref": "dining-4", "x": 235, "y": 175, "rot": 90}
+   ]
+  }
+ ]
+}

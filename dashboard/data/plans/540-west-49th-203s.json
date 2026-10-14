@@ -1,0 +1,111 @@
+{
+ "schema": 2,
+ "id": "540-west-49th-203s",
+ "title": "540 West #203S",
+ "units": "in",
+ "source": "Ported from an earlier fit-check model traced from the broker's plan (Brown Harris Stevens) in inches; rooms rebuilt on wall centrelines. The plan image itself was not re-checked here. Window side orientation unknown. A tracing, not a survey.",
+ "provenance": {
+  "match": "exact-unit",
+  "checked": "2026-10-14",
+  "printed": [
+   "Bedroom 17'-7\" x 10'-6\"",
+   "Living-dining 23'-9\" x 12'-6\""
+  ],
+  "estimated": [
+   "Plan geometry from a previous tracing, not re-measured",
+   "Door positions read from wall gaps",
+   "Window sill and head heights",
+   "Ceiling height",
+   "Compass: not on the plan; windows assumed to face 209 degrees (south-southwest)"
+  ],
+  "bedroom_door_drawn": true,
+  "wd_drawn": true
+ },
+ "ceiling": 108,
+ "wall": 5,
+ "up_bearing": 209,
+ "floor": 2,
+ "rooms": [
+  {
+   "name": "Bedroom",
+   "kind": "bedroom",
+   "poly": [[7.0, 301.5], [117.5, 301.5], [117.5, 286.0], [133.5, 286.0], [133.5, 130.5], [7.0, 130.5]],
+   "stated": "17'7\" x 10'6\""
+  },
+  {
+   "name": "Dressing area",
+   "kind": "hall",
+   "poly": [[33.5, 130.5], [65.0, 130.5], [65.0, 26.0], [33.5, 26.0]]
+  },
+  {
+   "name": "Closet",
+   "kind": "closet",
+   "poly": [[7.0, 130.5], [33.5, 130.5], [33.5, 15.0], [7.0, 15.0]]
+  },
+  {
+   "name": "Bath",
+   "kind": "bath",
+   "poly": [[65.0, 130.5], [133.5, 130.5], [133.5, 70.0], [183.5, 70.0], [183.5, 5.0], [65.0, 5.0]]
+  },
+  {
+   "name": "Living-dining",
+   "kind": "living",
+   "poly": [[133.5, 286.0], [147.5, 286.0], [147.5, 301.5], [252.0, 301.5], [252.0, 286.0], [266.0, 286.0], [266.0, 169.5], [241.0, 169.5], [241.0, 70.0], [133.5, 70.0]],
+   "stated": "23'9\" x 12'6\""
+  },
+  {
+   "name": "Foyer",
+   "kind": "hall",
+   "poly": [[183.5, 70.0], [241.0, 70.0], [241.0, 45.5], [223.5, 45.5], [223.5, 5.0], [183.5, 5.0]]
+  },
+  {
+   "name": "Kitchen",
+   "kind": "kitchen",
+   "poly": [[241.0, 169.5], [266.0, 169.5], [266.0, 5.0], [223.5, 5.0], [223.5, 45.5], [241.0, 45.5]]
+  }
+ ],
+ "windows": [
+  {"room": "Bedroom", "x1": 16.5, "y1": 301.5, "x2": 115.5, "y2": 301.5, "sill": 18, "head": 92},
+  {"room": "Living-dining", "x1": 149.0, "y1": 301.5, "x2": 252.0, "y2": 301.5, "sill": 18, "head": 92}
+ ],
+ "doors": [
+  {"x1": 185.5, "y1": 5.0, "x2": 212.5, "y2": 5.0, "hinge": "a", "room": "Foyer", "name": "front door", "kind": "entry", "swing": "in"},
+  {"x1": 133.5, "y1": 164.0, "x2": 133.5, "y2": 134.0, "hinge": "b", "room": "Bedroom", "name": "bedroom door", "swing": "in"},
+  {"x1": 183.5, "y1": 60.0, "x2": 183.5, "y2": 35.0, "hinge": "b", "name": "bath door from the foyer", "swing": "none"},
+  {"x1": 65.0, "y1": 60.0, "x2": 65.0, "y2": 37.0, "name": "bath door from the dressing area", "swing": "none"},
+  {"x1": 33.5, "y1": 127.0, "x2": 33.5, "y2": 21.0, "name": "closet doors", "swing": "none"}
+ ],
+ "open_walls": [
+  {"x1": 33.5, "y1": 130.5, "x2": 65.0, "y2": 130.5},
+  {"x1": 183.5, "y1": 70.0, "x2": 241.0, "y2": 70.0},
+  {"x1": 241.0, "y1": 169.5, "x2": 241.0, "y2": 45.5},
+  {"x1": 223.5, "y1": 45.5, "x2": 241.0, "y2": 45.5}
+ ],
+ "fixtures": [
+  {"kind": "column", "label": "Pier", "x": 117.5, "y": 286.0, "w": 16.0, "h": 15.5},
+  {"kind": "counter", "label": "Counter", "x": 242.5, "y": 62.5, "w": 20.5, "h": 106.0},
+  {"kind": "fridge", "label": "Fridge", "x": 243.0, "y": 45.0, "w": 20.0, "h": 17.5},
+  {"kind": "counter", "label": "Counter and sink", "x": 225.0, "y": 8.0, "w": 38.0, "h": 37.0},
+  {"kind": "wd", "label": "Washer/dryer", "x": 81.5, "y": 102.0, "w": 25.5, "h": 26.0},
+  {"kind": "tub", "label": "Tub", "x": 68.0, "y": 71.0, "w": 63.0, "h": 27.5},
+  {"kind": "toilet", "label": "Toilet", "x": 76.5, "y": 18.5, "w": 13.0, "h": 18.5},
+  {"kind": "vanity", "label": "Vanity", "x": 99.0, "y": 11.5, "w": 65.0, "h": 20.5}
+ ],
+ "layouts": [
+  {
+   "id": "bed-left-wall",
+   "name": "Bed on the outside wall, sofa on the partition",
+   "note": "Headboard on the solid left wall and a 55-inch TV on the partition; in the living-dining room the sofa backs onto the partition and a 4-seat table sits by the kitchen.",
+   "items": [
+    {"id": "bed", "ref": "queen-bed", "x": 52, "y": 215, "rot": 270},
+    {"id": "nightstand-1", "ref": "nightstand", "x": 18.5, "y": 174, "rot": 270},
+    {"id": "nightstand-2", "ref": "nightstand", "x": 18.5, "y": 256, "rot": 270},
+    {"id": "tv-bed", "ref": "tv-55", "x": 129.25, "y": 215, "rot": 90},
+    {"id": "sofa", "ref": "sofa-3", "x": 155, "y": 230, "rot": 270},
+    {"id": "coffee", "ref": "coffee-table", "x": 205, "y": 230, "rot": 270},
+    {"id": "tv", "ref": "tv-65", "x": 261.75, "y": 230, "rot": 90},
+    {"id": "dining", "ref": "dining-4", "x": 187, "y": 120, "rot": 0}
+   ]
+  }
+ ]
+}

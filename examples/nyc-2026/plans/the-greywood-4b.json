@@ -1,0 +1,122 @@
+{
+ "schema": 2,
+ "id": "the-greywood-4b",
+ "title": "The Greywood #4B (B line)",
+ "units": "ft",
+ "source": "Approximate plan drawn from the agent's B-line room sizes (living 11.5 x 15.5 ft, bedroom 11 x 10.5 ft) and the rendered 3D plan in the listing (image 13 of 14, staged furniture). Kitchen, bath, closet and entry positions are read off the rendering at about 23 px per foot and are estimates; total size was not given.",
+ "provenance": {
+  "match": "stated-dims",
+  "checked": "2026-10-14",
+  "printed": [
+   "Living room 11.5 x 15.5 ft (agent, B line)",
+   "Bedroom 11 x 10.5 ft (agent, B line)"
+  ],
+  "estimated": [
+   "Everything except the two stated rooms: read off a perspective rendering",
+   "Front door position",
+   "Window widths (floor-to-ceiling per the listing)",
+   "Ceiling height",
+   "Compass: not stated; windows assumed to face the 36th Street side (209 degrees)"
+  ],
+  "bedroom_door_drawn": true,
+  "wd_drawn": false
+ },
+ "ceiling": 9,
+ "wall": 0.4,
+ "up_bearing": 299,
+ "floor": 4,
+ "rooms": [
+  {
+   "name": "Living room",
+   "kind": "living",
+   "poly": [[0.9, 12.3], [12.6, 12.3], [12.6, 27.9], [0.9, 27.9]],
+   "stated": "15'6\" x 11'6\""
+  },
+  {
+   "name": "Kitchen",
+   "kind": "kitchen",
+   "poly": [[12.6, 12.3], [23.4, 12.3], [23.4, 23.0], [12.6, 23.0]],
+   "est": true
+  },
+  {
+   "name": "Entry hall",
+   "kind": "hall",
+   "poly": [[12.6, 23.0], [31.1, 23.0], [31.1, 27.9], [12.6, 27.9]],
+   "est": true
+  },
+  {
+   "name": "Coat closet",
+   "kind": "closet",
+   "poly": [[23.4, 19.2], [31.1, 19.2], [31.1, 23.0], [23.4, 23.0]],
+   "est": true
+  },
+  {
+   "name": "Bedroom",
+   "kind": "bedroom",
+   "poly": [[0.0, 0.75], [10.75, 0.75], [10.75, 12.3], [0.0, 12.3]],
+   "stated": "11'0\" x 10'6\""
+  },
+  {
+   "name": "Hall",
+   "kind": "hall",
+   "poly": [[10.75, 7.1], [17.4, 7.1], [17.4, 12.3], [10.75, 12.3]],
+   "est": true
+  },
+  {
+   "name": "Walk-in closet",
+   "kind": "closet",
+   "poly": [[10.75, 0.75], [17.4, 0.75], [17.4, 7.1], [10.75, 7.1]],
+   "est": true
+  },
+  {
+   "name": "Bath",
+   "kind": "bath",
+   "poly": [[17.4, 0.75], [23.4, 0.75], [23.4, 12.3], [17.4, 12.3]],
+   "est": true
+  }
+ ],
+ "windows": [
+  {"room": "Living room", "x1": 0.9, "y1": 13.3, "x2": 0.9, "y2": 26.2, "sill": 0.5, "head": 8.3, "note": "floor-to-ceiling"},
+  {"room": "Living room", "x1": 10.8, "y1": 27.9, "x2": 12.4, "y2": 27.9, "sill": 3.0, "head": 7.0, "note": "small window shown on the rendered plan"},
+  {"room": "Bedroom", "x1": 0.0, "y1": 1.8, "x2": 0.0, "y2": 10.6, "sill": 0.5, "head": 8.3, "note": "floor-to-ceiling"}
+ ],
+ "doors": [
+  {"x1": 31.1, "y1": 24.4, "x2": 31.1, "y2": 27.3, "hinge": "a", "name": "front door (position estimated)", "kind": "entry", "swing": "-x"},
+  {"x1": 10.75, "y1": 8.6, "x2": 10.75, "y2": 11.4, "hinge": "b", "room": "Bedroom", "name": "bedroom door", "swing": "-x"},
+  {"x1": 10.75, "y1": 2.4, "x2": 10.75, "y2": 5.4, "hinge": "a", "room": "Bedroom", "name": "closet door", "swing": "-x"},
+  {"x1": 17.4, "y1": 8.2, "x2": 17.4, "y2": 10.8, "hinge": "b", "room": "Bath", "name": "bath door", "swing": "+x"},
+  {"x1": 13.9, "y1": 7.1, "x2": 16.4, "y2": 7.1, "hinge": "a", "room": "Walk-in closet", "name": "closet door from the hall", "swing": "-y"},
+  {"x1": 24.0, "y1": 23.0, "x2": 30.5, "y2": 23.0, "name": "coat closet bifolds", "swing": "none"}
+ ],
+ "open_walls": [
+  {"x1": 12.6, "y1": 12.3, "x2": 12.6, "y2": 27.9},
+  {"x1": 12.6, "y1": 23.0, "x2": 23.4, "y2": 23.0},
+  {"x1": 10.75, "y1": 12.3, "x2": 14.2, "y2": 12.3}
+ ],
+ "fixtures": [
+  {"kind": "island", "label": "Island with sink", "x": 14.4, "y": 13.0, "w": 2.55, "h": 8.3},
+  {"kind": "counter", "label": "Counter and range", "x": 20.75, "y": 12.6, "w": 2.2, "h": 7.8},
+  {"kind": "fridge", "label": "Fridge", "x": 20.35, "y": 20.4, "w": 2.6, "h": 2.4},
+  {"kind": "tub", "label": "Tub", "x": 17.7, "y": 1.0, "w": 4.9, "h": 2.4},
+  {"kind": "vanity", "label": "Vanity", "x": 20.9, "y": 5.0, "w": 2.2, "h": 2.3},
+  {"kind": "toilet", "label": "Toilet", "x": 21.3, "y": 7.9, "w": 1.8, "h": 1.8},
+  {"kind": "closet", "label": "Hanging rails", "x": 12.4, "y": 0.95, "w": 4.8, "h": 1.95, "reserve": 0, "doors": "open", "front": "+y"}
+ ],
+ "layouts": [
+  {
+   "id": "staged-like",
+   "name": "As staged: sofa under the top wall, table by the kitchen",
+   "note": "Sofa a little off the top wall facing a TV console, a 4-seat table at the kitchen end; the bed's headboard is on the solid bottom wall because the side wall is all glass.",
+   "items": [
+    {"id": "bed", "ref": "queen-bed", "x": 5.0, "y": 4.55, "rot": 180},
+    {"id": "nightstand-1", "ref": "nightstand", "x": 1.58, "y": 1.67, "rot": 180},
+    {"id": "nightstand-2", "ref": "nightstand", "x": 8.42, "y": 1.67, "rot": 180},
+    {"id": "tv-bed", "ref": "tv-65", "x": 5.0, "y": 11.95, "rot": 0},
+    {"id": "sofa", "ref": "sofa-3", "x": 5.5, "y": 25.0, "rot": 0},
+    {"id": "coffee", "ref": "coffee-table", "x": 5.5, "y": 21.3, "rot": 0},
+    {"id": "tv", "ref": "tv-console", "x": 5.5, "y": 16.6, "rot": 180},
+    {"id": "dining", "ref": "dining-4", "x": 10.0, "y": 14.7, "rot": 90}
+   ]
+  }
+ ]
+}

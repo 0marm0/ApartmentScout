@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-14T00:44:11",
+ "generated": "2026-10-14T01:23:28",
  "version": "0.1.0",
  "search": "Manhattan 1BR, fall 2026",
  "layers": [
@@ -10,22 +10,40 @@
   "transit-lines.json"
  ],
  "sites": [
+  "540-west-49th-203s",
   "atlas-38d",
   "emerald-green-1211",
+  "emerald-green-620",
   "henry-hall-23j",
   "lana-condominium-11l",
   "orion-condominium-43e",
+  "paramount-tower-25e",
+  "paramount-tower-41a",
+  "paramount-tower-49k",
+  "paramount-tower-9j",
+  "paramount-tower-glenwood-40k",
+  "the-greywood-4b",
   "the-knox-13c",
   "the-maybury-2204",
   "townsend-14c"
  ],
  "plans": [
-  "emerald-green-1211"
+  "540-west-49th-203s",
+  "emerald-green-1211",
+  "emerald-green-620",
+  "paramount-tower-25e",
+  "paramount-tower-41a",
+  "paramount-tower-49k",
+  "paramount-tower-9j",
+  "paramount-tower-glenwood-40k",
+  "the-greywood-4b"
  ],
  "dossiers": [
   "416-west-52nd-street-507",
+  "540-west-49th-203s",
   "atlas-38d",
   "emerald-green-1211",
+  "emerald-green-620",
   "exhibit-downtown-15e",
   "gramercy-starck-10l",
   "henry-hall-11l",
@@ -33,6 +51,11 @@
   "lana-condominium-11l",
   "mercedes-house-1807",
   "orion-condominium-43e",
+  "paramount-tower-25e",
+  "paramount-tower-41a",
+  "paramount-tower-49k",
+  "paramount-tower-9j",
+  "paramount-tower-glenwood-40k",
   "the-adele-phf",
   "the-atelier-19b",
   "the-aurora-704",

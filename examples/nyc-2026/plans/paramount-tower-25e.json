@@ -1,0 +1,139 @@
+{
+ "schema": 2,
+ "id": "paramount-tower-25e",
+ "title": "Paramount Tower #25E (E line)",
+ "units": "in",
+ "source": "Traced from Glenwood's E-line plan for floors 3-27 (https://glenwoodadmin.com/webdav/images/floorplans/paramount/PM3-27E.jpg) at 1.643 px per inch, scaled from the printed room sizes. Positions of fixtures, the AC units and door swings are read from the drawing or estimated. A tracing, not a survey. Orientation of the E line is not stated on the plan.",
+ "provenance": {
+  "match": "line-tier",
+  "floor_band": "3-27",
+  "checked": "2026-10-14",
+  "printed": [
+   "Living room 23'-0\" x 12'-5\"",
+   "Bedroom 16'-6\" x 11'-4\"",
+   "Kitchen 7'-9\" x 7'-2\""
+  ],
+  "estimated": [
+   "Scale from printed room sizes (bedroom and living widths agree within 1%)",
+   "AC units: assumed through-wall units; size and place unverified",
+   "Window sill and head heights",
+   "Door swings not drawn on the plan",
+   "Compass: no north arrow on the plan; drawing top assumed to face 29 degrees (the 39th Street side), so this line's windows are an assumption"
+  ],
+  "bedroom_door_drawn": true,
+  "wd_drawn": false
+ },
+ "ceiling": 108,
+ "wall": 5,
+ "up_bearing": 29,
+ "floor": 25,
+ "rooms": [
+  {
+   "name": "Bath",
+   "kind": "bath",
+   "poly": [[15.0, 388.5], [87.5, 388.5], [87.5, 288.5], [15.0, 288.5]]
+  },
+  {
+   "name": "Walk-in closet",
+   "kind": "closet",
+   "poly": [[11.5, 288.5], [87.5, 288.5], [87.5, 242.0], [11.5, 242.0]]
+  },
+  {
+   "name": "Bedroom",
+   "kind": "bedroom",
+   "poly": [[0.0, 242.0], [139.5, 242.0], [139.5, 37.5], [29.0, 37.5], [0.0, 67.5]],
+   "stated": "16'6\" x 11'4\""
+  },
+  {
+   "name": "Coat closet",
+   "kind": "closet",
+   "poly": [[87.5, 357.5], [128.0, 357.5], [128.0, 328.0], [87.5, 328.0]]
+  },
+  {
+   "name": "Foyer",
+   "kind": "hall",
+   "poly": [[128.0, 388.5], [217.5, 388.5], [217.5, 282.5], [139.5, 282.5], [139.5, 242.0], [87.5, 242.0], [87.5, 328.0], [128.0, 328.0]]
+  },
+  {
+   "name": "Kitchen",
+   "kind": "kitchen",
+   "poly": [[217.5, 388.5], [311.0, 388.5], [311.0, 282.5], [217.5, 282.5]],
+   "stated": "7'9\" x 7'2\""
+  },
+  {
+   "name": "Living room",
+   "kind": "living",
+   "poly": [[139.5, 282.5], [293.5, 282.5], [293.5, 37.5], [255.5, 0.0], [174.5, 0.0], [139.5, 35.5]],
+   "stated": "23'0\" x 12'5\""
+  }
+ ],
+ "windows": [
+  {"room": "Bedroom", "x1": 0.0, "y1": 115.5, "x2": 0.0, "y2": 67.5, "sill": 20, "head": 94},
+  {"room": "Bedroom", "x1": 0.0, "y1": 67.5, "x2": 29.0, "y2": 37.5, "sill": 20, "head": 94},
+  {"room": "Bedroom", "x1": 29.0, "y1": 37.5, "x2": 105.5, "y2": 37.5, "sill": 20, "head": 94},
+  {"room": "Living room", "x1": 139.5, "y1": 35.5, "x2": 174.5, "y2": 0.0, "sill": 20, "head": 94},
+  {"room": "Living room", "x1": 174.5, "y1": 0.0, "x2": 255.5, "y2": 0.0, "sill": 20, "head": 94},
+  {"room": "Living room", "x1": 255.5, "y1": 0.0, "x2": 293.5, "y2": 37.5, "sill": 20, "head": 94}
+ ],
+ "doors": [
+  {"x1": 159.5, "y1": 388.5, "x2": 196.0, "y2": 388.5, "hinge": "a", "room": "Foyer", "name": "front door", "kind": "entry", "swing": "in"},
+  {"x1": 87.5, "y1": 325.0, "x2": 87.5, "y2": 294.5, "hinge": "a", "room": "Bath", "name": "bath door", "swing": "in"},
+  {"x1": 91.5, "y1": 328.0, "x2": 124.0, "y2": 328.0, "hinge": "a", "name": "coat closet door", "swing": "-y"},
+  {"x1": 34.0, "y1": 242.0, "x2": 65.5, "y2": 242.0, "hinge": "b", "room": "Walk-in closet", "name": "closet door", "swing": "in"},
+  {"x1": 93.0, "y1": 242.0, "x2": 125.5, "y2": 242.0, "hinge": "b", "room": "Bedroom", "name": "bedroom door", "swing": "in"}
+ ],
+ "open_walls": [
+  {"x1": 139.5, "y1": 282.5, "x2": 217.5, "y2": 282.5},
+  {"x1": 139.5, "y1": 282.5, "x2": 139.5, "y2": 242.0},
+  {"x1": 217.5, "y1": 282.5, "x2": 293.5, "y2": 282.5},
+  {"x1": 217.5, "y1": 355.5, "x2": 217.5, "y2": 320.0}
+ ],
+ "fixtures": [
+  {"kind": "column", "label": "Column", "x": 120.5, "y": 37.5, "w": 19.0, "h": 49.0},
+  {"kind": "closet", "label": "Foyer closet", "x": 131.5, "y": 289.5, "w": 22.0, "h": 41.0, "reserve": 24, "doors": "hinged", "front": "-x"},
+  {"kind": "counter", "label": "Counter, sink and dishwasher", "x": 219.5, "y": 287.5, "w": 89.0, "h": 29.0},
+  {"kind": "counter", "label": "Breakfast ledge", "x": 219.5, "y": 276.5, "w": 72.0, "h": 11.0, "height": 42},
+  {"kind": "range", "label": "Range", "x": 219.5, "y": 359.0, "w": 35.0, "h": 25.5},
+  {"kind": "counter", "label": "Counter", "x": 254.5, "y": 359.0, "w": 19.5, "h": 25.5},
+  {"kind": "fridge", "label": "Fridge", "x": 274.0, "y": 353.0, "w": 33.5, "h": 31.5},
+  {"kind": "tub", "label": "Tub", "x": 17.5, "y": 357.5, "w": 67.5, "h": 27.0},
+  {"kind": "vanity", "label": "Vanity", "x": 17.5, "y": 325.5, "w": 23.5, "h": 28.5},
+  {"kind": "toilet", "label": "Toilet", "x": 20.0, "y": 292.0, "w": 24.5, "h": 29.5},
+  {"kind": "ac", "label": "Bedroom AC", "x": 46.5, "y": 37.5, "w": 42.0, "h": 10.0, "height": 24, "reserve": 18, "est": true, "note": "Assumed through-wall heating/cooling unit under the window; size and place unverified."},
+  {"kind": "ac", "label": "Living room AC", "x": 194.0, "y": 0.0, "w": 42.0, "h": 9.5, "height": 24, "reserve": 18, "est": true, "note": "Assumed through-wall heating/cooling unit under the window; size and place unverified."}
+ ],
+ "layouts": [
+  {
+   "id": "bed-living-wall",
+   "name": "Bed on the living-room wall, floating sofa",
+   "note": "Headboard on the solid partition with both sides free and a 65-inch TV on the far wall past the bay; the sofa floats 1 ft off the partition so the TV is about 9 ft away, with a round table by the kitchen.",
+   "items": [
+    {"id": "bed", "ref": "queen-bed", "x": 94.5, "y": 150, "rot": 90},
+    {"id": "nightstand-1", "ref": "nightstand", "x": 128.5, "y": 108.5, "rot": 90},
+    {"id": "nightstand-2", "ref": "nightstand", "x": 128.5, "y": 191.5, "rot": 90},
+    {"id": "tv-bed", "ref": "tv-65", "x": 4.25, "y": 150, "rot": 270},
+    {"id": "dresser", "ref": "dresser", "x": 16.8, "y": 229, "rot": 0},
+    {"id": "sofa", "ref": "sofa-3", "x": 173, "y": 150, "rot": 270},
+    {"id": "coffee", "ref": "coffee-table", "x": 221, "y": 150, "rot": 270},
+    {"id": "tv", "ref": "tv-65", "x": 289.25, "y": 150, "rot": 90},
+    {"id": "dining", "ref": "dining-round", "x": 240, "y": 225, "rot": 0}
+   ]
+  },
+  {
+   "id": "bed-outside-wall",
+   "name": "Bed on the outside wall, desk by the column",
+   "note": "Headboard on the solid stretch of the outside wall above the corner window, TV on the partition; a desk sits beside the column, and the living room turns to face the partition.",
+   "items": [
+    {"id": "bed", "ref": "queen-bed", "x": 45, "y": 175, "rot": 270},
+    {"id": "nightstand-1", "ref": "nightstand", "x": 11.5, "y": 134, "rot": 270},
+    {"id": "nightstand-2", "ref": "nightstand", "x": 11.5, "y": 216, "rot": 270},
+    {"id": "tv-bed", "ref": "tv-65", "x": 135.25, "y": 175, "rot": 90},
+    {"id": "desk", "ref": "desk", "x": 124.5, "y": 112, "rot": 90},
+    {"id": "sofa", "ref": "sofa-3", "x": 252, "y": 140, "rot": 90},
+    {"id": "coffee", "ref": "coffee-table", "x": 210, "y": 140, "rot": 90},
+    {"id": "tv", "ref": "tv-65", "x": 143.75, "y": 140, "rot": 270},
+    {"id": "dining", "ref": "dining-4", "x": 216, "y": 240, "rot": 90}
+   ]
+  }
+ ]
+}
