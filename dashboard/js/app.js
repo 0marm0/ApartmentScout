@@ -235,7 +235,7 @@ export function setPick(id, patch) {
 }
 export function toggleSave(id) { setPick(id, { saved: !isSaved(id) }); toast(isSaved(id) ? 'Saved to your picks' : 'Removed from your picks'); }
 export function exportPicks() {
-  download(`apartmentscout-picks-${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify({ version: 1, search: S.crit.search?.name, picks: S.picks }, null, 1), 'application/json');
+  download(`apartmentscout-picks-${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify({ version: 1, search: S.crit.search?.name, picks: S.picks, weights: S.weights }, null, 1), 'application/json');
 }
 export async function importPicks(file) {
   try {
@@ -302,6 +302,7 @@ function renderKPIs() {
   $('kpis').querySelectorAll('[data-open]').forEach((a) => a.addEventListener('click', (e) => { e.preventDefault(); openDrawer(e.currentTarget.dataset.open, { fly: true }); }));
   $('kpis').querySelector('[data-pv=edit]')?.addEventListener('click', openSettings);
   $('kpis').querySelector('[data-pv=reset]')?.addEventListener('click', () => applyCriteria(null));
+  emit('kpis');   // [features/visit.js] the strip was rebuilt: features that add to it re-attach
 }
 
 // ------------------------------------------------------------------ filter rail
@@ -373,6 +374,7 @@ function renderRail() {
     e.preventDefault();
     download('weights.yaml', `# paste into criteria.yaml\n${S.preset ? `scoring:\n  preset: ${S.preset}\n` : ''}weights:\n${DIMS.map(([k]) => `  ${k}: ${S.weights[k] || 0}`).join('\n')}\n`, 'text/yaml');
   });
+  emit('rail');   // [features/tradeoff.js] the rail was rebuilt: features that add a block to it re-attach
 }
 const BASIS_RAIL = { monthly_cost: 'Monthly cost, net of concessions', net: 'Net-effective rent (fees left out)', gross: 'Gross rent in a paid month, plus known fees' };
 /** The amount budget tiers compare: the scorer's budget_amount (by basis), else the monthly cost. */
@@ -395,6 +397,16 @@ function refreshRailValues() {
   const tot = Object.values(S.weights).reduce((a, b) => a + b, 0) || 1;
   document.querySelectorAll('[data-w]').forEach((r) => { r.style.setProperty('--p', `${(r.value / 40) * 100}%`); r.parentElement.querySelector('b').textContent = Math.round(((S.weights[r.dataset.w] || 0) / tot) * 100) + '%'; });
   const rc = $('rCom'); if (rc) { rc.style.setProperty('--p', `${((rc.value - 5) / 70) * 100}%`); $('comVal').textContent = S.filters.maxCommute >= 75 ? 'Any' : '≤ ' + S.filters.maxCommute + ' min'; }
+}
+
+/** [features/tradeoff.js] Set the ranking weights from outside the rail (the trade-off pad). Same path as dragging a
+ *  slider: store, re-rank, move the slider thumbs and shares, tell the views; `settled` rebuilds the rail like a slider's
+ *  release does. Returns the weights now in force. */
+export function setWeights(w, { settled = false } = {}) {
+  S.weights = { ...S.weights, ...w }; store.set('weights', S.weights);
+  rescore(); refreshRailValues(); emit('weights');
+  if (settled) { renderRail(); emit('weights-settled'); }
+  return S.weights;
 }
 
 // ------------------------------------------------------------------ result cards
@@ -841,6 +853,7 @@ async function boot() {
   emit('compare'); emit('saved');
   // the top-bar search box opens the command palette; the text filter it sets shows here with a clear button
   initPalette(); initEnhance(); initMedia({ S, loadJSON, openDrawer, label });
+  import('./features/index.js').then((m) => m.initFeatures()).catch((e) => console.warn('features unavailable', e));   // [features] decision workflow
   const q = $('q'), openQ = (seed = '') => openPalette(seed || S.filters.q || '');
   q.addEventListener('click', () => openQ());
   q.addEventListener('keydown', (e) => {

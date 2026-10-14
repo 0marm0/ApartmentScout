@@ -442,6 +442,7 @@ def standalone(data_dir: Path, dest: Path) -> Path:
     data = {}
     for f in sorted(data_dir.rglob("*.json")):
         data["data/" + f.relative_to(data_dir).as_posix()] = json.loads(f.read_text())
+    data["share/snapshot.html"] = (DASH / "share" / "snapshot.html").read_text()   # the Share button's template (features/share.js)
     no_media = not (dest.parent / "media").is_dir()
     if no_media and isinstance(data.get("data/listings.json"), list):
         # local photo copies are not embedded: without a media/ folder next to the file use the photo links
