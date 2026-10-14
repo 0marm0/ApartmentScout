@@ -28,9 +28,10 @@ def sun_charts(site: dict, face: dict, floor: int, out_dir: Path, stem: str, com
     lat, lon = site["origin"]["lat"], site["origin"]["lon"]
     sky = Skyline(site)
     fh = site.get("floor_height_m", 3.2)
-    prof = sky.profile(*window_point(face, 0.5, floor, fh))
+    t = (site.get("window") or {}).get("t", 0.5)
+    prof = sky.profile(*window_point(face, t, floor, fh))
     cmp_floor = compare_floor or min(len(site.get("study", {}).get("floors_table", {})) + 1, floor + 9)
-    prof2 = sky.profile(*window_point(face, 0.5, cmp_floor, fh))
+    prof2 = sky.profile(*window_point(face, t, cmp_floor, fh))
     fb = face["bearing"]
     paths = []
     # sun path vs skyline
@@ -97,7 +98,41 @@ def sun_charts(site: dict, face: dict, floor: int, out_dir: Path, stem: str, com
         fig.savefig(p)
         plt.close(fig)
         paths.append(p)
+    p = sun_range_chart(site, out_dir / f"{stem}-sun-range.png")
+    if p:
+        paths.append(p)
     return paths
+
+
+def sun_range_chart(site: dict, out: Path) -> Path | None:
+    """Monthly direct sun for the chosen window, with the range over facade positions and nearby
+    floors shaded, and the after-construction line when filed buildings would cut it."""
+    st = site.get("study") or {}
+    rng, hours = st.get("sun_hours_range"), st.get("sun_hours")
+    if not rng or not hours:
+        return None
+    x = np.arange(12)
+    fig, ax = plt.subplots(figsize=(8, 3.4), dpi=140)
+    fl = rng.get("floors") or []
+    ax.fill_between(x, rng["lo"], rng["hi"], color=SUN, alpha=0.22, lw=0,
+                    label=f"range: window positions {', '.join(f'{t:.2f}' for t in rng.get('positions', []))}"
+                          + (f", floors {fl[0]}-{fl[-1]}" if fl else ""))
+    w = site.get("window") or {}
+    ax.plot(x, hours, color=SUN, lw=2.2, marker="o", ms=3.5, label=f"floor {w.get('floor')}, window at t={w.get('t')}")
+    if st.get("sun_hours_future"):
+        ax.plot(x, st["sun_hours_future"], color=INK, lw=1.2, ls="--", label="with filed new buildings")
+    ax.set_xticks(x)
+    ax.set_xticklabels("JFMAMJJASOND")
+    ax.set_ylim(0, max(9, max(rng["hi"]) + 0.5))
+    ax.set_ylabel("hours per day", color=MUTED)
+    ax.set_title("Direct sun on the window, 15th of each month", loc="left", color=INK, fontsize=12)
+    ax.legend(fontsize=8, loc="upper left", frameon=False)
+    _style(ax)
+    fig.tight_layout()
+    out.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(out)
+    plt.close(fig)
+    return out
 
 
 def noise_hour_chart(dossier: dict, out: Path) -> Path | None:

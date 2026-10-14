@@ -84,9 +84,56 @@ See [methodology](methodology.md) for how each part is computed.
 
 ## Site model
 
-`sites/<id>.json` holds buildings in local metres around the listing
-(`b: [[top, ground, is_target, [x0, y0, x1, y1, ...]], ...]`), named landmarks (`lm`), the
-facades of the target building, the chosen window and the sun study.
+`apartmentscout site <id>` writes `sites/<id>.json` (version 2) in local metres around the listing:
+x east, y north, origin = `origin` (the listing's coordinates). Heights are metres relative to the
+target building's ground. Every key except `b`, `origin` and `target` is optional, and version 1
+files (without the newer keys) still load.
+
+```json
+{
+  "version": 2, "source": "NYC Building Footprints (5zhs-2jue) with PLUTO", "generated": "2026-10-13",
+  "origin": {"lat": 40.7555, "lon": -73.9935}, "timezone": "America/New_York", "floor_height_m": 3.2,
+  "listing": {"id": "emerald-green-1211", "floor": 12, "exposure": ["SSW"], "...": "..."},
+  "b": [[77.0, 0.0, 1, [x0, y0, x1, y1, "..."]], "..."],
+  "holes": {"17": [[[x, y], "..."]]},
+  "bmeta": [{"bin": "1087840", "bbl": "1007610043", "address": "320 West 38 Street", "year": 2007,
+             "height_src": "roof", "src": "nyc-footprints"}, "..."],
+  "target": 189,
+  "lm": [["One Vanderbilt", 781, 1235.4, -220.8, 434.3], "..."],
+  "faces": [{"i": 6, "bearing": 208.8, "length": 75.5},
+            {"i": 4, "bearing": 208.8, "length": 45.4, "shared": true, "shared_frac": 1.0, "shared_h": 35.9},
+            {"i": 1, "bearing": 208.9, "length": 41.2, "open": [0.0, 0.167], "shared_frac": 0.83, "shared_h": 48.0}],
+  "window": {"face": 6, "bearing": 208.8, "floor": 12, "t": 0.5},
+  "study": {"sun_hours": [12 numbers], "floors_table": {"2": [12 numbers], "...": "..."},
+            "skyline_ahead_deg": 33.8, "open_sky_share": 0.28,
+            "sun_hours_range": {"lo": [12], "hi": [12], "positions": [0.2, 0.5, 0.8], "floors": [10, 11, 12, 13, 14]},
+            "sun_hours_future": [12 numbers]},
+  "streets": [{"name": "W 37 St", "pts": [[x, y], "..."], "width_m": 10.4}],
+  "streets_source": "NYC CSCL Street Centerline (inkn-q76z)",
+  "future": [{"name": "38 East 35 Street", "ring": [[x, y], "..."], "h": 58.2, "status": "under-construction",
+              "source": "NYC DOB NOW job filings (w9ak-ipjd)", "url": "https://data.cityofnewyork.us/...",
+              "stories": 18, "h_src": "filing-height", "ring_src": "tax-lot", "job": "M01062289",
+              "filed": "2024-06-13", "bin": "1017107", "bbl": "1008640047"}],
+  "provenance": {"exposure": "listing", "window_position": "assumed", "floor": "listing", "notes": "..."}
+}
+```
+
+| Key | Meaning |
+|---|---|
+| `b` | Buildings: `[top, ground, is_target, flat outer ring]`. Rings are simplified (vertices within 0.3 m of a straight line are dropped), so a straight wall is one edge. |
+| `holes` | Inner rings (light courts, courtyards) by building index. Their edges are walls; a point inside a hole is open air. |
+| `bmeta` | Per building, aligned with `b`; unknown keys are omitted. `height_src`: `roof` (NYC photogrammetry), `pluto-floors` (PLUTO floors x 3.2 m + 2 m), `osm-height`, `osm-levels` (levels x 3.2 m + 2 m) or `default` (10 m, nothing known). `src`: `nyc-footprints` or `osm`. |
+| `faces` | Target facades (edges of 8 m or more) with outward `bearing`. `shared: true` marks a party wall: points 0.5 to 1.5 m outside it fall inside another footprint (`shared_h` is that neighbour's roof). A partly shared face carries `open: [t0, t1]`, its longest unobstructed stretch. Shared faces are never picked for the window. |
+| `window` | Chosen facade (`face` = edge index), floor and position `t` along the edge (default: middle of the open stretch). |
+| `study.sun_hours` | Direct sun hours per day on the 15th of each month at the window. `floors_table` repeats it for every floor. |
+| `study.sun_hours_range` | Lowest and highest monthly hours over window positions 20 / 50 / 80 % along the open stretch (`positions`, as `t`) and floors f-2 to f+2 (`floors`): the uncertainty from not knowing exactly where the window is. |
+| `study.sun_hours_future` | Hours with `future` buildings added, when they change anything. |
+| `streets` | Street centrelines within the site radius (`width_m` = roadbed width where known). |
+| `future` | New buildings filed with or permitted by NYC DOB that are not standing yet. `status`: `proposed`, `permit` (plans approved), `under-construction` (work permit issued), `complete` (not yet in the footprints). `ring_src`: `tax-lot` (the whole lot, an upper bound) or `point` (location only). |
+| `provenance` | Where `exposure`, `window_position` (`listing`, `plan`, `agent`, `photo-landmarks`, `model`, `assumed`) and `floor` (`listing`, `inferred`, `assumed`) came from. Filled from the listing's `exposure_source`, `window_position_source` and `floor_inferred`. |
+
+The listing gets a summary in `site`: file, floor, bearing, `sun_hours`, `sun_hours_range` (`lo`, `hi`),
+`skyline_ahead_deg` and `open_sky_share`.
 
 ## Floor plan
 
