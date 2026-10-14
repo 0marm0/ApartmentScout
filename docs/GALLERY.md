@@ -60,15 +60,18 @@ the apartment.
 
 The unit the search ended on: $4,995 a month plus $37 in fees, E line on the 24th floor, a nine-minute walk to
 Grand Central. It has no in-unit washer/dryer; the renter waived that must-have for the space and the view, so
-it still costs amenity points but no longer gates the unit out. It ranks #8.
+it still costs amenity points but no longer gates the unit out. With the renter's building ratings and the graded
+interiors it ranks #1.
 
 <table>
 <tr><td colspan="2"><img src="images/map-paramount.png" alt="Paramount Tower 25E on the map"><br><sub>The listing drawer for 25E over the commute map</sub></td></tr>
-<tr><td width="50%"><img src="images/unit-paramount.png" alt="Paramount Tower 25E in Unit 3D"><br><sub>Unit 3D: the tower among its Murray Hill neighbours on October 15 at 1 pm. The window direction is not recorded, so the SSW facade is an assumption, labelled as one</sub></td><td width="50%"><img src="images/plan-paramount.png" alt="Paramount Tower 25E floor plan"><br><sub>Floor plan studio on the Glenwood E-line drawing: nine pieces placed, all clear, TV distances marked ideal</sub></td></tr>
-<tr><td width="50%"><img src="images/unit-paramount-window.png" alt="Window camera"><br><sub>Window camera, 24th floor at 1 pm, on the assumed facade: in the shadow of 240 East 38th Street</sub></td><td width="50%"><img src="images/unit-paramount-inside.png" alt="Inside camera"><br><sub>Inside: the bedroom bay at the 25th-floor slab height, morning sun on the side pane</sub></td></tr>
+<tr><td width="50%"><img src="images/unit-paramount.png" alt="Paramount Tower 25E in Unit 3D"><br><sub>Unit 3D: the tower among its Murray Hill neighbours on October 15. The bay faces ESE (119°), read from the renter's own photos and a park sightline check: the only open side, and the only one with park canopy in view</sub></td><td width="50%"><img src="images/plan-paramount.png" alt="Paramount Tower 25E floor plan"><br><sub>Floor plan studio on the Glenwood E-line drawing: nine pieces placed, all clear, TV distances marked ideal</sub></td></tr>
+<tr><td width="50%"><img src="images/unit-paramount-window.png" alt="Window camera"><br><sub>Window camera, 24th floor, facing ESE over Second Avenue toward the East River, with parks and trees drawn from OpenStreetMap</sub></td><td width="50%"><img src="images/unit-paramount-inside.png" alt="Inside camera"><br><sub>Inside: the bedroom bay at the 25th-floor slab height, park canopy low in the right-hand angled pane as in the renter's photo</sub></td></tr>
 </table>
 
-### Records
+### Research: records
+
+Records now sit inside the Research tab, next to the research queue and media.
 
 <table>
 <tr><td><img src="images/records.png" alt="Records report"><br><sub>A due-diligence report for one building: PLUTO facts, record and street-noise scores, metric tiles, a "What matters" table (issue, evidence, practical significance), monthly timelines of 311 and official records, 311 by hour and type, complaints and crime by category, collapsible ledgers, research notes and sources.</sub></td></tr>
@@ -80,7 +83,9 @@ it still costs amenity points but no longer gates the unit out. It ranks #8.
 <tr><td width="50%"><img src="images/research.png" alt="Research queue"><br><sub>The finalist standard and its gaps, then the research queue: missing and stale facts, points at stake, last check and copyable questions</sub></td><td width="50%"><img src="images/research-media.png" alt="Research media"><br><sub>Media: licensed building photos with author and licence, plans and aerial fallbacks, filtered by scope</sub></td></tr>
 </table>
 
-### Tours
+### Shortlist: tours
+
+Tours are a section of the Shortlist tab.
 
 <table>
 <tr><td><img src="images/tours.png" alt="Tours"><br><sub>Saved picks on a tier board (S, A, B, C, Pass) with tour times and notes, a backup file, and a tour plan in nearest-next order from the office with walking and viewing minutes.</sub></td></tr>
