@@ -31,9 +31,11 @@ from pathlib import Path
 from . import __version__
 from .config import Workspace, load_criteria
 from .listings import CSV_TEMPLATE_COLUMNS, load, normalize, save
+from .lqip import alias_remote, build_sidecar
 
 REPO = Path(__file__).resolve().parent.parent
 DASH = REPO / "dashboard"
+LQIP_INLINE_MAX_KB = 400   # larger blur-up sidecars stay out of the standalone file (the cards still work without them)
 
 
 def city_profile(city: str | None) -> dict:
@@ -418,9 +420,19 @@ def standalone(data_dir: Path, dest: Path) -> Path:
     data = {}
     for f in sorted(data_dir.rglob("*.json")):
         data["data/" + f.relative_to(data_dir).as_posix()] = json.loads(f.read_text())
-    if not (dest.parent / "media").is_dir() and isinstance(data.get("data/listings.json"), list):
+    no_media = not (dest.parent / "media").is_dir()
+    if no_media and isinstance(data.get("data/listings.json"), list):
         # local photo copies are not embedded: without a media/ folder next to the file use the photo links
+        if "data/lqip.json" in data:   # the blur-up previews follow the photos: found under their original links
+            data["data/lqip.json"] = alias_remote(data["data/lqip.json"], data["data/listings.json"])
         data["data/listings.json"] = [{k: v for k, v in L.items() if k != "photos_local"} for L in data["data/listings.json"]]
+    if "data/lqip.json" in data:
+        kb = len(json.dumps(data["data/lqip.json"], separators=(",", ":"))) / 1024
+        if kb > LQIP_INLINE_MAX_KB or not data["data/lqip.json"].get("items"):
+            log(f"Blur-up previews not embedded in the standalone file ({kb:.0f} KB; the limit is {LQIP_INLINE_MAX_KB} KB)")
+            del data["data/lqip.json"]
+        else:
+            log(f"Blur-up previews embedded: {kb:.0f} KB")
     blob = json.dumps(data, separators=(",", ":"), default=str).replace("</", "<\\/")
     js = bundle.read_text().replace("</script", "<\\/script")
     # inline every local stylesheet (tokens, shell and the per-view files) in document order
@@ -491,6 +503,7 @@ def _export(ws: Workspace, out: Path):
                 S["score"] = {**S["score"], "reasons": [{k: v for k, v in r.items() if k != "items"} for r in S["score"]["reasons"]]}
         slim.append(S)
     (out / "listings.json").write_text(json.dumps(slim, separators=(",", ":"), ensure_ascii=False))
+    build_sidecar(slim, ws.root / "media", out, cache_path=ws.cache_dir / "lqip.json", log=log)   # blur-up previews
     (out / "criteria.json").write_text(json.dumps(crit, default=str, indent=1))
     for sub in ("layers", "sites", "plans"):
         src = ws.root / sub
