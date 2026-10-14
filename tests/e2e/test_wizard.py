@@ -396,3 +396,18 @@ def test_an_untouched_wizard_leaves_no_draft_behind(open_page) -> None:
     pg.wait_for_selector(WIZARD)
     assert "unfinished draft" not in pg.inner_text(".wz-main")
     assert not s.take()
+
+
+def test_reopening_the_wizard_while_it_fades_out_keeps_it_open(open_page) -> None:
+    """Esc starts a 200 ms fade-out that hides the dialog at the end. Opening it again before that timer fires
+    (the next animation frame is late, as on a busy CI runner) must not be undone by the old timer: that race made
+    `test_an_untouched_wizard_leaves_no_draft_behind` time out waiting for a dialog that was open but hidden."""
+    s = _open(open_page)
+    pg = s.page
+    # make the animation frame that marks the dialog "on" arrive after the old 200 ms hide timer
+    pg.evaluate("() => { const raf = window.requestAnimationFrame.bind(window); window.requestAnimationFrame = (cb) => setTimeout(() => raf(cb), 450); }")
+    pg.keyboard.press("Escape")
+    pg.evaluate("async () => (await import('/js/app.js')).openWizard({ mode: 'new' })")
+    pg.wait_for_timeout(700)                      # past both the 200 ms timer and the delayed frame
+    assert pg.is_visible(WIZARD), "the old close timer hid a dialog that had been reopened"
+    assert not s.take()
