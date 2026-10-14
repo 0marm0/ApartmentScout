@@ -1,0 +1,70 @@
+# ApartmentScout feature gap and development plan
+
+This answers what is missing from the application, rather than where to find another dashboard. The comparison covers the preserved Radius board, Codex's two-plan furniture tool, corrected Emerald city/view tool, Knox obstruction study and the current ApartmentScout implementation. Two older Claude cloud artifacts remain inaccessible; their gallery descriptions are not proof of recovered code or numerical accuracy.
+
+The working tree is being developed concurrently. Findings distinguish implemented capability from unfinished inputs and deeper modeling that remains absent. No existing source data or renter criteria were replaced by this work.
+
+## Changes implemented in this pass
+
+| Area | Before | Added or corrected |
+|---|---|---|
+| Interior sunlight | Unknown orientation silently acted as north; ambient and direct sun had no separate controls | Unknown orientation/invalid city-window placement withholds directional sunlight. Separate directional-sun checkbox and background-light preview slider; preview is explicitly not lux. |
+| Geometry assumptions | Fixed AC, fixture and window sizes required source JSON edits | Plan → Edit geometry assumptions: fixture dimensions, position, front reserve, opening width/sill/head, and plan bearing. Changes create a labeled browser-local scenario and rerun fit checks; Undo restores geometry. |
+| Complete plan portability | Furniture-only layout import; plans required a generated manifest | Layout → complete-project import/export includes raw plan, furniture and display-light preferences. Browser-local library supports up to 20 validated projects within 3 MB and participates in same-scale comparison. Source files stay unchanged. |
+| Exterior placement | All-shared facades could be reopened as valid windows | Shared facades remain rejected; city orbit remains usable while invalid window/interior conclusions are withheld. Canonical exposed stretches are used in placement. |
+| Sunlight uncertainty | Stored baseline uncertainty could remain visible after editing the scenario | Original range is shown only for the matching original facade, position, bearing, floor and study year. |
+| Reproducibility | Shared URLs omitted important window/floor/lens settings | Versioned same-site scenario URLs preserve validated window/facade, comparison and camera inputs. |
+
+Research is also being expanded in the concurrent implementation: queue, coverage, change history, gone listings, watchlist and media scope/lightbox views. This pass preserves the newer modular implementation rather than retaining a second duplicate Research view. Actual history and watch data still depend on recorded events, not on merely having a tab.
+
+## Modeling gap matrix
+
+| Priority | Capability | Current status | Missing work / acceptance |
+|---|---|---|---|
+| 1 | A single interior-to-city coordinate anchor | Partial: current Unit 3D and new Floor plan city placement can position a plan; anchoring remains a hypothesis | Store and inspect the shared origin, north/rotation, slab datum, host facade and plan/window correspondence. Confirm the model's window lies in open air; show source vs assumed anchor. |
+| 1 | Same edited plan/furniture in Floor plan and Unit 3D | Partial: separate studios and baseline source plans | Add an explicit “use this local plan scenario” bridge, including furniture and architectural edits; test the same window and dimensions in both viewers. Never silently apply a sibling unit's plan. |
+| 1 | Per-window exterior blockage | New per-window skyline/ray implementation is present in concurrent development; exact-world anchoring remains assumed | Verify each opening/pane world position, outward normal and elevation against exact geometry. Test bay sides, multiple facades and windows that accidentally map inside the host; no silent host-occlusion bypass should establish sunlight. A blocked bedroom must not automatically block a differently oriented living room. |
+| 1 | Setbacks, podiums and separate towers | Missing: default building geometry is one footprint/height prism | Optional source-backed component prisms with footprint, base, top, confidence and references. Renderer and all obstruction calculations must consume the same components. Synthetic podium/tower tests must differ from a full-footprint tower. |
+| 1 | Vertical calibration | Partial: recorded ground/roof inputs and assumed floor spacing; newer Unit 3D has slab controls | Keep measured slab/window-eye height and vertical datum distinct from floor-count estimates. Export calibration, propagate it to both interior and city shadows, and recompute studies. |
+| 1 | Transparent geometry/provenance warnings | Partial: assumption labels, source/neighbor panels and corrected invalid placements | Display source coverage radius, age, height basis, incomplete podium geometry and orientation confidence alongside images and exports. No facade/window label can imply a verified exact-unit view when placement is assumed. |
+| 2 | Automatic floor-plan image reconstruction | Missing | Image/PDF upload, user scale anchors, guided room/wall/window tracing, dimensional checks and confidence. Agent-generated geometry needs human comparison with the source plan; no automatic survey claim. |
+| 2 | Door, ceiling and room editing | Partial: polygon geometry exists; fixture/window controls added now | Editable door width/swing/hinge, ceiling and wall thickness, room vertices, holes/bays and open walls. Undo/import/export must preserve geometry and related checks. |
+| 2 | Source-backed façade details and texture | Missing | Optional measured/CAD or GLB/mesh import, licensed photos/material references, terraces, balconies, mullions and parapets. Distinguish cosmetic textures from actual obstruction geometry. |
+| 2 | Diffuse sky light | Missing | Sky model and visible-sky integration per window; cloud/sky conditions, obstruction and window orientation. Output as a declared relative model until calibrated. |
+| 2 | Glass, blinds and surfaces | Missing | Glazing transmission, frames, shades/blinds and surface reflectance with source or assumed input labels. Avoid treating a brightness slider as a material or photometric model. |
+| 2 | Reflections and indirect daylight | Missing | Separate numerical lighting backend with bounce/reflection parameters and convergence checks. Agreement with a geometric sun ray alone is insufficient. |
+| 2 | Quantitative illuminance and glare | Missing | Sensor planes/grid, weather/sky assumptions, calibrated geometry/materials, lux and glare calculations and validation examples. Radiance is a candidate backend, not an installed or integrated capability. |
+| 2 | Artificial lighting design | Missing | Editable luminaires, positions, distributions and color temperature; night mode and energy/brightness comparisons. Decorative point lights alone must be labeled visual previews. |
+| 2 | Actual daylight over a year | Partial: monthly direct-sun charts | Weather/sky-informed annual studies and room sensor results; keep direct sun duration, sky visibility, illuminance and thermal gain separate. |
+| 2 | Scenario comparison board | Partial: floor comparisons and same-scale furniture comparison exist | Side-by-side winter/summer, floors, facade hypotheses, glazing/shading and proposed buildings with fixed camera, identical assumptions, deltas and shared export receipts. |
+| 2 | Detailed exterior and room outlook | Partial: city prisms, landmarks and window cameras | Linked exact-unit media, verified view direction, camera calibration and measured/mesh geometry. Generic interiors or rendered skyline prisms do not establish a photographed view. |
+| 3 | Exportable model project | Partial: plan projects, PNG/GLB and scenario URLs | Bundle city geometry, source receipts, windows/anchor, furniture, scenarios, studies and version metadata. Restore a scene without relying on a particular browser, port or changing remote source. |
+| 3 | Render quality options | Partial: realtime geometric views | Separate fast schematic, textured visual and numerical daylight modes. Allow resolution, anti-aliasing and progressive-quality exports; keep visual realism separate from evidence confidence. |
+| 3 | Scale/performance and offline use | Partial: lazy views, local JSON; model libraries still use CDN | Geometry tiers, LOD/culling, background study jobs, cached/vendor libraries and explicit missing-network behavior; mobile controls and exported project parity. |
+
+## Search and decision workflow gaps
+
+| Priority | Missing or unfinished | Desired behavior |
+|---|---|---|
+| 1 | Editable search profile in the app | Budget basis, must-haves, move date, city and multiple destinations; preview/apply/reset/export. Search-specific preferences, no silent scorer migration. |
+| 1 | Destination/mode-consistent commute | Selecting a destination and walk/transit/bus/best must update the same layer, pin totals, filters, list and comparison. No relabeling a transit surface as bus when bus data is absent. |
+| 1 | Recurring cash vs signing cash | Gross/net/recurring fees/upfront nonrefundable/refundable deposits and documented lease term shown separately. Unknown fees stay unresolved. |
+| 1 | Populated longitudinal history | Source snapshots and actual dated price/status events feed change/gone-fast views; an empty history must not produce invented market trends. |
+| 2 | Monitoring workflow and notifications | User-requested schedule, exact-unit rechecks, meaningful changes, freshness and failed-source alerts; no suggestion a monitor runs simply because a dashboard exists. |
+| 2 | Media completeness and exact scope | Every sourced plan reachable, large-image viewer and keyboard/mobile access; exact-unit/same-line/building labels, provenance and lawful reusable media. |
+| 2 | Coverage and provenance | Imported inventory coverage vs actual neighborhood/source searches; fee, floor, appliance and plan evidence completeness rather than favorable unknown defaults. |
+| 2 | Tour findings and decision history | Structured observed measurements/noise/window views, photos with permissions, test-route observations and revision trail separate from listing claims. |
+
+## Next build sequence and stop conditions
+
+1. **Shared model project and validated per-window anchor.** Connect edited plan scenarios to Unit 3D and validate the new per-window world coordinates. Stop numerical conclusions when orientation/position is unresolved.
+2. **Component buildings and calibration.** Implement podium/tower/setback schema and renderer/ray parity. Keep pristine city-source snapshots and explicitly assumed scenario components.
+3. **Lighting backend.** Start with documented relative sky/diffuse input; only add lux/glare after calibrated materials, weather/sky conditions and test cases are available. Do not promote realtime artistic lighting into measured performance.
+4. **Scenario/visual delivery.** Fixed-camera comparisons and versioned project bundle, then high-resolution exports and exact-media calibration.
+5. **Renter workflow.** Criteria editor, consistent multimodal commute, cash-flow disclosures and meaningful history/monitoring.
+
+The physically based lighting choice should be evaluated against the [Radiance capabilities](https://www.radiance-online.org/about) and [documentation](https://www.radiance-online.org/learning/documentation), which cover geometry, materials, sky inputs and illumination outputs. No Radiance installation, weather study or photometric validation is claimed in the current application.
+
+## Bounded verification
+
+New pure-module tests cover unknown orientation, direct/ambient separation, source-unit scaling, fixture/window edits, source immutability, project validation, invalid imports, canonical exposed intervals and scenario identity. Browser checks cover light controls, project export/import, independent local plans after reload, geometry edits and Undo, invalid-input preservation and same-scale comparison. Full numerical building/daylight validation remains separate from these product-flow checks.

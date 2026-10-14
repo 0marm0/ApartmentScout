@@ -234,6 +234,16 @@ def check_ignored(repo: Path) -> list[Finding]:
     return found
 
 
+def _photo_policy() -> dict:
+    """The owner's recorded photo policy (docs/gallery/manifest.json "policy"); hot-linked listing photo URLs may be
+    allowed there, local copies never are."""
+    try:
+        m = json.loads((Path(__file__).resolve().parent.parent / "docs/gallery/manifest.json").read_text())
+        return m.get("policy") or {}
+    except (OSError, ValueError):
+        return {}
+
+
 def _listing_photo_problems(rel: str, data: object) -> list[str]:
     rows = data if isinstance(data, list) else (data.get("listings") if isinstance(data, dict) else None)
     if not isinstance(rows, list):
@@ -244,7 +254,7 @@ def _listing_photo_problems(rel: str, data: object) -> list[str]:
             continue
         lid = L.get("id", "?")
         if L.get("photos"):
-            probs.append(f"{rel}: {lid} has listing photos")
+            probs.append(("INFO:" if _photo_policy().get("listing_photo_urls") == "allowed" else "") + f"{rel}: {lid} has listing photos")
         if L.get("photos_local"):
             probs.append(f"{rel}: {lid} has local photo copies (photos_local)")
         for bp in L.get("building_photos") or []:
@@ -274,7 +284,14 @@ def check_photos(repo: Path, files: list[str]) -> list[Finding]:
                 data = json.loads((repo / rel).read_text(encoding="utf-8"))
             except (OSError, ValueError):
                 continue
-            for p in _listing_photo_problems(rel, data):
+            probs = _listing_photo_problems(rel, data)
+            info = [p for p in probs if p.startswith("INFO:")]
+            if info:
+                found.append(Finding("INFO", "photos", f"{rel}: {len(info)} listings carry hot-linked listing photos "
+                                     f"(allowed by the owner's policy in docs/gallery/manifest.json)"))
+            for p in probs:
+                if p.startswith("INFO:"):
+                    continue
                 found.append(Finding("WARN", "photos", p[5:]) if p.startswith("WARN:")
                              else Finding("FAIL", "photos", p))
         elif ext == ".html":
