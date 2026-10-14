@@ -16,18 +16,18 @@ Checked September 30, 2026. Public allegations are not adjudicated facts. No res
 
 Material allegations, using the relative dates actually shown by Google:
 
-| Reviewer | Displayed age/rating | Relevant allegation | Interpretation |
+| Reviewer (names withheld) | Displayed age/rating | Relevant allegation | Interpretation |
 |---|---|---|---|
-| Juncheng Qian | Six months ago; 1 star | Deposit still unreturned after a long period; repeated follow-ups referred to accounting | Recent publication, but claimed events span years; responsible ownership period unknown |
-| Andrea Esqueda | Six months ago; 1 star | Deposit delayed; emails/calls unanswered | A second deposit allegation; no accounting records inspected |
-| Annie Shaw | One year ago; 1 star | Persistent buzzing/alarm sound inside unit and ineffective maintenance response | Test for mechanical hum in 23J; owner's reply said investigation was underway, not that repair was complete |
-| D M | Two years ago; 1 star | Smoke infiltration, slow repairs and gym access for an outside trainer's clients | Lease/use-policy questions; reviewer's statement about smoking law is not adopted as legal fact |
-| Marissa Shaker | Four years ago; 1 star; text refers to February–June 2022 | Bedbugs and delayed/disputed treatment, plus weekday drilling | Historical infestation allegation; official annual report separately establishes two infested units in the corresponding reporting period, not every detail of the allegation |
-| David Heller | Five years ago; 1 star | Packages allegedly misplaced and found later | Older operational allegation, not proof of current theft |
-| LALA | Edited four years ago; 1 star | Disputed $1,200 charge for a bathroom mirror allegedly missing at move-in | Photograph and jointly record existing defects before possession |
-| Rare Steak | Two years ago; 2 stars; claims three years' residency | Repairs, visitor access and service complaints; also praises broad triple-pane windows for outside-noise control | Some narrative claims are uncorroborated; no criminal allegation is treated as established |
-| Bama Manuel | Three years ago; 2 stars | Drafty windows, floors and slow washer/dryer in an affordable apartment | Do not transfer that unit's appliances or conditions to 23J |
-| Spencer Gorsch | Four years ago; 3 stars | Alleged 28% renewal increase after assurances of a reasonable increase | Cannot derive 23J's future increase or legal status from this; distinguish gross/legal rent, concessions and preferential rent |
+| Reviewer A | Six months ago; 1 star | Deposit still unreturned after a long period; repeated follow-ups referred to accounting | Recent publication, but claimed events span years; responsible ownership period unknown |
+| Reviewer B | Six months ago; 1 star | Deposit delayed; emails/calls unanswered | A second deposit allegation; no accounting records inspected |
+| Reviewer C | One year ago; 1 star | Persistent buzzing/alarm sound inside unit and ineffective maintenance response | Test for mechanical hum in 23J; owner's reply said investigation was underway, not that repair was complete |
+| Reviewer D | Two years ago; 1 star | Smoke infiltration, slow repairs and gym access for an outside trainer's clients | Lease/use-policy questions; reviewer's statement about smoking law is not adopted as legal fact |
+| Reviewer E | Four years ago; 1 star; text refers to February–June 2022 | Bedbugs and delayed/disputed treatment, plus weekday drilling | Historical infestation allegation; official annual report separately establishes two infested units in the corresponding reporting period, not every detail of the allegation |
+| Reviewer F | Five years ago; 1 star | Packages allegedly misplaced and found later | Older operational allegation, not proof of current theft |
+| Reviewer G | Edited four years ago; 1 star | Disputed $1,200 charge for a bathroom mirror allegedly missing at move-in | Photograph and jointly record existing defects before possession |
+| Reviewer H | Two years ago; 2 stars; claims three years' residency | Repairs, visitor access and service complaints; also praises broad triple-pane windows for outside-noise control | Some narrative claims are uncorroborated; no criminal allegation is treated as established |
+| Reviewer I | Three years ago; 2 stars | Drafty windows, floors and slow washer/dryer in an affordable apartment | Do not transfer that unit's appliances or conditions to 23J |
+| Reviewer J | Four years ago; 3 stars | Alleged 28% renewal increase after assurances of a reasonable increase | Cannot derive 23J's future increase or legal status from this; distinguish gross/legal rent, concessions and preferential rent |
 
 Several low ratings concern unsuccessful tours or contain no narrative. They are weaker evidence of actual living conditions. The newest three entries were ratings without narratives: 5 stars two weeks ago, 5 stars one month ago, 4 stars one month ago. More substantive favorable reviews praise staff, maintenance, windows, layouts and cleanliness, but often predate the sale. A favorable staff experience and an unfavorable accounting/repair experience can both be real.
 
