@@ -17,7 +17,7 @@ const TITLES = Object.fromEntries([...M.STEPS, M.REVIEW].map((s) => [s.id, s.tit
 const clone = (o) => JSON.parse(JSON.stringify(o));
 const NUMERIC = new Set(['lat', 'lon', 'max_minutes', 'weight']);
 
-let W = null, root = null, lastFocus = null, saveTimer = 0, savedTimer = 0;
+let W = null, root = null, lastFocus = null, saveTimer = 0, savedTimer = 0, hideTimer = 0;
 
 // ------------------------------------------------------------------ opening
 const draftKey = (mode) => `wizard:${mode}${mode === 'edit' ? ':' + (S.crit0.search?.name || '') : ''}`;
@@ -43,6 +43,7 @@ export async function openWizard({ mode = 'new', step = 0, fresh = false } = {})
   lastFocus = document.activeElement;
   document.body.classList.remove('rail-open');
   if (!root) build();
+  clearTimeout(hideTimer);   // a close still fading out must not hide the dialog we are opening now
   root.hidden = false; root.classList.remove('picking');
   render();
   requestAnimationFrame(() => { root.classList.add('on'); focusStep(); });
@@ -63,7 +64,8 @@ function close() {
   if (!root || root.hidden) return;
   flushSave();
   root.classList.remove('on');
-  setTimeout(() => { if (!root.classList.contains('on')) root.hidden = true; }, 200);
+  clearTimeout(hideTimer);
+  hideTimer = setTimeout(() => { if (!root.classList.contains('on')) root.hidden = true; }, 200);
   lastFocus?.focus?.();
   if (W && !W.result && isDirty()) toast('Draft saved. Open New search to continue where you left off.');
 }
