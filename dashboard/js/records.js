@@ -1,6 +1,7 @@
 // Records view: a due-diligence report for one building, built from its public-records dossier
 // (NYC built in; other cities via agent research notes) plus the listing and research notes.
 import { S, byId, label, loadJSON, openDrawer } from './app.js';
+import { illustration } from './features/empty.js';   // [feature C] empty-state art
 import { $, esc, md, safeUrl, ICONS, ring, scoreColor } from './util.js';
 import { buildModel, fmtDate, fmtMonth, SEV_LABEL, SEV_PILL, plural, num } from './records/model.js';
 import { mountTimeline, hourChart, barList, noiseTypeBars, makeTip, bindTips } from './records/charts.js';
@@ -72,7 +73,7 @@ export async function show(arg) {
 
 // ------------------------------------------------------------------ pieces
 function emptyHTML({ title, body }, L) {
-  return `${toolbarHTML(L, null)}<div class="empty rec-empty"><b>${esc(title)}</b><span>${body}</span>${L?.records?.flags?.length ? `<div class="rec-empty-flags">${L.records.flags.slice(0, 4).map((f) => `<div class="flag">${esc(f)}</div>`).join('')}</div>` : ''}${L ? `<div class="rec-actions"><button class="btn" type="button" data-drawer="${esc(L.id)}">${ICONS.doc}Open listing</button></div>` : ''}</div>`;
+  return `${toolbarHTML(L, null)}<div class="empty rec-empty has-ill">${illustration('records')}<b>${esc(title)}</b><span>${body}</span>${L?.records?.flags?.length ? `<div class="rec-empty-flags">${L.records.flags.slice(0, 4).map((f) => `<div class="flag">${esc(f)}</div>`).join('')}</div>` : ''}${L ? `<div class="rec-actions"><button class="btn" type="button" data-drawer="${esc(L.id)}">${ICONS.doc}Open listing</button></div>` : ''}</div>`;
 }
 
 function optionLabel(id) { const L = byId(id); return L ? { b: L.building || L.address || id, u: L.unit || '', n: L.neighborhood || '', r: L.records?.risk_score } : { b: id, u: '', n: '', r: null }; }

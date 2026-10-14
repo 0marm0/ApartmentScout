@@ -4,6 +4,7 @@
 import { S, on, byId, dest, cost, setPick, pick, exportPicks, importPicks, openDrawer, toggleCompare, score } from './app.js';
 import { $, esc, money, ICONS, toast, scoreColor } from './util.js';
 import { TIERS, groupKey, thumb, name, label, commuteHTML, gateFails, gateUnverified, walkMin } from './views/table-kit.js';
+import { illustration } from './features/empty.js';   // [feature C] empty-state art
 
 const PIN = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="3" y="2" width="10" height="12" rx="1.5"/><path d="M6 5h1M9 5h1M6 8h1M9 8h1M7 14v-3h2v3"/></svg>';
 
@@ -171,7 +172,7 @@ function render() {
   const nSaved = P.length, top = P.filter((x) => x.p.tier === 'S' || x.p.tier === 'A').length, booked = P.filter((x) => x.p.tour).length;
   $('trSub').textContent = nSaved ? `${nSaved} saved pick${nSaved > 1 ? 's' : ''} · ${top} in S or A · ${booked} with a tour time. Kept in this browser; back them up below.` : 'Save homes as you research, sort them into tiers, then plan the visits.';
   if (!nSaved) {
-    el.innerHTML = `<div class="empty tr-none"><div class="tr-ill" aria-hidden="true">${ICONS.star}</div><b>No saved picks yet</b>
+    el.innerHTML = `<div class="empty tr-none has-ill">${illustration('picks')}<b>No saved picks yet</b>
       <span>Star a home on any card or in the listing panel, or press <kbd>s</kbd> with a listing open. Picks appear here, ready to sort into tiers, annotate and route.</span>
       <div class="tr-cta"><a class="btn primary" href="#map">Browse the map</a><a class="btn" href="#list">Open the shortlist</a><label class="btn ghost">Restore a backup<input type="file" accept="application/json,.json" data-import hidden></label></div></div>`;
     return;
