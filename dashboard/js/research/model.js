@@ -3,6 +3,7 @@
 // except for reading the shared state S; nothing here touches the DOM.
 import { S, ACTIVE, cost, score, isSaved, byId, label } from '../app.js';
 import { safeUrl, imagesOf } from '../util.js';
+import { photoItems } from '../features/photos.js';
 
 export const R = { cov: null, hist: null, watch: null, loaded: false };
 
@@ -241,20 +242,10 @@ export function distM(a, b, c, d) {
 }
 
 // ------------------------------------------------------------------ media
-export const MEDIA_KINDS = [['unit', 'Unit photos'], ['plan', 'Floor plans'], ['building', 'Building'], ['aerial', 'Aerial']];
-const SCOPE_TEXT = { 'exact-unit': 'This unit', 'same-line': 'Same line, another floor', building: 'The building', street: 'On this block', aerial: 'Aerial' };
-const IMG_EXT = /\.(png|jpe?g|webp|gif|avif|svg)(\?.*)?$/i;
-/** Every image a listing has, best first: listing photos, plans, then licensed building photos. */
-export function mediaOf(L) {
-  const out = [], im = imagesOf(L);
-  im.own.forEach((url) => out.push({ url, kind: 'unit', exact: true, scope: 'Listing photo' }));
-  const plans = (L.floorplan_images || []).map(safeUrl).filter(Boolean);
-  const fp = safeUrl(L.links?.floorplan);
-  if (fp && IMG_EXT.test(fp)) plans.push(fp);
-  [...new Set(plans)].forEach((url) => out.push({ url, kind: 'plan', exact: true, scope: 'Floor plan' }));
-  im.building.forEach((b) => out.push({ url: b.url, kind: 'building', exact: b.scope === 'exact-unit', scope: SCOPE_TEXT[b.scope] || 'The building', credit: b }));
-  return out;
-}
+// Every image comes from features/photos.js: scope group (unit, same line, building, floor plan, street), credit, flags.
+export const MEDIA_SCOPES = [['all', 'All'], ['unit', 'Unit'], ['line', 'Same line'], ['building', 'Building'], ['plan', 'Floor plans'], ['street', 'Street']];
+/** Every image a listing has, in display order: exact unit, same line, building, floor plans, street. */
+export const mediaOf = (L) => photoItems(L);
 /** Groups of media per listing, best-ranked first; a photo shared by several units is shown once and says so. */
 export function mediaGroups() {
   const L0 = S.listings.filter(inQueue).sort((a, b) => (isSaved(b.id) - isSaved(a.id)) || ((a._rank ?? 1e6) - (b._rank ?? 1e6)) || ((score(b) ?? 0) - (score(a) ?? 0)));
@@ -264,7 +255,7 @@ export function mediaGroups() {
     for (const m of mediaOf(L)) {
       const prev = seen.get(m.url);
       if (prev) { prev.shared = (prev.shared || 1) + 1; continue; }
-      const it = { ...m, L }; seen.set(m.url, it); items.push(it);
+      const it = { ...m, shared: 1 }; seen.set(m.url, it); items.push(it);
     }
     groups.push({ L, items, aerial: L.lat != null && L.lon != null });
   }
