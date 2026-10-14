@@ -493,3 +493,13 @@ button.price-tag { font-family: var(--font-sans); }
 /* pin the shell rows so hiding the KPI strip never shifts the workspace into its row */
 body { grid-template-columns: minmax(0, 1fr); }
 .topbar { grid-row: 1; } .kpis { grid-row: 2; } .work { grid-row: 3; min-width: 0; }
+/* commute by mode on cards: walk · subway · bus, fastest highlighted */
+.c-modes { display: flex; align-items: center; gap: 4px; font-size: var(--fs-xs); color: var(--ink-2); white-space: nowrap; overflow: hidden; }
+.c-modes .mode { display: inline-flex; align-items: center; gap: 3px; height: 20px; padding: 0 6px 0 5px; border-radius: 6px; background: var(--surface-3); color: var(--ink-2); }
+.c-modes .mode svg { width: 12px; height: 12px; opacity: .8; }
+.c-modes .mode b { font-weight: 650; font-variant-numeric: tabular-nums; color: var(--ink); }
+.c-modes .mode.best { background: var(--good-soft); color: var(--good); }
+.c-modes .mode.best b { color: var(--good); }
+.c-modes .mode.na { opacity: .5; }
+.c-modes .line-bullets { margin-left: 3px; }
+.c-modes .to { color: var(--ink-3); margin-left: 2px; }

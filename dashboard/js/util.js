@@ -203,6 +203,9 @@ export const ICONS = {
   check: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 8.5l3 3 7-7"/></svg>',
   cube: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M8 2l5.5 3v6L8 14l-5.5-3V5zM8 8l5.5-3M8 8v6M8 8L2.5 5"/></svg>',
   doc: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4 1.5h5.5L12.5 4.5v10h-8.5zM9.5 1.5v3h3M6 8h4.5M6 10.5h4.5"/></svg>',
+  walk: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="8.5" cy="2.6" r="1.3"/><path d="M7.6 5.4L6 9l2.4 1.6L9 14.5M7.6 5.4l2.4 1.4 1.6 2.2M6 9l-1.6 1.2M8.4 10.6L6.6 14.5"/></svg>',
+  train: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="4" y="1.8" width="8" height="9.4" rx="2.4"/><path d="M4 7h8M6 14.2l1-3M10 14.2l-1-3"/><circle cx="6.3" cy="9.2" r=".5" fill="currentColor"/><circle cx="9.7" cy="9.2" r=".5" fill="currentColor"/></svg>',
+  bus: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="3" y="2" width="10" height="10" rx="2"/><path d="M3 7.5h10M5 14v-2M11 14v-2"/><circle cx="5.6" cy="10" r=".5" fill="currentColor"/><circle cx="10.4" cy="10" r=".5" fill="currentColor"/></svg>',
   plan: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="2" y="2" width="12" height="12" rx="1.5"/><path d="M2 8h5V2M10 14V9h4"/></svg>',
 };
 
@@ -228,4 +231,12 @@ export function imagesOf(L) {
   const own = [...(L.photos_local || []), ...(L.photos || [])].map(safeUrl).filter(Boolean);
   const bld = (L.building_photos || []).map((p) => ({ ...p, url: safeUrl(p.url) })).filter((p) => p.url);
   return { own: [...new Set(own)], building: bld };
+}
+
+/** Walking minutes along streets: straight line × detour at walking speed (the same model the router uses). */
+export function walkMinutes(lat1, lon1, lat2, lon2, kmh = 4.8, detour = 1.25) {
+  if ([lat1, lon1, lat2, lon2].some((v) => v == null)) return null;
+  const R = 6371000, r = Math.PI / 180, dl = (lat2 - lat1) * r, dn = (lon2 - lon1) * r;
+  const a = Math.sin(dl / 2) ** 2 + Math.cos(lat1 * r) * Math.cos(lat2 * r) * Math.sin(dn / 2) ** 2;
+  return (2 * R * Math.asin(Math.sqrt(a)) * detour) / ((kmh * 1000) / 60);
 }

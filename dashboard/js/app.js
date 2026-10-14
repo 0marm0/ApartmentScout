@@ -1,7 +1,7 @@
 // ApartmentScout dashboard core: data loading, shared state, live ranking, filters rail, result cards,
 // listing drawer, saved picks, router, theme and keyboard shortcuts. Views live in their own modules and
 // talk to the core through the exports below and the event bus (on/emit).
-import { $, esc, money, moneyShort, safeUrl, scoreColor, ring, unitGlyph, bullets, bullet, routeNames, ICONS, toast, LINE_COLORS, aerialHTML, imagesOf } from './util.js';
+import { $, esc, money, moneyShort, safeUrl, scoreColor, ring, unitGlyph, bullets, bullet, routeNames, ICONS, toast, LINE_COLORS, aerialHTML, imagesOf, walkMinutes } from './util.js';
 
 export const store = {
   get(k, d) { try { const v = localStorage.getItem('as:' + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
@@ -32,6 +32,17 @@ export const commuteOf = (L, d = dests()[0]) => L.commute?.[d]?.minutes;
 export const label = (L) => `${L.building || L.address}${L.unit ? ' ' + L.unit : ''}`;
 export const cost = (L) => L.score?.monthly_cost;
 export const score = (L) => L._s ?? L.score?.overall;
+/** Door-to-door minutes by mode for a listing and destination: walk / subway / bus / best, from the router when it
+ *  computed modes, else walk from distance and the stored transit time as subway. */
+export function modesOf(L, d = dest()) {
+  const c = L.commute?.[d?.name] || {}, m = c.modes || {};
+  const routerWalk = c.mode === 'walk' ? c.minutes : null;   // the router found walking faster than any train
+  const walk = m.walk?.minutes ?? routerWalk ?? walkMinutes(L.lat, L.lon, d?.lat, d?.lon, (S.crit.commute?.transit?.walk_speed_kmh) || 4.8);
+  const subway = m.subway?.minutes ?? (c.mode === 'walk' ? null : c.minutes ?? null);
+  const bus = m.bus?.minutes ?? null;
+  const opts = [['walk', walk], ['subway', subway], ['bus', bus]].filter(([, v]) => v != null).sort((x, y) => x[1] - y[1]);
+  return { walk, subway, bus, best: opts[0]?.[1] ?? null, bestMode: opts[0]?.[0] ?? null, route: m.transit?.route || m.subway?.route || c.route };
+}
 export const tierIndex = (L) => (S.crit.budget?.tiers || []).findIndex((t) => t.name === L.score?.budget_tier);
 export const isSaved = (id) => !!S.picks[id]?.saved;
 export const pick = (id) => S.picks[id] || {};
@@ -231,6 +242,13 @@ function refreshRailValues() {
 }
 
 // ------------------------------------------------------------------ result cards
+function modesHTML(L) {
+  const d = dest(); if (!d) return '';
+  const m = modesOf(L, d);
+  if (m.best == null) return '<div class="c-modes"><span class="faint">Commute not computed</span></div>';
+  const chip = (k, icon, v, label) => `<span class="mode ${m.bestMode === k ? 'best' : ''} ${v == null ? 'na' : ''}" title="${label}: ${v == null ? 'not computed' : Math.round(v) + ' min door to door'}">${icon}<b>${v == null ? '—' : Math.round(v)}</b></span>`;
+  return `<div class="c-modes">${chip('walk', ICONS.walk, m.walk, 'Walk')}${chip('subway', ICONS.train, m.subway, 'Subway')}${chip('bus', ICONS.bus, m.bus, 'Bus')}<span class="line-bullets">${bullets(m.route, 3)}</span><span class="to">min to ${esc(d.name)}</span></div>`;
+}
 function mediaHTML(L, im) {
   if (im.own.length) return `<img src="${esc(im.own[0])}" alt="" loading="lazy" referrerpolicy="no-referrer"><span class="nph">${im.own.length} photo${im.own.length > 1 ? 's' : ''}</span>`;
   if (im.building.length) return `<img src="${esc(im.building[0].url)}" alt="" loading="lazy" referrerpolicy="no-referrer"><span class="kind">Building</span>`;
@@ -258,7 +276,7 @@ export function cardHTML(L, i = 0) {
         <div class="c-sub">${esc(L.neighborhood || '')}${L.sqft ? ' · ' + Math.round(L.sqft) + ' ft²' : ''}${L.beds != null ? ' · ' + (L.beds ? L.beds + ' bd' : 'Studio') : ''}</div></div>${ring(score(L))}</div>
       <div class="c-price"><b>${money(cost(L))}</b><span class="per">/mo</span>${L.price?.gross && cost(L) && Math.abs(L.price.gross - cost(L)) > 5 ? `<span class="gross">${money(L.price.gross)} gross</span>` : ''}
         ${L.score?.budget_tier ? `<span class="tierpill" style="color:var(${t >= 0 ? TIER_VARS[t] : '--tier-over'})"><i></i>${esc(L.score.budget_tier)}</span>` : ''}</div>
-      <div class="c-meta">${c != null ? `<span class="line-bullets">${bullets(route)}</span><span>${Math.round(c)} min to ${esc(dests()[0])}</span>` : '<span class="faint">Commute not computed</span>'}</div>
+      ${modesHTML(L)}
       <div class="c-badges">${gate ? `<span class="bdg bad">${gate === 'over_budget' ? 'Over budget' : 'No ' + esc((gate.split(':')[1] || '').replaceAll('_', ' '))}</span>` : ''}${sun ? `<span class="bdg sun" title="Modelled direct sun on the window this month">${ICONS.sun}${sun[mi].toFixed(1)} h</span>` : ''}${b.map((x) => `<span class="bdg">${esc(x)}</span>`).join('')}</div>
     </div></article>`;
 }
