@@ -1,8 +1,6 @@
 /* list view (Shortlist table): owned by the list view module. Tokens from tokens.css, components from app.css. */
 #view-list { overflow: hidden; }
 #view-list .list-pad { height: 100%; display: flex; flex-direction: column; padding-bottom: var(--s-5); }
-#view-list .page-h { margin-bottom: var(--s-4); }
-#view-list .page-h h1 span { font-size: var(--fs-lg); font-weight: 500; margin-left: 6px; font-variant-numeric: tabular-nums; }
 #view-list .page-h p kbd { margin: 0 1px; }
 #view-list .seg button { display: inline-flex; align-items: center; gap: 6px; }
 #view-list .seg svg { width: 15px; height: 15px; }
@@ -103,7 +101,7 @@ table.lst td.c-name::after { content: ""; position: absolute; top: 0; bottom: 0;
 .tri { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 6px; font-size: var(--fs-xs); font-weight: 600; }
 .tri svg { display: block; }
 .tri.yes { color: var(--good); }
-.tri.no { color: var(--ink-4); }
+.tri.no { color: var(--ink-3); }
 .tri.bad { color: var(--bad); background: var(--bad-soft); }
 .tri.unk { color: var(--ink-3); background: repeating-linear-gradient(-45deg, var(--surface-3) 0 3px, transparent 3px 6px); }
 .door-txt { font-size: var(--fs-2xs); font-weight: 600; color: var(--ink-2); background: var(--surface-3); padding: 2px 6px; border-radius: 5px; }

@@ -392,7 +392,8 @@ function moneySection(L) {
   const rng = c.monthly_range, open = rng && rng[1] == null;
   const sizeTxt = sz.range ? `~${Math.round(sz.range[0])}–${Math.round(sz.range[1])} ft²` : L.sqft ? Math.round(L.sqft) + ' ft²' : '—';
   const basis = { reported: 'reported', exact_plan: 'exact plan', line_band_plan: 'same-line plan', main_rooms_sum: 'main rooms only', ratio_proxy: 'estimate' }[sz.basis] || '';
-  const pv = typeof s.ppsf === 'object' && s.ppsf ? s.ppsf.value : s.ppsf;   // v2: {value, range, basis}
+  const pv0 = typeof s.ppsf === 'object' && s.ppsf ? s.ppsf.value : s.ppsf;   // v2: {value, range, basis}
+  const pv = Number.isFinite(pv0) ? pv0 : null;
   const ppsf = pv ?? (L.sqft && cost(L) && (!sz.basis || ['reported', 'exact_plan'].includes(sz.basis)) ? cost(L) / L.sqft : null);
   const head = Object.entries(c.headroom || {}).map(([k, v]) => `<span class="pill ${v >= 0 ? 'good' : 'bad'}">${esc(k)} ${v >= 0 ? '+' : '−'}${money(Math.abs(v)).slice(1) ? money(Math.abs(v)) : '$0'}</span>`).join('');
   const conc = c.concession || {};

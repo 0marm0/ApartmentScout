@@ -54,7 +54,7 @@ separate mask. The light theme swaps the same layer paints.
 ## Space, radius, elevation
 
 - 4 px grid: `--s-1` 4 … `--s-10` 40.
-- Radius: 4 (badges), 6 (inputs), 10 (tiles, buttons), 14 (cards, floating panels), 20 (drawer), pill.
+- Radius: 6 (badges and inputs), 10 (tiles, buttons), 14 (cards, floating panels), 20 (drawer), pill.
 - Elevation: `--shadow-1` for pressed or selected segments, `--shadow-2` for floating map panels and
   price tags, `--shadow-3` for the drawer and popovers. In dark mode each adds a 1 px inner top highlight.
 

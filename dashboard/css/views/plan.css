@@ -1,12 +1,10 @@
 /* Floor plan studio: owned by the plan view module (js/plan3d.js, js/plan/*). Tokens from tokens.css,
    shared components (.page-h .panel .seg .field .metrics .pill .chip .tg .btn .icon-btn .hud) from app.css. */
 
-.ps .page-h { margin-bottom: var(--s-4); }
 .ps-head h1 span { font-weight: 500; }
 .ps-head p { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; }
 .ps-head .warnline { color: var(--warn); }
 .ps-head select { max-width: 240px; }
-.ps-head .icon-btn:disabled { opacity: .4; cursor: default; }
 
 .ps-grid { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: var(--s-4); align-items: start; }
 .ps-main { min-width: 0; display: flex; flex-direction: column; gap: var(--s-3); }
@@ -106,7 +104,6 @@
 .ps-quick { flex: none; }
 
 /* ------------------------------------------------------------------ side: inspector */
-.ps-insp { padding: var(--s-4); }
 .ps-sum .metrics { margin-bottom: var(--s-3); }
 .ps-sum .metrics, .ps-pm { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .ps-sum p { margin: 0; font-size: var(--fs-sm); color: var(--ink-3); line-height: 1.6; }
@@ -122,15 +119,13 @@
 .ps-fields .field { flex: none; }
 .ps-fields .field:nth-child(5) { grid-column: 1 / -1; }
 .ps-fields label { justify-content: flex-start; gap: 4px; }
-.ps-fields label span { color: var(--ink-4); }
+.ps-fields label span { color: var(--ink-3); }
 .ps-fields input { width: 100%; font-variant-numeric: tabular-nums; }
 .ps-acts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: var(--s-3); }
-.ps-acts .btn { height: 30px; padding: 0 10px; }
-.ps-acts .btn svg { width: 14px; height: 14px; }
-.ps-acts .icon-btn { width: 30px; height: 30px; }
+.ps-acts .icon-btn { width: 28px; height: 28px; }
 .ps-acts .icon-btn.danger:hover { color: var(--bad); }
 .ps-place { display: flex; gap: 4px; flex: 1 1 180px; min-width: 0; }
-.ps-place select { flex: 1; min-width: 0; height: 30px; }
+.ps-place select { flex: 1; min-width: 0; height: 28px; }
 .ps-nudge { display: none; grid-template-columns: repeat(3, 40px); grid-template-areas: ". u ." "l d r"; gap: 4px; justify-content: center; margin-top: var(--s-3); }
 .ps-nudge button { height: 36px; border-radius: var(--r-md); border: 1px solid var(--line); background: var(--surface-2); color: var(--ink); font-size: var(--fs-md); cursor: pointer; }
 .ps-nudge button:nth-child(1) { grid-area: u; } .ps-nudge button:nth-child(2) { grid-area: l; } .ps-nudge button:nth-child(3) { grid-area: d; } .ps-nudge button:nth-child(4) { grid-area: r; }
@@ -155,7 +150,6 @@
 .ps-tabs button { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 5px; }
 .ps-tabs .n { font-size: var(--fs-2xs); font-variant-numeric: tabular-nums; color: var(--ink-3); }
 .ps-tabs .n.bad { color: var(--bad); } .ps-tabs .n.warn { color: var(--warn); }
-.ps-tab { padding: var(--s-4); }
 .ps-tab .label { margin-top: var(--s-5); }
 .ps-tab .label:first-child { margin-top: 0; }
 .ps-presets { display: flex; flex-direction: column; gap: 6px; }

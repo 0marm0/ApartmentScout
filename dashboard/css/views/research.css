@@ -1,12 +1,10 @@
 /* research view: owned by the research view module. Uses tokens from tokens.css and components from app.css. */
-#view-research .page-h { margin-bottom: var(--s-4); }
 .rs { max-width: 1680px; margin: 0 auto; }
 .rs-built { font-size: var(--fs-xs); color: var(--ink-3); font-variant-numeric: tabular-nums; }
 .rs-sub { margin: 0 0 var(--s-3); font-size: var(--fs-xs); color: var(--ink-3); }
 .rs-sub b { color: var(--ink-2); font-weight: 600; }
 .rs-small { font-size: var(--fs-xs); margin: 6px 0 0; }
 .rs .sp { flex: 1; }
-.rs .btn[disabled] { opacity: .45; cursor: default; }
 .rs .chip[disabled] { opacity: .4; cursor: default; }
 .rs .chip:disabled:hover { border-color: var(--line); color: var(--ink-2); }
 
@@ -61,8 +59,6 @@
 .rs-more-btn { display: flex; margin: var(--s-4) auto 0; }
 
 /* empty states */
-.rs-empty { gap: 10px; padding: var(--s-10) var(--s-6); }
-.rs-empty > span:not(.rs-ill) { max-width: 560px; line-height: 1.55; }
 .rs-ill { width: 52px; height: 52px; border-radius: 16px; display: grid; place-items: center; color: var(--ink-2); background: var(--surface-2); box-shadow: inset 0 0 0 1px var(--line-strong); }
 .rs-ill svg { width: 24px; height: 24px; }
 .rs-cmd { font: 500 var(--fs-xs) var(--font-mono); color: var(--ink-2); background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 4px 10px; margin-top: 4px; }
@@ -109,8 +105,7 @@
 .rq-ibar i { display: block; height: 100%; border-radius: 2px; background: var(--ink-3); }
 .rq-score { grid-area: score; font-size: var(--fs-lg); font-weight: 650; text-align: right; font-variant-numeric: tabular-nums; }
 .rq-act { grid-area: act; display: flex; justify-content: flex-end; }
-.rq-qbtn { padding: 0 8px; font-size: var(--fs-xs); }
-.rq-qbtn svg { width: 13px; height: 13px; transition: transform var(--t-base) var(--ease-out); }
+.rq-qbtn svg { transition: transform var(--t-base) var(--ease-out); }
 .rq-qbtn[aria-expanded="true"] svg { transform: rotate(90deg); }
 .rq-qbtn .n { font-size: var(--fs-2xs); color: var(--ink-3); font-variant-numeric: tabular-nums; }
 .rq-noq { font-size: var(--fs-xs); }

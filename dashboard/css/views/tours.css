@@ -1,10 +1,7 @@
 /* tours view: owned by the tours view module. Tokens from tokens.css, components from app.css. */
-#view-tours .page-h { margin-bottom: var(--s-4); }
 #trImport input, .tr-cta input { display: none; }
 
 /* empty state */
-.tr-none { gap: 10px; padding: var(--s-10) var(--s-6); }
-.tr-none > span { max-width: 520px; }
 .tr-ill { width: 52px; height: 52px; border-radius: 16px; display: grid; place-items: center; color: var(--fav); background: color-mix(in srgb, var(--fav) 12%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--fav) 30%, transparent); }
 .tr-ill svg { width: 24px; height: 24px; }
 .tr-cta { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-top: 6px; }
@@ -22,7 +19,7 @@
 .lt.t-B, .lt.t-C { color: var(--ink); }
 .lt.t-Pass { color: var(--ink-3); background: transparent; box-shadow: inset 0 0 0 1px var(--line-strong); }
 .lane-body { display: flex; flex-direction: column; gap: 8px; padding: 0 8px 8px; flex: 1; }
-.lane .drop { flex: 1; min-height: 64px; display: grid; place-items: center; border: 1px dashed var(--line-strong); border-radius: var(--r-md); font-size: var(--fs-xs); color: var(--ink-4); }
+.lane .drop { flex: 1; min-height: 64px; display: grid; place-items: center; border: 1px dashed var(--line-strong); border-radius: var(--r-md); font-size: var(--fs-xs); color: var(--ink-3); }
 .lane.pass .tc { opacity: .72; }
 
 .tc {

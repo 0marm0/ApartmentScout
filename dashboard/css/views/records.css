@@ -47,8 +47,9 @@
 .rec-title p { margin: 0; color: var(--ink-2); font-size: var(--fs-md); }
 .rec-scores { display: flex; gap: var(--s-6); }
 .rec-score { display: flex; align-items: center; gap: 12px; }
-.rec-score > div b { display: block; font-size: var(--fs-sm); font-weight: 600; }
-.rec-score > div span { font-size: var(--fs-xs); color: var(--ink-3); }
+/* the label block only: .ring is also a direct child div and must keep its centred grid */
+.rec-score > div:not(.ring) b { display: block; font-size: var(--fs-sm); font-weight: 600; }
+.rec-score > div:not(.ring) span { font-size: var(--fs-xs); color: var(--ink-3); }
 .rec-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(128px, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--r-md); overflow: hidden; margin: var(--s-5) 0 0; }
 .rec-facts div { background: var(--surface-2); padding: 9px 12px; min-width: 0; }
 .rec-facts dt { font-size: var(--fs-2xs); font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); }
@@ -191,7 +192,7 @@
   .rec-bar { position: static; flex-wrap: wrap; gap: var(--s-2); margin-top: 0; padding: 0; }
   .rec-bar::before { display: none; }
   .rec-pick { flex: 1 1 100%; } .rec-pick-btn { width: 100%; max-width: none; min-width: 0; }
-  .rec-nav { margin-left: 0; flex: 1 1 100%; }
+  .rec-nav { margin-left: 0; flex: 1 1 100%; padding-right: 24px; -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent); }
   .rec { --rec-top: 8px; }
   .rec-head { padding: var(--s-4); }
   .rec-title h1 { font-size: var(--fs-2xl); }

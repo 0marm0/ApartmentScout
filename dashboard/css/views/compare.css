@@ -1,6 +1,4 @@
 /* compare view: owned by the compare view module. Tokens from tokens.css, components from app.css. */
-#view-compare .page-h { margin-bottom: var(--s-4); }
-#view-compare .page-h h1 span { font-size: var(--fs-lg); font-weight: 500; margin-left: 6px; }
 
 /* add-a-listing picker */
 .cmp-picker { position: relative; }
@@ -31,8 +29,7 @@
 .cl-none { padding: 14px; color: var(--ink-3); font-size: var(--fs-sm); text-align: center; }
 
 /* empty state */
-.cmp-empty { gap: 10px; padding: var(--s-8) var(--s-6); margin-bottom: var(--s-4); }
-.cmp-empty > span { max-width: 560px; }
+.cmp-empty { padding: var(--s-8) var(--s-6); margin-bottom: var(--s-4); }
 .cmp-empty .kbd-i { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 5px; background: var(--surface-3); vertical-align: -4px; }
 .cmp-empty .kbd-i svg { width: 12px; height: 12px; }
 .cmp-sugg { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 8px; width: min(980px, 100%); margin: 8px 0 4px; }
@@ -67,8 +64,6 @@
 .ch-t p { margin: 2px 0 0; font-size: var(--fs-xs); color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ch-tags { display: flex; flex-wrap: wrap; gap: 4px; }
 .ch-acts { display: flex; gap: 6px; }
-.ch-acts .btn { height: 30px; }
-.ch-acts .btn svg { width: 14px; height: 14px; }
 .cg-add {
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; margin: 12px; min-height: 180px;
   border: 1px dashed var(--line-strong); border-radius: var(--r-md); background: none; color: var(--ink-3); cursor: pointer; font: inherit;
@@ -159,9 +154,8 @@
   .cg-corner { padding: 10px; }
   .cg-v { padding: 8px 10px 8px 16px; }
   .ch-t h3 { font-size: var(--fs-md); }
-  .cg-head .ring.lg { width: 48px; height: 48px; }
-  .cg-head .ring.lg svg { width: 48px; height: 48px; }
-  .cg-head .ring.lg b { font-size: 15px; }
+  /* the ring svg has no viewBox, so scale the whole ring instead of resizing the svg (which cropped the arc) */
+  .cg-head .ring.lg { zoom: .75; }
   .cmp-search { width: 100%; }
   .cmp-picker { flex: 1; min-width: 0; }
   #view-compare .page-h .actions { width: 100%; }
