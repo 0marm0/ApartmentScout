@@ -924,7 +924,7 @@ ${Xn.map(([g])=>`  ${g}: ${k.weights[g]||0}`).join(`
     ${s.scenarios?.length?`<p class="money-note">Sources disagree: ${s.scenarios.map(_=>`${f(_.label||_.source||"claim")} ${Q(_.monthly??_.gross)}`).join(" vs ")} (ranked on the higher one).</p>`:""}
     <div class="cashflow">
       <div class="cf-col"><h4>Every month <span>recurring</span></h4>
-        ${S("Rent",Q(g.gross),g.free?"in a month you pay":"")}${S("Monthly fees",E,g.fees==null?"not added, not assumed":"")}
+        ${S("Rent",Q(g.gross),g.free?"in a month you pay":"")}${S("Monthly fees",E,g.fees==null?s.fees_estimate?`ranking assumes ~${Q(s.fees_estimate.monthly)}`:"not added, not assumed":"")}
         ${S("Cash each month",`${Q(g.paid??g.gross)}${g.fees==null?'<small class="plus">+ fees</small>':""}`,"","tot")}
         ${g.free&&g.net!=null?S("Net effective",Q(g.net),`${f(g.free)} month${g.free===1?"":"s"} free, averaged`):""}</div>
       <div class="cf-col"><h4>At signing <span>once</span></h4>

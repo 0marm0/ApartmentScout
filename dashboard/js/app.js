@@ -550,7 +550,7 @@ function moneySection(L) {
     ${c.scenarios?.length ? `<p class="money-note">Sources disagree: ${c.scenarios.map((x) => `${esc(x.label || x.source || 'claim')} ${money(x.monthly ?? x.gross)}`).join(' vs ')} (ranked on the higher one).</p>` : ''}
     <div class="cashflow">
       <div class="cf-col"><h4>Every month <span>recurring</span></h4>
-        ${row('Rent', money(mo.gross), mo.free ? 'in a month you pay' : '')}${row('Monthly fees', feeTxt, mo.fees == null ? 'not added, not assumed' : '')}
+        ${row('Rent', money(mo.gross), mo.free ? 'in a month you pay' : '')}${row('Monthly fees', feeTxt, mo.fees == null ? (c.fees_estimate ? `ranking assumes ~${money(c.fees_estimate.monthly)}` : 'not added, not assumed') : '')}
         ${row('Cash each month', `${money(mo.paid ?? mo.gross)}${mo.fees == null ? '<small class="plus">+ fees</small>' : ''}`, '', 'tot')}
         ${mo.free && mo.net != null ? row('Net effective', money(mo.net), `${esc(mo.free)} month${mo.free === 1 ? '' : 's'} free, averaged`) : ''}</div>
       <div class="cf-col"><h4>At signing <span>once</span></h4>
