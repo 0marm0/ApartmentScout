@@ -58,7 +58,8 @@ async function resolvePhotos(homes, schema, mode, progress) {
           c.done = true;
           let src = null;
           if (mode === 'embed' && tally.bytes < budget) {
-            const loc = c.local ? abs(c.local) : null, u = loc || (c.ref && /^https?:/.test(c.ref) ? c.ref : null);
+            // a page opened as a file cannot read its sibling files (the browser refuses with a console error): use the link
+            const loc = c.local && location.protocol !== 'file:' ? abs(c.local) : null, u = loc || (c.ref && /^https?:/.test(c.ref) ? c.ref : null);
             const uri = u ? await thumb(u, cfg.thumb_px, cfg.quality) : null;
             if (uri && tally.bytes + uri.length <= budget) { src = uri; tally.bytes += uri.length; tally.embedded++; }
           }
@@ -139,7 +140,7 @@ function mountSplit(host, { cls = '' } = {}) {
   if (host.querySelector('.share-split')) return;
   const id = `sharePop${++uid}`, wrap = document.createElement('div');
   wrap.className = `share-split ${cls}`;
-  wrap.innerHTML = `<button type="button" class="btn sm share-main" data-act="share" title="Download a read-only page of your saved picks">${SHARE_ICON}<span class="sl">Share shortlist</span></button><button type="button" class="btn sm share-more" aria-haspopup="true" aria-expanded="false" aria-controls="${id}" aria-label="More ways to share: decision memo and options" title="Decision memo and options">${CHEV}</button>
+  wrap.innerHTML = `<button type="button" class="btn sm share-main" data-act="share" aria-label="Share shortlist" title="Download a read-only page of your saved picks">${SHARE_ICON}<span class="sl">Share shortlist</span></button><button type="button" class="btn sm share-more" aria-haspopup="true" aria-expanded="false" aria-controls="${id}" aria-label="More ways to share: decision memo and options" title="Decision memo and options">${CHEV}</button>
     <div class="menu-pop share-pop" id="${id}" role="group" aria-label="Share options" hidden></div>`;
   host.append(wrap);
   const sync = () => wrap.querySelector('.share-main').classList.toggle('empty', !savedIds().length);
@@ -172,11 +173,9 @@ function mountMenu() {
 }
 
 export function init() {
-  // the Shortlist / Tours sub-tab row is rebuilt on every picks change: the split button is put back each time
+  // the Shortlist / Tours sub-tab row (on both pages) is rebuilt on every picks change: the split button is put back each time
   const sub = $('subnav');
   if (sub) watch(sub, () => { if (sub.querySelector('a') && !sub.querySelector('.share-split')) mountSplit(sub, { cls: 'in-subnav' }); });
-  const tours = $('view-tours');
-  if (tours) watch(tours, () => { const a = tours.querySelector('.page-h .actions'); if (a && !a.querySelector('.share-split')) mountSplit(a, { cls: 'in-actions' }); }, { subtree: true });
   mountMenu();
 }
 export const state = () => ({ busy, picks: savedIds(), ...opts() });

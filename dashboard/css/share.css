@@ -10,7 +10,6 @@
 .share-more svg { width: 13px; height: 13px; }
 .share-more[aria-expanded="true"] { background: var(--surface-hover); border-color: var(--line-strong); }
 .share-main:disabled { opacity: .7; cursor: progress; }
-.share-split.in-actions .btn { height: 34px; }
 .share-pop { left: auto; right: 0; top: calc(100% + 8px); width: min(332px, calc(100vw - 24px)); padding: 6px; transform-origin: 100% 0; }
 .share-pop[hidden] { display: none; }
 .sp-h { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 8px 10px 6px; }

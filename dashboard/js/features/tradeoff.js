@@ -102,7 +102,7 @@ function drawGhosts() {
     const s = sharesOf(p.weights, axes); if (!s) return '';
     const [x, y] = px(toXY(s));
     const on2 = S.preset === p.key;
-    return `<g class="tp-ghost${on2 ? ' cur' : ''}" tabindex="0" role="button" data-preset="${esc(p.key)}" aria-label="${esc(p.label)} preset${on2 ? ' (current)' : ''}: apply. Hover to preview how the top ten re-orders." transform="translate(${x.toFixed(1)} ${y.toFixed(1)})"><circle class="hit" r="12"/><circle class="ring" r="5"/></g>`;
+    return `<g class="tp-ghost${on2 ? ' cur' : ''}" tabindex="0" role="button" data-pad-preset="${esc(p.key)}" aria-label="${esc(p.label)} preset${on2 ? ' (current)' : ''}: apply. Hover to preview how the top ten re-orders." transform="translate(${x.toFixed(1)} ${y.toFixed(1)})"><circle class="hit" r="12"/><circle class="ring" r="5"/></g>`;
   }).join('');
 }
 
@@ -163,7 +163,7 @@ function onKey(e) {
 // ------------------------------------------------------------------ preset preview
 let pop = null;
 function showPreview(g) {
-  const p = presetList().find((x) => x.key === g.dataset.preset); if (!p) return;
+  const p = presetList().find((x) => x.key === g.dataset.padPreset); if (!p) return;
   const before = order(S.weights), after = order({ ...S.weights, ...p.weights });
   const r = rankShift(before, after, 10), cur = keys().every((k) => (+S.weights[k] || 0) === (+p.weights[k] || 0));
   hidePreview();
@@ -225,8 +225,8 @@ function wire() {
   gh.addEventListener('pointerout', (e) => { if (e.target.closest('.tp-ghost') && !e.relatedTarget?.closest?.('.tp-ghost')) hidePreview(); });
   gh.addEventListener('focusin', (e) => { const g = e.target.closest('.tp-ghost'); if (g) showPreview(g); });
   gh.addEventListener('focusout', hidePreview);
-  gh.addEventListener('click', (e) => { const g = e.target.closest('.tp-ghost'); if (g) applyPreset(g.dataset.preset); });
-  gh.addEventListener('keydown', (e) => { const g = e.target.closest('.tp-ghost'); if (g && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); applyPreset(g.dataset.preset); } });
+  gh.addEventListener('click', (e) => { const g = e.target.closest('.tp-ghost'); if (g) applyPreset(g.dataset.padPreset); });
+  gh.addEventListener('keydown', (e) => { const g = e.target.closest('.tp-ghost'); if (g && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); applyPreset(g.dataset.padPreset); } });
 }
 
 export function init() {

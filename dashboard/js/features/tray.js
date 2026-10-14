@@ -103,8 +103,9 @@ function place0() {
   const left = vp.left, avail = Math.max(240, right - left - 28);
   el.style.setProperty('--tx', `${Math.round((left + right) / 2)}px`);
   el.style.setProperty('--tw', `${Math.round(avail)}px`);
-  const need = (n) => n * 154 + 16 + 150;   // full slots + gaps + the action group
-  el.dataset.size = avail >= need(Math.max(ids().length, 3)) ? 'm' : avail >= Math.max(ids().length, 2) * 112 + 170 ? 's' : 'xs';
+  // slots on show: the picks plus one blank to drop on (all four while a drag is in the air)
+  const n = dragId != null ? MAX : Math.min(MAX, ids().length + 1), act = 160;
+  el.dataset.size = avail >= n * 168 + act ? 'm' : avail >= n * 126 + act ? 's' : 'xs';
 }
 
 // ------------------------------------------------------------------ drag and drop
