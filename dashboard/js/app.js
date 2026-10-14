@@ -13,7 +13,7 @@ export const store = {
 
 export const ACTIVE = ['new', 'researching', 'shortlist', 'touring', 'applied'];
 export const STATUSES = [['new', 'New'], ['researching', 'Researching'], ['shortlist', 'Shortlist'], ['touring', 'Touring'], ['applied', 'Applied'], ['rejected', 'Rejected'], ['gone', 'Gone']];
-export const DIMS = [['cost', 'Cost'], ['space', 'Space'], ['commute', 'Commute'], ['amenities', 'Amenities'], ['light_view', 'Light & view'], ['building', 'Building'], ['quiet', 'Quiet']];
+export const DIMS = [['cost', 'Cost'], ['space', 'Space'], ['commute', 'Commute'], ['amenities', 'Amenities'], ['light_view', 'Light & view'], ['building', 'Building'], ['interior', 'Interior'], ['quiet', 'Quiet']];
 export const TIER_VARS = ['--tier-1', '--tier-2', '--tier-3'];
 const FEATURES = [
   ['in_unit_wd', 'In-unit washer/dryer'], ['elevator', 'Elevator'], ['doorman', 'Full-time doorman'], ['gym', 'Gym'],
@@ -415,7 +415,7 @@ export function cardHTML(L, i = 0) {
     <div class="c-body">
       <div class="c-top"><div style="min-width:0;flex:1"><div class="c-title">${esc(L.building || L.address)} <span>${esc(L.unit || '')}</span>${my ? ` <span class="pill accent">${esc(my)}</span>` : ''}</div>
         <div class="c-sub">${esc(L.neighborhood || '')}${L.sqft ? ' · ' + Math.round(L.sqft) + ' ft²' : ''}${L.beds != null ? ' · ' + (L.beds ? L.beds + ' bd' : 'Studio') : ''}</div></div>${ring(score(L))}</div>
-      <div class="c-price"><b>${money(cost(L))}</b><span class="per">/mo</span>${L.price?.gross && cost(L) && Math.abs(L.price.gross - cost(L)) > 5 ? `<span class="gross">${money(L.price.gross)} gross</span>` : ''}
+      <div class="c-price"><b>${money(cost(L))}</b><span class="per">/mo${L.score?.cost?.fees_estimate ? ' <abbr title="Includes estimated fees: no fee sheet yet">est.</abbr>' : ''}</span>${L.price?.gross && cost(L) && Math.abs(L.price.gross - cost(L)) > 5 ? `<span class="gross">${money(L.price.gross)} gross</span>` : ''}
         ${L.score?.budget_tier ? `<span class="tierpill" style="color:var(${t >= 0 ? TIER_VARS[t] : '--tier-over'})"><i></i>${esc(L.score.budget_tier)}</span>` : ''}</div>
       ${modesHTML(L)}
       <div class="c-badges">${gate ? `<span class="bdg bad">${esc(GATE_LABEL(gate))}</span>` : ''}${(L.score?.tags || []).map((t) => `<span class="bdg warn">${esc(t)}</span>`).join('')}${sun ? `<span class="bdg sun" title="Modelled direct sun on the window this month">${ICONS.sun}${sun[mi].toFixed(1)} h</span>` : ''}${b.map((x) => `<span class="bdg">${esc(x)}</span>`).join('')}</div>
@@ -527,9 +527,10 @@ function moneySection(L) {
   const bb = S.crit.budget?.basis || 'monthly_cost';
   const cn = c.concession_needed, cnT = cn && Object.entries(cn).filter(([k, v]) => /^\d+$/.test(k) && v?.rent_only_ask != null && v.rent_only_ask > 0);
   return `<div class="d-sec" id="dMoney" data-tab="Money"><h3>Money <span>${c.rent?.lease_months ? Math.round(c.rent.lease_months) + '-month lease' : 'lease term unknown'}</span></h3>
-    <div class="money"><div><div class="k">Monthly cost</div><div class="v big">${money(c.monthly ?? cost(L))}${open ? '<small class="plus">+ fees?</small>' : ''}</div></div>
+    <div class="money"><div><div class="k">Monthly cost</div><div class="v big">${money(c.monthly_expected ?? c.monthly ?? cost(L))}${c.fees_estimate ? `<small class="plus">incl. ~${money(c.fees_estimate.monthly)} est. fees</small>` : open ? '<small class="plus">+ fees?</small>' : ''}</div></div>
       <div><div class="k">Gross rent</div><div class="v">${money(c.rent?.gross ?? p.gross)}</div></div>
       <div><div class="k">${c.rent?.basis === 'conditional' ? 'Net (if eligible)' : 'Paid month'}</div><div class="v">${money(c.rent?.basis === 'conditional' ? c.rent?.illustrations?.[0]?.net : c.paid_month ?? p.gross)}</div></div></div>
+    ${c.fees_estimate ? `<p class="money-note">No fee sheet yet, so ranking adds an estimate from similar buildings: ${esc(c.fees_estimate.parts.join('; '))}. Documented so far: ${money(c.monthly)}.</p>` : ''}
     ${c.rent?.basis === 'conditional' ? `<p class="money-note">Free months are advertised without a lease term, so the net depends on it: ${(c.rent.illustrations || []).map((i) => `${esc(i.lease_months)} months → ${money(i.net)}`).join(' · ')}.</p>` : ''}
     ${conc.notes?.length || conc.excluded ? `<p class="money-note">${esc([...(conc.notes || []), ...(conc.excluded ? [conc.excluded] : [])].join(' · '))}</p>` : ''}
     ${c.scenarios?.length ? `<p class="money-note">Sources disagree: ${c.scenarios.map((x) => `${esc(x.label || x.source || 'claim')} ${money(x.monthly ?? x.gross)}`).join(' vs ')} (ranked on the higher one).</p>` : ''}

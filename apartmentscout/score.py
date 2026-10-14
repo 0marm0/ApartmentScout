@@ -24,10 +24,10 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from .config import DIMENSION_LABELS
-from .listings import (cost_model, is_studio, normalise_laundry, normalise_service, parse_date,
+from .listings import (cost_model, headroom, is_studio, normalise_laundry, normalise_service, parse_date,
                        price_per_sqft, size_info)
 
-SCORE_VERSION = "2.0"
+SCORE_VERSION = "2.1"
 
 GOOD_EXPOSURE = {"S": 20, "SSW": 20, "SSE": 18, "SW": 16, "SE": 16, "W": 10, "E": 10,
                  "WSW": 13, "ESE": 13, "WNW": 4, "ENE": 4, "NW": 0, "NE": 0, "N": -10,
@@ -144,8 +144,15 @@ def part_cost(cm: dict, crit: dict) -> Part:
         fee_txt = f"{_money(f[0])}-{_money(f[1])}" if isinstance(f, list) else _money(f)
         items.append(f"monthly fees {fee_txt}" if f else "monthly fees: none")
     else:
-        items.append("monthly fees unknown: not added, not assumed")
         flags.append("fees_unknown")
+    est = cm.get("fees_estimate")
+    if est:
+        items += [f"estimated {x}" for x in est["parts"]]
+        items.append(f"ranked on {_money(cm['monthly_expected'])}/mo with these estimates; "
+                     f"{_money(cm['monthly'])} documented")
+        flags.append("fees_estimated")
+    elif not cm.get("fees_known"):
+        items.append("monthly fees unknown: nothing comparable to estimate from")
     if cm.get("one_time_spread"):
         items.append(f"one-time fees add {_money(cm['one_time_spread'])}/mo over the lease")
     conc = cm.get("concession") or {}
@@ -187,22 +194,153 @@ def _space_value(sq: float, u: dict) -> float:
     return _lin(sq, f, 0, g, 50) if sq < g else _lin(sq, g, 50, gr, 100)
 
 
-def part_space(L: dict, crit: dict) -> Part:
+# ---------------------------------------------------------------------- comparables
+
+def _q(vals: list[float] | tuple[float, ...], p: float) -> float:
+    """Linear-interpolated quantile of a non-empty list."""
+    v = sorted(vals)
+    i = p * (len(v) - 1)
+    lo = int(i)
+    return v[lo] + (v[min(lo + 1, len(v) - 1)] - v[lo]) * (i - lo)
+
+
+def _median(vals: list[float] | tuple[float, ...]) -> float:
+    return _q(vals, 0.5)
+
+
+def is_condo(L: dict) -> bool:
+    return bool(re.search(r"\bcondo(minium)?s?\b", f"{L.get('building', '')} {L.get('ownership', '')}", re.I))
+
+
+@dataclass(frozen=True)
+class Comps:
+    """What the rest of the search knows, used to estimate one listing's unknown size and fees.
+
+    Unknowns are estimated from comparable listings instead of counting as a neutral 50 or as $0, so a
+    listing that documents a modest size or a small fee is not ranked below one that documents nothing.
+    """
+
+    sizes_building: dict[tuple[str, float], tuple[float, ...]] = field(default_factory=dict)
+    sizes_beds: dict[float, tuple[float, ...]] = field(default_factory=dict)
+    fees_service: dict[str, tuple[float, ...]] = field(default_factory=dict)
+    fees_all: tuple[float, ...] = ()
+    condo_one_time: tuple[float, ...] = ()
+
+
+def build_comps(listings: list[dict]) -> Comps:
+    by_b: dict[tuple[str, float], list[float]] = {}
+    by_beds: dict[float, list[float]] = {}
+    by_service: dict[str, list[float]] = {}
+    fees: list[float] = []
+    condo: list[float] = []
+    for L in listings:
+        si = size_info(L)
+        beds = L.get("beds")
+        if si and si["exact"] or (si and si["basis"] in ("line_band_plan", "main_rooms_sum")):
+            if beds is not None:
+                by_b.setdefault((_building_key(L), float(beds)), []).append(float(si["sqft"]))
+                by_beds.setdefault(float(beds), []).append(float(si["sqft"]))
+        pr = L.get("price") or {}
+        fm = pr.get("fees_monthly")
+        if isinstance(fm, (int, float)) and fm >= 0:
+            fees.append(float(fm))
+            svc = normalise_service((L.get("amenities") or {}).get("doorman")) if isinstance(
+                (L.get("amenities") or {}).get("doorman"), str) else None
+            by_service.setdefault(str(svc), []).append(float(fm))
+        ot = pr.get("fees_one_time")
+        if is_condo(L) and isinstance(ot, (int, float)) and ot > 50:
+            condo.append(float(ot))
+    return Comps({k: tuple(v) for k, v in by_b.items()}, {k: tuple(v) for k, v in by_beds.items()},
+                 {k: tuple(v) for k, v in by_service.items()}, tuple(fees), tuple(condo))
+
+
+def estimated_size(L: dict, comps: Comps | None) -> dict[str, Any] | None:
+    """A size for a listing that states none: the same building's units with the same bedrooms, else the
+    search's lower-middle (40th percentile) for that bedroom count. Listings that hide their size tend
+    to be the smaller ones, so the estimate leans low and keeps a wide range."""
+    beds = L.get("beds")
+    if comps is None or beds is None:
+        return None
+    same = comps.sizes_building.get((_building_key(L), float(beds)))
+    if same:
+        mid = _median(same)
+        return {"sqft": round(mid), "range": [round(min(same) * 0.95), round(max(same) * 1.05)],
+                "label": f"the building's other {beds:g}-bed units ({len(same)} known)"}
+    pool = comps.sizes_beds.get(float(beds)) or ()
+    if len(pool) < 8:
+        return None
+    return {"sqft": round(_q(pool, 0.4)), "range": [round(_q(pool, 0.15)), round(_q(pool, 0.65))],
+            "label": f"{len(pool)} known {beds:g}-bed sizes in this search (40th percentile)"}
+
+
+def estimated_fees(L: dict, cm: dict, comps: Comps | None) -> dict[str, Any] | None:
+    """Expected unknown fees: the median known monthly fee in buildings with the same service level,
+    plus, for condo rentals with no fee sheet, the median known condo move-in/application package
+    spread over the lease. None when the fees are documented or nothing comparable is known."""
+    if comps is None or cm.get("monthly") is None:
+        return None
+    pr = L.get("price") or {}
+    out: dict[str, Any] = {"monthly": 0.0, "parts": []}
+    hi = 0.0
+    if not cm.get("fees_known"):
+        d = (L.get("amenities") or {}).get("doorman")
+        svc = str(normalise_service(d)) if isinstance(d, str) else "None"
+        pool = comps.fees_service.get(svc) or ()
+        if len(pool) < 5:
+            pool = comps.fees_all
+        if len(pool) >= 5:
+            m = _median(pool)
+            out["monthly"] += m
+            hi += _q(pool, 0.9)
+            out["parts"].append(f"monthly fees ~${m:,.0f} (median of {len(pool)} known fee sheets)")
+    if is_condo(L) and not pr.get("fees_one_time") and len(comps.condo_one_time) >= 3:
+        months = float(pr.get("lease_months") or 12)
+        ot = _median(comps.condo_one_time) / months
+        out["monthly"] += ot
+        hi += max(comps.condo_one_time) / months
+        out["parts"].append(f"condo move-in and application fees ~${ot * months:,.0f} once "
+                            f"(median of {len(comps.condo_one_time)} known), ${ot:,.0f}/mo over {months:g} months")
+    if not out["parts"]:
+        return None
+    out["monthly"] = round(out["monthly"])
+    out["high"] = round(hi)
+    return out
+
+
+def apply_fee_estimate(cm: dict, est: dict, crit: dict) -> dict:
+    """The money model with expected fees added to the amount the budget reads; known parts unchanged."""
+    out = dict(cm)
+    out["fees_estimate"] = est
+    out["monthly_expected"] = round(cm["monthly"] + est["monthly"], 2)
+    out["monthly_range"] = [cm["monthly"], round(cm["monthly"] + est["high"], 2)]
+    basis = ((crit or {}).get("budget") or {}).get("basis", "monthly_cost")
+    if basis == "monthly_cost":
+        out["budget_amount"] = out["monthly_expected"]
+        out["headroom"] = headroom(out["budget_amount"], crit)
+    return out
+
+
+def part_space(L: dict, crit: dict, comps: Comps | None = None) -> Part:
     u = crit.get("unit", {})
     si = size_info(L)
-    if not si:
-        return Part(None, "size unknown, counted as neutral")
-    v = _space_value(si["sqft"], u)
-    lo, hi = (_space_value(x, u) for x in si["range"])
     items: list[str] = []
     flags: list[str] = []
+    if not si:
+        est = estimated_size(L, comps)
+        if not est:
+            return Part(None, "size unknown, counted as neutral")
+        si = {**est, "exact": False, "ppsf_ok": False, "label": "estimated"}
+        items.append(f"no size stated: estimated from {est['label']}")
+        flags.append("size_imputed")
+    v = _space_value(si["sqft"], u)
+    lo, hi = (_space_value(x, u) for x in si["range"])
     if si["exact"]:
         summ = f"{si['sqft']:,} ft² ({si['label']})"
     else:
         summ = f"~{si['range'][0]:,}-{si['range'][1]:,} ft² ({si['label']})"
         items.append(f"scored at the {si['sqft']:,} ft² middle; the range is kept in the score range")
         flags.append("size_estimated")
-        if not si["ppsf_ok"]:
+        if not si["ppsf_ok"] and "size_imputed" not in flags:
             items.append("no $/ft² from a ratio estimate")
             flags.append("size_proxy")
     beds = L.get("beds")
@@ -348,7 +486,7 @@ def _scope_ok(L: dict, key: str) -> bool:
     return sc is None or str(sc).lower() in EXACT_SCOPES
 
 
-def part_light(L: dict) -> Part:
+def _light_model(L: dict) -> Part:
     sun = (L.get("site") or {}).get("sun_hours")
     if sun:
         mean = sum(sun) / len(sun)
@@ -400,29 +538,174 @@ def part_light(L: dict) -> Part:
     return Part(_clamp(s), summ, items, flags=sorted(set(flags)))
 
 
+def _photo_review(L: dict) -> dict:
+    """Graded listing photos (``photo_review``), unless they only show the building."""
+    pr = L.get("photo_review") or {}
+    return {} if pr.get("scope") == "building-only" else pr
+
+
+def _grade(v: Any) -> float | None:
+    return (float(v) - 1) / 4 * 100 if isinstance(v, (int, float)) else None
+
+
+def part_light(L: dict) -> Part:
+    """The sun and floor model, blended half and half with what the unit's own photos show (light
+    through the windows and the view out of them) when they were graded."""
+    p = _light_model(L)
+    pr = _photo_review(L)
+    view, light = _grade(pr.get("view")), _grade(pr.get("natural_light"))
+    if view is None and light is None:
+        return p
+    pv = view if light is None else light if view is None else 0.6 * view + 0.4 * light
+    bits = [f"view {pr['view']}/5" + (f" ({pr['view_note']})" if pr.get("view_note") else "") if view is not None else None,
+            f"light {pr['natural_light']}/5" if light is not None else None]
+    item = "unit photos: " + ", ".join(b for b in bits if b)
+    if p.value is None:
+        return Part(pv, item, [item], flags=p.flags)
+    v = 0.5 * p.value + 0.5 * pv
+    rng = (min(v, *(0.5 * x + 0.5 * pv for x in p.range)), max(v, *(0.5 * x + 0.5 * pv for x in p.range))) if p.range else None
+    return Part(v, f"{p.summary}; {item}", p.items + [item], rng, p.flags)
+
+
 # ---------------------------------------------------------------------- building and quiet
 
-def part_building(L: dict) -> Part:
+def _norm_building(name: Any) -> str:
+    t = re.sub(r"\(.*?\)", " ", str(name or "").lower())
+    t = re.sub(r"\b(the|condominiums?|condo|apartments?|residences?|tower|nyc)\b", " ", t)
+    return re.sub(r"[^a-z0-9]+", " ", t).strip()
+
+
+def renter_rating(L: dict, crit: dict) -> tuple[float, str] | None:
+    """The renter's own 1-5 rating of this building (``building_ratings`` in the criteria)."""
+    ratings = crit.get("building_ratings") or {}
+    if not ratings:
+        return None
+    b = _norm_building(L.get("building"))
+    for name, r in ratings.items():
+        n = _norm_building(name)
+        if n and (b == n or b.startswith(n + " ") or n.startswith(b + " ")) and isinstance(r, (int, float)):
+            return float(r), str(name)
+    return None
+
+
+QUALITY_AMENITIES = ("gym", "pool", "roof_deck", "lounge", "game_room", "outdoor_space", "parking")
+
+
+def building_quality(L: dict) -> tuple[float | None, list[str]]:
+    """How nice the building is, from what is known: age and height (PLUTO), service level, the breadth
+    of shared amenities, residents' star ratings and graded lobby or amenity photos."""
+    vals: list[float] = []
+    items: list[str] = []
+    bf = L.get("building_facts") or {}
+    year = bf.get("year_built")
+    if isinstance(year, (int, float)) and year > 1800:
+        v = _clamp((year - 1960) / 60 * 100)
+        vals.append(v)
+        items.append(f"built {year:.0f} ({v:.0f})")
+    floors = bf.get("floors")
+    if isinstance(floors, (int, float)) and floors > 0:
+        v = _clamp((floors - 5) / 35 * 100)
+        vals.append(v)
+        items.append(f"{floors:.0f} floors ({v:.0f})")
+    am = L.get("amenities") or {}
+    d = am.get("doorman")
+    lvl = normalise_service(d) if isinstance(d, str) and d not in SERVICE_LEVEL else d
+    if lvl in SERVICE_LEVEL:
+        v = 100 * SERVICE_LEVEL[lvl]
+        vals.append(v)
+        items.append(f"{lvl} doorman ({v:.0f})")
+    known = [k for k in QUALITY_AMENITIES if am.get(k) is not None]
+    if len(known) >= 2:
+        n = sum(1 for k in known if am.get(k) not in (False, "none", "no"))
+        v = _clamp(n / 4 * 100)
+        vals.append(v)
+        items.append(f"{n} shared amenities ({v:.0f})")
+    for r in (L.get("reviews") or {}).get("ratings") or []:
+        m = re.search(r"(\d(?:\.\d)?)\s*/\s*5", str(r.get("value", "")))
+        if m:
+            v = (float(m.group(1)) - 1) / 4 * 100
+            vals.append(v)
+            items.append(f"{r.get('label') or 'rating'} {m.group(1)}/5 ({v:.0f})")
+    lux = _grade((L.get("photo_review") or {}).get("building_luxury"))
+    if lux is not None:
+        vals.append(lux)
+        items.append(f"lobby and amenity photos {L['photo_review']['building_luxury']}/5 ({lux:.0f})")
+    return (sum(vals) / len(vals) if vals else None), items
+
+
+def building_risk(L: dict) -> tuple[float | None, list[str]]:
+    """Review and public-records risk scores (complaints and violations per 100 units): a coarse signal."""
     vals: list[float] = []
     items: list[str] = []
     rv = L.get("reviews") or {}
     if rv.get("risk_score") is not None:
         vals.append(float(rv["risk_score"]))
         items.append(f"review risk score {float(rv['risk_score']):.0f}")
-    for r in rv.get("ratings") or []:
-        m = re.search(r"(\d(?:\.\d)?)\s*/\s*5", str(r.get("value", "")))
-        if m:
-            x = (float(m.group(1)) - 1) / 4 * 100
-            vals.append(x)
-            items.append(f"{r.get('label') or 'rating'} {m.group(1)}/5 ({x:.0f})")
     rec = L.get("records") or {}
     if rec.get("risk_score") is not None:
         vals.append(float(rec["risk_score"]))
         items.append(f"public records {float(rec['risk_score']):.0f}")
-    if not vals:
-        return Part(None, "no reviews or records yet, counted as neutral")
-    v = sum(vals) / len(vals)
-    return Part(v, f"reviews and records average {v:.0f} ({len(vals)} source{'s' if len(vals) > 1 else ''})", items)
+    return (sum(vals) / len(vals) if vals else None), items
+
+
+def part_building(L: dict, crit: dict | None = None) -> Part:
+    """Your rating of the building leads (60%), then its quality (30%), then records risk (10%);
+    without a rating, quality 75% and risk 25%. Missing pieces drop out and the rest are reweighted."""
+    crit = crit or {}
+    rr = renter_rating(L, crit)
+    q, q_items = building_quality(L)
+    r, r_items = building_risk(L)
+    pieces = [(rr and (rr[0] - 1) / 4 * 100, 0.6 if rr else 0.0), (q, 0.3 if rr else 0.75), (r, 0.1 if rr else 0.25)]
+    num = sum(v * w for v, w in pieces if v is not None)
+    den = sum(w for v, w in pieces if v is not None)
+    if not den:
+        return Part(None, "no rating, quality facts, reviews or records yet, counted as neutral")
+    v = num / den
+    items = ([f"your rating {rr[0]:g}/5"] if rr else []) + q_items + r_items
+    bits = ([f"your rating {rr[0]:g}/5"] if rr else []) + ([f"quality {q:.0f}"] if q is not None else []) + \
+        ([f"records {r:.0f}"] if r is not None else [])
+    return Part(v, ", ".join(bits), items, flags=["renter_rated"] if rr else [])
+
+
+# ---------------------------------------------------------------------- interior
+
+PREMIUM_WORDS = (("sub-zero", 10), ("subzero", 10), ("miele", 10), ("wolf", 8), ("gaggenau", 10),
+                 ("bosch", 6), ("bertazzoni", 6), ("fisher", 5), ("thermador", 8), ("viking", 6),
+                 ("newly renovated", 10), ("renovated", 6), ("brand new", 8), ("new appliances", 8),
+                 ("quartz", 5), ("marble", 5), ("caesarstone", 6), ("stainless", 3), ("hardwood", 3),
+                 ("wide plank", 5), ("floor-to-ceiling", 4), ("custom", 3), ("dated", -10),
+                 ("original condition", -12), ("as-is", -10), ("carpet", -5), ("formica", -10))
+
+
+def part_interior(L: dict) -> Part:
+    """Finish quality: graded unit photos when there are any (overall, kitchen and bath, renovation,
+    appliances), else the listing's own wording about finishes and appliances."""
+    pr = _photo_review(L)
+    g = _grade(pr.get("interior"))
+    if g is not None:
+        rooms = [x for x in (_grade(pr.get("kitchen")), _grade(pr.get("bath"))) if x is not None]
+        v = 0.5 * g + 0.5 * (sum(rooms) / len(rooms)) if rooms else g
+        items = [f"interior {pr['interior']}/5" + "".join(f", {k} {pr[k]}/5" for k in ("kitchen", "bath") if pr.get(k))]
+        adj = {"new-or-recent": 6, "updated": 2, "dated": -8}.get(pr.get("renovation"), 0) + \
+            {"premium": 6, "modern-stainless": 2, "dated": -8}.get(pr.get("appliances"), 0)
+        if adj:
+            v += adj
+            items.append(f"renovation {pr.get('renovation')}, appliances {pr.get('appliances')} ({adj:+d})")
+        flags = []
+        if pr.get("scope") == "staged-or-rendered" or pr.get("confidence") == "low":
+            v = 0.7 * v + 0.3 * 50
+            items.append("staged, rendered or low-confidence photos: pulled 30% toward neutral")
+            flags.append("interior_staged")
+        if pr.get("evidence"):
+            items.append(str(pr["evidence"]))
+        return Part(_clamp(v), f"from the unit's photos: {pr['interior']}/5", items, flags=flags)
+    text = " ".join(str(x) for x in [*(L.get("features") or {}).values(), L.get("notes") or ""]).lower()
+    hits = [(w, pts) for w, pts in PREMIUM_WORDS if w in text]
+    if not hits:
+        return Part(None, "finishes unknown, counted as neutral")
+    v = _clamp(50 + sum(pts for _, pts in hits))
+    return Part(v, "from the listing's wording", [f"listing says '{w}' ({pts:+d})" for w, pts in hits],
+                flags=["interior_from_text"])
 
 
 def part_quiet(L: dict) -> Part:
@@ -589,19 +872,23 @@ def _signed(pts: float) -> str:
     return f"+{r}" if r > 0 else (str(r) if r < 0 else "0")
 
 
-def score_listing(L: dict, crit: dict, today: dt.date | None = None) -> dict[str, Any]:
+def score_listing(L: dict, crit: dict, today: dt.date | None = None, comps: Comps | None = None) -> dict[str, Any]:
     today = _today(crit, today)
     cm = cost_model(L, crit, today)
+    est = estimated_fees(L, cm, comps)
+    if est:
+        cm = apply_fee_estimate(cm, est, crit)
     cost = cm.get("budget_amount")
     am, fails, unknown = part_amenities(L, crit)
     move, move_gate = part_move_date(L, crit, today)
     parts_full: dict[str, Part] = {
         "cost": part_cost(cm, crit),
-        "space": part_space(L, crit),
+        "space": part_space(L, crit, comps),
         "commute": part_commute(L, crit),
         "amenities": am,
         "light_view": part_light(L),
-        "building": part_building(L),
+        "building": part_building(L, crit),
+        "interior": part_interior(L),
         "quiet": part_quiet(L),
         "move_date": move,
         "renewal_risk": part_renewal(cm),
@@ -680,7 +967,7 @@ def score_listing(L: dict, crit: dict, today: dt.date | None = None) -> dict[str
         "part_ranges": {k: list(p.range) for k, p in parts_full.items() if p.range},
         "confidence": confidence,
         "range": [round(lo, 1), round(hi, 1)],
-        "monthly_cost": cm.get("monthly"),
+        "monthly_cost": cm.get("monthly_expected", cm.get("monthly")),
         "budget_tier": budget_tier(cost, crit),
         "gates": gates,
         "eligible": eligible,
@@ -727,8 +1014,9 @@ def score_all(listings: list[dict], crit: dict, today: dt.date | None = None) ->
     """Score every listing and write ``rank`` (= ``ranks.action``) and ``ranks`` (fit / action / budget /
     building). Ties break on confidence, then lower cost, then id."""
     today = _today(crit, today)
+    comps = build_comps(listings)
     for L in listings:
-        L["score"] = score_listing(L, crit, today)
+        L["score"] = score_listing(L, crit, today, comps)
     scored = [L for L in listings if L["score"]["overall"] is not None]
     for L in listings:
         L["score"]["ranks"] = {"fit": None, "action": None, "budget": None, "building": None}

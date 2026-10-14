@@ -10,14 +10,14 @@ import yaml
 # Scored dimensions, in display order, with the labels the dashboard and reasons use.
 DIMENSION_LABELS: dict[str, str] = {
     "cost": "Cost", "space": "Space", "commute": "Commute", "amenities": "Amenities",
-    "light_view": "Light & view", "building": "Building", "quiet": "Quiet",
+    "light_view": "Light & view", "building": "Building", "interior": "Interior", "quiet": "Quiet",
     "move_date": "Move date", "renewal_risk": "Renewal risk", "transit_access": "Transit access",
 }
 
-# The three newer dimensions default to 0 so a criteria file written for the first seven keeps
+# The newer dimensions default to 0 so a criteria file written for the first seven keeps
 # exactly the same ranking; turn them on with a weight or a preset.
 DEFAULT_WEIGHTS = {"cost": 20, "space": 25, "commute": 15, "amenities": 15,
-                   "light_view": 10, "building": 10, "quiet": 5,
+                   "light_view": 10, "building": 10, "interior": 0, "quiet": 5,
                    "move_date": 0, "renewal_risk": 0, "transit_access": 0}
 
 # Named, versioned weight presets. Bump `version` whenever a preset's weights change, so exported
@@ -29,22 +29,23 @@ PRESETS: dict[str, dict[str, Any]] = {
         "weights": dict(DEFAULT_WEIGHTS),
     },
     "biggest-and-nicest": {
-        "version": 2, "label": "Biggest and nicest",
+        "version": 3, "label": "Biggest and nicest",
         "description": "Space first, then light, finishes and service; cost only through the budget gate.",
-        "weights": {"cost": 3, "space": 35, "commute": 7, "amenities": 20, "light_view": 20,
-                    "building": 10, "quiet": 5, "move_date": 0, "renewal_risk": 0, "transit_access": 0},
+        "weights": {"cost": 3, "space": 30, "commute": 7, "amenities": 15, "light_view": 20,
+                    "building": 10, "interior": 10, "quiet": 5, "move_date": 0, "renewal_risk": 0,
+                    "transit_access": 0},
     },
     "cheapest-good-enough": {
         "version": 1, "label": "Cheapest good enough",
         "description": "Lowest first-lease cost among homes that clear the must-haves; renewal shock counts.",
         "weights": {"cost": 40, "space": 15, "commute": 15, "amenities": 10, "light_view": 5,
-                    "building": 5, "quiet": 0, "move_date": 5, "renewal_risk": 5, "transit_access": 0},
+                    "building": 5, "interior": 0, "quiet": 0, "move_date": 5, "renewal_risk": 5, "transit_access": 0},
     },
     "shortest-commute": {
         "version": 1, "label": "Shortest commute",
         "description": "Door-to-door time and nearby lines first.",
         "weights": {"cost": 15, "space": 15, "commute": 40, "amenities": 10, "light_view": 5,
-                    "building": 5, "quiet": 0, "move_date": 0, "renewal_risk": 0, "transit_access": 10},
+                    "building": 5, "interior": 0, "quiet": 0, "move_date": 0, "renewal_risk": 0, "transit_access": 10},
     },
 }
 
@@ -148,4 +149,8 @@ def load_criteria(path: str | Path) -> dict[str, Any]:
     c.setdefault("nice_to_have", [])
     c.setdefault("commute", {}).setdefault("destinations", [])
     c["weights"], c["scoring"] = resolve_scoring(c)
+    br = c.get("building_ratings") or {}
+    if not isinstance(br, dict) or any(not isinstance(v, (int, float)) or not 1 <= v <= 5 for v in br.values()):
+        raise ValueError("building_ratings must map building names to a rating from 1 to 5")
+    c["building_ratings"] = {str(k): float(v) for k, v in br.items()}
     return c

@@ -8,9 +8,13 @@ Check the important ones in person before you sign.
 `apartmentscout score` writes the money picture to `score.cost` (see the [data model](data-model.md#money)).
 The rules, in order of importance:
 
-- **Unknown fees stay unknown.** A listing without a fee sheet is ranked on the part that is known
-  (rent plus any fees that are known) and carries an `unverified: fees` gate; its monthly range is open at
-  the top ("$4,850 + fees"). No fee buffer is invented, and `fees_monthly: 0` is the only way to say
+- **Unknown fees are estimated, not zero, and never hidden.** A listing without a fee sheet carries an
+  `unverified: fees` gate, and `monthly` stays the documented part. For ranking and the budget tier,
+  `monthly_expected` adds an estimate from comparable listings: the median known monthly fee in buildings
+  with the same doorman service, plus, for condo rentals without a fee sheet, the median known condo
+  move-in and application package spread over the lease (`score.cost.fees_estimate`, flagged
+  `fees_estimated`). Without that, a listing that documents a $37 fee would rank below one that documents
+  nothing. The range runs from the documented part to the 90th-percentile estimate. `fees_monthly: 0` says
   "no monthly fees". A fee given as a range ("$50-100 water/sewer") keeps the range.
 - **No net rent without a lease term.** "2 months free" with no term gives no single net-effective
   rent: the listing is ranked on the paid-month (gross) rent, gets an `unverified: lease_term` gate, and
@@ -47,13 +51,16 @@ The rules, in order of importance:
 (bedroom + living + kitchen rectangles; the whole unit is estimated as that sum / 0.65, range sum /
 0.75 to sum / 0.55) and `ratio_proxy` (any other estimate). Without an explicit `size.range`, the range
 is ±0, 3, 8, 12 and 20 % of the estimate for those bases. `sqft` holds a reported or exact-plan size
-only. The space score uses the middle of the range and carries the range into the score range;
+only. A listing that states no size at all is estimated from comparables (`size_imputed`): the median
+of the same building's units with the same bedrooms, else the 40th percentile of the search's known
+sizes for that bedroom count, with a wide range. Listings that hide their size tend to be the small ones,
+so the estimate leans low. The space score uses the middle of the range and carries the range into the score range;
 $/ft² is never shown for ratio proxies, and sizes on different bases should not be compared as
 percentages.
 
 ## Scoring
 
-Ten dimensions, each 0-100, combined with your `weights` (scoring version 2.0):
+Eleven dimensions, each 0-100, combined with your `weights` (scoring version 2.1):
 
 | Dimension | How it is scored |
 |---|---|
@@ -61,14 +68,15 @@ Ten dimensions, each 0-100, combined with your `weights` (scoring version 2.0):
 | Space | Size (middle of its range, see Size) mapped linearly: `sqft_floor` = 0, `sqft_good` = 50, `sqft_great` = 100. Halved if below `min_beds`; an explicit studio counts as 0 bedrooms, a "fitness studio" never does. |
 | Commute | Per destination: 100 at half your max minutes, 50 at the max, 0 at twice the max; weighted across destinations. |
 | Amenities | Must-haves count 3, strong preferences 2, nice-to-haves 1. Unknown amenities count half. Doorman: full-time 1, part-time 0.6, virtual 0.35. Wording is normalised first: "24-hour concierge", "24 hr", "24/7 staffed" and "full-time" are a full-time doorman, a concierge counts unless it is virtual, a live-in super does not; "laundry in building" is not in-unit laundry. |
-| Light and view | From the 3D sun study when present (annual mean and winter direct-sun hours); otherwise exposure, floor and words in the listing (panoramic, airshaft...). Words from building or representative media (`features_scope` other than `exact-unit`) are not scored. |
-| Building | Average of the review risk score, review-site star ratings and the public-records score. |
+| Light and view | From the 3D sun study when present (annual mean and winter direct-sun hours); otherwise exposure, floor and words in the listing (panoramic, airshaft...). Words from building or representative media (`features_scope` other than `exact-unit`) are not scored. When the unit's photos were graded (`photo_review`), the view (60%) and natural light (40%) they show are blended half and half with that model. |
+| Building | Your own rating (`building_ratings`, 1-5) leads at 60%, then building quality at 30% and records risk at 10%; without a rating, quality 75% and risk 25%. Quality averages what is known: year built (1960 = 0, 2020 = 100) and floors (5 = 0, 40 = 100) from PLUTO (`building_facts`), doorman service, the breadth of shared amenities, residents' star ratings and graded lobby and amenity photos. Violations per 100 units are a coarse signal and count least. |
+| Interior | Finishes from the unit's graded photos (`photo_review`): overall grade averaged with kitchen and bath, plus or minus for a recent renovation, premium or dated appliances; staged, rendered or low-confidence photos are pulled 30% toward neutral. Without photos, finish words in the listing (renovated, Miele, quartz, dated, formica...). Defaults to weight 0. |
 | Quiet | The public-records street-noise score when present; otherwise noise words in reviews. |
 | Move date | 100 when the unit is available inside your `move_in` window; up to 14 days early is also 100 (landlords often hold that long), then 40 at 45 days early and 0 at 90; late availability is 50 at 14 days and 0 at 30 days after `latest`. `move_in.hard: true` turns late availability into a failed gate. |
 | Renewal risk | 100 - 9 x the concession as a % of gross (1 month free on 12 = 8.3 % -> 25): renewals usually start from the gross. 100 without a concession. |
 | Transit access | 14 points per distinct line at stations within a 10-minute walk (up to 70), +20 for a one-seat ride to the main destination, +10 when a station is 5 minutes away or less. |
 
-Move date, renewal risk and transit access default to weight 0: they are computed and explained, and
+Interior, move date, renewal risk and transit access default to weight 0: they are computed and explained, and
 count only when you weight them or pick a preset that does.
 
 **Unknowns** count as 50 in the overall score, so a listing is neither rewarded nor punished for
@@ -97,12 +105,12 @@ eligible unit. Ties break on confidence, then lower cost, then id.
 **Presets.** `scoring.preset` picks a named, versioned set of weights; `weights:` then adjusts it key
 by key, and `scoring.presets` adds your own:
 
-| Preset | Version | Weights (cost / space / commute / amenities / light / building / quiet / move / renewal / transit) |
+| Preset | Version | Weights (cost / space / commute / amenities / light / building / interior / quiet / move / renewal / transit) |
 |---|---|---|
-| `balanced` | 1 | 20 / 25 / 15 / 15 / 10 / 10 / 5 / 0 / 0 / 0 |
-| `biggest-and-nicest` | 2 | 3 / 35 / 7 / 20 / 20 / 10 / 5 / 0 / 0 / 0 |
-| `cheapest-good-enough` | 1 | 40 / 15 / 15 / 10 / 5 / 5 / 0 / 5 / 5 / 0 |
-| `shortest-commute` | 1 | 15 / 15 / 40 / 10 / 5 / 5 / 0 / 0 / 0 / 10 |
+| `balanced` | 1 | 20 / 25 / 15 / 15 / 10 / 10 / 0 / 5 / 0 / 0 / 0 |
+| `biggest-and-nicest` | 3 | 3 / 30 / 7 / 15 / 20 / 10 / 10 / 5 / 0 / 0 / 0 |
+| `cheapest-good-enough` | 1 | 40 / 15 / 15 / 10 / 5 / 5 / 0 / 0 / 5 / 5 / 0 |
+| `shortest-commute` | 1 | 15 / 15 / 40 / 10 / 5 / 5 / 0 / 0 / 0 / 0 / 10 |
 
 The resolved weights, the preset and its version, the dimension list and every preset are exported
 with the criteria, so the dashboard can switch presets and re-rank live.
