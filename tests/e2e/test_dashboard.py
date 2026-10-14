@@ -40,6 +40,25 @@ OVERFLOW_JS = """() => {
 }"""
 
 
+# Resolves once timers fire on time eight times running (about half a second of an idle main thread). Opening a view
+# that builds a WebGL scene (the map, Unit 3D, the floor plan studio) blocks the page's one thread for seconds, many
+# times longer with software GL on a two-core CI runner; an action started in the meantime waits behind it, so a test
+# that clicks on without waiting piles those blocks up until one of its own timeouts fires. The cap only stops a
+# page that never idles (an endless busy loop) from hanging the run.
+SETTLED_JS = """(capMs) => new Promise((resolve) => {
+  const t0 = performance.now(); let quiet = 0, last = t0;
+  const iv = setInterval(() => {
+    const now = performance.now(); quiet = now - last < 130 ? quiet + 1 : 0; last = now;
+    if (quiet >= 8 || now - t0 > capMs) { clearInterval(iv); resolve(quiet >= 8); }
+  }, 50);
+})"""
+
+
+def _settled(s, cap_ms: int = 120_000) -> bool:
+    """Wait until the page's main thread is idle again (see SETTLED_JS); False when it never was within the cap."""
+    return s.page.evaluate(SETTLED_JS, cap_ms)
+
+
 def _show(s, view: str) -> None:
     """Route to a view the way a click on its tab does, then wait for it to render."""
     pg = s.page
@@ -98,6 +117,7 @@ def test_every_view_loads_clean(open_page, theme: str, width: int) -> None:
 def test_all_view_tabs_reachable_on_a_phone(open_page) -> None:
     s = open_page("#map", width=390, height=844)
     assert s.page.locator("#tabs a").count() == len(VIEWS)
+    assert _settled(s), "the map never finished opening"
     for v in VIEWS:
         tab = s.page.locator(f'#tabs a[data-view="{v}"]')
         tab.scroll_into_view_if_needed()
@@ -105,6 +125,7 @@ def test_all_view_tabs_reachable_on_a_phone(open_page) -> None:
         assert box and box["x"] >= 0 and box["x"] + box["width"] <= 390 + 1, f"tab {v} cannot be brought on screen: {box}"
         tab.click()
         s.page.wait_for_function("(v) => document.body.dataset.view === v", arg=v, timeout=30000)
+        assert _settled(s), f"view {v} kept the page busy for two minutes"
     assert not s.take()
 
 
