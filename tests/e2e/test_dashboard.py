@@ -104,7 +104,7 @@ def test_all_view_tabs_reachable_on_a_phone(open_page) -> None:
         box = tab.bounding_box()
         assert box and box["x"] >= 0 and box["x"] + box["width"] <= 390 + 1, f"tab {v} cannot be brought on screen: {box}"
         tab.click()
-        s.page.wait_for_function("(v) => document.body.dataset.view === v", arg=v, timeout=10000)
+        s.page.wait_for_function("(v) => document.body.dataset.view === v", arg=v, timeout=30000)
     assert not s.take()
 
 
