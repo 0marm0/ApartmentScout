@@ -1,8 +1,10 @@
 {
- "generated": "2026-10-13T21:07:40",
+ "generated": "2026-10-13T22:37:51",
  "version": "0.1.0",
  "search": "Manhattan 1BR, fall 2026",
  "layers": [
+  "commute-office-bus.json",
+  "commute-office-subway.json",
   "commute-office.json",
   "noise.json",
   "transit-lines.json"
@@ -44,5 +46,10 @@
   "the-maybury-2204",
   "the-oskar-10f",
   "townsend-14c"
+ ],
+ "extra": [
+  "coverage.json",
+  "history.json",
+  "watchlist.json"
  ]
 }

@@ -4,7 +4,8 @@ import { S, cost, commuteOf, dests, tierIndex, TIER_VARS, pick, score, label } f
 import { esc, money, safeUrl, bullets, COMPASS, scoreColor } from '../util.js';
 
 export const TIERS = ['S', 'A', 'B', 'C', 'Pass'];
-export const ppsf = (L) => (L.sqft && cost(L) ? cost(L) / L.sqft : null);
+// $/ft² from the scorer (v2 gives null for proxy sizes); older data falls back to cost / reported size
+export const ppsf = (L) => { const p = L.score?.ppsf; if (p && typeof p === 'object') return p.value ?? null; if (typeof p === 'number') return p; if (L.score?.version) return null; return L.sqft && cost(L) ? cost(L) / L.sqft : null; };
 export const num = (v, d = 0) => (v == null || isNaN(v) ? null : Number(v).toFixed(d));
 export const groupKey = (L) => String(L.building || L.address || L.id).trim().toLowerCase();
 

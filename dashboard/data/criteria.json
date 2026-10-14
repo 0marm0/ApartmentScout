@@ -67,13 +67,145 @@
    "feeds": [
     {
      "name": "NYC Subway",
-     "url": "https://rrgtfsfeeds.s3.amazonaws.com/gtfs_subway.zip"
+     "url": "https://rrgtfsfeeds.s3.amazonaws.com/gtfs_subway.zip",
+     "mode": "subway"
+    },
+    {
+     "name": "NYC Bus Manhattan",
+     "url": "https://rrgtfsfeeds.s3.amazonaws.com/gtfs_m.zip",
+     "mode": "bus"
+    },
+    {
+     "name": "MTA Bus Company",
+     "url": "https://rrgtfsfeeds.s3.amazonaws.com/gtfs_busco.zip",
+     "mode": "bus",
+     "exclude_routes": [
+      "^(BxM|BM|QM|SIM|X)[0-9]"
+     ]
     }
    ],
    "walk_speed_kmh": 4.8,
    "max_walk_to_station_m": 1200,
    "service_date": "2026-10-14"
   }
+ },
+ "scoring": {
+  "preset": "balanced",
+  "stale_days": 21,
+  "as_of": null,
+  "presets": {
+   "balanced": {
+    "version": 1,
+    "label": "Balanced",
+    "description": "Every dimension counts; space and cost lead.",
+    "weights": {
+     "cost": 20.0,
+     "space": 25.0,
+     "commute": 15.0,
+     "amenities": 15.0,
+     "light_view": 10.0,
+     "building": 10.0,
+     "quiet": 5.0,
+     "move_date": 0.0,
+     "renewal_risk": 0.0,
+     "transit_access": 0.0
+    }
+   },
+   "biggest-and-nicest": {
+    "version": 2,
+    "label": "Biggest and nicest",
+    "description": "Space first, then light, finishes and service; cost only through the budget gate.",
+    "weights": {
+     "cost": 3.0,
+     "space": 35.0,
+     "commute": 7.0,
+     "amenities": 20.0,
+     "light_view": 20.0,
+     "building": 10.0,
+     "quiet": 5.0,
+     "move_date": 0.0,
+     "renewal_risk": 0.0,
+     "transit_access": 0.0
+    }
+   },
+   "cheapest-good-enough": {
+    "version": 1,
+    "label": "Cheapest good enough",
+    "description": "Lowest first-lease cost among homes that clear the must-haves; renewal shock counts.",
+    "weights": {
+     "cost": 40.0,
+     "space": 15.0,
+     "commute": 15.0,
+     "amenities": 10.0,
+     "light_view": 5.0,
+     "building": 5.0,
+     "quiet": 0.0,
+     "move_date": 5.0,
+     "renewal_risk": 5.0,
+     "transit_access": 0.0
+    }
+   },
+   "shortest-commute": {
+    "version": 1,
+    "label": "Shortest commute",
+    "description": "Door-to-door time and nearby lines first.",
+    "weights": {
+     "cost": 15.0,
+     "space": 15.0,
+     "commute": 40.0,
+     "amenities": 10.0,
+     "light_view": 5.0,
+     "building": 5.0,
+     "quiet": 0.0,
+     "move_date": 0.0,
+     "renewal_risk": 0.0,
+     "transit_access": 10.0
+    }
+   }
+  },
+  "dimensions": [
+   [
+    "cost",
+    "Cost"
+   ],
+   [
+    "space",
+    "Space"
+   ],
+   [
+    "commute",
+    "Commute"
+   ],
+   [
+    "amenities",
+    "Amenities"
+   ],
+   [
+    "light_view",
+    "Light & view"
+   ],
+   [
+    "building",
+    "Building"
+   ],
+   [
+    "quiet",
+    "Quiet"
+   ],
+   [
+    "move_date",
+    "Move date"
+   ],
+   [
+    "renewal_risk",
+    "Renewal risk"
+   ],
+   [
+    "transit_access",
+    "Transit access"
+   ]
+  ],
+  "preset_version": 1
  },
  "weights": {
   "cost": 20,
@@ -82,7 +214,10 @@
   "amenities": 15,
   "light_view": 10,
   "building": 10,
-  "quiet": 5
+  "quiet": 5,
+  "move_date": 0,
+  "renewal_risk": 0,
+  "transit_access": 0
  },
  "favorites_first": true
 }
