@@ -124,7 +124,7 @@ function navIndicator() {
     // keep the active tab visible when the strip scrolls sideways on a phone
     if (nav.scrollWidth > nav.clientWidth) nav.scrollTo({ left: Math.max(0, a.offsetLeft - 40), behavior: reduce() ? 'auto' : 'smooth' });
   };
-  new MutationObserver(place).observe(nav, { subtree: true, attributes: true, attributeFilter: ['class'] });
+  new MutationObserver((ms) => { if (ms.some((m) => m.target.tagName === 'A')) place(); }).observe(nav, { subtree: true, attributes: true, attributeFilter: ['class'] });
   addEventListener('resize', place);
   document.fonts?.ready.then(place);
   place();
