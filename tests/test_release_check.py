@@ -133,3 +133,13 @@ def test_main_exit_status(tmp_path: Path, capsys) -> None:
     (tmp_path / "bad.md").write_text("the secret phrase\n")
     assert rc.main(["--repo", str(tmp_path), "--only", "privacy", "--patterns", str(pats)]) == 1
     assert "RELEASE BLOCKED" in capsys.readouterr().out
+
+
+def test_privacy_scan_is_linear_on_long_base64_runs(tmp_path: Path) -> None:
+    import time
+    blob = "QUJD" * 500_000                       # a 2 MB run with no '@', like an inlined data grid
+    (tmp_path / "big.js").write_text(f'x="{blob}";y="jane.doe' + '@' + 'corp-mail.net"\n')
+    t = time.perf_counter()
+    f = rc.check_privacy(tmp_path, ["big.js"], [], [])
+    assert time.perf_counter() - t < 5
+    assert any("email" in m for m in levels(f, "FAIL"))

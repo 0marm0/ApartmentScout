@@ -32,7 +32,8 @@ DEFAULT_PRIVACY_PATTERNS: tuple[tuple[str, str], ...] = (
     ("local-path", r"/Users/[A-Za-z0-9._-]+"),
     ("local-path", r"/home/[a-z][a-z0-9._-]+/"),
     ("local-path", r"[A-Za-z]:\\Users\\[A-Za-z0-9._-]+"),
-    ("email", r"[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}"),
+    # the look-behind starts a match only at the head of a run, so long base64 blobs scan in linear time
+    ("email", r"(?<![A-Za-z0-9._%+-])[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}"),
 )
 
 # Addresses that are fine to publish: documentation placeholders and bot/no-reply senders.
