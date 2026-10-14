@@ -33,8 +33,9 @@ the renter makes the calls in a dashboard they own, for any city.
 
 - **Records automation is NYC-only, and there is one city profile** (`config/cities/nyc.yaml`). The "works
   anywhere" claim for commute, 3D and scoring has not been shown end to end on a second city.
-- **The standalone file needs a network connection.** MapLibre, three.js and pdf.js load from a CDN, and the
-  map has no offline fallback. Only d3-contour is vendored.
+- **The standalone file needs a network connection only for map tiles.** MapLibre, three.js, pdf.js, the Geist
+  fonts and d3-contour are vendored and inlined; without tiles the map falls back to a plain background under the
+  local overlays.
 - **Dossiers stop at one building identity.** There are no elevator, facade (FISP), certificate-of-occupancy,
   litigation, registration or OATH datasets, and no resolution of address aliases or condo billing lots.
 - **Commute is for the morning arrival window only.** There is no late-night trip home, no rideshare
