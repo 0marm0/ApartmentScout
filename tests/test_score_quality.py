@@ -104,6 +104,30 @@ def test_interior_from_photo_grades_and_from_wording():
     assert part_interior({"photo_review": {"scope": "building-only", "building_luxury": 4}}).value is None
 
 
+def test_light_from_an_assumed_exposure_counts_at_half_strength():
+    sunny = {"sun_hours": [8.0] * 12, "file": "sites/x.json"}
+    shaded = {"sun_hours": [0.0] * 12, "file": "sites/x.json"}
+    known = part_light({"site": {**sunny, "exposure_source": "plan"}}).value
+    assumed = part_light({"site": {**sunny, "exposure_source": "assumed"}})
+    assert known == 100 and assumed.value == 75 and "exposure_assumed" in assumed.flags
+    assert any("only assumed" in i for i in assumed.items)
+    # a shaded unit is pulled up toward neutral the same way: a guess is neither good nor bad news
+    assert part_light({"site": {**shaded, "exposure_source": "assumed"}}).value == 25
+    assert part_light({"site": shaded}).value == 0          # no source recorded: counted as before
+    # the listing's own exposure_source works for the wording model too
+    base = {"floor": 24, "exposure": ["S"]}
+    assert part_light({**base, "exposure_source": "assumed"}).value < part_light(base).value
+
+
+def test_assumed_exposure_keeps_the_photo_blend():
+    site = {"sun_hours": [8.0] * 12, "exposure_source": "assumed"}
+    photos = {"view": 5, "natural_light": 5, "scope": "unit"}
+    plain = part_light({"site": site})
+    blended = part_light({"site": site, "photo_review": photos})
+    assert plain.value == 75 and blended.value == 87.5            # half the discounted model + half the photos (100)
+    assert "exposure_assumed" in blended.flags and any("unit photos" in i for i in blended.items)
+
+
 def test_photo_view_blends_into_light():
     base = {"floor": 24, "exposure": ["S"]}
     plain = part_light(base).value

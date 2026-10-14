@@ -486,7 +486,33 @@ def _scope_ok(L: dict, key: str) -> bool:
     return sc is None or str(sc).lower() in EXACT_SCOPES
 
 
+def exposure_assumed(L: dict) -> bool:
+    """True when nothing says which way the windows face: the listing's ``exposure_source`` (or the one the
+    3D site study recorded in ``site.exposure_source``, from the site file's provenance) is ``assumed``."""
+    src = L.get("exposure_source") or (L.get("site") or {}).get("exposure_source")
+    return str(src or "").strip().lower() == "assumed"
+
+
+ASSUMED_EXPOSURE_WEIGHT = 0.5   # how much of a light result counts when the facing is only a guess
+
+
+def _discount_assumed(L: dict, p: Part) -> Part:
+    """Pull a light result that rests on an assumed facing halfway to neutral, and say so."""
+    if p.value is None or not exposure_assumed(L):
+        return p
+    w = ASSUMED_EXPOSURE_WEIGHT
+    item = (f"exposure is only assumed (no listing, plan or photo says which way the windows face): "
+            f"counted at {w:.0%} strength, {p.value:.0f} -> {50 + w * (p.value - 50):.0f}")
+    rng = tuple(50 + w * (x - 50) for x in p.range) if p.range else None
+    return Part(50 + w * (p.value - 50), p.summary + "; exposure assumed", p.items + [item], rng,
+                sorted(set([*p.flags, "exposure_assumed"])))
+
+
 def _light_model(L: dict) -> Part:
+    return _discount_assumed(L, _light_model_raw(L))
+
+
+def _light_model_raw(L: dict) -> Part:
     sun = (L.get("site") or {}).get("sun_hours")
     if sun:
         mean = sum(sun) / len(sun)
