@@ -114,13 +114,13 @@ departure that still arrives by `arrive_by`. All feeds load into one network and
 a mode (subway, bus, rail or ferry: from the feed's `mode`, else its GTFS `route_type`), so the same
 scan runs per mode set:
 
-- **walk**: at `walk_speed_kmh` (4.8 km/h). Inside a city's street grid (the city profile's
-  `walk_grids`; NYC: Manhattan, avenues 29 degrees east of north) the distance is
+- **walk**: at `walk_speed_kmh` (4.8 km/h) along the real street network (`walk_model: network`, the
+  NYC default; see "Walking on the street network" below). With `walk_model: grid`, or when the
+  network cannot be fetched, a grid metric is used instead: inside a city's street grid (the city
+  profile's `walk_grids`; NYC: Manhattan, avenues 29 degrees east of north) the distance is
   `factor x (blend x L1 + (1 - blend) x straight line)` with L1 measured along the avenues and streets
-  (NYC: factor 1.01, blend 0.9), so a walk straight up an avenue is about the straight line and one at
-  45 degrees to the grid about 1.38x. Elsewhere, or between two different areas (Manhattan and
-  Roosevelt Island), it is straight line x `walk_detour` (1.25). The same function gives the walk to
-  the stop, transfer walks, the walk from the stop and the heat grids.
+  (NYC: factor 1.01, blend 0.9), elsewhere straight line x `walk_detour` (1.25). Every isochrone of
+  that metric is a diamond around a station's centroid, whatever the streets do.
 - **subway**, **bus** (and rail or ferry when a feed has them): that mode only, plus walking.
 - **transit**: every mode together, so a bus to the subway counts. This is the listing's headline
   `minutes`, and the heatmap.
@@ -141,17 +141,50 @@ traffic beyond the timetable and service changes. Only trips in the window befor
 stops within about 3 km of the search are loaded, so the Manhattan bus feeds add a few seconds (the
 732-listing example routes in about 5 s).
 
+**Walking on the street network.** The pedestrian network of the search area (plus 1 km) comes from
+OpenStreetMap through Overpass, one query per 0.05-degree tile, cached in `cache/walk/` with a
+receipt per tile (mirror, OSM data timestamp, sha256); the first run takes a few minutes, later runs
+read the cache. Ways tagged highway=footway, pedestrian, path, steps, living_street, residential,
+service, tertiary, secondary, primary, unclassified, trunk (and links, tracks, corridors, cycleways),
+plus anything with foot=yes, are walkable; motorways, foot=no/private/use_sidepath, access=no/private
+and road tunnels are not. So walks follow Broadway's diagonal, cross Central Park on its paths,
+climb the Tudor City steps, go around the FDR and the rail yards, use the bridges' walkways and cannot
+cross a river anywhere else. Fragments shorter than 1 km in total (a courtyard path) are dropped.
+Shape points are collapsed into a junction graph (about 355,000 junctions and 16,000 km of ways for
+the example), and destinations, station entrances, bus stops and listings are inserted as nodes at
+their nearest point on a way.
+
+Subway stations are entered at their real stairs: the MTA's "Subway Entrances and Exits: 2024"
+(data.ny.gov `i9wp-a4ja`, 1,400 entrances in the example's area) mapped to GTFS stations by stop id,
+entry-only stairs used only to enter and exit-only stairs only at the destination end; a station the
+MTA files no stairs for borrows those of its same-named complex (Times Sq 7, Fulton St A/C, 14 St-Union
+Sq L). The walk to the station is the network walk to the nearest usable stair, plus the same
+street-to-platform time as before (`station_access_min`). Bus stops are their own entrance.
+`station_entrances: osm` uses OpenStreetMap subway entrances for other cities.
+
+For each destination and routing profile one multi-source Dijkstra gives every node its door-to-door
+time: every entrance of every stop starts at "arrive_by minus the stop's latest departure plus its
+platform time", the destination itself starts at zero (walking only), and walking adds metres /
+speed. The fastest combination wins, with no cap on the walk to a station (a per-station cap cannot
+be applied exactly in one shared search, and an approximate one left holes);
+`max_walk_to_station_m x walk_detour` still bounds the walk from the last stop to the destination
+and the heat grid's "near a stop" mask. Each 50 m cell takes the least of (time at a point on a way
+within `walk_snap_m`, 60 m, + the straight walk from there); cells farther than that from any way
+(rail yards, reservoirs) are blank. A listing takes the same least over its own nearest point and
+every way within 60 m, so the map and the listing agree. The example (219 points, 94,000 cells,
+33 profiles) routes in about 26 s; set `walk_model: grid` for the old 5 s.
+
 **Land and water.** Walking never crosses a river: points and stops are labelled by landmass from
 shoreline-clipped land polygons (NYC: the city's borough boundaries with water excluded, NYC Open
 Data, fetched once into `cache/land/`), and a stop on another landmass is out of walking reach
 (Roosevelt Island cannot walk to a First Avenue bus stop; Long Island City cannot walk to the FDR).
 Bridges are not land, so they do not join landmasses. Points just off the polygons (piers, a stop at
 the water's edge) take the nearest land within 100 m. Set `commute.transit.land` to another GeoJSON
-(or `false`) for other cities; outside the polygons nothing is blocked. The walk-only time is still
-the street-grid estimate and ignores rivers.
+(or `false`) for other cities; outside the polygons nothing is blocked. With the network model the
+land polygons only blank water cells: the network itself has no way across a river except a bridge.
 
 **The heat grid** holds the router's own answer at the centre of every 50 m cell
-(`commute.transit.heat_cell_m`), computed the other way round for speed: each stop stamps its walking
+(`commute.transit.heat_cell_m`). With the network model see above; with the grid model it is computed the other way round for speed: each stop stamps its walking
 cone onto the cells in range and every cell keeps the best departure per mode set and arrival time,
 which is identical to routing each cell (checked to 1e-11 min) and takes about a second for the
 example's 94,000 cells. Cells over water and cells more than 1 km from any stop and too far to walk
@@ -162,12 +195,36 @@ the colour, the readout and the router agree: within 0.08 min on average (max 0.
 listing points, against 0.66 (max 2.4) for the old 150 m grid whose image was also stretched up to
 100 m out of place at the north and east edges.
 
-Checked against an independent GTFS router on 208 Manhattan buildings to an East Midtown office
-(arrive by 9:00), mean absolute difference in minutes:
+**Checks of the network model (October 2026).** Walking alone, against an independent OpenStreetMap
+foot router (FOSSGIS OSRM, routing.openstreetmap.de) from 204 Manhattan buildings to an East Midtown
+office: mean absolute difference 0.65 min (r = 0.9998, none over 3 min; it is a constant 50 m at the
+office end), against 1.29 min for the grid metric (2 over 5 min). On 20 hand-picked walks (Broadway's
+diagonal, across Central Park and Bryant Park, Tudor City to the UN, across West Street to Chelsea
+Piers and Little Island, through Stuyvesant Town, over the Brooklyn and Queensboro bridges) the two
+OSM routers agree within 0.17 min on average; the grid metric is off by 1.8 min on average and by
+4-5 min on every Broadway diagonal. Roosevelt Island is the exception for both models: walking means
+the Roosevelt Island Bridge, Queens and the Queensboro Bridge (85-90 min to Midtown; the other router
+quietly takes the ferry, and the grid metric walks across the East River). The Roosevelt Island Tram
+is not in the MTA's GTFS, so the island's transit times use the F train and the Q102 bus only.
+
+The heat map equals each listing's own minutes within 0.09 min on average (max 0.35, from
+interpolating between cell centres) for every mode, and along six lines walking away from a station
+the minutes never fall except where the line nears another station's stairs.
+
+Against the earlier independent prototype router (same office), the network model differs more than
+the grid model did, because that router walked with the same grid metric to stop centroids (the grid
+factors were fitted on its walks): mean absolute difference for any transit 1.24 min (grid 0.54),
+subway 1.27, bus 1.42 (excluding Roosevelt Island). The systematic parts are the stairs (walks to the
+subway 1.1 min shorter on average: Wall St, Fulton St and Brooklyn Bridge are entered at their nearest
+stair) and the office end of bus trips (1.4 min longer: the office's point is in the middle of its
+block, and the network walks to it from the nearest way, as a pedestrian must).
+
+The grid-metric model was checked against that prototype router on 208 Manhattan buildings to an
+East Midtown office (arrive by 9:00), mean absolute difference in minutes:
 
 | | walk | subway | bus | any transit |
 |---|---|---|---|---|
-| grid walking (default for NYC) | 0.57 | 0.65 | 0.80 | 0.61 |
+| grid walking (`walk_model: grid`) | 0.57 | 0.65 | 0.80 | 0.61 |
 | straight line x 1.25 | 3.91 | 0.84 | 1.02 | 0.79 |
 
 A later re-check (October 2026 feeds, the office point estimated to within about 50 m) gives, for

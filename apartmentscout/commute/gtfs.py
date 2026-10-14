@@ -394,24 +394,32 @@ class Profile:
 
 def reverse_scan(net: Network, dest_lat: float, dest_lon: float, arrive_by: int,
                  walk_speed_ms: float, detour: float, max_egress_m: float = 1200,
-                 transfer_buffer_s: int = 60, modes=None, egress_access: float = 0.0) -> Profile:
+                 transfer_buffer_s: int = 60, modes=None, egress_access: float = 0.0,
+                 egress: dict[int, float] | None = None) -> Profile:
     """Latest departure from every stop to reach (dest_lat, dest_lon) by arrive_by, riding only `modes`.
 
     ptr[stop] records the first step of that journey: ("dest", walk_s, metres), ("walk", next_stop, s)
     or ("ride", trip, exit_stop, board_time, alight_time). Each trip keeps the exit with the most slack,
     so a ride does not overshoot and walk back. egress_access is the share of the stop's street-to-vehicle
     time also charged on the way out at the destination end (0 = none, 1 = the same as on the way in).
+    egress: walking metres from each stop to the destination measured elsewhere (the street network,
+    walknet.py); when given it replaces the walker and the max_egress_m / landmass filters.
     """
     mask = mode_mask(modes)
     n = len(net.stop_ids)
     ok = [bool(m & mask) for m in net.stop_mask]
     ld = [NEG] * n
     ptr: list[tuple | None] = [None] * n
-    near = [i for i in range(n) if ok[i] and haversine_m(net.lat[i], net.lon[i], dest_lat, dest_lon) <= max_egress_m]
+    if egress is not None:
+        near = [i for i in egress if 0 <= i < n and ok[i]]
+        walked = [egress[i] for i in near]
+    else:
+        near = [i for i in range(n) if ok[i] and haversine_m(net.lat[i], net.lon[i], dest_lat, dest_lon) <= max_egress_m]
+        if near:
+            near = [i for i, k in zip(near, net.same_land(dest_lat, dest_lon, np.asarray(near))) if k]
+        walked = net.walk_m(dest_lat, dest_lon, np.asarray(near)) if near else []
     if near:
-        near = [i for i, k in zip(near, net.same_land(dest_lat, dest_lon, np.asarray(near))) if k]
-    if near:
-        for i, m in zip(near, net.walk_m(dest_lat, dest_lon, np.asarray(near))):
+        for i, m in zip(near, walked):
             w = int(m / net.walker.speed_ms + net.stop_access(i) * float(egress_access))
             ld[i] = arrive_by - w
             ptr[i] = ("dest", w, int(round(m)))

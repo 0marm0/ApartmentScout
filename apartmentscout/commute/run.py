@@ -137,6 +137,10 @@ class _Router:
         m = w.metres(lat, lon, self.dest[0], self.dest[1])
         return m / w.speed_ms, m
 
+    def access_m(self, lat: float, lon: float, stop: int, access_s: float) -> float:
+        """Metres walked from the point to `stop` (for the legs)."""
+        return haversine_m(lat, lon, self.net.lat[stop], self.net.lon[stop]) * self.detour
+
     def access(self, lat: float, lon: float):
         return access_points(self.net, lat, lon, self.max_access, self.speed, self.detour) if self.net else None
 
@@ -160,12 +164,71 @@ class _Router:
             ws, wm = self.walk_s(lat, lon)
             legs = [{"mode": "walk", "min": round(ws / 60, 1), "m": int(round(wm)), "to": "destination"}]
         else:
-            d = haversine_m(lat, lon, self.net.lat[stop], self.net.lon[stop]) * self.detour
-            legs = journey(self.net, prof, stop, a, d, self.detour)
+            legs = journey(self.net, prof, stop, a, self.access_m(lat, lon, stop, a), self.detour)
         out = {"minutes": round(mean, 1), "range": [round(min(mins), 1), round(max(mins), 1)],
                "route": route_text(legs) if stop >= 0 else f"walk {mins[i]:.0f} min",
                **legs_summary(legs), "legs": legs, "legs_arrive_by": clock(prof.arrive_by)}
         return out
+
+
+class _NetRouter(_Router):
+    """The router with street-network walking: per-point answers precomputed by netroute.net_surface."""
+
+    def __init__(self, net, profs, dest, speed, detour, max_access, runs: dict, walks: dict):
+        super().__init__(net, profs, dest, speed, detour, max_access, Walker(speed, detour))
+        self.runs, self.walks = runs, walks
+
+    @staticmethod
+    def _key(lat: float, lon: float) -> tuple[float, float]:
+        return round(lat, 6), round(lon, 6)
+
+    def walk_s(self, lat: float, lon: float) -> tuple[float, float]:
+        m = self.walks[self._key(lat, lon)]
+        return m / self.speed, m
+
+    def minutes(self, lat: float, lon: float, acc=None) -> dict[str, list[tuple[float, int, float]]]:
+        return self.runs[self._key(lat, lon)] if self.net is not None else {}
+
+    def access_m(self, lat: float, lon: float, stop: int, access_s: float) -> float:
+        return max(0.0, access_s - float(self.net.arrays()[3][stop])) * self.speed
+
+
+def walk_model(crit: dict) -> str:
+    """'network' (walk the OpenStreetMap street network) or 'grid' (straight line x detour, or the
+    street-grid metric of walk.py): commute.transit.walk_model, else the city profile's, else grid."""
+    tr = (crit.get("commute") or {}).get("transit") or {}
+    m = str(tr.get("walk_model") or city_profile(crit).get("walk_model") or "grid").lower()
+    if m not in ("network", "grid"):
+        raise ValueError(f"commute.transit.walk_model must be network or grid, not {m!r}")
+    return m
+
+
+def _build_walk_graph(ws, crit: dict, tr: dict, net, feeds, dests, listings, walk_bbox, log):
+    """(graph, plan, receipts summary) for street-network walking; raises when the network is unavailable."""
+    from ..geo.fetch import collect_receipts, summarise_receipts
+    from .entrances import access_points as entrance_points, load_entrances, parent_map
+    from .netroute import plan_anchors
+    from .walknet import load_graph
+    with collect_receipts() as rc:
+        src = tr.get("station_entrances", city_profile(crit).get("station_entrances"))
+        ents = load_entrances(src, ws.cache_dir / "walk", walk_bbox, log) if net is not None else []
+        if net is not None:
+            enter, leave, st = entrance_points(net, ents, parent_map(feeds))
+        else:
+            enter, leave, st = {}, {}, {}
+        plan = plan_anchors(dests, listings, enter, leave)
+        plan.entrance_stats = st
+        g = load_graph(walk_bbox, plan.anchors, ws.cache_dir, log,
+                       step_m=float(tr.get("walk_sample_m", 15)), anchor_max_m=float(tr.get("walk_anchor_max_m", 300)))
+    if st:
+        log(f"  entrances: {st['entrances']:,} station entrances, {st['stops_with_entrances']:,} platforms entered "
+            f"by their stairs")
+    summary = summarise_receipts(rc)
+    bases = sorted(r["rows_updated"] for r in rc if r.get("dataset") == "overpass" and r.get("rows_updated"))
+    for q in summary:
+        if q.get("dataset") == "overpass" and bases:
+            q["rows_updated"] = bases[0] if bases[0][:10] == bases[-1][:10] else f"{bases[0]} .. {bases[-1]}"
+    return g, plan, summary
 
 
 DEFAULT_CELL_M = 50
@@ -218,7 +281,9 @@ def run_commute(ws, listings: list[dict], crit: dict, cell_m: float | None = Non
         mode_grids = bool(tr.get("mode_grids", True))
     day = dt.date.fromisoformat(str(tr.get("service_date") or _next_weekday()))
     walker = make_walker(crit)
-    if walker.grids:
+    model = walk_model(crit)
+    snap_m = float(tr.get("walk_snap_m", 60))
+    if walker.grids and model == "grid":
         log(f"  walking: street-grid metric in {', '.join(g.name for g in walker.grids)}, "
             f"straight line x {detour} elsewhere")
     feeds = feed_specs(ws, crit, log)
@@ -232,6 +297,7 @@ def run_commute(ws, listings: list[dict], crit: dict, cell_m: float | None = Non
     out_dir.mkdir(parents=True, exist_ok=True)
     layers = []
     net_cache: dict[tuple[int, int], Network] = {}
+    graph = None  # (WalkGraph, NetPlan, receipts, CellStamp) once built; False after a failed build
     for d in dests:
         if d.get("lat") is None:
             raise ValueError(f"Destination {d['name']} has no lat/lon. Run `apartmentscout geocode`.")
@@ -245,43 +311,79 @@ def run_commute(ws, listings: list[dict], crit: dict, cell_m: float | None = Non
                                               access_s=_access_cfg(tr), log=log)
                 net_cache[key].set_land(land)
             net = net_cache[key]
+        if model == "network" and graph is None:
+            try:
+                t_g = time.time()
+                g, plan, rec = _build_walk_graph(ws, crit, tr, net, feeds, dests, listings, _pad(bbox, 1000), log)
+                from .walknet import CellStamp
+                graph = (g, plan, rec, CellStamp.build(g, spec, snap_m))
+                log(f"  walking: street network ({g.stats.get('km')} km of OpenStreetMap ways, "
+                    f"{time.time() - t_g:.1f}s)")
+            except Exception as e:  # noqa: BLE001 - any failure falls back to the grid metric
+                graph = False
+                log(f"  walking: street network unavailable ({e}); using the grid metric")
+        fld = None
+        if graph:
+            from .netroute import NetField, net_surface
+            fld = NetField(graph[0], graph[1], net, d["name"], speed, max_access * detour, snap_m)
+        profs = {}
+        if net is not None:
             t1 = time.time()
             sets = _mode_sets(net)
+            eg = fld.egress() if fld is not None else None
             profs = {k: [reverse_scan(net, d["lat"], d["lon"], arrive - 60 * o, speed, detour, max_access,
-                                      modes=s, egress_access=egress_access) for o in offsets]
+                                      modes=s, egress_access=egress_access, egress=eg) for o in offsets]
                      for k, s in sets.items()}
             log(f"  {d['name']}: {len(net.conns):,} scheduled hops, {sum(1 for m in net.stop_mask if m):,} stops, "
-                f"modes {', '.join(net.modes_present())} (load {t1 - t0:.1f}s, {len(sets) * len(offsets)} scans "
-                f"{time.time() - t1:.1f}s)")
-        else:
-            profs = {}
-        R = _Router(net, profs, (d["lat"], d["lon"]), speed, detour, max_access, walker)
+                f"modes {', '.join(net.modes_present())} ({len(sets) * len(offsets)} scans {time.time() - t1:.1f}s)")
         t2 = time.time()
         la, lo = spec.centres()
         LA, LO = np.meshgrid(la, lo, indexing="ij")
-        cell_land = land.at(LA, LO) if land is not None else None
-        srf = surface(net, profs, (d["lat"], d["lon"]), spec, max_access, walker, cell_land=cell_land,
-                      stop_land=net.stop_land() if net is not None else None)
-        blank = np.zeros((spec.rows, spec.cols), dtype=bool)
-        if net is not None:  # off the network: far from every stop and too far to walk
-            blank = (srf.walk_min > d.get("max_minutes", 30)) & ~(srf.nearest_stop_m <= mask_m * detour)
+        if fld is not None:
+            stamp = graph[3]
+            pts = sorted({(round(L["lat"], 6), round(L["lon"], 6)) for L in listings if L.get("lat") is not None})
+            mins, walk_min, near_m, runs, walks = net_surface(fld, profs, stamp, pts)
+            R = _NetRouter(net, profs, (d["lat"], d["lon"]), speed, detour, max_access, runs, walks)
+            blank = ~np.isfinite(walk_min)  # farther than walk_snap_m from any walkable way
+            if net is not None:
+                blank |= (walk_min > d.get("max_minutes", 30)) & ~(near_m <= mask_m * detour)
+            grids = {k: mins[k] for k in ([TRANSIT] + [k for k in profs if k != TRANSIT])} if profs \
+                else {TRANSIT: walk_min}
+        else:
+            R = _Router(net, profs, (d["lat"], d["lon"]), speed, detour, max_access, walker)
+            cell_land = land.at(LA, LO) if land is not None else None
+            srf = surface(net, profs, (d["lat"], d["lon"]), spec, max_access, walker, cell_land=cell_land,
+                          stop_land=net.stop_land() if net is not None else None)
+            blank = np.zeros((spec.rows, spec.cols), dtype=bool)
+            if net is not None:  # off the network: far from every stop and too far to walk
+                blank = (srf.walk_min > d.get("max_minutes", 30)) & ~(srf.nearest_stop_m <= mask_m * detour)
+            grids = {k: srf.minutes[k] for k in ([TRANSIT] + [k for k in profs if k != TRANSIT])} if profs \
+                else {TRANSIT: srf.walk_min}
         if land is not None:
             blank |= ~land.is_land(LA, LO)  # water
-        grids = {k: srf.minutes[k] for k in ([TRANSIT] + [k for k in profs if k != TRANSIT])} if profs \
-            else {TRANSIT: srf.walk_min}
         t3 = time.time()
         base = {"kind": "commute", "name": d["name"],
                 "destination": {k: d.get(k) for k in ("name", "address", "lat", "lon")},
                 "arrive_by": d.get("arrive_by", "09:00"), "service_date": str(day),
                 "feeds": [f.get("name") for f in tr.get("feeds") or []],
                 "bbox": [round(v, 7) for v in spec.bbox], "rows": spec.rows, "cols": spec.cols, "cell_m": cell,
-                "arrival_offsets_min": offsets, "water_masked": land is not None}
-        method = (f"GTFS reverse connection scan + walking, the router's answer at each cell centre, averaged "
-                  f"over arrivals {min(offsets)}-{max(offsets)} min before arrive_by") if feeds else "walking only"
+                "arrival_offsets_min": offsets, "water_masked": land is not None,
+                "walk_model": "network" if graph else "grid"}
+        if graph:
+            g, plan = graph[0], graph[1]
+            base["walk_network"] = {"source": "OpenStreetMap (Overpass)", "km": g.stats.get("km"),
+                                    "junctions": g.stats.get("junctions"), "snap_m": snap_m,
+                                    "osm_base": next((q.get("rows_updated") for q in graph[2]
+                                                      if q.get("dataset") == "overpass"), None),
+                                    "entrances": plan.entrance_stats or None,
+                                    "sources": [{k: v for k, v in q.items() if k != "queries"} for q in graph[2]]}
+        walking = "walking the OpenStreetMap street network to station entrances" if graph else "walking"
+        method = (f"GTFS reverse connection scan + {walking}, the router's answer at each cell centre, averaged "
+                  f"over arrivals {min(offsets)}-{max(offsets)} min before arrive_by") if feeds else walking
         for k, vals in grids.items():
             if k != TRANSIT and not mode_grids:
                 continue
-            m = np.where(blank | (vals >= 120), np.nan, vals)
+            m = np.where(blank | ~np.isfinite(vals) | (vals >= 120), np.nan, vals)
             layer = {**base, "mode": k, "modes": sorted(grids), "method": method, "scale": 0.5, "nodata": NODATA,
                      "values_u8": encode_minutes(m), "generated": dt.datetime.now().isoformat(timespec="seconds")}
             suffix = "" if k == TRANSIT else f"-{k}"

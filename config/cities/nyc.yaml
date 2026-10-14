@@ -25,7 +25,13 @@ transit_feeds:
   # - {name: NYC Bus Bronx, url: https://rrgtfsfeeds.s3.amazonaws.com/gtfs_bx.zip, mode: bus}
   # - {name: NYC Bus Queens, url: https://rrgtfsfeeds.s3.amazonaws.com/gtfs_q.zip, mode: bus}
   # - {name: PATH, url: http://data.trilliumtransit.com/gtfs/path-nj-us/path-nj-us.zip, mode: rail}
-# Walking on the street grid: inside the polygon, walking metres = factor x (blend x L1 + (1 - blend) x
+# Walking: `network` walks the OpenStreetMap pedestrian network (sidewalks, crossings, park paths, bridge
+# walkways; no motorways or road tunnels) to the station's real entrances; `grid` uses the street-grid
+# metric below. The grid metric is also the fallback when the network cannot be fetched.
+walk_model: network
+# Subway entrances: MTA "Subway Entrances and Exits: 2024" (data.ny.gov i9wp-a4ja), matched to GTFS stations.
+station_entrances: nyc
+# Walking on the street grid (walk_model: grid, or the fallback): inside the polygon, walking metres = factor x (blend x L1 + (1 - blend) x
 # straight line), with L1 measured along the avenues (bearing_deg east of north) and the streets.
 # Fitted on 208 Manhattan walks (walk MAE 0.6 min against 3.9 for straight x 1.25). Outside the polygon,
 # or between Manhattan and anywhere else, walking is straight line x walk_detour.
