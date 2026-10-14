@@ -10,8 +10,8 @@ import { contours } from '../vendor/d3-contour.js';
 const CLUSTER_Z = 12;                                 // below this zoom nearby pins merge into count bubbles
 const UNCL = ['!', ['has', 'point_count']];
 const selFilter = (id) => ['all', UNCL, ['==', ['get', 'id'], id || '']];
-/** Starred homes (saved picks, or flagged favorite in the data): gold tags that are always drawn, and pins that never join a count bubble. */
-const isStar = (L) => isSaved(L.id) || !!L.favorite;
+/** Starred homes (the renter's own saved picks in this browser): gold tags that are always drawn, and pins that never join a count bubble. */
+const isStar = (L) => isSaved(L.id);
 const hoverState = (id, v) => { if (id != null) for (const source of ['listings', 'starred']) if (map.getSource(source)) map.setFeatureState({ source, id }, { hover: v }); };
 const reduce = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 const layers = {};          // name -> grid json
