@@ -516,3 +516,25 @@ body { grid-template-columns: minmax(0, 1fr); }
 .lp { display: inline-flex; align-items: center; gap: 3px; height: 16px; padding: 0 5px; border-radius: 4px; background: #1f5fae; color: #fff; font: 700 9.5px/1 var(--font-sans); letter-spacing: .02em; white-space: nowrap; }
 .lp.sbs { background: #0b7bc1; }
 .lp i { font-style: normal; font-size: 8px; padding: 1px 2px; border-radius: 2px; background: rgba(255,255,255,.25); }
+/* v2 scoring: presets, reasons, money notes */
+.preset { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.preset .sel { flex: 1; }
+.preset .faint { font-size: var(--fs-xs); white-space: nowrap; }
+.reasons { display: flex; flex-direction: column; gap: 2px; }
+.rsn summary { display: grid; grid-template-columns: 40px 88px minmax(0, 1fr) 54px; gap: 8px; align-items: center; padding: 5px 4px; border-radius: var(--r-sm); cursor: pointer; list-style: none; font-size: var(--fs-xs); color: var(--ink-2); }
+.rsn summary::-webkit-details-marker { display: none; }
+.rsn summary:hover { background: var(--surface-2); }
+.rsn b { font-variant-numeric: tabular-nums; font-weight: 650; text-align: right; }
+.rsn b.pos { color: var(--good); } .rsn b.neg { color: var(--bad); } .rsn b.zero { color: var(--ink-3); }
+.rsn .lab { color: var(--ink); font-weight: 500; }
+.rsn .txt { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rsn[open] .txt { white-space: normal; }
+.rsn .bar { height: 5px; border-radius: 3px; background: var(--surface-3); overflow: hidden; }
+.rsn .bar i { display: block; height: 100%; }
+.rsn .bar.unk { background: repeating-linear-gradient(-45deg, var(--surface-3) 0 4px, transparent 4px 8px); }
+.rsn ul { margin: 2px 0 8px 136px; padding-left: 14px; font-size: var(--fs-xs); color: var(--ink-3); }
+.money-note { margin: 10px 0 0; font-size: var(--fs-xs); color: var(--ink-3); line-height: 1.5; }
+.money-note b { color: var(--ink); }
+.money .v .plus { display: block; font-size: var(--fs-2xs); font-weight: 600; color: var(--warn); margin-top: 2px; letter-spacing: 0; white-space: nowrap; }
+.facts .v small { font-weight: 500; color: var(--ink-3); font-size: var(--fs-2xs); }
+.headroom { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; margin-top: 12px; font-size: var(--fs-xs); }

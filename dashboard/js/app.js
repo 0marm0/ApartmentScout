@@ -56,9 +56,37 @@ export function rescore() {
     const p = L.score?.parts || {};
     L._s = p && Object.keys(p).length ? DIMS.reduce((a, [k]) => a + (W[k] || 0) * (p[k] ?? 50), 0) / tot : L.score?.overall;
   }
-  [...S.listings].filter((L) => L.score?.eligible).sort((a, b) => b._s - a._s).forEach((L, i) => (L._rank = i + 1));
-  S.listings.filter((L) => !L.score?.eligible).forEach((L) => (L._rank = null));
+  // ranks: score desc, then confidence desc, then lower monthly cost, then id (same tie-break as score.py)
+  const cmp = (a, b) => (b._s ?? -1) - (a._s ?? -1) || (b.score?.confidence ?? 0) - (a.score?.confidence ?? 0) || (cost(a) ?? 1e9) - (cost(b) ?? 1e9) || (a.id < b.id ? -1 : 1);
+  const cap = S.crit.budget?.tiers?.[0]?.max ?? Infinity;
+  for (const L of S.listings) L._ranks = {};
+  S.listings.filter((L) => L._s != null).sort(cmp).forEach((L, i) => (L._ranks.fit = i + 1));
+  const act = S.listings.filter((L) => L.score?.eligible).sort(cmp);
+  act.forEach((L, i) => (L._ranks.action = i + 1));
+  act.filter((L) => (L.score?.cost?.budget_amount ?? cost(L) ?? Infinity) <= cap).forEach((L, i) => (L._ranks.budget = i + 1));
+  const seen = new Map();
+  for (const L of act) { const k = (L.building || L.address || L.id).toLowerCase(); if (!seen.has(k)) seen.set(k, seen.size + 1); L._ranks.building = seen.get(k); }
+  for (const L of S.listings) L._rank = L._ranks.action ?? null;
 }
+const DIM_LABEL = () => Object.fromEntries(DIMS);
+/** "Why it ranks here" with the current weights: the scorer's sentences, points recomputed live. */
+export function reasons(L) {
+  const W = S.weights, tot = Object.values(W).reduce((a, b) => a + b, 0) || 1, p = L.score?.parts || {}, lab = DIM_LABEL();
+  const src = L.score?.reasons || DIMS.map(([k]) => ({ dim: k, text: `${lab[k]}: ${p[k] == null ? 'unknown, counted as neutral' : Math.round(p[k]) + ' / 100'}` }));
+  return src.map((r) => {
+    const pts = ((p[r.dim] ?? 50) - 50) * (W[r.dim] || 0) / tot;
+    const tail = String(r.text || '').includes(': ') ? r.text.slice(r.text.indexOf(': ') + 2) : r.text;
+    return { ...r, pts, weight: W[r.dim] || 0, label: lab[r.dim] || r.dim, sentence: tail };
+  }).filter((r) => r.weight > 0).sort((a, b) => Math.abs(b.pts) - Math.abs(a.pts));
+}
+export const GATE_LABEL = (g) => {
+  const [k, v] = String(g).split(':');
+  const m = { over_budget: 'Over budget', unknown_cost: 'Cost unknown', price_dispute: 'Price claims disagree', 'concession': 'Concession may not apply', 'move_date': 'Available after your window', stale: 'Not rechecked recently' };
+  if (k === 'unverified') return { fees: 'Fees unknown', lease_term: 'Lease term unknown' }[v] || `Unconfirmed: ${String(v || '').replaceAll('_', ' ')}`;
+  if (k === 'fails') return `Fails: ${String(v || '').replaceAll('_', ' ')}`;
+  if (k === 'stale') return `Last checked ${String(v || '').replace('checked_', '').replaceAll('_', ' ')}`;
+  return m[k] || String(g).replaceAll('_', ' ').replace(':', ': ');
+};
 /** Points each dimension adds or removes versus a neutral listing, with the current weights. */
 export function drivers(L) {
   const W = S.weights, tot = Object.values(W).reduce((a, b) => a + b, 0) || 1, p = L.score?.parts || {};
@@ -215,6 +243,7 @@ function renderRail() {
     <div class="sec"><div class="sec-h"><h3>Status</h3></div>
       <div class="chips">${STATUSES.map(([k, t]) => `<button type="button" class="chip ${f.status.includes(k) ? 'on' : ''}" data-st="${k}" aria-pressed="${f.status.includes(k)}">${t}<span class="n">${S.listings.filter((L) => (L.status || 'new') === k).length}</span></button>`).join('')}</div></div>
     <div class="sec"><div class="sec-h"><h3>Ranking weights</h3><button class="reset" type="button" data-reset="weights">Reset</button></div>
+      ${presetsHTML()}
       <div class="weights">${DIMS.map(([k, t]) => `<div class="w-row"><span>${t}</span><input type="range" min="0" max="40" value="${S.weights[k] || 0}" data-w="${k}" style="${pct(S.weights[k] || 0, 0, 40)}" aria-label="${t} weight"><b>${Math.round(((S.weights[k] || 0) / tot) * 100)}%</b></div>`).join('')}</div>
       <p class="w-note">Results re-rank as you drag. Unknown facts count as a neutral 50 and widen the score range. Your weights stay in this browser; <a href="#" id="dlCrit">download them</a> to put in criteria.yaml.</p></div>`;
   const R = $('rail');
@@ -228,15 +257,27 @@ function renderRail() {
   R.querySelectorAll('[data-saved]').forEach((el) => tg(el, () => setFilter('savedOnly', !S.filters.savedOnly)));
   R.querySelectorAll('[data-st]').forEach((b) => b.addEventListener('click', () => { const s = new Set(S.filters.status), k = b.dataset.st; s.has(k) ? s.delete(k) : s.add(k); setFilter('status', [...s]); }));
   R.querySelectorAll('[data-w]').forEach((r) => r.addEventListener('input', () => { S.weights[r.dataset.w] = +r.value; store.set('weights', S.weights); rescore(); refreshRailValues(); emit('weights'); }));
-  R.querySelector('[data-reset=weights]').addEventListener('click', () => { S.weights = { ...(S.crit.weights || {}) }; store.set('weights', null); rescore(); renderRail(); emit('weights'); });
+  R.querySelectorAll('[data-w]').forEach((r) => r.addEventListener('change', () => renderRail()));
+  R.querySelector('[data-reset=weights]').addEventListener('click', () => { S.weights = { ...(S.crit.weights || {}) }; S.preset = S.crit.scoring?.preset || null; store.set('weights', null); store.set('preset', null); rescore(); renderRail(); emit('weights'); emit('weights-settled'); });
   R.querySelector('[data-reset=tiers]')?.addEventListener('click', () => { S.filters.over = false; setFilter('tiers', (S.filters.over || !(S.filters.tiers || []).length) ? tiers.map((_, i) => i) : []); });
   R.querySelector('[data-reset=toggles]')?.addEventListener('click', () => setFilter('toggles', []));
   $('rCom')?.addEventListener('input', (e) => { S.filters.maxCommute = +e.target.value; saveFilters(); refreshRailValues(); emit('filters', { quiet: true }); });
   $('rCom')?.addEventListener('change', () => renderRail());
+  $('presetSel')?.addEventListener('change', (e) => {
+    const p = S.crit.scoring?.presets?.[e.target.value]; if (!p) return;
+    S.preset = e.target.value; S.weights = { ...p.weights }; store.set('preset', S.preset); store.set('weights', S.weights);
+    rescore(); renderRail(); emit('weights'); emit('weights-settled'); toast(`${p.label} weights`);
+  });
   $('dlCrit').addEventListener('click', (e) => {
     e.preventDefault();
-    download('weights.yaml', `# paste under criteria.yaml\nweights:\n${DIMS.map(([k]) => `  ${k}: ${S.weights[k] || 0}`).join('\n')}\n`, 'text/yaml');
+    download('weights.yaml', `# paste into criteria.yaml\n${S.preset ? `scoring:\n  preset: ${S.preset}\n` : ''}weights:\n${DIMS.map(([k]) => `  ${k}: ${S.weights[k] || 0}`).join('\n')}\n`, 'text/yaml');
   });
+}
+function presetsHTML() {
+  const P = S.crit.scoring?.presets; if (!P) return '';
+  const cur = S.preset && P[S.preset], same = cur && DIMS.every(([k]) => (cur.weights[k] || 0) === (S.weights[k] || 0));
+  return `<div class="preset"><select class="sel" id="presetSel" aria-label="Weight preset">${Object.entries(P).map(([k, p]) => `<option value="${esc(k)}" ${k === S.preset ? 'selected' : ''}>${esc(p.label)}</option>`).join('')}</select>
+    <span class="faint">${cur ? (same ? `v${cur.version}` : 'customised') : 'custom'}</span></div>${cur?.description ? `<p class="w-note" style="margin:0 0 10px">${esc(cur.description)}</p>` : ''}`;
 }
 function refreshRailValues() {
   const tot = Object.values(S.weights).reduce((a, b) => a + b, 0) || 1;
@@ -280,7 +321,7 @@ export function cardHTML(L, i = 0) {
       <div class="c-price"><b>${money(cost(L))}</b><span class="per">/mo</span>${L.price?.gross && cost(L) && Math.abs(L.price.gross - cost(L)) > 5 ? `<span class="gross">${money(L.price.gross)} gross</span>` : ''}
         ${L.score?.budget_tier ? `<span class="tierpill" style="color:var(${t >= 0 ? TIER_VARS[t] : '--tier-over'})"><i></i>${esc(L.score.budget_tier)}</span>` : ''}</div>
       ${modesHTML(L)}
-      <div class="c-badges">${gate ? `<span class="bdg bad">${gate === 'over_budget' ? 'Over budget' : 'No ' + esc((gate.split(':')[1] || '').replaceAll('_', ' '))}</span>` : ''}${sun ? `<span class="bdg sun" title="Modelled direct sun on the window this month">${ICONS.sun}${sun[mi].toFixed(1)} h</span>` : ''}${b.map((x) => `<span class="bdg">${esc(x)}</span>`).join('')}</div>
+      <div class="c-badges">${gate ? `<span class="bdg bad">${esc(GATE_LABEL(gate))}</span>` : ''}${(L.score?.tags || []).map((t) => `<span class="bdg warn">${esc(t)}</span>`).join('')}${sun ? `<span class="bdg sun" title="Modelled direct sun on the window this month">${ICONS.sun}${sun[mi].toFixed(1)} h</span>` : ''}${b.map((x) => `<span class="bdg">${esc(x)}</span>`).join('')}</div>
     </div></article>`;
 }
 function buildingGroups(F) {
@@ -346,6 +387,36 @@ function commuteSection(L, d) {
     ${sel?.transfers != null && drawerMode !== 'walk' ? `<div class="faint" style="font-size:var(--fs-xs);margin-top:8px">${sel.transfers ? sel.transfers + ' transfer' + (sel.transfers > 1 ? 's' : '') : 'One-seat ride'} · ${Math.round(sel.walk_min ?? 0)} min walking · ${Math.round(sel.ride_min ?? 0)} min riding${sel.wait_min ? ` · ${Math.round(sel.wait_min)} min waiting` : ''}</div>` : ''}
     ${live ? `<a class="d-link" href="${esc(live)}" target="_blank" rel="noopener">Check the live route ${ICONS.ext}</a>` : ''}</div>`;
 }
+function moneySection(L) {
+  const s = L.score || {}, p = L.price || {}, c = s.cost || {}, am = L.amenities || {}, sz = L.size || {};
+  const rng = c.monthly_range, open = rng && rng[1] == null;
+  const sizeTxt = sz.range ? `~${Math.round(sz.range[0])}–${Math.round(sz.range[1])} ft²` : L.sqft ? Math.round(L.sqft) + ' ft²' : '—';
+  const basis = { reported: 'reported', exact_plan: 'exact plan', line_band_plan: 'same-line plan', main_rooms_sum: 'main rooms only', ratio_proxy: 'estimate' }[sz.basis] || '';
+  const ppsf = s.ppsf ?? (L.sqft && cost(L) && (!sz.basis || ['reported', 'exact_plan'].includes(sz.basis)) ? cost(L) / L.sqft : null);
+  const head = Object.entries(c.headroom || {}).map(([k, v]) => `<span class="pill ${v >= 0 ? 'good' : 'bad'}">${esc(k)} ${v >= 0 ? '+' : '−'}${money(Math.abs(v)).slice(1) ? money(Math.abs(v)) : '$0'}</span>`).join('');
+  const conc = c.concession || {};
+  return `<div class="d-sec"><h3>Money <span>${c.rent?.lease_months ? Math.round(c.rent.lease_months) + '-month lease' : 'lease term unknown'}</span></h3>
+    <div class="money"><div><div class="k">Monthly cost</div><div class="v big">${money(c.monthly ?? cost(L))}${open ? '<small class="plus">+ fees?</small>' : ''}</div></div>
+      <div><div class="k">Gross rent</div><div class="v">${money(c.rent?.gross ?? p.gross)}</div></div>
+      <div><div class="k">${c.rent?.basis === 'conditional' ? 'Net (if eligible)' : 'Paid month'}</div><div class="v">${money(c.rent?.basis === 'conditional' ? c.rent?.illustrations?.[0]?.net : c.paid_month ?? p.gross)}</div></div></div>
+    ${c.unknown?.length ? `<p class="money-note">Unknown and not assumed: ${esc(c.unknown.join(', '))}.</p>` : ''}
+    ${c.rent?.basis === 'conditional' ? `<p class="money-note">Free months are advertised without a lease term, so the net depends on it: ${(c.rent.illustrations || []).map((i) => `${esc(i.lease_months)} months → ${money(i.net)}`).join(' · ')}.</p>` : ''}
+    ${conc.notes?.length || conc.excluded?.length ? `<p class="money-note">${esc([...(conc.notes || []), ...(conc.excluded || [])].join(' · '))}</p>` : ''}
+    ${c.scenarios?.length ? `<p class="money-note">Sources disagree: ${c.scenarios.map((x) => `${esc(x.source || 'claim')} ${money(x.monthly ?? x.gross)}`).join(' vs ')} (ranked on the higher one).</p>` : ''}
+    <div class="facts"><div><div class="k">Move-in cash</div><div class="v">${money(c.move_in_min)}${c.move_in_unknown?.length ? '<small> +' + esc(c.move_in_unknown.join(', ')) + '</small>' : ''}</div></div>
+      <div><div class="k">Size</div><div class="v">${sizeTxt}${basis ? `<small> ${basis}</small>` : ''}</div></div><div><div class="k">$ / ft²</div><div class="v">${ppsf ? '$' + ppsf.toFixed(2) : '—'}</div></div>
+      <div><div class="k">Floor</div><div class="v">${L.floor != null ? Math.round(L.floor) + (L.floor_inferred ? '?' : '') : '—'}${L.exposure?.length ? ' · ' + esc(L.exposure.join('/')) : ''}</div></div>
+      <div><div class="k">W/D</div><div class="v">${am.in_unit_wd ? 'In unit' : am.in_unit_wd === false ? 'No' : '?'}</div></div><div><div class="k">Doorman</div><div class="v">${esc(am.doorman || '?')}</div></div><div><div class="k">Gym</div><div class="v">${am.gym ? 'Yes' : am.gym === false ? 'No' : '?'}</div></div><div><div class="k">Elevator</div><div class="v">${am.elevator ? 'Yes' : am.elevator === false ? 'No' : '?'}</div></div></div>
+    ${head ? `<div class="headroom"><span class="faint">Headroom</span>${head}</div>` : ''}
+    ${c.concession_needed ? `<p class="money-note">To reach your target it would take about <b>${esc(c.concession_needed.months?.toFixed ? c.concession_needed.months.toFixed(1) : c.concession_needed.months)} free months</b>${c.concession_needed.ask ? ' (ask for ' + esc(c.concession_needed.ask) + ')' : ''}.</p>` : ''}</div>`;
+}
+function whySection(L) {
+  const s = L.score || {}, R = reasons(L), cov = coverage(L);
+  const range = s.range && s.range[0] !== s.range[1] ? `range ${Math.round(s.range[0])}–${Math.round(s.range[1])}` : '';
+  return `<div class="d-sec"><h3>Why it ranks here <span>${s.confidence ?? 0}% of weight known${range ? ' · ' + range : ''}</span></h3>
+    <div class="reasons">${R.map((r) => { const v = s.parts?.[r.dim]; return `<details class="rsn"><summary><b class="${r.pts > 0.05 ? 'pos' : r.pts < -0.05 ? 'neg' : 'zero'}">${r.pts > 0.05 ? '+' : r.pts < -0.05 ? '−' : ''}${Math.abs(r.pts).toFixed(1)}</b><span class="lab">${esc(r.label)}</span><span class="txt">${esc(r.sentence)}</span><span class="bar ${v == null ? 'unk' : ''}"><i style="width:${v ?? 0}%;background:${scoreColor(v)}"></i></span></summary>${r.items?.length ? `<ul>${r.items.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>` : ''}</details>`; }).join('')}</div>
+    <div class="coverage"><div class="cov-bar">${Array.from({ length: cov.total }, (_, i) => `<i class="${i < cov.have ? 'on' : ''}"></i>`).join('')}</div><span><b>${cov.have}/${cov.total}</b> key facts evidenced${cov.missing.length ? ` · still need ${esc(cov.missing.slice(0, 4).join(', ').toLowerCase())}${cov.missing.length > 4 ? '…' : ''}` : ''}</span></div></div>`;
+}
 export function openDrawer(id, opt = {}) {
   const L = byId(id); if (!L) return;
   S.sel = id;
@@ -367,15 +438,9 @@ export function openDrawer(id, opt = {}) {
       : L.lat != null ? `${aerialHTML(L, 448, 232, 19)}<div class="shade"></div><span class="kind">Aerial view${L.floor ? ` · floor ${Math.round(L.floor)}` : ''}${L.exposure?.length ? ' · faces ' + esc(L.exposure.join('/')) : ''}</span>` : unitGlyph(L, 448, 232)}
       <div class="hero-btns"><button type="button" id="dSave" aria-pressed="${!!my.saved}" aria-label="${my.saved ? 'Remove from picks' : 'Save to picks'}" style="${my.saved ? 'color:var(--fav)' : ''}">${my.saved ? ICONS.star : ICONS.starO}</button><button type="button" id="dClose" aria-label="Close">${ICONS.x}</button></div></div>
     <div class="d-head"><div class="t"><h2>${esc(L.building || L.address)} <span>${esc(L.unit || '')}</span></h2><p>${esc(L.address || '')}${L.neighborhood ? ' · ' + esc(L.neighborhood) : ''}</p></div>${ring(score(L), 64, 5)}</div>
-    <div class="d-tags">${s.budget_tier ? `<span class="tierpill" style="color:var(${t >= 0 ? TIER_VARS[t] : '--tier-over'});background:var(--surface-3)"><i></i>${esc(s.budget_tier)}</span>` : ''}<span class="pill">${esc(L.status || 'new')}</span>${L.stage ? `<span class="pill">${esc(L.stage)}</span>` : ''}${L.available ? `<span class="pill">Available ${esc(L.available)}</span>` : ''}${L._rank ? `<span class="pill accent">Rank ${L._rank} of ${S.listings.filter((x) => x.score?.eligible).length}</span>` : ''}${(s.gates || []).map((g) => `<span class="pill ${g.startsWith('fails') || g === 'over_budget' ? 'bad' : 'warn'}">${esc({ over_budget: 'Over budget', unknown_cost: 'Cost unknown' }[g] || g.replace(':', ': ').replaceAll('_', ' '))}</span>`).join('')}</div>
-    <div class="d-sec"><h3>Money <span>${p.lease_months || 12}-month lease</span></h3>
-      <div class="money"><div><div class="k">Monthly cost</div><div class="v big">${money(cost(L))}</div></div><div><div class="k">Gross rent</div><div class="v">${money(p.gross)}</div></div><div><div class="k">Free months</div><div class="v">${p.free_months || 0}</div></div></div>
-      <div class="facts"><div><div class="k">Size</div><div class="v">${L.sqft ? Math.round(L.sqft) + ' ft²' : '—'}</div></div><div><div class="k">$ / ft²</div><div class="v">${L.sqft && cost(L) ? '$' + (cost(L) / L.sqft).toFixed(2) : '—'}</div></div><div><div class="k">Floor</div><div class="v">${L.floor != null ? Math.round(L.floor) + (L.floor_inferred ? '?' : '') : '—'}${L.exposure?.length ? ' · ' + esc(L.exposure.join('/')) : ''}</div></div><div><div class="k">Fees / mo</div><div class="v">${p.fees_monthly != null ? money(p.fees_monthly) : '—'}</div></div>
-        <div><div class="k">W/D</div><div class="v">${am.in_unit_wd ? 'In unit' : am.in_unit_wd === false ? 'No' : '?'}</div></div><div><div class="k">Doorman</div><div class="v">${esc(am.doorman || '?')}</div></div><div><div class="k">Gym</div><div class="v">${am.gym ? 'Yes' : am.gym === false ? 'No' : '?'}</div></div><div><div class="k">Elevator</div><div class="v">${am.elevator ? 'Yes' : am.elevator === false ? 'No' : '?'}</div></div></div></div>
-    <div class="d-sec"><h3>Why it ranks here <span>${s.confidence ?? 0}% of weight known${range ? ' · ' + range : ''}</span></h3>
-      <div class="drivers">${dr.slice(0, 3).map((x) => `<span class="pill good">+${x.pts.toFixed(1)} ${esc(x.n)}</span>`).join('')}${dr.slice(-2).filter((x) => x.pts < 0).map((x) => `<span class="pill bad">${x.pts.toFixed(1)} ${esc(x.n)}</span>`).join('')}</div>
-      <div class="dims">${DIMS.map(([k, n]) => { const v = s.parts?.[k]; return `<span>${n}</span><span class="bar ${v == null ? 'unk' : ''}"><i style="width:${v ?? 0}%;background:${scoreColor(v)}"></i></span><b>${v == null ? '?' : Math.round(v)}</b>`; }).join('')}</div>
-      <div class="coverage"><div class="cov-bar">${Array.from({ length: cov.total }, (_, i) => `<i class="${i < cov.have ? 'on' : ''}"></i>`).join('')}</div><span><b>${cov.have}/${cov.total}</b> key facts evidenced${cov.missing.length ? ` · still need ${esc(cov.missing.slice(0, 4).join(', ').toLowerCase())}${cov.missing.length > 4 ? '…' : ''}` : ''}</span></div></div>
+    <div class="d-tags">${L._ranks?.fit ? `<span class="pill accent" title="Fit ranks quality on your weights; Action adds the must-haves; Budget keeps your first tier">Fit #${L._ranks.fit}${L._ranks.action ? ` · Action #${L._ranks.action}` : ''}${L._ranks.budget ? ` · Budget #${L._ranks.budget}` : ''}</span>` : ''}${s.budget_tier ? `<span class="tierpill" style="color:var(${t >= 0 ? TIER_VARS[t] : '--tier-over'});background:var(--surface-3)"><i></i>${esc(s.budget_tier)}</span>` : ''}<span class="pill">${esc(L.status || 'new')}</span>${L.stage ? `<span class="pill">${esc(L.stage)}</span>` : ''}${L.available ? `<span class="pill">Available ${esc(L.available)}</span>` : ''}${(s.gates || []).map((g) => `<span class="pill ${g.startsWith('fails') || g === 'over_budget' ? 'bad' : 'warn'}">${esc(GATE_LABEL(g))}</span>`).join('')}${(s.tags || []).map((t) => `<span class="pill warn">${esc(t)}</span>`).join('')}</div>
+${moneySection(L)}
+${whySection(L)}
     ${commuteSection(L, d)}
     ${sun ? `<div class="d-sec"><h3>Direct sun on the window <span>floor ${esc(L.site.floor)}, facing ${Math.round(L.site.bearing)}°</span></h3><div class="sunbars">${sun.map((h, i) => `<div title="${h.toFixed(1)} h"><i style="height:${Math.max(3, (h / 9) * 100)}%"></i><span>${'JFMAMJJASOND'[i]}</span></div>`).join('')}</div><div class="faint" style="font-size:var(--fs-xs);margin-top:8px">Skyline straight ahead ${esc(L.site.skyline_ahead_deg)}° · ${L.site.open_sky_share != null ? Math.round(L.site.open_sky_share * 100) + '% open sky in view' : ''}</div></div>` : ''}
     ${rec.flags?.length ? `<div class="d-sec"><h3>Public records <span>reports, not findings</span></h3>${rec.flags.slice(0, 4).map((x) => `<div class="flag">${esc(x)}</div>`).join('')}</div>` : ''}
@@ -481,7 +546,9 @@ async function boot() {
     getJSON(`${S.base}/listings.json`, []), getJSON(`${S.base}/criteria.json`, {}), getJSON(`${S.base}/manifest.json`, {}), getJSON(`${S.base}/notes.json`, {}),
   ]);
   Object.assign(S, { listings, crit, manifest, notes });
+  if (crit.scoring?.dimensions?.length) DIMS.splice(0, DIMS.length, ...crit.scoring.dimensions);
   S.weights = { ...(crit.weights || {}), ...(store.get('weights', null) || {}) };
+  S.preset = store.get('preset', null) || crit.scoring?.preset || null;
   const saved = store.get('filters2', null);
   if (saved) Object.assign(S.filters, saved);
   if (S.filters.tiers == null) S.filters.tiers = (crit.budget?.tiers || []).map((_, i) => i);
