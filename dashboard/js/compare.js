@@ -3,7 +3,7 @@
 // every eligible listing and a per-dimension chart. #compare/id1,id2 deep-links a set.
 import { S, on, byId, cost, commuteOf, dests, toggleCompare, toggleSave, openDrawer, isSaved, pick, score, DIMS } from './app.js';
 import { $, esc, money, moneyShort, safeUrl, ring, unitGlyph, bullets, scoreColor, ICONS, toast, debounce } from './util.js';
-import { ppsf, tierPill, myTierPill, gateFails, gateUnverified, name, thumb, label, isMust, TIERS } from './views/table-kit.js';
+import { modeRoute, ppsf, tierPill, myTierPill, gateFails, gateUnverified, name, thumb, label, isMust, TIERS } from './views/table-kit.js';
 
 const LET = ['A', 'B', 'C', 'D'];
 let shown = false, active = -1, opts = [];
@@ -42,8 +42,8 @@ function sections() {
       { t: 'Available', f: (L) => L.available || null, fmt: esc },
     ] },
     { t: 'Commute', rows: D.map((d) => ({
-      t: `To ${d}`, f: (L) => commuteOf(L, d), best: 'min', none: 'Not computed',
-      fmt: (v, L) => { const r = L.commute?.[d]?.route, b = bullets(r, 4); return `<span class="cg-cm">${b ? `<span class="line-bullets">${b}</span>` : '<span class="cg-walk">Walk</span>'}<b>${Math.round(v)}</b><span class="u">min</span></span>${r ? `<span class="cg-route" title="${esc(r)}">${esc(r)}</span>` : ''}`; },
+      t: `To ${d}${S.commuteMode && S.commuteMode !== 'best' ? ' · ' + S.commuteMode : ''}`, f: (L) => commuteOf(L, d), best: 'min', none: 'Not computed',
+      fmt: (v, L) => { const r = modeRoute(L, d), b = bullets(r, 4); return `<span class="cg-cm">${b ? `<span class="line-bullets">${b}</span>` : '<span class="cg-walk">Walk</span>'}<b>${Math.round(v)}</b><span class="u">min</span></span>${r ? `<span class="cg-route" title="${esc(r)}">${esc(r)}</span>` : ''}`; },
     })) },
     { t: 'Building', rows: [
       { t: 'Doorman', f: (L) => DOOR[L.amenities?.doorman] ?? null, best: 'max', fmt: (v, L) => esc(DOOR_T[L.amenities?.doorman] || '') },

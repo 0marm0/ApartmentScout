@@ -82,7 +82,7 @@ export function floorText(L) {
 export function commuteHTML(L, d = dests()[0]) {
   const c = commuteOf(L, d);
   if (c == null) return '<span class="faint">—</span>';
-  const r = L.commute?.[d]?.route, b = bullets(r, 3);
+  const r = modeRoute(L, d), b = bullets(r, 3);
   return `<span class="cm">${b ? `<span class="line-bullets">${b}</span>` : '<span class="walk" title="Walk"></span>'}<b>${Math.round(c)}</b><span class="u">min</span></span>`;
 }
 export function scoreBar(v) {
@@ -105,3 +105,9 @@ export function km(a, b) {
 }
 /** Walking minutes on the street grid: straight line × 1.25 detour at 4.8 km/h. */
 export const walkMin = (a, b, kmh = 4.8) => (km(a, b) * 1.25 / kmh) * 60;
+
+/** Route text for the commute lens: the selected mode's route (best = transit), falling back to the stored route. */
+export function modeRoute(L, d) {
+  const c = L.commute?.[d] || {}, k = S.commuteMode === 'best' || !S.commuteMode ? 'transit' : S.commuteMode;
+  return k === 'walk' ? null : (c.modes?.[k]?.route || (k === 'transit' ? c.route : null));
+}
