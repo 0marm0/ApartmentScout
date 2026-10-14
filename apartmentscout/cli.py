@@ -411,6 +411,14 @@ def _export(ws: Workspace, out: Path):
     slim = []
     for L in Ls:
         S = {k: v for k, v in L.items() if k not in ("stations",)}
+        if S.get("status") in ("gone", "rejected"):
+            # keep what the dashboard shows for closed listings, drop the bulky detail
+            S["commute"] = {d: {k: v for k, v in (c or {}).items() if k != "modes"} | (
+                {"modes": {m: {k: v for k, v in (x or {}).items() if k not in ("legs",)}
+                           for m, x in (c.get("modes") or {}).items()}} if (c or {}).get("modes") else {})
+                for d, c in (S.get("commute") or {}).items()}
+            if isinstance(S.get("score"), dict) and S["score"].get("reasons"):
+                S["score"] = {**S["score"], "reasons": [{k: v for k, v in r.items() if k != "items"} for r in S["score"]["reasons"]]}
         slim.append(S)
     (out / "listings.json").write_text(json.dumps(slim, separators=(",", ":"), ensure_ascii=False))
     (out / "criteria.json").write_text(json.dumps(crit, default=str, indent=1))
