@@ -43,7 +43,7 @@ const isDone = (id) => st.done[id] === st.day;
 
 // ------------------------------------------------------------------ the day's route
 function route() {
-  const booked = M.toursOn(S.picks, st.day, byId), ids = M.routeIds(st, booked);
+  const booked = M.toursOn(S.picks, st.day, byId), ids = M.routeIds(st, booked).filter((id) => byId(id));
   const stops = ids.map((id) => M.stopOf(byId(id), S.picks[id], S.crit, dest()?.name));
   const order = M.routeOrder(stops, st);
   return { booked, entries: M.routeLegs(stops, order, st.day) };
