@@ -80,7 +80,7 @@ export async function createPipeline(host, W, H, o = {}) {
     composer.addPass(gtao);
   }
   if (o.dof && cam.isPerspectiveCamera) {
-    bokeh = new A.BokehPass(scene, cam, { focus: host.focus?.() || 4, aperture: 0.00006, maxblur: 0.012 });
+    bokeh = new A.BokehPass(scene, cam, { focus: host.focus?.() || 4, aperture: host.look?.dofAperture ?? 0.0007, maxblur: 0.006 });
     composer.addPass(bokeh);
   }
   if (o.bloom) { bloom = new A.UnrealBloomPass(new THREE.Vector2(W, H), look.bloom.strength, look.bloom.radius, look.bloom.threshold); composer.addPass(bloom); }

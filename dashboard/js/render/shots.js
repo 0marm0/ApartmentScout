@@ -12,8 +12,8 @@ const smooth = (t) => { const u = Math.max(0, Math.min(1, t)); return u * u * (3
 const bearing = (v) => norm((Math.atan2(v[0], v[1]) * 180) / Math.PI);
 
 /** The walk-through as a sequence. Null when the plan has no walkable way in. */
-export function tourSequence(model, space, { seconds = 16, fps = 30, fov } = {}) {
-  const tour = planTour(model, space, { seconds, fov });
+export function tourSequence(model, space, { seconds = 16, fps = 30, fov, minSeconds } = {}) {
+  const tour = planTour(model, space, { seconds, fov, minSeconds });
   if (!tour) return null;
   const n = Math.max(2, Math.round(tour.seconds * fps));
   return { kind: 'tour', tour, n, fps, seconds: n / fps, poseAt: (i) => tour.pose(Math.min(tour.seconds, i / fps)), minuteAt: () => null };

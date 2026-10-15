@@ -284,7 +284,7 @@ function mountRenderStudio() {
     return sunPos(zonedMs(c.y, c.m - 1, c.d, min, c.tz), c.lat, c.lon).alt;
   };
   RUI.mountRender({
-    id: 'plan', container: $('pstage').querySelector('.rnq'), store,
+    id: 'plan', container: (() => { const bar = document.createElement('div'); bar.className = 'float rnd-bar'; bar.setAttribute('role', 'group'); bar.setAttribute('aria-label', 'Photo and video'); $('pstage').appendChild(bar); return bar; })(), store,
     host: async () => (model && G3.parts().renderer && $('pgl').clientWidth ? (await import('./render/hosts.js')).planHost(G3) : null),
     info: () => ({ stem: `${st.id}-${st.view || 'view'}-${st.date}-${String(Math.floor(st.min / 60)).padStart(2, '0')}${String(Math.round(st.min % 60)).padStart(2, '0')}`, title: `${model?.title || st.id} \u00b7 ${VIEW_NAME[st.view] || 'Floor plan'}`, when: `${st.date}, ${fmtT(st.min)}`, date: st.date }),
     video: {
