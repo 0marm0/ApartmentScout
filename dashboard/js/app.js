@@ -9,6 +9,7 @@ import { takeEarly } from './perf/early.js';   // [perf] boot data requested bef
 import { initTheme, flipTheme, initShell, parseRoute, syncSubnav } from './shell.js';
 import { initMedia, cardMediaHTML, afterDrawerMedia, mediaTransition } from './features/media.js';   // photos: lightbox, blur-up, counts
 import { loadPreviews } from './features/lqip.js';
+import { cleanStored } from './state-guard.js';
 import './features/comfort.js';
 import { initDestPin } from './features/dest-pin-style.js';   // [office pin] gold or classic destination marker   // [feature C] comfort + accent attributes on <html> apply at import, before first paint
 import { cardsEmpty } from './features/empty.js';   // [feature C]
@@ -17,7 +18,7 @@ import { destLineHTML, drawerHTML as destsDrawerHTML } from './features/multides
 import { initResults, setCardItems, clearCardList, cardIds, cardPos, cardEl, revealCard, decorateRail, railFocus, restoreRailFocus, rescoreWeights, deltaHTML, trendHTML } from './features/results.js';
 
 export const store = {
-  get(k, d) { try { const v = localStorage.getItem('as:' + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+  get(k, d) { try { const v = localStorage.getItem('as:' + k); return v == null ? d : cleanStored(k, JSON.parse(v), d); } catch { return d; } },   // [boot] a stored value of the wrong shape is the default (state-guard.js)
   set(k, v) { try { localStorage.setItem('as:' + k, JSON.stringify(v)); } catch { /* storage unavailable */ } },
 };
 
@@ -887,6 +888,7 @@ async function boot() {
   $('filtersBtn').addEventListener('click', () => document.body.classList.toggle('rail-open'));
   setupKeys();
   initShell(); syncSubnav();
+  document.documentElement.dataset.boot = 'ready';   // [boot] the first render is on screen: the inline watchdog in index.html stands down
   addEventListener('hashchange', route);
   await route();
   viewModule('map');   // the map keeps pins in sync even while another view is open
@@ -895,7 +897,7 @@ async function boot() {
   import('./features/extras.js').then((m) => m.initExtras()).catch((e) => console.warn('feature extras unavailable', e));   // [feature C] undo, chords, cheat sheet, plain-language search, coach marks, settings
   import('./pwa.js').then((m) => m.initPwa()).catch(() => {});   // [pwa] installable app: service worker, update prompt, Install item
 }
-boot();
+boot().catch((e) => { console.error('ApartmentScout could not start', e); window.__asBoot?.fail(e); });   // [boot] a failed start shows the recovery card (index.html)
 // [feature C] seams for ./features/*: the rail redraw and the feature list the filters offer
 export { renderRail };
 

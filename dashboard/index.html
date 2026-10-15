@@ -4,6 +4,86 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ApartmentScout</title>
+<!-- [boot] watchdog: if the app has not drawn itself in ~12 s, or a script fails to load or throws before the first render, show a calm
+     recovery card instead of a blank page (Reload, or Reset this browser's settings, which keeps picks, notes, tour findings and floor-plan
+     work). Inline and classic on purpose: it must run when a module fails to load, in the split build and in the standalone file.
+     js/app.js sets <html data-boot="ready"> after the first render and calls window.__asBoot.fail(error) if boot itself throws. -->
+<script>
+(function () {
+  var W = window, root = document.documentElement, errs = [], card = null, MS = +W.__AS_BOOT_MS || 12000, quiet = false;
+  var ready = function () { return root.getAttribute('data-boot') === 'ready'; };
+  var KEEP = /^as:(picks$|findings:|trail:|tourplan:|plan\.|plan-projects\.|plan-tracer-draft\.|plan-scenario:|compare-specs:)/;
+  function note(e) {
+    var m = e && (e.stack || e.message) ? String(e.stack || e.message) : String(e);
+    if (m.indexOf('ResizeObserver loop') === 0) return false;
+    if (errs.length < 6 && errs.indexOf(m) < 0) errs.push(m.slice(0, 600));
+    return true;
+  }
+  function el(tag, props, kids) {
+    var n = document.createElement(tag), k;
+    for (k in props || {}) { if (k === 'text') n.textContent = props[k]; else n.setAttribute(k, props[k]); }
+    (kids || []).forEach(function (c) { n.appendChild(c); });
+    return n;
+  }
+  function reload() { try { location.reload(); } catch (e) { location.href = location.href; } }
+  function reset(btn) {
+    btn.disabled = true; btn.textContent = 'Resetting…';
+    try {
+      for (var i = localStorage.length - 1; i >= 0; i--) { var k = localStorage.key(i); if (k && k.indexOf('as:') === 0 && !KEEP.test(k)) localStorage.removeItem(k); }
+    } catch (e) { /* storage blocked: nothing to clear */ }
+    try { for (var j = sessionStorage.length - 1; j >= 0; j--) { var s = sessionStorage.key(j); if (s && s.indexOf('as:') === 0) sessionStorage.removeItem(s); } } catch (e) { /* ignore */ }
+    var jobs = [], safe = function (p) { return p.then(null, function () {}); };
+    try { if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) jobs.push(safe(navigator.serviceWorker.getRegistrations().then(function (rs) { return Promise.all(rs.map(function (r) { return r.unregister(); })); }))); } catch (e) { /* ignore */ }
+    try { if (W.caches && caches.keys) jobs.push(safe(caches.keys().then(function (ks) { return Promise.all(ks.map(function (n) { return caches.delete(n); })); }))); } catch (e) { /* ignore */ }
+    var done = false, go = function () { if (!done) { done = true; reload(); } };
+    setTimeout(go, 4000);   // never wait forever on a stuck worker
+    Promise.all(jobs).then(go, go);
+  }
+  function settle() {   // a slow start that finishes after all: take the card away again
+    var t = setInterval(function () { if (ready() && card) { clearInterval(t); card.remove(); card = null; } }, 500);
+  }
+  function show(why) {
+    if (card || (ready() && why === 'timeout')) return;
+    var css = el('style', { id: 'as-boot-css' });
+    css.textContent = '#as-boot{position:fixed;inset:0;z-index:2147483000;display:grid;place-items:center;padding:20px;background:#08090c;color:#e8eaf0;font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}' +
+      '#as-boot .c{width:min(520px,100%);max-height:100%;overflow:auto;padding:28px;border:1px solid #2a2e38;border-radius:16px;background:#12141a}' +
+      '#as-boot h1{margin:0 0 8px;font-size:20px;line-height:1.3}#as-boot p{margin:0 0 16px;color:#aab0bf}' +
+      '#as-boot .a{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px}' +
+      '#as-boot button{font:inherit;font-weight:600;min-height:40px;padding:0 16px;border-radius:10px;border:1px solid #3a4050;background:transparent;color:inherit;cursor:pointer}' +
+      '#as-boot button.p{background:#6c7bff;border-color:#6c7bff;color:#fff}#as-boot button:disabled{opacity:.6;cursor:default}' +
+      '#as-boot button:focus-visible,#as-boot summary:focus-visible{outline:2px solid #9aa6ff;outline-offset:2px}' +
+      '#as-boot details{font-size:13px;color:#aab0bf}#as-boot summary{cursor:pointer}' +
+      '#as-boot pre{margin:8px 0 0;padding:10px;max-height:200px;overflow:auto;white-space:pre-wrap;word-break:break-word;border-radius:8px;background:#0b0c10;font:12px/1.45 ui-monospace,Menlo,monospace;color:#c9cfdd}' +
+      '@media (prefers-color-scheme:light){#as-boot{background:#f4f5f8;color:#1b1e27}#as-boot .c{background:#fff;border-color:#d8dbe4}#as-boot p,#as-boot details{color:#4d5466}#as-boot button{border-color:#b9bfcc}#as-boot button.p{background:#4656e8;border-color:#4656e8}#as-boot pre{background:#eef0f5;color:#2a2f3d}}';
+    var rl = el('button', { type: 'button', 'class': 'p', id: 'as-boot-reload', text: 'Reload' }), rs = el('button', { type: 'button', id: 'as-boot-reset', text: 'Reset this browser’s settings (keeps your saved picks)' });
+    rl.addEventListener('click', reload); rs.addEventListener('click', function () { reset(rs); });
+    var detail = el('pre', { id: 'as-boot-err', text: (errs.length ? errs.join('\n\n') : (why === 'timeout' ? 'The page did not finish loading within ' + Math.round(MS / 1000) + ' seconds.' : 'No error text was reported.')) + '\n\n' + navigator.userAgent });
+    card = el('div', { id: 'as-boot', role: 'alert', 'aria-labelledby': 'as-boot-h' }, [css,
+      el('div', { 'class': 'c' }, [el('h1', { id: 'as-boot-h', text: 'Something stopped ApartmentScout from starting' }),
+        el('p', { text: 'Your saved picks are safe in this browser. Reloading often fixes it. If it keeps happening, resetting this browser’s settings clears filters, weights, display choices and the app’s offline copy, and keeps your picks, notes, tour findings and floor-plan work.' }),
+        el('div', { 'class': 'a' }, [rl, rs]),
+        el('details', {}, [el('summary', { text: 'Technical details' }), detail])])]);
+    root.appendChild(card);
+    if (why === 'timeout' || why === 'error') settle();
+    var focus = function () { try { var a = document.activeElement; if (card && (!a || a === document.body || a === root)) rl.focus(); } catch (e) { /* ignore */ } };
+    focus(); requestAnimationFrame(focus); W.addEventListener('load', focus); setTimeout(focus, 400);   // stylesheets still loading can drop the first focus
+  }
+  function soon(e) {   // an uncaught error before the first render: fatal only if the app still has not drawn 2.5 s later
+    if (quiet || ready() || !note(e)) return;
+    setTimeout(function () { if (!ready()) show('error'); }, 2500);
+  }
+  var onErr = function (ev) {
+    var t = ev && ev.target;
+    if (t && t !== W && t.tagName === 'SCRIPT') { if (!ready() && note('A script did not load: ' + (t.src || 'inline module'))) show('script'); return; }
+    soon(ev && (ev.error || ev.message));
+  };
+  var onRej = function (ev) { soon(ev && ev.reason); };
+  W.addEventListener('error', onErr, true);
+  W.addEventListener('unhandledrejection', onRej);
+  setTimeout(function () { if (!ready()) show('timeout'); else { quiet = true; W.removeEventListener('error', onErr, true); W.removeEventListener('unhandledrejection', onRej); } }, MS);
+  W.__asBoot = { fail: function (e) { note(e); show('boot'); }, errors: errs };
+})();
+</script>
 <meta name="description" content="Rank apartments on your own criteria, map door-to-door commutes, read building records and model the light from the exact unit.">
 <meta name="theme-color" content="#08090c">
 <!-- [pwa] installable app: manifest and icons. js/pwa.js registers sw.js; `apartmentscout build --standalone` drops this block -->
