@@ -43,7 +43,7 @@ export const S = {
 };
 // [feature K] seams for tour findings and the decision trail (features/tour-findings.js, features/decision-trail.js): HTML for a
 // drawer section, a pass over the scores after criteria are (re)applied, and extra fields in the picks backup
-export const hooks = { drawer: null, score: null, exportExtra: null, importExtra: null };
+export const hooks = { drawer: null, score: null, exportExtra: null, importExtra: null, card: null, drawerTop: null, score2: null };   // card/drawerTop/score2: features/moves.js and unknowns.js (rank moves, unknowns that move a score)
 export const on = (ev, fn) => ((S.listeners[ev] ||= []).push(fn));
 export const emit = (ev, x) => (S.listeners[ev] || []).forEach((f) => f(x));
 export const byId = (id) => S.listings.find((L) => L.id === id);
@@ -117,6 +117,7 @@ export function applyCriteria(profile, { quiet = false } = {}) {
     store.set(searchKey('criteria'), null);
   }
   hooks.score?.();   // [feature K] tour findings: promoted facts re-evaluated, contradictions flagged
+  hooks.score2?.();   // the renter's own numbers for a home's unknowns (features/unknowns.js)
   if (!allDests().some((d) => d.name === S.destName)) S.destName = allDests()[0]?.name || null;
   fitMode(!!profile && !quiet);
   store.set(searchKey('commute'), { mode: S.commuteMode, dest: S.destName });
@@ -468,7 +469,7 @@ export function cardHTML(L, i = 0) {
       <button type="button" class="save ${saved ? 'on' : ''}" data-save="${esc(L.id)}" aria-pressed="${saved}" aria-label="${saved ? 'Remove from picks' : 'Save to picks'}">${saved ? ICONS.star : ICONS.starO}</button></div>
     <div class="c-body">
       <div class="c-top"><div style="min-width:0;flex:1"><div class="c-title">${esc(L.building || L.address)} <span>${esc(L.unit || '')}</span>${my ? ` <span class="pill accent">${esc(my)}</span>` : ''}</div>
-        <div class="c-sub"><span class="t">${esc(L.neighborhood || '')}${L.sqft ? ' · ' + Math.round(L.sqft) + ' ft²' : ''}${L.beds != null ? ' · ' + (L.beds ? L.beds + ' bd' : 'Studio') : ''}</span>${trendHTML(L)}</div></div>${ring(score(L))}</div>
+        <div class="c-sub"><span class="t">${esc(L.neighborhood || '')}${L.sqft ? ' · ' + Math.round(L.sqft) + ' ft²' : ''}${L.beds != null ? ' · ' + (L.beds ? L.beds + ' bd' : 'Studio') : ''}</span>${trendHTML(L)}${hooks.card?.(L) ?? ''}</div></div>${ring(score(L))}</div>
       <div class="c-price"><b>${money(cost(L))}</b><span class="per">/mo${L.score?.cost?.fees_estimate ? ' <abbr title="Includes estimated fees: no fee sheet yet">est.</abbr>' : ''}</span>${L.price?.gross && cost(L) && Math.abs(L.price.gross - cost(L)) > 5 ? `<span class="gross">${money(L.price.gross)} gross</span>` : ''}
         ${L.score?.budget_tier ? `<span class="tierpill" style="color:var(${t >= 0 ? TIER_VARS[t] : '--tier-over'})"><i></i>${esc(L.score.budget_tier)}</span>` : ''}</div>
       ${modesHTML(L)}
@@ -715,6 +716,7 @@ export function openDrawer(id, opt = {}) {
       <nav class="d-tabs" id="dTabs" aria-label="Sections"></nav></div>
 ${moneySection(L)}
 ${whySection(L)}
+    ${hooks.drawerTop?.(L) ?? ''}
     ${commuteSection(L, d)}
     ${destsDrawerHTML(L)}
     ${sun ? `<div class="d-sec" id="dLight" data-tab="Light"><h3>Direct sun on the window <span>floor ${esc(L.site.floor)}, facing ${Math.round(L.site.bearing)}°</span></h3><div class="sunbars">${sun.map((h, i) => `<div title="${h.toFixed(1)} h possible${L.site.sun_hours_expected?.[i] != null ? ` · ${(+L.site.sun_hours_expected[i]).toFixed(1)} h expected on a typical month` : ''}"><i style="height:${Math.max(3, (h / 9) * 100)}%"></i><span>${'JFMAMJJASOND'[i]}</span></div>`).join('')}</div><div class="faint" style="font-size:var(--fs-xs);margin-top:8px">Hours of possible (clear-sky) direct sun on the 15th${L.site.sun_year?.expected != null ? ` · a year: ${Number(L.site.sun_year.possible).toLocaleString()} h possible, about ${Number(L.site.sun_year.expected).toLocaleString()} h expected with typical cloud` : ''}</div><div class="faint" style="font-size:var(--fs-xs);margin-top:4px">Skyline straight ahead ${esc(L.site.skyline_ahead_deg)}° · ${L.site.open_sky_share != null ? Math.round(L.site.open_sky_share * 100) + '% open sky in view' : ''}${L.site.sky_view != null ? ` · sky view ${Math.round(L.site.sky_view * 100)}% (overcast sky)` : ''}${L.site.daylight_factor_est != null ? ` · estimated daylight factor ≈${esc(L.site.daylight_factor_est)}%, not measured` : ''}</div></div>` : ''}

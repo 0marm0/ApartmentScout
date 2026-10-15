@@ -60,6 +60,8 @@ const RULES = {
   visit: (v) => (isObj(v) ? v : null),
   tourplan: (v) => (isObj(v) ? v : null),
   findings: (v) => (isObj(v) ? v : null),
+  facts: (v) => (isObj(v) ? v : null),
+  moves: (v) => (isObj(v) ? v : null),
   trail: (v) => (Array.isArray(v) ? v : null),
   'rail:collapsed': (v) => strings(v),
 };
