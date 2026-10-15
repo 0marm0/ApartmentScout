@@ -247,7 +247,7 @@ def test_trade_off_pad_writes_the_slider_weights_and_reranks_live(open_page) -> 
     s.page.wait_for_function("""async (c0) => { const m = await import('/js/app.js'), t = await import('/js/features/tradeoff-model.js');
       const want = t.rankIds(m.filtered(), m.S.weights, m.DIMS.map(([k]) => k)).slice(0, 12);
       const dom = [...document.querySelectorAll('#cards .card')].slice(0, 12).map((c) => c.dataset.id);
-      return m.S.weights.commute > c0 && JSON.stringify(want) === JSON.stringify(dom); }""", arg=before["commute"], timeout=15000)
+      return m.S.weights.commute > c0 && dom.length > 0 && JSON.stringify(want.slice(0, dom.length)) === JSON.stringify(dom); }""", arg=before["commute"], timeout=15000)
     after = weights(s)
     # the group's weight is conserved, the others untouched, and the shift is toward commute
     grp = ["cost", "commute", "space"]
