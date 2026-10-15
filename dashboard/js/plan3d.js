@@ -17,7 +17,7 @@
 // All lengths are inches internally.
 import { S, on, byId, label, loadJSON, store } from './app.js';
 import { $, esc, toast, safeUrl } from './util.js';
-import { DEG, sunPos, zonedMs, angDiff, fmtT, prepBuildings, horizonProfile, hAt, facesOf, snapOpen, compass, skyView, SUNSHINE } from './sun.js';
+import { DEG, sunPos, zonedMs, angDiff, fmtT, prepBuildings, horizonProfile, hAt, facesOf, snapOpen, compass, skyView, SUNSHINE, dayTable, litInfo } from './sun.js';
 import { normalisePlan, fmtIn, pointInPoly } from './plan/model.js';
 import { CATALOG, CATEGORIES, CLEARANCE, TV_FOV, resolve } from './plan/catalog.js';
 import { evaluate, gapRays, findSpot, roomOf, axes, toWorld, swingPoly, FIX_NAMES } from './plan/checks.js';
@@ -36,6 +36,8 @@ import { getPin, pinOption } from './unit/anchor.js';   // [model project] the w
 import { facingSummary } from './plan/facing.js';   // [model project] host facade bearing, bays as a range
 import { anchorNoteHTML } from './plan/anchor-note.js';   // [model project] where the plan sits, source vs assumed
 import { cityGroup } from './plan/citymesh.js';
+import { sunGroupHTML, stripAt, setHandoff } from './room3d/sunlink.js';   // [room3d] sun today in the studio's eye-level views, and the way into Unit 3D
+import { accuracyRows, accuracyChip, loadFurnitureMeta } from './room3d/accuracy.js';   // [room3d] the measured-vs-assumed chip, shared with Unit 3D
 import { accessRoutes, entryPoint } from './plan/route.js';
 import { PRODUCT_MAP, productsFor, shoppingList, shoppingCSV, CHECKED } from './plan/products.js';
 import { productFinder, withProduct } from './plan/shop.js';
@@ -46,7 +48,7 @@ import * as Q3 from './plan/quality3d.js';   // [feature J] render quality (Fast
 import * as LX from './plan/lighting-ui.js';   // [feature J] daylight grid, glass/surface inputs, luminaires, annual summary
 import { validateInventory, fitInventory, pieceItem, placedIds } from './plan/inventory.js';   // [furniture] the renter's own pieces
 import { inventoryHTML } from './plan/inventory-ui.js';
-import { allViews, stepView } from './plan/viewpoints.js';   // [interior] where to stand to look out of the windows
+import { allViews, stepView, windowGroups } from './plan/viewpoints.js';   // [interior] where to stand to look out of the windows
 import { setLookChips, bindLookChips } from './plan/look-ui.js';
 
 const st = {
@@ -448,6 +450,7 @@ function bindChrome() {
   $('psCams').addEventListener('click', (e) => { const b = e.target.closest('[data-v]'); if (b) camera(b.dataset.v); });
   $('psWalls').addEventListener('click', (e) => { const b = e.target.closest('[data-w]'); if (b) setWall(b.dataset.w); });
   bindLookChips($('psLook'), { pick: lookAt, order: () => viewsNow().map((v) => v.key) });   // [interior]
+  $('psLook').addEventListener('click', (e) => { if (e.target.closest('[data-act="unit-sun"]')) openInUnit(); });   // [room3d]
   $('psTabs').addEventListener('click', (e) => { const b = e.target.closest('[data-t]'); if (b) { st.tab = b.dataset.t; tab(); } });
   $('psUndo').addEventListener('click', () => doUndo(true));
   $('psRedo').addEventListener('click', () => doUndo(false));
@@ -500,9 +503,38 @@ function viewsNow() {
   if (k !== viewsKey) { viewsKey = k; try { viewsMemo = allViews(model, R); } catch { viewsMemo = []; } }
   return viewsMemo;
 }
+// [room3d] "What's measured vs assumed" over the 3D pane: the same rows as Unit 3D's chip, and a way into Unit 3D's evidence
+let accUI = null, accKey = '', furnMeta = null;
+function accChip() {
+  if (!model) return;
+  if (!accUI) { accUI = accuracyChip({ host: 'studio', onOpen: () => { location.hash = `#unit/${st.id}`; }, openLabel: 'Open in Unit 3D' }); $('pstage').appendChild(accUI.el); loadFurnitureMeta(S.base, S.manifest).then((m) => { furnMeta = m; accKey = ''; accChip(); }); }
+  const key = [st.id, !!st.site, onSite?.floor, onSite?.t, onSite?.az, onSite?.cal?.state, !!inventory, items.length, !!furnMeta].join('|');
+  if (key === accKey) return; accKey = key;
+  accUI.update(accuracyRows({ site: st.site || {}, plan: model, cal: onSite ? { state: onSite.cal.state, fh: onSite.cal.fh, slab: onSite.slab } : null, floor: onSite?.floor, facing: onSite?.az ?? null, t: onSite?.t ?? null,
+    furniture: items.length && inventory ? { name: furnMeta?.name || inventory.name, confirmed: inventory.confirmed || furnMeta?.confirmed || null, count: items.length } : items.length ? { name: 'A starter layout', confirmed: null, count: items.length } : null }));
+}
+// [room3d] "Sun today" in the look panel: the direct sun the window of this view gets today (its own skyline against the shared city), with a way into Unit 3D
+let sunCtx = null, sunMemo = { key: '', html: '' };
+function sunExtra() {
+  if (G3.viewMode() !== 'eye' || !winSky || !st.site || !sunCtx) return { key: '', html: '' };
+  const v = viewsNow().find((q) => q.key === st.view), g = v ? windowGroups(model)[v.group] : null; if (!g) return { key: '', html: '' };
+  const i = g.panes[Math.floor(g.panes.length / 2)], { lat, lon, tz, y, m, d } = sunCtx, key = `${st.date}|${i}|${winSky.length}`;
+  if (sunMemo.key === key) return sunMemo;
+  let html;
+  if (windowWithheld(winSky, i)) html = sunGroupHTML({ minutes: null });
+  else { const info = litInfo(dayTable(y, m - 1, d, lat, lon, tz, 6), winSky[i].prof, model.windows[i].bearing, 6); html = sunGroupHTML({ minutes: info.min, segs: info.segs, min: st.min, label: v.room }); }
+  return (sunMemo = { key, html });
+}
+function openInUnit() {
+  const v = viewsNow().find((q) => q.key === st.view);
+  setHandoff(st.id, { date: st.date, min: st.min, mode: 'in', ...(v ? { inside: v.key } : {}) });
+  location.hash = `#unit/${encodeURIComponent(st.id)}`;
+}
 function lookChips() {
+  accChip();
   const el = $('psLook'); if (!el || !model) return;
-  el.hidden = !setLookChips(el, viewsNow(), G3.viewMode() === 'eye' ? st.view : null, {});
+  const ex = sunExtra();
+  el.hidden = !setLookChips(el, viewsNow(), G3.viewMode() === 'eye' ? st.view : null, { extra: ex.html, extraKey: ex.key });
   const on = el.querySelector('.lk-chip.on'); if (on && el.scrollWidth > el.clientWidth + 2) el.scrollLeft = Math.max(0, on.offsetLeft - 24);   // a phone's row scrolls to the active chip
 }
 function lookAt(key) {
@@ -882,6 +914,8 @@ function refreshSun() {
   const tz = st.site?.timezone || S.crit.search?.timezone || 'America/New_York';
   const [y, m, d] = st.date.split('-').map(Number);
   const s = sunPos(zonedMs(y, m - 1, d, st.min, tz), lat, lon);
+  sunCtx = { lat, lon, tz, y, m, d };   // [room3d]
+  { const u = document.querySelector('#psLook .rc-strip u'); if (u) u.style.left = `${stripAt(st.min)}%`; if (sunMemo.key && !sunMemo.key.startsWith(st.date)) lookChips(); }
   const sunny = st.site?.study?.sunshine?.fraction;   // [feature J] lighting tab: the sun now and the place's sunshine table
   LX.refresh({ az: s.az, alt: s.alt, lat, lon, tz, y, m, d, fraction: Array.isArray(sunny) && sunny.length === 12 ? sunny.map(Number) : SUNSHINE[S.crit.search?.city]?.fraction || null, place: st.site?.study?.sunshine?.place || (SUNSHINE[S.crit.search?.city] ? SUNSHINE[S.crit.search.city].place : '') });
   // per-window city occlusion when the plan is placed on its site: only the windows a neighbour blocks lose their sun
