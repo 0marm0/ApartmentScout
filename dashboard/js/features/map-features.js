@@ -54,7 +54,7 @@ export const refreshPins = sunData;
 const ORIG = {};
 function sunPaints(m) {
   // known homes read bigger and solid; unknown ones recede to small, translucent grey. Restored when the lens closes.
-  for (const id of ['pins', 'pins-s']) {
+  for (const id of ['pins', 'pins-t', 'pins-s']) {
     if (!m.getLayer(id)) continue;
     if (!(id in ORIG)) ORIG[id] = { op: m.getPaintProperty(id, 'circle-opacity'), r: m.getPaintProperty(id, 'circle-radius') };
     if (isSun()) {

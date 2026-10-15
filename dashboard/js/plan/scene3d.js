@@ -12,13 +12,15 @@ import { MAT, LAMP_K } from './catalog.js';
 import { axes, footprint, toWorld, swingPoly } from './checks.js';
 import { pointInPoly, fmtIn } from './model.js';
 import { applySurfaceTint, setSurfaceState } from './surfaces3d.js';   // [feature J] reflectance -> colours
+import { applyFinishes, doorColour, fixtureFinish, backsplashMeshes, TOP_T } from './finishes3d.js';   // [finishes] the unit's own paint, cabinets, counters and doors
 import * as I3 from './interior3d.js';   // [interior] reveals, sills, casings, framed glass, door frames, baseboards, ceiling trims, floor finishes
 import * as SKY from './sky3d.js';   // [interior] the sky and haze behind the city in eye-level views
 import * as F3 from './furniture3d.js';   // [interior] low-poly furniture models
 import * as R3F from '../room3d/furniture.js';   // [room3d] the shared, refined furniture models (tried first)
-import { roomQuality, onRoomQuality } from '../room3d/quality.js';
+import { roomQuality, onRoomQuality, furnitureQuality, quality } from '../room3d/quality.js';
 import { ROOM_HEX } from '../room3d/palette.js';   // [room3d] one paint and floor for both engines
-import { roomLightState, moodFor, applyRoomLight, windowGlowLights } from '../room3d/lighting.js';   // [room3d] one light for both engines
+import { roomLamps } from '../room3d/roomlamps.js';   // [daycycle] a warm ceiling light for the evening when no lamp is placed
+import { roomLightState, applyRoomLight, windowGlowLights } from '../room3d/lighting.js';   // [room3d] one light for both engines
 
 export const M = 0.0254;
 const DEG = Math.PI / 180;
@@ -26,12 +28,12 @@ const W = (x, y, h = 0) => new THREE.Vector3(x * M, h * M, -y * M);
 const CUT = { full: null, cut: 36, outline: 1.5 };
 
 let renderer, scene, cam, controls, canvas, stage, sunL, hemi, amb;
-let shell, proxies, furn, overlay, labels, glow;
+let shell, proxies, furn, overlay, labels, glow, lampsG, assumedLamps = null;
 let model = null, colors = null, wallMode = 'cut', dirty = true;
 const groups = new Map();
 const rig = { mode: 'orbit', view: 'bird', pos: new THREE.Vector3(), yaw: 0, pitch: 0, prevWall: null, fov: 70 };
 // lighting mood: 'auto' follows the sun (day when it is up, night when it is down)
-const mood = { want: 'auto', sunUp: true, now: 'day' };
+const mood = { want: 'auto', sunUp: true, now: 'day', altDeg: 45 };
 let glide = null, tourS = null;
 
 export const markDirty = () => { dirty = true; };
@@ -44,6 +46,21 @@ export const parts = () => ({ renderer, scene, cam, controls, sunL, hemi, amb, s
 /** Reflectances {floor, walls, ceiling} for the room colours (a visual preview), or null for the built-in look. */
 export function setSurfaces(rho) { if (setSurfaceState(rho) && model) { colors = applySurfaceTint(themeColors()); texCache.clear(); buildShell(); dirty = true; } }
 export const getCamera = () => cam;
+/** A placed piece's box on screen, in canvas pixels ({x0, y0, x1, y1}), or null when it is hidden or wholly behind the camera (the selection toolbar follows it). */
+export function screenRect(id) {
+  const g = groups.get(id), body = g?.children[0];
+  if (!g || !g.visible || !body || !renderer) return null;
+  const box = new THREE.Box3(); body.updateWorldMatrix(true, true); body.traverse((o) => { if (o.isMesh && o.name !== 'decal' && o.name !== 'outline') box.expandByObject(o); });   // the piece itself, not its floor decal or outline
+  if (box.isEmpty()) return null;
+  const el = renderer.domElement, W = el.clientWidth, H = el.clientHeight, v = new THREE.Vector3();
+  cam.updateMatrixWorld(); let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+  for (const x of [box.min.x, box.max.x]) for (const y of [box.min.y, box.max.y]) for (const z of [box.min.z, box.max.z]) {
+    v.set(x, y, z).applyMatrix4(cam.matrixWorldInverse); if (v.z > -0.05) continue;   // behind the lens
+    v.applyMatrix4(cam.projectionMatrix);
+    const px = (v.x + 1) / 2 * W, py = (1 - v.y) / 2 * H; x0 = Math.min(x0, px); x1 = Math.max(x1, px); y0 = Math.min(y0, py); y1 = Math.max(y1, py);
+  }
+  return x1 < x0 ? null : { x0, y0, x1, y1 };
+}
 export const viewMode = () => rig.mode;
 
 function tok(name, fb) { const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim(); return new THREE.Color(v || fb); }
@@ -53,7 +70,7 @@ export function themeColors() {
   const bg = (dark ? s2 : s3).clone();
   return {
     dark, bg, night: bg.clone().lerp(new THREE.Color(0x000000), dark ? 0.45 : 0.55),
-    ground: bg.clone().lerp(ink, dark ? 0.03 : -0.02),
+    ground: new THREE.Color(0xe3e7ec), daySky: new THREE.Color(0xd9e5f1),   // [daylight] the bird's-eye and top views stand in a bright, soft daylight in either UI theme (the ground is pale, the backdrop a pale sky)
     // [room3d] interior paint: bright white walls and ceiling, white trim, a light oak floor in both themes (room3d/palette.js), so the room reads as a room, not as UI chrome
     wall: new THREE.Color(ROOM_HEX.wall), ceiling: new THREE.Color(ROOM_HEX.ceiling),
     cap: dark ? tok('--ground', '#08090c') : tok('--ink-2', '#4b5261'),
@@ -119,8 +136,8 @@ export function init(canvasEl, stageEl, onChange) {
   sunL = new THREE.DirectionalLight(0xfff1d6, 6); sunL.castShadow = true; sunL.shadow.mapSize.set(2048, 2048);
   sunL.shadow.bias = -0.0004; sunL.shadow.normalBias = 0.025; sunL.shadow.radius = 3;
   scene.add(sunL); scene.add(sunL.target);
-  for (const n of ['shell', 'proxies', 'furn', 'overlay', 'labels', 'glow']) { const g = new THREE.Group(); g.name = n; scene.add(g); }
-  [shell, proxies, furn, overlay, labels, glow] = ['shell', 'proxies', 'furn', 'overlay', 'labels', 'glow'].map((n) => scene.getObjectByName(n));
+  for (const n of ['shell', 'proxies', 'furn', 'overlay', 'labels', 'glow', 'assumed room lights']) { const g = new THREE.Group(); g.name = n; scene.add(g); }
+  [shell, proxies, furn, overlay, labels, glow, lampsG] = ['shell', 'proxies', 'furn', 'overlay', 'labels', 'glow', 'assumed room lights'].map((n) => scene.getObjectByName(n));
   for (const o of SKY.objects()) { o.visible = false; scene.add(o); }   // [interior] sky dome and sun glow, shown in eye-level views
   new ResizeObserver(resize).observe(stage);
 }
@@ -178,13 +195,24 @@ export function setCity(group) {
   dirty = true;
 }
 /** [city3d] the city outside follows the sun (the water's light) and the mood (lit windows after dusk, as Unit 3D's). */
-function syncCity(now) {
+function syncCity(now, st) {
   const api = city?.userData.api; if (!api || !sunL) return;
   const v = sunL.position.clone().sub(sunL.target.position).normalize();
   api.setSun(v, Math.asin(Math.max(-1, Math.min(1, v.y))) / DEG);
-  api.setNight(now === 'night' ? 1 : now === 'evening' ? 0.5 : 0);
-  api.setQuality(roomQuality());
+  // [daycycle] on Auto the lit windows come with the dusk continuously (as Unit 3D's); a picked mood is that mood, and Night is deep night (the late hour)
+  api.setNight(mood.want === 'auto' && st ? Math.max(Math.max(0, Math.min(1, (3 - mood.altDeg) / 9)) * 0.75, st.lamps >= 1 ? 1 : st.lamps * 0.667) : now === 'night' ? 1 : now === 'evening' ? 0.5 : 0);
+  api.setLate?.(now === 'night' && mood.want !== 'auto' ? 0.85 : mood.want === 'auto' ? lateWant : now === 'evening' ? 0.2 : 0);
+  api.setQuality(quality.city);   // [quality] the mode and the step-down's level, as the shared city takes them
+  if (seasonWant && api.setSeason(seasonWant)) dirty = true;   // [season] leaves, autumn colour or bare branches (a picture)
 }
+let seasonWant = null, lateWant = 0;
+/** [daycycle] how late the evening is (0 early .. 1 deep night): fewer offices lit, fewer homes lit. Set from the clock by the studio. */
+export function setLate(v) { lateWant = Math.max(0, Math.min(1, +v || 0)); const api = city?.userData.api; api?.setLate?.(mood.want === 'auto' ? lateWant : mood.now === 'night' ? 0.85 : mood.now === 'evening' ? 0.2 : 0); }
+/** [season] The tree season ({leaf, autumn}, city3d/season.js) for the city outside; a picture only. Applied now and to any city built later. */
+export function setSeason(s) { seasonWant = s ? { leaf: s.leaf, autumn: s.autumn } : null; const api = city?.userData.api; if (api && seasonWant && api.setSeason(seasonWant)) dirty = true; }
+let lampsHooks = () => false;
+/** [daycycle] the Light tab says whether it has luminaires placed (then the assumed ceiling lights stay off): fn() -> boolean */
+export function setRealLampsProbe(fn) { lampsHooks = typeof fn === 'function' ? fn : () => false; }
 export const hasCity = () => !!city;
 /** [city3d] the city outside's handle (setSun, setNight, setQuality, anchorsOf) or null. */
 export const cityApi = () => city?.userData.api || null;
@@ -201,7 +229,8 @@ export function setLighting(options = {}) {
  * Build a plan's fixed parts into `T` ({shell, proxies, labels} groups). Used by the studio and by the
  * side-by-side compare. Returns the per-window shadow shades.
  */
-export function buildShellInto(T, m, C, mode = 'cut', opts = {}) {
+export function buildShellInto(T, m, C0, mode = 'cut', opts = {}) {
+  const C = applyFinishes(C0, m);   // [finishes] wall and ceiling paint from the plan's finishes
   const cut = CUT[mode], H = m.ceiling, out = { shades: [] };
   const b = m.bounds, cx = (b.x0 + b.x1) / 2, cy = (b.y0 + b.y1) / 2;
   if (opts.ground !== false) {
@@ -211,8 +240,9 @@ export function buildShellInto(T, m, C, mode = 'cut', opts = {}) {
   for (const r of m.rooms) {
     const shape = new THREE.Shape(r.poly.map(([x, y]) => new THREE.Vector2(x * M, y * M)));
     const g = new THREE.ShapeGeometry(shape); g.rotateX(-Math.PI / 2);
-    const fk = r.kind === 'closet' ? 'carpet' : I3.floorKind(r), base = fk === 'carpet' ? C.carpet : I3.floorBase(fk, C);   // [interior] parquet, oak or tile by room type
-    const mat = std(0xffffff, { roughness: fk === 'carpet' ? 0.95 : I3.floorRoughness(fk), map: fk === 'carpet' ? texture('carpet', base) : I3.floorTexture(fk, base) });
+    const fk = r.kind === 'closet' ? 'carpet' : I3.floorKind(r, m), base = I3.floorBase(fk, C, r, m);   // [interior] parquet, oak or tile by room type
+    const ftex = fk === 'carpet' ? texture('carpet', base) : I3.floorTexture(fk, base);
+    const mat = std(0xffffff, { roughness: fk === 'carpet' ? 0.95 : I3.floorRoughness(fk), map: ftex, ...(ftex.userData.bump ? { bumpMap: ftex.userData.bump, bumpScale: 1.4 } : {}) });   // [floor] wood: boards and joints catch the light
     const mm = new THREE.Mesh(g, mat); mm.position.y = 0.001; mm.receiveShadow = true; mm.name = `floor: ${r.name}`; T.shell.add(mm);
     if (cut == null) { // ceiling: faces down, so it is culled from above and only seen from inside
       const cg = new THREE.ShapeGeometry(new THREE.Shape(r.poly.map(([x, y]) => new THREE.Vector2(x * M, -y * M)))); cg.rotateX(Math.PI / 2);
@@ -244,7 +274,7 @@ export function buildShellInto(T, m, C, mode = 'cut', opts = {}) {
     const top = Math.min(w.head, cut); if (top <= w.sill + 0.5) continue;
     T.shell.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([W(w.a[0], w.a[1], top + 0.3), W(w.b[0], w.b[1], top + 0.3)]), new THREE.LineBasicMaterial({ color: C.cap })));
   }
-  const leafMat = std(C.wall.clone().lerp(new THREE.Color(0x8a7560), 0.25), { roughness: 0.6 }), arcMat = new THREE.LineDashedMaterial({ color: C.cap, dashSize: 0.06, gapSize: 0.05, transparent: true, opacity: 0.55 });
+  const leafMat = std(doorColour(C, C.wall.clone().lerp(new THREE.Color(0x8a7560), 0.25)), { roughness: 0.6 }), arcMat = new THREE.LineDashedMaterial({ color: C.cap, dashSize: 0.06, gapSize: 0.05, transparent: true, opacity: 0.55 });
   for (const d of m.doorways) {
     if (!d.swingDir) continue;
     const leafH = cut == null ? Math.min(d.head, H) : Math.min(d.head, cut), L = d.leaf;
@@ -259,12 +289,18 @@ export function buildShellInto(T, m, C, mode = 'cut', opts = {}) {
     if (top - f.elev < 0.2) continue;
     if (f.kind === 'radiator') { radiatorFixture(T.shell, f, top); continue; }
     const shape = new THREE.Shape(f.poly.map(([x, y]) => new THREE.Vector2(x * M, y * M)));
-    const g = new THREE.ExtrudeGeometry(shape, { depth: (top - f.elev) * M, bevelEnabled: false }); g.rotateX(-Math.PI / 2);
-    const col = f.kind === 'ac' || f.kind === 'ptac' ? new THREE.Color(MAT.ac) : C.fixture;
-    const mats = cut != null && f.height > 48 ? [capMat, std(col, { roughness: 0.8 })] : std(col, { roughness: f.kind === 'counter' || f.kind === 'island' ? 0.35 : 0.8, transparent: f.est, opacity: f.est ? 0.92 : 1 });
+    const ff = fixtureFinish(f, C), slab = ff?.top && top - f.elev > TOP_T + 2;   // [finishes] cabinet body and stone top in the colours the photos show
+    const g = new THREE.ExtrudeGeometry(shape, { depth: (top - f.elev - (slab ? TOP_T : 0)) * M, bevelEnabled: false }); g.rotateX(-Math.PI / 2);
+    const col = f.kind === 'ac' || f.kind === 'ptac' ? new THREE.Color(MAT.ac) : ff?.body || C.fixture;
+    const mats = cut != null && f.height > 48 ? [capMat, std(col, { roughness: 0.8 })] : std(col, { roughness: ff?.top ? 0.55 : f.kind === 'counter' || f.kind === 'island' ? 0.35 : 0.8, transparent: f.est, opacity: f.est ? 0.92 : 1 });
     const mm = new THREE.Mesh(g, mats); mm.position.y = f.elev * M; mm.castShadow = true; mm.receiveShadow = true; mm.name = `fixture: ${f.label || f.kind}`; T.shell.add(mm);
+    if (slab) {
+      const tg = new THREE.ExtrudeGeometry(shape, { depth: TOP_T * M, bevelEnabled: false }); tg.rotateX(-Math.PI / 2);
+      const tm = new THREE.Mesh(tg, std(ff.top, { roughness: 0.28, metalness: 0.04 })); tm.position.y = (top - TOP_T) * M; tm.castShadow = true; tm.receiveShadow = true; tm.name = `counter top: ${f.label || f.kind}`; T.shell.add(tm);
+    }
     if (f.kind === 'ac' || f.kind === 'ptac') acGrille(T.shell, f, top);
   }
+  for (const b of backsplashMeshes(m, C, W, cut)) T.shell.add(b);   // [finishes] tile behind the counters
   return out;
 }
 function buildShell() {
@@ -355,6 +391,7 @@ function frameLights() {
 function buildGlow() {
   clear(glow);
   for (const L of windowGlowLights(model, (p) => model.rooms.some((r) => pointInPoly(p, r.poly)))) glow.add(L);   // [room3d]
+  clear(lampsG); assumedLamps = roomLamps(model, (p) => [p[0] * M, -p[1] * M], { limit: 4 }); lampsG.add(assumedLamps.group);   // [daycycle]
   applyMood();
 }
 /** dir: unit vector toward the sun in plan terms {x, y, up}; on: direct sun reaches the unit. */
@@ -363,7 +400,7 @@ export function setSun(dir, on, up) {
   const v = new THREE.Vector3(dir.x, dir.up, -dir.y).normalize();
   sunL.position.copy(sunL.target.position).addScaledVector(v, 60);
   sunL.userData.on = on; sunL.userData.up = Math.max(0, dir.up);
-  mood.sunUp = !!up; mood.alt = Math.max(0, dir.up);
+  mood.sunUp = !!up; mood.alt = Math.max(0, dir.up); mood.altDeg = (Math.asin(Math.max(-1, Math.min(1, dir.up))) * 180) / Math.PI;   // (altDeg keeps its sign: the continuous light follows it)
   applyMood();
 }
 /** 'auto' | 'day' | 'evening' | 'night'. Evening and night switch the lamps on. */
@@ -373,25 +410,29 @@ function applyMood() {
   if (!sunL || !colors) return;
   const now = mood.want === 'auto' ? (mood.sunUp ? (mood.alt < 0.12 ? 'evening' : 'day') : 'night') : mood.want;
   mood.now = now;
-  syncCity(now);
-  const day = now === 'day', eve = now === 'evening', night = now === 'night';
-  // [room3d] the room's light is one definition for both engines (room3d/lighting.js)
-  const st = roomLightState({ mood: now, sunOn: !!sunL.userData.on && mood.sunUp, sinAlt: sunL.userData.up || 0, quality: roomQuality(), scale: { ambient: lighting.ambient, sun: lighting.sun, sky: lighting.sky } });
+  const day = now === 'day', eve = now === 'evening';
+  // [room3d] the room's light is one definition for both engines (room3d/lighting.js); [daycycle] on Auto it follows the sun's altitude continuously
+  const st = roomLightState({ mood: mood.want === 'auto' ? 'auto' : now, alt: mood.altDeg, sunOn: !!sunL.userData.on && mood.sunUp, sinAlt: sunL.userData.up || 0, quality: roomQuality(), envLight: quality.has('environment'), tone: quality.settings.tone, scale: { ambient: lighting.ambient, sun: lighting.sun, sky: lighting.sky } });
+  syncCity(now, st);
   applyRoomLight({ sunL, hemi, amb, glow, renderer }, st, (i) => !!shadeState[i]);
-  const lampOn = !day;
+  glow.visible = quality.has('windowGlow');   // [quality] the window glow lights are real lights: the step-down's level 4 takes them out of every shader
+  const lampOn = st.lamps > 0; let realLamps = false;
   for (const [, g] of groups) {
     const l = g.userData.lamp; if (!l) continue;
-    l.light.intensity = lampOn ? l.cd * (night ? 1 : 0.75) : 0; l.light.visible = lampOn;
-    if (l.shade) { l.shade.material.emissiveIntensity = lampOn ? (night ? 1.4 : 1) : 0; }
+    l.light.intensity = lampOn ? l.cd * st.lamps : 0; l.light.visible = lampOn;
+    if (l.shade) { l.shade.material.emissiveIntensity = lampOn ? (st.lamps >= 1 ? 1.4 : 1) : 0; }
+    if (g.visible) realLamps = true;
   }
+  // [daycycle] a placed luminaire (the Light tab) is a real lamp too: it puts the assumed ceiling lights out
+  assumedLamps?.set(st.lamps, { real: realLamps || lampsHooks(), lensRoot: shell });
   // from inside, the windows look out at a sky (and the haze fades the far city into it); from above, the backdrop stays the dashboard's
   if (scene) {
     if (rig.mode === 'eye') {
-      const sd = sunL.position.clone().sub(sunL.target.position), haze = SKY.setMood(now, sd, mood.sunUp);
+      const sd = sunL.position.clone().sub(sunL.target.position), haze = SKY.setMood(mood.want === 'auto' ? 'auto' : now, sd, mood.sunUp);
       SKY.show(true); scene.background = haze.color; scene.fog = new THREE.Fog(haze.color, haze.near, haze.far);
     } else {
       SKY.show(false); scene.fog = null;
-      scene.background = (day ? colors.bg : eve ? colors.bg.clone().lerp(colors.night, 0.5) : colors.night).clone();
+      scene.background = (day ? colors.daySky : eve ? colors.daySky.clone().lerp(colors.night, 0.55) : colors.night).clone();
     }
   }
   for (const f of moodHooks) f(now);   // [feature J] lamps, quality mode
@@ -403,7 +444,7 @@ export function setItems(items) { lastItems = items; const ids = new Set(items.m
 function disposeGroup(g) { g.traverse((o) => { o.geometry?.dispose(); if (o.material && !o.material.userData?.shared) (Array.isArray(o.material) ? o.material : [o.material]).forEach((m) => { if (m.map && !m.map.userData?.shared) m.map.dispose(); m.dispose(); }); o.dispose?.(); }); }
 onRoomQuality(() => { if (typeof rebuildAllItems === 'function' && groups.size) rebuildAllItems(); });   // [room3d] the furniture models are simpler in Fast, richer in Visual
 function rebuildAllItems() { for (const [, g] of groups) { furn.remove(g); disposeGroup(g); } groups.clear(); setItems(lastItems); }
-const sigOf = (it) => `${it.ref}|${it.w}|${it.d}|${it.h}|${it.elev}|${it.variant || ''}|${it.product || ''}`;
+const sigOf = (it) => `${it.ref}|${it.w}|${it.d}|${it.h}|${it.elev}|${it.variant || ''}|${it.product || ''}|${it.look ? JSON.stringify(it.look) : ''}`;
 /** Update an item's transform, rebuilding its meshes when its shape changed. */
 export function syncItem(it, rebuild = false) {
   let g = groups.get(it.id);
@@ -433,7 +474,7 @@ export function buildItem(it, env = {}) {
   const box = (w, h, d, color, x, y, z, o) => mk(new THREE.BoxGeometry(w, h, d), color, x, y, z, o);
   const cyl = (r, h, color, x, y, z, seg = 24, r2 = r) => mk(new THREE.CylinderGeometry(r, r2, h, seg), color, x, y, z);
   const { w, d, h, kind } = it, col = it.base?.color ?? 0x8899aa, hw = w / 2, hd = d / 2;
-  if (R3F.build(it, { s, std, fabric: fabricMat, quality: roomQuality(), texture }) || F3.build(it, { s, std, fabric: fabricMat })) { /* [interior] drawn by plan/furniture3d.js: rounded cushions, arms, headboards, drawers */ }
+  if (R3F.build(it, { s, std, fabric: fabricMat, quality: furnitureQuality(), texture }) || F3.build(it, { s, std, fabric: fabricMat })) { /* [interior] drawn by plan/furniture3d.js: rounded cushions, arms, headboards, drawers */ }
   else if (kind === 'bed') {
     const [mw0, md0] = it.productInfo?.mattress || it.base.mattress || [w - 4, d - 4], mw = Math.min(mw0, w - 2), md = Math.min(md0, d - 3);
     const storage = !!it.base.storage, deck = storage ? 14 : 11;

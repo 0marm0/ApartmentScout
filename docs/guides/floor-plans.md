@@ -61,6 +61,46 @@ renter has. `room` (`bedroom`, `living`, `dining`, `office`, `kitchen`, `other`)
 auto-placer; `variant` and `product` work as in a layout item. Plain text only, at most 60 pieces and 200 KB; the studio refuses a
 file with an unknown `ref`, a duplicate `id`, markup or an absurd size.
 
+### What a piece looks like: `look`
+
+Each piece may carry a `look`: its colour, material and finish, and who said so. Both 3D views (Unit 3D's Inside camera and the
+studio) draw it, joined to the layout's piece by `id`, so a plan never repeats it and **a colour the renter tells you later is a
+data edit, not a code change**.
+
+```json
+{"id": "futon", "ref": "futon", "w": 80, "d": 36, "h": 34,
+ "look": {"color": "black", "material": "leather", "finish": "sheen", "basis": "renter", "assumed": ["finish", "frame"],
+          "parts": {"frame": {"color": "black", "material": "metal", "finish": "satin"}},
+          "note": "Black leather futon; the frame is a stand-in."}}
+```
+
+| Field | Values |
+|---|---|
+| `color` | a name (`black`, `brown`, `dark-brown`, `grey`, `charcoal`, `white`, `cream`, `beige`, `tan`, `walnut`, `oak`, `navy`, `sage`, ... the list is `COLOR_NAMES` in `dashboard/js/plan/looks.js`) or a hex code (`#2e6f4f`) |
+| `material` | `leather`, `fabric`, `wood`, `metal`, `paint`, `laminate`, `plastic`, `glass` |
+| `finish` | `matte`, `satin`, `sheen`, `gloss` (how much the surface shines) |
+| `basis` | `renter` when they told you, `assumed` (the default) when it is the model's stand-in |
+| `assumed` | for a `renter` look, the fields or parts that are still guesses (`["finish", "frame"]`) |
+| `parts` | named parts of a model with their own look: the futon's `frame`, the desk's `chair` and `legs`, the dining table's `chairs`, a chest's `pulls`, a bed's `legs`; a part you do not name keeps the model's default, which is an assumption |
+| `note` | plain text, up to 300 characters |
+
+A piece with no `look` is drawn in the catalogue's stand-in colours and counts as assumed. The studio's furniture list shows each
+piece's colour and material (italic and "(assumed)" for a stand-in), and the *What's measured vs assumed* chip's furniture row says
+how many looks come from the renter and which details are still guesses. A layout item may also carry its own `look`, which wins
+over the inventory's; saved layouts do not copy the inventory's looks.
+
+Both 3D views share one set of models (`dashboard/js/room3d/furniture.js`): a futon is padded leather channels on a tubular frame,
+a chest has flat drawer fronts with simple handles, a desk is a plain table desk with a monitor and a chair, and a wall-mounted TV
+is a thin black panel hung at its `elev`. Fast stays within about 1,500 triangles a piece, Visual 6,000.
+
+### Looking from a seat, and moving a piece
+
+The camera chips offer a *Sofa*, *Bed* and *Desk* view: the sofa and the bed look at the TV they face, the desk at its monitor, and a
+second chip (*Sofa, window*, ...) looks out of the window as before. Click a piece (in the plan, in 3D or in the furniture list) and a
+toolbar appears beside it in both panes: **Rotate 90°** (R; Shift+R the other way), **Rotate** to any angle with a dial and the four
+square angles, **Move** (an arrow pad with 1 in, 6 in and 1 ft steps for touch and fine nudges; dragging the piece snaps it to a wall
+within 4 in; the arrow keys nudge it), **Remove** (Delete; Undo brings it back) and **Done** (Esc).
+
 - **Use your furniture layout** applies a plan's `your-furniture` preset; on a plan without one the button reads **Fit your furniture
   here** and places every piece with the fit checks (`plan/inventory.js`). A plan with no presets at all opens on that fit.
 - **Add** puts one piece, at its own size, in the kind of room it lives in. A layout item carries the renter's sizes (`w`, `d`, `h`,
@@ -185,6 +225,44 @@ schema 2 field is optional.
 | Axes | `+x` to the right of the drawing, `+y` to the top. |
 | `up_bearing` | Compass bearing the top of the drawing (+y) faces. Put the main window wall at the top (large `y`): the 3D views, the "City outside" layer and the Inside view place the plan with +y pointing out of the building. A plan drawn with its windows at the bottom (small `y`) must be rotated 180 degrees (`x -> width - x`, `y -> depth - y`, furniture `rot + 180`) or its windows will face into the building. |
 | `ceiling`, `wall` | Ceiling height and wall thickness (defaults 9 ft and 0.4 ft). |
+| `floor_finish` | Optional, the old one-field form of `finishes.floor.pattern` (`basket` = basket, `parquet` = herringbone, `oak` = plank); `finishes` wins where it names a pattern. The floor of the dry rooms as the listing photos show it: the floor of the dry rooms as the listing photos show it, `basket` (basket-weave block parquet in honey oak, the classic New York apartment floor), `parquet` (chevron) or `oak` (planks). Without it each room kind has its own default; kitchens, baths and closets keep theirs. Both 3D engines draw the same wood, with grain, joints and a light bump. |
+| `finishes` | Optional: what the unit is made of and where each value came from, see [Finishes](#finishes-what-the-room-is-made-of) below. |
+
+### Finishes: what the room is made of
+
+`finishes` makes the 3D rooms (Unit 3D Inside and the Floor plan studio, one builder for both) look like the unit's own photos. Every value says
+where it came from, and the accuracy chip's **Finishes** row reports that.
+
+```json
+"finishes": {
+  "floor":         {"pattern": "basket", "tone": "#916b42", "basis": "photos", "evidence": "tone sampled from the floor of photos 1-8, 10"},
+  "walls":         {"colour": "#f6f5f1", "basis": "photos", "evidence": "upper walls of photos 1-10"},
+  "ceiling":       {"colour": "white", "basis": "assumed"},
+  "window_frames": {"colour": "#e0e2e0", "basis": "photos", "evidence": "pale edge around the glass in photos 1-2, 5, 9, 12"},
+  "doors":         {"colour": "white", "basis": "listing_text", "evidence": "\"white doors\""},
+  "kitchen": {"cabinets": {...}, "counters": {...}, "backsplash": {...}, "floor": {"pattern": "tile", "tone": "#2b2a22", "basis": "photos"}},
+  "bath":    {"tile": {...}, "vanity": {...}, "floor": {...}}
+}
+```
+
+| Field | Values |
+|---|---|
+| `floor.pattern` | `herringbone` (chevron parquet), `basket` (basket-weave block parquet), `plank`, `tile`, `carpet`, `concrete`. Applies to the dry rooms; kitchens, baths, closets and terraces keep their own unless `kitchen.floor` / `bath.floor` name one. |
+| `floor.tone`, `*.colour` | `#rgb`, `#rrggbb` or a named tone (`white`, `honey`, `oak`, `walnut`, `charcoal`, `black granite`, `marble`, ...; the list is `NAMED_TONES` in `dashboard/js/plan/finishes.js`). This is the colour the room **draws**; the tool maps what a photo shows through the renderer's lighting so the drawn room matches the photo. |
+| `basis` | `renter` (you set or confirmed it; the tool never overwrites it), `photos` (read from the unit's own photos), `listing_text` (the listing or its photo review says so), `assumed` (a default or a guess; also what a bare colour string means). |
+| `evidence`, `confidence` | A short note ("photos 1-9") and `low` / `medium` / `high`. |
+| `walls`, `ceiling`, `doors` | Paint. Doors colour the leaf. |
+| `window_frames` | Black-framed and white or silver frames are both common; default is a charcoal bronze. |
+| `kitchen.cabinets`, `.counters`, `.backsplash` | Counters and islands are a cabinet body with a 1.5 in stone top; the backsplash is 18 in of tile on the wall behind a counter run. |
+| `bath.tile`, `.vanity` | The bath's tile (its floor too) and vanity. |
+
+`apartmentscout finishes [--listing ID] [--dry-run] [--words-only]` fills the block from the saved photos (`photos_local`, found in the search's
+`media/` or `media-lite/`; a photo on neither is skipped and reported) and the listing's photo review, titles and features: the floor tone from the wood-coloured
+floor in the bottom band of the interior shots, the wall paint from the lit upper wall, the window frames from the edge around the glass, the cabinets,
+counters and backsplash from the photos titled as kitchens, and the pattern from words such as "herringbone", "basket-weave" or "parquet" (a bare
+"parquet" is read as basket-weave block parquet). Homes that share photos share their words. Pillow is optional: without it only the words are read. Then
+`apartmentscout build` copies the plans into the dashboard. These are readings of lit, often virtually staged marketing photos: a shade off is normal,
+and anything you know better you set with `basis: renter`.
 
 ### Rooms, walls and openings
 

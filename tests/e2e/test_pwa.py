@@ -155,7 +155,8 @@ def test_manifest_icons_and_head_tags(site: Path) -> None:
             assert png_size(demo / icon["src"]) == (w, h), icon["src"]
     assert (demo / "assets" / "pwa" / "apple-touch-icon.png").is_file() and png_size(demo / "assets" / "pwa" / "apple-touch-icon.png") == (180, 180)
     assert (demo / "assets" / "pwa" / "favicon.ico").is_file()
-    assert all(s["url"].startswith("./#") for s in m["shortcuts"])
+    assert all(s["url"].startswith(("./#", "./?")) for s in m["shortcuts"]), "relative to the scope, whatever the Pages sub-path"
+    assert any(s["name"] == "Tour day" and s["url"] == "./?tourday=1" for s in m["shortcuts"])
 
 
 def test_precache_list_names_only_files_that_exist(site: Path) -> None:
@@ -215,6 +216,32 @@ def test_the_app_opens_and_works_offline_after_one_visit(open_app, server) -> No
         assert page.evaluate("() => document.documentElement.dataset.theme") == "light"
         page.goto(f"{server.origin}{PREFIX}#research")
         page.wait_for_selector("#view-research:not([hidden]) > *", timeout=20000)
+    finally:
+        page.context.set_offline(False)
+    assert errors == [], errors
+
+
+def test_tour_day_opens_offline_from_the_installed_copy_and_keeps_what_is_answered(open_app, server) -> None:
+    page, errors = open_app()
+    settle(page)
+    ids =page.evaluate("() => [...document.querySelectorAll('#cards .card')].slice(0, 2).map((c) => c.dataset.id)")
+    day = page.evaluate("() => { const d = new Date(), p = (n) => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`; }")
+    page.evaluate("([a, b, day]) => localStorage.setItem('as:picks', JSON.stringify({ [a]: { saved: true, tour: day + 'T10:00' }, [b]: { saved: true, tour: day + 'T11:30' } }))", [ids[0], ids[1], day])
+    page.reload()                                    # controlled now: the page, its scripts and the lazy Tour day chunk are all in the build's cache
+    page.wait_for_selector("#tourDayBtn", timeout=30000)
+    page.wait_for_timeout(1500)
+    page.context.set_offline(True)
+    try:
+        page.reload()
+        page.wait_for_selector("#tourDayBtn", timeout=30000)
+        page.click("#tourDayBtn")
+        page.wait_for_selector("#tourDay.on", timeout=30000)
+        assert page.locator("#tourDay .tday-stop").count() == 2
+        assert "Offline" in page.locator("#tourDay .tday-status").inner_text() or "this phone" in page.locator("#tourDay .tday-status").inner_text()
+        page.locator(f"#tourDay [data-open='{ids[0]}']").click()
+        page.locator(f"#tourDay [data-ans='water'][data-v='4']").click()
+        page.locator("#tourDay textarea[data-note]").fill("noted offline")
+        page.wait_for_function("(id) => { const s = Object.keys(localStorage).find((k) => k.startsWith('as:findings:')); const r = s && JSON.parse(localStorage.getItem(s))[id]; return r && r.water === 4 && r.note === 'noted offline'; }", arg=ids[0], timeout=10000)
     finally:
         page.context.set_offline(False)
     assert errors == [], errors

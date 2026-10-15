@@ -9,14 +9,19 @@ import { contours } from '../vendor/d3-contour.js';
 import * as MF from './features/map-features.js';   // [features] route preview, starred-only lens, sun lens
 import * as MD from './features/multidest.js';   // [multi-destination] worst-of / weighted commute surfaces
 import * as PM from './features/places-map.js';   // [places] the streets and outlines the place filters refer to
-import { hoverTrendHTML } from './features/price-ui.js';   // price-history sparkline in the hover card
+import { pinPlan, buildingId, isBuildingId, lowestCost, unitsLabel, NO_PRICE } from './features/map-pins.js';   // which homes get a pin of their own, which share a building pin
+import { unitPreviewHTML, buildingPreviewHTML, buildingListHTML } from './features/map-preview.js';   // hover / tap cards and a building's unit list
 
 const CLUSTER_Z = 12;                                 // below this zoom nearby pins merge into count bubbles
 const UNCL = ['!', ['has', 'point_count']];
-const selFilter = (id) => ['all', UNCL, ['==', ['get', 'id'], id || '']];
+const IS_BLD = ['to-boolean', ['get', 'bld']];
+const SINGLE = ['all', UNCL, ['!', IS_BLD]];                         // an ordinary home pin in the clustered source
+const BLD = ['all', UNCL, IS_BLD, ['!', ['to-boolean', ['get', 'sh']]]];   // a building pin: two or more homes under one count
+const BLD_S = ['all', UNCL, IS_BLD, ['to-boolean', ['get', 'sh']]];       // ... that shares its spot with a saved or top-ranked home, so it is drawn a little aside
+const selFilter = (id) => ['all', SINGLE, ['==', ['get', 'id'], id || '']];
 /** Starred homes (the renter's own saved picks in this browser): gold tags that are always drawn, and pins that never join a count bubble. */
 const isStar = (L) => isSaved(L.id);
-const hoverState = (id, v) => { if (id != null) for (const source of ['listings', 'starred', 'sunpins']) if (map.getSource(source)) map.setFeatureState({ source, id }, { hover: v }); };
+const hoverState = (id, v) => { if (id != null) for (const source of ['listings', 'starred', 'toppins', 'sunpins']) if (map.getSource(source)) map.setFeatureState({ source, id }, { hover: v }); };
 const reduce = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 const layers = {};          // name -> grid json
 let map, popup, markers = [], destMarkers = [], inited = null, active = null, heat = 'commute', vector = true, offline = false, tileOk = false, show3d = false, showLines = true, picking = false;
@@ -40,7 +45,8 @@ const PAINT = [
   ['lbl-road', 'text-color', 'label'], ['lbl-road', 'text-halo-color', 'halo'], ['lbl-hood', 'text-color', 'hood'], ['lbl-hood', 'text-halo-color', 'halo'], ['lbl-hoods', 'text-color', 'hood'], ['lbl-hoods', 'text-halo-color', 'halo'],
   ['lbl-water', 'text-color', 'waterLabel'], ['stations', 'circle-color', 'station'], ['stations', 'circle-stroke-color', 'stationLine'],
   ['lbl-station', 'text-color', 'label'], ['lbl-station', 'text-halo-color', 'halo'], ['walk-rings', 'line-color', 'ring'], ['lbl-rings', 'text-color', 'label'], ['lbl-rings', 'text-halo-color', 'halo'],
-  ['line-case', 'line-opacity', 'caseOp'], ['clusters', 'circle-color', 'clusterFill'], ['cl-count', 'text-color', 'clusterInk'],
+  ['line-case', 'line-opacity', 'caseOp'], ['clusters', 'circle-color', 'clusterFill'], ['cl-count', 'text-color', 'clusterInk'], ['bld', 'circle-color', 'clusterFill'], ['bld-n', 'text-color', 'clusterInk'], ['bld-s', 'circle-color', 'clusterFill'], ['bld-s-n', 'text-color', 'clusterInk'],
+  ['bld-lbl', 'text-color', 'clusterInk'], ['bld-lbl', 'text-halo-color', 'halo'], ['bld-s-lbl', 'text-color', 'clusterInk'], ['bld-s-lbl', 'text-halo-color', 'halo'], ['cl-price', 'text-color', 'clusterInk'], ['cl-price', 'text-halo-color', 'halo'],
 ];
 const theme = () => (document.documentElement.dataset.theme === 'light' ? 'light' : 'dark');
 
@@ -296,6 +302,7 @@ function setHeat(k) {
     }
   }
   if (map.getLayer('pins')) map.setPaintProperty('pins', 'circle-color', k === 'commute' ? ['case', ['get', 'fav'], css('--accent'), theme() === 'light' ? '#2b303b' : '#eef1f6'] : ['get', 'col']);
+  if (map.getLayer('pins-t')) map.setPaintProperty('pins-t', 'circle-color', k === 'commute' ? ['case', ['get', 'fav'], css('--accent'), theme() === 'light' ? '#2b303b' : '#eef1f6'] : ['get', 'col']);
   if (map.getLayer('pins-s')) map.setPaintProperty('pins-s', 'circle-color', k === 'commute' ? css('--accent') : ['get', 'col']);
   MF.afterHeat();
   PM.refresh();   // [places]
@@ -307,14 +314,36 @@ function circle(lon, lat, m, n = 96) {
   const kx = 111320 * Math.cos((lat * Math.PI) / 180), ky = 110574;
   return Array.from({ length: n + 1 }, (_, i) => { const t = (i / n) * 2 * Math.PI; return [lon + (Math.cos(t) * m) / kx, lat + (Math.sin(t) * m) / ky]; });
 }
-function pinFeatures(star) {
-  return { type: 'FeatureCollection', features: sorted(MF.mapListings()).filter((L) => L.lat != null && isStar(L) === star && (star || !MF.pinSplit(L))).reverse().map((L) => ({ type: 'Feature', id: L.id,
-    properties: { id: L.id, col: MF.pinColor(L, scoreColor(score(L))), unk: MF.pinUnknown(L), sc: score(L) ?? 50, fav: !!(isStar(L) || ['shortlist', 'touring', 'applied'].includes(L.status)), gone: L.status === 'gone' },
-    geometry: { type: 'Point', coordinates: [L.lon, L.lat] } })) };
+/** The pins for the homes the map draws now. Starred homes and the best-ranked ones keep a pin of their own at any
+ *  zoom; the rest go into the clustered source, where a building with two or more homes is one pin with a count. */
+let plan = { stars: [], top: [], singles: [], buildings: [], kept: null };
+const byId = new Map();     // building pin id -> its units (best first), for the hover card and the unit list
+function homeProps(L) {
+  return { id: L.id, col: MF.pinColor(L, scoreColor(score(L))), unk: MF.pinUnknown(L), sc: score(L) ?? 50, fav: !!(isStar(L) || ['shortlist', 'touring', 'applied'].includes(L.status)), gone: L.status === 'gone' };
 }
-/** Clustered pins (everything except starred homes) and the always-visible starred pins live in two sources. */
-const pinData = () => pinFeatures(false), starData = () => pinFeatures(true);
-function setPins() { map.getSource('listings')?.setData(pinData()); map.getSource('starred')?.setData(starData()); MF.refreshPins(); }
+const homeFeature = (L, extra = {}) => ({ type: 'Feature', id: L.id, properties: { ...homeProps(L), bld: false, n: 1, pr: cost(L) ?? NO_PRICE, ...extra }, geometry: { type: 'Point', coordinates: [L.lon, L.lat] } });
+function buildingFeature(b) {
+  const live = b.units.filter((L) => L.status !== 'gone'), pool = live.length ? live : b.units, best = b.units[0];
+  const price = lowestCost(b.units, cost);
+  byId.set(b.id, b.units);
+  return { type: 'Feature', id: b.id, properties: { id: b.id, bld: true, n: b.units.length, pr: price ?? NO_PRICE, name: best.building || best.address, lbl: unitsLabel(b.units.length, price),
+    col: MF.pinColor(best, scoreColor(score(best))), unk: MF.pinUnknown(best), sc: pool.reduce((t, L) => t + (score(L) ?? 50), 0) / pool.length,
+    fav: b.units.some((L) => ['shortlist', 'touring', 'applied'].includes(L.status)), gone: !live.length, sh: b.shifted }, geometry: { type: 'Point', coordinates: [b.lon, b.lat] } };
+}
+function planPins() {
+  const F = sorted(MF.mapListings()).filter((L) => L.lat != null);
+  byId.clear();
+  plan = { ...pinPlan(F, { isStar, split: MF.pinSplit, keep: (L) => L.id === S.sel }), kept: S.sel || null };
+}
+const collect = (fs) => ({ type: 'FeatureCollection', features: fs });
+// best-ranked last, so the better home draws on top where pins overlap
+const pinData = () => collect([...plan.singles.map((L) => homeFeature(L)).reverse(), ...plan.buildings.map(buildingFeature).reverse()]);
+const starData = () => collect(plan.stars.map((L) => homeFeature(L)).reverse());
+const topData = () => collect(plan.top.map((L) => homeFeature(L)).reverse());
+function setPins() {
+  planPins();
+  const pins = pinData(); map.getSource('listings')?.setData(pins); map.getSource('listings-lbl')?.setData(pins); map.getSource('starred')?.setData(starData()); map.getSource('toppins')?.setData(topData()); MF.refreshPins();
+}
 /** Neighbourhood labels placed at the middle of each neighbourhood's listings (tiles rarely label them at city zoom). */
 function hoodPoints() {
   const g = new Map();
@@ -368,29 +397,65 @@ function addOverlays() {
     map.addLayer({ id: 'stations', type: 'circle', source: 'stations', minzoom: 12.5, layout: { visibility: vis }, paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 12.5, 1.8, 16, 4.5], 'circle-color': p.station, 'circle-stroke-color': p.stationLine, 'circle-stroke-width': 1.2 } });
     map.addLayer({ id: 'lbl-station', type: 'symbol', source: 'stations', minzoom: 15, layout: { visibility: vis, 'text-field': ['get', 'name'], 'text-font': ['Noto Sans Regular'], 'text-size': 10.5, 'text-offset': [0, 1.1], 'text-anchor': 'top' }, paint: { 'text-color': p.label, 'text-halo-color': p.halo, 'text-halo-width': 1.5 } });
   }
-  // zoomed out (below CLUSTER_Z) nearby pins merge into count bubbles ringed by their average score
-  map.addSource('listings', { type: 'geojson', data: pinData(), promoteId: 'id', cluster: true, clusterMaxZoom: CLUSTER_Z - 1, clusterRadius: 36, clusterProperties: { s: ['+', ['get', 'sc']] } });
-  const avg = ['/', ['get', 's'], ['get', 'point_count']];
+  planPins();
+  // zoomed out (below CLUSTER_Z) nearby pins merge into count bubbles ringed by their average score. A bubble counts homes
+  // (a building pin contributes all its units) and carries the lowest monthly cost inside it.
+  const clustered = (data) => ({ type: 'geojson', data, promoteId: 'id', cluster: true, clusterMaxZoom: CLUSTER_Z - 1, clusterRadius: 44,
+    clusterProperties: { s: ['+', ['*', ['get', 'sc'], ['get', 'n']]], n: ['+', ['get', 'n']], pr: ['min', ['get', 'pr']] } });
+  map.addSource('listings', clustered(pinData()));
+  // the same clustering again, for the text only: a tile whose labels need glyphs fails whole when the glyph host cannot be
+  // reached (offline, behind a proxy), and it must not take the pins in it along
+  map.addSource('listings-lbl', clustered(pinData()));
+  const avg = ['/', ['get', 's'], ['get', 'n']];
   const avgCol = ['interpolate', ['linear'], avg, 30, css('--score-1'), 50, css('--score-2'), 65, css('--score-3'), 80, css('--score-4'), 95, css('--score-5')];
-  map.addLayer({ id: 'cl-halo', type: 'circle', source: 'listings', filter: ['has', 'point_count'], paint: {
-    'circle-radius': ['step', ['get', 'point_count'], 14, 10, 16, 40, 18, 120, 20], 'circle-color': avgCol, 'circle-opacity': 0.16, 'circle-blur': 0.25 } });
-  map.addLayer({ id: 'clusters', type: 'circle', source: 'listings', filter: ['has', 'point_count'], paint: {
-    'circle-radius': ['step', ['get', 'point_count'], 10, 10, 12, 40, 14, 120, 16], 'circle-color': p.clusterFill,
-    'circle-stroke-width': ['case', ['boolean', ['feature-state', 'hover'], false], 2.5, 1.5], 'circle-stroke-color': avgCol } });
-  map.addLayer({ id: 'cl-count', type: 'symbol', source: 'listings', filter: ['has', 'point_count'], layout: {
-    'text-field': ['get', 'point_count_abbreviated'], 'text-font': ['Noto Sans Bold'], 'text-size': ['step', ['get', 'point_count'], 10.5, 40, 11], 'text-allow-overlap': true, 'text-ignore-placement': true },
+  const hov = ['boolean', ['feature-state', 'hover'], false];
+  const HAS_N = ['has', 'point_count'];
+  map.addLayer({ id: 'cl-halo', type: 'circle', source: 'listings', filter: HAS_N, paint: {
+    'circle-radius': ['step', ['get', 'n'], 14, 10, 16, 40, 18, 120, 20], 'circle-color': avgCol, 'circle-opacity': 0.16, 'circle-blur': 0.25 } });
+  map.addLayer({ id: 'clusters', type: 'circle', source: 'listings', filter: HAS_N, paint: {
+    'circle-radius': ['step', ['get', 'n'], 10, 10, 12, 40, 14, 120, 16], 'circle-color': p.clusterFill,
+    'circle-stroke-width': ['case', hov, 2.5, 1.5], 'circle-stroke-color': avgCol } });
+  map.addLayer({ id: 'cl-count', type: 'symbol', source: 'listings-lbl', filter: HAS_N, layout: {
+    'text-field': ['to-string', ['get', 'n']], 'text-font': ['Noto Sans Bold'], 'text-size': ['step', ['get', 'n'], 10.5, 40, 11], 'text-allow-overlap': true, 'text-ignore-placement': true },
     paint: { 'text-color': p.clusterInk } });
-  map.addLayer({ id: 'pins-halo', type: 'circle', source: 'listings', filter: UNCL, paint: {
+  // the lowest cost inside a bubble, beside it; cheaper bubbles win when labels collide, so a crowded map stays calm
+  map.addLayer({ id: 'cl-price', type: 'symbol', source: 'listings-lbl', filter: ['all', HAS_N, ['<', ['get', 'pr'], NO_PRICE / 10]], layout: {
+    'text-field': ['concat', 'from $', ['number-format', ['get', 'pr'], { 'max-fraction-digits': 0 }]], 'text-font': ['Noto Sans Regular'], 'text-size': 10.5,
+    'text-anchor': 'left', 'text-offset': ['step', ['get', 'n'], ['literal', [1.4, 0]], 10, ['literal', [1.6, 0]], 40, ['literal', [1.8, 0]], 120, ['literal', [2, 0]]], 'text-padding': 3, 'symbol-sort-key': ['get', 'pr'] },
+    paint: { 'text-color': p.clusterInk, 'text-halo-color': p.halo, 'text-halo-width': 1.8 } });
+  // one pin per building with two or more homes: a ring around the unit count, labelled with the cheapest from zoom 14.
+  // When a saved or top-ranked home sits on the same spot the building pin is drawn a few pixels aside, never moved on the map.
+  for (const [id, filter, shift] of [['bld', BLD, [0, 0]], ['bld-s', BLD_S, [20, -17]]]) {
+    map.addLayer({ id, type: 'circle', source: 'listings', filter, paint: {
+      'circle-radius': ['interpolate', ['linear'], ['zoom'], 11, 8, 15, 13], 'circle-color': p.clusterFill, 'circle-opacity': ['case', ['get', 'gone'], 0.5, 1], 'circle-translate': shift,
+      'circle-stroke-width': ['case', hov, 3, 2.2], 'circle-stroke-color': ['case', hov, css('--ink'), ['get', 'col']] } });
+    map.addLayer({ id: id + '-n', type: 'symbol', source: 'listings-lbl', filter, layout: {
+      'text-field': ['to-string', ['get', 'n']], 'text-font': ['Noto Sans Bold'], 'text-size': ['interpolate', ['linear'], ['zoom'], 11, 9.5, 15, 11.5], 'text-allow-overlap': true, 'text-ignore-placement': true },
+      paint: { 'text-color': p.clusterInk, 'text-translate': shift } });
+    map.addLayer({ id: id + '-lbl', type: 'symbol', source: 'listings-lbl', minzoom: 14, filter, layout: {
+      'text-field': ['get', 'lbl'], 'text-font': ['Noto Sans Regular'], 'text-size': 11, 'text-variable-anchor': ['left', 'right'], 'text-radial-offset': 1.75, 'symbol-sort-key': ['get', 'pr'] },
+      paint: { 'text-color': p.clusterInk, 'text-halo-color': p.halo, 'text-halo-width': 1.8, 'text-translate': shift } });
+  }
+  map.addLayer({ id: 'pins-halo', type: 'circle', source: 'listings', filter: SINGLE, paint: {
     'circle-radius': ['interpolate', ['linear'], ['zoom'], 11, ['case', ['get', 'fav'], 8, 5], 15, ['case', ['get', 'fav'], 16, 12]],
     'circle-color': ['case', ['get', 'fav'], css('--accent'), '#000'], 'circle-blur': 0.9,
     'circle-opacity': ['case', ['get', 'fav'], 0.45, theme() === 'light' ? 0.12 : 0.4] } });
   map.addLayer({ id: 'pin-sel', type: 'circle', source: 'listings', filter: selFilter(S.sel), paint: {
     'circle-radius': 14, 'circle-color': 'rgba(0,0,0,0)', 'circle-stroke-width': 2.5, 'circle-stroke-color': css('--accent'), 'circle-stroke-opacity': 0.9 } });
-  map.addLayer({ id: 'pins', type: 'circle', source: 'listings', filter: UNCL, paint: {
-    'circle-radius': ['interpolate', ['linear'], ['zoom'], 11, ['case', ['get', 'fav'], 4, 2.6], 15, ['case', ['get', 'fav'], 9, 6.5]],
+  const pinPaint = (r0, r1) => ({
+    'circle-radius': ['interpolate', ['linear'], ['zoom'], 11, ['case', ['get', 'fav'], r0 + 1.4, r0], 15, ['case', ['get', 'fav'], r1 + 2.5, r1]],
     'circle-color': heat === 'commute' ? ['case', ['get', 'fav'], css('--accent'), theme() === 'light' ? '#2b303b' : '#eef1f6'] : ['get', 'col'], 'circle-opacity': ['case', ['get', 'gone'], 0.35, 1],
-    'circle-stroke-width': ['case', ['boolean', ['feature-state', 'hover'], false], 2.4, ['get', 'fav'], 1.6, 1.4],
-    'circle-stroke-color': ['case', ['boolean', ['feature-state', 'hover'], false], css('--ink'), p.pinLine] } });
+    'circle-stroke-width': ['case', hov, 2.4, ['get', 'fav'], 1.6, 1.4],
+    'circle-stroke-color': ['case', hov, css('--ink'), p.pinLine] });
+  map.addLayer({ id: 'pins', type: 'circle', source: 'listings', filter: SINGLE, paint: pinPaint(2.6, 6.5) });
+  // the best-ranked homes (and the open one): their own unclustered source, plain pins a count bubble never swallows
+  map.addSource('toppins', { type: 'geojson', data: topData(), promoteId: 'id' });
+  map.addLayer({ id: 'pins-t-halo', type: 'circle', source: 'toppins', paint: {
+    'circle-radius': ['interpolate', ['linear'], ['zoom'], 11, ['case', ['get', 'fav'], 8, 6], 15, ['case', ['get', 'fav'], 16, 13]],
+    'circle-color': ['case', ['get', 'fav'], css('--accent'), '#000'], 'circle-blur': 0.9, 'circle-opacity': ['case', ['get', 'fav'], 0.45, theme() === 'light' ? 0.12 : 0.4] } });
+  map.addLayer({ id: 'pin-sel-t', type: 'circle', source: 'toppins', filter: ['==', ['get', 'id'], S.sel || ''], paint: {
+    'circle-radius': 14, 'circle-color': 'rgba(0,0,0,0)', 'circle-stroke-width': 2.5, 'circle-stroke-color': css('--accent'), 'circle-stroke-opacity': 0.9 } });
+  map.addLayer({ id: 'pins-t', type: 'circle', source: 'toppins', paint: pinPaint(3.4, 7.5) });
   // starred homes: their own unclustered source, so a count bubble never swallows them at any zoom
   map.addSource('starred', { type: 'geojson', data: starData(), promoteId: 'id' });
   map.addLayer({ id: 'pins-s-halo', type: 'circle', source: 'starred', paint: {
@@ -467,7 +532,7 @@ function pulse() {
   const step = (t) => {
     if (!map.getLayer('pin-sel') || !S.sel) return;
     const k = ((t - t0) % 1600) / 1600;
-    for (const id of ['pin-sel', 'pin-sel-s']) if (map.getLayer(id)) { map.setPaintProperty(id, 'circle-radius', 11 + k * 12); map.setPaintProperty(id, 'circle-stroke-opacity', 0.9 * (1 - k)); }
+    for (const id of ['pin-sel', 'pin-sel-t', 'pin-sel-s']) if (map.getLayer(id)) { map.setPaintProperty(id, 'circle-radius', 11 + k * 12); map.setPaintProperty(id, 'circle-stroke-opacity', 0.9 * (1 - k)); }
     pulseRaf = requestAnimationFrame(step);
   };
   pulseRaf = requestAnimationFrame(step);
@@ -639,20 +704,73 @@ function readout(e) {
 }
 
 // ------------------------------------------------------------------ lifecycle
+/** A phone or tablet has no hover, so a first tap on a pin previews the home and a second tap (or the button) opens it. */
+const touchy = () => matchMedia('(hover: none)').matches || !!window.__asTouch;
+let listPop = null, previewed = null;
+function closeList() { listPop?.remove(); listPop = null; }
+/** A building pin's click: every unit in a small list, best first; a row opens that home's drawer. */
+function openList(id, lngLat) {
+  const units = byId.get(id); if (!units) return;
+  closeList(); popup.remove();
+  listPop = new maplibregl.Popup({ closeButton: false, closeOnClick: true, offset: 16, maxWidth: '320px', className: 'bld-pop' }).setLngLat(lngLat).setHTML(buildingListHTML(units)).addTo(map);
+  const el = listPop.getElement();
+  el.addEventListener('click', (e) => {
+    const row = e.target.closest('[data-id]');
+    if (row) { closeList(); openDrawer(row.dataset.id); } else if (e.target.closest('[data-x]')) closeList();
+  });
+  el.querySelector('[data-id]')?.focus({ preventScroll: true });
+}
 function wire() {
   let hov = null;
-  const onPins = (type, fn) => { map.on(type, 'pins', fn); map.on(type, 'pins-s', fn); map.on(type, 'sun-pins', fn); };
+  const HOMES = ['pins', 'pins-t', 'pins-s', 'sun-pins'];
+  const onPins = (type, fn) => { for (const l of HOMES) map.on(type, l, fn); };
+  const lookup = (id) => S.listings.find((x) => x.id === id);
+  const unitHTML = (L, touch) => unitPreviewHTML(L, { extra: MF.hoverLine(L), touch });
+  let shown = null;   // what the open preview is for: a mouse moving over one pin does not rebuild its card on every pixel
+  // a home's own price tag stands above its pin, so a card opening upward clears it; a building pin has no tag
+  const OFFSET = { home: { bottom: [0, -42], 'bottom-left': [0, -42], 'bottom-right': [0, -42], top: [0, 14], 'top-left': [0, 14], 'top-right': [0, 14], left: [14, 0], right: [-14, 0], center: [0, 0] }, building: 16 };
+  const showPopup = (key, lngLat, html) => {
+    if (shown === key && popup.isOpen()) return;
+    shown = key; popup.setOffset(isBuildingId(key) ? OFFSET.building : OFFSET.home).setLngLat(lngLat).setHTML(html).addTo(map);
+  };
+  const hidePopup = () => { shown = null; popup.remove(); };
+  const clearHov = () => { if (hov) hoverState(hov, false); hov = null; };
+  const setHov = (id) => { if (hov !== id) { clearHov(); hov = id; hoverState(id, true); } };
+  // a home pin: hovering previews it (desktop); a tap previews it first, a second tap opens it (touch)
   onPins('mousemove', (e) => {
     const f = e.features[0]; map.getCanvas().style.cursor = 'pointer';
-    if (hov !== f.id) { if (hov) hoverState(hov, false); hov = f.id; hoverState(hov, true); emit('hover', hov); }
-    const L = S.listings.find((x) => x.id === f.id); if (!L) return;
-    const im = imagesOf(L), ph = im.own[0] || im.building[0]?.url;
-    if (picking) return;
-    const cm = commuteOf(L), cml = S.commuteMode === 'best' ? '' : ' ' + MODE_LABEL[S.commuteMode].toLowerCase();
-    popup.setLngLat([L.lon, L.lat]).setHTML(`<div class="hovercard">${ph ? `<img src="${esc(mediaSrc(ph))}" alt="" referrerpolicy="no-referrer">` : aerialHTML(L, 236, 118, 18)}<div class="hb"><div class="t">${esc(label(L))}</div><div class="s">${esc(L.neighborhood || '')}${L.sqft ? ' · ' + Math.round(L.sqft) + ' ft²' : ''}</div><div class="p"><b>${money(cost(L))}/mo</b><span>${cm != null ? Math.round(cm) + ' min' + cml + ' · ' : ''}score ${Math.round(score(L) ?? 0)}</span></div>${MF.hoverLine(L)}${hoverTrendHTML(L)}</div></div>`).addTo(map);
+    if (hov !== f.id) { setHov(f.id); emit('hover', hov); }
+    const L = lookup(f.id); if (!L || picking || touchy() || listPop) return;
+    showPopup(L.id, [L.lon, L.lat], unitHTML(L, false));
   });
-  onPins('mouseleave', () => { map.getCanvas().style.cursor = ''; if (hov) hoverState(hov, false); hov = null; popup.remove(); emit('hover', null); });
-  onPins('click', (e) => { if (!picking) openDrawer(e.features[0].id); });
+  onPins('mouseleave', () => { map.getCanvas().style.cursor = ''; clearHov(); if (!touchy()) hidePopup(); emit('hover', null); });
+  onPins('click', (e) => {
+    if (picking) return;
+    const id = e.features[0].id, L = lookup(id);
+    if (touchy() && L && previewed !== id) { previewed = id; closeList(); shown = null; showPopup(id, [L.lon, L.lat], unitHTML(L, true)); return; }
+    previewed = null; hidePopup(); openDrawer(id);
+  });
+  // a building pin: hover shows the building and its best homes; click (or the second tap) lists every unit
+  const onBld = (type, fn) => { map.on(type, 'bld', fn); map.on(type, 'bld-s', fn); };
+  onBld('mousemove', (e) => {
+    const f = e.features[0]; map.getCanvas().style.cursor = 'pointer'; setHov(f.id);
+    const units = byId.get(f.id); if (!units || picking || touchy() || listPop) return;
+    showPopup(f.id, f.geometry.coordinates, buildingPreviewHTML(units, { touch: false }));
+  });
+  onBld('mouseleave', () => { map.getCanvas().style.cursor = ''; clearHov(); if (!touchy()) hidePopup(); });
+  onBld('click', (e) => {
+    if (picking) return;
+    const f = e.features[0], units = byId.get(f.id);
+    if (touchy() && units && previewed !== f.id) { previewed = f.id; closeList(); shown = null; showPopup(f.id, f.geometry.coordinates, buildingPreviewHTML(units, { touch: true })); return; }
+    previewed = null; hidePopup(); openList(f.id, f.geometry.coordinates);
+  });
+  // the touch card's button, and a tap on the card itself
+  popup.on('open', () => popup.getElement().addEventListener('click', (e) => {
+    const card = e.target.closest('[data-preview], .bldcard'); if (!card || !touchy()) return;
+    const id = card.dataset.preview;
+    if (id) { previewed = null; hidePopup(); openDrawer(id); } else if (previewed) { const pid = previewed; previewed = null; const at = popup.getLngLat(); hidePopup(); openList(pid, at); }
+  }));
+  addEventListener('keydown', (e) => { if (e.key === 'Escape' && listPop) { closeList(); e.stopPropagation(); } }, true);
   // a count bubble zooms to the level where it splits
   map.on('click', 'clusters', async (e) => {
     if (picking) return;
@@ -670,8 +788,10 @@ function wire() {
   map.on('mouseleave', 'clusters', () => { map.getCanvas().style.cursor = ''; if (hc != null) map.setFeatureState({ source: 'listings', id: hc }, { hover: false }); hc = null; });
   // clicking empty map dismisses the mini card
   map.on('click', (e) => {
+    const onPin = () => map.queryRenderedFeatures(e.point, { layers: ['pins', 'pins-t', 'pins-s', 'sun-pins', 'bld', 'bld-s', 'clusters'].filter((l) => map.getLayer(l)) }).length;
+    if (previewed && !onPin()) { previewed = null; hidePopup(); }
     if (picking || !$('mapCard') || $('mapCard').hidden) return;
-    if (!map.queryRenderedFeatures(e.point, { layers: ['pins', 'pins-s', 'sun-pins', 'clusters'].filter((l) => map.getLayer(l)) }).length) hideCard(true);
+    if (!onPin()) hideCard(true);
   });
   map.on('mousemove', readout);
   map.on('mouseout', () => ($('readout').hidden = true));
@@ -711,7 +831,8 @@ export function init() {
     if (map.getLayer('pins')) map.setPaintProperty('pins', 'circle-stroke-color', ['case', ['boolean', ['feature-state', 'hover'], false], css('--ink'), PAL[theme()].pinLine]);
     setPins();
     if (map.getLayer('pins-s-halo')) map.setPaintProperty('pins-s-halo', 'circle-color', css('--fav'));
-    for (const id of ['pin-sel', 'pin-sel-s']) if (map.getLayer(id)) map.setPaintProperty(id, 'circle-stroke-color', css('--accent'));
+    for (const id of ['pin-sel', 'pin-sel-t', 'pin-sel-s']) if (map.getLayer(id)) map.setPaintProperty(id, 'circle-stroke-color', css('--accent'));
+    if (map.getLayer('pins-t')) map.setPaintProperty('pins-t', 'circle-stroke-color', ['case', ['boolean', ['feature-state', 'hover'], false], css('--ink'), PAL[theme()].pinLine]);
     if (map.getLayer('pins-s')) map.setPaintProperty('pins-s', 'circle-stroke-color', ['case', ['boolean', ['feature-state', 'hover'], false], css('--ink'), PAL[theme()].pinLine]);
     setHeat(heat);
   });
@@ -727,7 +848,11 @@ export function init() {
     // a listing opened before the map finished loading (?open=…) is flown to once it has
     if (!map?.loaded()) { pendingFly = id && fly ? id : null; if (!map) return; }
     drawTags();
-    if (map.getLayer('pin-sel')) { map.setFilter('pin-sel', selFilter(id)); map.getLayer('pin-sel-s') && map.setFilter('pin-sel-s', ['==', ['get', 'id'], id || '']); pulse(); }
+    if (map.getLayer('pin-sel')) {
+      // the open home always keeps a pin of its own, even from inside a building: re-plan when it was not one already
+      if ((id && !plan.stars.concat(plan.top).some((L) => L.id === id)) || (!id && plan.kept)) setPins();
+      map.setFilter('pin-sel', selFilter(id)); for (const l of ['pin-sel-s', 'pin-sel-t']) map.getLayer(l) && map.setFilter(l, ['==', ['get', 'id'], id || '']); pulse();
+    }
     if (id) hideCard(); else if (lastSel) showCard(lastSel);
     if (fly) flyTo(id);
   });

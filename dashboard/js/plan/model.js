@@ -3,6 +3,8 @@
 // keep-out zones, provenance, layout presets) and returns one model with every length in inches,
 // in the plan frame: +x to the right of the drawing, +y to the top (toward `up_bearing`).
 
+import { normaliseFinishes } from './finishes.js';
+
 export const UNIT_IN = { in: 1, ft: 12, m: 39.37007874 };
 const FIX_DEFAULT = {
   closet: { height: 84, reserve: 24 }, wardrobe: { height: 84, reserve: 24 }, column: { height: 0, reserve: 0 },
@@ -247,9 +249,12 @@ export function normalisePlan(raw) {
     bedroom_door_drawn: pv.bedroom_door_drawn, wd_drawn: pv.wd_drawn,
   };
 
+  const { finishes, warnings: fwarn } = normaliseFinishes(raw.finishes, raw.floor_finish);   // [finishes] what the unit is made of, and where each value came from
+  warnings.push(...fwarn);
+
   return {
     schema: raw.schema === 2 ? 2 : 1, id: cleanStr(raw.id || '', 80), title: cleanStr(raw.title || '', 80), units, k,
-    ceiling, wallT, up_bearing: num(raw.up_bearing) ? raw.up_bearing : null, floor: num(raw.floor) ? raw.floor : null,
+    ceiling, wallT, up_bearing: num(raw.up_bearing) ? raw.up_bearing : null, floor: num(raw.floor) ? raw.floor : null, floor_finish: ['basket', 'parquet', 'oak'].includes(raw.floor_finish) ? raw.floor_finish : null, finishes,   // [floor] `floor_finish` = the old one-field alias; [finishes] the full model (plan/finishes.js)
     source: cleanStr(raw.source || '', 600), provenance,
     rooms, walls, pieces, windows, doors, doorways, open, fixtures, keepout, layouts, bounds, centre, warnings,
     area: rooms.reduce((s, r) => s + r.sqft, 0),

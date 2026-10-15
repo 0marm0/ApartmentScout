@@ -12,6 +12,9 @@ search:
   # Where the full set of listing photos is published (the demo site serves the GitHub release's photos here). A photo that is in
   # neither media/ nor media-lite/ next to this file is fetched from <this folder>/<its path under media/>. A fork changes this to its own site.
   media_base_url: https://0marm0.github.io/ApartmentScout/demo/media/
+  # The home that Unit 3D, the Floor plan studio and the 3D tab open when nothing else is chosen (a listing id; `build` writes it
+  # into the manifest). A home the renter opened or picked there wins, and without this line they open the first one in the list.
+  default_listing: paramount-tower-25e
 
 budget:
   basis: monthly_cost       # net-effective rent + recurring fees + one-time fees spread over the lease

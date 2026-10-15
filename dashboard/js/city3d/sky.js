@@ -2,6 +2,7 @@
 // glow where the sun really is, and the haze (fog) that fades the far city into the horizon. Colours come from city3d/look.js by sun altitude,
 // so the same hour is the same sky in both engines. A VISUAL PREVIEW.
 import * as THREE from 'three';
+import { quality } from '../room3d/quality.js';   // [quality] the stars are `skyDetail`
 import { SKY_VS, SKY_FS, skyAt, glowTexture } from './look.js';
 
 const mix = (a, b, t) => a.clone().lerp(b, t);
@@ -10,7 +11,7 @@ export const SKY_RADIUS = 6000;
 
 /** The dome, the sun disc and the glow sprite, not yet in a scene (add sky.objects). */
 export function createSky(pal) {
-  const U = { zen: { value: new THREE.Color() }, hor: { value: new THREE.Color() }, gnd: { value: pal.ground.clone() }, sunDir: { value: new THREE.Vector3(0, 1, 0) }, sunCol: { value: pal.sun.clone() }, glow: { value: 1 } };
+  const U = { zen: { value: new THREE.Color() }, hor: { value: new THREE.Color() }, gnd: { value: pal.ground.clone() }, sunDir: { value: new THREE.Vector3(0, 1, 0) }, sunCol: { value: pal.sun.clone() }, glow: { value: 1 }, stars: { value: 0 } };
   const dome = new THREE.Mesh(new THREE.SphereGeometry(SKY_RADIUS, 48, 24), new THREE.ShaderMaterial({ uniforms: U, vertexShader: SKY_VS, fragmentShader: SKY_FS, side: THREE.BackSide, depthWrite: false, fog: false }));
   dome.renderOrder = -10; dome.frustumCulled = false; dome.name = 'sky';
   const disc = new THREE.Mesh(new THREE.SphereGeometry(30, 24, 16), new THREE.MeshBasicMaterial({ color: pal.sun, fog: false, toneMapped: false })); disc.name = 'sun disc';
@@ -25,7 +26,8 @@ export function createSky(pal) {
  */
 export function applySky(sky, pal, s, dir, centre) {
   const k = Math.max(0, Math.min(1, s.alt / 30));
-  const zen = skyAt(pal.sky.zen, s.alt), hor = skyAt(pal.sky.hor, s.alt);
+  const zen = skyAt(pal.sky.zen, s.alt, pal.sky.alt), hor = skyAt(pal.sky.hor, s.alt, pal.sky.alt);
+  sky.U.stars.value = pal.daylight && quality.has('skyDetail') ? Math.max(0, Math.min(1, (-s.alt - 5) / 5)) : 0;   // stars only on the eye-level (natural) sky, once it is dark
   sky.U.zen.value.copy(zen); sky.U.hor.value.copy(hor); sky.U.sunDir.value.copy(dir);
   sky.U.glow.value = s.alt > -4 ? Math.min(1, (s.alt + 4) / 8) : 0;
   sky.U.sunCol.value.copy(mix(pal.sun, pal.white, 0.2 * k));

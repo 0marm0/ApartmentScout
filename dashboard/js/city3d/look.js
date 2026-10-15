@@ -5,12 +5,34 @@ import * as THREE from 'three';
 import { css } from '../util.js';
 
 export const isLight = () => document.documentElement.dataset.theme === 'light';
-const col = (name, fb) => { const v = css(name); return new THREE.Color(/^#[0-9a-f]{3,8}$/i.test(v) ? v.slice(0, 7) : fb); };
 const mix = (a, b, t) => a.clone().lerp(b, t);
 
-/** Colours for the scene, derived from the design tokens of the current theme. */
-export function palette() {
-  const L = isLight();
+// The light theme's design tokens, fixed: the daylight look of the eye-level views (Window, Inside, the studio's eye cameras) is the same in
+// either UI theme, like the room's own white paint, so a dark dashboard does not give a dark city and a dark sky outside a bright room.
+const DAY_TOKENS = {
+  '--ground': '#f4f4f1', '--surface-1': '#ffffff', '--surface-2': '#fafaf8', '--surface-3': '#f1f1ed', '--ink': '#12151c', '--ink-2': '#4b5261', '--ink-3': '#656c7b',
+  '--ink-4': '#aab0bc', '--accent': '#4952e2', '--sun': '#f5b547', '--warn': '#8f5a03', '--bad': '#bd3d27', '--band-30': '#3a93e0', '--score-1': '#e5604f', '--band-45': '#6a55b8',
+};
+
+// A natural daytime sky by sun altitude (sRGB hex; the dome is drawn without tone mapping, so these are the colours on the screen): night, dusk,
+// golden hour and day. Day is a clear blue overhead going to a pale, hazy white at the horizon (the haze the far city fades into); golden hour and dusk
+// warm the horizon through peach and rose while the zenith stays a deep blue.
+const hexes = (a) => a.map((h) => new THREE.Color(h));
+// The night end: a deep blue overhead with a lighter blue-violet glow at the horizon (the city's own light on the air), so the skyline reads against it
+// instead of dissolving into it; between dusk and night a rose-violet twilight.
+export const NATURAL_SKY = {
+  alt: [-12, -6, -1.5, 5, 22],
+  zen: hexes(['#0b1636', '#17265c', '#34457a', '#5d85c2', '#2f7fdc']),
+  hor: hexes(['#41609a', '#82679a', '#e0906c', '#f6c79a', '#d4e6f6']),
+};
+
+/**
+ * Colours for the scene, derived from the design tokens of the current theme.
+ * `opts.daylight`: the eye-level look (the light theme's colours whatever the UI theme, and the natural sky above).
+ */
+export function palette(opts = {}) {
+  const day = !!opts.daylight, L = day || isLight();
+  const col = (name, fb) => { const v = day ? DAY_TOKENS[name] : css(name); return new THREE.Color(/^#[0-9a-f]{3,8}$/i.test(v) ? v.slice(0, 7) : fb); };
   const ground = col('--ground', '#08090c'), s1 = col('--surface-1', '#0e1015'), s2 = col('--surface-2', '#13161d'), s3 = col('--surface-3', '#1a1e27');
   const ink = col('--ink', '#eef1f6'), ink2 = col('--ink-2', '#a9b1bf'), ink3 = col('--ink-3', '#6f7889'), ink4 = col('--ink-4', '#4a5160');
   const accent = col('--accent', '#8b96ff'), sun = col('--sun', '#f5b547'), warn = col('--warn', '#f0b04c'), bad = col('--bad', '#f2735f');
@@ -26,12 +48,14 @@ export function palette() {
     tBase: accent.clone(),
     light: true, ground: mix(s3, ink4, 0.22), bLow: mix(s3, ink4, 0.42), bHigh: mix(s1, s3, 0.25), street: mix(s1, s3, 0.2), streetOp: 0.95,
     outline: ink3, outlineOp: 0.32, edge: ink3, edgeOp: 0.22, accent, sun, warn, bad, ink, white,
-    sky: {
+    daylight: day,
+    sky: day ? NATURAL_SKY : {
       zen: [mix(ink, violet, 0.35), mix(ink2, violet, 0.45), mix(s1, blue, 0.5), mix(s1, blue, 0.58)],
       hor: [mix(ink, blue, 0.22), mix(s1, coral, 0.42), mix(s1, sun, 0.42), mix(s1, blue, 0.14)],
     },
     hemiDay: 1.9, hemiNight: 0.9, sunMax: 3.4,
   } : {
+    daylight: false,
     hcls, lit, blue,
     tBase: mix(accent, ground, 0.42),
     light: false, ground: mix(s3, ink4, 0.3), bLow: mix(s3, ink4, 0.5), bHigh: mix(ink4, ink3, 0.4), street: mix(s3, ink4, 0.55), streetOp: 0.9,
@@ -45,22 +69,33 @@ export function palette() {
 }
 // sky keyframes by sun altitude: night, dusk, golden, day
 export const SKY_ALT = [-10, -2, 5, 22];
-export function skyAt(stops, alt) {
-  if (alt <= SKY_ALT[0]) return stops[0].clone();
-  for (let i = 1; i < SKY_ALT.length; i++) if (alt <= SKY_ALT[i]) return mix(stops[i - 1], stops[i], (alt - SKY_ALT[i - 1]) / (SKY_ALT[i] - SKY_ALT[i - 1]));
+/** The sky colour at a sun altitude from keyframe colours `stops` at altitudes `keys` (default SKY_ALT; a palette's `sky.alt` carries its own, so the natural sky has a twilight stop). */
+export function skyAt(stops, alt, keys = SKY_ALT) {
+  if (alt <= keys[0]) return stops[0].clone();
+  for (let i = 1; i < keys.length; i++) if (alt <= keys[i]) return mix(stops[i - 1], stops[i], (alt - keys[i - 1]) / (keys[i] - keys[i - 1]));
   return stops[stops.length - 1].clone();
 }
 
 export const SKY_VS = `varying vec3 vDir; void main() { vDir = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`;
-export const SKY_FS = `uniform vec3 zen; uniform vec3 hor; uniform vec3 gnd; uniform vec3 sunDir; uniform vec3 sunCol; uniform float glow;
+export const SKY_FS = `uniform vec3 zen; uniform vec3 hor; uniform vec3 gnd; uniform vec3 sunDir; uniform vec3 sunCol; uniform float glow; uniform float stars;
 varying vec3 vDir;
+float sh3(vec3 p) { return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453); }
 void main() {
   vec3 d = normalize(vDir); float h = d.y;
-  vec3 c = h > 0.0 ? mix(hor, zen, pow(clamp(h, 0.0, 1.0), 0.6)) : mix(hor, gnd, clamp(-h * 6.0, 0.0, 1.0));
+  // blue overhead, a pale haze band at the horizon (the air thickens towards it), a darker ground below it
+  vec3 c = h > 0.0 ? mix(hor, zen, pow(clamp(h, 0.0, 1.0), 0.45)) : mix(hor, gnd, clamp(-h * 6.0, 0.0, 1.0));
   float s = max(dot(d, normalize(sunDir)), 0.0);
-  c += sunCol * (pow(s, 900.0) * 1.2 + pow(s, 48.0) * 0.32 + pow(s, 6.0) * 0.1) * glow;
+  // the sun: a hard core, a bright halo and a wide soft haze that whitens and warms the sky around it
+  c = mix(c, sunCol * 1.15 + 0.25, clamp(pow(s, 7.0) * 0.5 + pow(s, 28.0) * 0.35, 0.0, 0.85) * glow);
+  c += sunCol * (pow(s, 1200.0) * 1.4 + pow(s, 120.0) * 0.35) * glow;
+  // a few faint stars once the sky is dark (sparse: it is a city sky): one jittered point in a cell of the direction, a handful of cells in a hundred
+  if (stars > 0.0 && h > 0.04) {
+    vec3 q = d * 140.0, id = floor(q), f = fract(q) - 0.5;
+    vec3 off = (vec3(sh3(id + 1.7), sh3(id + 3.1), sh3(id + 5.3)) - 0.5) * 0.5;
+    float s = step(0.991, sh3(id)) * smoothstep(0.1, 0.0, length(f - off)) * (0.35 + 0.65 * sh3(id + 9.0));
+    c += vec3(0.82, 0.88, 1.0) * s * stars * smoothstep(0.04, 0.35, h);
+  }
   gl_FragColor = vec4(c, 1.0);
-  #include <tonemapping_fragment>
   #include <colorspace_fragment>
 }`;
 

@@ -15,8 +15,8 @@ import { contextLabels } from './context-core.js';
 import { palette, skyAt, SKY_VS, SKY_FS, glowTexture } from '../city3d/look.js';   // [city3d] the shared look of the city: palette, sky keyframes and dome, sun glow
 import { decorate } from '../city3d/facade.js';   // [city3d] the shared facade shader
 import { RectAreaLightUniformsLib } from 'three/addons/lights/RectAreaLightUniformsLib.js';
-import { roomLightState, moodFor, applyRoomLight } from '../room3d/lighting.js';   // [room3d] the room's own light, shared with the studio
-import { roomQuality } from '../room3d/quality.js';
+import { roomLightState, applyRoomLight } from '../room3d/lighting.js';   // [room3d] the room's own light, shared with the studio
+import { roomQuality, quality } from '../room3d/quality.js';
 import { createSky, applySky } from '../city3d/sky.js';   // [city3d] the shared sky
 import { createCity } from '../city3d/city.js';   // [city3d] THE city: buildings, outlines, context and ground, shared with the studio
 import { shapeOf, prism, prismsOf, solidGeo, heightColor, mergeBuildings, edgeGeo, outlineGeo } from '../city3d/buildings.js';   // [city3d] THE building mesher
@@ -42,7 +42,7 @@ export class UnitStage {
     this.maxTex = this.renderer.capabilities.maxTextureSize || 4096;
     this.mode = 'orbit'; this.look = { yaw: 0, pitch: 6, fov: 70 }; this.dirty = true; this.tween = null;
     this.opts = { shadows: true, labels: true, streets: true, future: true, green: true, water: true, streetTrees: true, parkTrees: true, cone: false, ray: true, target: 'solid' };   // [park trees] streetTrees / parkTrees switch the two kinds of tree
-    this.quality = { visual: false, phone: false };   // [city context] set by unit/quality3d.js: tree shadows and the water glint
+    this.quality = { visual: false, phone: false };   // [city context] set by unit/quality3d.js (room3d/quality.js cityQualityOf): tree shadows, water glint, tree share, grass detail, texture scale
     this.labels = []; this.pal = palette(); this.onCompass = null;
     this.opts.heights = false;
     // shared facade uniforms (see decorate)
@@ -60,7 +60,7 @@ export class UnitStage {
     const { B, T } = data;
     const cx = (T.bb[0] + T.bb[2]) / 2, cy = (T.bb[1] + T.bb[3]) / 2;
     this.center = W3(cx, cy, 0); this.cxy = [cx, cy];
-    const pal = this.pal = palette();
+    const pal = this.pal = this.livePalette();
 
     // cameras and controls
     this.orbitCam = new THREE.PerspectiveCamera(42, 1.6, 2, 12000);
@@ -91,6 +91,8 @@ export class UnitStage {
     // [city3d] ground, buildings, roof and footprint outlines: the city both engines share (city3d/city.js), in the site frame, near ones casting shadows
     const C = this.cityObj = createCity({ B, T, ti: data.ti, meta: data.meta, green: data.green, water: data.water, streets: data.streets }, { pal, center: this.cxy, quality: this.quality, castShadow: true, facU: this.facU });
     Object.assign(this, { groundMat: C.groundMat, groundBase: C.groundBase, bMat: C.bMat, vrange: C.vrange, city: C.meshes, edgeMat: C.edgeMat, edgeIdx: C.edgeIdx, edges: C.edges, outlineMat: C.outlineMat, outlines: C.outlines });
+    if (this.late != null) C.setLate(this.late);
+    if (this.season) C.season = { ...this.season };   // [season] the trees keep their leaves (or none) across a rebuild
     scene.add(C.group);
 
     // target building in the accent, with solid / faint / hidden display
@@ -164,8 +166,12 @@ export class UnitStage {
   }
   /** The plate stands in for the base ground where it is on; the base drops under the water so the plate's holes show it. */
   syncGroundBase() { if (this.cityObj) { this.cityObj.layers = { ...this.cityObj.layers, water: this.opts.water }; this.cityObj.syncGroundBase(); } }
+  /** [daycycle] How late the evening is, 0 (early) to 1 (deep night): fewer offices and homes stay lit. Remembered across a rebuild. */
+  setLate(v) { if (v === this.late) return; this.late = v; this.cityObj?.setLate(v); this.dirty = true; }
+  /** [season] The tree season ({leaf, autumn}, city3d/season.js): leaves on, autumn colour or bare branches. A picture only: the numbers never count a tree. */
+  setSeason(s) { if (!s) return; this.season = { leaf: s.leaf, autumn: s.autumn }; if (this.cityObj?.setSeason(this.season)) this.dirty = true; }
   /** [city context] Render quality from unit/quality3d.js: tree shadows (Visual) and the water's sky reflection and sun glint. */
-  setContextQuality(q) { this.quality = { visual: !!q.visual, phone: !!q.phone }; this.ctx?.setQuality(this.quality); if (this.facU.uQual) this.facU.uQual.value = q.visual ? 1 : 0; this.dirty = true; }   // [massing] Visual: full facades
+  setContextQuality(q) { this.quality = { ...q, visual: !!q.visual, phone: !!q.phone }; this.ctx?.setQuality(this.quality); if (this.facU.uQual) this.facU.uQual.value = (q.fullFacades ?? q.visual) ? 1 : 0; this.dirty = true; }   // [massing] Visual: full facades
   distTo(b) { return Math.hypot((b.bb[0] + b.bb[2]) / 2 - this.cxy[0], (b.bb[1] + b.bb[3]) / 2 - this.cxy[1]); }
   // [city3d] the buildings are meshed by city3d/buildings.js (prismsOf is its single entry point), the same code the studio uses
   shapeOf(b) { return shapeOf(b); }
@@ -320,7 +326,7 @@ export class UnitStage {
     this.dirty = true;
   }
   setPalette() {
-    const pal = this.pal = palette();
+    const pal = this.pal = this.livePalette();
     if (!this.scene) return;
     this.cityObj.setPalette(pal); this.skyU.gnd.value.copy(pal.ground);
     this.tMat.color.copy(pal.tBase); this.tEdgeMat.color.copy(pal.accent); this.tFoot.material.color.copy(pal.accent);
@@ -439,7 +445,7 @@ export class UnitStage {
     this.hemi.color.copy(mix(pal.white, tint, 0.3)); this.hemi.groundColor.copy(mix(pal.white, tint, 0.3)).multiplyScalar(0.45);
     this.hemi.intensity = up ? pal.hemiNight + (pal.hemiDay - pal.hemiNight) * Math.min(1, (s.alt + 2) / 14) : pal.hemiNight * (s.alt > -8 ? 1 : 0.85);
     // lit windows fade in through dusk
-    this.facU.uNight.value = Math.max(0, Math.min(1, (3 - s.alt) / 9)) * (pal.light ? 0.75 : 1);
+    this.cityObj.setNight(Math.max(0, Math.min(1, (3 - s.alt) / 9)) * (pal.light ? 0.75 : 1));   // [daycycle] the lit windows, the lamps, the dark ground
     this.applyRoomLook();   // [room3d]
     this.dirty = true;
   }
@@ -459,18 +465,29 @@ export class UnitStage {
       if (r.toneMapping !== this.baseTone.mapping) r.toneMapping = this.baseTone.mapping;
       r.toneMappingExposure = this.baseTone.exposure;
       for (const L of this.interior?.glow?.children || []) L.intensity = 0;
+      this.interior?.lamps?.set(0);
+      if (this.interior?.glow) this.interior.glow.visible = false;   // a light that is off still costs every lit pixel: only the room's own cameras have the window glow
       return;
     }
     const s = this.lastSun, up = s.alt > 0, sin = Math.max(0, Math.sin(s.alt * DEG));
-    const st = this.roomState = roomLightState({ mood: moodFor(this.moodWant || 'auto', up, sin), sunOn: up, sinAlt: sin, quality: roomQuality(), scale: this.roomScale });
+    // [daycycle] 'auto' follows the sun's altitude continuously (no jump where the sun crosses a threshold, so playing the day is smooth); a fixed mood is that mood
+    const st = this.roomState = roomLightState({ mood: this.moodWant || 'auto', alt: s.alt, sunOn: up, sinAlt: sin, quality: roomQuality(), envLight: quality.has('environment'), tone: quality.settings.tone, scale: this.roomScale });
     applyRoomLight({ sunL: this.sunL, hemi: this.hemi, amb: this.amb, glow: this.interior?.glow, renderer: r }, st);
+    if (this.interior?.glow) this.interior.glow.visible = quality.has('windowGlow');   // [quality] the step-down's level 4 takes the window glow lights out
     // lamps from the layout (floor and table lamps, pendants) come on after dark, like the studio's
+    let real = false;
     for (const g of this.interior?.furniture?.group.children || []) {
       const l = g.userData.lamp; if (!l) continue;
-      l.light.intensity = st.lamps ? l.cd * st.lamps : 0; l.light.visible = st.lamps > 0;
+      l.light.intensity = st.lamps ? l.cd * st.lamps : 0; l.light.visible = st.lamps > 0; real = true;
       if (l.shade) l.shade.material.emissiveIntensity = st.lamps ? (st.lamps === 1 ? 1.4 : 1) : 0;
     }
-    this.facU.uNight.value = st.lamps === 1 ? 1 : st.lamps ? Math.max(this.facU.uNight.value, 0.5) : this.facU.uNight.value;
+    const al = this.interior?.lamps;
+    if (al && !al.warm && al.count && !real) {   // the first time: compile the shaders with the assumed lights on, so a loop crossing dusk or dawn does not stall on a recompile
+      al.warm = true; al.set(1, { lensRoot: this.interior.group });
+      try { this.renderer.compile(this.scene, this.activeCam()); } catch { /* a missing context: the first frame compiles instead */ }
+    }
+    al?.set(st.lamps, { real, lensRoot: this.interior.group });   // [daycycle] no lamp placed: a warm ceiling light stands in
+    this.cityObj.setNight(Math.max(this.facU.uNight.value, st.lamps >= 1 ? 1 : st.lamps * 0.667));
   }
   /** w: {x,y,z,fx,fy}, az: window bearing; floorZ / cmpZ: slab heights; fh floor height. */
   setWindow(w, az, floorZ, cmpZ, fh, label, panes = [0]) {
@@ -620,8 +637,12 @@ export class UnitStage {
     if (!animate || reduce) { cam.position.copy(pos); ctl.target.copy(tgt); ctl.update(); this.dirty = true; return; }
     this.tween = { cam, ctl, p0: cam.position.clone(), t0: ctl.target.clone(), p1: pos, t1: tgt, start: performance.now(), dur: 750 };
   }
+  /** The window and Inside cameras look out at a bright day (the natural sky, the light colours of city, park and trees) whatever the dashboard's theme; the orbit, plan and top cameras keep the theme's. */
+  eyeLevel() { return this.mode === 'in' || this.mode === 'win'; }
+  livePalette() { return palette({ daylight: this.eyeLevel() }); }
   setMode(m) {
     const prev = this.mode; this.mode = m;
+    if (this.scene && !!this.pal.daylight !== this.eyeLevel()) this.setPalette();   // [daylight] the city, park and sky change look with the camera
     this.controls.enabled = m === 'orbit' || m === 'top'; this.planControls.enabled = m === 'plan';
     if (m === 'top') this.topDown(prev !== 'plan' && prev !== 'win' && prev !== 'in');
     if (m === 'orbit' && (prev === 'top' || prev === 'orbit')) this.resetOrbit(true);
@@ -640,16 +661,21 @@ export class UnitStage {
       // bias is in shadow-depth units over a ~4 km range: keep it to a few centimetres so 20 cm walls and the
       // ceiling still cast (the city-scale bias would let the sun through them)
       const r = 34; Object.assign(sc, { left: -r, right: r, top: r, bottom: -r });
-      this.sunL.shadow.normalBias = 0.02; this.sunL.shadow.bias = -0.000004;
     } else {
       Object.assign(sc, { left: -560, right: 560, top: 560, bottom: -560 });
-      this.sunL.shadow.normalBias = 0.6; this.sunL.shadow.bias = -0.00035;
     }
+    this.shadowBias();
     sc.updateProjectionMatrix();
     this.winCam.near = inside ? 0.05 : 0.3; this.winCam.updateProjectionMatrix();
     this.ctx?.setInside(inside);   // [city context] no tree shadows on the floor: the sun patches there follow the numbers, which ignore trees
     this.applyOpts();
     if (this.lastSun) this.setSun(this.lastSun);
+  }
+  /** The sun's shadow bias for the camera in use and the shadow type (set by applyMode, and again after the quality module rebuilds the shadow map). */
+  shadowBias() {
+    const L = this.sunL, inside = this.mode === 'in' && !!this.interior;
+    if (inside) { L.shadow.normalBias = 0.02; L.shadow.bias = -0.000004; }
+    else { L.shadow.normalBias = 0.6; L.shadow.bias = this.renderer.shadowMap.type === THREE.VSMShadowMap ? -0.0002 : -0.00035; }
   }
   activeCam() { return this.mode === 'win' || this.mode === 'in' ? this.winCam : this.mode === 'plan' ? this.planCam : this.orbitCam; }
   resize() {
@@ -678,7 +704,11 @@ export class UnitStage {
     if (!this.dirty && !force) return false;
     this.dirty = false;
     const cam = this.activeCam();
-    if (this.mode === 'win' && this.win) {
+    // [inside] the Inside camera never stands anywhere but in the room: with no standing point yet it takes the first window's, and with no room built
+    // (or no plan) it looks out of the window like the Window camera, instead of being left wherever the camera was last (the ground, with no view out)
+    if (this.mode === 'in' && this.interior && !this.inEye && this.win) this.setInteriorEye(0);
+    const outOfWindow = this.win && (this.mode === 'win' || (this.mode === 'in' && !(this.interior && this.inEye)));
+    if (outOfWindow) {
       const az = (this.win.az + this.look.yaw) * DEG, pt = this.look.pitch * DEG;
       cam.position.copy(W3(this.win.x, this.win.y, this.win.z)); cam.fov = this.look.fov; cam.updateProjectionMatrix();
       cam.lookAt(cam.position.clone().add(new THREE.Vector3(Math.sin(az) * Math.cos(pt), Math.sin(pt), -Math.cos(az) * Math.cos(pt))));
@@ -707,6 +737,22 @@ export class UnitStage {
     let lo = 0, hi = starts.length - 1;
     while (lo < hi) { const mid = (lo + hi + 1) >> 1; if (starts[mid] <= v) lo = mid; else hi = mid - 1; }
     return ids[lo];
+  }
+  /** [photo match] The model point under a client point, in site metres: {bi, x, y, z} (x east, y north, z up), or null for sky and ground. */
+  pickPoint(clientX, clientY) {
+    const r = this.cv.getBoundingClientRect(), cam = this.activeCam();
+    const ndc = new THREE.Vector2(((clientX - r.left) / r.width) * 2 - 1, -((clientY - r.top) / r.height) * 2 + 1);
+    const rc = new THREE.Raycaster(); rc.setFromCamera(ndc, cam);
+    const objs = [...this.city, ...(this.tMesh.visible ? [this.tMesh] : [])];
+    const hit = rc.intersectObjects(objs, false)[0]; if (!hit) return null;
+    let bi = this.data.ti;
+    if (hit.object !== this.tMesh) {
+      const { starts, ids } = hit.object.userData, v = hit.face.a;
+      let lo = 0, hi = starts.length - 1;
+      while (lo < hi) { const mid = (lo + hi + 1) >> 1; if (starts[mid] <= v) lo = mid; else hi = mid - 1; }
+      bi = ids[lo];
+    }
+    return { bi, x: hit.point.x, y: -hit.point.z, z: hit.point.y };
   }
   // ---------------------------------------------------------------- export
   /** Binary glTF of the city, this building, streets, park and lawn patches, proposed buildings and the apartment shell, with the

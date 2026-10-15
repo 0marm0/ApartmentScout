@@ -2,6 +2,7 @@
 // listing drawer, saved picks, router, theme and keyboard shortcuts. Views live in their own modules and
 // talk to the core through the exports below and the event bus (on/emit).
 import { $, esc, money, moneyShort, safeUrl, scoreColor, ring, unitGlyph, bullets, bullet, routeNames, ICONS, toast, LINE_COLORS, aerialHTML, imagesOf, mediaSrc, routeBadge, legBadges, miles } from './util.js';
+import { seeInsideLink, wireSeeInside } from './unit/camera-pref.js';   // [camera] "See inside": opens Unit 3D standing in the apartment
 import { COMMUTE_MODES, commuteEntry, modeMinutes, modeOptions, evaluate, applyProfile, profileOf, diffProfile, serverSteps, parseDay, cashFlow, basisLabel } from './criteria.js';
 import { initPalette, openPalette, shareListing, syncTrigger } from './palette.js';
 import { initEnhance } from './enhance.js';
@@ -14,6 +15,7 @@ import { cleanStored } from './state-guard.js';
 import './features/comfort.js';
 import { initDestPin } from './features/dest-pin-style.js';   // [office pin] gold or classic destination marker   // [feature C] comfort + accent attributes on <html> apply at import, before first paint
 import { cardsEmpty } from './features/empty.js';   // [feature C]
+import { sharesFor, pickFeatures, topReason, warnings } from './features/card-model.js';   // what a card says: two telling features, one reason, one warning mark
 import { destLineHTML, drawerHTML as destsDrawerHTML } from './features/multidest.js';   // [multi-destination] minutes to every destination on cards and in the drawer
 // results list and filter rail features (chips, collapsible sections, windowed cards, rank motion, density, price history, worker scoring)
 import { initResults, setCardItems, clearCardList, cardIds, cardPos, cardEl, revealCard, decorateRail, railFocus, restoreRailFocus, rescoreWeights, deltaHTML, trendHTML } from './features/results.js';
@@ -43,7 +45,7 @@ export const S = {
 };
 // [feature K] seams for tour findings and the decision trail (features/tour-findings.js, features/decision-trail.js): HTML for a
 // drawer section, a pass over the scores after criteria are (re)applied, and extra fields in the picks backup
-export const hooks = { drawer: null, score: null, exportExtra: null, importExtra: null };
+export const hooks = { drawer: null, score: null, exportExtra: null, importExtra: null, card: null, drawerTop: null, score2: null };   // card/drawerTop/score2: features/moves.js and unknowns.js (rank moves, unknowns that move a score)
 export const on = (ev, fn) => ((S.listeners[ev] ||= []).push(fn));
 export const emit = (ev, x) => (S.listeners[ev] || []).forEach((f) => f(x));
 export const byId = (id) => S.listings.find((L) => L.id === id);
@@ -117,6 +119,7 @@ export function applyCriteria(profile, { quiet = false } = {}) {
     store.set(searchKey('criteria'), null);
   }
   hooks.score?.();   // [feature K] tour findings: promoted facts re-evaluated, contradictions flagged
+  hooks.score2?.();   // the renter's own numbers for a home's unknowns (features/unknowns.js)
   if (!allDests().some((d) => d.name === S.destName)) S.destName = allDests()[0]?.name || null;
   fitMode(!!profile && !quiet);
   store.set(searchKey('commute'), { mode: S.commuteMode, dest: S.destName });
@@ -325,7 +328,31 @@ function renderKPIs() {
   $('kpis').querySelectorAll('[data-open]').forEach((a) => a.addEventListener('click', (e) => { e.preventDefault(); openDrawer(e.currentTarget.dataset.open, { fly: true }); }));
   $('kpis').querySelector('[data-pv=edit]')?.addEventListener('click', openSettings);
   $('kpis').querySelector('[data-pv=reset]')?.addEventListener('click', () => applyCriteria(null));
+  syncStatsChip(F.length);
   emit('kpis');   // [features/visit.js] the strip was rebuilt: features that add to it re-attach
+  syncStatsRow();
+}
+// The stats subline is folded into one chip in the top bar ("289 matches ▾"); the chevron opens the full strip. The renter's
+// choice is remembered in this browser. The strip row stays in the page when it has something that must not hide behind a
+// closed chip: the "since your last visit" pill or the criteria-preview banner.
+export const statsOpen = () => store.get('stats-open', false) === true;
+function syncStatsChip(n) {
+  const b = $('kpiChip'); if (!b) return;
+  const open = statsOpen();
+  b.hidden = false; b.setAttribute('aria-expanded', String(open));
+  $('kpiChipN').textContent = String(n);
+  b.setAttribute('aria-label', `${n} homes match your filters. ${open ? 'Hide' : 'Show'} the search summary`);
+  b.title = open ? 'Hide the search summary' : 'Show the search summary: tracked, eligible, shortlisted, median rent and commute';
+}
+function syncStatsRow() {
+  const strip = $('kpis'); if (!strip) return;
+  const open = statsOpen(), hold = !!strip.querySelector('.visit-wrap, .pv-banner');
+  document.body.toggleAttribute('data-stats-open', open);
+  document.body.toggleAttribute('data-stats-row', open || hold);
+}
+export function setStatsOpen(open) {
+  store.set('stats-open', !!open);
+  syncStatsChip(filtered().length); syncStatsRow();
 }
 
 // ------------------------------------------------------------------ filter rail
@@ -435,47 +462,49 @@ export function setWeights(w, { settled = false } = {}) {
 }
 
 // ------------------------------------------------------------------ result cards
+/** The commute on a card: one chip for the lens (mode and destination), with every mode in its tooltip. With several destinations
+ *  the card shows a minute per destination instead (features/multidest.js). */
 function modesHTML(L) {
   const d = dest(); if (!d) return '';
+  const md = destLineHTML(L); if (md) return md;
   const m = modesOf(L, d);
-  if (m.best == null) return '<div class="c-modes"><span class="faint">Commute not computed</span></div>' + destLineHTML(L);
-  // the selected mode is outlined; the fastest is green
-  const chip = (k, icon, v, label) => `<span class="mode ${m.bestMode === k ? 'best' : ''} ${m.mode === k ? 'on' : ''} ${v == null ? 'na' : ''}" title="${label}: ${v == null ? 'not computed' : Math.round(v) + ' min door to door'}">${icon}<b>${v == null ? '—' : Math.round(v)}</b></span>`;
-  return `<div class="c-modes">${chip('walk', ICONS.walk, m.walk, 'Walk')}${chip('subway', ICONS.train, m.subway, 'Subway')}${chip('bus', ICONS.bus, m.bus, 'Bus')}<span class="line-bullets">${m.mode === 'walk' ? '' : m.legs ? legBadges(m.legs, 3) : bullets(m.route, 3)}</span><span class="to" title="minutes to ${esc(d.name)}">${allDests().length > 1 ? `min to ${esc(d.name)}` : 'min'}</span></div>` + destLineHTML(L);   // [multi-destination]
+  if (m.best == null) return '<div class="c-modes"><span class="faint">Commute not computed</span></div>';
+  const lens = m.mode !== 'best' && m.sel != null ? m.mode : m.bestMode;
+  const icon = { walk: ICONS.walk, subway: ICONS.train, bus: ICONS.bus }[lens] || ICONS.train, v = m[lens] ?? m.best;
+  const all = [['walk', 'Walk', m.walk], ['subway', 'Subway', m.subway], ['bus', 'Bus', m.bus]].map(([, n, x]) => `${n} ${x == null ? 'not computed' : Math.round(x) + ' min'}`).join(', ');
+  const tip = `${all}, door to door to ${d.name}`;
+  const lines = lens === 'walk' ? '' : m.legs ? legBadges(m.legs, 3) : bullets(m.route, 3);
+  return `<div class="c-modes"><span class="mode" title="${esc(tip)}" aria-label="${esc(tip)}">${icon}<b>${Math.round(v)}</b><span class="u">min</span></span>${lines ? `<span class="line-bullets">${lines}</span>` : ''}</div>`;
 }
 function mediaHTML(L, im) {
   const fx = cardMediaHTML(L, im); if (fx) return fx;   // features/media.js: ordered photo, blur-up preview, count by group
   if (im.own.length) return `<img src="${esc(mediaSrc(im.own[0]))}" alt="" loading="lazy" referrerpolicy="no-referrer"><span class="nph">${im.own.length} photo${im.own.length > 1 ? 's' : ''}</span>`;
   if (im.building.length) return `<img src="${esc(mediaSrc(im.building[0].url))}" alt="" loading="lazy" referrerpolicy="no-referrer"><span class="kind">Building</span>`;
-  if (L.lat != null) return `${aerialHTML(L, 136, 108, 18)}<span class="kind">Aerial</span>`;
+  if (L.lat != null) return `${aerialHTML(L, 136, 112, 18)}<span class="kind">Aerial</span>`;
   return `<div class="glyph">${unitGlyph(L)}</div>`;
 }
 export function cardHTML(L, i = 0) {
   const im = imagesOf(L);
-  const am = L.amenities || {}, t = tierIndex(L), saved = isSaved(L.id);
-  const b = [];
-  if (am.in_unit_wd) b.push('W/D');
-  if (am.doorman === 'full-time') b.push('Doorman');
-  if (am.gym) b.push('Gym');
-  if (L.floor) b.push(`Fl ${Math.round(L.floor)}${L.exposure?.length ? ' · ' + L.exposure.join('/') : ''}`);
-  const sun = L.site?.sun_hours, mi = new Date().getMonth();
-  const c = commuteOf(L), route = L.commute?.[dests()[0]]?.route;
-  const gate = (L.score?.gates || []).find((g) => g.startsWith('fails') || g === 'over_budget');
+  const t = tierIndex(L), saved = isSaved(L.id);
+  const mo = new Date().getMonth(), feats = destLineHTML(L) ? [] : pickFeatures(L, sharesFor(S.listings, mo), { n: 2, month: mo });
+  const warn = warnings(L, GATE_LABEL), note = hooks.card?.(L) ?? '', why = note ? '' : topReason(reasons(L));
   const my = pick(L.id).tier, inCmp = S.compare.includes(L.id), has = (k) => (S.manifest[k] || []).includes(L.id);
+  const gross = L.price?.gross && cost(L) && Math.abs(L.price.gross - cost(L)) > 5 ? L.price.gross : null;
+  const tier = L.score?.budget_tier ? esc(L.score.budget_tier) : '';
   return `<article class="card ${S.sel === L.id ? 'sel' : ''} ${inCmp ? 'cmp' : ''}" data-id="${esc(L.id)}" tabindex="0" aria-label="${esc(label(L))}, ${esc(money(cost(L)))} a month${score(L) != null ? ', score ' + Math.round(score(L)) : ''}" style="animation-delay:${Math.min(i, 12) * 22}ms">
     <div class="media">${mediaHTML(L, im)}
       ${L._rank ? `<span class="rank">#${L._rank}</span>${deltaHTML(L.id)}` : ''}
       <button type="button" class="save ${saved ? 'on' : ''}" data-save="${esc(L.id)}" aria-pressed="${saved}" aria-label="${saved ? 'Remove from picks' : 'Save to picks'}">${saved ? ICONS.star : ICONS.starO}</button></div>
     <div class="c-body">
-      <div class="c-top"><div style="min-width:0;flex:1"><div class="c-title">${esc(L.building || L.address)} <span>${esc(L.unit || '')}</span>${my ? ` <span class="pill accent">${esc(my)}</span>` : ''}</div>
-        <div class="c-sub"><span class="t">${esc(L.neighborhood || '')}${L.sqft ? ' · ' + Math.round(L.sqft) + ' ft²' : ''}${L.beds != null ? ' · ' + (L.beds ? L.beds + ' bd' : 'Studio') : ''}</span>${trendHTML(L)}</div></div>${ring(score(L))}</div>
-      <div class="c-price"><b>${money(cost(L))}</b><span class="per">/mo${L.score?.cost?.fees_estimate ? ' <abbr title="Includes estimated fees: no fee sheet yet">est.</abbr>' : ''}</span>${L.price?.gross && cost(L) && Math.abs(L.price.gross - cost(L)) > 5 ? `<span class="gross">${money(L.price.gross)} gross</span>` : ''}
-        ${L.score?.budget_tier ? `<span class="tierpill" style="color:var(${t >= 0 ? TIER_VARS[t] : '--tier-over'})"><i></i>${esc(L.score.budget_tier)}</span>` : ''}</div>
-      ${modesHTML(L)}
-      <div class="c-badges">${gate ? `<span class="bdg bad">${esc(GATE_LABEL(gate))}</span>` : ''}${(L.score?.tags || []).map((t) => `<span class="bdg warn">${esc(t)}</span>`).join('')}${sun ? `<span class="bdg sun" title="Modelled direct sun on the window this month">${ICONS.sun}${sun[mi].toFixed(1)} h</span>` : ''}${b.map((x) => `<span class="bdg">${esc(x)}</span>`).join('')}</div>
+      <div class="c-top"><div class="c-id"><div class="c-title">${esc(L.building || L.address)} <span>${esc(L.unit || '')}</span>${my ? ` <span class="pill accent">${esc(my)}</span>` : ''}</div>
+        <div class="c-sub"><span class="t">${esc([L.neighborhood, L.sqft ? Math.round(L.sqft) + ' ft²' : '', L.beds != null ? (L.beds ? L.beds + ' bd' : 'Studio') : ''].filter(Boolean).join(' · '))}</span></div></div>${ring(score(L))}</div>
+      <div class="c-price"><span class="pp"><b>${money(cost(L))}</b><span class="per">/mo${L.score?.cost?.fees_estimate ? ' <abbr title="Includes estimated fees: no fee sheet yet">est.</abbr>' : ''}</span>${trendHTML(L)}${gross ? `<span class="gross" title="The advertised rent before free months and fees">${money(gross)} gross</span>` : ''}</span>
+        ${tier ? `<span class="tierpill" style="color:var(${t >= 0 ? TIER_VARS[t] : '--tier-over'})"><i></i>${tier}</span>` : ''}</div>
+      <div class="c-chips">${modesHTML(L)}<div class="c-badges">${feats.map((f) => `<span class="bdg ${f.key}" title="${esc(f.title)}">${f.key === 'sun' ? ICONS.sun : ''}${esc(f.label)}</span>`).join('')}</div>${warn ? `<span class="c-warn ${warn.tone}" role="img" aria-label="${esc(warn.items.join('. '))}" title="${esc(warn.items.join('\n'))}">${ICONS.warn}</span>` : ''}</div>
+      <div class="c-line">${note || (why ? `<span class="c-why ${why.up ? 'up' : 'down'}" title="${esc(why.detail)}">${esc(why.text)} <b>${why.num}</b></span>` : '')}</div>
       <div class="c-acts" role="group" aria-label="Quick actions for ${esc(label(L))}">
         <button type="button" class="qa ${inCmp ? 'on' : ''}" data-cmp="${esc(L.id)}" aria-pressed="${inCmp}" title="${inCmp ? 'In Compare: click to remove' : 'Add to Compare'}" aria-label="${inCmp ? 'Remove from Compare' : 'Add to Compare'}">${inCmp ? ICONS.check : ICONS.plus}<span>${inCmp ? 'Comparing' : 'Compare'}</span></button>
-        ${has('sites') ? `<a class="qa" href="#unit/${esc(L.id)}" title="Unit 3D: the unit in its block, with the sun" aria-label="Open Unit 3D">${ICONS.cube}</a>` : ''}${has('plans') ? `<a class="qa" href="#plan/${esc(L.id)}" title="Floor plan" aria-label="Open the floor plan">${ICONS.plan}</a>` : ''}${has('dossiers') ? `<a class="qa" href="#research/records/${esc(L.id)}" title="Building records" aria-label="Open the building records">${ICONS.doc}</a>` : ''}</div>
+        ${has('sites') && has('plans') ? seeInsideLink(L.id, { cls: 'qa qa-in', icon: ICONS.inside, label: 'See inside', title: 'See inside: Unit 3D from the sofa, looking out of the windows' }) : has('sites') ? `<a class="qa" href="#unit/${esc(L.id)}" title="Unit 3D: the unit in its block, with the sun" aria-label="Open Unit 3D">${ICONS.cube}</a>` : ''}${has('plans') ? `<a class="qa" href="#plan/${esc(L.id)}" title="Floor plan" aria-label="Open the floor plan">${ICONS.plan}</a>` : ''}${has('dossiers') ? `<a class="qa" href="#research/records/${esc(L.id)}" title="Building records" aria-label="Open the building records">${ICONS.doc}</a>` : ''}</div>
     </div></article>`;
 }
 function buildingGroups(F) {
@@ -501,7 +530,8 @@ function syncCompareCards() {
 const unitsMoreHTML = (g) => (g.units.length > 1 ? `<div class="units-more">${g.units.slice(1, 3).map((u) => `<button type="button" class="unit-row" data-open="${esc(u.id)}"><span>${esc(u.unit || label(u))}</span><span class="faint">${u.sqft ? Math.round(u.sqft) + ' ft²' : ''}</span><b>${money(cost(u))}</b><span class="mini-score" style="color:${scoreColor(score(u))}">${Math.round(score(u) ?? 0)}</span></button>`).join('')}${g.units.length > 3 ? `<span class="faint more">+ ${g.units.length - 3} more units</span>` : ''}</div>` : '');
 export function renderCards() {
   const F = sorted(filtered()), el = $('cards');
-  $('listTitle').innerHTML = `${F.length} ${S.group === 'buildings' ? 'homes in ' + new Set(F.map((L) => L.building)).size + ' buildings' : 'homes'} <span>· ${S.sort === 'match' ? 'ranked by your weights' : 'sorted'}</span>`;
+  $('listTitle').innerHTML = `${F.length} ${S.group === 'buildings' ? 'homes in ' + new Set(F.map((L) => L.building)).size + ' buildings' : 'homes'} <span class="sr"> · ${S.sort === 'match' ? 'ranked by your weights' : 'sorted'}</span>`;
+  $('listTitle').title = S.sort === 'match' ? 'Ranked by your weights' : 'Sorted';
   if (!F.length) {
     clearCardList();
     el.innerHTML = cardsEmpty({ q: S.filters.q, savedOnly: S.filters.savedOnly, hasPicks: Object.values(S.picks).some((p) => p.saved) });   // [feature C] illustrated empty state
@@ -715,6 +745,7 @@ export function openDrawer(id, opt = {}) {
       <nav class="d-tabs" id="dTabs" aria-label="Sections"></nav></div>
 ${moneySection(L)}
 ${whySection(L)}
+    ${hooks.drawerTop?.(L) ?? ''}
     ${commuteSection(L, d)}
     ${destsDrawerHTML(L)}
     ${sun ? `<div class="d-sec" id="dLight" data-tab="Light"><h3>Direct sun on the window <span>floor ${esc(L.site.floor)}, facing ${Math.round(L.site.bearing)}°</span></h3><div class="sunbars">${sun.map((h, i) => `<div title="${h.toFixed(1)} h possible${L.site.sun_hours_expected?.[i] != null ? ` · ${(+L.site.sun_hours_expected[i]).toFixed(1)} h expected on a typical month` : ''}"><i style="height:${Math.max(3, (h / 9) * 100)}%"></i><span>${'JFMAMJJASOND'[i]}</span></div>`).join('')}</div><div class="faint" style="font-size:var(--fs-xs);margin-top:8px">Hours of possible (clear-sky) direct sun on the 15th${L.site.sun_year?.expected != null ? ` · a year: ${Number(L.site.sun_year.possible).toLocaleString()} h possible, about ${Number(L.site.sun_year.expected).toLocaleString()} h expected with typical cloud` : ''}</div><div class="faint" style="font-size:var(--fs-xs);margin-top:4px">Skyline straight ahead ${esc(L.site.skyline_ahead_deg)}° · ${L.site.open_sky_share != null ? Math.round(L.site.open_sky_share * 100) + '% open sky in view' : ''}${L.site.sky_view != null ? ` · sky view ${Math.round(L.site.sky_view * 100)}% (overcast sky)` : ''}${L.site.daylight_factor_est != null ? ` · estimated daylight factor ≈${esc(L.site.daylight_factor_est)}%, not measured` : ''}</div></div>` : ''}
@@ -727,7 +758,7 @@ ${whySection(L)}
     ${hooks.drawer?.(L) ?? ''}
     <p class="faint" style="font-size:var(--fs-xs);padding:0 20px 18px;margin:0">Last checked ${esc(L.checked || '?')} · <span class="mono">${esc(L.id)}</span>${links.length ? ' · ' + links.map(([k, u]) => `<a href="${esc(u)}" target="_blank" rel="noopener">${esc(k)}</a>`).join(' · ') : ''}</p>
     </div>
-    <div class="d-actions">${hasSite ? `<a class="btn primary" href="#unit/${esc(L.id)}">${ICONS.cube}Unit 3D</a>` : ''}${hasPlan ? `<a class="btn" href="#plan/${esc(L.id)}">${ICONS.plan}Plan</a>` : ''}${hasDos ? `<a class="btn" href="#research/records/${esc(L.id)}">${ICONS.doc}Records</a>` : ''}<button class="btn ${S.compare.includes(L.id) ? 'primary' : ''}" type="button" id="dCmp">${S.compare.includes(L.id) ? ICONS.check + 'Comparing' : ICONS.plus + 'Compare'}</button>${safeUrl(L.links?.listing) ? `<a class="btn" href="${esc(safeUrl(L.links.listing))}" target="_blank" rel="noopener">Listing ${ICONS.ext}</a>` : ''}</div>`;
+    <div class="d-actions">${hasSite && hasPlan ? seeInsideLink(L.id, { cls: 'btn primary', icon: ICONS.inside }) : ''}${hasSite ? `<a class="btn${hasPlan ? '' : ' primary'}" href="#unit/${esc(L.id)}">${ICONS.cube}Unit 3D</a>` : ''}${hasPlan ? `<a class="btn" href="#plan/${esc(L.id)}">${ICONS.plan}Plan</a>` : ''}${hasDos ? `<a class="btn" href="#research/records/${esc(L.id)}">${ICONS.doc}Records</a>` : ''}<button class="btn ${S.compare.includes(L.id) ? 'primary' : ''}" type="button" id="dCmp">${S.compare.includes(L.id) ? ICONS.check + 'Comparing' : ICONS.plus + 'Compare'}</button>${safeUrl(L.links?.listing) ? `<a class="btn" href="${esc(safeUrl(L.links.listing))}" target="_blank" rel="noopener">Listing ${ICONS.ext}</a>` : ''}</div>`;
   $('dCommute')?.querySelectorAll('[data-mode]').forEach((b) => b.addEventListener('click', () => { drawerMode = b.dataset.mode; const y = $('drawer').querySelector('.d-scroll').scrollTop; openDrawer(L.id); $('drawer').querySelector('.d-scroll').scrollTop = y; }));
   $('dClose').addEventListener('click', closeDrawer);
   dw.querySelector('.mt-x').addEventListener('click', closeDrawer);
@@ -767,7 +798,7 @@ export function closeDrawer() {
 // Views load on first visit, so one that fails to load (a missing or blocked script) never blanks the app.
 // Five tabs in the top bar (Home holds Unit 3D and Floor plan: #unit/<id> and #plan/<id> are unchanged); Tours lives under Shortlist (#list/tours) and Records under Research (#research/records/<id>).
 // The old #tours and #records/<id> links are rewritten to those by parseRoute() (shell.js).
-const VIEWS = { map: () => import('./map.js'), list: () => import('./list.js'), compare: () => import('./compare.js'), unit: () => import('./unit3d.js'),
+const VIEWS = { map: () => import('./map.js'), list: () => import('./list.js'), compare: () => import('./compare.js'), unit: () => import('./unit3d.js'), pair: () => import('./unit/pair3d.js'),
   plan: () => import('./plan3d.js').then((m) => (import('./plan/tracer-ui.js').then((t) => t.attach()).catch(() => {}), m)), tours: () => import('./tours.js'), research: () => import('./research.js') };
 const loaded = {};
 async function viewModule(v) {
@@ -855,6 +886,9 @@ async function boot() {
   fitMode(false);
   renderSearchSwitch();
   rescore(); initResults(); renderRail(); renderKPIs(); renderCards();
+  $('kpiChip')?.addEventListener('click', () => setStatsOpen(!statsOpen()));
+  wireSeeInside();
+  new MutationObserver(syncStatsRow).observe($('kpis'), { childList: true });   // the visit pill arrives and leaves on its own schedule
   on('filters', (o) => { renderKPIs(); renderCards(); if (!o?.quiet) renderRail(); });
   // weight sliders fire on every pixel: coalesce to one render per frame, and render the full card list once the drag settles
   let wRaf = 0, wTimer = 0;

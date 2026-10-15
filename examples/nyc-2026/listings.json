@@ -409,6 +409,11 @@
     ],
     "basis": "reported"
    },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false,
+    "pv": 35.0
+   },
    "cost": {
     "monthly": 5200.0,
     "monthly_range": [
@@ -1020,6 +1025,11 @@
     "source conflict"
    ],
    "ppsf": null,
+   "light_hint": {
+    "rest": 53.0,
+    "assumed": false,
+    "pv": 35.0
+   },
    "cost": {
     "monthly": 5037.5,
     "monthly_range": [
@@ -3448,6 +3458,11 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false,
+    "pv": 60.0
+   },
    "cost": {
     "monthly": 5073.64,
     "monthly_range": [
@@ -4192,6 +4207,11 @@
     ],
     "basis": "reported"
    },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false,
+    "pv": 90.0
+   },
    "cost": {
     "monthly": 5173.75,
     "monthly_range": [
@@ -4894,6 +4914,11 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 53.0,
+    "assumed": false,
+    "pv": 50.0
+   },
    "cost": {
     "monthly": 4796.67,
     "monthly_range": [
@@ -5453,6 +5478,11 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false,
+    "pv": 45.0
+   },
    "cost": {
     "monthly": 5050.0,
     "monthly_range": [
@@ -7341,6 +7371,11 @@
     ],
     "basis": "reported"
    },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false,
+    "pv": 65.0
+   },
    "cost": {
     "monthly": 4974.0,
     "monthly_range": [
@@ -8012,6 +8047,11 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 53.0,
+    "assumed": false,
+    "pv": 35.0
+   },
    "cost": {
     "monthly": 5200.0,
     "monthly_range": [
@@ -8505,6 +8545,11 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 53.0,
+    "assumed": false,
+    "pv": 60.0
+   },
    "cost": {
     "monthly": 5041.67,
     "monthly_range": [
@@ -10015,6 +10060,11 @@
      6.21
     ],
     "basis": "reported"
+   },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false,
+    "pv": 50.0
    },
    "cost": {
     "monthly": 4965.42,
@@ -15110,6 +15160,11 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false,
+    "pv": 50.0
+   },
    "cost": {
     "monthly": 5142.19,
     "monthly_range": [
@@ -15751,6 +15806,11 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false,
+    "pv": 90.0
+   },
    "cost": {
     "monthly": 5300.0,
     "monthly_range": [
@@ -16537,6 +16597,11 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false,
+    "pv": 100.0
+   },
    "cost": {
     "monthly": 5300.0,
     "monthly_range": [
@@ -23663,6 +23728,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5000.0,
     "monthly_range": [
@@ -24417,6 +24486,11 @@
      6.96
     ],
     "basis": "reported"
+   },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false,
+    "pv": 35.0
    },
    "cost": {
     "monthly": 5000.0,
@@ -26561,6 +26635,11 @@
      5.77
     ],
     "basis": "reported"
+   },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false,
+    "pv": 35.0
    },
    "cost": {
     "monthly": 5000.0,
@@ -30345,6 +30424,11 @@
     ],
     "basis": "reported"
    },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false,
+    "pv": 35.0
+   },
    "cost": {
     "monthly": 4995.0,
     "monthly_range": [
@@ -31601,6 +31685,11 @@
     "source conflict"
    ],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false,
+    "pv": 60.0
+   },
    "cost": {
     "monthly": 5184.69,
     "monthly_range": [
@@ -32239,6 +32328,11 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false,
+    "pv": 100.0
+   },
    "cost": {
     "monthly": 5039.06,
     "monthly_range": [
@@ -34409,6 +34503,11 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false,
+    "pv": 85.0
+   },
    "cost": {
     "monthly": 5175.0,
     "monthly_range": [
@@ -38765,6 +38864,11 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 55.0,
+    "assumed": false,
+    "pv": 60.0
+   },
    "cost": {
     "monthly": 4868.0,
     "monthly_range": [
@@ -40839,6 +40943,11 @@
      6.78
     ],
     "basis": "reported"
+   },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false,
+    "pv": 75.0
    },
    "cost": {
     "monthly": 4595.0,
@@ -43906,6 +44015,11 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false,
+    "pv": 35.0
+   },
    "cost": {
     "monthly": 4472.22,
     "monthly_range": [
@@ -45802,6 +45916,10 @@
     ],
     "basis": "reported"
    },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5334.0,
     "monthly_range": [
@@ -46360,6 +46478,10 @@
      6.76
     ],
     "basis": "reported"
+   },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
    },
    "cost": {
     "monthly": 5200.0,
@@ -46979,6 +47101,11 @@
      9.0
     ],
     "basis": "reported"
+   },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false,
+    "pv": 60.0
    },
    "cost": {
     "monthly": 5200.0,
@@ -48270,6 +48397,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 4800.0,
     "monthly_range": [
@@ -48738,6 +48869,11 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false,
+    "pv": 70.0
+   },
    "cost": {
     "monthly": 3995.0,
     "monthly_range": [
@@ -49302,6 +49438,11 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false,
+    "pv": 60.0
+   },
    "cost": {
     "monthly": 3779.0,
     "monthly_range": [
@@ -49791,6 +49932,11 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false,
+    "pv": 60.0
+   },
    "cost": {
     "monthly": 3695.0,
     "monthly_range": [
@@ -50374,6 +50520,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 3550.0,
     "monthly_range": [
@@ -50758,6 +50908,11 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false,
+    "pv": 35.0
+   },
    "cost": {
     "monthly": 5250.0,
     "monthly_range": [
@@ -51143,6 +51298,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5250.0,
     "monthly_range": [
@@ -51637,6 +51796,11 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false,
+    "pv": 75.0
+   },
    "cost": {
     "monthly": 3450.0,
     "monthly_range": [
@@ -52555,6 +52719,11 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false,
+    "pv": 75.0
+   },
    "cost": {
     "monthly": 3249.0,
     "monthly_range": [
@@ -53473,6 +53642,11 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false,
+    "pv": 75.0
+   },
    "cost": {
     "monthly": 3375.0,
     "monthly_range": [
@@ -54355,6 +54529,11 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false,
+    "pv": 75.0
+   },
    "cost": {
     "monthly": 3375.0,
     "monthly_range": [
@@ -55034,6 +55213,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 4300.0,
     "monthly_range": [
@@ -55515,6 +55698,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5250.0,
     "monthly_range": [
@@ -55959,6 +56146,10 @@
     "price unverified"
    ],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5000.0,
     "monthly_range": [
@@ -57261,6 +57452,10 @@
     ],
     "basis": "reported"
    },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5150.0,
     "monthly_range": [
@@ -58024,6 +58219,11 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false,
+    "pv": 45.0
+   },
    "cost": {
     "monthly": 5000.0,
     "monthly_range": [
@@ -59218,6 +59418,10 @@
     ],
     "basis": "reported"
    },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 4950.0,
     "monthly_range": [
@@ -60230,6 +60434,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5465.0,
     "monthly_range": [
@@ -60709,6 +60917,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5275.0,
     "monthly_range": [
@@ -62911,6 +63123,11 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 53.0,
+    "assumed": false,
+    "pv": 35.0
+   },
    "cost": {
     "monthly": 4486.11,
     "monthly_range": [
@@ -63453,6 +63670,11 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 53.0,
+    "assumed": false,
+    "pv": 75.0
+   },
    "cost": {
     "monthly": 4147.92,
     "monthly_range": [
@@ -64000,6 +64222,11 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 53.0,
+    "assumed": false,
+    "pv": 35.0
+   },
    "cost": {
     "monthly": 3857.14,
     "monthly_range": [
@@ -64553,6 +64780,11 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 53.0,
+    "assumed": false,
+    "pv": 35.0
+   },
    "cost": {
     "monthly": 3812.5,
     "monthly_range": [
@@ -65097,6 +65329,11 @@
      7.19
     ],
     "basis": "reported"
+   },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false,
+    "pv": 75.0
    },
    "cost": {
     "monthly": 5000.0,
@@ -65835,6 +66072,11 @@
      10.22
     ],
     "basis": "reported"
+   },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false,
+    "pv": 60.0
    },
    "cost": {
     "monthly": 5100.0,
@@ -66589,6 +66831,11 @@
      5.6
     ],
     "basis": "reported"
+   },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false,
+    "pv": 35.0
    },
    "cost": {
     "monthly": 3600.0,
@@ -67782,6 +68029,11 @@
      7.0
     ],
     "basis": "reported"
+   },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false,
+    "pv": 35.0
    },
    "cost": {
     "monthly": 5179.17,
@@ -69018,6 +69270,10 @@
      7.63
     ],
     "basis": "reported"
+   },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
    },
    "cost": {
     "monthly": 3600.0,
@@ -71052,6 +71308,10 @@
      5.74
     ],
     "basis": "reported"
+   },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
    },
    "cost": {
     "monthly": 4652.0,
@@ -73173,6 +73433,11 @@
      5.05
     ],
     "basis": "reported"
+   },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false,
+    "pv": 75.0
    },
    "cost": {
     "monthly": 4800.0,
@@ -84628,6 +84893,11 @@
     ],
     "basis": "reported"
    },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false,
+    "pv": 35.0
+   },
    "cost": {
     "monthly": 4800.0,
     "monthly_range": [
@@ -85361,6 +85631,11 @@
      6.75
     ],
     "basis": "reported"
+   },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false,
+    "pv": 75.0
    },
    "cost": {
     "monthly": 5000.0,
@@ -89867,6 +90142,10 @@
     "price unverified"
    ],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 4819.0,
     "monthly_range": [
@@ -90628,6 +90907,10 @@
     "price unverified"
    ],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 4773.0,
     "monthly_range": [
@@ -93956,6 +94239,11 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false,
+    "pv": 45.0
+   },
    "cost": {
     "monthly": 5100.0,
     "monthly_range": [
@@ -94760,6 +95048,11 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false,
+    "pv": 45.0
+   },
    "cost": {
     "monthly": 5200.0,
     "monthly_range": [
@@ -96174,6 +96467,10 @@
      5.77
     ],
     "basis": "reported"
+   },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
    },
    "cost": {
     "monthly": 4964.0,
@@ -102931,6 +103228,11 @@
     ],
     "basis": "reported"
    },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false,
+    "pv": 90.0
+   },
    "cost": {
     "monthly": 5250.0,
     "monthly_range": [
@@ -104111,6 +104413,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 4935.0,
     "monthly_range": [
@@ -114364,6 +114670,11 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false,
+    "pv": 20.0
+   },
    "cost": {
     "monthly": 5015.0,
     "monthly_range": [
@@ -116222,6 +116533,11 @@
     ],
     "basis": "reported"
    },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false,
+    "pv": 35.0
+   },
    "cost": {
     "monthly": 4954.0,
     "monthly_range": [
@@ -116982,6 +117298,10 @@
      6.97
     ],
     "basis": "reported"
+   },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
    },
    "cost": {
     "monthly": 5160.0,
@@ -118744,6 +119064,10 @@
     "price unverified"
    ],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 4695.0,
     "monthly_range": [
@@ -121352,6 +121676,10 @@
     "price unverified"
    ],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5557.0,
     "monthly_range": [
@@ -122059,6 +122387,10 @@
      7.37
     ],
     "basis": "reported"
+   },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
    },
    "cost": {
     "monthly": 5159.0,
@@ -122845,6 +123177,11 @@
     "price unverified"
    ],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false,
+    "pv": 85.0
+   },
    "cost": {
     "monthly": 4485.0,
     "monthly_range": [
@@ -123404,6 +123741,11 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false,
+    "pv": 50.0
+   },
    "cost": {
     "monthly": 4000.0,
     "monthly_range": [
@@ -123840,6 +124182,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 4950.0,
     "monthly_range": [
@@ -124247,6 +124593,11 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false,
+    "pv": 10.0
+   },
    "cost": {
     "monthly": 4500.0,
     "monthly_range": [
@@ -124654,6 +125005,11 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false,
+    "pv": 35.0
+   },
    "cost": {
     "monthly": 4800.0,
     "monthly_range": [
@@ -125231,6 +125587,11 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false,
+    "pv": 75.0
+   },
    "cost": {
     "monthly": 4850.0,
     "monthly_range": [
@@ -126142,6 +126503,11 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false,
+    "pv": 75.0
+   },
    "cost": {
     "monthly": 4700.0,
     "monthly_range": [
@@ -127059,6 +127425,11 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false,
+    "pv": 75.0
+   },
    "cost": {
     "monthly": 4599.0,
     "monthly_range": [
@@ -127886,6 +128257,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly_range": [
      null,
@@ -128546,6 +128921,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly_range": [
      null,
@@ -129206,6 +129585,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly_range": [
      null,
@@ -129866,6 +130249,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly_range": [
      null,
@@ -130526,6 +130913,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly_range": [
      null,
@@ -131175,6 +131566,10 @@
     "thin data"
    ],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly_range": [
      null,
@@ -131645,6 +132040,10 @@
     "thin data"
    ],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly_range": [
      null,
@@ -132171,6 +132570,10 @@
     "thin data"
    ],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly_range": [
      null,
@@ -132841,6 +133244,11 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false,
+    "pv": 25.0
+   },
    "cost": {
     "monthly_range": [
      null,
@@ -133530,6 +133938,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly_range": [
      null,
@@ -136998,6 +137410,10 @@
      7.4
     ],
     "basis": "reported"
+   },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
    },
    "cost": {
     "monthly": 4998.0,
@@ -142900,6 +143316,11 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false,
+    "pv": 35.0
+   },
    "cost": {
     "monthly": 3795.0,
     "monthly_range": [
@@ -144173,6 +144594,11 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false,
+    "pv": 10.0
+   },
    "cost": {
     "monthly": 3950.0,
     "monthly_range": [
@@ -144592,6 +145018,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 4300.0,
     "monthly_range": [
@@ -145398,6 +145828,11 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false,
+    "pv": 20.0
+   },
    "cost": {
     "monthly": 3700.0,
     "monthly_range": [
@@ -145821,6 +146256,11 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false,
+    "pv": 10.0
+   },
    "cost": {
     "monthly": 4050.0,
     "monthly_range": [
@@ -146229,6 +146669,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 3733.0,
     "monthly_range": [
@@ -147585,6 +148029,10 @@
     ],
     "basis": "reported"
    },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5040.0,
     "monthly_range": [
@@ -148823,6 +149271,11 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false,
+    "pv": 25.0
+   },
    "cost": {
     "monthly": 4195.0,
     "monthly_range": [
@@ -150811,6 +151264,11 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false,
+    "pv": 25.0
+   },
    "cost": {
     "monthly": 4382.0,
     "monthly_range": [
@@ -151764,6 +152222,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 3575.0,
     "monthly_range": [
@@ -153090,6 +153552,11 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false,
+    "pv": 10.0
+   },
    "cost": {
     "monthly": 4400.0,
     "monthly_range": [
@@ -156386,6 +156853,11 @@
     ],
     "basis": "reported"
    },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false,
+    "pv": 45.0
+   },
    "cost": {
     "monthly": 5125.0,
     "monthly_range": [
@@ -156940,6 +157412,10 @@
      8.12
     ],
     "basis": "reported"
+   },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
    },
    "cost": {
     "monthly": 4230.0,
@@ -157699,6 +158175,11 @@
     ],
     "basis": "reported"
    },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false,
+    "pv": 45.0
+   },
    "cost": {
     "monthly": 5100.0,
     "monthly_range": [
@@ -158348,6 +158829,11 @@
      12.85
     ],
     "basis": "reported"
+   },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false,
+    "pv": 20.0
    },
    "cost": {
     "monthly": 5140.0,
@@ -164386,6 +164872,10 @@
     ],
     "basis": "reported"
    },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5650.0,
     "monthly_range": [
@@ -170357,6 +170847,11 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false,
+    "pv": 75.0
+   },
    "cost": {
     "monthly": 5395.0,
     "monthly_range": [
@@ -181003,6 +181498,10 @@
     "price unverified"
    ],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5862.0,
     "monthly_range": [
@@ -181713,6 +182212,10 @@
     "price unverified"
    ],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5650.0,
     "monthly_range": [
@@ -190173,6 +190676,10 @@
     "price unverified"
    ],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5700.0,
     "monthly_range": [
@@ -192592,6 +193099,10 @@
     "price unverified"
    ],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5550.0,
     "monthly_range": [
@@ -205528,6 +206039,10 @@
     ],
     "basis": "reported"
    },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5328.0,
     "monthly_range": [
@@ -209513,6 +210028,11 @@
     ],
     "basis": "reported"
    },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false,
+    "pv": 100.0
+   },
    "cost": {
     "monthly": 5345.0,
     "monthly_range": [
@@ -212807,6 +213327,10 @@
     "price unverified"
    ],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5500.0,
     "monthly_range": [
@@ -213228,6 +213752,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5685.0,
     "monthly_range": [
@@ -217603,6 +218131,11 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false,
+    "pv": 45.0
+   },
    "cost": {
     "monthly": 5313.0,
     "monthly_range": [
@@ -226429,6 +226962,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5495.0,
     "monthly_range": [
@@ -226901,6 +227438,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5700.0,
     "monthly_range": [
@@ -227619,6 +228160,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5730.0,
     "monthly_range": [
@@ -231418,6 +231963,10 @@
     ],
     "basis": "reported"
    },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5420.0,
     "monthly_range": [
@@ -233865,6 +234414,10 @@
     "thin data"
    ],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5495.0,
     "monthly_range": [
@@ -234270,6 +234823,10 @@
     "price unverified"
    ],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5495.0,
     "monthly_range": [
@@ -236487,6 +237044,10 @@
     "price unverified"
    ],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5495.0,
     "monthly_range": [
@@ -238350,6 +238911,11 @@
      8.87
     ],
     "basis": "reported"
+   },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false,
+    "pv": 60.0
    },
    "cost": {
     "monthly": 5500.0,
@@ -242353,6 +242919,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 4650.0,
     "monthly_range": [
@@ -243097,6 +243667,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 4700.0,
     "monthly_range": [
@@ -243831,6 +244405,11 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false,
+    "pv": 100.0
+   },
    "cost": {
     "monthly": 4700.0,
     "monthly_range": [
@@ -244587,6 +245166,11 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false,
+    "pv": 100.0
+   },
    "cost": {
     "monthly": 4900.0,
     "monthly_range": [
@@ -245337,6 +245921,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 4900.0,
     "monthly_range": [
@@ -246018,6 +246606,10 @@
     "price unverified"
    ],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5645.0,
     "monthly_range": [
@@ -246535,6 +247127,11 @@
      6.19
     ],
     "basis": "reported"
+   },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false,
+    "pv": 75.0
    },
    "cost": {
     "monthly": 4950.0,
@@ -247107,6 +247704,10 @@
      6.56
     ],
     "basis": "reported"
+   },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
    },
    "cost": {
     "monthly": 5146.0,
@@ -249171,6 +249772,10 @@
     ],
     "basis": "reported"
    },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5385.0,
     "monthly_range": [
@@ -249667,6 +250272,11 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false,
+    "pv": 65.0
+   },
    "cost": {
     "monthly": 4000.0,
     "monthly_range": [
@@ -252536,6 +253146,10 @@
     ],
     "basis": "reported"
    },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5168.0,
     "monthly_range": [
@@ -253027,6 +253641,11 @@
      7.17
     ],
     "basis": "reported"
+   },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false,
+    "pv": 45.0
    },
    "cost": {
     "monthly": 5370.0,
@@ -254148,6 +254767,11 @@
     ],
     "basis": "reported"
    },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false,
+    "pv": 35.0
+   },
    "cost": {
     "monthly": 5300.0,
     "monthly_range": [
@@ -254746,6 +255370,11 @@
     ],
     "basis": "reported"
    },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false,
+    "pv": 60.0
+   },
    "cost": {
     "monthly": 5346.0,
     "monthly_range": [
@@ -255303,6 +255932,10 @@
      7.21
     ],
     "basis": "reported"
+   },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
    },
    "cost": {
     "monthly": 4865.0,
@@ -255997,6 +256630,10 @@
     ],
     "basis": "reported"
    },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 4875.0,
     "monthly_range": [
@@ -256689,6 +257326,10 @@
      7.25
     ],
     "basis": "reported"
+   },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
    },
    "cost": {
     "monthly": 4896.0,
@@ -257383,6 +258024,10 @@
     ],
     "basis": "reported"
    },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 4367.0,
     "monthly_range": [
@@ -258076,6 +258721,10 @@
     ],
     "basis": "reported"
    },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 4964.0,
     "monthly_range": [
@@ -258768,6 +259417,10 @@
      7.23
     ],
     "basis": "reported"
+   },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
    },
    "cost": {
     "monthly": 4883.0,
@@ -260078,6 +260731,10 @@
      6.59
     ],
     "basis": "reported"
+   },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
    },
    "cost": {
     "monthly": 4348.0,
@@ -261731,6 +262388,11 @@
     ],
     "basis": "reported"
    },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false,
+    "pv": 75.0
+   },
    "cost": {
     "monthly": 4035.0,
     "monthly_range": [
@@ -262472,6 +263134,10 @@
      7.41
     ],
     "basis": "reported"
+   },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
    },
    "cost": {
     "monthly": 4352.0,
@@ -263571,6 +264237,11 @@
     ],
     "basis": "reported"
    },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false,
+    "pv": 60.0
+   },
    "cost": {
     "monthly": 4641.0,
     "monthly_range": [
@@ -264324,6 +264995,10 @@
     ],
     "basis": "reported"
    },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 4260.0,
     "monthly_range": [
@@ -265016,6 +265691,10 @@
      7.64
     ],
     "basis": "reported"
+   },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
    },
    "cost": {
     "monthly": 4332.0,
@@ -266668,6 +267347,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5139.0,
     "monthly_range": [
@@ -267075,6 +267758,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly_range": [
      null,
@@ -268390,6 +269077,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5250.0,
     "monthly_range": [
@@ -270584,6 +271275,10 @@
     ],
     "basis": "reported"
    },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 4950.0,
     "monthly_range": [
@@ -272323,6 +273018,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly_range": [
      null,
@@ -273517,6 +274216,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 4964.0,
     "monthly_range": [
@@ -273943,6 +274646,10 @@
      5.62
     ],
     "basis": "reported"
+   },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
    },
    "cost": {
     "monthly": 4500.0,
@@ -274804,6 +275511,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5184.0,
     "monthly_range": [
@@ -275262,6 +275973,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly_range": [
      null,
@@ -276131,6 +276846,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5031.0,
     "monthly_range": [
@@ -276558,6 +277277,10 @@
     "thin data"
    ],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly_range": [
      null,
@@ -276981,6 +277704,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5000.0,
     "monthly_range": [
@@ -277395,6 +278122,10 @@
     "thin data"
    ],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly_range": [
      null,
@@ -277703,6 +278434,10 @@
     "thin data"
    ],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly_range": [
      null,
@@ -278076,6 +278811,10 @@
     "thin data"
    ],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly_range": [
      null,
@@ -278449,6 +279188,10 @@
     "thin data"
    ],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly_range": [
      null,
@@ -278816,6 +279559,10 @@
     "thin data"
    ],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly_range": [
      null,
@@ -279215,6 +279962,10 @@
     "thin data"
    ],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly_range": [
      null,
@@ -279555,6 +280306,10 @@
     "thin data"
    ],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly_range": [
      null,
@@ -279920,6 +280675,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5200.0,
     "monthly_range": [
@@ -280291,6 +281050,10 @@
     "thin data"
    ],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly_range": [
      null,
@@ -280641,6 +281404,10 @@
     "thin data"
    ],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly_range": [
      null,
@@ -280997,6 +281764,10 @@
     "thin data"
    ],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly_range": [
      null,
@@ -281353,6 +282124,10 @@
     "thin data"
    ],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly_range": [
      null,
@@ -281709,6 +282484,10 @@
     "thin data"
    ],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly_range": [
      null,
@@ -282114,6 +282893,10 @@
     "thin data"
    ],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly_range": [
      null,
@@ -283179,6 +283962,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5450.0,
     "monthly_range": [
@@ -283586,6 +284373,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5475.0,
     "monthly_range": [
@@ -284394,6 +285185,10 @@
      5.08
     ],
     "basis": "reported"
+   },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
    },
    "cost": {
     "monthly": 5350.0,
@@ -286652,6 +287447,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 4858.0,
     "monthly_range": [
@@ -287069,6 +287868,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5195.0,
     "monthly_range": [
@@ -287525,6 +288328,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5090.0,
     "monthly_range": [
@@ -287992,6 +288799,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 4900.0,
     "monthly_range": [
@@ -288350,6 +289161,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 4900.0,
     "monthly_range": [
@@ -288708,6 +289523,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5200.0,
     "monthly_range": [
@@ -295222,6 +296041,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5271.0,
     "monthly_range": [
@@ -295686,6 +296509,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5363.0,
     "monthly_range": [
@@ -297408,6 +298235,10 @@
     ],
     "basis": "reported"
    },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5200.0,
     "monthly_range": [
@@ -298287,6 +299118,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5120.0,
     "monthly_range": [
@@ -298778,6 +299613,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5090.0,
     "monthly_range": [
@@ -299269,6 +300108,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5050.0,
     "monthly_range": [
@@ -299760,6 +300603,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 4900.0,
     "monthly_range": [
@@ -300240,6 +301087,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5015.0,
     "monthly_range": [
@@ -300731,6 +301582,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 4990.0,
     "monthly_range": [
@@ -301211,6 +302066,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5000.0,
     "monthly_range": [
@@ -301691,6 +302550,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 4890.0,
     "monthly_range": [
@@ -302171,6 +303034,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5015.0,
     "monthly_range": [
@@ -302662,6 +303529,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 4970.0,
     "monthly_range": [
@@ -303142,6 +304013,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 4990.0,
     "monthly_range": [
@@ -303572,6 +304447,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 4750.0,
     "monthly_range": [
@@ -304033,6 +304912,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 4600.0,
     "monthly_range": [
@@ -304494,6 +305377,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 4900.0,
     "monthly_range": [
@@ -304955,6 +305842,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 4650.0,
     "monthly_range": [
@@ -305416,6 +306307,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 4800.0,
     "monthly_range": [
@@ -305877,6 +306772,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 4500.0,
     "monthly_range": [
@@ -306338,6 +307237,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5000.0,
     "monthly_range": [
@@ -306799,6 +307702,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 4900.0,
     "monthly_range": [
@@ -307260,6 +308167,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5000.0,
     "monthly_range": [
@@ -307721,6 +308632,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 4800.0,
     "monthly_range": [
@@ -308182,6 +309097,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 4700.0,
     "monthly_range": [
@@ -308655,6 +309574,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 4350.0,
     "monthly_range": [
@@ -309028,6 +309951,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5153.64,
     "monthly_range": [
@@ -309495,6 +310422,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5050.0,
     "monthly_range": [
@@ -310771,6 +311702,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5395.0,
     "monthly_range": [
@@ -311236,6 +312171,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5395.0,
     "monthly_range": [
@@ -311687,6 +312626,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5100.0,
     "monthly_range": [
@@ -312138,6 +313081,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 4995.0,
     "monthly_range": [
@@ -312578,6 +313525,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5200.0,
     "monthly_range": [
@@ -313035,6 +313986,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5420.0,
     "monthly_range": [
@@ -313494,6 +314449,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 4948.0,
     "monthly_range": [
@@ -314354,6 +315313,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5050.0,
     "monthly_range": [
@@ -314890,6 +315853,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 4995.0,
     "monthly_range": [
@@ -315415,6 +316382,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5100.0,
     "monthly_range": [
@@ -315962,6 +316933,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5246.0,
     "monthly_range": [
@@ -316453,6 +317428,10 @@
     ],
     "basis": "reported"
    },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 4900.0,
     "monthly_range": [
@@ -316912,6 +317891,10 @@
      5.76
     ],
     "basis": "reported"
+   },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
    },
    "cost": {
     "monthly": 4950.0,
@@ -317411,6 +318394,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5495.0,
     "monthly_range": [
@@ -317876,6 +318863,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5490.0,
     "monthly_range": [
@@ -318341,6 +319332,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5510.0,
     "monthly_range": [
@@ -318806,6 +319801,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5595.0,
     "monthly_range": [
@@ -319271,6 +320270,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5550.0,
     "monthly_range": [
@@ -319736,6 +320739,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5895.0,
     "monthly_range": [
@@ -320179,6 +321186,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5215.0,
     "monthly_range": [
@@ -320625,6 +321636,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 4615.0,
     "monthly_range": [
@@ -321068,6 +322083,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5300.0,
     "monthly_range": [
@@ -321525,6 +322544,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5660.0,
     "monthly_range": [
@@ -322030,6 +323053,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5690.0,
     "monthly_range": [
@@ -322535,6 +323562,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5940.0,
     "monthly_range": [
@@ -323010,6 +324041,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5565.0,
     "monthly_range": [
@@ -323472,6 +324507,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5700.0,
     "monthly_range": [
@@ -323898,6 +324937,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 6025.0,
     "monthly_range": [
@@ -324326,6 +325369,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5631.0,
     "monthly_range": [
@@ -324701,6 +325748,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5326.0,
     "monthly_range": [
@@ -325112,6 +326163,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5261.0,
     "monthly_range": [
@@ -325523,6 +326578,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5252.0,
     "monthly_range": [
@@ -326873,6 +327932,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 4995.0,
     "monthly_range": [
@@ -327350,6 +328413,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 4995.0,
     "monthly_range": [
@@ -327821,6 +328888,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 4995.0,
     "monthly_range": [
@@ -330080,6 +331151,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5300.0,
     "monthly_range": [
@@ -330620,6 +331695,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5300.0,
     "monthly_range": [
@@ -331535,6 +332614,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5279.0,
     "monthly_range": [
@@ -331972,6 +333055,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5350.0,
     "monthly_range": [
@@ -332490,6 +333577,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5395.0,
     "monthly_range": [
@@ -332902,6 +333993,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5395.0,
     "monthly_range": [
@@ -333354,6 +334449,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5395.0,
     "monthly_range": [
@@ -334228,6 +335327,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5375.0,
     "monthly_range": [
@@ -334675,6 +335778,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5395.0,
     "monthly_range": [
@@ -335124,6 +336231,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5310.0,
     "monthly_range": [
@@ -335563,6 +336674,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5727.0,
     "monthly_range": [
@@ -335981,6 +337096,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5900.0,
     "monthly_range": [
@@ -336454,6 +337573,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5700.0,
     "monthly_range": [
@@ -336972,6 +338095,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5285.0,
     "monthly_range": [
@@ -337417,6 +338544,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5400.0,
     "monthly_range": [
@@ -337956,6 +339087,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5885.0,
     "monthly_range": [
@@ -338424,6 +339559,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5900.0,
     "monthly_range": [
@@ -338993,6 +340132,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5500.0,
     "monthly_range": [
@@ -339492,6 +340635,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5895.0,
     "monthly_range": [
@@ -339944,6 +341091,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5995.0,
     "monthly_range": [
@@ -340758,6 +341909,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5895.0,
     "monthly_range": [
@@ -341170,6 +342325,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5546.0,
     "monthly_range": [
@@ -341582,6 +342741,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5544.0,
     "monthly_range": [
@@ -341988,6 +343151,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5768.0,
     "monthly_range": [
@@ -342475,6 +343642,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5375.0,
     "monthly_range": [
@@ -342910,6 +344081,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5450.0,
     "monthly_range": [
@@ -343448,6 +344623,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5550.0,
     "monthly_range": [
@@ -343985,6 +345164,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5600.0,
     "monthly_range": [
@@ -344522,6 +345705,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5450.0,
     "monthly_range": [
@@ -345059,6 +346246,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5500.0,
     "monthly_range": [
@@ -345596,6 +346787,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5600.0,
     "monthly_range": [
@@ -346133,6 +347328,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5700.0,
     "monthly_range": [
@@ -347393,6 +348592,10 @@
     ],
     "basis": "reported"
    },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5195.0,
     "monthly_range": [
@@ -347880,6 +349083,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5465.0,
     "monthly_range": [
@@ -348367,6 +349574,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5450.0,
     "monthly_range": [
@@ -348854,6 +350065,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5465.0,
     "monthly_range": [
@@ -349324,6 +350539,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5030.0,
     "monthly_range": [
@@ -349878,6 +351097,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5250.0,
     "monthly_range": [
@@ -350442,6 +351665,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 4995.0,
     "monthly_range": [
@@ -350985,6 +352212,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5195.0,
     "monthly_range": [
@@ -351478,6 +352709,10 @@
      7.93
     ],
     "basis": "reported"
+   },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
    },
    "cost": {
     "monthly": 5157.0,
@@ -351998,6 +353233,10 @@
     ],
     "basis": "reported"
    },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5500.0,
     "monthly_range": [
@@ -352496,6 +353735,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5980.0,
     "monthly_range": [
@@ -352959,6 +354202,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5505.0,
     "monthly_range": [
@@ -353446,6 +354693,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5745.0,
     "monthly_range": [
@@ -353933,6 +355184,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5670.0,
     "monthly_range": [
@@ -354403,6 +355658,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5325.0,
     "monthly_range": [
@@ -355474,6 +356733,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5385.0,
     "monthly_range": [
@@ -356029,6 +357292,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5395.0,
     "monthly_range": [
@@ -356548,6 +357815,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 4395.0,
     "monthly_range": [
@@ -356972,6 +358243,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 4495.0,
     "monthly_range": [
@@ -357396,6 +358671,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 4495.0,
     "monthly_range": [
@@ -357789,6 +359068,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 3825.0,
     "monthly_range": [
@@ -358297,6 +359580,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5000.0,
     "monthly_range": [
@@ -358670,6 +359957,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 4995.0,
     "monthly_range": [
@@ -359067,6 +360358,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5153.64,
     "monthly_range": [
@@ -359486,6 +360781,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5000.0,
     "monthly_range": [
@@ -359894,6 +361193,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5200.0,
     "monthly_range": [
@@ -360313,6 +361616,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5250.0,
     "monthly_range": [
@@ -360732,6 +362039,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 4950.0,
     "monthly_range": [
@@ -361141,6 +362452,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5146.0,
     "monthly_range": [
@@ -361602,6 +362917,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5100.0,
     "monthly_range": [
@@ -361956,6 +363275,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5142.0,
     "monthly_range": [
@@ -362414,6 +363737,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5165.0,
     "monthly_range": [
@@ -362872,6 +364199,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 4888.0,
     "monthly_range": [
@@ -363281,6 +364612,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 4496.0,
     "monthly_range": [
@@ -363675,6 +365010,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5175.0,
     "monthly_range": [
@@ -364092,6 +365431,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 4832.0,
     "monthly_range": [
@@ -364492,6 +365835,10 @@
     "thin data"
    ],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly_range": [
      null,
@@ -364839,6 +366186,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 4595.0,
     "monthly_range": [
@@ -365982,6 +367333,10 @@
     ],
     "basis": "reported"
    },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 4450.0,
     "monthly_range": [
@@ -366455,6 +367810,10 @@
     ],
     "basis": "reported"
    },
+   "light_hint": {
+    "rest": 53.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5650.0,
     "monthly_range": [
@@ -366901,6 +368260,10 @@
     ],
     "basis": "reported"
    },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5500.0,
     "monthly_range": [
@@ -367319,6 +368682,10 @@
      7.19
     ],
     "basis": "reported"
+   },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
    },
    "cost": {
     "monthly": 5750.0,
@@ -367778,6 +369145,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5257.0,
     "monthly_range": [
@@ -368166,6 +369537,10 @@
      7.03
     ],
     "basis": "reported"
+   },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
    },
    "cost": {
     "monthly": 5500.0,
@@ -368569,6 +369944,10 @@
      6.94
     ],
     "basis": "reported"
+   },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
    },
    "cost": {
     "monthly": 5000.0,
@@ -368990,6 +370369,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5475.0,
     "monthly_range": [
@@ -369465,6 +370848,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 4219.0,
     "monthly_range": [
@@ -370013,6 +371400,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 4148.0,
     "monthly_range": [
@@ -370555,6 +371946,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 4234.0,
     "monthly_range": [
@@ -371047,6 +372442,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5350.0,
     "monthly_range": [
@@ -371454,6 +372853,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5395.0,
     "monthly_range": [
@@ -371867,6 +373270,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5356.0,
     "monthly_range": [
@@ -372305,6 +373712,10 @@
      7.93
     ],
     "basis": "line_band_plan"
+   },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
    },
    "cost": {
     "monthly": 5395.0,
@@ -373570,6 +374981,10 @@
     ],
     "basis": "reported"
    },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 4000.0,
     "monthly_range": [
@@ -374118,6 +375533,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5400.0,
     "monthly_range": [
@@ -374529,6 +375948,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5995.0,
     "monthly_range": [
@@ -374991,6 +376414,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5442.0,
     "monthly_range": [
@@ -375451,6 +376878,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5700.0,
     "monthly_range": [
@@ -375837,6 +377268,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5495.0,
     "monthly_range": [
@@ -376273,6 +377708,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5995.0,
     "monthly_range": [
@@ -376709,6 +378148,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5695.0,
     "monthly_range": [
@@ -377114,6 +378557,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5495.0,
     "monthly_range": [
@@ -377558,6 +379005,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5495.0,
     "monthly_range": [
@@ -378002,6 +379453,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5695.0,
     "monthly_range": [
@@ -378446,6 +379901,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5750.0,
     "monthly_range": [
@@ -378890,6 +380349,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5995.0,
     "monthly_range": [
@@ -379334,6 +380797,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5850.0,
     "monthly_range": [
@@ -379770,6 +381237,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5750.0,
     "monthly_range": [
@@ -380192,6 +381663,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5573.0,
     "monthly_range": [
@@ -380613,6 +382088,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5809.0,
     "monthly_range": [
@@ -381034,6 +382513,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5878.0,
     "monthly_range": [
@@ -381439,6 +382922,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5719.0,
     "monthly_range": [
@@ -381898,6 +383385,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5534.0,
     "monthly_range": [
@@ -382303,6 +383794,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5625.0,
     "monthly_range": [
@@ -382733,6 +384228,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5495.0,
     "monthly_range": [
@@ -383140,6 +384639,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5795.0,
     "monthly_range": [
@@ -383547,6 +385050,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5615.0,
     "monthly_range": [
@@ -383954,6 +385461,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5500.0,
     "monthly_range": [
@@ -384361,6 +385872,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5895.0,
     "monthly_range": [
@@ -384768,6 +386283,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5995.0,
     "monthly_range": [
@@ -385175,6 +386694,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5795.0,
     "monthly_range": [
@@ -385582,6 +387105,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5695.0,
     "monthly_range": [
@@ -385989,6 +387516,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5795.0,
     "monthly_range": [
@@ -386396,6 +387927,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5995.0,
     "monthly_range": [
@@ -386870,6 +388405,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5500.0,
     "monthly_range": [
@@ -387609,6 +389148,10 @@
     ],
     "basis": "reported"
    },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5250.0,
     "monthly_range": [
@@ -387995,6 +389538,10 @@
      7.47
     ],
     "basis": "reported"
+   },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
    },
    "cost": {
     "monthly": 4950.0,
@@ -388458,6 +390005,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 4308.0,
     "monthly_range": [
@@ -388932,6 +390483,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 4525.0,
     "monthly_range": [
@@ -389406,6 +390961,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 4725.0,
     "monthly_range": [
@@ -389880,6 +391439,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5050.0,
     "monthly_range": [
@@ -390344,6 +391907,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5600.0,
     "monthly_range": [
@@ -390758,6 +392325,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5700.0,
     "monthly_range": [
@@ -391172,6 +392743,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5500.0,
     "monthly_range": [
@@ -391615,6 +393190,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5950.0,
     "monthly_range": [
@@ -392070,6 +393649,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5595.0,
     "monthly_range": [
@@ -392525,6 +394108,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5650.0,
     "monthly_range": [
@@ -393011,6 +394598,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5695.0,
     "monthly_range": [
@@ -393400,6 +394991,10 @@
      5.68
     ],
     "basis": "reported"
+   },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
    },
    "cost": {
     "monthly": 3695.0,
@@ -393824,6 +395419,10 @@
     ],
     "basis": "reported"
    },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 4900.0,
     "monthly_range": [
@@ -394190,6 +395789,10 @@
      8.04
     ],
     "basis": "reported"
+   },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
    },
    "cost": {
     "monthly": 5250.0,
@@ -394562,6 +396165,10 @@
      7.69
     ],
     "basis": "reported"
+   },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
    },
    "cost": {
     "monthly": 5000.0,
@@ -395410,6 +397017,10 @@
     ],
     "basis": "reported"
    },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 4500.0,
     "monthly_range": [
@@ -395800,6 +397411,10 @@
      7.83
     ],
     "basis": "reported"
+   },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
    },
    "cost": {
     "monthly": 4995.0,
@@ -396263,6 +397878,10 @@
     ],
     "basis": "reported"
    },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5395.0,
     "monthly_range": [
@@ -396618,6 +398237,10 @@
      7.09
     ],
     "basis": "reported"
+   },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
    },
    "cost": {
     "monthly": 4500.0,
@@ -397039,6 +398662,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 4700.0,
     "monthly_range": [
@@ -397418,6 +399045,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 3895.0,
     "monthly_range": [
@@ -398250,6 +399881,10 @@
     ],
     "basis": "reported"
    },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 6000.0,
     "monthly_range": [
@@ -398718,6 +400353,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5295.0,
     "monthly_range": [
@@ -399139,6 +400778,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5449.0,
     "monthly_range": [
@@ -399611,6 +401254,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5449.0,
     "monthly_range": [
@@ -400038,6 +401685,10 @@
     ],
     "basis": "reported"
    },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 3500.0,
     "monthly_range": [
@@ -400409,6 +402060,10 @@
      8.68
     ],
     "basis": "reported"
+   },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
    },
    "cost": {
     "monthly": 5157.0,
@@ -401288,6 +402943,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 6050.0,
     "monthly_range": [
@@ -401759,6 +403418,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5891.0,
     "monthly_range": [
@@ -402231,6 +403894,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5558.0,
     "monthly_range": [
@@ -402703,6 +404370,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5885.0,
     "monthly_range": [
@@ -403138,6 +404809,10 @@
     ],
     "basis": "reported"
    },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5409.0,
     "monthly_range": [
@@ -403540,6 +405215,10 @@
      8.42
     ],
     "basis": "reported"
+   },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
    },
    "cost": {
     "monthly": 5500.0,
@@ -404008,6 +405687,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
+   },
    "cost": {
     "monthly": 5995.0,
     "monthly_range": [
@@ -404440,6 +406123,10 @@
      8.86
     ],
     "basis": "reported"
+   },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
    },
    "cost": {
     "monthly": 5300.0,
@@ -404875,6 +406562,10 @@
      7.1
     ],
     "basis": "reported"
+   },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
    },
    "cost": {
     "monthly": 3900.0,
@@ -405867,13 +407558,13 @@
   },
   "score": {
    "version": "2.1",
-   "overall": 77.1,
+   "overall": 77.3,
    "parts": {
     "cost": 81.4,
     "space": 44.2,
     "commute": 100.0,
     "amenities": 73.3,
-    "light_view": 90.6,
+    "light_view": 91.8,
     "building": 93.7,
     "interior": 70.3,
     "quiet": 46.0,
@@ -405889,8 +407580,8 @@
    },
    "confidence": 100,
    "range": [
-    76.5,
-    77.7
+    76.6,
+    77.9
    ],
    "monthly_cost": 5032.0,
    "budget_tier": "Stretch",
@@ -405937,11 +407628,11 @@
     },
     {
      "dim": "light_view",
-     "pts": 6.1,
-     "text": "+6 light & view: 3D sun study: 6.2 h of direct sun a day on average, 3.2 h in Dec-Jan; unit photos: view 5/5 (open skyline with park canopy below (renter's photos from the unit)), light 5/5",
+     "pts": 6.3,
+     "text": "+6 light & view: 3D sun study: 6.4 h of direct sun a day on average, 3.3 h in Dec-Jan; unit photos: view 5/5 (open skyline with park canopy below (renter's photos from the unit)), light 5/5",
      "items": [
-      "annual mean 6.2 h x 11",
-      "winter 3.2 h x 4",
+      "annual mean 6.4 h x 11",
+      "winter 3.3 h x 4",
       "unit photos: view 5/5 (open skyline with park canopy below (renter's photos from the unit)), light 5/5"
      ]
     },
@@ -406388,77 +408079,77 @@
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
   },
-  "exposure_evidence": "Facades tested at floor 25 (eye 76 m, 90-degree view, straight sight lines over the site's walls; see the sightline block): NNE 28 (the 39th Street end): no mapped green in view and 43% of the frame blocked above 30 degrees, 633 3rd Avenue 129 m away. SSW 209: 67% of the frame blocked above 30 degrees by 240 East 38th Street (115 m, 48 m away), only a playground sliver at the left edge; this is also why the old SSW guess contradicts \"excellent open view\". WNW 299: no green (a lawn at the foot of the tower), 605 3rd Avenue (159 m) 74 m away on the right. ESE 119 (the long east side): the open side (mean obstruction 11 degrees, nothing above 30) and the only one with green in the frame: a lawn 213-322 m out, 31-39 degrees right of centre and 13-19 degrees below the horizon, Slifka Park and St. Vartan Park's playground at the right edge, St. Vartan Park itself at 62-65 degrees right. About 5,000 of the 6,100 m2 of green that the 25th floor can see anywhere around the tower lies at 135-195 degrees (south-east); the rest is a few small lawns within 140 m at 30-105 degrees, and nothing at all to the west or north-west. So a facade that shows the renter's canopy must be on the east or south side. The E-line plan's bedroom corner window wraps to the right of the living-room bay (panes at 119, 164 and 209 degrees), which puts the unit at the south end of the east side: the bedroom's angled pane looks over the lawns and parks, the bay's left edge meets Churchill Apartments (tan brick, 1967, 114 m) and, just past its right edge, 240 East 38th Street (2012, 115 m) stands 48 m away at 209 degrees. Confidence: likely. The facade and the park match the photos; facade material, terrain and unmapped trees are not in the data and the position along the facade is an assumption. Check with a compass at the window.",
+  "exposure_evidence": "Facades tested at floor 25 (eye 76 m, 90-degree view, straight sight lines over the site's walls; see the sightline block): NNE 28 (the 39th Street end): no mapped green in view and 39% of the frame blocked above 30 degrees, 633 3rd Avenue 129 m away. SSW 209: 62% of the frame blocked above 30 degrees by 240 East 38th Street (115 m, 48 m away), only a playground sliver at the left edge; this is also why the old SSW guess contradicts \"excellent open view\". WNW 299: no green (a lawn at the foot of the tower), 605 3rd Avenue (159 m) 74 m away on the right. ESE 119 (the long east side): the open side (mean obstruction 10 degrees, nothing above 30) and the only one with green in the frame: a lawn 213-322 m out, 31-39 degrees right of centre and 13-19 degrees below the horizon, Slifka Park and St. Vartan Park's playground at the right edge, St. Vartan Park itself at 62-65 degrees right. About 5,000 of the 6,100 m2 of green that the 25th floor can see anywhere around the tower lies at 135-195 degrees (south-east); the rest is a few small lawns within 140 m at 30-105 degrees, and nothing at all to the west or north-west. So a facade that shows the renter's canopy must be on the east or south side. The E-line plan's bedroom corner window wraps to the right of the living-room bay (panes at 119, 164 and 209 degrees), which puts the unit at the south end of the east side: the bedroom's angled pane looks over the lawns and parks, the bay's left edge meets Churchill Apartments (tan brick, 1967, 114 m) and, just past its right edge, 240 East 38th Street (2012, 115 m) stands 48 m away at 209 degrees. Confidence: likely. The facade and the park match the photos; facade material, terrain and unmapped trees are not in the data and the position along the facade is an assumption. Check with a compass at the window.",
   "window_t": 0.55,
   "site": {
    "file": "sites/paramount-tower-25e.json",
    "floor": 25,
    "bearing": 118.7,
    "sun_hours": [
-    3.4,
-    4.4,
-    6.5,
-    7.9,
+    3.5,
+    4.7,
+    7.2,
     8.0,
+    8.1,
     8.5,
-    8.6,
-    7.8,
-    7.3,
-    5.7,
-    3.3,
+    8.7,
+    7.9,
+    7.4,
+    6.0,
+    3.7,
     3.1
    ],
    "sun_hours_range": {
     "lo": [
-     3.1,
-     4.0,
-     5.7,
-     6.8,
+     3.3,
+     4.2,
+     5.9,
+     6.9,
      6.4,
      5.8,
      6.0,
-     6.8,
-     6.2,
-     5.1,
+     7.0,
+     6.3,
+     5.4,
      3.3,
      3.0
     ],
     "hi": [
-     3.9,
-     6.3,
-     8.1,
-     9.8,
-     9.6,
+     4.1,
+     6.7,
+     8.8,
+     9.9,
+     9.7,
      9.8,
      10.0,
      9.4,
-     9.4,
-     7.2,
-     4.3,
-     3.8
+     9.6,
+     7.6,
+     4.7,
+     3.9
     ]
    },
-   "skyline_ahead_deg": 9.8,
-   "open_sky_share": 0.858,
-   "sky_view": 0.658,
-   "daylight_factor_est": 1.61,
+   "skyline_ahead_deg": 8.6,
+   "open_sky_share": 0.869,
+   "sky_view": 0.672,
+   "daylight_factor_est": 1.64,
    "sun_year": {
-    "possible": 2269,
-    "expected": 1305
+    "possible": 2339,
+    "expected": 1344
    },
    "exposure_source": "photo-landmarks",
    "sun_hours_expected": [
-    1.84,
-    2.42,
-    3.7,
-    4.5,
+    1.89,
+    2.59,
+    4.1,
     4.56,
+    4.62,
     4.84,
-    5.07,
-    4.91,
-    4.31,
-    3.48,
-    1.68,
+    5.13,
+    4.98,
+    4.37,
+    3.66,
+    1.89,
     1.49
    ]
   },
@@ -406794,6 +408485,10 @@
      7.53
     ],
     "basis": "line_band_plan"
+   },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
    },
    "cost": {
     "monthly": 4895.0,
@@ -407487,6 +409182,10 @@
      8.08
     ],
     "basis": "line_band_plan"
+   },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
    },
    "cost": {
     "monthly": 5495.0,
@@ -408187,6 +409886,10 @@
      7.85
     ],
     "basis": "line_band_plan"
+   },
+   "light_hint": {
+    "rest": 45.0,
+    "assumed": false
    },
    "cost": {
     "monthly": 5495.0,
@@ -409593,6 +411296,10 @@
    ],
    "tags": [],
    "ppsf": null,
+   "light_hint": {
+    "rest": 41.0,
+    "assumed": false
+   },
    "cost": {
     "monthly_range": [
      null,

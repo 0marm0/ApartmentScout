@@ -342,3 +342,32 @@ table.mini.ps-shop small a { font-weight: 500; color: var(--ink-3); }
   .ps-mood button { flex: 1; }
   .ps-dims button { padding: 0 7px; }
 }
+
+/* the floating toolbar beside the selected piece (plan/selbar.js): the same in the 2D plan and the 3D view */
+.selbar { top: 0; left: 0; z-index: 7; display: flex; flex-direction: column; align-items: stretch; gap: 4px; padding: 5px; border-radius: var(--r-md); width: max-content; max-width: calc(100% - 16px); will-change: transform; touch-action: manipulation; }
+.selbar[hidden] { display: none; }
+.sb-name { font: 600 var(--fs-2xs) var(--font-sans); color: var(--ink-2); padding: 1px 6px 0; letter-spacing: .02em; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sb-name:empty { display: none; }
+.sb-row { display: flex; align-items: center; justify-content: center; gap: 2px; }
+.sb-sep { width: 1px; align-self: stretch; margin: 4px 3px; background: var(--line); }
+.sb-b { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-width: 44px; min-height: 44px; padding: 4px 6px; border: 0; border-radius: 9px; background: none; color: var(--ink-2); font: 500 var(--fs-2xs) var(--font-sans); cursor: pointer; transition: color var(--t-fast), background var(--t-fast); }
+.sb-b:hover, .sb-b:focus-visible { color: var(--ink); background: color-mix(in srgb, var(--ink) 8%, transparent); }
+.sb-b.on { color: var(--ink); background: var(--surface-3); box-shadow: var(--shadow-1); }
+.sb-b[data-act=del]:hover { color: var(--bad); }
+.sb-b svg .tk { stroke-width: 1.2; opacity: .7; }
+.sb-pop { padding: 6px 4px 3px; border-top: 1px solid var(--line); display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.sb-pop[hidden] { display: none; }
+.sb-dial { display: inline-flex; align-items: center; gap: 8px; font-size: var(--fs-2xs); color: var(--ink-3); }
+.sb-dial input { width: 150px; accent-color: var(--accent); }
+.sb-dial output { font: 600 var(--fs-xs) var(--font-mono); color: var(--ink); min-width: 3.2ch; text-align: right; }
+.sb-snaps, .sb-step { display: inline-flex; gap: 2px; }
+.sb-snaps button, .sb-step button { border: 0; background: color-mix(in srgb, var(--ink) 6%, transparent); color: var(--ink-2); height: 30px; min-width: 38px; padding: 0 8px; border-radius: 7px; font: 500 var(--fs-xs) var(--font-mono); cursor: pointer; }
+.sb-snaps button:hover, .sb-step button:hover { color: var(--ink); }
+.sb-step button.on { background: var(--surface-3); color: var(--ink); box-shadow: var(--shadow-1); }
+.sb-pad { display: grid; grid-template-areas: ". u ." "l . r" ". d ."; grid-template-columns: 40px 18px 40px; grid-template-rows: 36px 8px 36px; gap: 2px; justify-items: center; }
+.sb-pad button { width: 40px; height: 36px; border: 0; border-radius: 8px; background: color-mix(in srgb, var(--ink) 7%, transparent); color: var(--ink-2); font-size: 12px; cursor: pointer; }
+.sb-pad button:hover { color: var(--ink); background: var(--surface-3); }
+.sb-pad .u { grid-area: u; } .sb-pad .l { grid-area: l; } .sb-pad .r { grid-area: r; } .sb-pad .d { grid-area: d; }
+.ps-2d .selbar svg, .selbar svg { width: 16px; height: 16px; flex: none; }
+.iv-look.assumed { color: var(--ink-3); font-style: italic; }
+@media (max-width: 760px) { .sb-b span { display: none; } .sb-b { min-width: 44px; } .sb-dial input { width: 120px; } }

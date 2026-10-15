@@ -35,7 +35,9 @@ The tabs are Map, Shortlist, Compare, 3D and Research. **3D** holds Unit 3D and 
 between them (the same way Tours sits under Shortlist and Records under Research), and the 3D tab opens whichever you used last.
 The numbered rows above are the sections, not the shortcuts (`1` to `5` are the tabs). Views load on first visit; `#<view>/<listing-id>` opens a view on
 a listing (for example `#unit/emerald-green-1211` or `#plan/emerald-green-1211`: both routes are unchanged, and the switch under the
-bar keeps the same home when the other view has data for it).
+bar keeps the same home when the other view has data for it). With no listing in the address, Unit 3D, Floor plan and Records open the
+home the search names in `search.default_listing` (the bundled example: Paramount Tower 25E), unless you opened another home in this
+browser before ([data model](data-model.md#the-home-the-3d-views-open-searchdefault_listing)).
 
 ### The tabs
 
@@ -69,6 +71,16 @@ dropped.
 ### One room, one city: Unit 3D and the Floor plan
 
 Unit 3D's Inside and Window cameras and the Floor plan studio's eye-level views share one renderer for the room (bright white walls, a light oak floor, the same windows without a bar across them, ACES in Visual and a gentle curve in Fast, warm lamps at night) and one city (every building by id, the same sky, haze, trees, grass and water). A **What's measured vs assumed** chip over both says what the picture rests on. The studio's look panel shows the direct sun through the window you are looking out of and opens the same view in Unit 3D; Unit 3D's Inside look panel shows the studio's daylight map and blinds. Detail in [floor plans](floor-plans.md#one-room-one-city).
+
+### Questions for the leasing office
+
+The listing drawer has a **Questions for the leasing office** section, every building row of Shortlist > Buildings a small mail chip with
+the number of open questions, and the Records report a button beside Print. Each opens one side sheet with the open questions of the
+homes you are weighing in that building (the ones the data marks, plus everything you saved, tiered or put in Compare): a checkbox per
+question, "Why this is asked" for the evidence, the subject and message below, **Copy email**, and **Open in my email app**, a `mailto:` link
+with no recipient. **Mark answered** keeps a pasted reply as a dated note on the home, offers the values it seems to state, and copies them as
+an `updates.json` entry for `apartmentscout handoff import`. Nothing is sent from the page. Detail and the data file:
+[leasing-office questions](leasing-office-questions.md). Tests: `tests/e2e/test_office_questions.py`.
 
 ## Keyboard
 
@@ -119,6 +131,16 @@ Use **Back up picks** on the Tours view to keep them as a file, and **Restore** 
 browser.
 
 ## Map interactions
+
+**A calmer map.** Zoomed out, nearby homes merge into a bubble that counts homes and shows the lowest monthly cost inside
+("from $3,075"); click it to zoom in and watch it split. A building with two or more homes is one pin with its unit count
+and, from zoom 14, "6 units · from $4,995"; hover it for the best three, click it for the full list (a row opens that
+home's drawer, Esc closes the list). Your starred picks (gold) and the ten best-ranked homes, plus the one open in the
+drawer, keep a pin of their own at any zoom, never inside a bubble or a building pin; a building pin that shares a spot with
+one of them is drawn a few pixels aside. Everything follows the filters. Hovering a pin shows a card with photo, rank, price,
+score and key facts without opening the drawer; on a phone the first tap shows the card and the second tap (or its button)
+opens the drawer. The model lives in `dashboard/js/features/map-pins.js` (pure, tested in `tests/js/map-pins.test.mjs`), the
+cards in `features/map-preview.js`.
 
 **Route preview on hover.** Hover a result card, a map pin or price tag, or a Shortlist row and that home's commute
 route is drawn for the destination and mode you have selected (`L.commute[destination].modes[mode].legs`): walk legs
@@ -195,6 +217,30 @@ that keep snapshots, `apartmentscout history snapshot`). Price drops and rises c
 visit with the latest; a home that is now gone or rejected is never announced as new. *Mark as seen* moves the baseline to today.
 A reload in the same tab keeps the baseline; a first visit has none.
 
+### Why a home moved, and the unknowns that move its score
+
+Code: `features/moves.js` (screen) and `moves-model.js` (the arithmetic and the sentences), `unknowns.js` (screen), `facts-model.js`
+(re-scoring) and `facts-store.js` (storage), `drawer-slots.js`; Python mirror: `apartmentscout/rankhistory.py`, `renterfacts.py`.
+
+**Why it moved.** Every `apartmentscout score` records where each home stood (see *Rank history* in the [data model](data-model.md#history)).
+A result card whose rank moved at least ten places, and that is or was in the top quarter of the ranking, says so quietly: *↓40 since
+Oct 13*. The drawer's **Why it moved** section lists the dimensions behind it, biggest first, each with the overall points it moved and a
+plain sentence built from what was recorded: *size now estimated at ~562 ft² (no size listed)*, *two prices disagree: scoring the higher
+($5,038 a month) until you have a written quote*, *the unit's own photos now count: view 2/5 ...*, *the weights in your criteria changed
+(Space 25% → 15%, ...)*, *scoring 2.1 added interior*. The lines add up to the change in the score; the section also counts the homes that
+now rank above it and did not before. The rail's **Rank moves** section picks the run to compare with (default: your last visit, else the
+first run recorded), filters the list to the homes that moved, and the sort menu gains *Biggest rank moves*. With fewer than two recorded
+runs none of this appears. Moving a weight slider never makes a note appear: the notes compare two recorded runs.
+
+**Unknowns that move this score.** For a home the scorer had to estimate or guess, the drawer lists each unknown (size, monthly fees, a
+disputed or unverified price, a washer/dryer nobody confirmed, a floor read off the unit number) with the score range it spans under your
+weights and the ranks it could land in (for the Knox 6B: *Enter the size ... #15 to #68*). Type the real value and the line under the field
+shows the score and rank you would get; **Save** keeps it. The home re-ranks at once, the number is stored as yours (source: `renter`, with
+the day), the listing's own facts are untouched, and **Clear** puts the estimate back (an Undo sits in the toast). The numbers are kept in
+this browser (`localStorage`, key `facts:<search>`) and, when the page is served by `apartmentscout serve`, also in `renter_facts.json`
+in the search folder; `apartmentscout score` reads that file, so the next run bakes them in. They ride along in the picks backup. The
+bundled example is read-only, so its numbers stay in the browser.
+
 ### Decision tray
 
 A slim dock at the bottom of the stage with the Compare picks (up to four, lettered like the Compare columns): photo, price,
@@ -250,6 +296,42 @@ times); **Copy plan** puts the day on the clipboard as text. Walking uses the da
 4.8 km/h). The subway router does not run in the browser, so a transit hop is an **estimate**, labelled "est.": each home's
 walk to its station from its commute route, a 4 min wait and a straight-line ride at 25 km/h; the faster of walking and that is
 used unless you fix the mode on the hop.
+
+### Tour day (the phone)
+
+A full-screen mode for the day of the visits, built for a 375 px phone in one hand: 17 px type, every control at least 48 px tall,
+the main actions in a bar at the bottom. Open it from the **Tour day** button that appears on the main screen while a pick has a
+tour booked for today, from the command palette (*Tour day*), from the home-screen shortcut, or at `?tourday=1`. With no tour
+booked it lets you pick the homes you are visiting. The phone's back button steps back through its screens and never leaves the app.
+
+- **Route.** Today's tours in time order (or *Shortest walk*, booked homes first), each with its time, address, how far along the
+  checklist is, a **Directions** link (a Google or, on iPhone and iPad, an Apple Maps URL built from the address: no API key, and
+  nothing is sent until you tap it) and the walk or transit estimate to the next stop. Move a stop up or down, take it off, or add
+  another saved home.
+- **Checklist per home.** Light at the window (1 to 5) and which way it faces, noise with the windows shut and open, water pressure,
+  cell signal, washer/dryer in the unit, closets, then yes/no questions for the amenities your criteria want and the listing does not
+  state, and *Ask the leasing office* ticks for what the score is unsure about (unverified fees, lease term, price, a stale check).
+  Each question says why it matters (your weights, a must-have). A photo button, a note box.
+- **Noise check.** *Measure 10 s* asks for the microphone only when you tap it, reads the level in short blocks with the Web Audio
+  API (echo cancelling, noise suppression and gain control off), keeps one number and discards the audio. Nothing is recorded or
+  uploaded. The figure is labelled **approximate**: phone microphones are not calibrated (the dashboard adds a fixed offset that puts
+  a quiet room near 40 dB), so compare homes visited with the same phone and do not treat it as a meter.
+- **Where answers go.** Into the tour findings the visit sheet already uses, so they flow into the home's flags and score exactly as
+  there: light, facing, water, signal and closets fill their fields, the W/D answer becomes the *Matches / Differs* check (a
+  difference is flagged and never scored until you use it as a fact), and the louder of the two noise answers is the noise rating
+  and dB. What the findings schema has no field for (shut and open noise separately, the amenity yes/no answers, the questions
+  asked) is kept in this browser under `tourday:<search>` and written into the note after a `— Tour day answers —` marker, so it
+  travels with the findings; your own note text always comes first.
+- **Offline.** The installed app caches the mode (it is fetched ahead once there are tours today). Answers are saved in the browser at
+  once; when the page was served by `apartmentscout serve` and the API is unreachable they are queued ("N homes waiting to sync")
+  and sent when it is back, on the `online` event, every 15 s, or with *Sync now*. Photos taken offline stay in the browser and
+  go to the search folder with the next sync.
+- **After the tour.** *Finish this home* shows a summary card (the answers as labelled values, a flag where something differs from
+  the listing, photos, the note and what is still open) with the next stop and its directions. *Summaries* keeps one card per home
+  for comparing later, with *Copy*, and *Full visit notes* opens the visit sheet to promote a finding.
+
+Code: `features/tourday-entry.js` (the button, the URL, the palette), `tourday.js` (the screens), `tourday-model.js` (pure rules, with
+node tests in `tests/js/tourday.test.mjs`), `tourday-noise.js` (the microphone), `findings-store.js` (`resync()`, `pending()`).
 
 ### Tour findings and decision history
 
@@ -531,6 +613,7 @@ landmarks, custom presets) is carried over, but comments in the old file are not
 | `GET /api/tours`, `GET /api/tours/<id>` | Every saved visit, or one |
 | `POST /api/tours/<id>` | Validate and write `<search>/tours/<id>/findings.json` (`{"findings": {...}}`) |
 | `POST /api/tours/<id>/photos`, `POST /api/tours/<id>/photos/delete` | Add a photo (a raw image body) or delete one (`{"photo": "<id>"}`) |
+| `GET /api/facts`, `POST /api/facts/<id>` | Every number the renter typed for a home's unknowns, or replace one home's (`{"facts": {"size": 640}}`; empty removes) in `<search>/renter_facts.json` |
 
 The tour calls pass the same guards. On top of those: a listing id must be a plain slug (never a path) and its folder must resolve
 directly inside `<search>/tours/` and not be a symlink; a photo body is at most 12 MB, an image Pillow can decode within 60 megapixels

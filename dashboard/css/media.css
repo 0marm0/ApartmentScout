@@ -16,6 +16,8 @@
 /* ------------------------------------------------------------------ card photo count (a button: it opens the lightbox) */
 .media .nph { appearance: none; border: 0; font: inherit; font-size: var(--fs-2xs); line-height: 1.45; padding: 2px 7px; cursor: zoom-in; white-space: nowrap; max-width: calc(100% - 12px); overflow: hidden;
   text-overflow: ellipsis; background: var(--on-photo-bg); color: var(--on-photo); font-variant-numeric: tabular-nums; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+.media .nph { display: inline-flex; align-items: center; gap: 4px; }
+.media .nph svg { width: 12px; height: 12px; flex: none; }
 .media .nph b { font-weight: 650; }
 .media .nph .w { opacity: .86; }
 .media .nph:hover { background: color-mix(in srgb, var(--on-photo-bg) 70%, var(--accent)); }
