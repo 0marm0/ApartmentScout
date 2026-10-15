@@ -118,6 +118,18 @@ class Network:
     _areas: np.ndarray | None = field(default=None, repr=False)
     land: object | None = field(default=None, repr=False)  # land.Land: no walking across water when set
     _stop_land: np.ndarray | None = field(default=None, repr=False)
+    _foot_out: dict[int, list[tuple[int, int]]] | None = field(default=None, repr=False)
+
+    def foot_out(self) -> dict[int, list[tuple[int, int]]]:
+        """Footpaths by where they start: {stop: [(stop reached, seconds)]}. `foot` is keyed by where a walk ends (the reverse
+        scan relaxes backwards); a forward scan needs the other direction."""
+        if self._foot_out is None:
+            out: dict[int, list[tuple[int, int]]] = defaultdict(list)
+            for v, lst in self.foot.items():
+                for u, t in lst:
+                    out[u].append((v, t))
+            self._foot_out = dict(out)
+        return self._foot_out
 
     def set_land(self, land) -> None:
         self.land, self._stop_land = land, None
@@ -454,6 +466,82 @@ def reverse_scan(net: Network, dest_lat: float, dest_lon: float, arrive_by: int,
     return Profile(arrive_by, ld, ptr, mask)
 
 
+INF = 10**9
+
+
+@dataclass
+class FProfile:
+    """Earliest arrival at every stop's platform for a trip that leaves the destination at `depart_at` (the evening way home)."""
+
+    depart_at: int
+    ea: list[int]
+    mask: int = ALL_MODES
+    _np: np.ndarray | None = field(default=None, repr=False)
+
+    def ea_array(self) -> np.ndarray:
+        """Seconds after midnight, np.inf where the stop cannot be reached."""
+        if self._np is None:
+            a = np.asarray(self.ea, dtype=float)
+            a[a >= INF] = np.inf
+            self._np = a
+        return self._np
+
+
+def forward_scan(net: Network, dest_lat: float, dest_lon: float, depart_at: int,
+                 walk_speed_ms: float, detour: float, max_egress_m: float = 1200,
+                 transfer_buffer_s: int = 60, modes=None, egress_access: float = 0.0,
+                 ingress: dict[int, float] | None = None) -> FProfile:
+    """Earliest arrival at every stop for a trip that leaves (dest_lat, dest_lon) at `depart_at`, riding only `modes`.
+
+    The mirror of reverse_scan: a forward Connection Scan over the day's hops in departure order. The walk from the
+    destination to a stop costs the walk plus `egress_access` of the stop's street-to-vehicle time (the same allowance
+    reverse_scan charges at the destination end, so the morning and evening trips between two places are priced alike).
+    ingress: walking metres from the destination to each stop measured elsewhere (the street network); it replaces the
+    walker and the max_egress_m / landmass filters, as `egress` does in reverse_scan. A change of vehicle needs
+    `transfer_buffer_s` to spare, a boarding straight off the walk from the destination does not.
+    """
+    mask = mode_mask(modes)
+    n = len(net.stop_ids)
+    ok = [bool(m & mask) for m in net.stop_mask]
+    ea = [INF] * n
+    walked_from_dest = [False] * n
+    if ingress is not None:
+        near = [i for i in ingress if 0 <= i < n and ok[i]]
+        walked = [ingress[i] for i in near]
+    else:
+        near = [i for i in range(n) if ok[i] and haversine_m(net.lat[i], net.lon[i], dest_lat, dest_lon) <= max_egress_m]
+        if near:
+            near = [i for i, k in zip(near, net.same_land(dest_lat, dest_lon, np.asarray(near))) if k]
+        walked = net.walk_m(dest_lat, dest_lon, np.asarray(near)) if near else []
+    for i, m in zip(near, walked):
+        ea[i] = depart_at + int(m / net.walker.speed_ms + net.stop_access(i) * float(egress_access))
+        walked_from_dest[i] = True
+    foot = net.foot_out()
+
+    def relax_foot(x: int) -> None:
+        # one hop only, as in reverse_scan
+        ex = ea[x]
+        for w, t in foot.get(x, ()):
+            if ok[w] and ex + t < ea[w]:
+                ea[w] = ex + t
+                walked_from_dest[w] = False
+
+    for i in range(n):
+        if ea[i] < INF:
+            relax_foot(i)
+    boarded: set[int] = set()
+    for dep, arr, u, v, ti in reversed(net.conns_for(mask)):   # conns are stored latest departure first
+        if ti not in boarded:
+            eu = ea[u]
+            if eu < INF and eu + (0 if walked_from_dest[u] else transfer_buffer_s) <= dep:
+                boarded.add(ti)
+        if ti in boarded and arr < ea[v]:
+            ea[v] = arr
+            walked_from_dest[v] = False
+            relax_foot(v)
+    return FProfile(depart_at, ea, mask)
+
+
 class StopIndex:
     def __init__(self, net: Network, cell_m: float = 400):
         self.net = net
@@ -526,6 +614,19 @@ def best_from(prof: Profile, acc: Access, walk_s: float) -> tuple[float, int, fl
         if vals[k] > best_dep:
             best_dep, stop, a = float(vals[k]), int(acc.js[k]), float(acc.acc[k])
     return (prof.arrive_by - best_dep) / 60, stop, a
+
+
+def best_from_forward(prof: FProfile, acc: Access, walk_s: float) -> float:
+    """Minutes from leaving the destination to reaching a home, for the home's stops in `acc` (or walking all the way)."""
+    best = prof.depart_at + walk_s
+    if len(acc.js):
+        eav = prof.ea_array()[acc.js]
+        vals = np.where(np.isfinite(eav) & ((acc.mask & prof.mask) > 0), eav + acc.acc, np.inf)
+        k = int(np.argmin(vals))
+        if vals[k] < best:
+            best = float(vals[k])
+    return (best - prof.depart_at) / 60
+
 
 
 # ---------------------------------------------------------------- journeys: legs and route text

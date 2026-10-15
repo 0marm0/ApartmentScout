@@ -24,12 +24,13 @@ courtyard path), so its minutes are read off the same field as the map's.
 """
 from __future__ import annotations
 
+import copy
 import math
 from dataclasses import dataclass, field
 
 import numpy as np
 
-from .gtfs import NEG, Network, Profile
+from .gtfs import NEG, FProfile, Network, Profile
 from .walknet import CellStamp, WalkGraph
 
 
@@ -97,6 +98,43 @@ class NetField:
             if m <= self.limit_m:
                 out[j] = m
         return out
+
+    def rebind(self, net: Network | None) -> NetField:
+        """The same walking field (graph, destination distances, point cache) over another timetable window of the
+        same feeds: stop numbers are the same in every window, so the anchors of the plan still apply."""
+        c = copy.copy(self)
+        c.net = net
+        return c
+
+    def ingress(self) -> dict[int, float]:
+        """Walking metres from the destination to each stop's nearest entrance (within the limit): where a trip that
+        leaves the destination steps into a station."""
+        out = {}
+        for j, anchors in self.plan.enter.items():
+            m = min((self.anchor_cost(self.dest_cost, a) for a in anchors), default=math.inf)
+            if m <= self.limit_m:
+                out[j] = m
+        return out
+
+    def forward_cost(self, prof: FProfile) -> tuple[np.ndarray, np.ndarray]:
+        """`profile_cost` for a trip that leaves the destination: (seconds from leaving the destination x speed, winning
+        stop or -1 = walk) per node, a multi-source Dijkstra seeded at every stop's exits with (arrival at the platform
+        - departure + the stop's street-to-vehicle time)."""
+        net, g, sp = self.net, self.g, self.speed
+        seeds = []
+        if net is not None:
+            _, _, smask, sacc = net.arrays()
+            ea = prof.ea_array()
+            live = np.nonzero(np.isfinite(ea) & ((smask & prof.mask) > 0))[0]
+            for j in live.tolist():
+                c = (float(ea[j]) - prof.depart_at + float(sacc[j])) * sp
+                for a in self.plan.leave.get(j, ()):
+                    node = int(g.anchor_node[a])
+                    if node >= 0:
+                        seeds.append((node, c + float(g.anchor_snap_m[a]), j))
+        cost, src = g.dijkstra(seeds)
+        walk_better = self.dest_cost <= cost
+        return np.where(walk_better, self.dest_cost, cost), np.where(walk_better, -1, src)
 
     def profile_cost(self, prof: Profile) -> tuple[np.ndarray, np.ndarray]:
         """(cost in metres-equivalent: seconds before arrive_by x speed, winning stop or -1 = walk) per node."""
@@ -179,3 +217,24 @@ def net_surface(fld: NetField, profs: dict[str, list[Profile]], stamp: CellStamp
         out[k] = acc / len(ps)
     walks = {p: fld.point(fld.dest_cost, np.full(g.n, -1), *p)[0] for p in points}
     return out, walk_min, near, runs, walks
+
+
+def time_surface(fld: NetField, profs: dict[str, list], stamp: CellStamp, points: list[tuple[float, float]],
+                 forward: bool = False):
+    """Minutes per cell per mode set (mean over the profiles) and, for every point, {set: [minutes per profile]}, for a
+    window other than the one `net_surface` serves. forward=True takes FProfiles (leaving the destination), else Profiles
+    (arriving by a time). Walking is the same in every window, so it is not recomputed here."""
+    g, sp = fld.g, fld.speed
+    out: dict[str, np.ndarray] = {}
+    per_point: dict[tuple[float, float], dict[str, list[float]]] = {p: {} for p in points}
+    for k, ps in profs.items():
+        acc = None
+        for prof in ps:
+            cost, src = fld.forward_cost(prof) if forward else fld.profile_cost(prof)
+            cell = stamp.apply(g.sample_cost(cost)) / sp / 60
+            acc = cell if acc is None else acc + cell
+            for p in points:
+                c, _ = fld.point(cost, src, *p)
+                per_point[p].setdefault(k, []).append(c / sp / 60)
+        out[k] = acc / len(ps)
+    return out, per_point

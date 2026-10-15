@@ -193,7 +193,7 @@ def test_run_commute_writes_mode_grids(tmp_path, feeds):
                               {"name": "Bus", "path": str(feeds[1][1]), "mode": "bus",
                                "exclude_routes": ["^BxM"]}]}}}
     listings = [{"id": "a", "lat": HOME[0], "lon": HOME[1]}, {"id": "b", "lat": 40.7091, "lon": -74.0005}]
-    layers = run_commute(ws, listings, crit, cell_m=300, pad_m=300, log=lambda *_: None)
+    layers = run_commute(ws, listings, crit, cell_m=300, pad_m=300, log=lambda *_: None, times=False)   # times of day: test_commute_times.py
     assert len(layers) == 1 and layers[0]["mode"] == "transit"
     files = sorted(p.name for p in ws.layers_dir.glob("commute-*.json"))
     assert files == ["commute-office-bus.json", "commute-office-subway.json", "commute-office.json"]

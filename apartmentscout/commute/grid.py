@@ -15,7 +15,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from .gtfs import NEG, Network, Profile
+from .gtfs import NEG, FProfile, Network, Profile
 from .walk import R_EARTH, Walker
 
 
@@ -127,6 +127,75 @@ def surface(net: Network, profs: dict[str, list[Profile]], dest: tuple[float, fl
             sub = best[np.ix_(rows_, idx)]
             best[np.ix_(rows_, idx)] = np.maximum(sub, dep)
     mins = (arrive[:, None] - best) / 60.0
+    out: dict[str, np.ndarray] = {}
+    i = 0
+    for k in keys:
+        q = len(profs[k])
+        out[k] = mins[i:i + q].mean(axis=0).reshape(spec.rows, spec.cols)
+        i += q
+    return Surface(spec, out, nearest.reshape(spec.rows, spec.cols), (walk_s / 60).reshape(spec.rows, spec.cols))
+
+
+def surface_forward(net: Network, profs: dict[str, list[FProfile]], dest: tuple[float, float], spec: GridSpec,
+                    max_access_m: float, walker: Walker | None = None, cell_land: np.ndarray | None = None,
+                    stop_land: np.ndarray | None = None) -> Surface:
+    """`surface` for trips that leave the destination (the evening way home): minutes from the departure to reaching each
+    cell centre, for every mode set in `profs`, averaged over the departure times. Each stop stamps the same walking cone
+    onto the cells; a cell keeps the earliest arrival over all stamps and the walk from the destination."""
+    w = walker or net.walker
+    la, lo = spec.centres()
+    LA, LO = np.meshgrid(la, lo, indexing="ij")
+    flat_la, flat_lo = LA.ravel(), LO.ravel()
+    n = flat_la.size
+    cell_area = w.area(flat_la, flat_lo) if w.grids else None
+    walk_m = w.metres_many(dest[0], dest[1], flat_la, flat_lo, areas=cell_area)
+    walk_s = walk_m / w.speed_ms
+    keys = list(profs)
+    plist = [(k, p) for k in keys for p in profs[k]]
+    P = len(plist)
+    depart = np.array([p.depart_at for _, p in plist], dtype=float)
+    best = depart[:, None] + walk_s[None, :]  # earliest arrival at the cell; walking is always an option
+    nearest = np.full(n, np.inf)
+    if net is not None and P:
+        rlat, rlon, smask, sacc = net.arrays()
+        slat, slon = np.degrees(rlat), np.degrees(rlon)
+        EA = np.full((P, len(slat)), np.inf)
+        for i, (_, p) in enumerate(plist):
+            ea = p.ea_array()
+            ok = np.isfinite(ea) & ((smask & p.mask) > 0)
+            EA[i, ok] = ea[ok]
+        sarea = net.areas() if w.grids else None
+        dla = max_access_m / 110574 + spec.dlat
+        flat_land = cell_land.ravel() if cell_land is not None else None
+        for j in np.nonzero(smask > 0)[0]:
+            dlo = max_access_m / (111320 * math.cos(math.radians(slat[j]))) + spec.dlon
+            r0 = max(0, int((slat[j] - dla - spec.lat0) / spec.dlat))
+            r1 = min(spec.rows, int((slat[j] + dla - spec.lat0) / spec.dlat) + 1)
+            c0 = max(0, int((slon[j] - dlo - spec.lon0) / spec.dlon))
+            c1 = min(spec.cols, int((slon[j] + dlo - spec.lon0) / spec.dlon) + 1)
+            if r0 >= r1 or c0 >= c1:
+                continue
+            idx = (np.arange(r0, r1)[:, None] * spec.cols + np.arange(c0, c1)[None, :]).ravel()
+            d = _haversine(slat[j], slon[j], flat_la[idx], flat_lo[idx])
+            keep = d <= max_access_m
+            if flat_land is not None and stop_land is not None and stop_land[j] > 0:
+                cl = flat_land[idx]
+                keep &= (cl == 0) | (cl == stop_land[j])
+            idx = idx[keep]
+            if not idx.size:
+                continue
+            m = w.metres_many(slat[j], slon[j], flat_la[idx], flat_lo[idx],
+                              areas=None if cell_area is None else cell_area[idx],
+                              area=None if sarea is None else int(sarea[j]))
+            nearest[idx] = np.minimum(nearest[idx], m)
+            col = EA[:, j]
+            live = np.isfinite(col)
+            if not live.any():
+                continue
+            arr = col[live][:, None] + (m / w.speed_ms + sacc[j])[None, :]
+            rows_ = np.nonzero(live)[0]
+            best[np.ix_(rows_, idx)] = np.minimum(best[np.ix_(rows_, idx)], arr)
+    mins = (best - depart[:, None]) / 60.0
     out: dict[str, np.ndarray] = {}
     i = 0
     for k in keys:
