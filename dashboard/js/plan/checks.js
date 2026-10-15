@@ -17,6 +17,20 @@ export function toWorld(it, lx, ly) { const { r, b } = axes(it.rot); return [it.
 export function localRect(it, x0, y0, x1, y1) { return [toWorld(it, x0, y0), toWorld(it, x1, y0), toWorld(it, x1, y1), toWorld(it, x0, y1)]; }
 export function footprint(it) { return localRect(it, -it.w / 2, -it.d / 2, it.w / 2, it.d / 2); }
 export function rotRect(cx, cy, w, d, rot) { return footprint({ x: cx, y: cy, w, d, rot }); }
+/**
+ * The solid pieces a furniture item is made of, each with its own outline and height range: one box for most pieces, several for a model
+ * that is not a box (a bed with a tall headboard unit and floating nightstands: `it.parts` from plan/bedspec.js, in the item's frame).
+ * @returns {{id: string, kind: string, poly: number[][], z0: number, z1: number}[]}
+ */
+export function partPolys(it) {
+  if (!it.parts?.length) return [{ id: 'body', kind: it.kind, poly: footprint(it), z0: it.elev, z1: it.elev + it.h }];
+  return it.parts.map((p) => ({ id: p.id, kind: p.kind, poly: localRect(it, p.x0, p.y0, p.x1, p.y1), z0: it.elev + p.z0, z1: it.elev + p.z1 }));
+}
+/** The same outlines pulled in by `k` inches (the test for "sticks out past the rooms"). */
+function insetParts(it, k = 1) {
+  if (!it.parts?.length) return [footprint({ ...it, w: Math.max(1, it.w - 2 * k), d: Math.max(1, it.d - 2 * k) })];
+  return it.parts.map((p) => localRect(it, p.x0 + Math.min(k, (p.x1 - p.x0) / 2 - 0.05), p.y0 + Math.min(k, (p.y1 - p.y0) / 2 - 0.05), p.x1 - Math.min(k, (p.x1 - p.x0) / 2 - 0.05), p.y1 - Math.min(k, (p.y1 - p.y0) / 2 - 0.05)));
+}
 /** Rectangle around a wall piece; ends that close a corner extend by half the thickness. */
 export function piecePoly(p) {
   const dx = p.b[0] - p.a[0], dy = p.b[1] - p.a[1], L = Math.hypot(dx, dy) || 1, ux = dx / L, uy = dy / L, h = p.t / 2;
@@ -83,7 +97,7 @@ export function obstacles(model, items) {
   const out = [];
   for (const p of model.pieces) { const poly = piecePoly(p); out.push({ type: 'wall', kind: p.kind === 'sill' ? 'sill' : 'wall', poly, bb: bbox(poly), z0: p.z0, z1: p.z1, label: p.kind === 'sill' ? 'the window sill' : 'a wall', piece: p }); }
   for (const f of model.fixtures) out.push({ type: 'fixture', kind: f.kind, poly: f.poly, bb: bbox(f.poly), z0: f.elev, z1: f.elev + (f.height || model.ceiling), label: f.label || FIX_NAMES[f.kind] || f.kind, fixture: f });
-  for (const it of items) { if (it.hidden || it.flat) continue; const poly = footprint(it); out.push({ type: 'item', kind: it.kind, id: it.id, poly, bb: bbox(poly), z0: it.elev, z1: it.elev + it.h, label: it.name, item: it }); }
+  for (const it of items) { if (it.hidden || it.flat) continue; for (const p of partPolys(it)) out.push({ type: 'item', kind: it.kind, id: it.id, part: p.id, poly: p.poly, bb: bbox(p.poly), z0: p.z0, z1: p.z1, label: it.name, item: it }); }
   return out;
 }
 export const FIX_NAMES = { closet: 'Closet', wardrobe: 'Built-in wardrobe', column: 'Column', ac: 'AC unit', ptac: 'AC unit', radiator: 'Radiator', counter: 'Counter', island: 'Island', fridge: 'Fridge', range: 'Range', sink: 'Sink', dishwasher: 'Dishwasher', wd: 'Washer/dryer', tub: 'Tub', shower: 'Shower', toilet: 'Toilet', vanity: 'Vanity', other: 'Fixture' };
@@ -92,19 +106,20 @@ export const FIX_NAMES = { closet: 'Closet', wardrobe: 'Built-in wardrobe', colu
 const SIDE_DIR = { front: [0, -1], back: [0, 1], left: [-1, 0], right: [1, 0] };
 /** World polygon of a clearance zone and the face samples and direction used to measure it. */
 export function zoneGeom(it, z, depth = z.preferred) {
+  // `at` (the local coordinate of the face the zone starts from) and `along` (its extent along that face, [from, to]) let a model that is not a
+  // box say where its own sides are: the side drawers of a bed stand 30 in in from the ends of a 94 in headboard unit
   const hw = it.w / 2, hd = it.d / 2, W = z.width ? Math.min(z.width, z.side === 'left' || z.side === 'right' ? it.d : it.w) / 2 : null;
   const { r, b } = axes(it.rot); const [sx, sy] = SIDE_DIR[z.side]; const u = [sx * r[0] + sy * b[0], sx * r[1] + sy * b[1]];
-  let rect, face;
+  let rect, face, span;
   if (z.side === 'front' || z.side === 'back') {
-    const w = W ?? hw, y0 = sy < 0 ? -hd : hd;
-    rect = localRect(it, -w, y0, w, y0 + sy * depth);
-    face = (t) => toWorld(it, -w + 2 + (2 * w - 4) * t, y0);
+    const [a0, a1] = z.along || [-(W ?? hw), W ?? hw], y0 = z.at ?? (sy < 0 ? -hd : hd);
+    rect = localRect(it, a0, y0, a1, y0 + sy * depth);
+    face = (t) => toWorld(it, a0 + 2 + (a1 - a0 - 4) * t, y0); span = a1 - a0;
   } else {
-    const d = W ?? hd, x0 = sx < 0 ? -hw : hw;
-    rect = localRect(it, x0, -d, x0 + sx * depth, d);
-    face = (t) => toWorld(it, x0, -d + 2 + (2 * d - 4) * t);
+    const [a0, a1] = z.along || [-(W ?? hd), W ?? hd], x0 = z.at ?? (sx < 0 ? -hw : hw);
+    rect = localRect(it, x0, a0, x0 + sx * depth, a1);
+    face = (t) => toWorld(it, x0, a0 + 2 + (a1 - a0 - 4) * t); span = a1 - a0;
   }
-  const span = z.side === 'front' || z.side === 'back' ? 2 * (W ?? hw) : 2 * (W ?? hd);
   return { poly: rect, u, face, span };
 }
 function quantile(arr, q) { const s = [...arr].sort((a, b) => a - b); return s[Math.min(s.length - 1, Math.max(0, Math.floor(q * (s.length - 1) + 0.5)))]; }
@@ -204,25 +219,25 @@ const issue = (grade, code, text, extra = {}) => ({ grade, code, text, ...extra 
 export function itemIssues(model, it, obs) {
   const issues = [], zones = [];
   const add = (x) => { if (!issues.some((y) => y.text === x.text)) issues.push(x); };
-  const fp = footprint(it), z0 = it.elev, z1 = it.elev + it.h;
+  const z0 = it.elev, z1 = it.elev + it.h, parts = partPolys(it);   // [bed option] a model that is not a box checks each solid part at its own height
+  const hit = (poly, p, eps) => parts.some((q) => zHit(q.z0, q.z1, p.z0, p.z1) && overlaps(q.poly, poly, eps));
   // walls and sills
   let wallHit = null;
-  for (const o of obs) if (o.type === 'wall' && zHit(z0, z1, o.z0, o.z1) && overlaps(fp, o.poly, 0.75)) { wallHit = o; break; }
+  for (const o of obs) if (o.type === 'wall' && hit(o.poly, o, 0.75)) { wallHit = o; break; }
   if (wallHit) add(issue('blocked', 'wall', wallHit.kind === 'sill' ? 'Runs into the window wall' : 'Runs into a wall', { at: wallHit.poly }));
   // fixtures, then other furniture (height-aware: a wall TV above a low dresser is fine)
-  for (const o of obs) if (o.type === 'fixture' && zHit(z0, z1, o.z0, o.z1) && overlaps(fp, o.poly)) add(issue('blocked', 'fixture', `Overlaps the ${o.label.toLowerCase()}`, { at: o.poly }));
-  for (const o of obs) if (!it.flat && o.type === 'item' && o.id !== it.id && zHit(z0, z1, o.z0, o.z1) && overlaps(fp, o.poly)) add(issue('blocked', 'overlap', `Overlaps the ${o.label.toLowerCase()}`, { other: o.id, at: o.poly }));
+  for (const o of obs) if (o.type === 'fixture' && hit(o.poly, o, 0.5)) add(issue('blocked', 'fixture', `Overlaps the ${o.label.toLowerCase()}`, { at: o.poly }));
+  for (const o of obs) if (!it.flat && o.type === 'item' && o.id !== it.id && hit(o.poly, o, 0.5)) add(issue('blocked', 'overlap', `Overlaps the ${o.label.toLowerCase()}`, { other: o.id, at: o.poly }));
   // outside the rooms
-  const inset = footprint({ ...it, w: Math.max(1, it.w - 2), d: Math.max(1, it.d - 2) });
-  if (!wallHit && inset.some((p) => !nearRoom(model, p, model.wallT + 0.5))) add(issue('blocked', 'outside', 'Sticks out past the rooms on the plan'));
+  if (!wallHit && insetParts(it).some((poly) => poly.some((p) => !nearRoom(model, p, model.wallT + 0.5)))) add(issue('blocked', 'outside', 'Sticks out past the rooms on the plan'));
   // doors
   if (z0 < 80) for (const d of model.doorways) {
     const sw = swingPoly(d);
-    if (sw) { if (overlaps(fp, sw, 1)) add(it.flat ? issue('tight', 'door', `Under the swing of the ${doorName(d, model)}: a thick rug can catch the door`, { at: sw }) : issue('blocked', 'door', `In the swing of the ${doorName(d, model)}`, { at: sw })); }
-    else if (!it.flat && !['slide', 'pocket', 'none'].includes(d.swing) && overlaps(fp, doorwayPoly(d), 1)) add(issue('tight', 'doorway', `In front of a doorway (${doorName(d, model)})`, { at: doorwayPoly(d) }));
+    if (sw) { if (parts.some((q) => overlaps(q.poly, sw, 1))) add(it.flat ? issue('tight', 'door', `Under the swing of the ${doorName(d, model)}: a thick rug can catch the door`, { at: sw }) : issue('blocked', 'door', `In the swing of the ${doorName(d, model)}`, { at: sw })); }
+    else if (!it.flat && !['slide', 'pocket', 'none'].includes(d.swing) && parts.some((q) => overlaps(q.poly, doorwayPoly(d), 1))) add(issue('tight', 'doorway', `In front of a doorway (${doorName(d, model)})`, { at: doorwayPoly(d) }));
   }
   // keep-out zones
-  for (const k of model.keepout) if (!it.flat && z0 < 80 && overlaps(fp, k.poly, 1)) add(issue(k.grade, 'keepout', `In the keep-out zone: ${k.name}`, { at: k.poly }));
+  for (const k of model.keepout) if (!it.flat && z0 < 80 && parts.some((q) => overlaps(q.poly, k.poly, 1))) add(issue(k.grade, 'keepout', `In the keep-out zone: ${k.name}`, { at: k.poly }));
   // rules
   if (it.rules.includes('no-window-behind')) {
     const n = 9; let hit = false;
@@ -296,7 +311,7 @@ export function evaluate(model, items) {
     const pseudo = fixtureAsItem(f);
     const z = { side: 'front', name: `${f.label || FIX_NAMES[f.kind]} front`, min: Math.round(f.reserve * (f.kind === 'ac' || f.kind === 'ptac' ? 2 / 3 : 0.75)), preferred: f.reserve, mode: 'full' };
     const m = measureZone(pseudo, z, obs.filter((o) => o.type === 'item'), {});
-    const blockers = vis.filter((it) => overlaps(footprint(it), m.poly, 0.5) && it.elev < f.elev + f.height + 12).map((it) => it.id);
+    const blockers = vis.filter((it) => partPolys(it).some((q) => overlaps(q.poly, m.poly, 0.5) && q.z0 < f.elev + f.height + 12)).map((it) => it.id);
     fixtures.push({ fixture: f, ...m, blockers });
     if (m.grade !== 'clear') for (const id of blockers) add(id, issue(m.grade, 'fixture-zone', `In the ${f.reserve} in clearance in front of the ${(f.label || FIX_NAMES[f.kind]).toLowerCase()}${f.est ? ' (estimated)' : ''}`, { at: m.poly }));
   }

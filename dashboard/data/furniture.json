@@ -27,6 +27,135 @@
    "source": "Fit check; Room to live uses a 62 x 84 in frame; the TV study uses a 60 x 80 in mattress."
   },
   {
+   "id": "bed-latitude",
+   "ref": "queen-storage-bed-towers",
+   "label": "Latitude Run storage bed (Brown Oak)",
+   "room": "bedroom",
+   "w": 94,
+   "d": 83.3,
+   "h": 47.4,
+   "look": {
+    "color": "#8f7258",
+    "material": "wood",
+    "finish": "satin",
+    "basis": "manufacturer",
+    "parts": {
+     "panels": {
+      "color": "#ece3d0",
+      "material": "fabric",
+      "finish": "sheen"
+     },
+     "metal": {
+      "color": "#1b1b1d",
+      "material": "metal",
+      "finish": "satin"
+     }
+    },
+    "note": "Brown Oak: a warm mid-brown wood grain, with two cream velvet panels in the headboard and black metal for the reading lights, legs and casters, read from the maker's pictures. The shades are our reading of a product photo, not a colour sample."
+   },
+   "spec": {
+    "overall": {
+     "w": 94,
+     "d": 83.3,
+     "h": 47.4
+    },
+    "headboard": {
+     "depth": 3.9,
+     "tower_w": 16.7,
+     "tower_depth": 6.5,
+     "centre_gap": 12,
+     "band_h": 3,
+     "top_rail_h": 3,
+     "cubby_lid_h": 5.1,
+     "panel_pad": 1.2
+    },
+    "nightstand": {
+     "w": 16.7,
+     "d": 17,
+     "h": 8.3,
+     "bottom": 12,
+     "drawer_w": 11.3,
+     "drawer_d": 13.9,
+     "drawer_h": 3.4
+    },
+    "frame": {
+     "w": 60.5,
+     "rail_h": 13,
+     "clearance": 4.5,
+     "slat_inset": 2,
+     "centre_legs": 3,
+     "board_t": 0.25
+    },
+    "mattress": {
+     "w": 60,
+     "d": 80,
+     "h": 12
+    },
+    "drawers": {
+     "per_side": 2,
+     "front_l": 30.7,
+     "front_h": 11.8,
+     "basket_l": 25.4,
+     "basket_w": 17,
+     "basket_h": 4.7,
+     "pull": 17,
+     "caster_d": 2
+    }
+   },
+   "spec_basis": {
+    "overall.w": "spec",
+    "overall.d": "spec",
+    "overall.h": "spec",
+    "headboard.depth": "diagram",
+    "headboard.tower_w": "diagram",
+    "headboard.centre_gap": "diagram",
+    "headboard.tower_depth": "measured",
+    "headboard.band_h": "measured",
+    "headboard.top_rail_h": "measured",
+    "headboard.cubby_lid_h": "measured",
+    "headboard.panel_pad": "assumed",
+    "nightstand.w": "diagram",
+    "nightstand.d": "diagram",
+    "nightstand.h": "diagram",
+    "nightstand.drawer_w": "diagram",
+    "nightstand.drawer_d": "diagram",
+    "nightstand.drawer_h": "diagram",
+    "nightstand.bottom": "measured",
+    "frame.w": "diagram",
+    "frame.rail_h": "spec",
+    "frame.clearance": "spec",
+    "frame.centre_legs": "spec",
+    "frame.slat_inset": "assumed",
+    "frame.board_t": "assumed",
+    "mattress.w": "spec",
+    "mattress.d": "spec",
+    "mattress.h": "assumed",
+    "drawers.per_side": "spec",
+    "drawers.front_l": "diagram",
+    "drawers.front_h": "diagram",
+    "drawers.basket_l": "diagram",
+    "drawers.basket_w": "diagram",
+    "drawers.basket_h": "diagram",
+    "drawers.pull": "diagram",
+    "drawers.caster_d": "assumed"
+   },
+   "candidate": {
+    "name": "Modern Storage Platform Bed With Integrated Nightstands, Upholstered Headboard, LED Reading Lights & 4 Drawers",
+    "brand": "Latitude Run",
+    "retailer": "Wayfair",
+    "sku": "BHLT1182",
+    "size": "Queen",
+    "colour": "Brown Oak",
+    "url": "https://www.wayfair.com/furniture/pdp/latitude-run-modern-storage-platform-bed-with-integrated-nightstands-upholstered-headboard-led-reading-lights-4-drawers-bhlt1182.html",
+    "status": "candidate purchase, not owned",
+    "materials": "Solid and manufactured wood (oak), velvet upholstery, plug-in power; two built-in USB-C and USB charging ports and a reading light in each tower.",
+    "weight_capacity_lb": 1000,
+    "note": "Read by the renter from the product page's Specifications table and its dimension drawing; the page itself was not fetched by the studio. The drawing and the table differ by under 1 in on the frame (61.42 W x 83.46 L x 47.24 H in the table for the bed frame alone, 60.5 x 83.3 x 47.4 in on the drawing); the model uses the drawing's figures. The 13.8 in on the drawing is read as a depth along the nightstand's top, not as a height: the nightstand's underside at 12 in off the floor is measured off the drawing's proportions (about 1.5 in either way), and the 12 in mattress height is chosen inside the maker's 10 to 15 in. Prices are deliberately not recorded."
+   },
+   "note": "A bed the renter may buy, modelled to the maker's dimensions: a 94 in headboard unit with two 16.7 in towers (an open cubby with USB ports and a reading light each), a floating nightstand with one drawer on each tower, and a 60 x 80 in platform with four side drawers on casters. It comes with its own nightstands, so the separate ones are hidden while it is shown.",
+   "source": "manufacturer"
+  },
+  {
    "id": "nightstand-1",
    "ref": "nightstand",
    "label": "Nightstand",
@@ -258,9 +387,41 @@
    "source": "Fit check; Room to live."
   }
  ],
+ "options": {
+  "bed": {
+   "label": "Bed",
+   "default": "mine",
+   "choices": [
+    {
+     "id": "mine",
+     "label": "My bed",
+     "pieces": [
+      "bed",
+      "nightstand-1",
+      "nightstand-2"
+     ]
+    },
+    {
+     "id": "storage",
+     "label": "Latitude Run storage bed",
+     "pieces": [
+      "bed-latitude"
+     ]
+    },
+    {
+     "id": "none",
+     "label": "No bed",
+     "pieces": [
+      "nightstand-1",
+      "nightstand-2"
+     ]
+    }
+   ]
+  }
+ },
  "confirmed": {
   "by": "renter",
   "date": "2026-10-15",
-  "note": "The renter confirmed these are their own pieces, and on 2026-10-15 their colours and materials (each piece's `look`, where its basis is renter). A field listed in `assumed`, the TVs' casing and the chairs are stand-ins."
+  "note": "The renter confirmed these are their own pieces, and on 2026-10-15 their colours and materials (each piece's `look`, where its basis is renter). A field listed in `assumed`, the TVs' casing and the chairs are stand-ins. The Latitude Run storage bed is not one of the renter's pieces: it is a candidate purchase, modelled from the maker's dimensions."
  }
 }
