@@ -15,6 +15,7 @@ import { cleanStored } from './state-guard.js';
 import './features/comfort.js';
 import { initDestPin } from './features/dest-pin-style.js';   // [office pin] gold or classic destination marker   // [feature C] comfort + accent attributes on <html> apply at import, before first paint
 import { cardsEmpty } from './features/empty.js';   // [feature C]
+import { sharesFor, pickFeatures, topReason, warnings } from './features/card-model.js';   // what a card says: two telling features, one reason, one warning mark
 import { destLineHTML, drawerHTML as destsDrawerHTML } from './features/multidest.js';   // [multi-destination] minutes to every destination on cards and in the drawer
 // results list and filter rail features (chips, collapsible sections, windowed cards, rank motion, density, price history, worker scoring)
 import { initResults, setCardItems, clearCardList, cardIds, cardPos, cardEl, revealCard, decorateRail, railFocus, restoreRailFocus, rescoreWeights, deltaHTML, trendHTML } from './features/results.js';
@@ -461,44 +462,46 @@ export function setWeights(w, { settled = false } = {}) {
 }
 
 // ------------------------------------------------------------------ result cards
+/** The commute on a card: one chip for the lens (mode and destination), with every mode in its tooltip. With several destinations
+ *  the card shows a minute per destination instead (features/multidest.js). */
 function modesHTML(L) {
   const d = dest(); if (!d) return '';
+  const md = destLineHTML(L); if (md) return md;
   const m = modesOf(L, d);
-  if (m.best == null) return '<div class="c-modes"><span class="faint">Commute not computed</span></div>' + destLineHTML(L);
-  // the selected mode is outlined; the fastest is green
-  const chip = (k, icon, v, label) => `<span class="mode ${m.bestMode === k ? 'best' : ''} ${m.mode === k ? 'on' : ''} ${v == null ? 'na' : ''}" title="${label}: ${v == null ? 'not computed' : Math.round(v) + ' min door to door'}">${icon}<b>${v == null ? '—' : Math.round(v)}</b></span>`;
-  return `<div class="c-modes">${chip('walk', ICONS.walk, m.walk, 'Walk')}${chip('subway', ICONS.train, m.subway, 'Subway')}${chip('bus', ICONS.bus, m.bus, 'Bus')}<span class="line-bullets">${m.mode === 'walk' ? '' : m.legs ? legBadges(m.legs, 3) : bullets(m.route, 3)}</span><span class="to" title="minutes to ${esc(d.name)}">${allDests().length > 1 ? `min to ${esc(d.name)}` : 'min'}</span></div>` + destLineHTML(L);   // [multi-destination]
+  if (m.best == null) return '<div class="c-modes"><span class="faint">Commute not computed</span></div>';
+  const lens = m.mode !== 'best' && m.sel != null ? m.mode : m.bestMode;
+  const icon = { walk: ICONS.walk, subway: ICONS.train, bus: ICONS.bus }[lens] || ICONS.train, v = m[lens] ?? m.best;
+  const all = [['walk', 'Walk', m.walk], ['subway', 'Subway', m.subway], ['bus', 'Bus', m.bus]].map(([, n, x]) => `${n} ${x == null ? 'not computed' : Math.round(x) + ' min'}`).join(', ');
+  const tip = `${all}, door to door to ${d.name}`;
+  const lines = lens === 'walk' ? '' : m.legs ? legBadges(m.legs, 3) : bullets(m.route, 3);
+  return `<div class="c-modes"><span class="mode" title="${esc(tip)}" aria-label="${esc(tip)}">${icon}<b>${Math.round(v)}</b><span class="u">min</span></span>${lines ? `<span class="line-bullets">${lines}</span>` : ''}</div>`;
 }
 function mediaHTML(L, im) {
   const fx = cardMediaHTML(L, im); if (fx) return fx;   // features/media.js: ordered photo, blur-up preview, count by group
   if (im.own.length) return `<img src="${esc(mediaSrc(im.own[0]))}" alt="" loading="lazy" referrerpolicy="no-referrer"><span class="nph">${im.own.length} photo${im.own.length > 1 ? 's' : ''}</span>`;
   if (im.building.length) return `<img src="${esc(mediaSrc(im.building[0].url))}" alt="" loading="lazy" referrerpolicy="no-referrer"><span class="kind">Building</span>`;
-  if (L.lat != null) return `${aerialHTML(L, 136, 108, 18)}<span class="kind">Aerial</span>`;
+  if (L.lat != null) return `${aerialHTML(L, 136, 112, 18)}<span class="kind">Aerial</span>`;
   return `<div class="glyph">${unitGlyph(L)}</div>`;
 }
 export function cardHTML(L, i = 0) {
   const im = imagesOf(L);
-  const am = L.amenities || {}, t = tierIndex(L), saved = isSaved(L.id);
-  const b = [];
-  if (am.in_unit_wd) b.push('W/D');
-  if (am.doorman === 'full-time') b.push('Doorman');
-  if (am.gym) b.push('Gym');
-  if (L.floor) b.push(`Fl ${Math.round(L.floor)}${L.exposure?.length ? ' · ' + L.exposure.join('/') : ''}`);
-  const sun = L.site?.sun_hours, mi = new Date().getMonth();
-  const c = commuteOf(L), route = L.commute?.[dests()[0]]?.route;
-  const gate = (L.score?.gates || []).find((g) => g.startsWith('fails') || g === 'over_budget');
+  const t = tierIndex(L), saved = isSaved(L.id);
+  const mo = new Date().getMonth(), feats = destLineHTML(L) ? [] : pickFeatures(L, sharesFor(S.listings, mo), { n: 2, month: mo });
+  const warn = warnings(L, GATE_LABEL), note = hooks.card?.(L) ?? '', why = note ? '' : topReason(reasons(L));
   const my = pick(L.id).tier, inCmp = S.compare.includes(L.id), has = (k) => (S.manifest[k] || []).includes(L.id);
+  const gross = L.price?.gross && cost(L) && Math.abs(L.price.gross - cost(L)) > 5 ? L.price.gross : null;
+  const tier = L.score?.budget_tier ? esc(L.score.budget_tier) : '';
   return `<article class="card ${S.sel === L.id ? 'sel' : ''} ${inCmp ? 'cmp' : ''}" data-id="${esc(L.id)}" tabindex="0" aria-label="${esc(label(L))}, ${esc(money(cost(L)))} a month${score(L) != null ? ', score ' + Math.round(score(L)) : ''}" style="animation-delay:${Math.min(i, 12) * 22}ms">
     <div class="media">${mediaHTML(L, im)}
       ${L._rank ? `<span class="rank">#${L._rank}</span>${deltaHTML(L.id)}` : ''}
       <button type="button" class="save ${saved ? 'on' : ''}" data-save="${esc(L.id)}" aria-pressed="${saved}" aria-label="${saved ? 'Remove from picks' : 'Save to picks'}">${saved ? ICONS.star : ICONS.starO}</button></div>
     <div class="c-body">
-      <div class="c-top"><div style="min-width:0;flex:1"><div class="c-title">${esc(L.building || L.address)} <span>${esc(L.unit || '')}</span>${my ? ` <span class="pill accent">${esc(my)}</span>` : ''}</div>
-        <div class="c-sub"><span class="t">${esc(L.neighborhood || '')}${L.sqft ? ' · ' + Math.round(L.sqft) + ' ft²' : ''}${L.beds != null ? ' · ' + (L.beds ? L.beds + ' bd' : 'Studio') : ''}</span>${trendHTML(L)}${hooks.card?.(L) ?? ''}</div></div>${ring(score(L))}</div>
-      <div class="c-price"><b>${money(cost(L))}</b><span class="per">/mo${L.score?.cost?.fees_estimate ? ' <abbr title="Includes estimated fees: no fee sheet yet">est.</abbr>' : ''}</span>${L.price?.gross && cost(L) && Math.abs(L.price.gross - cost(L)) > 5 ? `<span class="gross">${money(L.price.gross)} gross</span>` : ''}
-        ${L.score?.budget_tier ? `<span class="tierpill" style="color:var(${t >= 0 ? TIER_VARS[t] : '--tier-over'})"><i></i>${esc(L.score.budget_tier)}</span>` : ''}</div>
-      ${modesHTML(L)}
-      <div class="c-badges">${gate ? `<span class="bdg bad">${esc(GATE_LABEL(gate))}</span>` : ''}${(L.score?.tags || []).map((t) => `<span class="bdg warn">${esc(t)}</span>`).join('')}${sun ? `<span class="bdg sun" title="Modelled direct sun on the window this month">${ICONS.sun}${sun[mi].toFixed(1)} h</span>` : ''}${b.map((x) => `<span class="bdg">${esc(x)}</span>`).join('')}</div>
+      <div class="c-top"><div class="c-id"><div class="c-title">${esc(L.building || L.address)} <span>${esc(L.unit || '')}</span>${my ? ` <span class="pill accent">${esc(my)}</span>` : ''}</div>
+        <div class="c-sub"><span class="t">${esc([L.neighborhood, L.sqft ? Math.round(L.sqft) + ' ft²' : '', L.beds != null ? (L.beds ? L.beds + ' bd' : 'Studio') : ''].filter(Boolean).join(' · '))}</span></div></div>${ring(score(L))}</div>
+      <div class="c-price"><span class="pp"><b>${money(cost(L))}</b><span class="per">/mo${L.score?.cost?.fees_estimate ? ' <abbr title="Includes estimated fees: no fee sheet yet">est.</abbr>' : ''}</span>${trendHTML(L)}${gross ? `<span class="gross" title="The advertised rent before free months and fees">${money(gross)} gross</span>` : ''}</span>
+        ${tier ? `<span class="tierpill" style="color:var(${t >= 0 ? TIER_VARS[t] : '--tier-over'})"><i></i>${tier}</span>` : ''}</div>
+      <div class="c-chips">${modesHTML(L)}<div class="c-badges">${feats.map((f) => `<span class="bdg ${f.key}" title="${esc(f.title)}">${f.key === 'sun' ? ICONS.sun : ''}${esc(f.label)}</span>`).join('')}</div>${warn ? `<span class="c-warn ${warn.tone}" role="img" aria-label="${esc(warn.items.join('. '))}" title="${esc(warn.items.join('\n'))}">${ICONS.warn}</span>` : ''}</div>
+      <div class="c-line">${note || (why ? `<span class="c-why ${why.up ? 'up' : 'down'}" title="${esc(why.detail)}">${esc(why.text)} <b>${why.num}</b></span>` : '')}</div>
       <div class="c-acts" role="group" aria-label="Quick actions for ${esc(label(L))}">
         <button type="button" class="qa ${inCmp ? 'on' : ''}" data-cmp="${esc(L.id)}" aria-pressed="${inCmp}" title="${inCmp ? 'In Compare: click to remove' : 'Add to Compare'}" aria-label="${inCmp ? 'Remove from Compare' : 'Add to Compare'}">${inCmp ? ICONS.check : ICONS.plus}<span>${inCmp ? 'Comparing' : 'Compare'}</span></button>
         ${has('sites') && has('plans') ? seeInsideLink(L.id, { cls: 'qa qa-in', icon: ICONS.inside, label: 'See inside', title: 'See inside: Unit 3D from the sofa, looking out of the windows' }) : has('sites') ? `<a class="qa" href="#unit/${esc(L.id)}" title="Unit 3D: the unit in its block, with the sun" aria-label="Open Unit 3D">${ICONS.cube}</a>` : ''}${has('plans') ? `<a class="qa" href="#plan/${esc(L.id)}" title="Floor plan" aria-label="Open the floor plan">${ICONS.plan}</a>` : ''}${has('dossiers') ? `<a class="qa" href="#research/records/${esc(L.id)}" title="Building records" aria-label="Open the building records">${ICONS.doc}</a>` : ''}</div>
@@ -527,7 +530,8 @@ function syncCompareCards() {
 const unitsMoreHTML = (g) => (g.units.length > 1 ? `<div class="units-more">${g.units.slice(1, 3).map((u) => `<button type="button" class="unit-row" data-open="${esc(u.id)}"><span>${esc(u.unit || label(u))}</span><span class="faint">${u.sqft ? Math.round(u.sqft) + ' ft²' : ''}</span><b>${money(cost(u))}</b><span class="mini-score" style="color:${scoreColor(score(u))}">${Math.round(score(u) ?? 0)}</span></button>`).join('')}${g.units.length > 3 ? `<span class="faint more">+ ${g.units.length - 3} more units</span>` : ''}</div>` : '');
 export function renderCards() {
   const F = sorted(filtered()), el = $('cards');
-  $('listTitle').innerHTML = `${F.length} ${S.group === 'buildings' ? 'homes in ' + new Set(F.map((L) => L.building)).size + ' buildings' : 'homes'} <span>· ${S.sort === 'match' ? 'ranked by your weights' : 'sorted'}</span>`;
+  $('listTitle').innerHTML = `${F.length} ${S.group === 'buildings' ? 'homes in ' + new Set(F.map((L) => L.building)).size + ' buildings' : 'homes'} <span class="sr"> · ${S.sort === 'match' ? 'ranked by your weights' : 'sorted'}</span>`;
+  $('listTitle').title = S.sort === 'match' ? 'Ranked by your weights' : 'Sorted';
   if (!F.length) {
     clearCardList();
     el.innerHTML = cardsEmpty({ q: S.filters.q, savedOnly: S.filters.savedOnly, hasPicks: Object.values(S.picks).some((p) => p.saved) });   // [feature C] illustrated empty state

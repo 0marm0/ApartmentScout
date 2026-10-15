@@ -52,3 +52,8 @@
   #view-plan .rnq-note { top: 140px; bottom: auto; right: 8px; }
   #view-plan .rnq-prog { bottom: 112px; }
 }
+
+@media (max-width: 760px) {
+  /* the measured-vs-assumed dots flow with the camera buttons and the room chips instead of being shifted up by the old bottom offset */
+  #view-unit #uViews > .acc-chip[data-host="unit"] { bottom: auto; top: auto; left: auto; }
+}

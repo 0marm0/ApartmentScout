@@ -37,7 +37,6 @@
    switcher under them), so none of them can land on another. Inside / Window view / Outside are the big labelled buttons. The
    compass sits left of the layer tools. */
 .u-views { position: absolute; z-index: 6; top: 12px; left: 12px; right: 108px; display: flex; flex-wrap: wrap; align-items: flex-start; gap: 8px; pointer-events: none; }
-.u-views::after { content: ""; order: 3; flex-basis: 100%; height: 0; margin-top: -8px; }   /* a line break: the room switcher takes the next row */
 #uViews > .acc-chip { order: 2; }
 #uViews > .u-look { order: 4; }
 #uViews > * { pointer-events: auto; position: relative; top: auto; left: auto; right: auto; bottom: auto; }
@@ -502,3 +501,48 @@
   .u-stage[data-mode="in"] .u-compass, .u-stage[data-mode="win"] .u-compass { display: none; }
 }
 @media (max-width: 460px) { .u-modes .um-x { display: none; } }
+
+/* ---- the lens panel: closed by default (a small icon at the corner), open for Lens, Turn and Tilt */
+.u-lens .ul-tog { display: inline-flex; align-items: center; gap: var(--s-2); align-self: flex-start; height: 28px; padding: 0 6px; border: 0; border-radius: var(--r-inner); background: none; color: var(--ink-2); font: 500 var(--fs-xs) var(--font-sans, inherit); cursor: pointer; white-space: nowrap; }
+.u-lens .ul-tog:hover { color: var(--ink); background: var(--surface-2); }
+.u-lens .ul-tog:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.u-lens .ul-tog svg { width: 16px; height: 16px; flex: none; }
+.u-lens:not(.open) .ul-tog span { display: none; }
+.u-lens:not(.open) .ul-tog { padding: 0; width: 28px; justify-content: center; }
+.u-lens:not(.open) { width: auto; padding: 3px; }
+.u-stage[data-mode="win"] .u-lens:not(.open) { padding: 8px; }
+.u-lens:not(.open) .field:has(#uFov), .u-lens:not(.open) .field:has(#uYaw), .u-lens:not(.open) .field:has(#uPitch) { display: none; }
+@media (max-width: 760px) { .u-lens .ul-tog { display: none; } .u-lens:not(.open) { padding: 8px 10px; } }
+@media (min-width: 761px) { .u-lens { right: 56px; } }   /* beside the layer tools, never over them */
+
+/* ------------------------------------------------------------------ the model first
+   One compact line above the model (the name, and two small folds for the facts and the other units); the model fills the width and
+   the height of the screen, with its inspector panels below it (the panels button puts them beside it again); the overlays are
+   slim controls at the edges. */
+.u-head { align-items: center; margin-bottom: var(--s-3); }
+.u-head .u-eyebrow { display: none; }
+.u-tline { display: flex; align-items: center; flex-wrap: wrap; gap: var(--s-2); }
+.u-head h1 { margin: 0; font-size: var(--fs-xl); line-height: 28px; }
+.u-fold { display: inline-flex; align-items: center; gap: 4px; height: 26px; padding: 0 8px 0 10px; border: 1px solid var(--line); border-radius: var(--r-pill); background: var(--surface-2); color: var(--ink-3); font: 500 var(--fs-xs) var(--font-sans, inherit); cursor: pointer; }
+.u-fold:hover { color: var(--ink); border-color: var(--line-strong); }
+.u-fold:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.u-fold svg { width: 12px; height: 12px; transition: transform var(--t-base) var(--ease-out); }
+.u-fold[aria-expanded="true"] { color: var(--ink); background: var(--accent-soft); border-color: var(--accent-line); }
+.u-fold[aria-expanded="true"] svg { transform: rotate(180deg); }
+.u-pad:has(#uUnits[hidden]) #uUnitsBtn { display: none; }
+#view-unit:not([data-facts]) .u-sub { display: none; }
+#view-unit:not([data-units]) #uUnits { display: none !important; }
+#view-unit .u-units { margin-bottom: var(--s-3); }
+.u-hud { flex-wrap: nowrap; overflow: hidden; }
+.u-hud span { white-space: nowrap; }
+.u-stage .u-hud .u-hud-x { display: none; }
+.u-stage:hover .u-hud .u-hud-x, .u-stage:focus-within .u-hud .u-hud-x { display: inline-block; }
+@media (min-width: 1181px) {
+  #view-unit[data-wide="1"] .u-grid { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto; height: auto; }
+  #view-unit[data-wide="1"] .u-side { overflow: visible; margin: 0; padding: 0; -webkit-mask-image: none; mask-image: none; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; }
+}
+@media (max-width: 760px) { #uFull, #uWide { display: none; } }
+.u-hud span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 1360px) { .u-links a[href^="#plan"] { display: none; } }   /* the camera buttons carry the Floor plan link */
+
+#view-unit .u-tools { max-height: calc(100% - 24px); overflow-y: auto; scrollbar-width: none; }

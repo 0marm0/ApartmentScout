@@ -161,6 +161,7 @@ export function init() {
             <canvas id="pgl" aria-label="3D model of the apartment"></canvas>
             <div class="float ps-cams" id="psCams" role="group" aria-label="Camera">${[['bird', 'Bird’s eye'], ['top', 'Top'], ['bed', 'From bed'], ['sofa', 'From sofa'], ['door', 'From door'], ['walk', 'Walk']].map(([k, t]) => `<button type="button" data-v="${k}">${t}</button>`).join('')}</div>
             <div class="float ps-walls" id="psWalls" role="group" aria-label="Walls">${[['cut', 'Cut'], ['full', 'Full'], ['outline', 'Outline']].map(([k, t]) => `<button type="button" data-w="${k}">${t}</button>`).join('')}</div>
+            <button type="button" class="float ps-full" id="psFull" title="Full screen" aria-label="Full screen" aria-pressed="false"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.5 2.5h4v4M6.5 13.5h-4v-4M13.5 2.5l-4.5 4.5M2.5 13.5L7 9"/></svg></button>
             <div class="float ps-look" id="psLook" role="toolbar" aria-label="Look out of the windows" hidden></div>
             <div class="hud" id="phud"></div>
             <div class="ps-hint" id="psHint"></div>
@@ -516,6 +517,8 @@ function bindChrome() {
   document.addEventListener('keyup', (e) => { held.delete(e.key.toLowerCase()); if (!e.shiftKey) held.delete('shift'); });
   window.addEventListener('blur', () => held.clear());
   $('psCams').addEventListener('click', (e) => { const b = e.target.closest('[data-v]'); if (b) camera(b.dataset.v); });
+  $('psFull').addEventListener('click', () => { const el = $('pstage'); if (document.fullscreenElement) document.exitFullscreen?.(); else el.requestFullscreen?.().catch(() => {}); });
+  document.addEventListener('fullscreenchange', () => $('psFull')?.setAttribute('aria-pressed', String(document.fullscreenElement === $('pstage'))));
   $('psWalls').addEventListener('click', (e) => { const b = e.target.closest('[data-w]'); if (b) setWall(b.dataset.w); });
   bindLookChips($('psLook'), { pick: lookAt, order: () => viewsNow().map((v) => v.key) });   // [interior]
   $('psLook').addEventListener('click', (e) => { if (e.target.closest('[data-act="unit-sun"]')) openInUnit(); });   // [room3d]
