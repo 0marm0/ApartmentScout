@@ -45,6 +45,7 @@ import { productFinder, withProduct } from './plan/shop.js';
 import { suggestLayout } from './plan/suggest.js';
 import { planEmpty, missingNotice } from './features/plan-empty.js';   // [feature C] empty state and missing-plan notice
 import { renderOptions } from './plan/options.js';
+import { mountDock } from './room3d/dock.js';   // [phone] the time slider within thumb reach
 import * as Q3 from './plan/quality3d.js';   // [feature J] render quality (Fast / Visual) and progressive export
 import * as LX from './plan/lighting-ui.js';   // [feature J] daylight grid, glass/surface inputs, luminaires, annual summary
 import { validateInventory, fitInventory, pieceItem, placedIds } from './plan/inventory.js';   // [furniture] the renter's own pieces
@@ -231,9 +232,9 @@ async function load(id) {
       }
     }
   }
-  if (!ready) { G3.init($('pgl'), $('pstage'), () => {}); P2.mount($('p2d'), { item: (i) => R.find((x) => x.id === i), select, move: dragTo, commit: () => commit() }); bind3D(); mountBars(); ready = true; LX.attach3D(); Q3.mount({ stage: $('pstage'), model: () => model, toast, store }); }
+  if (!ready) { G3.init($('pgl'), $('pstage'), () => {}); P2.mount($('p2d'), { item: (i) => R.find((x) => x.id === i), select, move: dragTo, commit: () => commit() }); bind3D(); mountBars(); ready = true; LX.attach3D(); Q3.mount({ stage: $('pstage'), model: () => model, toast, store }); mountDock($('pstage'), { min: 300, max: 1230, step: 5, get: () => st.min, set: (v) => { st.min = v; const t = $('pTime'); if (t) t.value = String(v); refreshSun(); }, text: () => fmtT(st.min), playing: () => !!st.playing, toggle: () => $('pPlay')?.click() }); }   // [phone]
   G3.setModel(model); G3.setWallMode(st.wall);
-  P2.setModel(model); LX.reattach2D(); Q3.modelChanged();   // [feature J]
+  P2.setModel(model); LX.reattach2D(); Q3.modelChanged(); if (st.mode !== '2d') Q3.opened();   // [feature J] [quality]
   st.city = !!store.get(`plan-city.${S.base}`, false); applyCity();
   // furniture: the saved layout for this plan, else the first preset
   const saved = projectLibrary[id]?.layout || store.get(key(id), null), v = saved && validateLayout(saved, { planId: id });
@@ -513,7 +514,7 @@ function setMode(m) {
   st.mode = m; $('psPanes').dataset.mode = m;
   $('psMode').querySelectorAll('[data-m]').forEach((b) => b.classList.toggle('on', b.dataset.m === m));
   const reframe = () => { G3.resize(); if (model && G3.viewMode() === 'orbit') G3.setView(st.view === 'top' ? 'top' : 'bird'); G3.markDirty(); };
-  if (ready) { reframe(); requestAnimationFrame(reframe); }
+  if (ready) { reframe(); requestAnimationFrame(reframe); if (m !== '2d') Q3.opened(); }   // [quality] the 3D pane is showing: time its first frames
 }
 function setWall(w, quiet) {
   st.wall = w; $('psWalls').querySelectorAll('[data-w]').forEach((b) => b.classList.toggle('on', b.dataset.w === w));
@@ -1064,5 +1065,6 @@ function frame() {
     const fwd = (h('w') || h('arrowup') ? v : 0) - (h('s') || h('arrowdown') ? v : 0), turn = ((h('d') || h('arrowright') ? 1 : 0) - (h('a') || h('arrowleft') ? 1 : 0)) * 1.6 * dt, side = ((h('e') ? 1 : 0) - (h('q') ? 1 : 0)) * v;
     if (fwd || turn || side) G3.walk(fwd, turn, side);
   }
-  G3.render();
+  const t0 = performance.now(), drew = G3.render();
+  if (st.mode !== '2d') Q3.pulse(t0, drew, performance.now() - t0);   // [quality] the step-down times the frames that are really drawn
 }

@@ -17,7 +17,7 @@ import * as I3 from './interior3d.js';   // [interior] reveals, sills, casings, 
 import * as SKY from './sky3d.js';   // [interior] the sky and haze behind the city in eye-level views
 import * as F3 from './furniture3d.js';   // [interior] low-poly furniture models
 import * as R3F from '../room3d/furniture.js';   // [room3d] the shared, refined furniture models (tried first)
-import { roomQuality, onRoomQuality } from '../room3d/quality.js';
+import { roomQuality, onRoomQuality, furnitureQuality, quality } from '../room3d/quality.js';
 import { ROOM_HEX } from '../room3d/palette.js';   // [room3d] one paint and floor for both engines
 import { roomLightState, moodFor, applyRoomLight, windowGlowLights } from '../room3d/lighting.js';   // [room3d] one light for both engines
 
@@ -199,7 +199,7 @@ function syncCity(now) {
   const v = sunL.position.clone().sub(sunL.target.position).normalize();
   api.setSun(v, Math.asin(Math.max(-1, Math.min(1, v.y))) / DEG);
   api.setNight(now === 'night' ? 1 : now === 'evening' ? 0.5 : 0);
-  api.setQuality(roomQuality());
+  api.setQuality(quality.city);   // [quality] the mode and the step-down's level, as the shared city takes them
 }
 export const hasCity = () => !!city;
 /** [city3d] the city outside's handle (setSun, setNight, setQuality, anchorsOf) or null. */
@@ -400,8 +400,9 @@ function applyMood() {
   syncCity(now);
   const day = now === 'day', eve = now === 'evening', night = now === 'night';
   // [room3d] the room's light is one definition for both engines (room3d/lighting.js)
-  const st = roomLightState({ mood: now, sunOn: !!sunL.userData.on && mood.sunUp, sinAlt: sunL.userData.up || 0, quality: roomQuality(), scale: { ambient: lighting.ambient, sun: lighting.sun, sky: lighting.sky } });
+  const st = roomLightState({ mood: now, sunOn: !!sunL.userData.on && mood.sunUp, sinAlt: sunL.userData.up || 0, quality: roomQuality(), envLight: quality.has('environment'), tone: quality.settings.tone, scale: { ambient: lighting.ambient, sun: lighting.sun, sky: lighting.sky } });
   applyRoomLight({ sunL, hemi, amb, glow, renderer }, st, (i) => !!shadeState[i]);
+  glow.visible = quality.has('windowGlow');   // [quality] the window glow lights are real lights: the step-down's level 4 takes them out of every shader
   const lampOn = !day;
   for (const [, g] of groups) {
     const l = g.userData.lamp; if (!l) continue;
@@ -457,7 +458,7 @@ export function buildItem(it, env = {}) {
   const box = (w, h, d, color, x, y, z, o) => mk(new THREE.BoxGeometry(w, h, d), color, x, y, z, o);
   const cyl = (r, h, color, x, y, z, seg = 24, r2 = r) => mk(new THREE.CylinderGeometry(r, r2, h, seg), color, x, y, z);
   const { w, d, h, kind } = it, col = it.base?.color ?? 0x8899aa, hw = w / 2, hd = d / 2;
-  if (R3F.build(it, { s, std, fabric: fabricMat, quality: roomQuality(), texture }) || F3.build(it, { s, std, fabric: fabricMat })) { /* [interior] drawn by plan/furniture3d.js: rounded cushions, arms, headboards, drawers */ }
+  if (R3F.build(it, { s, std, fabric: fabricMat, quality: furnitureQuality(), texture }) || F3.build(it, { s, std, fabric: fabricMat })) { /* [interior] drawn by plan/furniture3d.js: rounded cushions, arms, headboards, drawers */ }
   else if (kind === 'bed') {
     const [mw0, md0] = it.productInfo?.mattress || it.base.mattress || [w - 4, d - 4], mw = Math.min(mw0, w - 2), md = Math.min(md0, d - 3);
     const storage = !!it.base.storage, deck = storage ? 14 : 11;

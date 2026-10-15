@@ -30,7 +30,7 @@ export function buildCityContext(data, o) {
   const f = o.frame || {}, q = o.quality || {}, pal = o.pal;
   return buildContext({ green: data.green, water: data.water, streets: data.streets }, {
     B: data.B, place: f.place, matrix: f.matrix, center: o.center, radius: o.radius ?? CITY_RADIUS_M, y0: f.y0 ?? 0,
-    ground: pal.ground, light: pal.light, blue: pal.blue, visual: !!q.visual, phone: !!q.phone,
+    ground: pal.ground, light: pal.light, blue: pal.blue, visual: !!q.visual, phone: !!q.phone, quality: q,
     layers: { green: true, water: true, ...loadTreeLayers(), ...(o.layers || {}) },
   });
 }
@@ -68,7 +68,7 @@ export function createCity(data, o) {
   const bMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9, metalness: 0 });
   facU.uLitCol.value.copy(pal.lit);
   decorate(bMat, facU, 'unit-city');
-  facU.uQual.value = o.quality?.visual ? 1 : 0;   // Fast: grid, tint and lights; Visual: the full facades
+  facU.uQual.value = (o.quality?.fullFacades ?? o.quality?.visual) ? 1 : 0;   // Fast: grid, tint and lights; Visual: the full facades (the step-down's level 4 goes back to the grid)
   const vrange = new Map(), meshes = [];
   for (const [idx, cast, name] of [[near, !!o.castShadow, 'neighbours'], [far, false, 'neighbours-far']]) {
     const { geometry, starts, ids, H, ranges } = mergeBuildings(B, idx, { pal, matrix: bakeM, near: idx === near });

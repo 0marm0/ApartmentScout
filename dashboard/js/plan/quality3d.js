@@ -1,14 +1,16 @@
 // Render quality for the Floor plan studio's 3D view: Fast (as before) or Visual (soft shadows from a larger shadow
-// map, an environment light, contact shadows under furniture and along the walls), and a progressive high-resolution
-// PNG export. A look, not evidence: it changes no number and no modelled sun patch (features/render-quality.js).
+// map, an environment light, contact shadows under furniture and along the walls), the automatic lighter level, and a progressive
+// high-resolution PNG export. The mode, the level and the step-down are ONE setting shared with Unit 3D (room3d/quality.js); this module draws them onto
+// the studio's renderer. A look, not evidence: it changes no number and no modelled sun patch (features/render-quality.js).
 import * as THREE from 'three';
 import * as G3 from './scene3d.js';
 import * as RQ from '../features/render-quality.js';
-import { environmentFor, recompileMaterials } from '../features/render-env.js';
-import { setRoomQuality } from '../room3d/quality.js';   // [room3d] both engines' room shares one quality
+import { quality } from '../room3d/quality.js';   // [room3d] THE shared setting: mode, level, step-down
+import { applyRenderer } from '../room3d/quality-apply.js';
 
 const M = 0.0254;
-let mode = 'fast', ui = null, prog = null, note = null, noteT = 0, mounted = false, aoRoot = null, getModel = () => null, toastFn = () => {}, store = null, aoTex = null, stripTex = null;
+let ui = null, prog = null, note = null, noteT = 0, mounted = false, aoRoot = null, getModel = () => null, toastFn = () => {}, aoTex = null, stripTex = null;
+const memo = {};   // what applyRenderer last wrote to this scene
 
 function radial() {
   if (aoTex) return aoTex;
@@ -28,45 +30,45 @@ function strip() {
 /** Add the Fast / Visual control to the studio's 3D stage. `o` = {stage, model(), toast(msg), store}. */
 export function mount(o) {
   if (mounted) return;
-  getModel = o.model; toastFn = o.toast; store = o.store; mounted = true;
-  mode = RQ.readMode(store); setRoomQuality(mode);   // [room3d]
-  ui = RQ.modeControl({ mode, onChange: (m) => setMode(m, true) });
+  getModel = o.model; toastFn = o.toast; mounted = true;
+  quality.bind(o.store);
+  ui = RQ.modeControl({ mode: quality.mode, onChange: (m) => setMode(m, true) });
   note = document.createElement('div'); note.className = 'float rnq-note'; note.hidden = true; note.setAttribute('role', 'status');
   o.stage.append(ui.el, note);
   prog = RQ.progressStrip(o.stage);
-  if (mode === 'visual') apply();
+  RQ.autoNote(o.stage);   // "Lighter mode for this device" while the step-down is on, with a way to force full quality
+  quality.attach('plan', { renderer: () => G3.parts().renderer, scene: () => G3.parts().scene, kick: () => G3.markDirty() });
+  const { renderer } = G3.parts(); if (renderer) quality.setDevice({ maxTexture: renderer.capabilities.maxTextureSize });
+  quality.onChange((s, ch) => { if (ch.mode || ch.pinned) ui.set(s.mode); apply(); });   // Unit 3D, the step-down or the renter changed it
+  if (quality.mode === 'visual' || quality.level > 0) apply();
 }
-export const current = () => mode;
+export const current = () => quality.mode;
+/** The studio's 3D view opened (a model was set, or the 3D pane came to the front): time its first frames. */
+export const opened = () => quality.opened('plan');
+/** Once per animation frame while the 3D view is showing: `drew` = a frame was drawn, `ms` = how long the draw took. */
+export const pulse = (now, drew, ms) => quality.pulse('plan', now, drew, ms);
 
 export function setMode(m, announce) {
-  mode = m === 'visual' ? 'visual' : 'fast'; setRoomQuality(mode); G3.cityApi()?.setQuality(mode);   // [room3d]
-  RQ.saveMode(store, mode); ui?.set(mode); apply();
-  if (announce && note) { note.hidden = false; note.textContent = `${RQ.MODES[mode].label}: ${RQ.MODES[mode].note}`; clearTimeout(noteT); noteT = setTimeout(() => { note.hidden = true; }, 7000); }
+  quality.setMode(m, { user: true });   // writes the shared, remembered setting; every subscriber (this page and Unit 3D) follows
+  if (announce && note) { const T = RQ.MODES[quality.mode]; note.hidden = false; note.textContent = `${T.label}: ${T.note}`; clearTimeout(noteT); noteT = setTimeout(() => { note.hidden = true; }, 7000); }
 }
 
 function apply() {
   const { renderer, scene, sunL } = G3.parts();
   if (!renderer) return;
-  const s = RQ.settingsFor(mode, { phone: RQ.phoneClass(), maxTexture: renderer.capabilities.maxTextureSize, dpr: window.devicePixelRatio });
-  renderer.setPixelRatio(s.pixelRatio);
-  sunL.shadow.map?.dispose(); sunL.shadow.map = null;
-  sunL.shadow.mapSize.set(s.shadowSize, s.shadowSize);
-  if (s.softShadows) {
-    renderer.shadowMap.type = THREE.VSMShadowMap; sunL.shadow.radius = s.radius; sunL.shadow.blurSamples = s.blurSamples; sunL.shadow.bias = -0.0001; sunL.shadow.normalBias = 0.02;
-  } else {
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap; sunL.shadow.radius = 3; sunL.shadow.blurSamples = 8; sunL.shadow.bias = -0.0004; sunL.shadow.normalBias = 0.025;
-  }
-  recompileMaterials(scene);
-  scene.environment = s.environment ? environmentFor(renderer, { intensity: 0.35 }) : null;
+  const s = quality.settings;
+  const out = applyRenderer({ renderer, scene, sun: sunL }, s, { soft: { radius: s.radius ?? 4, blurSamples: s.blurSamples ?? 8, bias: -0.0001, normalBias: 0.02 }, hard: { radius: 3, blurSamples: 8, bias: -0.0004, normalBias: 0.025 }, envIntensity: 0.35 }, memo);
   rebuildAO(s.contact);
-  G3.resize(); G3.setLighting({});   // re-runs the lighting mood so the hemisphere level follows the mode
+  if (out.pixelRatioChanged) G3.resize();
+  G3.setLighting({});   // re-runs the lighting mood so the hemisphere level, the window glow and the city follow the setting
+  G3.markDirty();
 }
 
 // ------------------------------------------------------------------ contact shadows and wall-base shading (an ambient-occlusion approximation)
-function rebuildAO(on = mode === 'visual' && !RQ.phoneClass()) {
+function rebuildAO(on = quality.has('contactShadows')) {
   const { scene, furn } = G3.parts();
   if (aoRoot) { scene.remove(aoRoot); aoRoot.traverse((o) => { o.geometry?.dispose(); o.material?.dispose(); }); aoRoot = null; }
-  if (!on || mode !== 'visual') { G3.markDirty(); return; }
+  if (!on) { G3.markDirty(); return; }
   aoRoot = new THREE.Group(); aoRoot.name = 'quality-ao'; scene.add(aoRoot);
   const box = new THREE.Box3(), size = new THREE.Vector3(), ctr = new THREE.Vector3();
   for (const g of furn.children) {
@@ -89,8 +91,8 @@ function rebuildAO(on = mode === 'visual' && !RQ.phoneClass()) {
 }
 let aoRaf = 0;
 /** The furniture moved or the plan changed: refresh the contact shadows (once per frame at most). */
-export function itemsChanged() { if (mode !== 'visual' || !aoRoot) return; if (aoRaf) return; aoRaf = requestAnimationFrame(() => { aoRaf = 0; rebuildAO(); }); }
-export function modelChanged() { if (mode === 'visual') itemsChanged(); }
+export function itemsChanged() { if (!quality.has('contactShadows') || !aoRoot) return; if (aoRaf) return; aoRaf = requestAnimationFrame(() => { aoRaf = 0; rebuildAO(); }); }
+export function modelChanged() { if (quality.has('contactShadows')) itemsChanged(); }
 
 // ------------------------------------------------------------------ progressive export
 /** Render the current 3D view at `scale` x the stage size (capped at 4096 px), averaged over jittered frames. */
@@ -99,6 +101,7 @@ export async function renderImage(scale, { name = 'floor-plan', caption = '' } =
   const cv = renderer.domElement, w = cv.clientWidth, h = cv.clientHeight; if (!w || !h) return;
   const k = RQ.fitScale(scale, w, h), pr = renderer.getPixelRatio(), frames = 16;
   const signal = prog.start(); prog.show(0, frames, 'Preparing the render…');
+  quality.hold(true);   // slow frames on purpose: not a measurement of this device
   const sunStart = sunL.position.clone(), tgt = sunL.target.position.clone();
   const dir = sunStart.clone().sub(tgt), len = dir.length(), up = new THREE.Vector3(0, 1, 0);
   const side = new THREE.Vector3().crossVectors(dir, up).normalize(), vert = new THREE.Vector3().crossVectors(side, dir).normalize();
@@ -124,6 +127,6 @@ export async function renderImage(scale, { name = 'floor-plan', caption = '' } =
     toastFn(signal.aborted ? `Stopped after ${done} frames; saved what was rendered.` : `Saved a ${Math.round(w * k)} px render.`);
   } catch (e) { toastFn(`Render failed: ${e.message || e}`); }
   finally {
-    cam.clearViewOffset(); sunL.position.copy(sunStart); renderer.setPixelRatio(pr); G3.resize(); G3.markDirty(); prog.hide();
+    cam.clearViewOffset(); sunL.position.copy(sunStart); renderer.setPixelRatio(pr); G3.resize(); G3.markDirty(); prog.hide(); quality.hold(false);
   }
 }
