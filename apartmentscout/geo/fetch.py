@@ -34,7 +34,8 @@ DATASET_NAMES = {"5zhs-2jue": "NYC Building Footprints", "64uk-42ks": "PLUTO", "
                  "w9ak-ipjd": "DOB NOW job filings", "i38t-6if2": "Digital Tax Map lots",
                  "erm2-nwe9": "311 Service Requests", "wvxf-dwi5": "HPD violations", "ygpa-z7cr": "HPD complaints",
                  "eabe-havv": "DOB complaints", "6bgk-3dad": "ECB violations", "wz6d-d3jb": "Bedbug reports",
-                 "5uac-w243": "NYPD complaints", "overpass": "OpenStreetMap (Overpass)"}
+                 "5uac-w243": "NYPD complaints", "overpass": "OpenStreetMap (Overpass)",
+                 "uvpi-gqnh": "NYC Street Tree Census 2015", "pjs3-c3z5": "NYC Planimetric Hydrography"}
 _RECEIPTS: contextvars.ContextVar[list | None] = contextvars.ContextVar("receipts", default=None)
 
 
