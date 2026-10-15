@@ -49,7 +49,7 @@ function canvasTex(key, w, h, draw, { repeat = null, wrap = true } = {}) {
   if (repeat) t.repeat.set(repeat[0], repeat[1]);
   t.userData.shared = true; TEX.set(key, t); return t;
 }
-/** Wood grain, near white so it multiplies the material colour; UVs are metres, one tile is 0.8 m along the grain and 0.4 m across it.
+/** Wood grain, near white so it multiplies the material colour; UVs are metres, one tile is 1 m along the grain and 0.5 m across it.
  *  Grain runs along u. Plain-sawn figure (nested arcs), long fine grain lines, tonal drift between growth bands and open pores; every
  *  stroke is periodic in x and wrapped in y, so the tile repeats without a seam. Also the bump map of a wood material in Visual. */
 const grainTex = () => canvasTex('r3-grain2', 1024, 512, (g, W, H) => {
@@ -63,7 +63,7 @@ const grainTex = () => canvasTex('r3-grain2', 1024, 512, (g, W, H) => {
   }
   for (let i = 0; i < 300; i++) stroke(wave(r() * H, 0.6 + r() * 4.5, 1 + (r() * 3 | 0), r() * TAU, 5 + (r() * 6 | 0), 0.3 + r() * 0.5, r() * TAU), `rgba(${r() < 0.88 ? '92,62,38' : '255,250,240'},${0.04 + r() * 0.15})`, 0.4 + r() * 1.5);
   for (let i = 0; i < 2600; i++) { const x = r() * W, y = r() * H, L = 2 + r() * 10; g.fillStyle = `rgba(66,42,24,${0.08 + r() * 0.2})`; g.fillRect(x, y, L, 0.8 + r() * 0.7); if (x + L > W) g.fillRect(x - W, y, L, 1); }
-}, { repeat: [1.25, 2.5] });
+}, { repeat: [1, 2] });
 /** A printed wood-grain foil (a laminate such as IKEA's black-brown): a dark base with a low-contrast, mostly vertical grain; near white
  *  in the light parts so it multiplies the colour, with the streaks pulled down to about 60 %. One tile is 0.4 m. */
 const foilTex = () => canvasTex('r3-foil', 512, 512, (g, W, H) => {
@@ -176,11 +176,13 @@ function rugTex(color, wIn, dIn, round) {
 /** Metre UVs by box projection along the dominant normal (wood grain and weave then keep their scale on every face). */
 function boxUV(g, mode, w, d) {
   const pos = g.attributes.position, nor = g.attributes.normal, uv = g.attributes.uv;
+  let tall = false;   // a tall member (a table leg, a post): the grain runs up it, so the side faces swap u and v
+  if (!mode) { g.computeBoundingBox(); const b = g.boundingBox; tall = b.max.y - b.min.y > 2.2 * Math.max(b.max.x - b.min.x, b.max.z - b.min.z, 1e-3); }
   for (let i = 0; i < pos.count; i++) {
     const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
     if (mode === 'top') { uv.setXY(i, x / w + 0.5, 0.5 - z / d); continue; }
     const ax = Math.abs(nor.getX(i)), ay = Math.abs(nor.getY(i)), az = Math.abs(nor.getZ(i));
-    if (ay >= ax && ay >= az) uv.setXY(i, x * IN, z * IN); else if (az >= ax) uv.setXY(i, x * IN, y * IN); else uv.setXY(i, z * IN, y * IN);
+    if (ay >= ax && ay >= az) uv.setXY(i, x * IN, z * IN); else if (az >= ax) tall ? uv.setXY(i, y * IN, x * IN) : uv.setXY(i, x * IN, y * IN); else tall ? uv.setXY(i, y * IN, z * IN) : uv.setXY(i, z * IN, y * IN);
   }
 }
 /** Recompute smooth normals and average them across coincident vertices (BoxGeometry faces do not share vertices). */
@@ -238,7 +240,12 @@ function softGeo(w, h, d, o = {}) {
 /** A plain box, bottom at y = 0, with metre UVs (Fast mode's boards). */
 function boxGeo(w, h, d) { const g = new THREE.BoxGeometry(w, h, d); g.translate(0, h / 2, 0); boxUV(g, null, w, d); return g; }
 /** A tapered leg, bottom at y = 0; square legs are 4-sided cylinders turned 45 degrees. */
-function legGeo(rTop, rBot, h, seg, square = false) { const g = new THREE.CylinderGeometry(rTop, rBot, h, square ? 4 : seg, 1); g.translate(0, h / 2, 0); if (square) g.rotateY(Math.PI / 4); return g; }
+function legGeo(rTop, rBot, h, seg, square = false) {
+  const g = new THREE.CylinderGeometry(rTop, rBot, h, square ? 4 : seg, 1); g.translate(0, h / 2, 0); if (square) g.rotateY(Math.PI / 4);
+  const p = g.attributes.position, uv = g.attributes.uv, r = (rTop + rBot) / 2;   // wood grain runs up a leg: u along the height, v round it (metres)
+  for (let i = 0; i < p.count; i++) uv.setXY(i, p.getY(i) * IN, Math.atan2(p.getZ(i), p.getX(i)) * r * IN);
+  return g;
+}
 /** A rod along x, centred (piping, pull bars, rails). */
 function rodGeo(r, len, seg = 8, open = false) { const g = new THREE.CylinderGeometry(r, r, len, seg, 1, open); g.rotateZ(Math.PI / 2); return g; }
 /** A lathed solid (pots, tops, vases) with metre UVs projected like a box, so wood grain runs straight across a round top. */
@@ -336,7 +343,7 @@ function kit(it, ctx) {
     wood(col, rough = 0.58, grain = true) {
       return K.mat(`wood|${hexOf(col)}|${rough}|${grain}|${fast ? 1 : 2}`, () => {
         const t = grain ? grainTex() : null, c = mix(col, 0x7f7a74, 0.1).multiplyScalar(0.94);   // a hair less orange: the light warms every brown
-        return ctx.std(c, { roughness: rough, ...(t ? { map: t, ...(fast ? {} : { bumpMap: t, bumpScale: 0.45 }) } : {}) });
+        return ctx.std(c, { roughness: rough, ...(t ? { map: t, ...(fast ? {} : { bumpMap: t, bumpScale: 0.3 }) } : {}) });
       });
     },
     /** A printed laminate (wood-grain foil on a board): dark and nearly matt, with a faint grain. */
