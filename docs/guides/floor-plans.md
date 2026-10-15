@@ -4,7 +4,9 @@ Put one JSON file per unit in `searches/<name>/plans/<listing-id>.json` and run 
 The **Floor plan** tab opens a studio for that unit:
 
 - a 2D plan and a 3D model side by side (or either alone; phones open on 2D), kept in sync;
-- furniture at real sizes from a catalogue (beds, sofas, tables, desks, storage, TVs, AC units), dragged
+- **your furniture**: the renter's own pieces with their real sizes (`furniture.json`, see [Your furniture](#your-furniture)), the
+  default layout of a unit, fitted with the checks;
+- furniture at real sizes from a catalogue (beds, sofas, tables, desks, storage, TVs, plants, AC units), dragged
   in either view, turned with **R**, nudged with the arrow keys (1 in, **Shift** 6 in), duplicated with
   **D**, removed with **Del**, undone with **Ctrl/Cmd+Z**, and snapped flush to walls;
 - fit checks graded **clear / tight / blocked**: overlaps (height-aware, so a wall TV over a low
@@ -13,6 +15,9 @@ The **Floor plan** tab opens a studio for that unit:
   a window and a wall-mounted TV without a solid wall behind it;
 - eye-level cameras from the bed, the sofa and the front door, a walk mode, and walls cut at 3 ft, full
   height or as outlines;
+- **Look out of the window**: chips over the 3D view that stand you at each room's window (a bay or a corner is one view, with a
+  close, wide one of its own) or sit you on the sofa, the bed or the desk looking out, with the real city outside by default
+  ([The view from inside](#the-view-from-inside));
 - the real sun through the windows for any date and time. If the listing also has a site model
   (`apartmentscout site <id>`), the sun switches off whenever nearby buildings block it, and the
   furniture casts shadows, so you can see where morning sun lands on the bed;
@@ -22,10 +27,89 @@ The **Floor plan** tab opens a studio for that unit:
   floor), glass, frame, blinds and surface inputs that say whether each number is assumed or from a source, editable luminaires
   with a lamp-light estimate and a night preview, and an annual daylight summary per window
   ([Lighting design](#lighting-design-the-light-tab));
-- **Fast** and **Visual** render quality for the 3D view, and a progressive 2x or 4x PNG render.
+- **Fast** and **Visual** render quality for the 3D view, and a progressive 2x or 4x PNG render;
+- a finished 3D room ([What the 3D room is made of](#what-the-3d-room-is-made-of)): walls with real thickness, window reveals and
+  sills, framed glass, door frames, baseboards, ceiling lights and floors by room type, with furniture drawn as low-poly models at
+  the plan's own scale.
 - a plan tracer (**New plan from image**) that turns a plan image or PDF page into a plan file, and
   **Edit plan** for corners, doors, windows, ceiling and walls, saved as a local version
   ([Trace a plan](#trace-a-plan)).
+
+## Your furniture
+
+`furniture.json` beside `listings.json` is the renter's own inventory: the pieces they have or chose, with real sizes. The
+build copies it to `data/furniture.json` and sets `"furniture": true` in `manifest.json`; the studio shows it at the top of the
+Furniture tab and uses it as the default kit for every plan.
+
+```json
+{
+  "schema": 1, "kind": "apartmentscout-furniture", "name": "Your furniture",
+  "source": "Where the list came from, in words (no personal paths)",
+  "pieces": [
+    {"id": "bed", "ref": "queen-bed", "label": "Queen bed", "room": "bedroom", "w": 64, "d": 84, "h": 40,
+     "note": "Mattress 60 x 80 in on a 64 x 84 in frame with a 40 in headboard.", "source": "Fit check"},
+    {"id": "tv", "ref": "tv-55", "label": "55-inch TV, living room", "room": "living", "w": 48.4, "d": 3.5, "h": 27.8, "elev": 32}
+  ]
+}
+```
+
+`ref` is a catalogue id; `w`, `d`, `h` and `elev` (inches) replace the catalogue's size, so the studio draws and checks the piece the
+renter has. `room` (`bedroom`, `living`, `dining`, `office`, `kitchen`, `other`) is the kind of room it lived in and steers the
+auto-placer; `variant` and `product` work as in a layout item. Plain text only, at most 60 pieces and 200 KB; the studio refuses a
+file with an unknown `ref`, a duplicate `id`, markup or an absurd size.
+
+- **Use your furniture layout** applies a plan's `your-furniture` preset; on a plan without one the button reads **Fit your furniture
+  here** and places every piece with the fit checks (`plan/inventory.js`). A plan with no presets at all opens on that fit.
+- **Add** puts one piece, at its own size, in the kind of room it lives in. A layout item carries the renter's sizes (`w`, `d`, `h`,
+  `elev`, `label`), so a layout file or a plan preset keeps them without the inventory.
+- A complete plan project (**Layout ▸ Save complete plan project**) carries the inventory as `inventory`, validated like the layout,
+  and the studio shows the project's pieces when you import it.
+
+**Where the example's list comes from.** The earlier layout studios kept the renter's drags in the browser only, so no saved
+positions survived. The kit (queen bed, two nightstands, IKEA Storklinta dresser, a 60 x 24 in desk with a chair, a 3-seat futon,
+a coffee table, two wall-mounted 55-inch TVs and a 4-seat dining table) and its sizes come from those tools: the Fit check, Room to
+live and the Apartment layout studio, with the TV study for Emerald Green 1211. Positions in the shipped `your-furniture` layouts for
+Paramount 25E and Emerald Green 1211 are the fit checks' work: all ten pieces grade clear in both.
+
+## The view from inside
+
+The 3D view puts a sky, a haze and the real city behind every window at eye level, with no toggle: the plan is placed on its
+facade by the same anchor Unit 3D uses (the slab height and the facade bearing), so the neighbours stand at the right height and
+direction. A unit with no site model has a sky and no city, and says so. (**Light ▸ Show the city in the bird's-eye view too**
+controls the layer from above.) Day, Evening and Night change the sky and the sun's glow; the haze fades the far buildings into the
+horizon. A look, not a measurement.
+
+The chips on the 3D pane come from `plan/viewpoints.js`, the same list Unit 3D's Inside camera offers:
+
+| Chip | What it does |
+|---|---|
+| **Living room**, **Bedroom**, a kitchen with a window | Stand about 7 ft back from the glass at eye level (63 in) and look straight out of that room's window |
+| **Bay**, **Corner** | Stand 30 in from the glass with a wide lens (100 degrees) so the whole bay or the wrap-around corner is in view. A run of panes that join end to end in one room is one window; a bay has a square-on middle pane and angled sides, a corner turns |
+| **Sofa**, **Bed**, **Desk** | Sit where a person sits (40 in, 34 in, 46 in eye height) and look out of the window of that room |
+
+A room with two windows that face different ways gets the compass point in the chip's name (the plan's `up_bearing` makes it
+real). **←** and **→** on a focused chip switch the view; **[** and **]** switch from anywhere in the studio; **Esc** leaves the eye
+level. The camera glides there (no glide with reduced motion). Drag to look around, scroll to step, **W A S D** to walk as before.
+
+## What the 3D room is made of
+
+A visual preview: nothing here changes a number, and the fit checks never look at it.
+
+- **Walls** have the plan's thickness (`wall`, 4.8 in by default). Each window gets a **stool** (the inside sill board, 1.6 in
+  proud of the wall) with an apron, side and head **casings**, a slim bronze **frame** with mullions about every 40 in (and a transom
+  rail on tall glass), and glass with a soft diagonal reflection (Visual mode adds the environment's reflection on top).
+- **Doors** get jamb and head casings on both faces and a lever on each side of the leaf where the swing is known.
+- **Baseboards** (5 in with a cap line) run along every wall piece that reaches the floor, on both faces.
+- **Ceiling**: a trim ring on a loose grid in each room of more than 25 ft2 (architecture, not luminaires: the Light tab's recessed
+  lamps are the lamps that light).
+- **Floors** by room type: herringbone-style chevron **parquet** in living and dining rooms, **oak** planks in bedrooms, offices
+  and halls, large-format **tile** in the kitchen, small mosaic **tile** in the bath, carpet in closets. The room colours follow the
+  Light tab's surface reflectances.
+- **Furniture** (`plan/furniture3d.js`): a sofa with arms, seat and back cushions, legs and a throw pillow; a bed with an upholstered
+  headboard, platform, mattress, duvet with a turned-down top, pillows and a throw; a dining table with chairs; a desk with a drawer
+  unit, a laptop and a swivel chair; nightstands and dressers with drawers and brass pulls; a coffee table; a wall-mounted TV on
+  its bracket (or on a console); a rug with a border; plants. Soft shapes are rounded pads, a few hundred triangles each, so Fast
+  mode and phones stay light. **Visual** quality adds soft shadows from a larger map, contact shadows and an environment light.
 
 ## The plan file
 
@@ -141,6 +225,7 @@ The catalogue lives in `dashboard/js/plan/catalog.js`, with a cited source for e
 | `queen-storage-bed` (variants `both`, `left`, `right`, `foot`) | 64 x 84 x 40 | the bed's own zones plus 24-30 in on every drawer side (drawer depth + 4 to 10 in with a real product) |
 | `ptac`, `window-ac`, `radiator` | 42 x 13.9 x 16, 19 x 9 x 13.5 on the sill, 36 x 8 x 24 | 12-18 airflow, 12-24 airflow (must sit in a window at sill height), 4-8 heat clearance |
 | `rug` (variants `5x8`, `6x9`, `8x10`, `round6`) | 96 x 60 and up | not an obstacle; tight under a door swing |
+| `plant-floor`, `plant-table` | 18 x 18 x 54, 8 x 8 x 20 at 30 in up | a look, not a rule: it only takes floor (or a table's top) |
 | `wall-art` (variants `s`, `m`, `l`) | 36 x 24 at 45 in up | centre at 57 ± 3 in; 6-12 in above the furniture below; solid wall behind |
 | `floor-lamp`, `table-lamp`, `pendant`, `ceiling-light` | 12 x 60 tall, 10 x 20 at 24 in, 16 at 66 in, 14 at 100 in | a table lamp needs a surface at its height; lamps light the room in Evening and Night and count in the Light tab's lamp estimate (catalogue lumens) |
 
@@ -290,6 +375,13 @@ which plan window lands where, each fact marked *source*, *measured*, *your sett
 anchor) and in the studio (Light tab ▸ Where this plan sits in the city), and exported with a model project
 ([data model](data-model.md#model-anchor-pin-assumed-parts-and-the-model-project)).
 
+Unit 3D's **Inside** camera offers the same rooms as the studio's chips (Living room, Bay, Bedroom, Corner, then Sofa, Bed and Desk,
+and **Into the room**), over the view: click one, press **←** or **→** while a chip has focus (**Home** and **End** jump to the
+first and last), or press **[** and **]** anywhere in the view. The camera glides there, and between rooms the walls and ceiling
+step aside for the move so it never cuts through one (with reduced motion it goes straight there). On a phone the chips scroll
+sideways and the **Look out of** list in the lens panel does the same job. A source plan shows its default layout in the Inside view
+(for the example, **Your furniture**); a scenario shows the one sent from the studio. The **Show furniture** switch hides either.
+
 Unit 3D's **Use this window in the Floor plan** pins the window it is showing (facade, position along it, facing, bay, floor and measured
 height) in this browser; the studio then places the plan there instead of at the site file's window, and says so. **Unpin** (or Unit 3D's
 **Back to the listing**) removes the pin.
@@ -330,6 +422,11 @@ scale, surface tint, render-quality settings and the annual chart are covered by
 `lighting-render.test.mjs`; `daylight-parity.test.mjs` and `tests/test_daylight.py` check the sky model against Python. The
 browser flows are in `tests/e2e/test_lighting.py`.
 scenario bridge, the shared anchor, the open-air check, the pin, the comparison maths and the model project are pure ES modules covered by `node --test tests/js`; `tests/e2e/test_model_project.py` checks the bridge in a browser.
+
+The inventory (`plan/inventory.js`: validation, the fit of the renter's pieces into the example plans, the project carrying it) is
+covered by `plan-inventory.test.mjs`; the window groups, the standing and seated viewpoints, the camera maths and the Inside views by
+`plan-viewpoints.test.mjs`; `tests/e2e/test_interior_view.py` drives the chips, the arrow and bracket keys, the glide and the phone
+layout in a browser.
 
 Agents: the `floor-plan-model` skill explains how to read a plan image into this format (or hand it
 to the renter to trace) and how to write layouts.
