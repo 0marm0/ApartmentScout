@@ -269,7 +269,7 @@ def test_tabs_have_icons_labels_and_badges(open_page) -> None:
     s = open_page("#map", width=1440, height=900)
     pg = s.page
     labels = pg.eval_on_selector_all("#tabs a", "els => els.map((e) => e.querySelector('.nl').textContent)")
-    assert labels == ["Map", "Shortlist", "Compare", "Home", "Research"]
+    assert labels == ["Map", "Shortlist", "Compare", "3D", "Research"]
     assert pg.locator("#tabs a svg.ni").count() == 5
     assert pg.evaluate("() => document.querySelector('#tabs a.on').dataset.view") == "map"
     pg.wait_for_selector("#cards .card[data-id]")
@@ -304,7 +304,7 @@ def test_sliding_indicator_follows_the_active_tab(open_page) -> None:
 def test_unit_3d_and_floor_plan_live_under_home(open_page) -> None:
     s = open_page("#map", width=1440, height=900)
     pg = s.page
-    assert pg.locator('#tabs a[data-view="unit"], #tabs a[data-view="plan"]').count() == 0, "one Home tab, not two"
+    assert pg.locator('#tabs a[data-view="unit"], #tabs a[data-view="plan"]').count() == 0, "one 3D tab, not two"
     pg.click('#tabs a[data-view="home"]')
     pg.wait_for_function("() => document.body.dataset.view === 'unit'", timeout=30000)
     assert pg.locator("#tabs a.on").get_attribute("data-view") == "home"

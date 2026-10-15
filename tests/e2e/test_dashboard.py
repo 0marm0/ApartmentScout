@@ -115,7 +115,7 @@ def test_every_view_loads_clean(open_page, theme: str, width: int) -> None:
 
 
 def test_all_view_tabs_reachable_on_a_phone(open_page) -> None:
-    """Five tabs in a bottom tab bar, all on screen at once (Unit 3D and Floor plan share the Home tab)."""
+    """Five tabs in a bottom tab bar, all on screen at once (Unit 3D and Floor plan share the 3D tab)."""
     s = open_page("#map", width=390, height=844)
     tabs = ["map", "list", "compare", "home", "research"]
     assert s.page.locator("#tabs a").count() == len(tabs)
