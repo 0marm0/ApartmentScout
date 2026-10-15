@@ -201,6 +201,23 @@ def test_one_unreadable_piece_in_a_saved_layout_does_not_send_everything_back_to
     assert not s.take()
 
 
+def test_the_desk_set_and_the_chest_stay_within_the_triangle_budgets_in_fast_and_visual(open_page, webgl: bool) -> None:
+    _need_webgl(webgl)
+    s = open_page("#map")
+    pg = s.page
+    _unit(s)
+    count = """() => { const out = {}; for (const g of window.__unit3d.stage.interior.furniture.group.children) { let t = 0; g.traverse((o) => { if (!o.isMesh) return; const gm = o.geometry; t += (gm.index ? gm.index.count : gm.attributes.position.count) / 3; }); out[g.userData.itemId] = t; } return out; }"""
+    fast = pg.evaluate(count)
+    assert fast["desk"] > 300 and all(v <= 1600 for v in fast.values()), f"Fast: about 1,500 triangles a piece at most ({fast})"
+    pg.locator("button", has_text="Visual").first.click()
+    pg.wait_for_function("(n) => window.__unit3d.stage.interior.furniture.group.children.length === n", arg=len(fast))
+    pg.wait_for_timeout(2500)
+    visual = pg.evaluate(count)
+    assert visual["desk"] > fast["desk"] * 2, "Visual draws the desk set richer (a mesh chair back, a mug, a notebook)"
+    assert all(v <= 6000 for v in visual.values()), f"Visual: about 6,000 triangles a piece at most ({visual})"
+    assert not s.take()
+
+
 # ----------------------------------------------------------------------------------------------- walking in Unit 3D
 
 
