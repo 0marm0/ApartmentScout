@@ -21,7 +21,7 @@ def _need_webgl(webgl: bool) -> None:
 
 
 def _unit(s, uid: str = UNIT) -> None:
-    s.page.goto(f"{s.origin}/#unit/{uid}")
+    s.page.goto(f"{s.origin}/?mode=orbit#unit/{uid}")   # a home with a plan opens Inside by default; these checks are about the city outside
     s.page.wait_for_function(
         "(id) => window.__unit3d && window.__unit3d.st.id === id && window.__unit3d.stage && window.__unit3d.stage.scene && document.getElementById('uLoad').hidden",
         arg=uid, timeout=120000)

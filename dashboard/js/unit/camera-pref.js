@@ -58,6 +58,13 @@ export function takeSeeInside(id, now = Date.now()) {
   } catch { return false; }
 }
 
+/** Open Unit 3D inside `id`: mark the intent, then go there (a hashchange is sent by hand when the page address is already that home's). */
+export function goSeeInside(id) {
+  markSeeInside(id);
+  const h = '#unit/' + encodeURIComponent(id);
+  if (location.hash === h) dispatchEvent(new HashChangeEvent('hashchange')); else location.hash = h;
+}
+
 /** The shared "this home has an interior model" test: a site model (Unit 3D) and a floor plan, both in the manifest. */
 export const hasInterior = (manifest, id) => !!manifest && (manifest.sites || []).includes(id) && (manifest.plans || []).includes(id);
 
