@@ -23,6 +23,7 @@ import re
 from dataclasses import dataclass, field
 from typing import Any
 
+from . import tours as tours_mod
 from .config import DIMENSION_LABELS
 from .listings import (cost_model, headroom, is_studio, normalise_laundry, normalise_service, parse_date,
                        price_per_sqft, size_info)
@@ -1036,13 +1037,21 @@ def _building_key(L: dict) -> str:
     return str(L.get("bin") or "").split(".")[0] or str(L.get("building") or L.get("address") or L.get("id")).lower()
 
 
-def score_all(listings: list[dict], crit: dict, today: dt.date | None = None) -> list[dict]:
+def score_all(listings: list[dict], crit: dict, today: dt.date | None = None, tours: dict[str, dict] | None = None) -> list[dict]:
     """Score every listing and write ``rank`` (= ``ranks.action``) and ``ranks`` (fit / action / budget /
-    building). Ties break on confidence, then lower cost, then id."""
+    building). Ties break on confidence, then lower cost, then id.
+
+    ``tours`` maps a listing id to the renter's tour findings (``tours.load_all``). A finding the renter promoted is read
+    as a fact (the listing itself is not changed); one that contradicts the listing and was not promoted only adds a
+    ``contradicted:<field>`` gate, a "differs on tour" tag and a line in the reasons."""
     today = _today(crit, today)
     comps = build_comps(listings)
     for L in listings:
-        L["score"] = score_listing(L, crit, today, comps)
+        f = (tours or {}).get(L.get("id"))
+        if f:
+            L["score"] = tours_mod.annotate_score(score_listing(tours_mod.overlay(L, f), crit, today, comps), tours_mod.flags_for(L, f))
+        else:
+            L["score"] = score_listing(L, crit, today, comps)
     scored = [L for L in listings if L["score"]["overall"] is not None]
     for L in listings:
         L["score"]["ranks"] = {"fit": None, "action": None, "budget": None, "building": None}
