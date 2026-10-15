@@ -10,7 +10,8 @@ import time
 from pathlib import Path
 from typing import Callable
 
-from ..sun import (DAYLIGHT_DEFAULTS, DAYLIGHT_FORMULA, FIELD_DEG, Skyline, _Tracks, expected_sun, face_by_bearing,
+from ..daylight import annual_daylight
+from ..sun import (DAYLIGHT_DEFAULTS,DAYLIGHT_FORMULA, FIELD_DEG, Skyline, _Tracks, expected_sun, face_by_bearing,
                    future_sun_hours, main_blockers, max_floor, month_tracks, pick_face, sample_states, sun_hours_range,
                    sun_study, sunshine, target_faces, window_point, window_t)
 from .buildings import build_site, fetch_nyc, fetch_osm, fill_heights, nyc_pluto
@@ -295,6 +296,10 @@ def _make_site(L, crit, cache_dir, floor, bearing, t, radius, streets, future, r
         wp = window_point(face, tt, floor, site["floor_height_m"])
         site["study"]["blockers"] = main_blockers(sky, wp, face["bearing"], year, lat, lon, tz, panes)
         T["blockers"] = time.perf_counter() - c0
+        # annual daylight summary (modelled): direct sun, sky visibility and relative daylight, kept apart (apartmentscout/daylight.py)
+        site["study"]["daylight_annual"] = annual_daylight(
+            sky.profile(*wp), face["bearing"], panes, year, lat, lon, tz, st["sun_hours"], st["sky_view"],
+            sun_climate["fraction"] if sun_climate else None)
         if site.get("green") and (site["green"].get("polys") or site["green"].get("trees")):
             c0 = time.perf_counter()
             from .sightline import green_view, sightline_block
