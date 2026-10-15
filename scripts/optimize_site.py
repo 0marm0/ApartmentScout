@@ -43,7 +43,7 @@ EXTERNALS = ["three", "three/addons/*", "pdfjs-dist", "pdfjs-dist/worker"]
 DEFERRED_CSS = {
     "css/wizard.css", "css/views/compare.css", "css/views/unit.css", "css/views/plan.css", "css/views/tracer.css",
     "css/views/records.css", "css/views/tours.css", "css/views/research.css", "css/tradeoff.css", "css/share.css",
-    "css/tour-plan.css", "css/cheatsheet.css", "css/coach.css", "css/pwa.css", "css/measure.css",
+    "css/tour-plan.css", "css/cheatsheet.css", "css/coach.css", "css/pwa.css", "css/measure.css", "css/tryfit.css",
 }
 BOOT_DATA = ("listings", "criteria", "manifest", "notes", "lqip")          # fetched by the app at boot (js/app.js boot())
 SW_DATA = BOOT_DATA + ("history",)

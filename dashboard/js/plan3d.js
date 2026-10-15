@@ -52,6 +52,8 @@ import { allViews, stepView, windowGroups } from './plan/viewpoints.js';   // [i
 import { setLookChips, bindLookChips } from './plan/look-ui.js';
 import { mountStudioMeasure } from './measure/studio-hook.js';   // [measure] the measuring tape, 2D and 3D
 import { isMetricSearch } from './measure/core.js';
+import { parsePiece, fitReport, pieceFromItem, withPiece, roomKindAt } from './plan/tryfit.js';   // [fit] does it fit?
+import { tryFitHTML, fitCardHTML, parseNote } from './plan/tryfit-ui.js';
 
 const st = {
   id: null, date: '', min: 720, playing: false, site: null, mode: 'both', view: 'bird', wall: 'cut', tab: 'furniture',
@@ -156,6 +158,7 @@ export function init() {
       </div>
       <aside class="ps-side">
         <div class="panel ps-insp" id="psInsp"></div>
+        <div class="panel ps-fit" id="psFit" hidden></div>
         <div class="seg ps-tabs" id="psTabs" role="tablist">${[['furniture', 'Furniture'], ['checks', 'Checks'], ['shop', 'Shop'], ['light', 'Light'], ['plan', 'Plan']].map(([k, t]) => `<button type="button" role="tab" data-t="${k}">${t}<span class="n" id="psTabN-${k}"></span></button>`).join('')}</div>
         <div class="panel ps-tab" id="psTab" role="tabpanel"></div>
       </aside>
@@ -261,12 +264,20 @@ function mountMeasure() {
 // [furniture] "Your furniture" (furniture.json beside the search, or the inventory a project carried)
 let fileInventory;
 async function loadInventory(id) {
-  if (projectLibrary[id]?.inventory) return projectLibrary[id].inventory;
+  if (projectLibrary[id]?.inventory) return withExtras(projectLibrary[id].inventory);
   if (fileInventory === undefined) {
     const raw = S.manifest.furniture ? await loadJSON(`${S.base}/furniture.json`, null) : null, v = raw && validateInventory(raw);
     fileInventory = v?.ok ? v.inventory : null;
   }
-  return fileInventory;
+  return withExtras(fileInventory);
+}
+/** [fit] Pieces the renter added to their furniture list in this browser (the file beside the search is not touched), kept across plans. */
+const extrasKey = () => `furniture-extra.${S.base}`;
+function withExtras(inv) {
+  const extra = store.get(extrasKey(), []);
+  if (!Array.isArray(extra) || !extra.length) return inv;
+  const next = extra.reduce((acc, p) => withPiece(acc, p), inv), v = validateInventory(next);
+  return v.ok ? v.inventory : inv;
 }
 /** The renter's pieces fitted into this plan with the checks, as a layout preset. */
 function ownLayout() { const r = fitInventory(model, inventory, { step: 8 }); return { id: 'your-furniture', name: r.name, note: r.note, items: r.items, auto: true }; }
@@ -349,6 +360,7 @@ function recompute(opts = {}) {
   if (opts.panels !== false) tab();
   tabCounts(); lookChips();   // [interior]
   MEAS?.changed();   // [measure]
+  fitCard();   // [fit]
 }
 function computeRoutes() { try { routesRes = accessRoutes(model, R); } catch { routesRes = null; } }
 const shownRoutes = () => (routesRes ? routesRes.routes.filter((r) => st.routes || r.key === st.routeKey) : []);
@@ -482,6 +494,8 @@ function bindChrome() {
   $('psInsp').addEventListener('click', inspClick);
   $('psInsp').addEventListener('change', inspChange);
   $('psTab').addEventListener('click', tabClick);
+  $('psTab').addEventListener('input', tfInput); $('psTab').addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.id === 'tfText') { e.preventDefault(); tfDrop('text'); } });
+  $('psFit').addEventListener('click', fitClick);
   $('psTab').addEventListener('change', tabChange);
   $('psCompare').addEventListener('click', (e) => { if (e.target.closest('[data-cmp=close]')) { cancelCompare(); $('psCompare').hidden = true; } });
 }
@@ -757,6 +771,70 @@ function inspChange(e) {
   mutate(() => { if (k === 'rot') it.rot = ((v % 360) + 360) % 360; else it[k] = Math.max(1, Math.min(300, v)); });
 }
 
+// ------------------------------------------------------------------ [fit] does it fit?
+const tf = { text: '', pick: '', room: null };
+const tfState = () => { if (!model.rooms.some((r) => r.name === tf.room)) tf.room = (sel && ev?.items[sel]?.room) || [...model.rooms.filter((r) => r.kind === 'living')].sort((a, b) => b.area - a.area)[0]?.name || model.rooms[0].name; return tf; };
+function tfInput(e) {
+  const f = e.target.dataset.tfField; if (!f) return;
+  tf[f] = e.target.value;
+  if (f === 'text') { const n = parseNote(tf.text), el = $('tfNote'); if (el) { el.className = `tf-note ${n.tone}`; el.innerHTML = n.html; } }
+}
+/** Drop a typed piece, or a catalogue piece or product, into the chosen room, auto-placed where it fits best. */
+function tfDrop(which) {
+  const room = model.rooms.find((r) => r.name === tfState().room); if (!room) return;
+  let spec;
+  if (which === 'text') {
+    const p = parsePiece(tf.text);
+    if (!p.ok) { toast(p.error, 5200); $('tfText')?.focus(); return; }
+    spec = { ref: p.ref, label: p.label, w: p.w, d: p.d, h: p.h, note: p.heightGiven ? '' : ` (height ${fmtIn(p.h)} assumed)` };
+  } else {
+    const v = tf.pick || ''; if (!v) { toast('Pick a piece or a product first.'); return; }
+    if (v.startsWith('p:')) { const pr = PRODUCT_MAP[v.slice(2)]; if (!pr) return; spec = { ref: pr.ref, product: pr.id, label: `${pr.brand} ${shortName(pr.name)}`.slice(0, 80) }; }
+    else { const ref = v.slice(2); if (!CATALOG[ref]) return; spec = { ref }; }
+  }
+  const it = { id: newId(spec.ref, items), ref: spec.ref, x: Math.round(room.label[0]), y: Math.round(room.label[1]), rot: 0 };
+  for (const k of ['w', 'd', 'h', 'label', 'product']) if (spec[k] != null) it[k] = spec[k];
+  mutate(() => {
+    items.push(it); const g = place(it, room.name, true); sel = it.id; st.activePreset = null;
+    const nm = (it.label || CATALOG[it.ref].name).toLowerCase();
+    toast(g ? `Dropped the ${nm} into the ${room.name.toLowerCase()}${g === 'clear' ? '' : `, with a ${g} clearance`}. Drag it where you want it: the card shows whether it fits${spec.note || ''}` : `No spot in the ${room.name.toLowerCase()} fits the ${nm} with the rest where it is; it is in the middle, and the card shows what is in the way${spec.note || ''}`, 5200);
+  });
+}
+function addToList() {
+  const it = R.find((x) => x.id === sel); if (!it) return;
+  const piece = pieceFromItem(it, roomKindAt(model, [it.x, it.y]), { source: `Added in the Floor plan studio on ${new Date().toISOString().slice(0, 10)}` });
+  const v = validateInventory(withPiece(inventory, piece));
+  if (!v.ok) { toast(`Could not add it to your furniture list: ${v.error}`, 5200); return; }
+  const extra = store.get(extrasKey(), []);
+  store.set(extrasKey(), [...(Array.isArray(extra) ? extra.filter((p) => p.id !== piece.id) : []), piece].slice(-60));
+  inventory = v.inventory; persist(); tab(); fitCard();
+  toast(`${piece.label} is in your furniture list, saved in this browser. Download furniture.json to keep it with the search.`, 5200);
+}
+function downloadList() { if (inventory) saveBlob(new Blob([JSON.stringify(inventory, null, 2)], { type: 'application/json' }), 'furniture.json'); }
+function fitClick(e) {
+  const b = e.target.closest('[data-tf]'); if (!b) return;
+  const a = b.dataset.tf;
+  if (a === 'drop-text') tfDrop('text'); else if (a === 'drop-pick') tfDrop('pick'); else if (a === 'add') addToList(); else if (a === 'download') downloadList();
+}
+/** The answer for the selected piece, under the inspector. The cheap parts follow every drag; the walk from the front door is worked out once it settles. */
+let fitT = 0, fitWalk = null;
+function fitCard() {
+  const el = $('psFit'); if (!el || !model) return;
+  const it = sel && R.find((x) => x.id === sel && !x.hidden);
+  clearTimeout(fitT);
+  if (!it) { el.hidden = true; el.innerHTML = ''; return; }
+  const key = `${sel}|${R.map((x) => `${x.id}:${Math.round(x.x * 10)},${Math.round(x.y * 10)},${x.rot},${x.w},${x.d},${x.elev || 0}`).join(';')}`;
+  const walk = fitWalk?.key === key ? fitWalk : null;
+  const rep = fitReport(model, R, sel, { ev, reach: 96, routesAfter: walk?.after, routesBefore: walk?.before });
+  const inList = !!inventory?.pieces.some((p) => p.id === sel);
+  el.innerHTML = fitCardHTML(rep, { inList, walkPending: !walk }); el.hidden = false;
+  if (!walk) fitT = setTimeout(() => {
+    if (st.dragging) { fitCard(); return; }
+    try { fitWalk = { key, after: routesRes || accessRoutes(model, R), before: accessRoutes(model, R.filter((x) => x.id !== sel)) }; } catch { fitWalk = { key, after: null, before: null }; }
+    fitCard();
+  }, 380);
+}
+
 // ------------------------------------------------------------------ side tabs
 function tabCounts() {
   const c = ev?.counts || {}; const n = $('psTabN-checks');
@@ -811,7 +889,7 @@ function furnitureTab() {
   }).join('') : '<p class="faint">Nothing placed yet.</p>';
   const cat = CATEGORIES.map(([k, t]) => { const refs = Object.entries(CATALOG).filter(([, c]) => c.cat === k); return refs.length ? `<div class="ps-cat"><span class="ps-cat-h">${t}</span><div class="chips">${refs.map(([r, c]) => `<button type="button" class="chip" data-add="${esc(r)}" title="${esc(c.src)}">${IC.plus}${esc(c.name)}</button>`).join('')}</div></div>` : ''; }).join('');
   const own = inventory ? inventoryHTML(inventory, { held: placedIds(inventory, items), hasPreset: model.layouts.some((l) => l.id === OWN), active: st.activePreset === OWN }) : '';   // [furniture]
-  return `${own}${pres}<h3 class="label">In this layout <span>${R.filter((x) => !x.hidden).length} pieces</span></h3><div class="ps-list">${list}</div>
+  return `${tryFitHTML({ rooms: model.rooms.filter((r) => !['bath', 'closet', 'hall'].includes(r.kind)), st: tfState() })}${own}${pres}<h3 class="label">In this layout <span>${R.filter((x) => !x.hidden).length} pieces</span></h3><div class="ps-list">${list}</div>
     <h3 class="label">Add furniture <span>real sizes, hover for the source</span></h3>${cat}
     <div class="ps-opts">${[['snap', 'Snap to walls'], ['zonesAll', 'Show every clearance zone'], ['sight', 'Show TV sightlines'], ['swings', 'Shade door swings in 3D']].map(([k, t]) => `<label class="tg ${st[k] ? 'on' : ''}"><input type="checkbox" class="sr" data-opt="${k}" ${st[k] ? 'checked' : ''}><span class="switch"></span><span class="lbl">${t}</span></label>`).join('')}</div>`;
 }
@@ -874,6 +952,7 @@ function planTab() {
 function tabClick(e) {
   const b = e.target.closest('button, [data-sel]'); if (!b) return;
   if (b.dataset.p) applyPreset(b.dataset.p);
+  else if (b.dataset.tf) fitClick(e);
   else if ('invUse' in b.dataset) useOwn();
   else if (b.dataset.invAdd) addOwn(b.dataset.invAdd);
   else if (b.dataset.sel) { select(b.dataset.sel === sel ? null : b.dataset.sel); markList(); }
