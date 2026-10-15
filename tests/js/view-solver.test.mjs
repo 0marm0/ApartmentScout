@@ -68,7 +68,7 @@ test('two landmarks at the same distance cannot fix the eye height: the model he
   assert.equal(r.eye_determined, false); assert.equal(r.sigma.eye, null);
   assert.equal(r.eye_height_m, 66, 'the model height is kept');
   near(r.bearing_deg, 119, 0.3, 'the bearing is still measured');
-  assert.ok(r.warnings.some((w) => /same distance/.test(w)));
+  assert.ok(r.warnings.some((w) => /not spread far enough/.test(w)));
 });
 
 test('a wrong lens guess biases two landmarks only a little in bearing', () => {

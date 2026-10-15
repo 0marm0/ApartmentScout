@@ -42,7 +42,7 @@ jobs:
           - name: wizard
             files: tests/e2e/test_wizard.py tests/e2e/test_onboarding.py tests/e2e/test_boot_recovery.py tests/e2e/test_menu_nav.py
           - name: model-project
-            files: tests/e2e/test_model_project.py
+            files: tests/e2e/test_model_project.py tests/e2e/test_view_match.py
           - name: interior-views
             files: tests/e2e/test_interior_view.py
           - name: city-context

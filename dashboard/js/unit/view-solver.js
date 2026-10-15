@@ -225,7 +225,7 @@ export function solveView(inp) {
   let sg = sigmaOf(p, free, true);
   if (dof >= 1) { const infl = Math.sqrt(Math.max(1, fit.cost / Math.max(1, dof))); for (const k of free) sg[k] *= infl; }
   const warnings = [];
-  if (!eyeDetermined) warnings.push('These landmarks sit at about the same distance, so the photo cannot separate tilt from height: the model\'s eye height is kept. Add a landmark much nearer or farther.');
+  if (!eyeDetermined) warnings.push('These landmarks are not spread far enough in distance for the photo to separate tilt from camera height, so the model\'s eye height is kept. A landmark close by (a neighbouring roof, clicked in the 3D view) fixes it.');
   if (n >= 3 && !lensDetermined && fixed.vfov == null) warnings.push(`The lens could not be pinned down from these landmarks: ${vfov0.toFixed(0)}° (vertical) is assumed.`);
   if (n === 2) warnings.push('Two landmarks fit with almost nothing to check against: add a third to see whether they agree.');
   const span = Math.max(...lms.map((l, i) => angDiff(dirs[i].bearing, dirs[0].bearing))) - Math.min(...lms.map((l, i) => angDiff(dirs[i].bearing, dirs[0].bearing)));
