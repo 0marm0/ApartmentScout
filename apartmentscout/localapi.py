@@ -37,6 +37,7 @@ from . import cities as city_lookup   # [onboarding] city and address lookups, f
 from .config import Workspace
 from .criteria_check import check_text, summary_lines
 from .intake import city_profile, init_search, next_steps
+from .mediabase import find_local, media_base_url, remote_url
 from .tourapi import MAX_PHOTO_BYTES, TourError, TourFiles, pillow_available   # tour findings and photos
 
 MAX_BODY = 256 * 1024
@@ -86,6 +87,9 @@ class ServeState:
     resolve_city: Callable[[str], Any] | None = None
     locate: Callable[[str, str | None], dict | None] | None = None
     check_feed: Callable[[str], Any] | None = None
+    # photos: /media/<path> is answered from media_dir, then media_lite_dir (the starter set), else sent to media_base_url
+    media_lite_dir: Path | None = None
+    media_base_url: str | None = None
     token: str = field(default_factory=lambda: secrets.token_urlsafe(24))
     port: int = 0
     lock: threading.RLock = field(default_factory=threading.RLock)
@@ -103,6 +107,11 @@ class ServeState:
         self.export(ws, data_dir)
         with self.lock:
             self.ws, self.data_dir, self.media_dir = ws, data_dir, ws.root / "media"
+            self.media_lite_dir = ws.root / "media-lite"
+            try:
+                self.media_base_url = media_base_url(ws.criteria())
+            except (OSError, ValueError, SystemExit):
+                self.media_base_url = None
 
     def display(self, p: Path) -> str:
         """A path as the renter would type it: relative to the folder the server started in when possible."""
@@ -342,6 +351,16 @@ def make_handler(state: ServeState) -> type[http.server.SimpleHTTPRequestHandler
                 return str(target) if target.parent.parent.parent == base else str(state.dash / "__forbidden__")
             with state.lock:
                 routes = {"/data/": state.data_dir.resolve(), "/media/": state.media_dir.resolve() if state.media_dir else None}
+                lite = state.media_lite_dir
+            if clean.startswith("/media/"):   # media/ first, then the starter set in media-lite/ (same relative paths)
+                rel = urllib.parse.unquote(clean[len("/media/"):])
+                hit = find_local([state.media_dir, lite], rel)
+                if hit is not None:
+                    return str(hit)
+                if routes["/media/"] is None:
+                    return str(state.dash / "__forbidden__")
+                target = (routes["/media/"] / rel).resolve()
+                return str(target) if routes["/media/"] in target.parents else str(routes["/media/"] / "__forbidden__")
             for prefix, root in routes.items():
                 if root and clean.startswith(prefix):
                     rel = Path(urllib.parse.unquote(clean[len(prefix):]))
@@ -436,12 +455,36 @@ def make_handler(state: ServeState) -> type[http.server.SimpleHTTPRequestHandler
                 return self._send(403, {"error": "Open the dashboard at http://127.0.0.1:%d/." % state.port})
             if state.api and route in ("/", "/index.html"):
                 return self._index()
+            if self._media_redirect(route):
+                return None
             return super().do_GET()
 
         def do_HEAD(self) -> None:  # noqa: N802
             if self.path.startswith("/api/") or not self._host_ok():
                 return self._send(405, {"error": "Not allowed."})
+            if self._media_redirect(self.path.split("?", 1)[0]):
+                return None
             return super().do_HEAD()
+
+        def _media_redirect(self, route: str) -> bool:
+            """A /media/ photo that is in neither media/ nor media-lite/: 302 to the published copy when the search names one
+            (search.media_base_url). Otherwise the normal 404 follows."""
+            if not route.startswith("/media/"):
+                return False
+            rel = urllib.parse.unquote(route[len("/media/"):])
+            with state.lock:
+                roots, base = [state.media_dir, state.media_lite_dir], state.media_base_url
+            if find_local(roots, rel) is not None:
+                return False
+            target = remote_url(base, rel)
+            if target is None:
+                return False
+            self.send_response(302)
+            self.send_header("Location", target)
+            self.send_header("Cache-Control", "no-store")   # the photo may be saved here tomorrow
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+            return True
 
         def do_POST(self) -> None:  # noqa: N802
             route = self.path.split("?", 1)[0]

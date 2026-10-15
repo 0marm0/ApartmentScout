@@ -34,6 +34,7 @@ from . import tours as tours_mod
 from .config import Workspace, load_criteria
 from .listings import CSV_TEMPLATE_COLUMNS, load, normalize, save
 from .lqip import alias_remote, build_sidecar
+from .mediabase import media_base_url
 from .slim import slim_listing
 
 REPO = Path(__file__).resolve().parent.parent
@@ -554,7 +555,13 @@ def standalone(data_dir: Path, dest: Path) -> Path:
         data["data/" + f.relative_to(data_dir).as_posix()] = json.loads(f.read_text())
     data["share/snapshot.html"] = (DASH / "share" / "snapshot.html").read_text()   # the Share button's template (features/share.js)
     no_media = not (dest.parent / "media").is_dir()
-    if no_media and isinstance(data.get("data/listings.json"), list):
+    manifest = data.get("data/manifest.json")
+    if no_media and isinstance(manifest, dict) and manifest.get("media_base_url") and isinstance(data.get("data/listings.json"), list):
+        # no photos next to the file, but the search publishes them: the page asks the published copy (media_base_url) and then
+        # the photo's original link. The saved paths stay, so the blur-up previews are found as they are.
+        manifest["media_local"] = False
+        log(f"Photos are fetched from {manifest['media_base_url']} (none are embedded)")
+    elif no_media and isinstance(data.get("data/listings.json"), list):
         # local photo copies are not embedded: without a media/ folder next to the file use the photo links
         if "data/lqip.json" in data:   # the blur-up previews follow the photos: found under their original links
             data["data/lqip.json"] = alias_remote(data["data/lqip.json"], data["data/listings.json"])
@@ -663,7 +670,8 @@ def _export(ws: Workspace, out: Path):
                 S["score"] = {**S["score"], "reasons": [{k: v for k, v in r.items() if k != "items"} for r in S["score"]["reasons"]]}
         slim.append(slim_listing(S))   # only the fields the dashboard reads (apartmentscout/slim.py)
     (out / "listings.json").write_text(json.dumps(slim, separators=(",", ":"), ensure_ascii=False))
-    previews = build_sidecar(slim, ws.root / "media", out, cache_path=ws.cache_dir / "lqip.json", log=log)   # blur-up previews
+    previews = build_sidecar(slim, ws.root / "media", out, cache_path=ws.cache_dir / "lqip.json", log=log,   # blur-up previews: the full set,
+                             fallback=[ws.root / "media-lite"])                                                  # else the last sidecar, else the starter set
     (out / "criteria.json").write_text(json.dumps(crit, default=str, indent=1))
     for sub in ("layers", "sites", "plans"):
         src = ws.root / sub
@@ -698,6 +706,9 @@ def _export(ws: Workspace, out: Path):
                 "dossiers": sorted(p.stem for p in ddst.glob("*.json")) if ddst.exists() else [],
                 "furniture": fdst.exists(),
                 "lqip": bool(previews)}
+    base = media_base_url(crit)   # where photos missing from media/ and media-lite/ can be fetched (apartmentscout/mediabase.py)
+    if base:
+        manifest["media_base_url"] = base
     from .exports import run_all
     manifest["extra"] = run_all(ws, out, log=log)   # history, coverage and other optional data files
     (out / "manifest.json").write_text(json.dumps(manifest, indent=1))

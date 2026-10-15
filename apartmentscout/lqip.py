@@ -121,9 +121,14 @@ def pillow_available() -> bool:
     return True
 
 
-def build_sidecar(listings: Iterable[dict], media_root: Path, out_dir: Path, cache_path: Path | None = None,
-                  log: Callable[[str], None] = lambda s: None) -> dict | None:
+def build_sidecar(listings: Iterable[dict], media_root: Path | Iterable[Path], out_dir: Path, cache_path: Path | None = None,
+                  log: Callable[[str], None] = lambda s: None, fallback: Iterable[Path] = ()) -> dict | None:
     """Write ``out_dir/lqip.json`` for the listings' leading photos found under ``media_root``.
+
+    ``media_root`` is one folder or several, searched in order (a search's full ``media/`` set). A photo found in none of
+    them keeps the preview already in ``out_dir/lqip.json`` (or in the cache), so a machine without the full photo set
+    rebuilds the same sidecar instead of losing it; only a photo that has no earlier preview either is read from the
+    ``fallback`` folders (the smaller ``media-lite/`` starter set, whose files are re-encoded copies of the same photos).
 
     Returns the sidecar dict, or None when Pillow is missing or there is nothing to preview (any stale sidecar is
     removed so the dashboard never reads a preview that no longer matches). Previews are cached by file size and
@@ -133,20 +138,38 @@ def build_sidecar(listings: Iterable[dict], media_root: Path, out_dir: Path, cac
         dest.unlink(missing_ok=True)
         log("Blur-up previews skipped: Pillow is not installed (pip install 'apartmentscout[images]')")
         return None
+    roots = [media_root] if isinstance(media_root, Path) else list(media_root)
+    spare = list(fallback)
     cache: dict[str, list] = {}
     if cache_path and cache_path.exists():
         try:
             cache = json.loads(cache_path.read_text()).get("items", {})
         except (OSError, ValueError):
             cache = {}
+    earlier: dict[str, list] = {}
+    if dest.exists():
+        try:
+            earlier = json.loads(dest.read_text()).get("items", {})
+        except (OSError, ValueError):
+            earlier = {}
     items: dict[str, list] = {}
     fresh: dict[str, list] = {}
     for rel in lqip_targets(listings):
-        f = media_root / rel.removeprefix("media/")
-        try:
-            st = f.stat()
-        except OSError:
-            continue
+        def find(folders: list[Path]) -> Path | None:
+            return next((r / rel.removeprefix("media/") for r in folders if (r / rel.removeprefix("media/")).is_file()), None)
+
+        f = find(roots)
+        if f is None:   # not on this machine: the preview made when it was
+            hit = earlier.get(rel) or (cache.get(rel) or [None, None])[2:]
+            if hit and len(hit) == 3:
+                items[rel] = list(hit)
+                if rel in cache:
+                    fresh[rel] = cache[rel]
+                continue
+            f = find(spare)
+            if f is None:
+                continue
+        st = f.stat()
         stamp = [st.st_size, int(st.st_mtime)]
         hit = cache.get(rel)
         if hit and hit[:2] == stamp:
