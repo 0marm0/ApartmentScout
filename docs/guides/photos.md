@@ -30,6 +30,13 @@ image, and records `photos_local` and `building_photos[].local`. `apartmentscout
 to that folder for your own searches, so the dashboard keeps showing photos after the listing comes
 down. The command refuses to cache inside `examples/`, which is committed.
 
+**The example's photos.** The bundled example does not keep its 5,595 photos (about 400 MB) in the repository. A clone holds a
+34 MB starter set, `examples/nyc-2026/media-lite/`: a full gallery for each of the top twelve homes (and Paramount Tower 25E), one or
+two photos for every other home, and every floor plan. `serve` and the dashboard take the rest from the live demo, which publishes the
+full set (`search.media_base_url`), so the example works with nothing to download. For a full set on disk (offline use), run
+`scripts/fetch_media.sh`; delete `examples/nyc-2026/media/` whenever you want the space back, nothing breaks. The order the dashboard
+tries is in the [data model](data-model.md#where-a-saved-photo-comes-from-media-media-lite-media_base_url).
+
 ## How Commons photos are chosen
 
 Listings are grouped into buildings by location (about 10 m), so a tower with twenty units is looked

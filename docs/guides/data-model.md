@@ -250,6 +250,39 @@ Every dashboard surface (cards, drawer, lightbox, Research gallery, Shortlist th
 flagged in `photo_flags` goes last and otherwise the data order holds. A card's photo is the first unit, line or building image,
 never a plan. The card's count reads "8 unit · 22 building".
 
+### Where a saved photo comes from: `media/`, `media-lite/`, `media_base_url`
+
+A listing's saved photos are paths such as `media/<listing-id>/p-1a2b3c4d.webp` or `media/shared/<hash>.webp`. Which copy of a
+path exists depends on where the page runs, so the dashboard asks for each photo in the same order everywhere (a plain static
+server, `apartmentscout serve`, the published site, the share and tour pages) and moves on at the first miss:
+
+1. `media/<path>`: the full set next to the page (`<search>/media/`; a private search has nothing else).
+2. `media-lite/<path>`: a **starter set** with the same relative paths, small enough to keep in the repository.
+3. `<media_base_url><path under media/>`: the published full set.
+4. The photo's original link (`photos[i]`), then the card's aerial view or glyph.
+
+`search.media_base_url` in `criteria.yaml` names the published folder (an `https://` folder URL, validated by `criteria --check`):
+
+```yaml
+search:
+  media_base_url: https://0marm0.github.io/ApartmentScout/demo/media/
+```
+
+`apartmentscout build` copies it into `manifest.json` as `media_base_url`, so no URL lives in the page's code. Without the line a
+search has no published copy and step 3 is skipped. In `apartmentscout serve`, `/media/<path>` answers from `media/`, then
+`media-lite/`, and sends anything else to the published copy with a `302`. A page served by a plain static server tries each step
+with an `onerror` fallback: one chain per image, remembered for the session, and a folder that has failed three times without ever
+answering is skipped from then on (`dashboard/js/features/media-chain.js`). The single-file build (`build --standalone`) has no media
+folders beside it, so it starts at step 3 (`manifest.media_local: false` in the embedded copy); without a `media_base_url` it
+falls back to the photos' original links, as before.
+
+The bundled example uses all the tiers: the full 5,595-photo set (about 400 MB) is a GitHub release that the Pages workflow
+publishes at `/demo/media/`; `examples/nyc-2026/media-lite/` (34 MB, tracked) holds the starter set; and
+`examples/nyc-2026/media/` is ignored and only exists if you run `scripts/fetch_media.sh`. The starter set is built by
+`scripts/make_media_lite.py`: a full gallery (up to 30 photos, clean ones first) for the top 12 active listings by `score.rank`
+and for Paramount Tower 25E, the hero plus one building photo, re-encoded smaller, for every other listing that has photos,
+and every floor plan that is a local file. Its `MANIFEST.json` records the settings and the counts.
+
 ### Blur-up previews: `lqip.json`
 
 `apartmentscout build` writes `data/lqip.json` next to `listings.json` when Pillow is installed (`pip install 'apartmentscout[images]'`;
@@ -264,8 +297,10 @@ Keys are the saved photo path; each value is `[source width, source height, base
 was written. The dashboard fetches it beside the main data (never inside `listings.json`, which stays the same size), paints each preview
 blurred behind its photo and cross-fades when the photo arrives, and uses the pixel size as the layout ratio in the Research gallery.
 Previews are cached by file size and modification time in `<search>/cache/lqip.json`, so a rebuild only reads photos that changed.
-The example's sidecar is about 290 KB for 970 photos. The standalone file embeds it when it is under 400 KB; without a `media/` folder
-beside the file the previews are re-keyed by each photo's original link (about 63 KB for the example).
+A photo that is not on this machine (the full set was never downloaded, or was deleted to free space) keeps the preview already in
+`lqip.json`; only a photo with no earlier preview is read from `media-lite/`. The example's sidecar is about 150 KB for 495 photos.
+The standalone file embeds it when it is under 400 KB. With a `media_base_url` the previews stay keyed by the saved path; without one,
+and without a `media/` folder beside the file, they are re-keyed by each photo's original link.
 
 ## Commute
 

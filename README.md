@@ -59,7 +59,7 @@ The [live demo](https://0marm0.github.io/ApartmentScout/demo/) is the dashboard 
 and 30 building dossiers. Install it from Chrome, Edge or Safari and it keeps working offline. To run it on your own machine:
 
 ```bash
-git clone https://github.com/<your-username>/ApartmentScout.git
+git clone --depth 1 https://github.com/<your-username>/ApartmentScout.git   # --depth 1: today's files, not the whole history
 cd ApartmentScout
 python -m venv .venv && source .venv/bin/activate
 pip install -e .                                       # ".[xlsx]" adds the workbook export, ".[dev]" the test tools
@@ -165,9 +165,13 @@ with prices, amenities, review summaries and statuses; walk, subway, bus and bes
 Grand Central on the MTA timetables; a 311 noise layer; 30 building dossiers from NYC Open Data; 16 3D site models and 9 floor
 plans with a furnished layout; and saved photos for 286 homes, with an aerial view where a home has none.
 
-The photos (about 400 MB) are kept in a GitHub release rather than in git, so clones stay small. To see them in a local
-copy of the demo, run `scripts/fetch_media.sh` (it needs the GitHub CLI signed in); without them the dashboard falls back
-to the photos' original links and aerial views.
+**Photos.** The full set is 5,595 photos (about 400 MB), so it is not in the download. The repository carries a 34 MB starter
+set, [`examples/nyc-2026/media-lite`](examples/nyc-2026/media-lite): a real gallery (up to 30 photos) for each of the twelve
+top-ranked homes, one or two photos for every other home, and every floor plan. The [live demo](https://0marm0.github.io/ApartmentScout/demo/)
+serves all of them, and a local copy fetches the ones it lacks from there (`apartmentscout serve` redirects, a static server falls back
+in the page), so the example works with nothing extra to download. Offline, or for the full set on disk, run `scripts/fetch_media.sh`
+(it needs the GitHub CLI signed in) and delete `examples/nyc-2026/media` any time to get the space back. How the dashboard picks a
+copy: [the data model](docs/guides/data-model.md#where-a-saved-photo-comes-from-media-media-lite-media_base_url).
 
 ## Host it, install it
 

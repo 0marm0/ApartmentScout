@@ -552,8 +552,9 @@ apartmentscout serve --no-api                         # files only: no save, cre
 **Private searches stay out of the repo.** For the bundled example, `serve` exports into
 `dashboard/data/` (the committed demo). For any other search it exports into that search's own
 git-ignored cache (`<search>/cache/dashboard-data/`) and the server maps `/data/` to it, and `/media/` to
-`<search>/media/`, where `apartmentscout photos --cache` keeps local copies of listing photos. Paths that
-try to leave those folders are refused. Nothing from your search is written into `dashboard/`.
+`<search>/media/`, where `apartmentscout photos --cache` keeps local copies of listing photos; a photo that is not there is
+looked up in `<search>/media-lite/` (the starter set) and then sent to the published copy, if `search.media_base_url` names one
+(a `302`). Paths that try to leave those folders are refused. Nothing from your search is written into `dashboard/`.
 
 You can also serve `dashboard/` with any static server after `apartmentscout build --out dashboard/data`.
 Opening `dashboard/index.html` directly as a file does **not** work (browsers block ES modules on
@@ -613,7 +614,7 @@ Safari uses *Add to Home Screen*.
 
 What it saves: the shell and core data listed in `precache.json` (written at deploy time) go into a cache named for the build; other
 same-origin files (map layers, 3D site models, plans, dossiers) are cached the first time they are used, in a cache that belongs to the
-same build; saved listing photos (`media/`) are cached on first view in their own cache, capped at 50 MB, oldest first. Remote photos
+same build; saved listing photos (`media/` or `media-lite/`) are cached on first view in their own cache, capped at 50 MB, oldest first. Remote photos
 and map tiles are never touched, so offline the map shows its basemap note and the pins, lines and heat from the saved data. The page
 is served from the build's cache (so the page and the hashed files it names stay one version) and the browser's worker update check
 finds a new deploy: the dashboard then shows *A new version is ready* with **Reload** and **Later**. The new build installs in the
@@ -666,7 +667,8 @@ them.
 Measure it: `python scripts/perf_check.py --site _site --standalone my-search.html` reports LCP, FCP, total blocking time, bytes on the
 wire (gzip, as Pages sends them) and request count on a cold load, with the CPU slowed (`--cpu 4`) and a network profile (`--net 4g`) if you
 want a phone. `--check` enforces `scripts/perf_budget.json` (the `perf` job in `tests.yml`). Build the site locally with
-`NO_MEDIA=1 scripts/build_site.sh _site` (leave out `NO_MEDIA` to copy the 400 MB of example photos).
+`NO_MEDIA=1 scripts/build_site.sh _site` (it publishes the 34 MB starter set at `/demo/media-lite/`; leave out `NO_MEDIA` to copy the full
+400 MB set from `examples/nyc-2026/media`, which `scripts/fetch_media.sh` downloads).
 
 ## Host it
 
