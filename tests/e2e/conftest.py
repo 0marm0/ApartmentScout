@@ -79,6 +79,12 @@ def serve(dashboard: Path, media: list[Path] | Path) -> http.server.ThreadingHTT
                     return str(folders[0] / "__missing__")
             return super().translate_path(path)
 
+        def handle(self) -> None:
+            try:
+                super().handle()
+            except (BrokenPipeError, ConnectionResetError):
+                pass   # the page went away (a test navigated, or closed its context) while a file was on its way
+
         def log_message(self, *a) -> None:
             pass
 
@@ -295,14 +301,23 @@ def map_opened(page, timeout_ms: int = 15000) -> None:
 
 
 # ------------------------------------------------------------------ parallel runs
-# Test files whose module-scoped fixtures are costly (a site built with esbuild, a temp search built with the CLI, a second static
-# server): under `--dist loadgroup` each stays on ONE worker, so the fixture is built once instead of once per worker that gets
-# one of its tests. Every other test is its own unit of work and goes to whichever worker is free.
-XDIST_GROUPED = {"test_pwa", "test_landing_page", "test_places_multidest", "test_tour_findings", "test_media_tiers"}
+# A test that uses a module-scoped fixture (a site built with esbuild, a temp search built with the CLI, a second static server) is
+# kept with the other tests of its file on ONE worker under `--dist loadgroup`, so the fixture is built once instead of once per worker
+# that gets one of them. Tests of the same file that use none of those (they only need the browser) are free to go anywhere, and so is
+# every test of a file with no module-scoped fixture: each is its own unit of work for whichever worker is idle.
+def _uses_module_fixture(item) -> bool:
+    info = getattr(item, "_fixtureinfo", None)
+    for name in item.fixturenames:
+        defs = info.name2fixturedefs.get(name) if info else None
+        if defs and str(getattr(defs[-1], "scope", "")) == "module":
+            return True
+    return False
 
 
+@pytest.hookimpl(tryfirst=True)   # before pytest-xdist reads the marks to put the group name into the test ids
 def pytest_collection_modifyitems(items) -> None:
     for item in items:
-        mod = item.module.__name__.rsplit(".", 1)[-1]
-        if mod in XDIST_GROUPED and not item.get_closest_marker("xdist_group"):
-            item.add_marker(pytest.mark.xdist_group(name=mod))
+        if item.get_closest_marker("xdist_group") or getattr(item, "module", None) is None:
+            continue
+        if _uses_module_fixture(item):
+            item.add_marker(pytest.mark.xdist_group(name=item.module.__name__.rsplit(".", 1)[-1]))

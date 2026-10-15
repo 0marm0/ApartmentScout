@@ -91,6 +91,14 @@ apartmentscout monitor --dry-run                  # plan a re-check of the watch
 apartmentscout all                                # geocode, commute, layers, score, build
 ```
 
+## Testing (when you change this repository's code)
+
+Run `python scripts/test_changed.py` before committing: it picks the unit, JavaScript and browser tests that cover your changes (against
+`main`, including uncommitted files) and runs them in parallel; the full suite runs in CI. `--list` shows what it would run. A browser file
+on its own: `APARTMENTSCOUT_E2E=1 pytest -m e2e tests/e2e/test_x.py -q`. Browser tests never sleep for a fixed time and never start their own
+Playwright; the rules are in `CONTRIBUTING.md`. Shell commands are killed after about five minutes: run long ones in the background with
+the output in a log file.
+
 ## Editing listings
 
 `listings.json` is the source of truth. Edit it directly (it is plain JSON) or import CSV.

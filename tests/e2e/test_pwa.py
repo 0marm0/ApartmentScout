@@ -78,7 +78,7 @@ class Server(http.server.ThreadingHTTPServer):
 
 
 @pytest.fixture(scope="module")
-def site(tmp_path_factory: pytest.TempPathFactory) -> Path:
+def site(tmp_path_factory: pytest.TempPathFactory, esbuild_ready) -> Path:
     """A built copy of the dashboard at <tmp>/ApartmentScout/demo, with a few fake photos under media/."""
     if not (os.environ.get("ESBUILD") or shutil.which("npx")):
         _need("Node (npx esbuild) is needed to build the optimised site")

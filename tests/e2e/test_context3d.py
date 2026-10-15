@@ -44,7 +44,8 @@ def _ctx(s):
 
 def _wait_ctx(s, pred: str) -> None:
     """Wait until `pred` (a JS expression over the CTX_JS result `c`) holds: the state the next assertion looks at, not a fixed sleep."""
-    s.page.wait_for_function(f"() => {{ const s = window.__unit3d.stage; s.dirty = true; s.frame(true); const c = ({CTX_JS})(); return !!c && ({pred}); }}", timeout=20000)
+    # read the state without drawing a frame per poll: with software GL a frame takes a second, and a poll that forced one would starve the very switch it waits for
+    s.page.wait_for_function(f"() => {{ const c = ({CTX_JS})(); return !!c && ({pred}); }}", timeout=60000)
     settled(s.page, 20000, ticks=3)
 
 
