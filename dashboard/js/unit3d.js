@@ -23,6 +23,8 @@ import { illustration } from './features/empty.js';   // [feature C] empty-state
 import { missingNotice } from './features/plan-empty.js';   // [feature C]
 import { chooseHome, homeToRemember, SAVED_KEY } from './features/default-home.js';   // the home the 3D views open: address, session, renter's last, search default
 import * as UQ from './unit/quality3d.js';   // [feature J] render quality and progressive render
+import * as RUI from './render/ui.js';   // [render] "Render a photo" and "Make a video" (the renderers load when a button is pressed)
+import { applyUnitPose, saveUnitCamera, restoreUnitCamera } from './render/shots.js';
 import { mountDock } from './room3d/dock.js';   // [phone] the time slider within thumb reach
 import { annualFor, panelHTML as annualPanelHTML } from './unit/daylight-annual.js';   // [feature J] annual daylight summary
 import { resolveCal, geoFromSite, measuredFromSite, calSummary } from './unit/calibration.js';   // [model project] measured vs estimated height
@@ -222,6 +224,7 @@ export function init() {
   sel.addEventListener('change', () => { location.hash = '#unit/' + encodeURIComponent(sel.value); });
   $('uSnap').addEventListener('click', () => snapshot());
   UQ.mount({ host: root.querySelector('.u-head .actions'), stageEl: $('stage'), store, toast, render: (scale) => snapshot({ hires: scale }) });   // [feature J]
+  RUI.mountRender({ id: 'unit', container: root.querySelector('.u-head .rnq-inline'), store, host: renderHost, info: renderInfo, video: renderVideoBridge() });   // [render]
   mountDock($('stage'), { min: STRIP_FROM, max: STRIP_TO - STRIP_STEP, step: STRIP_STEP, get: () => st.min, set: (v) => setTime(v), text: () => fmtT(st.min), playing: () => !!st.playing, toggle: () => togglePlay() });   // [phone]
   $('annualPanel').addEventListener('toggle', (e) => { if (e.target.id === 'uAnnualDetails' && e.target.open !== !!st.annualOpen) { st.annualOpen = e.target.open; annualPanel(); } }, true);   // [feature J]
   new ResizeObserver(fitGrid).observe(root);
@@ -1751,6 +1754,42 @@ function syncUrl() {
   qs.set('mode', cameraParam(st.mode));   // [camera] always written: a home with a plan opens Inside when the address says nothing, so Outside has to be said
   const url = `${location.pathname}?${qs}#unit/${encodeURIComponent(st.id)}`;
   if (url !== location.pathname + location.search + location.hash) history.replaceState(history.state, '', url);
+}
+
+// ------------------------------------------------------------------ [render] photo and video
+/** The live view as a render host (render/hosts.js), or null while there is no window to look out of. */
+async function renderHost() {
+  if (!stage?.scene || !site || !hasWindow()) return null;
+  return (await import('./render/hosts.js')).unitHost(stage);
+}
+function renderInfo() {
+  const L = listing(), mm = `${String(Math.floor(st.min / 60)).padStart(2, '0')}${String(Math.round(st.min % 60)).padStart(2, '0')}`, [y, m, d] = ymd();
+  const date = new Date(Date.UTC(y, m - 1, d)).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
+  return { stem: `${st.id}-floor${st.floor}-${st.date}-${mm}-${{ win: 'window', in: 'inside' }[st.mode] || st.mode}`, title: `${label(L) || st.id} · floor ${st.floor} · ${MODE_NAME[st.mode]}`, when: `${date}, ${fmtT(st.min)}`, date };
+}
+/** What a video needs of this view: the plan and its walkable floor, the sun, and how to stand the camera and set the time (and put both back). */
+function renderVideoBridge() {
+  const ensure = () => { if (!interior && plan && stage?.scene && hasWindow()) buildApartment(); return !!interior && !interior.generic && !!plan; };
+  return {
+    plan: () => (ensure() ? plan : null),
+    space: () => (ensure() ? walk?.space || null : null),
+    altAt: (m) => sunAt(m).alt,
+    range: [STRIP_FROM, STRIP_TO - STRIP_STEP],
+    minute: () => st.min,
+    prepare() {
+      pausePlay(false);
+      const mode0 = st.mode, cam0 = interior ? saveUnitCamera(stage) : null, min0 = st.min, view0 = curView;
+      if (st.mode !== 'in' && ensure()) setMode('in', true);
+      return () => {
+        st.min = min0;
+        if (mode0 !== 'in') setMode(mode0, true);
+        if (cam0) restoreUnitCamera(stage, cam0);
+        curView = view0; refreshTime(); stage.dirty = true; syncUrlSoon();
+      };
+    },
+    applyPose: (p) => applyUnitPose(stage, interior.frame, p),
+    setMinute: (m) => { st.min = m; refreshTime(true); },
+  };
 }
 
 // ------------------------------------------------------------------ snapshot and 3D model
