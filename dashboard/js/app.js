@@ -6,7 +6,7 @@ import { COMMUTE_MODES, commuteEntry, modeMinutes, modeOptions, evaluate, applyP
 import { initPalette, openPalette, shareListing, syncTrigger } from './palette.js';
 import { initEnhance } from './enhance.js';
 import { takeEarly } from './perf/early.js';   // [perf] boot data requested before the code loaded (optimised build only)
-import { initTheme, flipTheme, initShell, parseRoute, syncSubnav } from './shell.js';
+import { initTheme, flipTheme, initShell, parseRoute, syncSubnav, homeTarget } from './shell.js';
 import { initMedia, cardMediaHTML, afterDrawerMedia, mediaTransition } from './features/media.js';   // photos: lightbox, blur-up, counts
 import { loadPreviews } from './features/lqip.js';
 import { cleanStored } from './state-guard.js';
@@ -128,7 +128,7 @@ export function applyCriteria(profile, { quiet = false } = {}) {
 function renderSearchSwitch() {
   const b = $('searchSwitch'); if (!b) return;
   b.classList.toggle('pv', !!S.preview);
-  b.title = S.preview ? 'Searches and settings: previewing edited criteria in this browser' : 'Searches, settings and New search';
+  b.title = S.preview ? 'This search: previewing edited criteria in this browser' : 'This search: edit criteria, switch or start a new one';
 }
 export async function openSettings() { (await import('./settings.js')).openSettings(); }
 /** The New search wizard (mode 'new', or 'edit' for every criterion of the open search). */
@@ -764,7 +764,7 @@ export function closeDrawer() {
 
 // ------------------------------------------------------------------ router
 // Views load on first visit, so one that fails to load (a missing or blocked script) never blanks the app.
-// Six tabs in the top bar; Tours lives under Shortlist (#list/tours) and Records under Research (#research/records/<id>).
+// Five tabs in the top bar (Home holds Unit 3D and Floor plan: #unit/<id> and #plan/<id> are unchanged); Tours lives under Shortlist (#list/tours) and Records under Research (#research/records/<id>).
 // The old #tours and #records/<id> links are rewritten to those by parseRoute() (shell.js).
 const VIEWS = { map: () => import('./map.js'), list: () => import('./list.js'), compare: () => import('./compare.js'), unit: () => import('./unit3d.js'),
   plan: () => import('./plan3d.js').then((m) => (import('./plan/tracer-ui.js').then((t) => t.attach()).catch(() => {}), m)), tours: () => import('./tours.js'), research: () => import('./research.js') };
@@ -805,13 +805,13 @@ function setupKeys() {
     if (e.key === 's' && S.sel) { toggleSave(S.sel); openDrawer(S.sel); return; }
     if (e.key === 'c' && S.sel) { toggleCompare(S.sel); openDrawer(S.sel); return; }
     if (e.key === 't') { flipTheme(); return; }
-    const views = ['map', 'list', 'compare', 'unit', 'plan', 'research'];
-    if (/^[1-6]$/.test(e.key)) { location.hash = views[+e.key - 1]; return; }
+    // 1-5 follow the tabs left to right; 4 is Home (Unit 3D or Floor plan, whichever was open last; pressing it again on Home flips to the other)
+    if (/^[1-5]$/.test(e.key)) { location.hash = e.key === '4' ? homeTarget() : ['map', 'list', 'compare', '', 'research'][+e.key - 1]; return; }
     if (e.key === '?') {
       if (!dispatchEvent(new CustomEvent('as:cheatsheet', { cancelable: true }))) return;   // [feature C] the searchable cheat sheet (features/keys.js) answers this; the list below is the fallback
       const old = document.querySelector('.kbd-help'); if (old) { old.remove(); return; }
       const el = document.createElement('div'); el.className = 'kbd-help'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', 'Keyboard shortcuts');
-      el.innerHTML = `<div class="panel"><h3>Keyboard</h3><dl>${[['⌘K /', 'Search homes, views and actions'], ['j k', 'Next or previous listing'], ...(S.view === 'map' ? [['↑ ↓ Home End', 'Move through the result cards']] : []), ['s', 'Save the open listing'], ['c', 'Add it to compare'], ['1–6', 'Switch view'], ['t', 'Light or dark'], ['Esc', 'Close'], ...(S.view === 'plan' ? [['R', 'Turn the selected piece'], ['← →', 'Nudge 1 in (Shift 6 in)'], ['D', 'Duplicate'], ['Del', 'Remove'], ['⌘Z', 'Undo'], ['W A S D', 'Walk mode']] : []), ...(S.view === 'unit' ? [['p', 'Play or pause the day'], [', .', 'Step 15 minutes']] : [])].map(([k, t]) => `<dt>${k.split(' ').map((x) => `<kbd>${x}</kbd>`).join(' ')}</dt><dd style="margin:0">${t}</dd>`).join('')}</dl></div>`;
+      el.innerHTML = `<div class="panel"><h3>Keyboard</h3><dl>${[['⌘K /', 'Search homes, views and actions'], ['j k', 'Next or previous listing'], ...(S.view === 'map' ? [['↑ ↓ Home End', 'Move through the result cards']] : []), ['s', 'Save the open listing'], ['c', 'Add it to compare'], ['1–5', 'Switch tab'], ['t', 'Light or dark'], ['Esc', 'Close'], ...(S.view === 'plan' ? [['R', 'Turn the selected piece'], ['← →', 'Nudge 1 in (Shift 6 in)'], ['D', 'Duplicate'], ['Del', 'Remove'], ['⌘Z', 'Undo'], ['W A S D', 'Walk mode']] : []), ...(S.view === 'unit' ? [['p', 'Play or pause the day'], [', .', 'Step 15 minutes']] : [])].map(([k, t]) => `<dt>${k.split(' ').map((x) => `<kbd>${x}</kbd>`).join(' ')}</dt><dd style="margin:0">${t}</dd>`).join('')}</dl></div>`;
       el.addEventListener('click', () => el.remove()); document.body.append(el);
     }
   });
@@ -850,8 +850,6 @@ async function boot() {
   if (prof) { try { applyCriteria(prof, { quiet: true }); } catch { store.set(searchKey('criteria'), null); S.crit = S.crit0; for (const L of listings) L.score = L._score0; } }
   if (!allDests().some((d) => d.name === S.destName)) S.destName = allDests()[0]?.name || null;
   fitMode(false);
-  $('searchSwitch').setAttribute('aria-haspopup', 'menu'); $('searchSwitch').setAttribute('aria-expanded', 'false');
-  for (const id of ['searchSwitch', 'searchMenuBtn']) $(id)?.addEventListener('click', async () => (await import('./onboarding.js')).openSearchMenu($(id)));
   renderSearchSwitch();
   rescore(); initResults(); renderRail(); renderKPIs(); renderCards();
   on('filters', (o) => { renderKPIs(); renderCards(); if (!o?.quiet) renderRail(); });
