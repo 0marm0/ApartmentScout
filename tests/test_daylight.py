@@ -271,10 +271,31 @@ def test_input_presets_are_ordered_and_in_range():
     assert list(D.BLINDS) == ["open", "sheer", "half", "closed"] and sorted(D.BLINDS.values()) == [0.1, 0.5, 0.55, 1.0]
 
 
-def test_site_study_carries_the_annual_summary():
-    """geo/site.py writes the summary for a real study (checked on the module source, no network)."""
-    src = (Path(__file__).parents[1] / "apartmentscout" / "geo" / "site.py").read_text()
-    assert "annual_daylight" in src and "daylight_annual" in src
+def test_make_site_writes_the_annual_summary_into_the_study(monkeypatch):
+    """A real (stubbed, offline) site study carries study.daylight_annual, consistent with its sky view and sun hours."""
+    from apartmentscout.geo import site as site_mod
+
+    lot = [(-30, -70), (30, -70), (30, -10), (-30, -10)]
+
+    def ll(ring):
+        return [[LON + x / (111320 * math.cos(math.radians(LAT))), LAT + y / 110574] for x, y in ring]
+
+    rows = [{"bin": "1000001", "height": 100.0, "height_src": "roof", "ground": 0.0, "ring": ll(lot), "holes": [], "src": "nyc-footprints"},
+            {"bin": "1000002", "height": 60.0, "height_src": "roof", "ground": 0.0,
+             "ring": ll([(-10, 10), (10, 10), (10, 30), (-10, 30)]), "holes": [], "src": "nyc-footprints"}]
+    monkeypatch.setattr(site_mod, "fetch_nyc", lambda *a, **k: [dict(r) for r in rows])
+    monkeypatch.setattr(site_mod, "nyc_pluto", lambda *a, **k: {})
+    L = {"id": "x", "lat": LAT, "lon": LON, "floor": 5, "exposure": ["S"], "bin": "1000002"}
+    site, _, _ = site_mod.make_site(L, {"search": {"city": "nyc"}}, streets=False, future=False, year=2026)
+    a, st = site["study"]["daylight_annual"], site["study"]
+    assert a["model"] == D.MODEL_LABEL and a["direct_sun"]["kind"] == "modelled"
+    assert a["direct_sun"]["possible_h_per_day"] == [round(h, 2) for h in st["sun_hours"]]
+    assert a["sky_visibility"]["share"] == st["sky_view"]
+    assert a["direct_sun"]["expected_h_per_day"] == [round(h * f, 2) for h, f in zip(st["sun_hours"], st["sunshine"]["fraction"])]
+    rd = a["relative_daylight"]
+    assert 0 < rd["overcast_pct"] <= 39.7 and len(rd["clear_pct"]) == 12
+    # the 100 m block to the south of a 60 m target blocks the sky: well under the open-window 39.6 %
+    assert rd["overcast_pct"] < 30
 
 
 # ------------------------------------------------------------------------------------------------ parity with the fixture

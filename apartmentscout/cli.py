@@ -305,6 +305,10 @@ def cmd_site(args):
         log(f"  sky view {st.get('sky_view')} (CIE overcast, relative), estimated daylight factor "
             f"{st.get('daylight_factor_est')}% (indicative); direct sun {sy.get('possible')} h a year possible"
             + (f", about {sy['expected']} h expected with typical cloud" if sy.get("expected") else ""))
+        da = (st.get("daylight_annual") or {}).get("relative_daylight")
+        if da:  # modelled, relative: percent of the same sky's open horizontal illuminance (apartmentscout/daylight.py)
+            log(f"  relative daylight (vertical sky component, modelled): {da['overcast_pct']}% under an overcast sky, "
+                f"{min(da['clear_pct'])}-{max(da['clear_pct'])}% under a clear diffuse sky by month")
         fc = (site.get("roofs") or {}).get("facing") or {}
         if fc:
             cl = fc.get("clears_floor")

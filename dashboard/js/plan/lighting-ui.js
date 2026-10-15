@@ -11,7 +11,7 @@ import { store } from '../app.js';
 import { GLAZING_PRESETS, FRAME_PRESETS, SURFACE_PRESETS, BLINDS_T, MODEL_LABEL } from '../features/daylight-core.js';
 import {
   defaultInputs, cleanInputs, cleanLuminaires, reflectances, sourceCount, presetFor, daylightGrids, lampGrids, furnitureLuminaires,
-  newLuminaire, LUM_TYPES, LUM_ORDER, LUM_LIMITS, kelvinCss, SURFACE_KEYS, isDefaultInputs, LUX_GUIDE, M,
+  newLuminaire, LUM_TYPES, LUM_ORDER, LUM_LIMITS, kelvinCss, SURFACE_KEYS, LUX_GUIDE,
 } from './lighting-model.js';
 import { SCALES, heatCanvas, legendHTML, valueAt, fmtVal } from './heatmap.js';
 import { pointInPoly } from './model.js';
@@ -55,7 +55,7 @@ export function attach3D() { if (!lx.ready3d) { L3.attach(); lx.ready3d = true; 
 /** A plan was loaded or an undo restored `light` (the studio's stored lighting object). */
 export function load(light = {}) {
   lx.inputs = cleanInputs(light.daylight); lx.luminaires = cleanLuminaires(light.luminaires);
-  lx.sel = null; lx.cache = {}; lx.modelId = idOf(lx.api.model());
+  lx.sel = null; lx.cache = {}; lx.heatKey = null; lx.modelId = idOf(lx.api.model());
   syncSurfaces(); push3D(); schedule();
 }
 /** The new keys of the studio's lighting object (only those that differ from the defaults, so saved projects stay small). */
@@ -75,7 +75,7 @@ export function dfOptions() {
   };
 }
 /** The sun moved or the date changed (called from the studio's refreshSun). `info` = {az, alt, lat, lon, tz, y, m, d, fraction, place}. */
-export function refresh(info) { lx.info = info; if (lx.inputs.sky === 'clear' || lx.view === 'year') schedule(); else if (!lx.raf) schedule(); }
+export function refresh(info) { lx.info = info; schedule(); }
 /** Furniture changed (lamps among them). */
 export function itemsChanged() { if (lx.view === 'lamps' || lx.heat2d || lx.heat3d) { lx.cache.lamps = null; schedule(); } }
 /** The 2D svg was rebuilt (plan2d.setModel): put the overlay groups back. */
@@ -130,21 +130,25 @@ const activeSource = () => (lx.view === 'lamps' ? 'lamps' : 'daylight');
 
 function flush() {
   if (!lx.api?.model()) return;
-  const src = activeSource();
-  const data = wantsHeat() || (lx.el && lx.view !== 'year') ? (src === 'lamps' ? lampData() : daylightData()) : null;
+  const live = !!lx.el?.isConnected, src = activeSource();
+  const data = wantsHeat() || (live && lx.view !== 'year') ? (src === 'lamps' ? lampData() : daylightData()) : null;
   lx.data = data; lx.dataSrc = src;
-  const scale = src === 'lamps' ? SCALES.lux : SCALES.daylight;
-  lx.rooms = [];
-  if (data && wantsHeat()) {
-    for (const r of data.rooms) {
-      const mr = lx.api.model().rooms.find((q) => q.name === r.room);
-      if (!mr || !r.stats) continue;
-      lx.rooms.push({ ...r, poly: mr.poly, canvas: heatCanvas(r, scale) });
+  const key = `${src}|${idOf(data)}|${lx.heat2d}|${lx.heat3d}`;
+  if (key !== lx.heatKey) {   // the grids (and so the images) only change when their inputs do
+    lx.heatKey = key; lx.rooms = [];
+    if (data && wantsHeat()) {
+      const scale = src === 'lamps' ? SCALES.lux : SCALES.daylight;
+      for (const r of data.rooms) {
+        const mr = lx.api.model().rooms.find((q) => q.name === r.room);
+        if (!mr || !r.stats) continue;
+        const canvas = heatCanvas(r, scale);
+        lx.rooms.push({ ...r, poly: mr.poly, canvas, url: lx.heat2d && canvas ? canvas.toDataURL() : null });
+      }
     }
+    render2D();
+    if (lx.ready3d) L3.setHeat(lx.heat3d ? lx.rooms : [], 0.82);
   }
-  render2D();
-  if (lx.ready3d) { L3.setHeat(lx.heat3d ? lx.rooms : [], 0.82); }
-  results();
+  if (live) results();
 }
 function push3D() {
   if (!lx.ready3d) return;
@@ -164,7 +168,7 @@ function render2D() {
   const svg = lx.api?.svg(); if (!svg || !lx.api.model()) return;
   const heat = ensureGroup(svg, 'p2heat', svg.querySelector('.p2-grids'));
   if (lx.heat2d && lx.rooms?.length) {
-    heat.innerHTML = lx.rooms.map((r, i) => r.canvas ? `<clipPath id="lxclip${i}"><polygon points="${pts(r.poly)}"/></clipPath><image class="lx-heat" href="${r.canvas.toDataURL()}" x="${r.x0In}" y="${-(r.y0In + r.ny * r.stepIn)}" width="${r.nx * r.stepIn}" height="${r.ny * r.stepIn}" preserveAspectRatio="none" clip-path="url(#lxclip${i})"><title>${esc(r.room)}</title></image>` : '').join('');
+    heat.innerHTML = lx.rooms.map((r, i) => r.url ? `<clipPath id="lxclip${i}"><polygon points="${pts(r.poly)}"/></clipPath><image class="lx-heat" href="${r.url}" x="${r.x0In}" y="${-(r.y0In + r.ny * r.stepIn)}" width="${r.nx * r.stepIn}" height="${r.ny * r.stepIn}" preserveAspectRatio="none" clip-path="url(#lxclip${i})"><title>${esc(r.room)}</title></image>` : '').join('');
   } else heat.innerHTML = '';
   svg.setAttribute('role', lx.luminaires.length ? 'group' : 'img');   // an image may not contain focusable luminaires
   const g = ensureGroup(svg, 'p2lum');

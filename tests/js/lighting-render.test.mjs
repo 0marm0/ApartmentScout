@@ -29,9 +29,9 @@ test('heat-map values are formatted with their unit and looked up by plan point'
 test('surface reflectance changes the 3D colours only when it differs from the built-in look', () => {
   class Col { constructor(r, g, b) { Object.assign(this, { r, g, b }); } clone() { return new Col(this.r, this.g, this.b); } multiplyScalar(k) { this.r *= k; this.g *= k; this.b *= k; return this; } }
   const C = { wall: new Col(0.5, 0.5, 0.5), wood: new Col(0.4, 0.3, 0.2), tile: new Col(0.6, 0.6, 0.6), carpet: new Col(0.3, 0.3, 0.3), dark: true };
-  setSurfaceState({ floor: 0.25, walls: 0.55, ceiling: 0.75 }); assert.equal(surfaceState(), null); assert.equal(applySurfaceTint(C), C);
-  setSurfaceState(null); assert.equal(applySurfaceTint(C), C);
-  setSurfaceState({ floor: 0.5, walls: 0.275, ceiling: 0.75 });
+  assert.equal(setSurfaceState({ floor: 0.25, walls: 0.55, ceiling: 0.75 }), false, 'the built-in look: nothing changed'); assert.equal(surfaceState(), null); assert.equal(applySurfaceTint(C), C);
+  assert.equal(setSurfaceState(null), false); assert.equal(applySurfaceTint(C), C);
+  assert.equal(setSurfaceState({ floor: 0.5, walls: 0.275, ceiling: 0.75 }), true); assert.equal(setSurfaceState({ floor: 0.5, walls: 0.275, ceiling: 0.75 }), false);
   const T = applySurfaceTint(C);
   assert.notEqual(T, C); assert.ok(Math.abs(T.wall.r - 0.25) < 1e-9, 'walls at half the reflectance are half as bright');
   assert.ok(Math.abs(T.wood.r - 0.8) < 1e-9 && T.wood.g <= 1, 'floors at twice the reflectance, clamped'); assert.ok(Math.abs(T.ceiling.r - 0.52) < 1e-9);
