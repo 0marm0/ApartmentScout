@@ -16,7 +16,7 @@ const TARGETS = {
   weights: () => document.querySelector('#rail .weights')?.closest('.sec') || document.querySelector('#rail .weights'),
   star: () => document.querySelector('#cards .card .save'),
   compare: () => document.querySelector('#cards .card [data-cmp]'),
-  unit: () => document.querySelector('#tabs a[data-view="unit"]'),
+  unit: () => document.querySelector('#tabs a[data-view="home"]'),
 };
 
 export const coachActive = () => !!root;
