@@ -19,8 +19,8 @@ const DAY_TOKENS = {
 // warm the horizon through peach and rose while the zenith stays a deep blue.
 const hexes = (a) => a.map((h) => new THREE.Color(h));
 export const NATURAL_SKY = {
-  zen: hexes(['#0a1022', '#34457a', '#5d85c2', '#2f7fdc']),
-  hor: hexes(['#1a2338', '#e0906c', '#f6c79a', '#d4e6f6']),
+  zen: hexes(['#121c3a', '#34457a', '#5d85c2', '#2f7fdc']),
+  hor: hexes(['#2b3658', '#e0906c', '#f6c79a', '#d4e6f6']),
 };
 
 /**

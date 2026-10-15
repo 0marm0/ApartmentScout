@@ -27,6 +27,7 @@
  "wall": 5,
  "up_bearing": 118.7,
  "floor": 25,
+ "floor_finish": "basket",
  "rooms": [
   {
    "name": "Bath",
