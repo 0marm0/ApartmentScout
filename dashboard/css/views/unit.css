@@ -462,3 +462,10 @@
   .u-st-acts { margin-left: 0; }
   .u-hm-l { font-size: 9px; padding: 0 3px; }
 }
+
+/* ------------------------------------------------------------------ city context labels: rivers and large parks (unit/context3d.js) */
+.u-lab.water, .u-lab.park { padding: 0; border: 0; background: none; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none;
+  font: 600 10.5px var(--font-sans); letter-spacing: .16em; text-transform: uppercase; text-shadow: 0 0 3px var(--ground), 0 0 6px var(--ground), 0 0 1px var(--ground); }
+.u-lab.water { font-style: italic; letter-spacing: .24em; color: color-mix(in srgb, var(--band-30) 78%, var(--ink)); }
+.u-lab.park { letter-spacing: .12em; color: color-mix(in srgb, var(--ok, #3fa56b) 62%, var(--ink-2)); }
+.u-lab.water::after, .u-lab.park::after { display: none; }
