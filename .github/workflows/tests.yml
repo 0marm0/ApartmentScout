@@ -46,6 +46,8 @@ jobs:
             files: tests/e2e/test_interior_view.py
           - name: city-context
             files: tests/e2e/test_context3d.py
+          - name: one-city
+            files: tests/e2e/test_one_city.py
           - name: places-destinations
             files: tests/e2e/test_places_multidest.py
           - name: pwa-landing

@@ -209,6 +209,15 @@ with roving arrow-key focus. Source: `css/appmenu.css`, `js/app-menu.js`.
   or `--warn` after a rise, and a `--good-soft` "↓ $150" chip for the latest drop. Drawn only from recorded prices.
 - **Histogram slider.** Distribution of the current results behind the range, out-of-range bars greyed.
 
+## 3D views
+
+The room in the 3D views is **not themed**: walls, ceiling, trim and floor are one palette (`js/room3d/palette.js`, white walls `#f7f4ef`, ceiling `#ffffff`, oak floor `#d8bc96`) in the dark and the light UI, so the room reads as a room and not as interface chrome. The city outside follows the theme's colours (`js/city3d/look.js`). Overlays on the 3D views are glass floats like the other map controls.
+
+- **Look chips** (`.lk-chip`, `.lk-act`, `.lk-sel`): the viewpoint chips and the small actions beside them (Sun path in Unit 3D, Show daylight map, Blinds). Radio-group keys (arrows, Home, End; `[` and `]` from anywhere); the actions are buttons and are not part of the radio group.
+- **Measured-vs-assumed chip** (`.acc-chip`): a glass float, 28 px high, with one dot per row and the label. It opens a panel of six rows, each with a pill: measured and confirmed in `--good`, from a source in `--accent`, estimated and assumed in `--warn`. The dots repeat the colours (assumed is an outline). The panel scrolls; Escape closes it and returns focus to the chip. On a phone it moves to the bottom-left above the HUD.
+- **Sun strip** (`.rc-strip`): 10 px, `--surface-2` track, `--sun` for lit stretches, a 2 px `--ink` mark for the time now.
+- **Motion**: the camera glides between viewpoints for 750 ms and not at all with reduced motion.
+
 ## Accessibility
 
 Body text on every surface meets WCAG AA in both themes, in every accent, and in the high-contrast and largest-text settings; the e2e axe sweep fails the build on any serious or critical violation on every view (Unit 3D and Floor plan included), Tours and Records, and on the open menu. Focus rings use the accent at 2 px with

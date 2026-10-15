@@ -4,6 +4,7 @@
 import * as THREE from 'three';
 import * as RQ from '../features/render-quality.js';
 import { environmentFor, recompileMaterials } from '../features/render-env.js';
+import { setRoomQuality } from '../room3d/quality.js';   // [room3d] both engines' room shares one quality
 
 let mode = 'fast', stage = null, ui = null, prog = null, store = null, note = null, noteT = 0, toastFn = () => {}, hires = () => {};
 
@@ -28,10 +29,12 @@ export function setMode(m, announce) {
 }
 function apply() {
   if (!stage?.renderer || !stage.scene || !stage.sunL) return;   // the scene is built later, by stage.build()
+  setRoomQuality(mode);   // [room3d]
   const r = stage.renderer, s = RQ.settingsFor(mode, { phone: RQ.phoneClass(), maxTexture: stage.maxTex, dpr: window.devicePixelRatio });
   r.setPixelRatio(s.pixelRatio);
   // Visual: filmic tone mapping lifts highlights gently; the sky dome is its own shader and is left as it was
   r.toneMapping = s.softShadows ? THREE.ACESFilmicToneMapping : THREE.NoToneMapping; r.toneMappingExposure = 1.3;
+  stage.baseTone = { mapping: r.toneMapping, exposure: r.toneMappingExposure }; stage.applyRoomLook?.();   // [room3d] the Inside and Window cameras use the room's own tone mapping
   const L = stage.sunL;
   L.shadow.map?.dispose(); L.shadow.map = null;
   if (s.softShadows) { r.shadowMap.type = THREE.VSMShadowMap; L.shadow.radius = 2.5; L.shadow.blurSamples = s.blurSamples; L.shadow.bias = -0.0002; }
