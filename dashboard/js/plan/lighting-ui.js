@@ -166,8 +166,13 @@ function render2D() {
   if (lx.heat2d && lx.rooms?.length) {
     heat.innerHTML = lx.rooms.map((r, i) => r.canvas ? `<clipPath id="lxclip${i}"><polygon points="${pts(r.poly)}"/></clipPath><image class="lx-heat" href="${r.canvas.toDataURL()}" x="${r.x0In}" y="${-(r.y0In + r.ny * r.stepIn)}" width="${r.nx * r.stepIn}" height="${r.ny * r.stepIn}" preserveAspectRatio="none" clip-path="url(#lxclip${i})"><title>${esc(r.room)}</title></image>` : '').join('');
   } else heat.innerHTML = '';
+  svg.setAttribute('role', lx.luminaires.length ? 'group' : 'img');   // an image may not contain focusable luminaires
   const g = ensureGroup(svg, 'p2lum');
+  // the glyphs are redrawn on every change: keep keyboard focus on the one the renter is moving
+  const fid = lx.focusId || document.activeElement?.closest?.('[data-lum]')?.getAttribute('data-lum');
   g.innerHTML = lx.luminaires.map(glyph).join('');
+  lx.focusId = null;
+  if (fid) [...g.querySelectorAll('[data-lum]')].find((n) => n.getAttribute('data-lum') === fid)?.focus({ preventScroll: true });
 }
 function glyph(l) {
   const sel = l.id === lx.sel, c = kelvinCss(l.k), dim = l.on === false ? ' off' : '';
@@ -188,7 +193,7 @@ function down2D(e) {
   if (!l || e.button > 0) return;
   e.stopPropagation(); e.preventDefault();
   const p = lx.api.toPlan(e.clientX, e.clientY);
-  lx.api.checkpoint();
+  lx.api.checkpoint(); lx.focusId = id;
   lx.drag = { id, end: !!end, ox: (end ? l.x2 : l.x) - p[0], oy: (end ? l.y2 : l.y) - p[1], moved: false, x0: e.clientX, y0: e.clientY };
   select(id, false);
 }
@@ -297,7 +302,7 @@ function inputsBlock() {
       <p class="ps-note">Every number below is an assumption until you tie it to a source. The label travels with a saved project.</p>
       <div class="lx-in"><label for="glzPreset">Glass, visible transmittance <output id="lxVt"></output></label>${presetSelect('glzPreset', GLAZING_PRESETS, 'Glazing preset')}${srcControls('glazing')}<p class="ps-note faint">Fine-tune with the slider above. Typical catalogue values, not your windows.</p></div>
       <div class="lx-in"><label for="frmPreset">Frame: glazed share of the opening <output id="lxFrame"></output></label>${presetSelect('frmPreset', FRAME_PRESETS, 'Frame preset')}${srcControls('frame')}</div>
-      <div class="lx-in"><span class="label">Blinds <output id="lxBlinds"></output></span><p class="ps-note faint">Open, sheer, half and closed buttons are in Glass and blinds above (sheer passes ${BLINDS_T.sheer * 100}%).</p>${srcControls('blinds')}</div>
+      <div class="lx-in"><span class="label">Blinds <output id="lxBlinds"></output></span><p class="ps-note faint">Open, sheer, half and closed buttons are in Glass and blinds above (sheer passes ${Math.round(BLINDS_T.sheer * 100)}%).</p>${srcControls('blinds')}</div>
       ${SURFACE_KEYS.map((k) => `<div class="lx-in"><label for="srf-${k}">${{ floor: 'Floor', walls: 'Walls', ceiling: 'Ceiling' }[k]} reflectance <output id="lxRho-${k}"></output></label>${presetSelect('srf-' + k, SURFACE_PRESETS[k], k + ' preset')}
         <input type="number" class="lx-rho" id="srfv-${k}" data-lx="rho" data-k="${k}" min="0.02" max="0.98" step="0.01" aria-label="${k} reflectance (0 to 1)" hidden>${srcControls(k)}</div>`).join('')}
     </details>`;

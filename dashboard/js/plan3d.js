@@ -37,6 +37,7 @@ import { productFinder, withProduct } from './plan/shop.js';
 import { suggestLayout } from './plan/suggest.js';
 import { planEmpty, missingNotice } from './features/plan-empty.js';   // [feature C] empty state and missing-plan notice
 import { renderOptions } from './plan/options.js';
+import * as Q3 from './plan/quality3d.js';   // [feature J] render quality (Fast / Visual) and progressive export
 import * as LX from './plan/lighting-ui.js';   // [feature J] daylight grid, glass/surface inputs, luminaires, annual summary
 
 const st = {
@@ -109,6 +110,8 @@ export function init() {
             <button type="button" role="menuitem" data-f="png">Snapshot of the 3D view<span>.png</span></button>
             <button type="button" role="menuitem" data-f="png2">High-resolution snapshot<span>2× .png</span></button>
             <button type="button" role="menuitem" data-f="png4k">Poster snapshot<span>4K .png</span></button>
+            <button type="button" role="menuitem" data-f="render2">Render image, progressive<span>2× .png</span></button>
+            <button type="button" role="menuitem" data-f="render4">Render image, progressive<span>4× .png</span></button>
             <button type="button" role="menuitem" data-f="csv">Shopping list<span>.csv</span></button>
             <hr><button type="button" role="menuitem" data-f="clear">Clear all furniture</button>
           </div></div>
@@ -207,9 +210,9 @@ async function load(id) {
       }
     }
   }
-  if (!ready) { G3.init($('pgl'), $('pstage'), () => {}); P2.mount($('p2d'), { item: (i) => R.find((x) => x.id === i), select, move: dragTo, commit: () => commit() }); bind3D(); ready = true; LX.attach3D(); }
+  if (!ready) { G3.init($('pgl'), $('pstage'), () => {}); P2.mount($('p2d'), { item: (i) => R.find((x) => x.id === i), select, move: dragTo, commit: () => commit() }); bind3D(); ready = true; LX.attach3D(); Q3.mount({ stage: $('pstage'), model: () => model, toast, store }); }
   G3.setModel(model); G3.setWallMode(st.wall);
-  P2.setModel(model); LX.reattach2D();   // [feature J]
+  P2.setModel(model); LX.reattach2D(); Q3.modelChanged();   // [feature J]
   st.city = !!store.get(`plan-city.${S.base}`, false); applyCity();
   // furniture: the saved layout for this plan, else the first preset
   const saved = projectLibrary[id]?.layout || store.get(key(id), null), v = saved && validateLayout(saved, { planId: id });
@@ -293,7 +296,7 @@ function recompute(opts = {}) {
   if (!model) return;
   R = items.map((x) => resolve(x)).filter(Boolean);
   ev = evaluate(model, R);
-  G3.setItems(R); LX.itemsChanged();   // [feature J]
+  G3.setItems(R); LX.itemsChanged(); Q3.itemsChanged();   // [feature J]
   for (const it of R) G3.setRoomOf(it.id, ev.items[it.id]?.room || '');
   const states = Object.fromEntries(Object.values(ev.items).map((r) => [r.id, r.state]));
   G3.setStatus(states, sel);
@@ -491,6 +494,9 @@ async function fileAction(f) {
     if (st.mode === '2d') { setMode('both'); await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))); }
     const scale = f === 'png' ? 1 : f === 'png2' ? 2 : 3840 / Math.max(1, $('pstage').clientWidth);
     const a = document.createElement('a'); a.href = G3.snapshotPNG(scale); a.download = `${st.id}-${st.view}${f === 'png' ? '' : f === 'png2' ? '@2x' : '-4k'}.png`; document.body.append(a); a.click(); a.remove();
+  } else if (f === 'render2' || f === 'render4') {
+    if (st.mode === '2d') { setMode('both'); await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))); }
+    Q3.renderImage(f === 'render2' ? 2 : 4, { name: `${st.id}-${st.view}`, caption: `${model.title || st.id} · ${st.date} ${fmtT(st.min)}` });   // [feature J]
   } else if (f === 'csv') {
     saveBlob(new Blob([shoppingCSV(shoppingList(R), model.title || st.id)], { type: 'text/csv' }), `${st.id}-shopping-list.csv`);
   } else if (f === 'options') openOptions(); else if (f === 'clear') mutate(() => { items = []; sel = null; }, 'Cleared. Undo brings it back');

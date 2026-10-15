@@ -93,10 +93,11 @@ const offAxis = (az, fs) => { let d = 180; for (const f of fs) d = Math.min(d, M
 /**
  * Vertical sky component as a fraction (0.396 for an unobstructed window under the overcast sky): the vertical
  * illuminance on the window from the sky above its skyline, over the horizontal illuminance of the same unobstructed
- * sky. A bay takes the union of its panes' fields. `prof` is a 720-bin skyline in degrees (0.5 degree bins).
+ * sky. A bay is the mean of its panes' own VSCs (equal panes, one skyline). `prof` is a 720-bin skyline in degrees (0.5 degree bins).
  */
 export function verticalSkyComponent(prof, facing, panes = null, sky = null, field = FIELD_DEG) {
   const fs = paneFacings(facing, panes);
+  if (fs.length > 1) return fs.reduce((t, f) => t + verticalSkyComponent(prof, f, null, sky, field), 0) / fs.length;
   let num = 0;
   if (!isClear(sky)) {
     const step = OVERCAST_STEP;
