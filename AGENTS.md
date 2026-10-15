@@ -72,7 +72,8 @@ apartmentscout criteria --check searches/my-search/criteria.yaml  # validate cri
 export APARTMENTSCOUT_SEARCH=searches/my-search   # or pass --search to every command
 apartmentscout import listings.csv                # add or update listings from CSV/JSON
 apartmentscout geocode                            # coordinates (NYC also gets BBL/BIN)
-apartmentscout commute                            # transit commute grid + per-listing times
+apartmentscout commute                            # transit commute grid + per-listing times, every destination (--dest NAME: just some)
+apartmentscout places                             # street, park and neighbourhood geometry for place filters (east of 3rd Ave, near a park)
 apartmentscout layers                             # NYC: 311 noise density layer
 apartmentscout dossier [id ...]                   # NYC public records (default: shortlist)
 apartmentscout site <id> --floor 12 --charts      # 3D site model, sun and view study

@@ -7,7 +7,10 @@ description: Set up commute destinations and transit feeds, compute door-to-door
 
 1. **Destinations**: every regular trip (office, school, partner, gym) under
    `commute.destinations` with `address`, `arrive_by`, `max_minutes` and `weight`.
-   `apartmentscout geocode` prints coordinates; copy them in.
+   `apartmentscout geocode` prints coordinates; copy them in. Two or more is normal (your office and a
+   partner's, a gym): give each its own `max_minutes` and a `weight` for how much it counts (a gym you
+   visit twice a week might be 0.5). The dashboard then shows minutes to every destination, a limit per
+   destination, a combined commute score and heat maps of the farthest and the weighted destination.
 2. **Transit feeds**: find the agency GTFS zips ("<agency> GTFS static"), add each under
    `commute.transit.feeds` with a `name` and `url` (or a local `path`), and a `mode`
    (`subway`, `bus`, `rail` or `ferry`; without one each route's GTFS `route_type` decides).
@@ -22,7 +25,10 @@ description: Set up commute destinations and transit feeds, compute door-to-door
    `commute.<destination>`: `minutes`/`route` (best of transit) plus `modes.walk|subway|bus|transit`
    with minutes, a min-max range over arrival times, route text and legs (walk to stop with
    distance, rides with board and alight times, transfers, final walk). See
-   `docs/guides/data-model.md`.
+   `docs/guides/data-model.md`. With several destinations every one is routed (the network loads once);
+   add a destination later and `apartmentscout commute --dest "Partner"` routes only that one and leaves
+   the others' grids and times alone. `apartmentscout build` then writes the combined surfaces
+   (`layers/commute-combined-<mode>.json`) from the grids on disk.
 4. **Check**: compare three or four listings against a live trip planner at the arrive-by time,
    per mode. The model is schedule-based, averages five arrival times to include waiting, adds a
    street-to-vehicle time per mode at both ends (subway 2 min, bus 0.5) and walks at 4.8 km/h.
