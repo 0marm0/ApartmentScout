@@ -369,6 +369,35 @@ podium-and-tower pair and a full-footprint tower of the same height give differe
 `tests/test_anchor.py` and `tests/js/model-anchor.test.mjs` check it, in Python and JavaScript, against the same fixture). The stored study in
 the site file describes the source geometry, so it is not shown for a scenario with assumed parts.
 
+**City context (trees, water, ground).** Around the buildings, the 3D views draw what is not a building, all of it read from the site
+file and none of it entering a sun hour, a skyline, a daylight number or a score.
+
+- *Street trees.* OpenStreetMap maps only a few percent of the street trees (a Midtown site has 100 to 300 mapped trees where the city
+  counts 800 to 2,000), so for New York the site takes the city's own NYC Street Tree Census 2015 (`uvpi-gqnh`, through the same cached,
+  receipted Socrata helper as the footprints): every live street tree within the site radius with its trunk diameter and species. A
+  crown is sized from the trunk with a simple urban-forestry rule: crown diameter = 2.0 m + 0.24 m per cm of trunk, height = 1.3 m +
+  0.8 x trunk(cm)^0.8, both capped (a 20 cm trunk carries a crown about 7 m wide on a tree about 10 m tall), after adding 2 in of growth
+  since the 2015 survey. The census does not record crowns, so sizes are estimates, a species group only tints the crown, and a street
+  tree is drawn at the census point, not at a surveyed crown. Trees mapped in OpenStreetMap stay (a typical street tree, skipped where a
+  census tree stands within 2.5 m); park, wood and lawn polygons get fill canopies by Poisson-disc sampling (no two crowns closer than
+  8.5 m in a park, 5.5 m in a wood, 15 m on a lawn, in groves and clearings, denser along the edge, kept out of footprints): about 60,
+  200 and 15 trees a hectare. Only the census and the mapped trees are records of real trees; the fill shows where green lies. The
+  views draw up to 9,000 trees (4,500 on a phone) as instanced meshes in two levels of detail, picked by distance to the camera.
+  **Trees are never counted as obstructions**: canopies are seasonal and porous and their crowns are estimates, so the sun hours, the
+  sky view and the blockers use buildings alone, and the legend and the evidence row say so. In Visual render quality the crowns cast
+  soft shadows in the picture; Fast draws none. That is a look, not a measurement.
+- *Water.* Rivers and ponds come from the NYC Planimetric Database: Hydrography (`pjs3-c3z5`, surveyed polygons with the real
+  shoreline, piers and islands such as Roosevelt Island as holes), or from OpenStreetMap `natural=water` / `water=*` /
+  `waterway=riverbank` outside New York (open sea is not a polygon there, so a coastal site elsewhere may show none). Deriving water
+  from the commute router's land mask (borough boundaries on a 25 m grid) was rejected: it cannot tell water from land outside the
+  five boroughs and blurs the quay. The polygons are clipped to a 3.2 km square, simplified to 0.8 m and stored in half-metres
+  (about 1 to 4 KB a site). They are drawn as a blue plane 0.4 m under street level, in both themes (flat colour in Fast; in Visual a
+  sky reflection that grows at grazing angles and a sun glint), with the same shape cut out of the street plate, so buildings and
+  parks stand on the plate and the water shows only where the river is. The tide, depth and current are not modelled.
+- *Ground.* Streets from the site's street centrelines (NYC CSCL, widths in the data) are painted as a roadbed with a sidewalk each
+  side (4.0 m, 4.6 m beside avenues, none on highways, ramps, tunnels and alleys) over the plain block ground, so blocks read; the
+  detail fades out beyond the surveyed radius (600 m). The widest parks and the rivers are named in the view.
+
 **Vertical datum.** The height of a window is the slab of its floor plus 1.6 m for the eye. A floor count only estimates the slab
 (floor - 1) x the storey height. A measured slab (a section drawing, an elevator directory, a stated height) or a measured window-eye height
 is kept beside the estimate, never in place of it: `apartmentscout site --slab-height` or `--eye-height`, or Unit 3D's Height fold, write a `calibration` with
@@ -587,7 +616,8 @@ reading 300-500 lx) are printed for orientation, not as a standard. Night in the
 that glow is a visual preview, not the estimate.
 
 **Render quality (a look, not evidence).** Fast is the default everywhere, and the only start on phones: it is the view as it
-always was. Visual adds a larger shadow map with soft (variance) shadows, a dim procedural environment light, and contact
+always was. Visual adds a larger shadow map with soft (variance) shadows (Unit 3D: also from the street trees, and a sky reflection
+and sun glint on the water), a dim procedural environment light, and contact
 shadows under furniture and along wall bases, which approximate ambient occlusion (no screen-space AO addon is vendored, so this
 is not SSAO). The choice is remembered per browser. A progressive export renders the current view 2x or 4x (capped at 4096 px)
 as the average of 16 frames with sub-pixel camera jitter and a tiny jitter of the sun, for smooth edges and soft shadow edges; the
@@ -599,7 +629,7 @@ physically based lighting engine with materials, a calibrated room and weather f
 suite (https://www.radiance-online.org/) is the standard route; ApartmentScout does not run it and
 claims none of its results.
 
-Not modelled: crowns and spires except where a building's components describe them, trees, reflected
+Not modelled: crowns and spires except where a building's components describe them, trees and water (drawn as context, never as obstructions), reflected
 light from glass towers or the ground, sky brightness beyond the CIE overcast and clear skies, interior depth (except in the
 floor-plan view), glare, interior walls and furniture between a sensor and a window, lamp bounce and shadows, thermal gain,
 and weather beyond the monthly sunshine share.
@@ -624,6 +654,6 @@ building you know (your current home) is only fair with the same window, filter 
 ## Data sources
 
 NYC Open Data (PLUTO, HPD, DOB, ECB, DOB NOW, 311, NYPD, bedbug filings, building footprints, street
-centerline, tax lots), NYC Planning Labs GeoSearch, US Census geocoder, OpenStreetMap (Nominatim,
+centerline, tax lots, the 2015 Street Tree Census, planimetric hydrography), NYC Planning Labs GeoSearch, US Census geocoder, OpenStreetMap (Nominatim,
 Overpass, map tiles), and the transit agencies' GTFS feeds. Respect each source's terms; heavy use of the OpenStreetMap tile server
 is not allowed, so set `search.tiles` to your own tile provider if you publish a busy dashboard.

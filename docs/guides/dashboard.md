@@ -8,8 +8,8 @@ design rules in [the design system](../design/design-system.md).
 
 ## Views
 
-Every view sits in the same shell: a top bar with the search name, six view tabs, search (`/`) and a settings
-menu (theme: system, dark or light; search settings; CSV export of the filtered listings; picks backup; shortcuts; accent, comfort settings and the tour); a
+Every view sits in the same shell: a top bar with the search name, five view tabs, search (`/`) and one menu
+(see [The menu](#the-menu)); a
 thin stats strip under it (tracked, matching, eligible, shortlisted, median cost and commute, top match; on narrow screens
 the secondary figures fold into an "all figures" popover); and, on the Map and Shortlist, the filter rail.
 
@@ -18,17 +18,48 @@ the secondary figures fold into an "all figures" popover); and, on the Map and S
 | 1 | **Map** | Filter rail (budget tiers on monthly cost, cost and commute histograms, must-haves and feature switches, status chips, weight presets and live weight sliders), ranked photo cards with walk, subway and bus minutes, and a vector map with heat layers (commute bands, 311 noise, rent per ft², score), official subway lines, price tags and an optional 3D-buildings tilt. Clicking a listing opens the drawer: photos with credits, money (first-lease monthly, gross rent, paid month, move-in cash, unknown fees shown as unknown, headroom per tier), facts, why it ranks here, commute by mode with route legs, sun, records flags, reviews and open questions. |
 | 2 | **Shortlist** | A sticky table of every filtered listing ranked live by your weights: monthly cost, tier and gate pills, size and $/ft², route bullets and minutes, floor and exposure, key amenities, score and fact coverage. Group by unit or building, change density and columns, move with the keyboard. |
 | 3 | **Compare** | Up to four listings in lettered columns with grouped rows (money, space, commute, building, light, score), the best value in each row marked, unknowns never counted as the worst, a cost-against-space scatter with the value frontier and a per-dimension chart. Deep link: `#compare/id,id`. |
-| 4 | **Unit 3D** | The unit's building and its neighbours from the site model. Orbit, Window, Inside (the floor plan's rooms at the real slab height, furnished with the plan's default layout, with room chips for the living room, the bedroom, a bay or a corner and for the sofa, bed or desk that look out, switched by click, ← → or [ ] with a smooth glide), north-up Plan and Top cameras; layer toggles; a day strip comparing your floor with a compare floor and naming the building that shades the window; bay windows; proposed and filed buildings; what the window sees; sun path against the skyline; sun hours by floor and month; a **Daylight through the year** panel (direct sun, sky visibility and relative daylight per month, kept separate and labelled modelled); units in the building; assumptions and sources; **Fast / Visual** render quality, PNG snapshot (also a progressive 2x or 4x render) and GLB export. |
+| 4 | **Unit 3D** | The unit's building and its neighbours from the site model. Orbit, Window, Inside (the floor plan's rooms at the real slab height, furnished with the plan's default layout, with room chips for the living room, the bedroom, a bay or a corner and for the sofa, bed or desk that look out, switched by click, ← → or [ ] with a smooth glide), north-up Plan and Top cameras; layer toggles (parks and trees from the NYC street tree census, water and ground, drawn as context and never counted as shade); a day strip comparing your floor with a compare floor and naming the building that shades the window; bay windows; proposed and filed buildings; what the window sees; sun path against the skyline; sun hours by floor and month; a **Daylight through the year** panel (direct sun, sky visibility and relative daylight per month, kept separate and labelled modelled); units in the building; assumptions and sources; **Fast / Visual** render quality, PNG snapshot (also a progressive 2x or 4x render) and GLB export. |
 | 5 | **Floor plan** | The studio for a plan JSON: synced 2D plan and 3D (Both / 2D / 3D), sun patches through each window, furniture from a cited catalogue with drag, snap, rotate, duplicate and undo, fit checks graded clear / tight / blocked, TV viewing distances, layout presets, **your own furniture** (`furniture.json`) as the default layout, a finished 3D room with the real city outside the windows by default and Look out of the window / From the sofa, bed or desk cameras, eye-level cameras and walk mode, layout save and load, PNG and GLB export, a side-by-side plan comparison, and a Light tab for relative daylight in each room, glass and surface inputs, luminaires with a night preview and an annual summary, with Fast / Visual render quality. See [floor plans](floor-plans.md). |
-| 4 | **Unit 3D** | The unit's building and its neighbours from the site model. Orbit, Window, Inside (the floor plan's rooms at the real slab height, furnished with the plan's default layout, with room chips for the living room, the bedroom, a bay or a corner and for the sofa, bed or desk that look out, switched by click, ← → or [ ] with a smooth glide), north-up Plan and Top cameras; layer toggles; a day strip comparing your floor with a compare floor and naming the building that shades the window; bay windows; proposed and filed buildings; what the window sees; sun path against the skyline; sun hours by floor and month; units in the building; assumptions and sources; PNG snapshot and GLB export. The **Model** panel (see [floor plans](floor-plans.md#same-plan-in-unit-3d)) chooses the plan the Inside camera shows (your edited plan scenario with its furniture, or the source file), shows the shared anchor, lets you pin the window for the Floor plan studio, enter a measured slab or window-eye height beside the floor-count estimate, assume a podium and tower for a building, compare two to four scenarios side by side (one PNG, one JSON receipt) and export or import a model project that restores offline. |
+| 4 | **Unit 3D** | The unit's building and its neighbours from the site model. Orbit, Window, Inside (the floor plan's rooms at the real slab height, furnished with the plan's default layout, with room chips for the living room, the bedroom, a bay or a corner and for the sofa, bed or desk that look out, switched by click, ← → or [ ] with a smooth glide), north-up Plan and Top cameras; layer toggles (parks and trees from the NYC street tree census, water and ground, drawn as context and never counted as shade); a day strip comparing your floor with a compare floor and naming the building that shades the window; bay windows; proposed and filed buildings; what the window sees; sun path against the skyline; sun hours by floor and month; units in the building; assumptions and sources; PNG snapshot and GLB export. The **Model** panel (see [floor plans](floor-plans.md#same-plan-in-unit-3d)) chooses the plan the Inside camera shows (your edited plan scenario with its furniture, or the source file), shows the shared anchor, lets you pin the window for the Floor plan studio, enter a measured slab or window-eye height beside the floor-count estimate, assume a podium and tower for a building, compare two to four scenarios side by side (one PNG, one JSON receipt) and export or import a model project that restores offline. |
 | 5 | **Floor plan** | The studio for a plan JSON: synced 2D plan and 3D (Both / 2D / 3D), sun patches through each window, furniture from a cited catalogue with drag, snap, rotate, duplicate and undo, fit checks graded clear / tight / blocked, TV viewing distances, layout presets, **your own furniture** (`furniture.json`) as the default layout, a finished 3D room with the real city outside the windows by default and Look out of the window / From the sofa, bed or desk cameras, eye-level cameras and walk mode, layout save and load, PNG and GLB export, and a side-by-side plan comparison. See [floor plans](floor-plans.md). |
 | 6 | **Research > Records** | A due-diligence report per building: PLUTO facts, record and street-noise scores, a generated "What matters" table with severity and report/finding labels, timelines, 311 by hour and category, collapsible ledgers linked to the raw rows, and the research notes. Prints cleanly. Deep links: `#research/records/<id>` (the old `#records/<id>` redirects here). |
 | 7 | **Shortlist > Tours** | Saved picks on a tier board (S, A, B, C, Pass) by drag or buttons, tour times and notes, a nearest-next visiting order with walking minutes, a Google Maps route, printable call sheets, and picks backup and restore. Deep link: `#list/tours` (the old `#tours` redirects here). |
 | 8 | **Research** | The finalist standard and coverage gaps, then tabs: a priority queue (missing and stale facts, lint flags, score swing, copyable questions), new and changed listings, gone fast, the building watchlist and a media gallery of every image with its credit. Deep links: `#research/queue`, `new`, `gone`, `watch`, `media`, `records`. See [research quality](research-quality.md). |
 
-The tabs are Map, Shortlist, Compare, Unit 3D, Floor plan and Research; Tours is a sub-tab of Shortlist and Records a
-sub-tab of Research. The numbered rows above are the sections, not the shortcuts (`1` to `6` are the tabs). Views load on first visit; `#<view>/<listing-id>` opens a view on
-a listing (for example `#unit/emerald-green-1211` or `#plan/emerald-green-1211`).
+The tabs are Map, Shortlist, Compare, Home and Research. **Home** holds Unit 3D and Floor plan: a second row under the bar switches
+between them (the same way Tours sits under Shortlist and Records under Research), and the Home tab opens whichever you used last.
+The numbered rows above are the sections, not the shortcuts (`1` to `5` are the tabs). Views load on first visit; `#<view>/<listing-id>` opens a view on
+a listing (for example `#unit/emerald-green-1211` or `#plan/emerald-green-1211`: both routes are unchanged, and the switch under the
+bar keeps the same home when the other view has data for it).
+
+### The tabs
+
+A segmented control: an icon and a label per tab, an indicator that slides to the active tab (it jumps when motion is reduced), and
+badges: starred homes on Shortlist, homes in Compare, open research questions on Research. At 1280 to 1600 px the top bar is one
+line; the search-name pill goes first below 1360 px, and the filter rail moves behind a **Filters** button below 1180 px. On a
+phone (760 px and narrower) the tabs become a **bottom tab bar**: five equal icon-and-label targets within thumb reach, all
+visible at once (the old scrolling strip hid Research behind a fade), safe-area aware on notched phones, with the compare tray,
+toasts and shortcut hints lifted above it. Tests: `tests/e2e/test_menu_nav.py`.
+
+### The menu
+
+One button at the top right (`#menuBtn`) opens one menu (`#appMenu`, `js/app-menu.js`) with five sections; it replaces the
+folder menu and the settings menu. The search-name pill on the left opens the same menu under itself.
+
+| Section | Holds |
+|---|---|
+| **This search** | The search name and counts (and its folder, when served), **Edit criteria…** (the wizard on every criterion), **Search settings** (quick edits previewed in this browser), **Switch search…** (the other searches; only when `apartmentscout serve` is running) and **New search…** |
+| **Data** | **Export filtered CSV**, **Back up picks**, **Restore picks…** (a backup file), **Share shortlist**, **Decision memo** |
+| **Appearance** | Theme (system, dark, light), accent (iris, jade, amber, rose), density (roomy, compact), office pin (gold, green) and the golden-hour map tint |
+| **Comfort** | Reduce motion, reduce transparency, high contrast, text size |
+| **Help** | Search or jump to (`⌘K`), Keyboard shortcuts (`?`), Restart tour, and **Install app** where the browser offers it |
+
+Keyboard: `Enter` on the button opens it on the first row; `↑` `↓` move between rows, `←` `→` move inside a segmented row (theme,
+density, accent, text size), `Home` `End` jump to the first and last row, a letter jumps to the next row that starts with it,
+`Esc` closes it and returns focus to the button (or the pill) it was opened from, `Tab` leaves it. Only one row is in the tab order
+(roving focus). Appearance and Comfort choices keep the menu open so you see the change; actions close it. The body scrolls on short
+screens; on a phone the menu is a bottom sheet with a grab handle and a scrim, rows are at least 44 px tall and the keyboard hints are
+dropped.
 
 ## Keyboard
 
@@ -40,8 +71,8 @@ a listing (for example `#unit/emerald-green-1211` or `#plan/emerald-green-1211`)
 | `[` / `]` | Fly to the previous or next starred home on the Map and open its mini card (with the drawer open, move the drawer) |
 | `s` | Save the open listing to your picks |
 | `c` | Add the open listing to Compare |
-| `1`–`6` | Switch tab (Map, Shortlist, Compare, Unit 3D, Floor plan, Research) |
-| `t` | Flip light and dark (the settings menu also has System) |
+| `1`–`5` | Switch tab (Map, Shortlist, Compare, Home, Research); `4` opens Unit 3D or Floor plan, whichever was open last, and pressing it again on Home flips to the other |
+| `t` | Flip light and dark (the menu's Appearance row also has System) |
 | `Esc` | Close the lightbox, the drawer or the help |
 
 | `Esc` | Close the drawer or the help |
@@ -54,7 +85,7 @@ view you are on listed first. The same list, in full:
 |---|---|---|
 | `⌘K` / `Ctrl K`, `/` | Open the command menu: search homes, jump to a view, run an action, or ask in plain words | Everywhere |
 | `?` | The searchable cheat sheet (`Esc` or `?` closes it) | Everywhere |
-| `1`–`6` | Switch tab: Map, Shortlist, Compare, Unit 3D, Floor plan, Research | Everywhere |
+| `1`–`5` | Switch tab: Map, Shortlist, Compare, Home (Unit 3D or Floor plan; `4` again flips), Research | Everywhere |
 | `g` then `m` `s` `c` `u` `p` `r` `t` | Go to Map, Shortlist, Compare, Unit 3D, Floor plan, Research, Tours (a hint chip lists them while the `g` waits). From a home that has a site model or a plan, `g u` and `g p` open that home | Everywhere |
 | `t` | Flip light and dark (the settings menu also has System) | Everywhere |
 | `⌘Z` / `Ctrl Z`, `⇧⌘Z` / `Ctrl Shift Z` (`Ctrl Y`) | Undo and redo a pick, Compare, filter, weight or commute change; not while typing in a field, and not in the Floor plan, which keeps its own history | Everywhere |
@@ -177,7 +208,7 @@ to apply it through the rail's own preset select.
 
 ### Share shortlist and decision memo
 
-*Share shortlist* (under the Shortlist and Tours tabs, and in the settings menu) downloads one read-only, self-contained HTML
+*Share shortlist* (under the Shortlist and Tours tabs, and in the menu's Data section) downloads one read-only, self-contained HTML
 of your saved picks (Pass left out): a map of the homes with the subway lines, a ranked list, and per home the photos, price
 (estimated fees marked), size, commute, the reasons it ranks where it does with the points under your weights, and, folded,
 the money split into documented and estimated, light and view, building and interior grades and open questions. The arrow
@@ -354,7 +385,7 @@ Add a destination in the criteria editor (or `criteria.yaml`), run `apartmentsco
 
 On a first visit in a normal browser the Map shows a five-step tour: the filters, live weights, starring a home,
 Compare and Unit 3D. Each step spotlights its target; `→`/`Enter` go on, `←` goes back, `Esc` or **Skip tour** ends it.
-It is shown once per browser. Restart it from **Take the tour** in the settings menu or the command menu. (Browsers under
+It is shown once per browser. Restart it from **Restart tour** in the menu (Help) or the command menu. (Browsers under
 automation never start it by themselves; `?coach=1` forces it.)
 
 Views that can be empty say so with an illustration and the next step: no saved picks (Tours, and the Map's saved-only
@@ -363,8 +394,8 @@ Research tabs. A link to a home that has no plan or site model shows another one
 
 ## Comfort and personalisation
 
-The settings menu has an **Accent** row (Iris, Jade, Amber, Rose), a **Golden-hour map tint** switch and a **Comfort**
-block. They apply through data attributes on `<html>`, are kept per browser and, for the three comfort switches, follow
+The menu's **Appearance** section has an **Accent** row (Iris, Jade, Amber, Rose) and a **Golden-hour map tint** switch; its **Comfort**
+section has the three comfort switches and text size. They apply through data attributes on `<html>`, are kept per browser and, for the three comfort switches, follow
 your system by default:
 
 | Setting | Attribute | Does |
@@ -408,7 +439,7 @@ in the Shortlist table's rank column. Filters and sorting move the cards without
 change. The motion is skipped under `prefers-reduced-motion` (the badges still appear), and for a moment after any
 update that took more than 9 ms, so a slow device drops the animation instead of frames.
 
-**Density.** The settings menu has Comfortable and Compact. Compact shrinks the card photo, trims the badge row to two,
+**Density.** The menu's Appearance section has Roomy (comfortable) and Compact. Compact shrinks the card photo, trims the badge row to two,
 drops the photo count and the sparkline but keeps the price, score, commute and drop chip, tightens the rail, and
 tightens every table (the Shortlist's own density buttons follow the setting and change it). It is remembered per
 browser; `?density=compact` wins for one page load.
@@ -558,7 +589,7 @@ makes a split build of `dashboard/js/` at deploy time.)
 The hosted dashboard (GitHub Pages under `/demo/`) is an installable app: `manifest.webmanifest` (name, relative `start_url` and
 `scope`, so any sub-path works, theme colours, shortcuts to Map, Shortlist, Compare and Unit 3D) plus icons rendered from the brand pin
 by `scripts/make_icons.py` into `dashboard/assets/pwa/` (dark and light 192 and 512 px, maskable 192 and 512, a 180 px Apple touch
-icon, 32 px favicons and an `.ico`). Chrome and Edge offer *Install app* in the address bar and in the dashboard's settings menu;
+icon, 32 px favicons and an `.ico`). Chrome and Edge offer *Install app* in the address bar and in the dashboard's menu (Help);
 Safari uses *Add to Home Screen*.
 
 `dashboard/sw.js` is the service worker; `js/pwa.js` registers it and `js/pwa-core.js` decides when:
@@ -580,6 +611,28 @@ finds a new deploy: the dashboard then shows *A new version is ready* with **Rel
 background and only takes over when you choose Reload; the first install takes over at once. Your picks, weights and filters live in
 `localStorage` and are kept. Tests: `tests/e2e/test_pwa.py` (manifest, installability under `/ApartmentScout/demo/`, offline reload,
 the update prompt, the photo cap, and the places the worker must stay out of) and `tests/js/pwa.test.mjs`.
+
+## When the page will not start
+
+Stale or hand-edited browser state must never leave a blank page.
+
+- **Saved state is checked on read.** Every `as:*` value comes back through `store.get`, which passes it to `cleanStored()`
+  (`js/state-guard.js`, pure and unit-tested in `tests/js/state-guard.test.mjs`). The shape is compared with the default the caller
+  passes, or with a per-key rule for the keys that default to `null` (picks drop bad entries and bad fields, filters keep only known
+  fields, weights keep finite numbers, `commute:` / `criteria:` / `findings:` need objects, and so on). A bad value is the default;
+  nothing else is touched. The comfort, density and office-pin readers do their own normalising.
+- **A watchdog runs before anything else.** The classic inline script at the top of `index.html` (so it also runs when a module fails
+  to load, in the split build and in the standalone file) shows a full-page card, *Something stopped ApartmentScout from starting*,
+  when a script does not load or fails to parse, when `boot()` throws (`window.__asBoot.fail`), when an uncaught error is followed
+  by 2.5 s without a first render, or when nothing has drawn in 12 s. `app.js` marks the first render with `<html data-boot="ready">`;
+  from then on the watchdog is silent, and a card shown for a slow start disappears if the app does finish.
+- **The card offers two ways out.** *Reload*, and *Reset this browser's settings (keeps your saved picks)*, which removes every `as:*`
+  key except `picks`, `findings:`, `trail:`, `tourplan:` and the floor-plan work (`plan.`, `plan-projects.`, `plan-tracer-draft.`,
+  `plan-scenario:`, `compare-specs:`), unregisters the service worker, deletes its caches and reloads. *Technical details* holds the
+  error text. `window.__AS_BOOT_MS` shortens the 12 s limit (used by the tests).
+
+Tests: `tests/e2e/test_boot_recovery.py` (corrupt values for every kind of key, a script that does not load, a start that never
+finishes, a slow start that recovers, and the reset keeping picks).
 
 ## Speed: the published build and the budget
 

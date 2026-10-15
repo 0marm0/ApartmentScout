@@ -23,6 +23,10 @@ description: Build the 3D site model for a unit, work out which way its windows 
   the plan's window layout against it (which wall has the bay, which way the corner window wraps), and
   keep the confidence honest: OSM maps few trees, terrain is flat in the model and facade colour is not
   in the data.
+  The 3D views also draw the NYC Street Tree Census (`green.census`, trunk diameters) and the rivers
+  (`water`), but only as context: they never count as shade, and the sightline survey above still
+  counts OpenStreetMap trees only. `apartmentscout site <id> --context-only [--keep-osm]` adds or
+  refreshes all of it on an existing site file.
 - Record where each came from on the listing, so the model and the dashboard can say so:
   `exposure_source` and `window_position_source` (`listing`, `plan`, `agent`, `photo-landmarks`,
   `model`, `assumed`) and `floor_inferred`. They end up in the site file's `provenance`.

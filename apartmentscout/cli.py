@@ -274,15 +274,15 @@ def cmd_site(args):
     if L.get("lat") is None:
         sys.exit("Listing has no coordinates. Run `apartmentscout geocode` first.")
     city = crit["search"].get("city")
-    if args.green_only:
+    if args.green_only or args.context_only:
         from .geo.site import add_green
         path = ws.sites_dir / f"{L['id']}.json"
         if not path.exists():
             sys.exit(f"No site file for {L['id']}: run `apartmentscout site {L['id']}` first.")
         site = json.loads(path.read_text())
-        log(f"  parks and trees around {L['id']} (OpenStreetMap)")
+        log(f"  parks, street trees{' and water' if args.context_only else ''} around {L['id']}")
         if not add_green(site, ws.cache_dir / "site", radius=args.radius if args.radius != 600 else None,
-                         refresh=args.refresh, say=log):
+                         refresh=args.refresh, say=log, city=city, water=args.context_only, keep_osm=args.keep_osm):
             sys.exit("The site file has no origin: rebuild it with `apartmentscout site`.")
         path.write_text(json.dumps(site, separators=(",", ":")))
         return
@@ -294,7 +294,8 @@ def cmd_site(args):
                                     panes=_panes_arg(args), slab_height=args.slab_height,
                                     floor_height=args.floor_height, components=not args.no_components,
                                     overrides=_components_file(ws.sites_dir, L["id"]),
-                                    green=not args.no_green, face_index=args.face, eye_height=args.eye_height, say=log)
+                                    green=not args.no_green, face_index=args.face, eye_height=args.eye_height, say=log,
+                                    water=not args.no_water)
     prov = site.get("provenance") or {}
     log(f"  target matched by {prov.get('target') or '?'}; storey height {site['floor_height_m']} m "
         f"({site.get('floor_height_src')})")
@@ -728,8 +729,13 @@ def main(argv=None):
     s.add_argument("--no-streets", action="store_true", help="skip street centrelines")
     s.add_argument("--no-future", action="store_true", help="skip filed / permitted new buildings (NYC)")
     s.add_argument("--no-green", action="store_true", help="skip parks, lawns and trees from OpenStreetMap")
+    s.add_argument("--no-water", action="store_true", help="skip rivers and ponds (the 3D views' blue water)")
     s.add_argument("--green-only", action="store_true", help="only add (or refresh) the parks and trees of an "
-                   "existing site file, leaving the rest of it as it is")
+                   "existing site file (NYC: and the street tree census), leaving the rest of it as it is")
+    s.add_argument("--keep-osm", action="store_true", help="with --green-only / --context-only: keep the parks and "
+                   "mapped trees already in the site file (no Overpass call) and only add the street tree census and water")
+    s.add_argument("--context-only", action="store_true", help="like --green-only, and also add (or refresh) the "
+                   "water block: everything the 3D views draw around the buildings")
     s.add_argument("--no-components", action="store_true", help="keep every building a single prism (skip "
                    "OpenStreetMap building:part podiums / towers; <id>.components.yaml still applies)")
     s.add_argument("--refresh", action="store_true", help="ignore cached downloads")

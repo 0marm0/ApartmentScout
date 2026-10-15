@@ -1,6 +1,6 @@
 // Keyboard additions, installed once from extras.js as a capture-phase listener on window so it sees a key before the
 // shell's own handler (setupKeys in app.js) and the views' handlers. It only takes a key over when it has something to
-// do with it; everything else (j k s c t 1-6 Esc, the view-specific keys) keeps working exactly as before.
+// do with it; everything else (j k s c t 1-5 Esc, the view-specific keys) keeps working exactly as before.
 //
 //   Cmd/Ctrl+Z, Shift+Cmd/Ctrl+Z (Ctrl+Y)   undo and redo (not in the Floor plan, which keeps its own history)
 //   ?                                       the searchable cheat sheet (replaces the old fixed list)

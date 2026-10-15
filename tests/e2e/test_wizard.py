@@ -233,17 +233,20 @@ def test_empty_state_leads_to_the_wizard(open_page) -> None:
 
 
 def test_search_menu_opens_with_the_keyboard(open_page) -> None:
+    """The search switcher opens the one top-right menu at its This search section; Esc returns focus to the switcher."""
     s = open_page("#map", width=1600, height=900)
     pg = s.page
     pg.focus("#searchSwitch"); pg.keyboard.press("Enter")
-    pg.wait_for_selector(".sm-pop.on")
-    names = pg.eval_on_selector_all(".sm-it b", "els => els.map((e) => e.textContent)")
-    assert names[0].startswith("New search") and any(n.startswith("Edit all") for n in names)
+    pg.wait_for_selector("#appMenu:not([hidden])")
+    names = pg.eval_on_selector_all("#amSearch button[role=menuitem]:not([hidden]) span", "els => els.map((e) => e.textContent)")
+    assert names[0].startswith("Edit criteria") and "New search…" in names and any(n.startswith("Search settings") for n in names)
+    assert pg.evaluate("() => document.activeElement.id") == "mnEdit", "keyboard opening lands on the first row"
+    assert pg.locator("#amName").inner_text().strip()
     pg.keyboard.press("ArrowDown"); pg.keyboard.press("Escape")
-    pg.wait_for_function("() => !document.querySelector('.sm-pop')")
+    pg.wait_for_function("() => document.getElementById('appMenu').hidden")
     assert pg.evaluate("() => document.activeElement.id") == "searchSwitch"
-    pg.keyboard.press("Enter"); pg.wait_for_selector(".sm-pop.on")
-    pg.click("[data-go=new]")
+    pg.keyboard.press("Enter"); pg.wait_for_selector("#appMenu:not([hidden])")
+    pg.click("#mnNew")
     pg.wait_for_selector(WIZARD)
     assert not s.take()
 
