@@ -28,6 +28,20 @@ add to compare, switch research tabs) or a **critical** axe-core violation. Seri
 warnings: read them. About 2 to 3 minutes. Without Chromium installed the suite skips itself unless
 `APARTMENTSCOUT_E2E=1`; `APARTMENTSCOUT_E2E=0` turns it off.
 
+Two more checks run in CI and are worth running before a release that touched the dashboard:
+
+```bash
+NO_MEDIA=1 scripts/build_site.sh /tmp/as-site          # the Pages build: bundles, splits, stamps the service worker
+python scripts/perf_check.py --site /tmp/as-site --check --cpu 1 --net broadband   # first-load budget (scripts/perf_budget.json)
+APARTMENTSCOUT_E2E=1 pytest -m e2e tests/e2e/test_pwa.py tests/e2e/test_landing_page.py -q   # install, offline, update prompt, landing page
+```
+
+- After changing `dashboard/js/`, run `scripts/bundle.sh` so the standalone file embeds the current code. The published site does not
+  use that file (`scripts/optimize_site.py` builds from `dashboard/js/`).
+- Installable app: open the published `/demo/` once, choose Install, switch the network off and reload; the app must open with the
+  search data and the pages you had visited. Then deploy again with a change and check that *A new version is ready* appears.
+- The perf budget only moves down: tighten `scripts/perf_budget.json` when numbers fall, and say why when one has to rise.
+
 ## 2. Keep your private strings outside the repo
 
 The privacy scan always looks for local home-directory paths and e-mail addresses. Add the strings only you know

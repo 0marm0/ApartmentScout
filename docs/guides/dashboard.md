@@ -436,12 +436,66 @@ with the vendored pdf.js. It embeds the data, so treat it
 like the search itself: it shows your listings and notes to anyone you send it to.
 
 After editing `dashboard/js/`, run `scripts/bundle.sh` (Node + esbuild) to refresh
-`dashboard/dist/app.bundle.js`, which the standalone build embeds.
+`dashboard/dist/app.bundle.js`, which the standalone build embeds. (The published site is not built from that file: `scripts/optimize_site.py`
+makes a split build of `dashboard/js/` at deploy time.)
+
+## Install it and use it offline
+
+The hosted dashboard (GitHub Pages under `/demo/`) is an installable app: `manifest.webmanifest` (name, relative `start_url` and
+`scope`, so any sub-path works, theme colours, shortcuts to Map, Shortlist, Compare and Unit 3D) plus icons rendered from the brand pin
+by `scripts/make_icons.py` into `dashboard/assets/pwa/` (dark and light 192 and 512 px, maskable 192 and 512, a 180 px Apple touch
+icon, 32 px favicons and an `.ico`). Chrome and Edge offer *Install app* in the address bar and in the dashboard's settings menu;
+Safari uses *Add to Home Screen*.
+
+`dashboard/sw.js` is the service worker; `js/pwa.js` registers it and `js/pwa-core.js` decides when:
+
+| Where the page is opened | Worker |
+|---|---|
+| The published build (`as-build` meta stamped by `scripts/optimize_site.py`) on https, or on localhost | Registered |
+| A plain copy of `dashboard/` (the repo tree, `python -m http.server`) | Never, unless the URL has `?pwa=1` (a source edit is never hidden by a cache) |
+| `apartmentscout serve` (the page carries the `as-token` meta tag) | Never (the server rebuilds data under the page) |
+| A standalone file on `file://` | Never (browsers do not allow it; the install block of `index.html` is dropped from that file) |
+| Any page with `?pwa=0` | Off for that visit |
+
+What it saves: the shell and core data listed in `precache.json` (written at deploy time) go into a cache named for the build; other
+same-origin files (map layers, 3D site models, plans, dossiers) are cached the first time they are used, in a cache that belongs to the
+same build; saved listing photos (`media/`) are cached on first view in their own cache, capped at 50 MB, oldest first. Remote photos
+and map tiles are never touched, so offline the map shows its basemap note and the pins, lines and heat from the saved data. The page
+is served from the build's cache (so the page and the hashed files it names stay one version) and the browser's worker update check
+finds a new deploy: the dashboard then shows *A new version is ready* with **Reload** and **Later**. The new build installs in the
+background and only takes over when you choose Reload; the first install takes over at once. Your picks, weights and filters live in
+`localStorage` and are kept. Tests: `tests/e2e/test_pwa.py` (manifest, installability under `/ApartmentScout/demo/`, offline reload,
+the update prompt, the photo cap, and the places the worker must stay out of) and `tests/js/pwa.test.mjs`.
+
+## Speed: the published build and the budget
+
+The source tree loads about 110 module files. `scripts/optimize_site.py` (run by `scripts/build_site.sh`, which `pages.yml` calls)
+rewrites the copy that Pages serves:
+
+- esbuild splits `js/app.js` into a tiny entry, shared chunks and a chunk per lazy view (Unit 3D, Floor plan, Research, Compare, Tours, the
+  wizard, settings, the lightbox ...), so the first screen runs about 80 KB of script (gzip) instead of 400 KB, and three.js and pdf.js load with the
+  views that need them. The page `modulepreload`s the chunks the first screen imports.
+- The 31 stylesheets become 10 minified files in the **same order** (the cascade is unchanged; a computed-style comparison of nine views found
+  no difference). View-only sheets load without blocking the first render and keep their place in the document.
+- MapLibre loads with `defer`, the Geist font is preloaded, and a small inline script starts `listings.json`, `criteria.json`,
+  `manifest.json`, `notes.json` and `lqip.json` before any code has downloaded (`js/perf/early.js` hands those requests to `getJSON`).
+- `data/listings.json` keeps only the fields the dashboard reads (`apartmentscout/slim.py`; `apartmentscout build` does the same for
+  `dashboard/data/`). The list is an allowlist: **a listing field a script starts to read must be added to `DASHBOARD_FIELDS`**, and
+  `tests/test_slim.py` fails when a field the example search carries and a script mentions is missing from it.
+
+The standalone file keeps its single bundle (it has nowhere to put chunks) but embeds each data file as a JSON block that is parsed the
+first time the app asks for it, so the 8 MB listings file is parsed at boot and dossiers, 3D site models and plans only when a view opens
+them.
+
+Measure it: `python scripts/perf_check.py --site _site --standalone my-search.html` reports LCP, FCP, total blocking time, bytes on the
+wire (gzip, as Pages sends them) and request count on a cold load, with the CPU slowed (`--cpu 4`) and a network profile (`--net 4g`) if you
+want a phone. `--check` enforces `scripts/perf_budget.json` (the `perf` job in `tests.yml`). Build the site locally with
+`NO_MEDIA=1 scripts/build_site.sh _site` (leave out `NO_MEDIA` to copy the 400 MB of example photos).
 
 ## Host it
 
-GitHub Pages: `.github/workflows/pages.yml` publishes the landing page at the site root and `dashboard/`
-(with the NYC example data) at `/demo/` on every push to `main`; see `landing/README.md`. To publish your
+GitHub Pages: `.github/workflows/pages.yml` runs `scripts/build_site.sh`, which publishes the landing page at the site root and the
+optimised, installable `dashboard/` (with the NYC example data) at `/demo/` on every push to `main`; see `landing/README.md`. To publish your
 own search instead, build into a copy of `dashboard/` and host that. Anything in `data/` is public on a
 public site, including notes, so publish from a copy of your search without private notes if needed, and
 run `python scripts/release_check.py` first.
