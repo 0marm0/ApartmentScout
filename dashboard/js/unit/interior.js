@@ -6,6 +6,7 @@
 import * as THREE from 'three';
 import { normalisePlan, pointInPoly } from '../plan/model.js';
 import { planFrame } from '../plan/city.js';
+import * as I3 from '../plan/interior3d.js';   // [interior] reveals, casings, framed glass, door frames, baseboards, trims, floor finishes
 
 export { planFrame };
 import { css } from '../util.js';
@@ -46,7 +47,8 @@ export function buildInterior(model, opts = {}) {
   for (const r of model.rooms) {
     const shape = new THREE.Shape(r.poly.map((p) => { const [x, z] = L(p); return new THREE.Vector2(x, -z); }));
     const geo = new THREE.ShapeGeometry(shape); geo.rotateX(-Math.PI / 2);
-    const m = new THREE.Mesh(geo, std(['bath', 'kitchen', 'outdoor'].includes(r.kind) ? tile : wood, { roughness: 0.74 }));
+    const fk = I3.floorKind(r), base = I3.floorBase(fk, { wood, tile, dark: !light });   // [interior] parquet, oak or tile by room type
+    const m = new THREE.Mesh(geo, std(0xffffff, { map: I3.floorTexture(fk, base), roughness: I3.floorRoughness(fk) }));
     m.position.y = 0.004; m.receiveShadow = true; m.name = `floor: ${r.name}`; g.add(m);
   }
   // shadowSide FrontSide: the slab and walls cast from their sun-facing faces, so the full thickness separates
@@ -64,20 +66,11 @@ export function buildInterior(model, opts = {}) {
   const ceil = new THREE.Mesh(new THREE.BoxGeometry(bx1 - bx0, 0.2, bz1 - bz0), std(wallC.clone().lerp(ink, light ? 0 : 0.05), { shadowSide: THREE.FrontSide }));
   // the slab overlaps the wall tops by 3 cm so no sun leaks in at the junction
   ceil.position.set((bx0 + bx1) / 2, H + 0.07, (bz0 + bz1) / 2); ceil.castShadow = true; ceil.receiveShadow = true; ceil.name = 'ceiling'; g.add(ceil);
-  const glassMat = new THREE.MeshStandardMaterial({ color: 0x9fc6e8, transparent: true, opacity: light ? 0.16 : 0.12, roughness: 0.05, metalness: 0.1, side: THREE.DoubleSide, depthWrite: false });
-  const frameMat = std(wallC.clone().lerp(s3, 0.5), { roughness: 0.6 });
+  // [interior] window reveals, sills, casings, framed glass with a soft reflection, door frames, baseboards, ceiling trims (shared with the studio)
+  g.add(I3.detailGroup(model, { origin: [fr.xc, fr.yw], cut: null, dark: !light, sheen: true }));
   const windows = [];
   for (const w of model.windows) {
-    const [mx, mz] = L(w.mid), rot = Math.atan2(w.b[1] - w.a[1], w.b[0] - w.a[0]);
-    const gl = new THREE.Mesh(new THREE.PlaneGeometry(w.len * M, (w.head - w.sill) * M), glassMat);
-    gl.position.set(mx, ((w.sill + w.head) / 2) * M, mz); gl.rotation.y = rot; gl.name = 'glass'; g.add(gl);
-    // mullions: thin frame at the ends and every ~1.2 m
-    const n = Math.max(1, Math.round((w.len * M) / 1.2));
-    for (let i = 0; i <= n; i++) {
-      const t = i / n, p = L([w.a[0] + (w.b[0] - w.a[0]) * t, w.a[1] + (w.b[1] - w.a[1]) * t]);
-      const mu = new THREE.Mesh(new THREE.BoxGeometry(0.05, (w.head - w.sill) * M, 0.07), frameMat);
-      mu.position.set(p[0], ((w.sill + w.head) / 2) * M, p[1]); mu.rotation.y = rot; mu.castShadow = true; g.add(mu);
-    }
+    const [mx, mz] = L(w.mid);
     const room = model.rooms.find((r) => r.name === w.room) || model.rooms.find((r) => pointInPoly([w.mid[0] - w.normal[0] * 12, w.mid[1] - w.normal[1] * 12], r.poly));
     // stand back from the glass, inside the room
     let eye = null;

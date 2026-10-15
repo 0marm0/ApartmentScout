@@ -58,6 +58,7 @@ for (const id of ['paramount-tower-25e', 'emerald-green-1211']) {
     for (const it of items) {   // same ref and the same real size as the inventory
       const p = v.pieces.find((q) => q.id === it.id);
       assert.equal(it.ref, p.ref); assert.equal(it.w, p.w); assert.equal(it.d, p.d); assert.equal(it.h, p.h);
+      assert.equal(it.elev, p.elev);   // a wall TV keeps its own height off the floor through the plan normaliser
     }
     const R = items.map((i) => resolve(i)), ev = evaluate(m, R);
     assert.equal(ev.counts.blocked, 0, JSON.stringify(Object.values(ev.items).filter((r) => r.state === 'blocked').map((r) => [r.id, r.issues.map((x) => x.text)])));

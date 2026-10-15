@@ -46,6 +46,8 @@ import * as Q3 from './plan/quality3d.js';   // [feature J] render quality (Fast
 import * as LX from './plan/lighting-ui.js';   // [feature J] daylight grid, glass/surface inputs, luminaires, annual summary
 import { validateInventory, fitInventory, pieceItem, placedIds } from './plan/inventory.js';   // [furniture] the renter's own pieces
 import { inventoryHTML } from './plan/inventory-ui.js';
+import { allViews, stepView } from './plan/viewpoints.js';   // [interior] where to stand to look out of the windows
+import { lookChipsHTML, bindLookChips } from './plan/look-ui.js';
 
 const st = {
   id: null, date: '', min: 720, playing: false, site: null, mode: 'both', view: 'bird', wall: 'cut', tab: 'furniture',
@@ -139,6 +141,7 @@ export function init() {
             <canvas id="pgl" aria-label="3D model of the apartment"></canvas>
             <div class="float ps-cams" id="psCams" role="group" aria-label="Camera">${[['bird', 'Bird’s eye'], ['top', 'Top'], ['bed', 'From bed'], ['sofa', 'From sofa'], ['door', 'From door'], ['walk', 'Walk']].map(([k, t]) => `<button type="button" data-v="${k}">${t}</button>`).join('')}</div>
             <div class="float ps-walls" id="psWalls" role="group" aria-label="Walls">${[['cut', 'Cut'], ['full', 'Full'], ['outline', 'Outline']].map(([k, t]) => `<button type="button" data-w="${k}">${t}</button>`).join('')}</div>
+            <div class="float ps-look" id="psLook" role="toolbar" aria-label="Look out of the windows" hidden></div>
             <div class="hud" id="phud"></div>
             <div class="ps-hint" id="psHint"></div>
           </div>
@@ -330,7 +333,7 @@ function recompute(opts = {}) {
   overlays();
   inspector();
   if (opts.panels !== false) tab();
-  tabCounts();
+  tabCounts(); lookChips();   // [interior]
 }
 function computeRoutes() { try { routesRes = accessRoutes(model, R); } catch { routesRes = null; } }
 const shownRoutes = () => (routesRes ? routesRes.routes.filter((r) => st.routes || r.key === st.routeKey) : []);
@@ -443,6 +446,7 @@ function bindChrome() {
   window.addEventListener('blur', () => held.clear());
   $('psCams').addEventListener('click', (e) => { const b = e.target.closest('[data-v]'); if (b) camera(b.dataset.v); });
   $('psWalls').addEventListener('click', (e) => { const b = e.target.closest('[data-w]'); if (b) setWall(b.dataset.w); });
+  bindLookChips($('psLook'), { pick: lookAt, order: () => viewsNow().map((v) => v.key) });   // [interior]
   $('psTabs').addEventListener('click', (e) => { const b = e.target.closest('[data-t]'); if (b) { st.tab = b.dataset.t; tab(); } });
   $('psUndo').addEventListener('click', () => doUndo(true));
   $('psRedo').addEventListener('click', () => doUndo(false));
@@ -483,9 +487,34 @@ function markCams() {
     if (b.dataset.v === 'sofa') b.disabled = !R.some((x) => (x.kind === 'sofa' || x.kind === 'chair') && !x.hidden);
   });
   const hints = { walk: 'Drag to look · hold W S or ↑ ↓ to walk, A D to turn, Q E to step sideways, Shift to hurry · Esc to stop', tour: 'Walking the route · drag or W A S D to take over · Esc to stop', bed: 'Drag to look around · scroll to move', sofa: 'Drag to look around · scroll to move', door: 'Drag to look around · scroll to move' };
-  $('psHint').textContent = hints[st.view] || (isPhone() ? 'Drag a piece to move it · drag the floor to orbit' : 'Drag a piece to move it · drag the floor to orbit · right-drag to pan');
+  lookChips();   // [interior]
+  $('psHint').textContent = hints[st.view] || (G3.viewMode() === 'eye' ? 'Drag to look around · scroll to step · ← → or [ ] switch the view · Esc to leave' : '') || (isPhone() ? 'Drag a piece to move it · drag the floor to orbit' : 'Drag a piece to move it · drag the floor to orbit · right-drag to pan');
 }
 const entryDoor = () => entryPoint(model);
+// [interior] "Look out of": the windows by room (with bays and corners) and the seats, as chips over the 3D view
+let viewsKey = '', viewsMemo = [];
+function viewsNow() {
+  if (!model) return [];
+  const k = `${model.id}|${R.filter((x) => !x.hidden && ['sofa', 'chair', 'bed', 'desk'].includes(x.kind)).map((x) => `${x.id}:${Math.round(x.x)},${Math.round(x.y)},${Math.round(x.rot)}`).join(';')}|${model.windows.length}`;
+  if (k !== viewsKey) { viewsKey = k; try { viewsMemo = allViews(model, R); } catch { viewsMemo = []; } }
+  return viewsMemo;
+}
+function lookChips() {
+  const el = $('psLook'); if (!el || !model) return;
+  const vs = viewsNow(), html = lookChipsHTML(vs, G3.viewMode() === 'eye' ? st.view : null);
+  if (el.dataset.sig !== `${html}`) { const had = el.contains(document.activeElement); el.innerHTML = html; el.dataset.sig = html; if (had) el.querySelector('.lk-chip.on')?.focus(); }
+  el.hidden = !html;
+}
+function lookAt(key) {
+  const v = viewsNow().find((q) => q.key === key); if (!v || !model) return;
+  if (st.mode === '2d') setMode(isPhone() ? '3d' : 'both');
+  st.view = key;
+  G3.setView('look', { at: v.at, dir: v.dir, h: v.h, pitch: v.pitch, fov: v.fov }); setWall('full', true);
+  applyCity(); overlays(); markCams();
+}
+function stepLook(step) {
+  const vs = viewsNow(), nx = stepView(vs, G3.viewMode() === 'eye' ? st.view : null, step); if (nx) lookAt(nx.key);
+}
 function camera(v) {
   if (!model) return;
   if (st.mode === '2d') setMode(isPhone() ? '3d' : 'both');
@@ -501,6 +530,7 @@ function camera(v) {
     } else eye = { ...entryDoor(), h: 63, pitch: -0.05 };
     G3.setView(v, eye); setWall('full', true);
   }
+  applyCity();   // [interior] the city outside comes with every eye-level view
   overlays(); markCams();
 }
 
@@ -556,6 +586,7 @@ function keys(e) {
   const tag = e.target.tagName;
   if (['INPUT', 'TEXTAREA', 'SELECT'].includes(tag)) return;
   const k = e.key, eye = G3.viewMode() === 'eye';
+  if ((k === '[' || k === ']') && !e.metaKey && !e.ctrlKey && !e.altKey) { e.preventDefault(); stepLook(k === ']' ? 1 : -1); return; }   // [interior] next / previous window or seat
   if ((e.metaKey || e.ctrlKey) && k.toLowerCase() === 'z') { e.preventDefault(); doUndo(!e.shiftKey); return; }
   if (e.metaKey || e.ctrlKey || e.altKey) return;
   const stop = () => { e.preventDefault(); e.stopPropagation(); };
@@ -873,7 +904,7 @@ function refreshSun() {
   $('phud').innerHTML = `<span>${esc(st.date)} ${fmtT(st.min)}${mn !== 'day' ? ` · ${mn === 'night' ? 'night' : 'evening'}, ${lamps ? `${lamps} lamp${lamps > 1 ? 's' : ''} on` : 'no lamps placed'}` : ''}</span><span class="${light.directional ? 'lit' : 'shade'}">${!placementKnown ? 'Window placement unresolved · direct sun withheld' : !light.orientationKnown ? 'Orientation unknown · direct sun unresolved' : !up ? 'Night' : blocked ? (perWin ? 'Every window shaded by neighbours' : 'Site observation point shaded') : nWh && nWh === model.windows.length ? 'Windows not in open air · sun withheld' : nBlk ? `Sun blocked at ${nBlk} of ${perWin.length} windows${nWh ? ` · ${nWh} withheld` : ''}` : !st.directSun ? 'Direct sun hidden in preview' : `Sun ${Math.round(s.alt)}° up, ${compass(s.az)}`}</span>`;
   const el = $('psLight'); if (!el) return;
   if (!el.querySelector('#psLightResults')) {
-    el.innerHTML = `<div class="ps-light-controls"><label class="tg"><input id="psDirectSun" type="checkbox"> Show directional sunlight</label>${onSite ? `<label class="tg ps-city-tg"><input id="psCityTg" type="checkbox"> Show the city outside</label>` : ''}<div class="field"><label for="psAmbient">Background light preview <span id="psAmbientValue"></span></label><input id="psAmbient" type="range" min="0" max="2" step="0.05"></div><p class="ps-note faint">Background intensity is a display preference, not measured brightness or lux.</p>
+    el.innerHTML = `<div class="ps-light-controls"><label class="tg"><input id="psDirectSun" type="checkbox"> Show directional sunlight</label>${onSite ? `<label class="tg ps-city-tg"><input id="psCityTg" type="checkbox"> Show the city in the bird’s-eye view too</label>` : ''}<div class="field"><label for="psAmbient">Background light preview <span id="psAmbientValue"></span></label><input id="psAmbient" type="range" min="0" max="2" step="0.05"></div><p class="ps-note faint">Background intensity is a display preference, not measured brightness or lux.</p>
       <div class="ps-glaze"><div class="label">Glass and blinds <span class="pill">Preview</span></div>
         <div class="field"><label for="psGlazing">Glazing transmittance <span id="psGlazingValue"></span></label><input id="psGlazing" type="range" min="0.05" max="1" step="0.05" aria-describedby="psGlazeNote"></div>
         <div class="seg ps-blinds" id="psBlinds" role="group" aria-label="Blinds">${Object.entries(BLINDS_LABEL).map(([k, t]) => `<button type="button" data-b="${k}" aria-pressed="false">${t}</button>`).join('')}</div>
@@ -934,16 +965,23 @@ const up_ = (s) => s.alt > 0;
 const hmShort = (min) => { if (!min) return 'none'; const h = Math.floor(min / 60), mm = Math.round(min % 60); return h && mm ? `${h} h ${String(mm).padStart(2, '0')}` : h ? `${h} h` : `${mm} m`; };
 function placeOnSite(site, floor) {
   try { const pin = getPin(st.id, { base: S.base }); onSite = placePlan(site, model, pin?.floor ?? floor, { anchor: pinOption(pin) }); winSky = onSite ? windowSkylines(onSite, model) : null; } catch { onSite = winSky = null; }
-  winMin = null; winMinKey = '';
+  winMin = null; winMinKey = ''; cityKey = '';
   if (ready) applyCity();
 }
-function dropPlacement() { onSite = winSky = winMin = null; winMinKey = ''; G3.setWindowShade([]); applyCity(); }
+function dropPlacement() { onSite = winSky = winMin = null; winMinKey = ''; cityKey = ''; G3.setWindowShade([]); applyCity(); }
 function applyCity() {
   if (!ready) return;
-  if (!st.city || !onSite) { if (G3.hasCity()) G3.setCity(null); return; }
+  // [interior] the real city outside is always there from inside (every eye-level view); the toggle is for the bird's-eye view
+  const eye = G3.viewMode() === 'eye', want = !!onSite && (eye || st.city), key = `${eye ? 'eye' : 'orbit'}|${document.documentElement.dataset.theme}`;
+  if (!want) { if (G3.hasCity()) G3.setCity(null); cityKey = ''; return; }
+  if (cityKey === key && G3.hasCity()) return;
+  cityKey = key;
   const dark = document.documentElement.dataset.theme !== 'light', css = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-  G3.setCity(cityGroup(onSite, { light: !dark, colors: { low: dark ? css('--surface-3') : css('--ink-4'), high: css('--ink-3'), roof: dark ? css('--ink-3') : css('--surface-1'), own: css('--accent'), ground: dark ? css('--surface-1') : css('--surface-3') } }));
+  const colors = eye ? { low: '#7f8996', high: '#b9c2cf', roof: '#dde1e7', own: css('--accent'), ground: '#6e7378' }
+    : { low: dark ? css('--surface-3') : css('--ink-4'), high: css('--ink-3'), roof: dark ? css('--ink-3') : css('--surface-1'), own: css('--accent'), ground: dark ? css('--surface-1') : css('--surface-3') };
+  G3.setCity(cityGroup(onSite, { light: eye || !dark, colors }));
 }
+let cityKey = '';
 
 // ------------------------------------------------------------------ frame loop
 function frame() {
