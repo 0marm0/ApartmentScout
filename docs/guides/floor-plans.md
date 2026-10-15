@@ -25,7 +25,7 @@ The **Floor plan** tab opens a studio for that unit:
   (`apartmentscout site <id>`), the sun switches off whenever nearby buildings block it, and the
   furniture casts shadows, so you can see where morning sun lands on the bed;
 - layout presets written into the plan file, and layouts saved per plan in the browser, as a JSON
-  file (download and load), as a 3D model (`.glb`, one named node per piece) or as a PNG.
+  file (download and load), as a 3D model (`.glb`, one named node per piece), as a true-size model for your phone (`.usdz`, [View in your room (AR)](#view-in-your-room-ar)) or as a PNG.
 - a **Light** tab for lighting design: relative daylight on a sensor grid in each room (a heat map on the plan and on the 3D
   floor), glass, frame, blinds and surface inputs that say whether each number is assumed or from a source, editable luminaires
   with a lamp-light estimate and a night preview, and an annual daylight summary per window
@@ -105,12 +105,55 @@ piece's colour and material (italic and "(assumed)" for a stand-in), and the *Wh
 how many looks come from the renter and which details are still guesses. A layout item may also carry its own `look`, which wins
 over the inventory's; saved layouts do not copy the inventory's looks.
 
-Both 3D views share one set of models (`dashboard/js/room3d/furniture.js`): a futon is padded leather channels on a tubular frame,
-a chest has flat drawer fronts with simple handles (the MALM has slab fronts with a recessed pull along each top edge), a desk is a
-work desk (a solid top, four square legs, an apron with a shallow centre drawer, low stretchers, a modesty panel and a steel cable
-tray under the top) with a desk mat, keyboard and mouse, a slim monitor on a stand and a rolling task chair (a five-star base on
-twin-wheel casters, a gas lift, a waterfall seat, a curved back that is mesh in Visual, two armrests), and a wall-mounted TV is a thin
-black panel hung at its `elev`. Fast stays within about 1,500 triangles a piece, Visual 6,000.
+Both 3D views share one set of models (`dashboard/js/room3d/furniture.js`), drawn procedurally at each piece's own size:
+
+- **Futon**: a thick leather mattress for the seat and one for the back, each crowned like a pillow and deep-buttoned (a covered button
+  in every dimple), with a piped seam and a thread of top-stitching round the face, on a tubular black frame (rail arms with rounded
+  ends, raked back stiles, a slatted deck). Opened as a bed it is one buttoned mattress across the deck.
+- **IKEA MALM 6-drawer chest**: 160 x 48 x 78 cm to the hair, full-depth side panels and a top on a recessed plinth, two columns of
+  three flat drawer fronts with a 3 mm gap, no knobs: the top edge of every front is cut back into a finger recess (a real notch, dark
+  inside), and the finish is a printed black-brown wood-grain foil, nearly matt.
+- **Desk set**: a work desk (a solid top, four square legs, an apron with a shallow centre drawer, low stretchers, a modesty panel and a
+  steel cable tray) with a mat, keyboard and mouse, a slim 32-inch monitor on a stand, and a rolling task chair: a five-star base of
+  tapered spokes on twin-wheel casters, a gas lift with its ridged bellows, a waterfall seat, a curved mesh back (Visual) on a post, two
+  armrests.
+- **TVs**: a 55-inch panel with slim bezels, a glass front, a bulge and vents behind and a standby light, hung at its `elev` on a
+  low-profile mount (a wall plate, VESA rails on the set and four spacer arms).
+- **Bed**: an upholstered frame with a channelled headboard on tapered legs, a piped mattress, a box-quilted duvet, a knitted throw
+  across the foot, two sleeping pillows and two euro pillows. Bedding is generic décor, never the renter's.
+- Wood has a long-grain texture with plain-sawn figure, fine lines and open pores (and a bump in Visual); upholstery has a weave
+  with a bump; leather a pebbled grain with a velvety sheen.
+
+Fast stays within about 1,600 triangles a piece (the room3d tests and `scripts/perf_budget.json` hold it), Visual within 6,000
+(`quality.has('richFurniture')`).
+
+### View in your room (AR)
+
+The Furniture tab has a **See it in your room** section: the whole furnished layout, and a small link on each piece in the list and in
+its inspector. The models are baked to true size (metres, the sizes in your furniture list) from the Visual models whatever the screen
+is drawing, and offered the way each device can use them:
+
+| Device | What you get |
+|---|---|
+| iPhone, iPad (iPadOS Safari too) | **View in your room (AR)**: a real `<a rel="ar">` link to a `.usdz` built in the page. Tap it, point the phone at the floor, tap to place; walk round the furniture at true size. Each piece has its own **AR** link. |
+| Android phone, desktop | **Download .glb** (a glTF binary for Android's Scene Viewer, Blender or any glTF viewer) and **Download .usdz** (to AirDrop to an iPhone or iPad). **Layout ▸ Furnished room for AR** downloads the room's `.usdz` anywhere. |
+
+The `.usdz` files are built when the tab opens (the room first, then each piece, a moment after the last change) because Safari starts
+AR Quick Look only from a tap on the link itself, not from a script that finishes later. The whole room is the furniture where the
+layout puts it, centred on the point you anchor, with no walls or floor, so it lays over your own room. A wall TV hangs at its true
+height: stand where the wall is and line it up. Everything is yours: the file is built in the browser, nothing is uploaded.
+
+How it is made (`dashboard/js/room3d/ar-export.js`): the studio draws in inches inside a scaled group, so `bakeForAR` flattens the
+pieces into plain meshes in metres and re-bakes what AR Quick Look cannot read: every material becomes a `UsdPreviewSurface` (base
+colour, roughness, metalness, a colour map and a normal map; a bump map such as the leather grain is converted to a normal map; metal
+is really metallic in AR, where Fast draws it near 0.15 because Fast has no environment light), vertex colours are split into one mesh
+per colour, double-sided cloth (the duvet, the throw) gets a flipped copy of its triangles, and identical geometry and materials are
+shared. three.js r160's `USDZExporter` (and its `fflate` zip) are vendored unmodified next to the other addons in
+`dashboard/vendor/three/addons/`. Tests: `tests/js/ar-export.test.mjs` (a valid archive, true-scale bounds in metres, materials,
+sharing, the triangle budgets) and `tests/e2e/test_ar_view.py` (the links on an iPhone user agent, the downloads elsewhere).
+
+AR Quick Look needs an iPhone or iPad with ARKit (any since the iPhone 6s) and Safari or another WebKit browser; the dashboard's data
+is local, so open it from where you host it (a file opened from a mail attachment will not run it).
 
 ### Looking from a seat, and moving a piece
 
