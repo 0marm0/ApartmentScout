@@ -433,7 +433,7 @@ def test_the_camera_controls_fit_a_phone_and_the_model_comes_to_the_top(open_pag
     assert all(b[1] <= tools - 4 and b[2] >= 34 for b in boxes), (boxes, tools)           # the three big buttons clear the layer tools
     assert pg.evaluate("() => [...document.querySelectorAll('#uModes .um-b')].map((b) => b.innerText.trim())") == ["Inside", "Window", "Outside"]
     overlap = pg.evaluate("""() => { const q = (s) => document.querySelector(s).getBoundingClientRect(); const a = q('#uModes'), l = q('#uLook');
-      return a.top >= l.bottom - 1; }""")
-    assert overlap, "the room chips run along the top and the camera buttons sit in the thumb zone below them"
+      return a.bottom <= l.top + 1; }""")
+    assert overlap, "the room switcher sits under the camera buttons"
     assert pg.evaluate("() => document.documentElement.scrollWidth <= window.innerWidth + 1")
     assert not s.take()

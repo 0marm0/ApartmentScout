@@ -264,7 +264,7 @@ function fitGrid() {
   const main = g.querySelector(':scope > .u-main');
   if (main) main.style.height = '';
   if (!matchMedia('(min-width: 1181px)').matches || g.querySelector(':scope > .empty')) { g.style.height = ''; return; }
-  const top = g.getBoundingClientRect().top - root.getBoundingClientRect().top + root.scrollTop, h = Math.max(560, root.clientHeight - top - 20 + (root.dataset.wide === "1" ? 44 : 0));
+  const top = g.getBoundingClientRect().top - root.getBoundingClientRect().top + root.scrollTop, h = Math.max(560, root.clientHeight - top - 20 + (root.dataset.wide === "1" ? 110 : 0));
   if (root.dataset.wide === '1' && main) { g.style.height = ''; main.style.height = h + 'px'; return; }   // wide: the model and its time strip fill the screen, the panels follow below
   g.style.height = h + 'px';
 }
