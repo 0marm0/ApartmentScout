@@ -39,6 +39,8 @@ export const findCity = (q) => call('POST', '/api/city', { q });
 export const findAddress = (q, city) => call('POST', '/api/geocode', { q, city });
 export const checkFeed = (url) => call('POST', '/api/feeds/check', { url });
 export const savePlan = (plan, overwrite = false) => call('POST', '/api/plans', { plan, overwrite });
+// [photo match] a unit's matched view (apartmentscout-view-calibration) saved into the search folder's view-calibrations/
+export const saveViewCal = (record, overwrite = true) => call('POST', '/api/view-calibrations', { record, overwrite });
 export const job = (id) => call('GET', `/api/jobs/${encodeURIComponent(id)}`);
 /** Poll a re-score job until it ends; `onTick(job)` after every poll. Resolves with the final job. */
 export async function waitForJob(id, onTick = () => {}, every = 600) {
