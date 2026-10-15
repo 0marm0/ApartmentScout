@@ -403,7 +403,7 @@ export function setItems(items) { lastItems = items; const ids = new Set(items.m
 function disposeGroup(g) { g.traverse((o) => { o.geometry?.dispose(); if (o.material && !o.material.userData?.shared) (Array.isArray(o.material) ? o.material : [o.material]).forEach((m) => { if (m.map && !m.map.userData?.shared) m.map.dispose(); m.dispose(); }); o.dispose?.(); }); }
 onRoomQuality(() => { if (typeof rebuildAllItems === 'function' && groups.size) rebuildAllItems(); });   // [room3d] the furniture models are simpler in Fast, richer in Visual
 function rebuildAllItems() { for (const [, g] of groups) { furn.remove(g); disposeGroup(g); } groups.clear(); setItems(lastItems); }
-const sigOf = (it) => `${it.ref}|${it.w}|${it.d}|${it.h}|${it.elev}|${it.variant || ''}|${it.product || ''}`;
+const sigOf = (it) => `${it.ref}|${it.w}|${it.d}|${it.h}|${it.elev}|${it.variant || ''}|${it.product || ''}|${it.look ? JSON.stringify(it.look) : ''}`;
 /** Update an item's transform, rebuilding its meshes when its shape changed. */
 export function syncItem(it, rebuild = false) {
   let g = groups.get(it.id);
