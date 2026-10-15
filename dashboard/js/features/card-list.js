@@ -18,7 +18,7 @@ const mqReduce = matchMedia('(prefers-reduced-motion: reduce)');   // one query 
 const reduced = () => mqReduce.matches;
 
 let host, topSp, botSp, pad = 4;
-let layout = new Layout({ gap: 2, estimate: 131 });
+let layout = new Layout({ gap: 4, estimate: 128 });
 let smoothUntil = 0;                         // a smooth scroll to a card is running: do not fight it with position corrections
 let items = [], index = new Map();           // item key -> position
 let idPos = new Map();                       // listing id (any unit in a group) -> position
