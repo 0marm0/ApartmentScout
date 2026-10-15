@@ -20,15 +20,27 @@ export function clock12(min) {
  * @returns {{start: number, end: number, rise: number|null, set: number|null, noon: number}} minutes
  */
 export function dayRange(altAt, { from = 300, to = 1290, step = 5, dawnAlt = -5, duskAlt = -5 } = {}) {
-  let start = null, end = null, rise = null, set = null, noon = from, hi = -Infinity, prev = null;
-  for (let m = 0; m <= 1440; m += 1) {
-    const a = altAt(Math.min(m, 1439));
-    if (a > hi) { hi = a; noon = m; }
-    if (start == null && a > dawnAlt) start = m;
-    if (a > duskAlt) end = m;
-    if (prev != null) { if (rise == null && prev <= 0 && a > 0) rise = m; if (prev > 0 && a <= 0) set = m; }
-    prev = a;
-  }
+  // a coarse scan (every 8 minutes: the sun model is not free, Intl time zones are slow) and a bisection of each crossing down to the minute
+  const N = 8, A = (m) => altAt(Math.max(0, Math.min(1439, m))), ms = [];
+  for (let m = 0; m <= 1440; m += N) ms.push(m);
+  const vals = ms.map(A);
+  const cross = (level, up) => {   // the minute the altitude crosses `level` going up (first) or down (last)
+    for (let k = up ? 0 : ms.length - 2; up ? k < ms.length - 1 : k >= 0; k += up ? 1 : -1) {
+      const a = vals[k], b = vals[k + 1];
+      if (up ? a <= level && b > level : a > level && b <= level) {
+        let lo = ms[k], hi = ms[k + 1];
+        while (hi - lo > 1) { const mid = Math.floor((lo + hi) / 2), v = A(mid); if (up ? v > level : v <= level) hi = mid; else lo = mid; }
+        return up ? hi : lo;
+      }
+    }
+    return null;
+  };
+  let noon = 0, hi = -Infinity;
+  vals.forEach((v, k) => { if (v > hi) { hi = v; noon = ms[k]; } });
+  const rise = cross(0, true), set = cross(0, false);
+  let start = cross(dawnAlt, true), end = cross(duskAlt, false);
+  if (start == null && vals[0] > dawnAlt) start = 0;
+  if (end == null && vals[vals.length - 1] > duskAlt) end = 1439;
   if (start == null || end == null || end - start < 30) return { start: from, end: to - step, rise, set, noon };
   start = Math.max(from, start); end = Math.min(to - step, end);
   return { start, end: Math.max(end, start + 30), rise, set, noon };

@@ -479,7 +479,12 @@ export class UnitStage {
       l.light.intensity = st.lamps ? l.cd * st.lamps : 0; l.light.visible = st.lamps > 0; real = true;
       if (l.shade) l.shade.material.emissiveIntensity = st.lamps ? (st.lamps === 1 ? 1.4 : 1) : 0;
     }
-    this.interior?.lamps?.set(st.lamps, { real, lensRoot: this.interior.group });   // [daycycle] no lamp placed: a warm ceiling light stands in
+    const al = this.interior?.lamps;
+    if (al && !al.warm && al.count && !real) {   // the first time: compile the shaders with the assumed lights on, so a loop crossing dusk or dawn does not stall on a recompile
+      al.warm = true; al.set(1, { lensRoot: this.interior.group });
+      try { this.renderer.compile(this.scene, this.activeCam()); } catch { /* a missing context: the first frame compiles instead */ }
+    }
+    al?.set(st.lamps, { real, lensRoot: this.interior.group });   // [daycycle] no lamp placed: a warm ceiling light stands in
     this.cityObj.setNight(Math.max(this.facU.uNight.value, st.lamps >= 1 ? 1 : st.lamps * 0.667));
   }
   /** w: {x,y,z,fx,fy}, az: window bearing; floorZ / cmpZ: slab heights; fh floor height. */
