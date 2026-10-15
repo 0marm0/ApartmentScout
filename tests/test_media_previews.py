@@ -106,6 +106,12 @@ def test_alias_remote_keys_the_previews_by_the_original_links() -> None:
     assert out["items"] == {"https://x/1.jpg": [1, 1, "x"], "https://x/2.jpg": [2, 2, "y"]}
 
 
+def embedded_data(html: str) -> dict:
+    """The data files a standalone page embeds: one `<script type="application/json" data-as="PATH">` block each."""
+    import re
+    return {m.group(1): json.loads(m.group(2)) for m in re.finditer(r'<script type="application/json" data-as="([^"]+)">(.*?)</script>', html, re.S)}
+
+
 def test_standalone_embeds_the_sidecar_under_remote_links_without_a_media_folder(tmp_path: Path) -> None:
     from apartmentscout.cli import standalone
     data = tmp_path / "data"
@@ -114,7 +120,7 @@ def test_standalone_embeds_the_sidecar_under_remote_links_without_a_media_folder
     (data / "lqip.json").write_text(json.dumps({"v": 1, "items": {"media/a-1/p-1.webp": [3, 2, "AAAA"]}}))
     dest = standalone(data, tmp_path / "out" / "s.html")
     html = dest.read_text()
-    blob = json.loads(html.split("window.__AS_DATA__=", 1)[1].split(";</script>", 1)[0].replace("<\\/", "</"))
+    blob = embedded_data(html)
     assert blob["data/lqip.json"]["items"] == {"https://x/1.jpg": [3, 2, "AAAA"]}
     assert "photos_local" not in blob["data/listings.json"][0]
 
@@ -126,7 +132,7 @@ def test_standalone_leaves_out_an_oversized_sidecar(tmp_path: Path) -> None:
     (data / "listings.json").write_text(json.dumps([_listing()]))
     (data / "lqip.json").write_text(json.dumps({"v": 1, "items": {"media/a-1/p-1.webp": [3, 2, "A" * (LQIP_INLINE_MAX_KB * 1024)]}}))
     html = standalone(data, tmp_path / "out" / "s.html").read_text()
-    assert '"data/lqip.json"' not in html
+    assert 'data-as="data/lqip.json"' not in html
 
 
 # ------------------------------------------------------------------ photo flags

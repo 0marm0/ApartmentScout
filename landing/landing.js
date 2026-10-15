@@ -75,8 +75,35 @@
     return true;
   };
 
+  // The tour: tabs over the feature panels (ARIA tabs, arrow keys, Home and End). Without this script every panel shows, stacked.
+  const initTour = () => {
+    const ui = $('[data-tour]');
+    if (!ui) return;
+    const tabs = [...ui.querySelectorAll('[role="tab"]')];
+    const select = (tab, focus) => {
+      tabs.forEach((t) => {
+        const on = t === tab;
+        t.setAttribute('aria-selected', String(on));
+        t.tabIndex = on ? 0 : -1;
+        document.getElementById(t.getAttribute('aria-controls')).classList.toggle('is-on', on);
+      });
+      if (focus) tab.focus();
+      tab.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    };
+    tabs.forEach((t) => t.addEventListener('click', () => select(t, false)));
+    ui.querySelector('[role="tablist"]').addEventListener('keydown', (e) => {
+      const i = tabs.indexOf(document.activeElement);
+      if (i < 0) return;
+      const to = { ArrowRight: (i + 1) % tabs.length, ArrowLeft: (i - 1 + tabs.length) % tabs.length, ArrowDown: (i + 1) % tabs.length, ArrowUp: (i - 1 + tabs.length) % tabs.length, Home: 0, End: tabs.length - 1 }[e.key];
+      if (to === undefined) return;
+      e.preventDefault();
+      select(tabs[to], true);
+    });
+  };
+
   document.addEventListener('DOMContentLoaded', () => {
     fixRepoLinks();
+    initTour();
     onScroll();
     syncThemeUi();
     addEventListener('scroll', onScroll, { passive: true });

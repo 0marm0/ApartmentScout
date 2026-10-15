@@ -40,7 +40,7 @@ included as a worked example.
 | **Agent handoff kit** | `handoff pack / verify / import` moves a search between agents as checksummed packs. Imports append claims, keep conflicts on disk and never let an older claim overwrite a newer fact. |
 | **Decide in the dashboard** | Hover a home to see its commute route, star homes and view only the stars, colour the map by direct sun hours, or dock a map beside the Shortlist. Filter chips, collapsible rail sections, a trade-off pad that previews how a weight preset would re-order the top ten, and rank-change badges. A decision tray, a read-only Share shortlist page and decision memo, and a tour-day planner (leave-by times, calendar file). |
 | **Easy to use** | Undo for every pick, filter and weight change; plain-words search (`⌘K`: "1 bd under 5k within 20 min by subway with w/d"); a searchable shortcut sheet (`?`); a photo lightbox with floor plan beside the photo; blur-up photo loading; compact density, four accents, high contrast, reduced motion and larger text; a first-run tour; a New search wizard (`?new=1`). |
-| **A dashboard you own** | Six tabs: Map, Shortlist (with Tours), Compare, Unit 3D, Floor plan and Research (with Records). Dark first with a light and a system theme, liquid-glass panels over the map, works on a phone. Serve it locally, host it on GitHub Pages, or build one self-contained HTML file. No server code, accounts or API keys. |
+| **A dashboard you own** | Six tabs: Map, Shortlist (with Tours), Compare, Unit 3D, Floor plan and Research (with Records). Dark first with a light and a system theme, liquid-glass panels over the map, works on a phone. Serve it locally, host it on GitHub Pages (it then installs as an app and keeps working offline), or build one self-contained HTML file. No server code, accounts or API keys. |
 
 ## Quick start
 
@@ -74,6 +74,18 @@ Requires Python 3.10+. Everything built in uses free public data: NYC Open Data,
 OpenStreetMap, Wikimedia Commons and transit agencies' GTFS feeds.
 
 ![The CLI: commute router, site model and the ranked top ten](docs/images/cli.png)
+
+## Host the demo, install it
+
+`.github/workflows/pages.yml` publishes the landing page at the site root and the dashboard, with the worked example, at
+`/demo/` on every push to `main` (turn it on under Settings, Pages, Source: GitHub Actions). The published dashboard is the
+fast build: bundled and split so the first screen loads about 80 KB of script, with the heavy views (Unit 3D, floor plan,
+research, compare, the wizard) fetched when you open them. Open `/demo/` in Chrome, Edge or Safari and choose
+*Install* (or *Add to Home Screen*): it runs in its own window and keeps working offline, because the app files, your search
+data and the photos you have looked at are saved on the device; a new version asks before it replaces the old one. A
+single-file build (`build --standalone`) and `apartmentscout serve` are unchanged and never install a service worker. CI keeps the
+first load honest with a budget (`scripts/perf_budget.json`, checked by `scripts/perf_check.py`). Details:
+[the dashboard guide](docs/guides/dashboard.md#install-it-and-use-it-offline).
 
 ## Start a new search
 
@@ -306,7 +318,7 @@ examples/nyc-2026/          worked example
 templates/                  research note, landlord questions, tour checklist, decision memo
 docs/guides/                getting started, dashboard, data model, methodology, research quality,
                             photos, floor plans, agent handoff, new cities
-scripts/                    release_check.py, screenshots.py, bundle.sh
+scripts/                    release_check.py, screenshots.py, bundle.sh, build_site.sh, optimize_site.py, perf_check.py
 tests/                      pytest suite and node tests (tests/js)
 ```
 

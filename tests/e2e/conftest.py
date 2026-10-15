@@ -63,7 +63,8 @@ def serve(dashboard: Path, media: Path) -> http.server.ThreadingHTTPServer:
 
 @pytest.fixture(scope="session")
 def base_url() -> Iterator[str]:
-    httpd = serve(ROOT / "dashboard", (ROOT / "examples" / "nyc-2026" / "media").resolve())
+    # [perf] APARTMENTSCOUT_E2E_DASHBOARD=<folder> runs the suite against a built copy (scripts/build_site.sh output: _site/demo)
+    httpd = serve(Path(os.environ.get("APARTMENTSCOUT_E2E_DASHBOARD") or ROOT / "dashboard"), (ROOT / "examples" / "nyc-2026" / "media").resolve())
     yield f"http://127.0.0.1:{httpd.server_address[1]}"
     httpd.shutdown()
 
@@ -126,7 +127,8 @@ def open_page(browser, base_url: str):
 
     def _open(path: str = "#map", theme: str = "dark", width: int = 1440, height: int = 900) -> Session:
         ctx = browser.new_context(viewport={"width": width, "height": height}, color_scheme=theme,
-                                  device_scale_factor=1, reduced_motion="reduce")
+                                  device_scale_factor=1, reduced_motion="reduce",
+                                  service_workers="block")   # [pwa] only tests/e2e/test_pwa.py runs with the service worker
         contexts.append(ctx)
         ctx.route("**/*", lambda r: r.continue_() if r.request.url.startswith((base_url, "data:", "blob:")) else r.abort())
         page = ctx.new_page()
