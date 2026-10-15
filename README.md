@@ -54,7 +54,7 @@ Five steps, in the order a search goes. The [gallery](docs/GALLERY.md) shows eve
 <tr><th colspan="2" align="left">4. Decide</th></tr>
 <tr>
 <td valign="top"><img src="docs/images/phone-tour-day.png" alt="Tour day on a phone: three homes in time order with directions and the minutes to the next stop" width="260"><br><b>Tour day, on your phone</b><br>Today's tours in order with directions and leave-by times, a one-hand checklist at each home (light, noise, water, signal), and a noise check that keeps one number and no audio. The answers flow into the visit notes and the score.</td>
-<td valign="top"><img src="docs/images/decide-office-questions.png" alt="A drafted email to a building's leasing office with a checklist of questions and why each is asked"><br><b>Questions for the leasing office</b><br>Drafts built from what the score is unsure about, a checkbox per question and the evidence behind it. Copy it or open it in your mail app: nothing is sent from the page. Then a tour planner, a share page and a decision memo.</td>
+<td valign="top"><img src="docs/images/decide-office-questions.png" alt="A drafted email to a building's leasing office with a checklist of questions and why each is asked"><br><b>Questions for the leasing office</b><br>Drafts built from what the score is unsure about, a checkbox per question and the evidence behind it. Copy it or open it in your mail app: nothing is sent from the page. Then a tour planner, a share page, a decision memo, a typeset decision report for two to four homes (print it or `apartmentscout report --homes ... --out report.pdf`) and a move planner with a calendar file.</td>
 </tr>
 <tr><th colspan="2" align="left">5. Set up</th></tr>
 <tr>
