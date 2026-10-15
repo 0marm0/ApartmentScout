@@ -1,15 +1,17 @@
-"""The city context in a real browser: the NYC street tree census as instanced trees in two levels of detail, the street /
-sidewalk plate, the blue water plane and the river and park labels, in Unit 3D and in the Floor plan studio's "City outside".
-Checks what the renter is told (trees and water are context only, never shade), that Visual quality turns on tree shadows and
-the water glint while Fast does not, that neither changes a sun number, the draw-call and triangle budgets on a desktop and on
-a phone-width viewport, and that the water really renders blue. Needs WebGL, otherwise skipped."""
+"""The city context in a real browser: the NYC street tree census and the NYC Parks inventory as instanced trees in two levels of
+detail, the street / sidewalk plate, the grass of parks and lawns, the blue water plane and the river and park labels, in Unit 3D
+and in the Floor plan studio's "City outside". Checks what the renter is told (trees and water are context only, never shade; street
+trees come from the 2015 census, park trees from the Parks inventory), the separate street-tree and park-tree layers and that the
+choice is remembered, that parks really render as grass, that Visual quality turns on tree shadows and the water glint while Fast
+does not, that none of it changes a sun number, the draw-call and triangle budgets on a desktop and on a phone-width viewport, and
+that the water really renders blue. Needs WebGL, otherwise skipped."""
 from __future__ import annotations
 
 import pytest
 
 pytestmark = pytest.mark.e2e
 
-UNIT = "paramount-tower-25e"          # the East River is ~250 m east of this tower; 1,500 census trees around it
+UNIT = "paramount-tower-25e"          # the East River is ~250 m east of this tower; 1,300 census trees and 600 Parks inventory trees around it
 SLOW = 90000
 
 
@@ -45,7 +47,10 @@ def test_unit_3d_draws_the_census_trees_ground_and_water(open_page, webgl):
     _unit(s)
     c = _ctx(s)
     assert c is not None
-    assert c["info"]["trees"]["census"] > 1000 and c["info"]["trees"]["total"] > 1500        # not the old 170 mapped trees
+    t = c["info"]["trees"]
+    assert t["census"] > 1000 and t["total"] > 2000                                          # not the old 170 mapped trees
+    assert t["park"] > 150 and t["street"] > 100 and t["streetTrees"] > 1200 and t["parkTrees"] > 300   # the Parks inventory: park trees and newer street trees
+    assert t["streetTrees"] + t["parkTrees"] == t["total"]
     assert c["info"]["waterBodies"] >= 1 and c["info"]["streets"] is True
     assert all(c["layers"][k] for k in ("plate", "water", "green", "trees"))
     assert {"water", "park"} <= set(c["labels"]) or "water" in c["labels"]                     # the East River is labelled
@@ -60,14 +65,66 @@ def test_legend_says_trees_and_water_are_context_only(open_page, webgl):
     _need_webgl(webgl)
     s = open_page("#unit/" + UNIT)
     _unit(s)
-    tg = s.page.locator('#uTools [data-tg="green"]').get_attribute("title")
-    assert "street tree census" in tg.lower() and "never counted as shade" in tg
-    assert "context only" in s.page.locator('#uTools [data-tg="water"]').get_attribute("title").lower()
-    row = s.page.locator("#modelPanel, .u-panel, body").first.inner_text()
+    title = lambda k: s.page.locator(f'#uTools [data-tg="{k}"]').get_attribute("title")   # noqa: E731
+    assert "grass" in title("green").lower() and "never counted as shade" in title("green")
+    street, park = title("streetTrees"), title("parkTrees")
+    assert "NYC Street Tree Census" in street and "2015" in street and "never counted as shade" in street
+    assert "NYC Parks" in park and "inventory" in park and "never counted as shade" in park
+    assert "context only" in title("water").lower()
     s.page.evaluate("() => { document.querySelectorAll('details').forEach((d) => { d.open = true; }); }")
     text = s.page.locator("body").inner_text()
     assert "never counted as shade or as obstructions" in text
-    assert "NYC Street Tree Census" in text and "East River" in text
+    assert "Street trees:" in text and "NYC Street Tree Census" in text and "surveyed 2015" in text
+    assert "Park trees:" in text and "NYC Parks" in text and "East River" in text
+    assert "paved playgrounds and courts are drawn as paved ground" in text
+
+
+def test_street_trees_and_park_trees_switch_separately_and_are_remembered(open_page, webgl):
+    _need_webgl(webgl)
+    s = open_page("#unit/" + UNIT)
+    _unit(s)
+    n = lambda: (lambda lod: lod["near"] + lod["far"] + lod["cones"])(_ctx(s)["lod"])   # the trees drawn   # noqa: E731
+    both = n()
+    base = _ctx(s)["info"]["trees"]
+    s.page.click('#uTools [data-tg="streetTrees"]')
+    street_off = n()
+    assert street_off == base["parkTrees"] and street_off < both                         # only the park trees are left
+    assert s.page.locator('#uTools [data-tg="streetTrees"]').get_attribute("aria-pressed") == "false"
+    assert s.page.locator('#uTools [data-tg="parkTrees"]').get_attribute("aria-pressed") == "true"
+    assert _ctx(s)["layers"]["trees"] and _ctx(s)["layers"]["green"]                       # the grass stays
+    s.page.click('#uTools [data-tg="parkTrees"]')
+    assert n() == 0 and not _ctx(s)["layers"]["trees"] and _ctx(s)["layers"]["green"]
+    s.page.reload()                                                                          # remembered per browser
+    _unit(s)
+    assert s.page.locator('#uTools [data-tg="streetTrees"]').get_attribute("aria-pressed") == "false"
+    assert s.page.locator('#uTools [data-tg="parkTrees"]').get_attribute("aria-pressed") == "false"
+    assert n() == 0
+    s.page.click('#uTools [data-tg="parkTrees"]')
+    assert n() == base["parkTrees"]
+    s.page.click('#uTools [data-tg="streetTrees"]')
+    assert n() == both
+    s.page.reload()
+    _unit(s)
+    assert n() == both                                                                       # both on again, and that is remembered too
+    assert s.take() == []
+
+
+def test_parks_render_as_grass_and_playgrounds_as_paved_ground(open_page, webgl):
+    """Look straight down on a planted median (an OpenStreetMap lawn beside the Queens Midtown Tunnel ramp): green, in both themes."""
+    _need_webgl(webgl)
+    for theme in ("dark", "light"):
+        s = open_page("#unit/" + UNIT, theme=theme)
+        _unit(s)
+        meshes = s.page.evaluate("() => window.__unit3d.stage.ctx.parts.green.children.map((m) => m.name)")
+        assert "green-patches" in meshes and any(m.startswith("green-patches-") for m in meshes)   # parks, and at least one more layer (lawn, paved, court)
+        px = s.page.evaluate("""() => { const st = window.__unit3d.stage; st.tween = null; st.setMode('top'); st.opts.labels = false; st.applyOpts();
+          st.opts.streetTrees = false; st.opts.parkTrees = false; st.applyOpts();
+          st.orbitCam.position.set(145, 420, 245); st.controls.target.set(145, 0, 245); st.controls.update(); st.dirty = true; st.frame(true);
+          const cv = document.createElement('canvas'); cv.width = st.cv.width; cv.height = st.cv.height; const g = cv.getContext('2d'); g.drawImage(st.cv, 0, 0);
+          const at = (fx, fy) => Array.from(g.getImageData(Math.round(cv.width * fx), Math.round(cv.height * fy), 1, 1).data).slice(0, 3);
+          return { lawn: at(0.5, 0.5) }; }""")
+        r, g, b = px["lawn"]
+        assert g > r + 18 and g > b + 18, (theme, "the lawn is green", px)
 
 
 def test_toggling_the_layers_and_the_ground_base(open_page, webgl):

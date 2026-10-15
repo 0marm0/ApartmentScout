@@ -14,7 +14,9 @@ Source: Overpass API (cached and receipted like every other download, see ``fetc
 Site JSON ``"green"``: ``{"source", "fetched", "radius_m", "polys": [{"kind", "name"?, "osm", "ring":
 [[x, y], ...], "holes"?: [...]}], "trees": [x0, y0, x1, y1, ...], "counts", "note"}`` in the site's local
 metre frame (x east, y north), the same frame as the footprints. ``kind`` is park | play | grass | wood;
-``hard: 1`` marks plazas, courts and playgrounds (OSM ``surface`` paved or rubber), which get a ground patch but no scattered canopies.
+``hard: 1`` marks plazas, courts and playgrounds (OSM ``surface`` paved or rubber, ``leisure=playground``, a court
+pitch): drawn as paved ground, with no scattered canopies; ``turf: 1`` (with ``hard``) is an artificial-turf field or
+a field-sport pitch with no surface tag: drawn green, no canopies. A pitch or park whose ``surface`` is grass is a lawn.
 New York sites also carry ``"census"``: the street trees of the NYC Street Tree Census with their trunk diameters
 (see ``geo/trees.py``), because OpenStreetMap maps only a few percent of them; open water is the separate ``"water"`` block
 (``geo/water.py``).
@@ -38,14 +40,20 @@ NOTE = ("Context only: trees and lawns are drawn from OpenStreetMap and are not 
         "sun hours (canopies are seasonal and their heights are not surveyed).")
 
 LEISURE = {"park": "park", "garden": "park", "common": "park", "dog_park": "park", "playground": "play",
-           "nature_reserve": "wood"}
+           "nature_reserve": "wood", "pitch": "play", "track": "play"}
 LANDUSE = {"grass": "grass", "meadow": "grass", "village_green": "grass", "recreation_ground": "grass",
-           "forest": "wood", "orchard": "wood", "cemetery": "park"}
-NATURAL = {"wood": "wood", "scrub": "wood", "grassland": "grass"}
+           "forest": "wood", "orchard": "wood", "cemetery": "park", "flowerbed": "park", "greenfield": "grass",
+           "allotments": "park"}
+NATURAL = {"wood": "wood", "scrub": "wood", "grassland": "grass", "heath": "grass"}
 KINDS = ("park", "play", "grass", "wood")
 # surfaces that carry no trees: a plaza or court drawn as a park gets its patch but no scattered canopies
-HARD_SURFACES = {"concrete", "asphalt", "paved", "paving_stones", "sett", "tartan", "rubber", "artificial_turf",
-                 "clay", "gravel", "compacted", "metal", "wood", "unpaved"}
+HARD_SURFACES = {"concrete", "asphalt", "paved", "paving_stones", "sett", "tartan", "rubber", "clay", "gravel",
+                 "compacted", "metal", "wood", "unpaved", "dirt", "sand", "pebblestone", "fine_gravel", "stone"}
+GRASS_SURFACES = {"grass", "grass_paver"}
+TURF_SURFACES = {"artificial_turf", "artificial_grass"}
+# pitches with no surface tag: a field sport is turf or grass (no trees, drawn green), anything else (a court) is paved
+FIELD_SPORTS = {"soccer", "football", "baseball", "softball", "rugby", "rugby_union", "cricket", "lacrosse", "field_hockey",
+                "american_football", "australian_football", "gaelic_games", "ultimate", "frisbee"}
 
 
 def green_query(lat: float, lon: float, radius_m: float) -> str:
@@ -73,6 +81,25 @@ def _kind(tags: dict) -> str | None:
         if k:
             return k
     return None
+
+
+def surface_class(tags: dict, kind: str) -> tuple[str, bool, bool]:
+    """(kind, hard, turf) of an area from its ``surface`` and ``sport`` tags: grass keeps (or makes) a lawn, artificial turf is
+    a green field with no trees, a court or playground is paved."""
+    surface = str(tags.get("surface", "")).lower()
+    leisure = str(tags.get("leisure", "")).lower()
+    sports = {x.strip() for x in str(tags.get("sport", "")).lower().replace(",", ";").split(";")}
+    if surface in GRASS_SURFACES:
+        return ("grass" if leisure in ("pitch", "track") else kind), False, False
+    if surface in TURF_SURFACES:
+        return "grass", True, True
+    if surface in HARD_SURFACES:
+        return kind, True, False
+    if leisure == "pitch" and not surface:
+        return ("grass", True, True) if sports & FIELD_SPORTS else (kind, True, False)
+    if kind == "play":
+        return kind, True, False
+    return kind, False, False
 
 
 def _round(pts) -> list[list[float]]:
@@ -130,6 +157,7 @@ def parse_green(els: list[dict], frame: LocalFrame, radius_m: float, fetched: st
         kind = _kind(tags)
         if kind is None:
             continue
+        kind, hard, turf = surface_class(tags, kind)
         rings: list[tuple[list, list]] = []
         if typ == "way":
             g = e.get("geometry") or []
@@ -148,8 +176,12 @@ def parse_green(els: list[dict], frame: LocalFrame, radius_m: float, fetched: st
             p = {"kind": kind, "osm": f"{typ}/{e.get('id')}", "ring": _round(ring)}
             if tags.get("name"):
                 p["name"] = str(tags["name"])
-            if kind == "play" or str(tags.get("surface", "")).lower() in HARD_SURFACES:
+            if hard:
                 p["hard"] = 1
+            if turf:
+                p["turf"] = 1
+            if str(tags.get("surface", "")).lower() in GRASS_SURFACES:
+                p["lawn"] = 1
             tidy_holes = (_tidy(h, simplify_tol) for h in holes)
             hs = [_round(h2) for h2 in tidy_holes if h2 and abs(ring_area(h2)) >= MIN_AREA_M2]
             if hs:

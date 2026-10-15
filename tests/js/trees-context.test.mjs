@@ -30,10 +30,15 @@ test('allometry grows with the trunk then levels off, and never goes negative', 
   assert.equal(T.treeHeight(999), T.ALLOMETRY.heightMax);
   assert.equal(T.treeHeight(-5), T.ALLOMETRY.heightBase);
   assert.equal(T.crownRadius(NaN), T.ALLOMETRY.crownBase / 2);
-  // a Midtown street tree (8 in, plus the decade of growth since the survey): 11-14 m tall, crown 7-9 m across
+  // typical open-grown NYC street trees: 8 in ~7.5 m tall and ~4.5 m across, 12 in ~12 m and ~7.5 m, 24 in ~18 m and ~13.5 m
+  assert.ok(T.treeHeight(8) > 7.5 && T.treeHeight(8) < 9.5 && 2 * T.crownRadius(8) > 4 && 2 * T.crownRadius(8) < 5.6);
+  assert.ok(T.treeHeight(12) > 10.5 && T.treeHeight(12) < 12.5 && 2 * T.crownRadius(12) > 6 && 2 * T.crownRadius(12) < 8);
+  assert.ok(T.treeHeight(24) > 17 && T.treeHeight(24) < 20.5 && 2 * T.crownRadius(24) > 11.5 && 2 * T.crownRadius(24) < 14);
+  // a Midtown street tree (8 in, plus the decade of growth since the survey, 1 in): 8.5-10.5 m tall, crown 5-6.5 m across
   const grown = 8 + T.GROWTH_IN;
-  assert.ok(T.treeHeight(grown) > 11 && T.treeHeight(grown) < 14.5, `height ${T.treeHeight(grown)}`);
-  assert.ok(2 * T.crownRadius(grown) > 6.5 && 2 * T.crownRadius(grown) < 9.5);
+  assert.equal(T.GROWTH_IN, 1);
+  assert.ok(T.treeHeight(grown) > 8.5 && T.treeHeight(grown) < 10.5, `height ${T.treeHeight(grown)}`);
+  assert.ok(2 * T.crownRadius(grown) > 5 && 2 * T.crownRadius(grown) < 6.5);
 });
 
 test('the group list matches geo/trees.py', () => {
@@ -88,11 +93,12 @@ test('Poisson fill gives believable densities per kind and none on hard surfaces
   const area = 100 * 100;
   const count = (kind, extra = {}) => T.fillTrees([{ kind, ring: sq(0, 0, 100, 100), holes: [], ...extra }], {}).length;
   const park = ha(count('park'), area), wood = ha(count('wood'), area), grass = ha(count('grass'), area);
-  assert.ok(park > 30 && park < 130, `park ${park}/ha`);
-  assert.ok(wood > 120 && wood < 330, `wood ${wood}/ha`);
+  assert.ok(park > 90 && park < 170, `park ${park}/ha`);          // St. Vartan Park holds about 95 a hectare in the Parks inventory, malls 165-245
+  assert.ok(wood > 150 && wood < 330, `wood ${wood}/ha`);
   assert.ok(grass > 8 && grass < 60, `lawn ${grass}/ha`);
   assert.ok(wood > park && park > grass, 'woods are denser than parks, parks than lawns');
   assert.equal(count('park', { hard: true }), 0);
+  assert.equal(count('grass', { turf: true }), 0);
   assert.equal(count('play'), 0);
 });
 
