@@ -32,6 +32,7 @@ from . import __version__
 from .config import Workspace, load_criteria
 from .listings import CSV_TEMPLATE_COLUMNS, load, normalize, save
 from .lqip import alias_remote, build_sidecar
+from .slim import slim_listing
 
 REPO = Path(__file__).resolve().parent.parent
 DASH = REPO / "dashboard"
@@ -439,6 +440,9 @@ def standalone(data_dir: Path, dest: Path) -> Path:
     if not bundle.exists():
         sys.exit("dashboard/dist/app.bundle.js is missing. Run scripts/bundle.sh (needs Node and esbuild).")
     html = (DASH / "index.html").read_text()
+    # [pwa] the manifest and icon links point at files that are not next to a single HTML file (and a manifest cannot load
+    # from file://), so the installable-app block is dropped; js/pwa.js does nothing without a secure origin
+    html = re.sub(r"<!-- \[pwa\].*?<!-- end \[pwa\] -->\n?", "", html, flags=re.S)
     data = {}
     for f in sorted(data_dir.rglob("*.json")):
         data["data/" + f.relative_to(data_dir).as_posix()] = json.loads(f.read_text())
@@ -456,18 +460,42 @@ def standalone(data_dir: Path, dest: Path) -> Path:
             del data["data/lqip.json"]
         else:
             log(f"Blur-up previews embedded: {kb:.0f} KB")
-    blob = json.dumps(data, separators=(",", ":"), default=str).replace("</", "<\\/")
+    embedded = _embed_data(data)
     js = bundle.read_text().replace("</script", "<\\/script")
     # inline every local stylesheet (tokens, shell and the per-view files) in document order
     html = re.sub(r'<link rel="stylesheet" href="(css/[^"]+)">',
                   lambda m: f"<style>\n{(DASH / m.group(1)).read_text()}\n</style>", html)
     html = html.replace('<script type="module" src="js/app.js"></script>',
-                        f"<script>window.__AS_DATA__={blob};</script>\n<script type=\"module\">\n{js}\n</script>")
+                        f"{embedded}\n<script type=\"module\">\n{js}\n</script>")
     html = _inline_vendor(html)
     dest.parent.mkdir(parents=True, exist_ok=True)
     dest.write_text(html)
     return dest.resolve()
 
+
+
+# Defines window.__AS_DATA__ over the JSON blocks above it. Each file is parsed the first time the app asks for it (a getter
+# replaces itself with the value), so the 8 MB listings file is parsed at boot and the dossiers, 3D site models and plans
+# only when a view opens them; parsing one big JSON string is also much cheaper than compiling the same data as a
+# JavaScript object literal. `p in __AS_DATA__` stays free (no parse). The text of a block is dropped once parsed.
+_LAZY_DATA_JS = (
+    "(function(){var E={};document.querySelectorAll('script[type=\"application/json\"][data-as]').forEach(function(s){"
+    "var k=s.getAttribute('data-as');Object.defineProperty(E,k,{enumerable:true,configurable:true,get:function(){"
+    "var v=JSON.parse(s.textContent);Object.defineProperty(E,k,{value:v,enumerable:true,writable:true,configurable:true});"
+    "s.textContent='';return v}})});window.__AS_DATA__=E})();"
+)
+
+
+def _embed_data(data: dict) -> str:
+    """The standalone file's data: one inert `<script type="application/json" data-as="PATH">` per file plus the loader that
+    makes them `window.__AS_DATA__` (see _LAZY_DATA_JS). JSON is ASCII-escaped and every `<` is written as \\u003c, so no
+    value can end the block or start an HTML comment."""
+    import html as _html
+    blocks = []
+    for path, value in data.items():
+        text = json.dumps(value, separators=(",", ":"), default=str).replace("<", "\\u003c")
+        blocks.append(f'<script type="application/json" data-as="{_html.escape(path, quote=True)}">{text}</script>')
+    return "\n".join(blocks) + f"\n<script>{_LAZY_DATA_JS}</script>"
 
 
 def _inline_vendor(html: str) -> str:
@@ -527,7 +555,7 @@ def _export(ws: Workspace, out: Path):
                 for d, c in (S.get("commute") or {}).items()}
             if isinstance(S.get("score"), dict) and S["score"].get("reasons"):
                 S["score"] = {**S["score"], "reasons": [{k: v for k, v in r.items() if k != "items"} for r in S["score"]["reasons"]]}
-        slim.append(S)
+        slim.append(slim_listing(S))   # only the fields the dashboard reads (apartmentscout/slim.py)
     (out / "listings.json").write_text(json.dumps(slim, separators=(",", ":"), ensure_ascii=False))
     previews = build_sidecar(slim, ws.root / "media", out, cache_path=ws.cache_dir / "lqip.json", log=log)   # blur-up previews
     (out / "criteria.json").write_text(json.dumps(crit, default=str, indent=1))
