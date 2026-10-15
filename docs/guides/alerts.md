@@ -128,7 +128,7 @@ To stop: delete the `APARTMENTSCOUT_ALERTS` variable (or set it to anything but 
 `apartmentscout build` writes `alerts.json` beside the other dashboard data (the change since the baseline, or the last saved
 digest while it is under two weeks old). The dashboard shows it:
 
-- **A dot** on the top-right menu button when there is something you have not seen, and a **What's new** row at the top of the menu
+- **A dot** on the top-right menu button when there is something you have not seen, and a **What's new** row in the menu's *This search* section
   with the count.
 - **The panel**: a popover on a desktop, a bottom sheet on a phone. Each change is a row; tapping a home opens it. Opening the panel
   marks the digest as seen in this browser (the dot and the badge go away until the next digest).
