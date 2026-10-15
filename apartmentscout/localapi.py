@@ -42,6 +42,7 @@ from .tourapi import MAX_PHOTO_BYTES, TourError, TourFiles, pillow_available   #
 
 MAX_BODY = 256 * 1024
 FOLDER = re.compile(r"^[a-z0-9][a-z0-9-]{0,59}$")
+REVALIDATE = re.compile(r"(/|\.html|\.js|\.mjs|\.css|\.json|\.webmanifest)$")   # what changes with each build: never served stale
 TOUR_PHOTO = re.compile(r"^/tours/(?P<id>[A-Za-z0-9][A-Za-z0-9._-]{0,119})/photos/(?P<name>[a-z0-9]{6,32}\.webp)$")
 BACKUPS_KEPT = 30
 REPO = Path(__file__).resolve().parent.parent
@@ -373,6 +374,19 @@ def make_handler(state: ServeState) -> type[http.server.SimpleHTTPRequestHandler
 
         def log_message(self, *a: Any) -> None:
             pass
+
+        # -- caching: the page, its scripts and its data are revalidated on every load (a 304 when unchanged), so a browser never
+        #    mixes a cached old module with new ones after an update; photos keep the browser's default caching
+        def send_header(self, keyword: str, value: str) -> None:
+            if keyword.lower() == "cache-control":
+                self._cache_set = True
+            super().send_header(keyword, value)
+
+        def end_headers(self) -> None:
+            if not getattr(self, "_cache_set", False) and REVALIDATE.search(self.path.split("?", 1)[0].split("#", 1)[0]):
+                super().send_header("Cache-Control", "no-cache")
+            self._cache_set = False
+            super().end_headers()
 
         # -- static files
         def translate_path(self, path: str) -> str:
