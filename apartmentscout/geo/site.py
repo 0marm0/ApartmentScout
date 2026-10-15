@@ -190,14 +190,18 @@ def _make_site(L, crit, cache_dir, floor, bearing, t, radius, streets, future, r
 
     if components or (overrides is not None and Path(overrides).exists()):
         c0 = time.perf_counter()
-        from .components import PARTS_RADIUS_M, build_components, fetch_osm_parts
+        from .components import PARTS_RADIUS_M, build_components, fetch_osm_parts, tall_centres
         parts = None
+        tall: list = []
         if components:
             try:
-                parts = fetch_osm_parts(L["lat"], L["lon"], min(radius, PARTS_RADIUS_M), cache_dir, refresh)
+                # [building massing] the skyline's landmarks lie beyond the near radius: read their parts too
+                tall = tall_centres(site, min(radius, PARTS_RADIUS_M))
+                parts = fetch_osm_parts(L["lat"], L["lon"], min(radius, PARTS_RADIUS_M), cache_dir, refresh, tall=tall)
             except RuntimeError as e:
                 say(f"  building parts unavailable: {e}")
         comps, info = build_components(site, parts, overrides)
+        info["tall_searched"] = len(tall)
         if comps:
             site["components"] = comps
         site["components_info"] = info
