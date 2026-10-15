@@ -62,6 +62,8 @@ const RULES = {
   findings: (v) => (isObj(v) ? v : null),
   facts: (v) => (isObj(v) ? v : null),
   moves: (v) => (isObj(v) ? v : null),
+  moveplan: (v) => (isObj(v) ? v : null),   // the move planner's saved plan (features/move-model.js normalize() checks the rest)
+  'report-opts': (v) => (isObj(v) ? v : null),
   trail: (v) => (Array.isArray(v) ? v : null),
   'rail:collapsed': (v) => strings(v),
 };
