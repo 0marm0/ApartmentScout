@@ -284,6 +284,7 @@ With two or more `commute.destinations` (your work, a partner's work, a gym) the
 - **Cards and drawer.** Each card has a compact line, `Work 18 · Partner 26 · Gym 9 ▲ · Σ 78`: minutes in the lens's mode
   to every destination (▲ marks a destination over its own limit) and the combined commute score. The drawer lists every
   destination with minutes, score, limit and weight; a row switches the lens (and the route above it) to that destination.
+  Compare has a row per destination, and the Shortlist table an *Every destination* column (switch it off in the column menu).
 - **Combined score.** The score that ranks homes already averages the destinations by `weight` (methodology: Scoring). The
   combined figure is that same number: 100 at half a destination's limit, 50 at the limit, 0 at twice it, so a 15-minute
   gym and a 45-minute office are each judged against their own limit. *Sort > Best combined commute* orders by it.
