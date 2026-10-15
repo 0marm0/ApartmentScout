@@ -37,6 +37,7 @@ function apply() {
   if (s.softShadows) { r.shadowMap.type = THREE.VSMShadowMap; L.shadow.radius = 2.5; L.shadow.blurSamples = s.blurSamples; L.shadow.bias = -0.0002; }
   else { r.shadowMap.type = THREE.PCFSoftShadowMap; L.shadow.radius = 3; L.shadow.bias = -0.00035; }
   recompileMaterials(stage.scene);
+  stage.setContextQuality?.({ visual: s.softShadows, phone: RQ.phoneClass() });   // [city context] tree shadows and the water glint
   stage.scene.environment = s.environment ? environmentFor(r, { intensity: 0.3 }) : null;
   stage.resize?.();
   stage.dirty = true;

@@ -24,3 +24,15 @@ def _no_osm_green(monkeypatch):
         raise RuntimeError("offline in tests")
 
     monkeypatch.setattr(green, "fetch_green", offline)
+
+
+@pytest.fixture(autouse=True)
+def _no_census_or_water(monkeypatch):
+    """The street tree census and the water polygons are network downloads too (geo/trees.py, geo/water.py)."""
+    from apartmentscout.geo import trees, water
+
+    def offline(*a, **k):
+        raise RuntimeError("offline in tests")
+
+    monkeypatch.setattr(trees, "fetch_census", offline)
+    monkeypatch.setattr(water, "fetch_water", offline)

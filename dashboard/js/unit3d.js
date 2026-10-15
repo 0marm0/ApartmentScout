@@ -68,6 +68,7 @@ const ICON = {
   labels: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3.5" width="12" height="6.5" rx="2"/><path d="M8 10v3"/></svg>',
   streets: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 2L3 14M11 2l2 12M8 3v2M8 7.5v2M8 12v1.5"/></svg>',
   green: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M8 14V9.5M8 9.5C4.5 9.5 3 7 3 5.2 3 3 5 1.8 8 1.8s5 1.2 5 3.4c0 1.8-1.5 4.3-5 4.3z"/></svg>',
+  water: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2 6c1.5-1.4 3-1.4 4.5 0s3 1.4 4.5 0 2-1 3-.4M2 10c1.5-1.4 3-1.4 4.5 0s3 1.4 4.5 0 2-1 3-.4"/></svg>',   // [city context]
   future: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="2 2"><rect x="4" y="2.5" width="8" height="11" rx="1"/></svg>',
   ray: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="4" r="2"/><path d="M3 13l7-7"/></svg>',
   cone: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 13L2.5 4.5a8 8 0 0111 0z"/></svg>',
@@ -101,7 +102,7 @@ export function init() {
           <div class="u-labels" id="uLabels" aria-hidden="true"></div>
           <div class="float u-modes" id="uModes" role="group" aria-label="Camera">${MODES.map(([k, t, tip]) => `<button type="button" data-mode="${k}" title="${tip}" aria-pressed="false">${t}</button>`).join('')}</div>
           <div class="float u-tools" id="uTools" role="group" aria-label="Layers">
-            ${[['shadows', 'Shadows'], ['labels', 'Labels'], ['heights', 'Heights: colour by height class, label roofs, 150 m and 300 m rings'], ['streets', 'Street names and centrelines'], ['future', 'Proposed buildings'], ['green', 'Parks and trees (OpenStreetMap; context only, not counted in sun hours)'], ['ray', 'Sun ray'], ['cone', 'View cone']].map(([k, t]) => `<button type="button" data-tg="${k}" title="${t}" aria-label="${t}" aria-pressed="false">${ICON[k]}</button>`).join('')}
+            ${[['shadows', 'Shadows'], ['labels', 'Labels'], ['heights', 'Heights: colour by height class, label roofs, 150 m and 300 m rings'], ['streets', 'Street names and centrelines'], ['future', 'Proposed buildings'], ['green', 'Parks and trees: the NYC street tree census, OpenStreetMap and park fill. Context only: trees are never counted as shade in the sun hours'], ['water', 'Water and ground: rivers, streets and sidewalks. Context only'], ['ray', 'Sun ray'], ['cone', 'View cone']].map(([k, t]) => `<button type="button" data-tg="${k}" title="${t}" aria-label="${t}" aria-pressed="false">${ICON[k]}</button>`).join('')}
             <hr><button type="button" id="uTarget" title="This building: solid" aria-label="This building display: solid">${ICON.target}<i class="u-tmode">S</i></button>
             <button type="button" id="uHome" title="Reset the camera" aria-label="Reset the camera">${ICON.reset}</button>
           </div>
@@ -267,7 +268,7 @@ async function load(id) {
   stage.opts.streets = true; stage.opts.future = restored?.future ?? true;
   if (restored) Object.assign(stage.look, restored.look);
   await new Promise((r) => requestAnimationFrame(r)); // let the loading state paint before the heavy build
-  stage.build({ B: B0, T, ti: B0.indexOf(T), streets: Array.isArray(site.streets) ? site.streets : [], future: FUT, green: site.green || null, lm: LM, ownLabel: site.listing?.building || L.building || 'This building' }); UQ.adopt(stage);   // [feature J] the scene was rebuilt
+  stage.build({ B: B0, T, ti: B0.indexOf(T), streets: Array.isArray(site.streets) ? site.streets : [], future: FUT, green: site.green || null, water: site.water || null, lm: LM, ownLabel: site.listing?.building || L.building || 'This building' }); UQ.adopt(stage);   // [feature J] the scene was rebuilt
   stage.setFloorH(FH());
   for (const [bi, h] of edits) stage.setHeight(bi, h / Math.max(0.01, B0[bi].top - B0[bi].g), B0[bi].g, B);
   stage.resize();
@@ -529,9 +530,9 @@ function setMode(m, quiet = false) {
 function syncTools() {
   $('uTools').querySelectorAll('[data-tg]').forEach((b) => {
     const k = b.dataset.tg, on = !!stage.opts[k];
-    const na = (k === 'streets' && !(site.streets || []).length) || (k === 'future' && !FUT.length) || (k === 'green' && !site.green);
+    const na = (k === 'streets' && !(site.streets || []).length) || (k === 'future' && !FUT.length) || (k === 'green' && !site.green) || (k === 'water' && !site.water && !(site.streets || []).length);
     b.classList.toggle('on', on && !na); b.setAttribute('aria-pressed', String(on && !na)); b.disabled = na;
-    if (na) b.title = k === 'streets' ? 'No street centrelines in this site file' : k === 'green' ? 'No parks or trees in this site file: rebuild it with apartmentscout site' : 'No proposed buildings in this site file';
+    if (na) b.title = k === 'streets' ? 'No street centrelines in this site file' : k === 'green' ? 'No parks or trees in this site file: rebuild it with apartmentscout site' : k === 'water' ? 'No water or streets in this site file: rebuild it with apartmentscout site --context-only' : 'No proposed buildings in this site file';
   });
   const t = stage.opts.target, nm = { solid: 'solid', faint: 'faint', hidden: 'hidden' }[t];
   $('uTarget').title = `This building: ${nm} (click to change)${interior ? '. Faint or hidden shows the apartment inside' : ''}`; $('uTarget').setAttribute('aria-label', `This building display: ${nm}`);
@@ -1149,7 +1150,10 @@ function greenRow() {
   const g = site.green;
   if (!g || typeof g !== 'object') return '';
   const c = g.counts || {}, gv = site.study?.green_view, seen = Array.isArray(gv?.green) ? gv.green.slice(0, 3).map((r) => `${esc(r.name || `unnamed ${r.kind}`)} (${Math.round(r.visible_m2)} m², ${Math.round(r.dist_m?.[0] ?? 0)}-${Math.round(r.dist_m?.[1] ?? 0)} m)`).join(', ') : '';
-  return `<dt>Parks and trees</dt><dd>${(c.polys ?? (g.polys || []).length).toLocaleString()} parks, lawns and playgrounds and ${(c.trees ?? (g.trees || []).length / 2).toLocaleString()} mapped trees from ${esc(g.source || 'OpenStreetMap')}${g.fetched ? `, fetched ${esc(g.fetched)}` : ''}. Trees mapped in OpenStreetMap are few, so park and lawn areas also get canopies at about 8-15 m: the picture shows where green lies, not how many trees. Context only: not counted as shade in the sun hours.${seen ? ` From this window, in a ${gv.fov_deg ?? 90}° view: ${seen}.` : ''}</dd>`;
+  // [city context] what is drawn, from where, and the rule that none of it is shade
+  const cen = g.census, nc = cen && cen.n ? Number(cen.n) : 0, ctxLine = nc ? `${nc.toLocaleString()} street trees from the ${esc(cen.source || 'NYC Street Tree Census')}${cen.date ? ` (surveyed ${esc(cen.date)})` : ''}, each sized from its trunk diameter, plus ${(c.trees ?? (g.trees || []).length / 2).toLocaleString()} trees mapped in OpenStreetMap` : `${(c.trees ?? (g.trees || []).length / 2).toLocaleString()} mapped trees from ${esc(g.source || 'OpenStreetMap')}`;
+  const wt = site.water ? ` Water: ${esc((site.water.polys || []).map((p) => p.name).filter(Boolean).join(', ') || 'open water')} from ${esc(site.water.source || 'the site file')}.` : '';
+  return `<dt>Parks and trees</dt><dd>${(c.polys ?? (g.polys || []).length).toLocaleString()} parks, lawns and playgrounds, ${ctxLine}${g.fetched ? `, fetched ${esc(g.fetched)}` : ''}. Park, wood and lawn areas also get canopies at blue-noise spacing (about 60 trees a hectare in a park): that fill shows where green lies, not a count. <b>Trees and water are context only: never counted as shade or as obstructions in the sun hours.</b>${wt}${seen ? ` From this window, in a ${gv.fov_deg ?? 90}° view: ${seen}.` : ''}</dd>`;
 }
 function safeLink(u) { const v = safeUrl(u); return v && /^https?:/i.test(v) ? `, <a href="${esc(v)}" target="_blank" rel="noopener">source</a>` : ''; }
 
@@ -1481,7 +1485,7 @@ async function rebuildScene() {
   FACES = canonicalFaces(facesOf(T, 8, B), site.faces, site.version); calcCal();
   const look = { ...stage.look }, mode = st.mode;
   $('uLoad').hidden = false; await new Promise((r) => requestAnimationFrame(r));
-  stage.build({ B: B0, T, ti: B0.indexOf(T), streets: Array.isArray(site.streets) ? site.streets : [], future: FUT, green: site.green || null, lm: LM, ownLabel: site.listing?.building || listing().building || 'This building' });
+  stage.build({ B: B0, T, ti: B0.indexOf(T), streets: Array.isArray(site.streets) ? site.streets : [], future: FUT, green: site.green || null, water: site.water || null, lm: LM, ownLabel: site.listing?.building || listing().building || 'This building' });
   stage.setFloorH(FH());
   for (const [bi, h] of edits) stage.setHeight(bi, h / Math.max(0.01, B0[bi].top - B0[bi].g), B0[bi].g, B);
   stage.resize(); Object.assign(stage.look, look);

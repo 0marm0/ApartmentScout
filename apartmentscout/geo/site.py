@@ -142,17 +142,18 @@ def make_site(L: dict, crit: dict, cache_dir: Path | None = None, floor: int | N
               panes: list[float] | None = None, slab_height: float | None = None,
               floor_height: float | None = None, components: bool = True, overrides: Path | None = None,
               green: bool = True, face_index: int | None = None, eye_height: float | None = None,
-              say: Callable[..., None] = lambda *a: None) -> tuple[dict, dict | None, dict]:
+              say: Callable[..., None] = lambda *a: None, water: bool = True) -> tuple[dict, dict | None, dict]:
     """Build the site JSON. Returns (site, chosen face or None, timings in seconds).
 
     ``components``: split footprints into podium / tower / setback prisms from OpenStreetMap
     ``building:part`` outlines; ``overrides``: a ``<id>.components.yaml`` with manual components;
-    ``green``: parks, lawns and trees from OpenStreetMap (drawn in the 3D views, never counted as shade).
+    ``green``: parks, lawns and trees from OpenStreetMap, and in New York the street tree census (drawn in the 3D
+    views, never counted as shade); ``water``: rivers and ponds (same block of context, ``--no-water`` skips it).
     """
     with collect_receipts() as rc:
         site, face, T = _make_site(L, crit, cache_dir, floor, bearing, t, radius, streets, future, refresh,
                                    landmarks, year, panes, slab_height, floor_height, say, components, overrides, green,
-                                   face_index, eye_height)
+                                   face_index, eye_height, water)
     site["receipts"] = summarise_receipts(rc)
     for r in site["receipts"]:
         if r.get("limit_hit"):
@@ -164,7 +165,7 @@ def make_site(L: dict, crit: dict, cache_dir: Path | None = None, floor: int | N
 
 def _make_site(L, crit, cache_dir, floor, bearing, t, radius, streets, future, refresh, landmarks, year, panes,
                slab_height, floor_height, say, components=True, overrides=None, green=True, face_index=None,
-               eye_height=None):
+               eye_height=None, water=True):
     city = crit["search"].get("city")
     tz = crit["search"].get("timezone") or "America/New_York"
     year = year or dt.date.today().year
@@ -226,14 +227,17 @@ def _make_site(L, crit, cache_dir, floor, bearing, t, radius, streets, future, r
         T["streets"] = time.perf_counter() - c0
     if green:
         c0 = time.perf_counter()
-        try:
-            from .green import fetch_green
-            site["green"] = fetch_green(L["lat"], L["lon"], radius, cache_dir, refresh)
-            gc = site["green"]["counts"]
-            say(f"  green space: {gc['polys']} parks / lawns, {gc['trees']} mapped trees")
-        except RuntimeError as e:
-            say(f"  green space unavailable: {e}")
+        from .context import build_green, build_water   # [city context] parks, census trees, water (geo/context.py)
+        g = build_green(L["lat"], L["lon"], radius, city, cache_dir, refresh, say)
+        if g is not None:
+            site["green"] = g
         T["green"] = time.perf_counter() - c0
+        if water:
+            c0 = time.perf_counter()
+            w = build_water(L["lat"], L["lon"], city, cache_dir, refresh, say)
+            if w is not None:
+                site["water"] = w
+            T["water"] = time.perf_counter() - c0
     if future and city == "nyc":
         c0 = time.perf_counter()
         try:
@@ -353,20 +357,31 @@ def merge_receipts(site: dict, fresh: list[dict]) -> None:
 
 
 def add_green(site: dict, cache_dir: Path | None = None, radius: float | None = None, refresh: bool = False,
-              say: Callable[..., None] = lambda *a: None) -> bool:
-    """Add (or refresh) the ``green`` block of an existing site JSON, and the window's ``study.green_view``,
-    without rebuilding anything else. Returns False when the site has no origin."""
-    from .green import fetch_green
+              say: Callable[..., None] = lambda *a: None, city: str | None = None, water: bool = False,
+              keep_osm: bool = False) -> bool:
+    """Add (or refresh) the ``green`` block of an existing site JSON (parks and mapped trees, plus the street tree
+    census when ``city`` is ``"nyc"``) and the window's ``study.green_view``, without rebuilding anything else.
+    ``water=True`` also adds the ``water`` block (``--context-only``); ``keep_osm=True`` keeps the parks and mapped trees
+    already in the file and adds only the census and water (``--keep-osm``: no Overpass call). Returns False when the site
+    has no origin."""
+    from .context import build_green, build_water   # [city context]
     from .sightline import green_view
     origin = site.get("origin") or {}
     if "lat" not in origin or "lon" not in origin:
         return False
     r = radius or float((site.get("green") or {}).get("radius_m") or 600)
     with collect_receipts() as rc:
-        site["green"] = fetch_green(origin["lat"], origin["lon"], r, cache_dir, refresh)
+        g = build_green(origin["lat"], origin["lon"], r, city, cache_dir, refresh, say, keep=site.get("green") if keep_osm else None)
+        if g is None:
+            raise RuntimeError("green space unavailable")
+        site["green"] = g
+        if water:
+            wb = build_water(origin["lat"], origin["lon"], city, cache_dir, refresh, say)
+            if wb is not None:
+                site["water"] = wb
+            else:
+                site.pop("water", None)
     merge_receipts(site, summarise_receipts(rc))
-    gc = site["green"]["counts"]
-    say(f"  green space: {gc['polys']} parks / lawns, {gc['trees']} mapped trees")
     w = site.get("window")
     if w and site.get("study") is not None:
         face = next((f for f in target_faces(site) if f["i"] == w.get("face")), None)
