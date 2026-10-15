@@ -167,6 +167,16 @@ async function make(act) {
 
 // ------------------------------------------------------------------ the sheet
 export const isOpen = () => !!root;
+function onKey(e) {
+  if (!root) return;
+  if (e.key === 'Escape') { e.stopPropagation(); if (!busy) close(); return; }
+  if (e.key !== 'Tab') return;
+  const f = [...root.querySelectorAll('button:not([disabled]), input:not([disabled]), select')].filter((x) => x.offsetParent !== null);
+  if (!f.length) return;
+  const a = f.indexOf(document.activeElement);
+  if (!root.contains(document.activeElement)) { e.preventDefault(); f[0].focus(); }
+  else if (e.shiftKey && a <= 0) { e.preventDefault(); f[f.length - 1].focus(); } else if (!e.shiftKey && a === f.length - 1) { e.preventDefault(); f[0].focus(); }
+}
 export function open({ ids = null } = {}) {
   if (root) return;
   const c = candidates();
@@ -189,14 +199,7 @@ export function open({ ids = null } = {}) {
     if (h) { if (h.checked && st.sel.size < MAX) st.sel.add(h.dataset.home); else st.sel.delete(h.dataset.home); refresh(); }
     else if (o) { setOpt(o.dataset.opt, o.type === 'checkbox' ? o.checked : o.value); if (o.dataset.opt === 'stills') refresh(); }
   });
-  root.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') { e.stopPropagation(); if (!busy) close(); return; }
-    if (e.key !== 'Tab') return;
-    const f = [...root.querySelectorAll('button:not([disabled]), input:not([disabled]), select')].filter((x) => x.offsetParent !== null);
-    if (!f.length) return;
-    const a = f.indexOf(document.activeElement);
-    if (e.shiftKey && a <= 0) { e.preventDefault(); f[f.length - 1].focus(); } else if (!e.shiftKey && a === f.length - 1) { e.preventDefault(); f[0].focus(); }
-  });
+  document.addEventListener('keydown', onKey, true);   // on the document: a redrawn list drops the focused row, and the key would never reach the sheet
   refresh();
   document.documentElement.classList.add('rp-open');
   requestAnimationFrame(() => { root?.classList.add('on'); $('rpT')?.focus({ preventScroll: true }); });
@@ -204,6 +207,7 @@ export function open({ ids = null } = {}) {
 export function close() {
   if (!root) return;
   const r = root; root = null; st = null;
+  document.removeEventListener('keydown', onKey, true);
   r.classList.remove('on');
   for (const n of inerted) n.inert = false;
   inerted = [];
