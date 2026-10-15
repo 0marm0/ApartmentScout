@@ -794,7 +794,7 @@ export function closeDrawer() {
 // Views load on first visit, so one that fails to load (a missing or blocked script) never blanks the app.
 // Five tabs in the top bar (Home holds Unit 3D and Floor plan: #unit/<id> and #plan/<id> are unchanged); Tours lives under Shortlist (#list/tours) and Records under Research (#research/records/<id>).
 // The old #tours and #records/<id> links are rewritten to those by parseRoute() (shell.js).
-const VIEWS = { map: () => import('./map.js'), list: () => import('./list.js'), compare: () => import('./compare.js'), unit: () => import('./unit3d.js'),
+const VIEWS = { map: () => import('./map.js'), list: () => import('./list.js'), compare: () => import('./compare.js'), unit: () => import('./unit3d.js'), pair: () => import('./unit/pair3d.js'),
   plan: () => import('./plan3d.js').then((m) => (import('./plan/tracer-ui.js').then((t) => t.attach()).catch(() => {}), m)), tours: () => import('./tours.js'), research: () => import('./research.js') };
 const loaded = {};
 async function viewModule(v) {
