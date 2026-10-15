@@ -12,7 +12,7 @@ For published images shoot from a clean snapshot of the committed dashboard, not
     python scripts/screenshots.py --root /tmp/snap/dashboard --out /tmp/shots
 
 Each shot has one size, so the images sit together: desktop 1600 x 1000, phone 390 x 844 (1.5x), and for the 3D views the stage
-alone at 1140 x 716, which is the desktop layout's 3D pane with a window tall enough to show it 16:10. Dark theme except the
+alone at 1560 x 954, the wide 3D pane of this window (the Unit 3D tab's stage fills the width). Dark theme except the
 `*-light*` shots. The first-run tour is switched off for every shot (the page also never starts it under automation), the pointer is
 parked in a corner so no hover card or route preview is left in the picture (except in the shots that are about a hover), and a toast
 left on screen is cleared before the picture is taken. A shot that fails is reported and the rest
@@ -53,8 +53,8 @@ OUT = ROOT / "docs" / "images"
 #   ("block_media",)                   hold back every listing photo so only the blurred previews show
 DESK = (1600, 1000)
 PHONE = (390, 844)             # drawn at 1.5x
-STAGE = (1600, 1256)           # with this window the 3D pane is 1140 x 716 (16:10); the shot is the pane alone
-STAGE_TALL = (1600, 1450)      # a taller pane, cropped to 1140 x 716 from its top left, for panels that need the height
+STAGE = (1600, 1256)           # with this window the 3D stage is 1560 x 954; the shot is the stage alone
+STAGE_TALL = (1600, 1450)      # a taller window, cropped to the stage size from its top left, for panels that need the height
 
 # the example's saved picks, as the app stores them (local storage 'as:picks'): five example saves, not data from the search
 PICK_DATA = {

@@ -133,7 +133,7 @@ def test_wcag_aa_in_both_themes(browser, origin, width: int, theme: str) -> None
     ctx, page, _, _ = open_landing(browser, origin, width, 900, theme)
     page.wait_for_load_state("load")
     page.add_script_tag(path=str(AXE))
-    for tab in ("tt-map", "tt-photos", "tt-decide", "tt-wizard", "tt-3d", "tt-app"):        # the tour shows one panel at a time
+    for tab in ("tt-map", "tt-compare", "tt-3d", "tt-decide", "tt-setup"):        # the tour shows one panel at a time
         page.locator(f"#{tab}").click()
         res = page.evaluate("""async () => {
           const r = await axe.run(document, { runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'] }, resultTypes: ['violations'] });
@@ -147,20 +147,20 @@ def test_wcag_aa_in_both_themes(browser, origin, width: int, theme: str) -> None
 def test_the_tour_tabs_work_with_the_keyboard(browser, origin) -> None:
     ctx, page, _, errors = open_landing(browser, origin, 1440, 900, "dark")
     tabs = page.locator("#tour [role=tab]")
-    assert tabs.count() == 6
-    assert page.locator("#tp-map").is_visible() and not page.locator("#tp-photos").is_visible()
+    assert tabs.count() == 5
+    assert page.locator("#tp-map").is_visible() and not page.locator("#tp-compare").is_visible()
     tabs.nth(0).focus()
     page.keyboard.press("ArrowRight")
-    assert page.evaluate("document.activeElement.id") == "tt-photos"
-    assert page.locator("#tp-photos").is_visible() and not page.locator("#tp-map").is_visible()
+    assert page.evaluate("document.activeElement.id") == "tt-compare"
+    assert page.locator("#tp-compare").is_visible() and not page.locator("#tp-map").is_visible()
     assert tabs.nth(1).get_attribute("aria-selected") == "true" and tabs.nth(0).get_attribute("aria-selected") == "false"
     page.keyboard.press("End")
-    assert page.evaluate("document.activeElement.id") == "tt-app" and page.locator("#tp-app").is_visible()
+    assert page.evaluate("document.activeElement.id") == "tt-setup" and page.locator("#tp-setup").is_visible()
     page.keyboard.press("ArrowRight")                    # wraps
     assert page.evaluate("document.activeElement.id") == "tt-map" and page.locator("#tp-map").is_visible()
     # exactly one panel is in the accessibility tree at a time, and each panel is labelled by its tab
     assert page.locator("#tour [role=tabpanel]:visible").count() == 1
-    for t in range(6):
+    for t in range(5):
         assert page.evaluate("(i) => { const t = document.querySelectorAll('#tour [role=tab]')[i]; return document.getElementById(t.getAttribute('aria-controls')).getAttribute('aria-labelledby') === t.id; }", t)
     assert errors == []
     ctx.close()
@@ -168,7 +168,7 @@ def test_the_tour_tabs_work_with_the_keyboard(browser, origin) -> None:
 
 def test_without_javascript_every_tour_panel_is_there_and_the_tabs_are_not(browser, origin) -> None:
     ctx, page, _, _ = open_landing(browser, origin, 1440, 900, "dark", js=False)
-    assert page.locator("#tour [role=tabpanel]:visible").count() == 6
+    assert page.locator("#tour [role=tabpanel]:visible").count() == 5
     assert page.locator("#tour [role=tablist]:visible").count() == 0
     assert page.locator("a[href='./demo/']:visible").count() >= 2
     ctx.close()
