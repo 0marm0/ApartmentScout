@@ -22,6 +22,7 @@ import { normalisePlan } from './plan/model.js';
 import { illustration } from './features/empty.js';   // [feature C] empty-state art
 import { missingNotice } from './features/plan-empty.js';   // [feature C]
 import * as UQ from './unit/quality3d.js';   // [feature J] render quality and progressive render
+import { mountDock } from './room3d/dock.js';   // [phone] the time slider within thumb reach
 import { annualFor, panelHTML as annualPanelHTML } from './unit/daylight-annual.js';   // [feature J] annual daylight summary
 import { resolveCal, geoFromSite, measuredFromSite, calSummary } from './unit/calibration.js';   // [model project] measured vs estimated height
 import { effectiveComponents, isAssumed } from './unit/parts.js';   // [model project] source parts plus the assumed override
@@ -161,6 +162,7 @@ export function init() {
   sel.addEventListener('change', () => { location.hash = '#unit/' + encodeURIComponent(sel.value); });
   $('uSnap').addEventListener('click', () => snapshot());
   UQ.mount({ host: root.querySelector('.u-head .actions'), stageEl: $('stage'), store, toast, render: (scale) => snapshot({ hires: scale }) });   // [feature J]
+  mountDock($('stage'), { min: STRIP_FROM, max: STRIP_TO - STRIP_STEP, step: STRIP_STEP, get: () => st.min, set: (v) => setTime(v), text: () => fmtT(st.min), playing: () => !!st.playing, toggle: () => togglePlay() });   // [phone]
   $('annualPanel').addEventListener('toggle', (e) => { if (e.target.id === 'uAnnualDetails' && e.target.open !== !!st.annualOpen) { st.annualOpen = e.target.open; annualPanel(); } }, true);   // [feature J]
   new ResizeObserver(fitGrid).observe(root);
   $('uGlb').addEventListener('click', exportGLB);
