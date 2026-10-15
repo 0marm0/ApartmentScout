@@ -52,7 +52,7 @@ jobs:
           - name: one-city
             files: tests/e2e/test_one_city.py
           - name: places-destinations
-            files: tests/e2e/test_places_multidest.py
+            files: tests/e2e/test_places_multidest.py tests/e2e/test_map_clusters.py
           - name: pwa-landing
             files: tests/e2e/test_pwa.py tests/e2e/test_landing_page.py
     name: e2e (${{ matrix.shard.name }})
