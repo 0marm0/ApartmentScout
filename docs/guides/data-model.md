@@ -95,7 +95,11 @@ Optional price fields beyond `gross`, `net_effective`, `free_months`, `lease_mon
 | `fees[]` | Itemised schedule (`period`: `monthly` or `one_time`; `refundable`; `optional` items never count). Fills in when `fees_monthly` / `fees_one_time` are absent. |
 | `deposit`, `application_fee`, `upfront` | Upfront cash. Deposits and `upfront.refundable` are refundable; the rest is spread over the lease. |
 | `concession.free_months` | A number, or `[lo, hi]` when a range is advertised (then ranked at gross). |
-| `concession.conditions[]` | `start_before` / `lease_start_by` (date), `expires` / `sign_by` (date), `unit_not_named`, `min_lease_months` (number), `new_residents_only`, `immediate_only` or any other note. |
+| `concession.conditions[]` | `start_before` / `lease_start_by` (date), `expires` / `sign_by` (date), `unit_not_named`, `min_lease_months` (number), `new_residents_only`, `immediate_only` or any other note. The same list can sit flat as `concession_conditions` next to `free_months` / `lease_months`. |
+| `basis` | Where the rent was read (alias: listing-level `price_basis`). Quoted as is: `unit_page`, `owner_page`, `leasing_office`, `renter_quote`, `broker_card`. **Weak** (ranked on gross, cost range, `unverified:price` gate): `search_snippet`, `building_page`, `received` (an undated copy), `stale` (page known to be old or delisted), `estimate`. Absent = no claim either way. |
+| `source`, `checked` | Plain words for the page or person behind the price (no local paths) and the date it was read; `checked` falls back to the listing's `checked`. |
+| `range` | `[low, high]`: an advertised range such as RentHop's "$4,318-$4,652". `gross` is the high end; the low end is the best case in `score.cost.price_range`. A range has no term, so it never becomes a net. |
+| `note` | One sentence on what the price is and is not (for example "lease assignment through 2/27/27; the 12-month lease is $5,557"). |
 
 `score.cost` for the price above (written by `apartmentscout score`; empty keys are left out):
 
@@ -132,6 +136,9 @@ Optional price fields beyond `gross`, `net_effective`, `free_months`, `lease_mon
 | `renewal_base` | Present when it differs from the gross. |
 | `concession` | `applies`, `excluded` (why not applied), `notes` (conditions to confirm), `term_from_condition`. |
 | `scenarios`, `dispute` | One row per disagreeing price capture; ranking uses the most expensive. |
+| `price_basis`, `price_unverified`, `price_checked`, `price_source` | Present when `price.basis` is set; `price_unverified` is true for a weak basis (the `unverified:price` gate and the "price unverified" tag follow). |
+| `price_range` | `[best, worst]` monthly cost from the price's own uncertainty, fees as documented: the cheaper reading (the low end of `price.range`, or a quoted net that was not trusted) and the seen rent plus `scoring.unverified_price_band` (default 0.05). Weak prices only. |
+| `rent.net_unverified`, `rent.range` | A net quoted by a weak source and not used for ranking; the advertised range. |
 | `budget_amount` | Present when `budget.basis` is `gross` or `net`: what the tiers compared. |
 | `headroom` | Room under each tier and the hard cap (negative = over). |
 | `concession_needed` | For listings above the first tier: free months that reach it, per 12 and 18 month term. |
@@ -473,6 +480,26 @@ Optional listing fields read by history and lint: `price_history` (`[{"date", "g
 a portal's history), `listed_at` (the date the source says the unit was listed; never inferred from a check
 date), `address_aliases` (other street addresses of the same building).
 
+A search can start with history taken from an earlier research record: every price point is a `gross` or `net`
+claim whose `claimed_at` is the day that price was shown and whose `source` names the file it came from (a path
+relative to the research folder, never an absolute one), and a status claim is only written for a listing that
+stayed gone (a relisted unit keeps its price points instead). The bundled `examples/nyc-2026/history/claims.jsonl`
+is built this way. A claim about a listing whose `status` still reads active is dated by the check that found it,
+with the event's own date in `note`, so the availability ladder does not report a dispute with itself.
+
+Monitor files, written by `apartmentscout monitor` (see [monitoring](monitoring.md)) under `history/monitor/`:
+`observations.jsonl` (append-only; one line per page fetched: `{"id", "url", "host", "fetched_at", "status",
+"observation": {"gross", "net", "free_months", "lease_months", "status", "available", "method", "note"}, "sha"}`),
+`cache/<hash>.json` (the last reading per URL, with `fetched_at` and `status` `ok` or `blocked`),
+`digests/YYYY-MM-DD.md|json` and `digest.json` (the latest). Changes it finds also go to `claims.jsonl` with
+`method: "monitor"`. criteria.yaml:
+
+```yaml
+monitor:
+  allow_hosts: [example-tower.com]   # hosts that may be fetched; portals are never fetched unless named here
+  max_age_hours: 12                  # reuse a reading younger than this
+```
+
 `history.json` (dashboard export):
 
 ```json
@@ -556,6 +583,25 @@ image says it is for).
 `last_checked` is the latest of the entry's own date and its units' `checked`; `new_units` are units that
 appeared (new or relisted in history) on or after it. Buildings with new units come first, then the
 longest unchecked. `note` explains how to add buildings when the list is empty.
+
+`digest.json` (dashboard export; the latest `apartmentscout monitor` digest, or an empty stub):
+
+```json
+{"schema_version": 1, "generated": "2026-10-14", "note": null,
+ "run": {"at": "2026-10-14T09:00:05", "date": "2026-10-14", "since": null, "dry_run": false, "offline": false,
+         "targets": 6, "read": 4, "fetched": 3, "from_cache": 1, "skipped": 2, "unreadable": 0},
+ "counts": {"price": 1, "gone": 1},
+ "changes": [{"id": "tower-12b", "name": "The Example Tower 12B", "date": "2026-10-14", "type": "price", "field": "gross",
+              "from": 4950, "to": 4800, "url": "https://example-tower.com/units/12b", "host": "example-tower.com", "note": null}],
+ "unchanged": ["tower-9a"],
+ "skipped": [{"id": "tower-3c", "url": "https://...", "host": "streeteasy.com", "reason": "streeteasy.com is a portal that blocks automated reads; name it in monitor.allow_hosts to try it"}],
+ "unreadable": [{"id": "tower-5d", "url": "https://...", "reason": "the page says nothing usable about this unit"}],
+ "blocked_hosts": {"example.com": "HTTP 403: bot check or block"}}
+```
+
+`changes[].type` and `field` are the history event types (`price` gross or net, `concession` free or lease months,
+`status` available, `gone`, `relist`). `skipped` lists pages not fetched and why (a portal, a host that answered with a bot
+check, no cache offline); `unreadable` lists pages that were read but gave nothing usable.
 
 ## Floor plan
 

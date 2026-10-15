@@ -67,6 +67,11 @@ one (unit page beats building page beats portal summary) and note the conflict i
 - Net-effective vs gross: portals often advertise net-effective. Record the gross in
   `price.gross` and the concession in `free_months`/`lease_months`; if only the net figure is
   known, put it in `price.net_effective` and note it.
+- Say where the price was read: `price.basis` (`unit_page`, `owner_page`, `leasing_office`, `renter_quote`,
+  `broker_card`; or the weak `search_snippet`, `building_page`, `received`, `stale`, `estimate`), with
+  `price.source` and `price.checked`. A price from a search-result snippet, a building list or an undated copy is
+  ranked on gross with an `unverified:price` gate until you read the unit's own page. A snippet that shows a
+  price range ("$4,318-$4,652") goes in `price.range`, never `net_effective`: a range has no lease term.
 - Floor from unit number is a guess (`12B` is usually floor 12, `PH` is the top): the importer
   marks such floors `floor_inferred: true`.
 - Studios and "flex" layouts listed as 1BR: check the floor plan for a real bedroom door and window.
