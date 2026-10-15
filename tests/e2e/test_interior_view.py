@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 
 import pytest
+from conftest import settled
 
 pytestmark = pytest.mark.e2e
 
@@ -28,7 +29,7 @@ def _studio(s, uid: str = UNIT) -> None:
     pg = s.page
     pg.goto(f"{s.origin}/#plan/{uid}")
     pg.wait_for_function("() => window.__plan3d && window.__plan3d.items.length > 0 && !!document.querySelector('#psLook .lk-chip')", timeout=90000)
-    pg.wait_for_timeout(600)
+    settled(pg, 20000, ticks=5)
 
 
 def _unit(s, uid: str = UNIT, query: str = "?mode=inside") -> None:
@@ -36,7 +37,7 @@ def _unit(s, uid: str = UNIT, query: str = "?mode=inside") -> None:
     s.page.wait_for_function(
         "(id) => window.__unit3d && window.__unit3d.st.id === id && window.__unit3d.stage && window.__unit3d.stage.interior && window.__unit3d.views.length > 4 && document.getElementById('uLoad').hidden",
         arg=uid, timeout=120000)
-    s.page.wait_for_timeout(600)
+    settled(s.page, 20000, ticks=5)
 
 
 def _settle(pg) -> None:
@@ -165,7 +166,7 @@ def test_studio_stands_at_the_window_and_sits_on_the_sofa_with_the_real_city_out
     assert inside("Bedroom", bed["at"]) and bed["dir"][0] > 0.4 and bed["dir"][1] > 0.6
     # evening and night give the window a different sky; leaving puts the bird's-eye view back
     pg.click("#pMood [data-mood=evening]")
-    pg.wait_for_timeout(300)
+    pg.wait_for_function("async () => (await import('/js/plan/scene3d.js')).parts().scene.fog.color.getHexString() !== 'cddcec'", timeout=10000)
     assert pg.evaluate("async () => (await import('/js/plan/scene3d.js')).parts().scene.fog.color.getHexString()") != "cddcec"
     pg.keyboard.press("Escape")
     pg.wait_for_function("() => window.__plan3d.eye === 'orbit' && !window.__plan3d.hasCity")
@@ -178,7 +179,8 @@ def test_the_chips_are_an_accessible_radio_group_on_a_phone_too(open_page, webgl
     pg = s.page
     _studio(s)
     pg.click('#psMode [data-m="3d"]')
-    pg.wait_for_timeout(400)
+    pg.wait_for_selector("#psLook .lk-chip", state="visible", timeout=10000)
+    settled(pg, 20000, ticks=4)   # the toolbar has finished laying itself out
     box = pg.evaluate("() => { const r = document.getElementById('psLook').getBoundingClientRect(), c = document.getElementById('psCams').getBoundingClientRect(), n = document.querySelector('.rnq').getBoundingClientRect(); return { look: [r.top, r.bottom], cams: [c.top, c.bottom], rnq: [n.top, n.bottom], scrolls: document.getElementById('psLook').scrollWidth > document.getElementById('psLook').clientWidth }; }")
     assert box["look"][0] >= box["cams"][1] - 1, box                              # under the camera row, not on the render switch
     assert box["look"][1] <= box["rnq"][0] or box["look"][0] >= box["rnq"][1]

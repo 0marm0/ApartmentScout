@@ -8,6 +8,7 @@ from __future__ import annotations
 import math
 
 import pytest
+from conftest import settled
 
 pytestmark = pytest.mark.e2e
 
@@ -20,6 +21,22 @@ def _need_webgl(webgl: bool) -> None:
         pytest.skip("no WebGL in this browser (SwiftShader unavailable)")
 
 
+# Resolves when the camera has not moved for six frames running: the glide to a chip is over (what a fixed sleep stood in for).
+CAMERA_STILL_JS = """async (getCam) => {
+  const get = await (async () => { if (getCam === 'studio') { const G3 = await import('/js/plan/scene3d.js'); return () => G3.getCamera(); } return () => window.__unit3d.stage.winCam; })();
+  let last = null, still = 0;
+  return await new Promise((resolve) => { const t0 = performance.now(); const tick = () => {
+    const c = get(), p = [...c.position.toArray(), c.fov, ...(c.getWorldDirection ? c.getWorldDirection(new c.position.constructor()).toArray() : [])];
+    still = last && p.every((v, i) => Math.abs(v - last[i]) < 1e-6) ? still + 1 : 0; last = p;
+    if (still >= 6 || performance.now() - t0 > 20000) resolve(still >= 6); else requestAnimationFrame(tick); }; tick(); });
+}"""
+
+
+def _camera_still(pg, engine: str) -> None:
+    assert pg.evaluate(CAMERA_STILL_JS, engine), f"the {engine} camera never came to rest"
+    settled(pg, 20000, ticks=3)
+
+
 def _studio(s, chip: str = "room:Living", extra: str = "") -> None:
     pg = s.page
     pg.goto(f"{s.origin}/?date={DATE}&pmin=780{extra}#plan/{UNIT}")
@@ -27,7 +44,8 @@ def _studio(s, chip: str = "room:Living", extra: str = "") -> None:
     pg.click('#psMode [data-m="3d"]')
     pg.click(f"#psLook [data-vp^='{chip}']")
     pg.wait_for_function("() => window.__plan3d.eye === 'eye' && window.__plan3d.hasCity", timeout=60000)
-    pg.wait_for_timeout(1500)
+    pg.wait_for_function("""async () => { const api = (await import('/js/plan/scene3d.js')).cityApi(); return !!api && api.city.near.length + api.city.far.length > 500; }""", timeout=60000)
+    _camera_still(pg, "studio")
 
 
 def _unit(s, chip: str = "room:Living", date: str = DATE, minute: int = 780) -> None:
@@ -37,7 +55,8 @@ def _unit(s, chip: str = "room:Living", date: str = DATE, minute: int = 780) -> 
         "(id) => window.__unit3d && window.__unit3d.st.id === id && window.__unit3d.stage && window.__unit3d.stage.interior && window.__unit3d.views.length > 4 && document.getElementById('uLoad').hidden",
         arg=UNIT, timeout=120000)
     pg.click(f"#uLook [data-vp^='{chip}']")
-    pg.wait_for_timeout(1500)
+    pg.wait_for_function("() => !window.__unit3d.stage.inTween", timeout=20000)
+    _camera_still(pg, "unit")
     pg.evaluate("() => { const s = window.__unit3d.stage; s.dirty = true; s.frame(true); }")
 
 
@@ -228,10 +247,10 @@ def test_the_chips_and_the_seats_behave_the_same_in_both_engines(open_page, webg
     # the sofa chip: the same seat (40 in eye height) in both, and the same eye point in the site frame
     a.page.click("#psLook [data-vp='seat:sofa']")
     a.page.wait_for_function("() => window.__plan3d.view === 'seat:sofa'")
-    a.page.wait_for_timeout(800)
+    _camera_still(a.page, "studio")
     b.page.click("#uLook [data-vp='seat:sofa']")
-    b.page.wait_for_function("() => window.__unit3d.curView.seat === 'sofa'")
-    b.page.wait_for_timeout(1200)
+    b.page.wait_for_function("() => window.__unit3d.curView.seat === 'sofa' && !window.__unit3d.stage.inTween", timeout=20000)
+    _camera_still(b.page, "unit")
     b.page.evaluate("() => { const s = window.__unit3d.stage; s.dirty = true; s.frame(true); }")
     ps, pu = a.page.evaluate(STUDIO_JS)["pose"], b.page.evaluate(UNIT_JS)["pose"]
     assert math.dist(ps["p"], pu["p"]) < 0.03 and ps["fov"] == pu["fov"]
@@ -283,7 +302,7 @@ def test_unit_inside_shows_the_studios_blinds_and_daylight_map(open_page, webgl:
     assert b.page.evaluate("() => !!document.querySelector('#uLook [data-act=dl]') && !!document.querySelector('#uLook [data-act=blinds]')")
     before = b.page.evaluate("() => window.__unit3d.stage.sunL.intensity")
     b.page.select_option('#uLook [data-act="blinds"]', "closed")                          # the studio's saved blinds, written where the studio reads them
-    b.page.wait_for_timeout(300)
+    b.page.wait_for_function("(b) => window.__unit3d.stage.sunL.intensity < b * 0.2", arg=before, timeout=10000)
     assert b.page.evaluate("() => window.__unit3d.stage.sunL.intensity") < before * 0.2
     assert "closed" in b.page.evaluate("() => localStorage.getItem('as:plan-light.data.paramount-tower-25e')")
     b.page.click('#uLook [data-act="dl"]')

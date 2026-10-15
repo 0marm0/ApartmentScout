@@ -6,6 +6,7 @@ WebGL, otherwise skipped."""
 from __future__ import annotations
 
 import pytest
+from conftest import settled
 
 pytestmark = pytest.mark.e2e
 
@@ -23,7 +24,14 @@ def _unit(s, uid: str = UNIT, query: str = "") -> None:
     s.page.wait_for_function(
         "(id) => window.__unit3d && window.__unit3d.st.id === id && window.__unit3d.stage && window.__unit3d.stage.scene && document.getElementById('uLoad').hidden",
         arg=uid, timeout=120000)
-    s.page.wait_for_timeout(800)
+    settled(s.page, 20000, ticks=5)   # the first frames are drawn (CITY_JS also forces one)
+
+
+def _quality(s, mode: str, q: int) -> None:
+    """Click Fast or Visual and wait until the facade shader has switched."""
+    s.page.click(f'[data-rnq="{mode}"]')
+    s.page.wait_for_function("(q) => window.__unit3d.stage.facU.uQual.value === q", arg=q, timeout=20000)
+    settled(s.page, 20000, ticks=4)
 
 
 # the city of Unit 3D: ids, meshes, uniforms and what is drawn, with the stable id (BIN) and the parts of every building
@@ -77,8 +85,7 @@ def test_a_few_draw_calls_not_a_mesh_per_window(open_page, webgl):
     c = _city(s)
     assert c["calls"] < 90 and c["tris"] < 1_500_000, (c["calls"], c["tris"])        # the context3d budget
     assert sum(c["meshVerts"]) / 3 < 700_000                                         # the buildings are a fraction of it
-    s.page.click('[data-rnq="visual"]')
-    s.page.wait_for_timeout(1500)
+    _quality(s, "visual", 1)
     v = _city(s)
     assert v["qual"] == 1 and v["calls"] < 90 and v["tris"] < 1_800_000, (v["calls"], v["tris"])
 
@@ -88,11 +95,9 @@ def test_fast_is_simple_and_visual_gets_the_full_facades(open_page, webgl):
     s = open_page("#unit/" + UNIT)
     _unit(s)
     assert _city(s)["qual"] == 0
-    s.page.click('[data-rnq="visual"]')
-    s.page.wait_for_timeout(1000)
+    _quality(s, "visual", 1)
     assert _city(s)["qual"] == 1
-    s.page.click('[data-rnq="fast"]')
-    s.page.wait_for_timeout(600)
+    _quality(s, "fast", 0)
     assert _city(s)["qual"] == 0
 
 
@@ -118,8 +123,7 @@ def test_the_look_never_changes_a_sun_number(open_page, webgl):
     _unit(s)
     state = "() => { const u = window.__unit3d; return JSON.stringify({ sun: u.sun, hit: u.hit, blk: u.blockers && u.blockers.slice(0, 5), floor: u.st.floor }); }"
     fast = s.page.evaluate(state)
-    s.page.click('[data-rnq="visual"]')
-    s.page.wait_for_timeout(800)
+    _quality(s, "visual", 1)
     assert s.page.evaluate(state) == fast
 
 
@@ -135,7 +139,8 @@ def test_unit_3d_and_the_floor_plan_studio_build_the_same_buildings(open_page, w
     pg.evaluate("() => localStorage.setItem('as:plan-city.data', 'true')")
     pg.reload()
     pg.wait_for_selector("#psFileBtn", timeout=60000)
-    pg.wait_for_timeout(3500)
+    pg.wait_for_function("""async () => { const api = (await import('/js/plan/scene3d.js')).cityApi(); return !!(api && api.city && api.city.near && api.city.meshes && api.city.meshes[0]); }""", timeout=60000)
+    settled(pg, 20000, ticks=5)
     plan = pg.evaluate("""async () => { const G3 = await import('/js/plan/scene3d.js'), api = G3.cityApi(); if (!api) return null; const C = api.city; const verts = {}; for (const [i, [m, a, b]] of C.vrange) verts[i] = b - a;
       return { n: C.near.length + C.far.length, verts, qual: C.facU.uQual.value, attrs: Object.keys(C.meshes[0].geometry.attributes).sort() }; }""")
     assert plan and plan["n"] == unit["n"] and plan["n"] > 500
@@ -165,7 +170,7 @@ def test_the_heights_layer_shows_its_classes_not_wall_palettes(open_page, webgl)
     _unit(s)
     assert _city(s)["tint"] == 1
     s.page.click('#uTools [data-tg="heights"]')
-    s.page.wait_for_timeout(600)
+    s.page.wait_for_function("() => window.__unit3d.stage.facU.uTintMix.value === 0", timeout=20000)
     assert _city(s)["tint"] == 0
     s.page.click('#uTools [data-tg="heights"]')
     assert _city(s)["tint"] == 1
@@ -181,7 +186,7 @@ def test_height_source_and_confidence_are_in_the_neighbours_and_evidence_panels(
     row = s.page.locator(".u-nb tbody tr").first.inner_text()
     assert "Measured roof" in row and ("(high)" in row or "(medium)" in row or "(low)" in row), row
     s.page.locator(".u-nb tbody tr").first.click()
-    s.page.wait_for_timeout(400)
+    s.page.wait_for_function("() => /Building id/.test(document.getElementById('uCard').innerText)", timeout=10000)
     card = s.page.locator("#uCard").inner_text()
     assert "confidence" in card and "Building id" in card, card
     assert s.take() == []
