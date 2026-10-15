@@ -11,7 +11,10 @@ in an ICO container, written by hand.
     icon-{192,512}.png            any purpose, dark tile with rounded corners (the manifest's icons)
     icon-light-{192,512}.png      the same on the light ground (light-scheme favicons; the manifest cannot switch by scheme)
     maskable-{192,512}.png        full-bleed dark square, mark inside the 80 % safe zone, for adaptive/maskable icons
-    apple-touch-icon.png          180 px, opaque (iOS rounds it)
+    apple-touch-icon.png          180 px, opaque (iOS rounds it); apple-touch-icon-{120,152,167}.png for older and iPad home screens
+    splash-<w>x<h>-{dark,light}.png   iOS launch screens (apple-touch-startup-image) for every current iPhone size, portrait; the ground
+                                  colour of the theme, the mark and the name. SPLASH_SIZES is the one list: index.html's <link>s are
+                                  checked against it by tests/test_pwa_assets.py
     favicon-32.png / favicon-32-light.png / favicon.ico   browser tab icons (PNG fallbacks for the SVG favicon)
 """
 from __future__ import annotations
@@ -45,6 +48,37 @@ def svg(size: int, theme: str, *, height_frac: float, radius_frac: float = 0.0) 
             f'<path d="{TOWER}" fill="{c["tower"]}" fill-rule="evenodd" clip-path="url(#h)"/></g></svg>')
 
 
+# portrait iPhone screens: (CSS width, CSS height, device pixel ratio); the file is (w*dpr) x (h*dpr)
+SPLASH_SIZES = [(375, 667, 2), (414, 736, 3), (375, 812, 3), (414, 896, 2), (414, 896, 3), (390, 844, 3), (428, 926, 3),
+                (393, 852, 3), (430, 932, 3), (402, 874, 3), (420, 912, 3), (440, 956, 3)]
+
+
+def splash_name(w: int, h: int, dpr: int, theme: str) -> str:
+    return f"splash-{w * dpr}x{h * dpr}-{theme}.png"
+
+
+def splash_svg(w: int, h: int, theme: str) -> str:
+    """A launch screen: the theme's ground, the pin a little above the middle, the name under it."""
+    c = THEMES[theme]
+    mark_h = w * 0.2
+    k = mark_h / PIN_H
+    tx, ty = w / 2 - 50 * k, h * 0.45 - PIN_CY * k
+    ink = "#eef1f6" if theme == "dark" else "#12151c"
+    return (f'<svg xmlns="http://www.w3.org/2000/svg" width="{w}" height="{h}" viewBox="0 0 {w} {h}">'
+            f'<defs>'
+            f'<clipPath id="h"><circle cx="50" cy="40" r="25"/></clipPath></defs>'
+            f'<rect width="{w}" height="{h}" fill="{c["ground"]}"/>'
+            f'<g transform="translate({tx:.3f} {ty:.3f}) scale({k:.5f})"><path d="{PIN}" fill="{c["ring"]}" fill-rule="evenodd"/>'
+            f'<path d="{TOWER}" fill="{c["tower"]}" fill-rule="evenodd" clip-path="url(#h)"/></g>'
+            f'<text x="{w / 2}" y="{h * 0.45 + mark_h * 0.5 + w * 0.085:.1f}" text-anchor="middle" fill="{ink}" '
+            f'font-family="-apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif" font-weight="600" font-size="{w * 0.058:.1f}" letter-spacing="{w * -0.0008:.2f}">ApartmentScout</text></svg>')
+
+
+def splash_jobs() -> dict[str, tuple[str, int, int, int]]:
+    """name -> (markup in CSS pixels, width, height, device scale factor): rendered at the device ratio so the file has the device's pixels."""
+    return {splash_name(w, h, dpr, t): (splash_svg(w, h, t), w, h, dpr) for (w, h, dpr) in SPLASH_SIZES for t in THEMES}
+
+
 def jobs() -> dict[str, str]:
     out: dict[str, str] = {}
     for s in (192, 512):
@@ -54,6 +88,8 @@ def jobs() -> dict[str, str]:
         # (the pin's farthest point from its centre is 44.75 units, so 72 % of the side tall puts it at radius 36 %, inside the 40 % safe zone)
         out[f"maskable-{s}.png"] = svg(s, "dark", height_frac=0.72)
     out["apple-touch-icon.png"] = svg(180, "dark", height_frac=0.70)
+    for size in (120, 152, 167):
+        out[f"apple-touch-icon-{size}.png"] = svg(size, "dark", height_frac=0.70)
     out["favicon-32.png"] = svg(32, "dark", height_frac=0.78, radius_frac=0.22)
     out["favicon-32-light.png"] = svg(32, "light", height_frac=0.78, radius_frac=0.22)
     return out
@@ -77,6 +113,11 @@ def main() -> int:
             page = browser.new_page(viewport={"width": side, "height": side}, device_scale_factor=1)
             page.set_content(f'<!doctype html><style>html,body{{margin:0;background:transparent}}svg{{display:block}}</style>{markup}')
             made[name] = page.screenshot(omit_background=True, clip={"x": 0, "y": 0, "width": side, "height": side})
+            page.close()
+        for name, (markup, w, h, dpr) in splash_jobs().items():
+            page = browser.new_page(viewport={"width": w, "height": h}, device_scale_factor=dpr)
+            page.set_content(f'<!doctype html><style>html,body{{margin:0}}svg{{display:block}}</style>{markup}')
+            made[name] = page.screenshot(clip={"x": 0, "y": 0, "width": w, "height": h})
             page.close()
         browser.close()
     for name, data in made.items():

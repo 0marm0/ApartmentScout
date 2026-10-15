@@ -19,7 +19,10 @@ const effective = () => (mode === 'system' ? (mq.matches ? 'light' : 'dark') : m
 function applyTheme(announce) {
   const root = document.documentElement, eff = effective(), changed = root.dataset.theme !== eff;
   root.dataset.theme = eff; root.dataset.themePref = mode;
-  document.querySelector('meta[name=theme-color]')?.setAttribute('content', getComputedStyle(root).getPropertyValue('--ground').trim());
+  // the page ships one theme-color per OS scheme (for the first paint and the splash); once the app knows which theme is showing
+  // (its own choice can differ from the OS), one colour-matched tag stands for both
+  const tc = [...document.querySelectorAll('meta[name=theme-color]')];
+  if (tc[0]) { tc[0].removeAttribute('media'); tc[0].setAttribute('content', getComputedStyle(root).getPropertyValue('--ground').trim()); tc.slice(1).forEach((m) => m.remove()); }
   document.querySelectorAll('button[data-theme-mode]').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.themeMode === mode)));
   if (changed && announce) emit('theme');
 }
