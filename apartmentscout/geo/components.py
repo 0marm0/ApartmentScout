@@ -154,9 +154,39 @@ def parts_query(lat: float, lon: float, radius_m: float, tall: list[tuple[float,
     return "[out:json][timeout:120];\n(" + "\n ".join(around) + ");\nout geom;"
 
 
+def tall_query(tall: list[tuple[float, float, float]]) -> str:
+    """Overpass query for the parts around some tall buildings only (one request per chunk of landmarks)."""
+    around = []
+    for tlat, tlon, tr in tall:
+        around.append(f'way["building:part"](around:{tr:.0f},{tlat:.6f},{tlon:.6f});')
+        around.append(f'relation["building:part"]["type"="multipolygon"](around:{tr:.0f},{tlat:.6f},{tlon:.6f});')
+    return "[out:json][timeout:120];\n(" + "\n ".join(around) + ");\nout geom;"
+
+
+TALL_CHUNK = 10
+
+
 def fetch_osm_parts(lat: float, lon: float, radius_m: float = PARTS_RADIUS_M, cache_dir: Path | None = None,
-                    refresh: bool = False, tall: list[tuple[float, float, float]] | None = None) -> list[dict]:
-    return parse_osm_parts(overpass(parts_query(lat, lon, radius_m, tall), cache_dir, refresh=refresh))
+                    refresh: bool = False, tall: list[tuple[float, float, float]] | None = None,
+                    problems: list[str] | None = None) -> list[dict]:
+    """Parts within ``radius_m`` (one request, as before: a failure raises) and around the tall landmarks (chunks of
+    ``TALL_CHUNK``: a failed chunk is reported in ``problems`` and skipped, so the near blocks keep their parts)."""
+    els = overpass(parts_query(lat, lon, radius_m), cache_dir, refresh=refresh)
+    seen = {(e.get("type"), e.get("id")) for e in els}
+    tall = tall or []
+    for i in range(0, len(tall), TALL_CHUNK):
+        try:
+            more = overpass(tall_query(tall[i:i + TALL_CHUNK]), cache_dir, refresh=refresh)
+        except RuntimeError as e:
+            if problems is not None:
+                problems.append(f"landmarks {i + 1}-{min(i + TALL_CHUNK, len(tall))}: {e}")
+            continue
+        for e in more:
+            k = (e.get("type"), e.get("id"))
+            if k not in seen:
+                seen.add(k)
+                els.append(e)
+    return parse_osm_parts(els)
 
 
 def tall_centres(site: dict, radius_m: float, min_h: float = TALL_PARTS_M, limit: int = TALL_PARTS_MAX
