@@ -3,7 +3,7 @@
 // through a setback, the plan was pushed through the wall, a party wall): sun and view conclusions for it are withheld.
 // Pure; apartmentscout/geo/anchor.py (solid_at, window_open_air) is the Python twin and tests/fixtures/model_anchor.json
 // pins both to the same answers. B is sun.js prepBuildings(); heights are metres above the target's ground (z up).
-import { insideBuilding, solidsOf, DEG } from '../sun.js';
+import { insideBuilding, DEG } from '../sun.js';
 
 export const OUT_M = 0.4;
 /** The solids of building b as [{part, lo, hi}], absolute z: its components, else the footprint prism (buried 1.5 m). */

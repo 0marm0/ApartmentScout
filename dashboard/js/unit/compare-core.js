@@ -2,7 +2,7 @@
 // base state (winter vs summer, floors, facade hypotheses, proposed buildings on or off, assumed building parts,
 // a measured height), evaluated with identical assumptions everywhere else, with the deltas against the first scenario
 // and a JSON receipt. Pure (no DOM, no three.js); the board's drawing lives in compare-board.js.
-import { sunPos, zonedMs, dayTable, horizonProfile, litInfo, skyView, daylightFactor, hAt, expectedSun, DAYS_IN_MONTH, compass, angDiff } from '../sun.js';
+import { sunPos, zonedMs, dayTable, horizonProfile, litInfo, skyView, daylightFactor, hAt, expectedSun, compass } from '../sun.js';
 import { windowPoint, windowOpenAir, airReason } from './openair.js';
 import { resolveCal, describeCal, normaliseMeasured } from './calibration.js';
 
@@ -126,9 +126,9 @@ export function evaluateAll(base, specs, env) {
 
 const DELTA_KEYS = [['day_min', 'Direct sun that day', 'min', 0], ['dec_h', 'Dec 15, hours of sun', 'h', 2], ['jun_h', 'Jun 15, hours of sun', 'h', 2], ['year_possible_h', 'A year, possible sun', 'h', 0], ['sky_view', 'Sky view', 'pts', 1], ['daylight_factor_pct', 'Daylight factor (est.)', 'pts', 2], ['skyline_ahead_deg', 'Skyline straight ahead', '°', 1]];
 /** Rows for the board's table: each metric per scenario and the change from scenario 1. sky_view is shown in percent points. */
-export function deltaRows(results) {
+export function deltaRows(results, { hideSame = false } = {}) {
   const ref = results[0]?.metrics;
-  return DELTA_KEYS.map(([key, label, unit, dp]) => ({
+  const rows = DELTA_KEYS.map(([key, label, unit, dp]) => ({
     key, label, unit,
     cells: results.map((r, i) => {
       const m = r.metrics;
@@ -137,6 +137,9 @@ export function deltaRows(results) {
       return { value: Number(v.toFixed(dp)), delta: i === 0 || ref0 == null ? null : Number((v - ref0).toFixed(dp)) };
     }),
   }));
+  // a metric that comes out the same in every scenario says nothing about the change: the board hides those rows (the receipt keeps them)
+  const same = (r) => r.key !== 'day_min' && r.cells.every((c) => !c.withheld && c.value === r.cells[0].value);
+  return hideSame ? Object.assign(rows.filter((r) => !same(r)), { hidden: rows.filter(same).map((r) => r.label) }) : rows;
 }
 
 /** What every scenario shares, in words: the base state's fields that no scenario changes. */
@@ -176,4 +179,3 @@ export function buildReceipt({ siteId, site, base, results, env, camera, created
 
 /** Faces ordered for pickers: open facades first, longest first. */
 export const openFaces = (faces) => faces.map((f, i) => [f, i]).filter(([f]) => !f.shared).sort((a, b) => b[0].length - a[0].length);
-export { DAYS_IN_MONTH, angDiff };
