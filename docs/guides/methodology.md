@@ -392,9 +392,10 @@ with theta, the visible sky angle seen from the window, taken as 90 degrees x sk
 parallel to the window this agrees with the BRE construction within a few degrees). Unit 3D and the site
 file use an assumed room: glazing transmittance T = 0.6, Aw = 3 m^2 of glass, A = 88.6 m^2 of room
 surfaces (4 x 5 m, 2.7 m ceiling), reflectance R = 0.5, so an unobstructed window gives about 2.4 %. The
-Floor plan studio's Light tab uses the plan's own room and window sizes (80 % of each opening glazed) and
-lets you change the glazing transmittance and the blinds (open, half = 0.5, closed = 0.1): a preview
-that scales the sun patches and the estimate together. Read DF_est as "this window sees more sky than
+Floor plan studio's Light tab uses the plan's own room and window sizes and lets you change the glazing
+transmittance, the frame factor (the glazed share of the opening, 0.8 by default) and the blinds (open, sheer = 0.55,
+half = 0.5, closed = 0.1): a preview that scales the sun patches and the estimate together. Its reflectance is 0.5
+until you pick surfaces (below), then the area-weighted mean of your floor, walls and ceiling. Read DF_est as "this window sees more sky than
 that one", never as a measurement: reflections from facades, the depth and colour of the room, frames,
 dirt and furniture are not in it.
 
@@ -406,14 +407,94 @@ Central Park (percent of possible sunshine: 54 % in January, 55, 57, 57, 57, 57,
 the 15th x days in the month). This assumes cloud is independent of the time of day and of the
 direction the window faces; other cities have no table yet, so only possible hours are given.
 
+### Relative daylight in a room, glass and surfaces, a year of it, and lamps
+
+This builds on the sky view above. All of it is a **relative model**: `apartmentscout/daylight.py` and
+`dashboard/js/features/daylight-core.js` run the same method and `tests/fixtures/daylight_parity.json` pins them to the
+same numbers. Nothing is calibrated against a light meter, a weather file or a simulation engine, and every result in
+the dashboard carries one of three labels:
+
+| Label | Means | Where |
+|---|---|---|
+| **Modelled** | The relative daylight model: a sky, a skyline, assumed glass and surfaces. Not lux, not calibrated | the room grid, the annual chart |
+| **Estimate** | A simple physical calculation with its simplifications named (lamps: inverse square and cosine, no bounce) | the Lamps view |
+| **Visual preview** | What the 3D view shows: brightness, tint, glow, shadow softness. For looking, never for measuring | the 3D floor tint, lamp glow, Visual render quality |
+
+**Sky and vertical sky component.** The CIE standard overcast sky (as above) or the CIE standard clear sky (ISO 15469 /
+CIE S 011 type 12; gradation 1 - exp(-0.32 / cos z), indicatrix 1 + 10 (e^(-3 chi) - e^(-3 pi/2)) + 0.45 cos^2 chi) for the
+sun position on screen. "Clear" means the diffuse sky only; direct sun stays the separate sun-hours number. The vertical sky
+component (VSC, the BRE / UK measure) is the vertical illuminance a window gets from the sky its skyline leaves visible,
+over the horizontal illuminance of the same unobstructed sky: an open window under the overcast sky gets 39.6 %, a wall
+rising 30 degrees everywhere leaves about half of that. Under the clear sky a window facing the sun can exceed 39.6 %
+because that sky's horizontal illuminance is lower. A bay is the mean of its panes' VSCs.
+
+**Sensor grid.** For every room that has a window with a known skyline, relative daylight is computed on a 0.3 m grid at
+table height (0.76 m), 0.15 m in from the walls. At each point the window rectangle is sampled (8 x 6 points): every sample
+sends the luminance of its direction, zero below the window's skyline, times the cosine to the horizontal plane and to the
+window plane over r^2. Light enters a room only through that room's own windows, the skyline is the window point's and is
+shared by every ray through that window (parallax is ignored), and the room is open air between a sensor and the glass
+(furniture and inner walls do not block it). On top of that comes one **inter-reflected** figure per room by flux transfer,
+rho / (A (1 - rho)) times the flux the windows admit, with rho the area-weighted reflectance of floor, walls and ceiling and
+A the room's surface area. Relative daylight at a point is `T x sky component + inter-reflected`, in percent of the
+unobstructed horizontal sky illuminance (a daylight factor for the chosen sky, up to about 25 % right at a large window and
+a few percent mid-room). The plan view draws it as a heat map (a fixed purple-to-yellow data scale with a numeric legend,
+hover for the value under the pointer) and the 3D view tints the floor with the same image. The room table gives average,
+low, high and evenness (lowest point over the average). Rooms without a window are listed as such and get no number.
+
+**Glass, frame, blinds, surfaces.** Inputs, each carrying `assumed` or `from a source` with a free note that travels in a
+saved project (`lighting.daylight`). Typical values, assumed unless you record a source:
+
+| Input | Presets (value) |
+|---|---|
+| Visible transmittance of the glass | model default 0.60, single clear 0.88, double clear 0.78, double low-E 0.70, triple low-E 0.62, tinted double 0.45, reflective / solar control 0.30 |
+| Frame: glazed share of the opening | model default 0.80, curtain wall 0.90, aluminium 0.85, wood or vinyl 0.75, multi-lite 0.65 |
+| Blinds | open 1.00, sheer 0.55, half 0.50, closed 0.10 (scalar multipliers, not a shading geometry) |
+| Floor reflectance | dark 0.15, medium wood 0.25 (default), light 0.45 |
+| Wall reflectance | white 0.80, light 0.65, typical 0.55 (default), mid 0.40, dark 0.15 |
+| Ceiling reflectance | white 0.85, off-white 0.75 (default), mid 0.50 |
+
+Transmission is `T = glass x frame x blinds`; it multiplies the sky component and the admitted flux. Reflectance moves only the
+inter-reflected part. The same inputs scale the sun patches and the glow at the windows, and scale the 3D floor, wall and
+ceiling colours (a visual preview: linear colours in proportion to reflectance), so the picture and the numbers move together.
+A preset is a catalogue-style typical value, never a reading of the renter's windows or paint.
+
+**Annual summary.** Per window and per month (the 15th), three quantities that are never combined: direct sun hours a day
+(possible, and expected with NOAA's monthly sunshine share where the city has one; the existing sun model), sky visibility (the
+share of an unobstructed window's overcast-sky light, constant through the year) and relative daylight (the window's VSC as a
+percent of the same sky's open horizontal illuminance, under the overcast sky as one value and under the clear diffuse sky as
+twelve, because where the sun stands changes the clear sky's pattern; the monthly value is the mean over the day's hourly sun
+positions weighted by sin(altitude)). The two skies differ in absolute brightness, so they are shown side by side and never
+averaged into a "typical" figure. Python writes the same block into the site study (`study.daylight_annual`); the dashboard
+computes it from the window's skyline, in Unit 3D (a panel that computes only while it is open) and in the studio's Year view.
+
+**Lamps (an estimate).** Luminaires are recessed downlights, pendants, floor lamps and light strips, each with a position,
+height, lumens, colour temperature and beam angle (the full angle at half intensity; 360 means all directions). Typical
+starting values (assumed): recessed 800 lm, 3000 K, 70 degrees; pendant 1600 lm, 2700 K, 130 degrees; floor lamp 1100 lm,
+2700 K, all directions; strip 900 lm in total, 3000 K, 120 degrees, split into five sources along its run. A directional lamp has
+a cos^n intensity about straight down with n set by the beam, normalised so its lumens integrate back to the stated lumens.
+Illuminance on the floor (or the 0.76 m work plane) is the sum over sources of I cos(angle) / r^2, for the lamps standing in
+that room, with **no bounce, no shadows, no furniture, no dimming**. Floor and table lamps placed from the Furniture and Shop
+tabs count with their catalogue lumens. Rule-of-thumb ranges (relaxed living 50-150 lx, dining 100-200 lx, kitchen, desk or
+reading 300-500 lx) are printed for orientation, not as a standard. Night in the 3D view switches the lamps on with a display gain;
+that glow is a visual preview, not the estimate.
+
+**Render quality (a look, not evidence).** Fast is the default everywhere, and the only start on phones: it is the view as it
+always was. Visual adds a larger shadow map with soft (variance) shadows, a dim procedural environment light, and contact
+shadows under furniture and along wall bases, which approximate ambient occlusion (no screen-space AO addon is vendored, so this
+is not SSAO). The choice is remembered per browser. A progressive export renders the current view 2x or 4x (capped at 4096 px)
+as the average of 16 frames with sub-pixel camera jitter and a tiny jitter of the sun, for smooth edges and soft shadow edges; the
+PNG carries a caption saying it is a visual render. Visual realism changes no number, no sun patch and no skyline: the evidence
+confidence of a result is the provenance and the Modelled / Estimate / Visual preview label beside it.
+
 **Towards real photometry.** Illuminance in lux, glare and annual climate-based metrics need a
 physically based lighting engine with materials, a calibrated room and weather files. The Radiance
 suite (https://www.radiance-online.org/) is the standard route; ApartmentScout does not run it and
 claims none of its results.
 
 Not modelled: crowns and spires except where a building's components describe them, trees, reflected
-light from glass towers, sky brightness beyond the overcast model, interior depth (except in the
-floor-plan view), and weather beyond the monthly sunshine share.
+light from glass towers or the ground, sky brightness beyond the CIE overcast and clear skies, interior depth (except in the
+floor-plan view), glare, interior walls and furniture between a sensor and a window, lamp bounce and shadows, thermal gain,
+and weather beyond the monthly sunshine share.
 
 ## Public records (NYC)
 
