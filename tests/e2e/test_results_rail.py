@@ -36,7 +36,7 @@ def open_page(open_page):
     def _open(path: str = "#map", **kw):
         s = open_page(path, **kw)
         s.page.wait_for_function("() => document.querySelector('#cards .card') && document.querySelector('#rail [data-w]')", timeout=T)
-        frames(s.page)
+        settled(s.page, 20000, ticks=5)   # the rail has filled in (its height is measured by some tests)
         return s
     return _open
 
@@ -587,7 +587,7 @@ def test_density_setting_in_the_menu_changes_cards_rail_and_tables_and_is_rememb
     assert p.evaluate("() => document.documentElement.dataset.density") == "compact"
     assert p.locator('button[data-density="compact"]').get_attribute("aria-checked") == "true"
     assert p.locator("#appMenu").is_visible()                                       # the menu stays open, like the theme switch
-    p.wait_for_function("(h) => document.querySelector('#cards .card').offsetHeight <= h - 12", arg=h_comfy, timeout=T)   # the cards have re-laid out at the compact height
+    p.wait_for_function("([h, r]) => document.querySelector('#cards .card').offsetHeight <= h - 12 && document.getElementById('rail').scrollHeight < r", arg=[h_comfy, rail_comfy], timeout=T)   # the cards and the rail have re-laid out at the compact density
     h_compact = p.evaluate("() => document.querySelector('#cards .card').offsetHeight")
     assert h_compact <= h_comfy - 12, (h_comfy, h_compact)
     assert p.evaluate("() => document.getElementById('rail').scrollHeight") < rail_comfy

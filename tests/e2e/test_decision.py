@@ -117,6 +117,7 @@ def test_visit_pill_on_a_phone(open_page, theme: str) -> None:
     s = open_with_history(open_page, "2026-10-09", theme=theme, width=420)
     s.page.locator(".visit-pill").wait_for(timeout=SLOW)
     s.page.locator(".visit-pill").click()
+    s.page.locator(".visit-pop").wait_for(state="visible", timeout=SLOW)   # the popover opens on the frame after the click
     box = s.page.locator(".visit-pop").bounding_box()
     assert box and box["x"] >= 0 and box["x"] + box["width"] <= 420 + 1
     assert not s.take()
