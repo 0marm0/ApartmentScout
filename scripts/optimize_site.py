@@ -171,7 +171,7 @@ def slim_data(demo: Path) -> None:
         p.write_text(json.dumps(slim_listings(json.loads(p.read_text())), separators=(",", ":"), ensure_ascii=False))
 
 
-def write_service_worker(demo: Path, entry: str, outputs: list[str], css_files: list[str], data_names: list[str]) -> str:
+def write_service_worker(demo: Path, outputs: list[str], css_files: list[str]) -> str:
     shell = ["./", "manifest.webmanifest", "assets/favicon.svg", "assets/pwa/favicon-32.png", "assets/pwa/favicon-32-light.png",
              *[f"dist/{o}" for o in outputs], *css_files,
              "vendor/fonts/geist.css", "vendor/fonts/Geist-Variable.woff2", "vendor/fonts/GeistMono-Variable.woff2",
@@ -205,11 +205,13 @@ def optimize(demo: Path) -> dict:
     demo = demo.resolve()
     if not (demo / "index.html").is_file():
         sys.exit(f"optimize_site: {demo} has no index.html")
+    if 'name="as-build"' in (demo / "index.html").read_text():
+        sys.exit(f"optimize_site: {demo} is already optimised; run it on a fresh copy of dashboard/")
     slim_data(demo)
     entry, static_chunks, outputs = build_js(demo)
     data_names = [n for n in BOOT_DATA if (demo / f"data/{n}.json").exists()]
     _, css_files = rewrite_html(demo, entry, static_chunks, data_names)
-    build = write_service_worker(demo, entry, outputs, css_files, data_names)
+    build = write_service_worker(demo, outputs, css_files)
     return {"build": build, "entry": entry, "chunks": len(outputs), "css": len(css_files), "static_chunks": static_chunks}
 
 

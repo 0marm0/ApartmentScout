@@ -78,8 +78,8 @@ class Site(http.server.ThreadingHTTPServer):
                 if path.endswith("/"):
                     path += "index.html"
                 target = (site.root / path.lstrip("/")).resolve()
-                if site.media and path.startswith("/media/"):
-                    target = (site.media / path[len("/media/"):]).resolve()
+                if site.media and "/media/" in path:   # /media/ for a dashboard at the root, /demo/media/ under Pages
+                    target = (site.media / path.split("/media/", 1)[1]).resolve()
                 if not target.is_file() or (site.root not in target.parents and not (site.media and site.media in target.parents)):
                     self.send_response(404)
                     self.send_header("Content-Length", "0")
