@@ -32,7 +32,7 @@ from typing import Any
 
 import yaml
 
-from . import __version__, planfile
+from . import __version__, planfile, viewcal
 from . import cities as city_lookup   # [onboarding] city and address lookups, feed checks
 from .config import Workspace
 from .criteria_check import check_text, summary_lines
@@ -214,6 +214,33 @@ class ServeState:
                 pass
         return {"ok": True, **out, "folder": ws.root.name,
                 "next": [f"apartmentscout build --search {self.display(ws.root)}"]}
+
+    # -- [photo match] a window view matched to a listing photo, saved into the search folder (apartmentscout/viewcal.py)
+    def save_view_calibration(self, record: Any, overwrite: bool) -> dict[str, Any]:
+        ws = self.ws
+        if ws is None:
+            raise ApiError(409, "No search is open, so there is no view-calibrations folder to save into.")
+        if self.read_only:
+            raise ApiError(403, "This is a bundled example search and is read-only. The match stays in this browser; use Export to keep it.")
+        with self.lock:
+            try:
+                out = viewcal.save(ws.root, record, overwrite=bool(overwrite))
+            except viewcal.ViewCalError as e:
+                raise ApiError(422, str(e)) from e
+            # the page's data folder is a copy made at start: put the record in it so a reload shows it without a re-build
+            try:
+                dst = self.data_dir / viewcal.FOLDER
+                dst.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(ws.root / out["path"], dst / Path(out["path"]).name)
+                mf = self.data_dir / "manifest.json"
+                if mf.exists():
+                    m = json.loads(mf.read_text(encoding="utf-8"))
+                    m["view_calibrations"] = sorted({*m.get("view_calibrations", []), Path(out["path"]).stem})
+                    mf.write_text(json.dumps(m, indent=1), encoding="utf-8")
+            except OSError:
+                pass
+        return {"ok": True, **out, "folder": ws.root.name,
+                "next": [f"apartmentscout site {record.get('site') if isinstance(record, dict) else '<id>'}   # to carry it into the site file's sun and sky numbers"]}
 
     # -- tour findings and photos (apartmentscout/tourapi.py)
     def tour_files(self) -> TourFiles:
@@ -573,6 +600,8 @@ def make_handler(state: ServeState) -> type[http.server.SimpleHTTPRequestHandler
                 return state.feed_check(body.get("url"))
             if route == "/api/plans":
                 return state.save_plan(body.get("plan"), body.get("overwrite"))
+            if route == "/api/view-calibrations":
+                return state.save_view_calibration(body.get("record"), body.get("overwrite", True))
             raise ApiError(404, "Unknown endpoint.")
 
     return Handler
