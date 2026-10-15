@@ -34,6 +34,11 @@ export const saveCriteria = (yaml) => call('POST', '/api/criteria', { yaml });
 export const createSearch = (folder, yaml, city) => call('POST', '/api/searches', { folder, yaml, city });
 export const activate = (folder) => call('POST', '/api/searches/activate', { folder });
 export const startRescore = () => call('POST', '/api/rescore', {});
+// [onboarding] lookups (the server asks OpenStreetMap, the US Census or the feed's host) and saving a traced plan into the search folder
+export const findCity = (q) => call('POST', '/api/city', { q });
+export const findAddress = (q, city) => call('POST', '/api/geocode', { q, city });
+export const checkFeed = (url) => call('POST', '/api/feeds/check', { url });
+export const savePlan = (plan, overwrite = false) => call('POST', '/api/plans', { plan, overwrite });
 export const job = (id) => call('GET', `/api/jobs/${encodeURIComponent(id)}`);
 /** Poll a re-score job until it ends; `onTick(job)` after every poll. Resolves with the final job. */
 export async function waitForJob(id, onTick = () => {}, every = 600) {

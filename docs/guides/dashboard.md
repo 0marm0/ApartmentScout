@@ -482,14 +482,14 @@ loaded, or with `?new=1` / `?wizard=edit` (add `&step=3` to jump to a step).
 
 | Step | Sets |
 |---|---|
-| Basics | `search.name`, `search.city` (profiles in `config/cities/`), `search.timezone`, `search.map_center`, `search.move_in` |
-| Places | `commute.destinations`: name, address, a pin placed by clicking the map (or typed coordinates), arrive-by, longest trip, weight, usual mode |
+| Basics | `search.name`, `search.city` (a profile in `config/cities/`, or any city you type), `search.city_name`, `search.timezone`, `search.map_center`, `search.move_in`. Pick *Another city*, type the name and choose *Find it* (served pages only): the time zone and where the map opens are filled in, the starter transit feeds are offered, and the note says what the city does not have built in. A static page offers quick-start places instead |
+| Places | `commute.destinations`: name, address (*Find address* drops the pin on it when served), a pin placed by clicking the map (or typed coordinates), arrive-by, longest trip, weight, usual mode; and `commute.transit.feeds`: a profile city brings its own, otherwise add the starter feed or paste a GTFS zip address (checked when served). With none, commute times are walking only |
 | Money | `budget.basis` (how fees count), `budget.tiers`, `budget.hard_max`; a target rent fills sensible tiers |
 | Home | `unit.min_beds` and the floor / good / great square feet that score 0 / 50 / 100 |
 | Amenities | `must_have`, `strongly_prefer`, `nice_to_have` from the amenity keys, plus your own keys |
 | Building and interior | Importance (not, somewhat, very, essential) of a luxury building, renovated interior, new appliances, view, light and quiet. Each answer sets the weight of its dimension and they add up (`interior` counts toward `building` until the scorer has that dimension). Also an optional `building_ratings` map, building name to 1-5, to add to as you go |
 | Weights | `scoring.preset` and `weights`: pick a preset, then adjust sliders that show each dimension's live share of the total. The dimensions are read from the loaded data (`scoring.dimensions`), so new ones appear without a change here |
-| Review | The criteria.yaml, a diff against the open search, the command lines, and the actions below |
+| Review | The criteria.yaml, a diff against the open search, what happens after you create it (listings, commutes, the buildings around each home, floor plans: the `after` list in `config/intake.yaml`), the command lines, and the actions below |
 
 Every field is checked as you type, with the message under the field; *Next* will not move on while the step has
 a problem. `Esc` closes, `Enter` in a field goes to the next step, the arrow keys move inside a choice group, and

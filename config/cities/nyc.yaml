@@ -1,5 +1,9 @@
 # City profile: New York City. Used when criteria.yaml has `search.city: nyc`.
 name: New York City
+aliases: [new york, new york city, nyc, manhattan, brooklyn, queens, the bronx, bronx]   # what a renter may type for this city
+country: us
+center: [40.7549, -73.984]        # where the map opens
+zoom: 12.8
 timezone: America/New_York
 geocoder: nyc                     # NYC Planning Labs GeoSearch (returns BBL/BIN)
 buildings: nyc                    # NYC Building Footprints with roof heights
