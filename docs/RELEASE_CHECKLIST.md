@@ -102,3 +102,10 @@ machine but a fresh clone would not ignore it.
 - `git status` is clean and `git diff origin/main` contains only what you mean to publish.
 - No handoff packs (`*.zip`), exports (`*.xlsx`, `*.csv`) or adjudication folders sit in tracked paths.
 - CI is green on the branch.
+
+## Example photos
+
+`examples/nyc-2026/media` is git-ignored. The photos live in the GitHub release named in
+`examples/nyc-2026/MEDIA_RELEASE` and the Pages workflow downloads them with `scripts/fetch_media.sh`. After adding photos:
+run `scripts/dedupe_media.py examples/nyc-2026`, upload a new tar as a new release (see the script's header), and update
+`MEDIA_RELEASE` in the same commit as the listings that reference the new files.
