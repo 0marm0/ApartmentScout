@@ -11,7 +11,7 @@ import { applyInventory, resolveLayout } from '../../dashboard/js/plan/placement
 import { walkSpace } from '../../dashboard/js/plan/walkcore.js';
 import { entryPoint } from '../../dashboard/js/plan/route.js';
 import { windowGroups } from '../../dashboard/js/plan/viewpoints.js';
-import { planTour, roundCorners, resample, atLength, TOUR, roomsToShow } from '../../dashboard/js/render/tour.js';
+import { planTour, roundCorners, resample, atLength, TOUR, roomsToShow, safeAt, mend } from '../../dashboard/js/render/tour.js';
 import { tourSequence, daySequence, bestWindowStand } from '../../dashboard/js/render/shots.js';
 
 const ROOT = new URL('../../', import.meta.url);
@@ -45,10 +45,10 @@ test('the tour starts at the front door, shows the living room and the bedroom, 
   assert.ok(t.stops[3].t0 > t.stops[2].t0 && t.stops[2].t0 > t.stops[1].t0 && t.stops[1].t0 > t.stops[0].t0, 'the stops come in order');
 });
 
-test('the camera never collides: every frame, at 30 and 60 fps, stands on floor a person fits on', () => {
+test('the camera never collides: every frame, at 30 to 240 fps, stands on floor a person fits on', () => {
   for (const seconds of [10, 16, 20]) {
     const t = planTour(model, space, { seconds });
-    for (const fps of [30, 60]) for (const f of t.frames(fps)) assert.equal(space.canStand(f.at[0], f.at[1]), true, `${seconds} s at ${fps} fps: frame ${f.i} at ${f.at.map(Math.round)} is inside something`);
+    for (const fps of [30, 60, 120, 240]) for (const f of t.frames(fps)) assert.equal(space.canStand(f.at[0], f.at[1]), true, `${seconds} s at ${fps} fps: frame ${f.i} at ${f.at.map(Math.round)} is inside something`);
   }
 });
 
@@ -131,4 +131,16 @@ test('rounded corners stay on floor, and a corner that would clip stays sharp', 
   const rs = resample(r, 1), a = atLength(rs, rs.length / 2);
   assert.ok(Math.abs(rs.s.at(-1) - rs.length) < 1e-9 && a.at.length === 2 && Math.hypot(...a.dir) > 0.99);
   assert.equal(TOUR.minSeconds, 10); assert.equal(TOUR.maxSeconds, 20);
+});
+
+test('mend moves a point that has no margin to the nearest one that has, and leaves a safe path as it is', () => {
+  const floor = { canStand: (x, y) => x >= 0 && x <= 100 && y >= 0 && y <= 6 };   // a corridor 6 in wide
+  assert.equal(safeAt(floor, 50, 3), true); assert.equal(safeAt(floor, 50, 0.4), false, 'less than an inch from the edge');
+  const line = Array.from({ length: 41 }, (_, i) => [30 + i, 3]);
+  assert.ok(mend(floor, line).every((p, i) => Math.hypot(p[0] - line[i][0], p[1] - line[i][1]) < 1e-9), 'a safe path is unchanged');
+  const bent = line.map(([x, y], i) => (i === 20 ? [x, 0.2] : [x, y]));
+  const m = mend(floor, bent);
+  assert.ok(m.every(([x, y]) => safeAt(floor, x, y)), 'every point has its margin');
+  assert.ok(Math.hypot(m[20][0] - bent[20][0], m[20][1] - bent[20][1]) < 4, 'moved only a little');
+  assert.ok(Math.hypot(m[0][0] - bent[0][0], m[0][1] - bent[0][1]) < 1e-9 && Math.hypot(m.at(-1)[0] - bent.at(-1)[0], m.at(-1)[1] - bent.at(-1)[1]) < 1e-9, 'the ends stay');
 });

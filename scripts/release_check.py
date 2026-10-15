@@ -54,7 +54,8 @@ MUST_IGNORE = {"searches/": "searches/example-private/criteria.yaml", "_referenc
                "examples/nyc-2026/media/": "examples/nyc-2026/media/shared/x.webp"}   # the full photo set lives in a release
 LITE_MAX_MB = 40   # examples/*/media-lite/ (the starter photos in the repository) must stay small; make_media_lite.py aims at 35
 # Public phrases that contain a string an owner may reasonably list as private (a station name, a landmark).
-DEFAULT_ALLOW = ("Simpson St", "Harvard Club")
+# (banksean@gmail.com: the credit line in the header of the vendored three.js addon math/SimplexNoise.js, an MIT file in the public three.js repository)
+DEFAULT_ALLOW = ("Simpson St", "Harvard Club", "banksean@gmail.com")
 DEFAULT_PATTERN_FILE = Path.home() / ".config" / "apartmentscout" / "privacy-patterns.txt"
 MAX_SCAN_BYTES = 40 * 1024 * 1024
 
