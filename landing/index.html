@@ -9,9 +9,15 @@
 <meta property="og:type" content="website">
 <meta property="og:title" content="ApartmentScout">
 <meta property="og:description" content="Deep apartment research for you and your AI agent: agent playbooks, a Python CLI and a dashboard you own.">
-<meta property="og:image" content="__SITE__/images/map-commute.png">
+<meta property="og:image" content="__SITE__/images/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="The ApartmentScout dashboard: a dark map of Manhattan with a door-to-door commute heatmap and scored listings.">
+<meta name="twitter:image" content="__SITE__/images/og.jpg">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/pwa/favicon-32.png">
+<link rel="apple-touch-icon" href="assets/pwa/apple-touch-icon.png">
 <script>
   /* Theme before first paint. Shares the dashboard's key ("as:theme"), so the demo opens in the same theme. */
   (function () {
@@ -25,7 +31,7 @@
 <link rel="stylesheet" href="fonts/geist.css">
 <link rel="stylesheet" href="tokens.css">
 <link rel="stylesheet" href="landing.css">
-<link rel="preload" as="image" href="images/map-commute.png" fetchpriority="high">
+<link rel="preload" as="image" href="images/map-commute.webp" imagesrcset="images/map-commute-800.webp 800w, images/map-commute.webp 1600w" imagesizes="(min-width: 1200px) 1152px, calc(100vw - 32px)" fetchpriority="high">
 <script src="landing.js" defer></script>
 </head>
 <body>
@@ -38,8 +44,9 @@
       <span>ApartmentScout</span>
     </a>
     <nav class="nav-links" aria-label="Sections">
-      <a href="#features">Features</a>
       <a href="#how">How it works</a>
+      <a href="#tour">Tour</a>
+      <a href="#features">Features</a>
       <a href="#gallery">Gallery</a>
       <a href="#start">Quick start</a>
     </nav>
@@ -75,11 +82,11 @@
   <div class="wrap hero-shot">
     <div class="tilt">
       <figure class="frame hero-frame">
-        <img src="images/map-commute.png" width="1600" height="1000" fetchpriority="high"
+        <img src="images/map-commute.webp" srcset="images/map-commute-800.webp 800w, images/map-commute.webp 1600w" sizes="(min-width: 1200px) 1152px, calc(100vw - 32px)" width="1600" height="1000" fetchpriority="high"
              alt="The ApartmentScout dashboard: a dark map of Manhattan with a door-to-door commute heatmap, scored listing pins, a filter rail and ranked listing cards.">
       </figure>
       <figure class="phone hero-phone">
-        <img src="images/mobile-map.png" width="630" height="1350" loading="lazy"
+        <img src="images/mobile-map.webp" width="630" height="1350" loading="lazy"
              alt="The same search on a phone: the map on top and the ranked listings in a bottom sheet.">
       </figure>
     </div>
@@ -96,6 +103,224 @@
       <li><b class="tnum">23</b><span>building dossiers from city records</span></li>
       <li><b class="tnum">0</b><span>API keys, accounts or servers</span></li>
     </ul>
+  </div>
+</section>
+
+<!-- ================================================================ how it works, short -->
+<section class="how3" id="how" aria-labelledby="how-h">
+  <div class="wrap">
+    <header class="sec-h">
+      <p class="eyebrow">How it works</p>
+      <h2 id="how-h">An agent, a CLI and a dashboard. All three are yours.</h2>
+      <p class="sub">No account, no server and no API key sits between you and your data: everything lives in plain files in a folder.</p>
+    </header>
+    <ol class="parts">
+      <li class="part" style="--c: var(--accent)">
+        <span class="part-n tnum" aria-hidden="true">1</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M4.5 5.5h15a1.5 1.5 0 011.5 1.5v8a1.5 1.5 0 01-1.5 1.5H11l-4.5 3.5V16.5h-2A1.5 1.5 0 013 15V7a1.5 1.5 0 011.5-1.5z"/><path d="M8 10h8M8 13h5"/></svg>
+        <h3>Your agent does the legwork</h3>
+        <p>Open the repo in Claude Code, Codex or Cursor. It interviews you, writes <code>criteria.yaml</code>, sources and checks listings, and drafts messages for you to send. Nine playbooks, each ending in a file you can read.</p>
+        <p class="part-cmd"><code>AGENTS.md</code> <code>.claude/skills/</code></p>
+      </li>
+      <li class="part" style="--c: var(--band-20)">
+        <span class="part-n tnum" aria-hidden="true">2</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><rect x="3" y="4.5" width="18" height="15" rx="2.5"/><path d="M7 10l3 2.5L7 15M12.5 15H17"/></svg>
+        <h3>The CLI turns files into facts</h3>
+        <p>Each stage is one command over those files: geocode, door-to-door commute by walking, subway and bus, city records, sun and view, then a score on your weights. Repeatable, scriptable and offline once the data is pulled.</p>
+        <p class="part-cmd"><code>apartmentscout all</code></p>
+      </li>
+      <li class="part" style="--c: var(--score-5)">
+        <span class="part-n tnum" aria-hidden="true">3</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M3 9h18M9 9v11"/></svg>
+        <h3>The dashboard is where you decide</h3>
+        <p>Map, shortlist, compare, Unit 3D, floor plan and research in one page you own. Serve it, host it, open it as a single file, or install it as an app that keeps working offline.</p>
+        <p class="part-cmd"><code>apartmentscout serve</code></p>
+      </li>
+    </ol>
+    <p class="how3-more"><a class="more" href="#pipeline">Every stage, step by step <span aria-hidden="true">→</span></a></p>
+  </div>
+</section>
+
+<!-- ================================================================ tour of the dashboard -->
+<section class="tour" id="tour" aria-labelledby="tour-h">
+  <div class="wrap">
+    <header class="sec-h">
+      <p class="eyebrow">A tour of the demo</p>
+      <h2 id="tour-h">Six things worth trying.</h2>
+      <p class="sub">All of it runs in the live demo on the example search. Nothing to install and nothing to sign up for.</p>
+    </header>
+    <div class="tour-ui" data-tour>
+      <div class="tabs" role="tablist" aria-label="Dashboard tour">
+        <button type="button" role="tab" id="tt-map" aria-controls="tp-map" aria-selected="true">The map</button>
+        <button type="button" role="tab" id="tt-photos" aria-controls="tp-photos" aria-selected="false" tabindex="-1">Photos</button>
+        <button type="button" role="tab" id="tt-decide" aria-controls="tp-decide" aria-selected="false" tabindex="-1">Deciding</button>
+        <button type="button" role="tab" id="tt-wizard" aria-controls="tp-wizard" aria-selected="false" tabindex="-1">New search</button>
+        <button type="button" role="tab" id="tt-3d" aria-controls="tp-3d" aria-selected="false" tabindex="-1">Light and 3D</button>
+        <button type="button" role="tab" id="tt-app" aria-controls="tp-app" aria-selected="false" tabindex="-1">The app</button>
+      </div>
+
+      <article class="feat tour-panel is-on" id="tp-map" role="tabpanel" aria-labelledby="tt-map" style="--c: var(--band-20)">
+        <div class="feat-copy">
+          <p class="tag"><i aria-hidden="true"></i>Map interactions</p>
+          <h3>Hover a home and see how you would get there.</h3>
+          <p>Rest the pointer on a card, a pin or a price tag and that home's route is drawn for the mode you chose: walking legs dashed, subway rides along the line in its official colour, a dot at every transfer and the door-to-door minutes in a pill.</p>
+          <ul class="ticks">
+            <li>Star homes to see only your picks, and fly between them with <kbd>[</kbd> and <kbd>]</kbd></li>
+            <li>Sun lens: colour every pin by direct-sun hours</li>
+            <li>Filter chips and rank-change arrows show what moved and why</li>
+          </ul>
+          <a class="more" href="./demo/#map">Open the map <span aria-hidden="true">→</span></a>
+        </div>
+        <figure class="feat-media stack">
+          <div class="frame">
+            <img src="images/map-route-preview.webp" srcset="images/map-route-preview-800.webp 800w, images/map-route-preview.webp 1600w" sizes="(min-width: 1080px) 700px, calc(100vw - 32px)" width="1600" height="1000" loading="lazy" decoding="async"
+                 alt="Hovering a listing draws its commute route on the map: a dashed walk, a subway ride in the line's colour and a pill with the minutes.">
+          </div>
+          <div class="frame inset">
+            <img src="images/map-starred-lens.webp" srcset="images/map-starred-lens-800.webp 800w, images/map-starred-lens.webp 1600w" sizes="(min-width: 1080px) 330px, 52vw" width="1600" height="1000" loading="lazy" decoding="async"
+                 alt="The starred-only lens: the map shows just the homes you saved.">
+          </div>
+        </figure>
+      </article>
+
+      <article class="feat flip tour-panel" id="tp-photos" role="tabpanel" aria-labelledby="tt-photos" style="--c: var(--sun)">
+        <div class="feat-copy">
+          <p class="tag"><i aria-hidden="true"></i>Photos and the lightbox</p>
+          <h3>Every photo, in the order that tells the truth.</h3>
+          <p>Exact-unit photos come first, then the same line, the building, floor plans and the street, and a card says so: "8 unit · 22 building". Open the lightbox to zoom up to six times, swipe through, or lay the listing's floor plan over the photo.</p>
+          <ul class="ticks">
+            <li>Floor-plan overlay with an opacity slider, or side by side</li>
+            <li>Credit and licence on every image; broker marks are flagged</li>
+            <li>A blurred preview paints at once, then the photo fades in</li>
+          </ul>
+          <a class="more" href="./demo/#map">Open a listing <span aria-hidden="true">→</span></a>
+        </div>
+        <figure class="feat-media stack">
+          <div class="frame">
+            <img src="images/lightbox.webp" srcset="images/lightbox-800.webp 800w, images/lightbox.webp 1600w" sizes="(min-width: 1080px) 700px, calc(100vw - 32px)" width="1600" height="1000" loading="lazy" decoding="async"
+                 alt="The photo lightbox: a living room with a thumbnail strip, group tabs and zoom controls.">
+          </div>
+          <div class="frame inset">
+            <img src="images/lightbox-floor-plan.webp" srcset="images/lightbox-floor-plan-800.webp 800w, images/lightbox-floor-plan.webp 1600w" sizes="(min-width: 1080px) 330px, 52vw" width="1600" height="1000" loading="lazy" decoding="async"
+                 alt="The lightbox with the listing's floor plan beside the photo.">
+          </div>
+        </figure>
+      </article>
+
+      <article class="feat tour-panel" id="tp-decide" role="tabpanel" aria-labelledby="tt-decide" style="--c: var(--score-4)">
+        <div class="feat-copy">
+          <p class="tag"><i aria-hidden="true"></i>Decision tools</p>
+          <h3>From a long list to a choice you can defend.</h3>
+          <p>Drag up to four homes onto the tray and open Compare. Drag one dot on the trade-off pad to shift weight between cost, commute and space and watch the ranking move. When you are ready, share a read-only page or a printable decision memo.</p>
+          <ul class="ticks">
+            <li>Trade-off pad that writes the same weights as the sliders</li>
+            <li>Share a shortlist page or a memo; your notes stay out unless you tick them</li>
+            <li>Tour-day planner in walking order, with a calendar file, and undo for every change</li>
+          </ul>
+          <a class="more" href="./demo/#compare">Compare finalists <span aria-hidden="true">→</span></a>
+        </div>
+        <figure class="feat-media stack">
+          <div class="frame">
+            <img src="images/decision-tray.webp" srcset="images/decision-tray-800.webp 800w, images/decision-tray.webp 1600w" sizes="(min-width: 1080px) 700px, calc(100vw - 32px)" width="1600" height="1000" loading="lazy" decoding="async"
+                 alt="The decision tray at the bottom of the map holding three homes dragged from the results, with a Compare button.">
+          </div>
+          <div class="frame inset">
+            <img src="images/share-decision-memo.webp" srcset="images/share-decision-memo-800.webp 800w, images/share-decision-memo.webp 1600w" sizes="(min-width: 1080px) 330px, 52vw" width="1600" height="1000" loading="lazy" decoding="async"
+                 alt="A printable decision memo with a ranked table of five homes and the weights behind it.">
+          </div>
+        </figure>
+      </article>
+
+      <article class="feat flip tour-panel" id="tp-wizard" role="tabpanel" aria-labelledby="tt-wizard" style="--c: var(--accent)">
+        <div class="feat-copy">
+          <p class="tag"><i aria-hidden="true"></i>New search wizard</p>
+          <h3>Start your own search without writing YAML.</h3>
+          <p>Eight short steps ask what an agent would ask: where you work, what you can pay, which amenities are must-haves and how much you care about light, quiet and finishes. Click the map to place your commute destinations. Every field is checked as you type.</p>
+          <ul class="ticks">
+            <li>The same questions as the agent's intake, in the same order</li>
+            <li>A review step with the finished <code>criteria.yaml</code> and a diff against the open search</li>
+            <li>A half-finished draft is kept in your browser</li>
+          </ul>
+          <a class="more" href="./demo/?new=1">Try the wizard <span aria-hidden="true">→</span></a>
+        </div>
+        <figure class="feat-media stack">
+          <div class="frame">
+            <img src="images/wizard-basics.webp" srcset="images/wizard-basics-800.webp 800w, images/wizard-basics.webp 1600w" sizes="(min-width: 1080px) 700px, calc(100vw - 32px)" width="1600" height="1000" loading="lazy" decoding="async"
+                 alt="The new search wizard on its first step, with a progress list on the left and the search name and city on the right.">
+          </div>
+          <div class="frame inset">
+            <img src="images/wizard-pick-on-map.webp" srcset="images/wizard-pick-on-map-800.webp 800w, images/wizard-pick-on-map.webp 1600w" sizes="(min-width: 1080px) 330px, 52vw" width="1600" height="1000" loading="lazy" decoding="async"
+                 alt="Placing a commute destination by clicking the map.">
+          </div>
+        </figure>
+      </article>
+
+      <article class="feat tour-panel" id="tp-3d" role="tabpanel" aria-labelledby="tt-3d" style="--c: var(--sun)">
+        <div class="feat-copy">
+          <p class="tag"><i aria-hidden="true"></i>Light and 3D</p>
+          <h3>See the sun, the view and your sofa before the tour.</h3>
+          <p>Orbit the unit in its real city, or stand at the window and look out. The day strip names the building that shades it and the hours of direct sun by floor and month. In the floor-plan studio, place furniture, check fit and daylight, or trace a plan from a PDF or an image.</p>
+          <ul class="ticks">
+            <li>Sun hours by floor and month, possible and expected</li>
+            <li>A plan with a light tab: window sun patches through the day</li>
+            <li>Tracer for a listing's PDF or image plan, with a scale check</li>
+          </ul>
+          <a class="more" href="./demo/#unit">Open Unit 3D <span aria-hidden="true">→</span></a>
+        </div>
+        <figure class="feat-media stack">
+          <div class="frame">
+            <img src="images/unit-paramount.webp" srcset="images/unit-paramount-800.webp 800w, images/unit-paramount.webp 1600w" sizes="(min-width: 1080px) 700px, calc(100vw - 32px)" width="1600" height="1000" loading="lazy" decoding="async"
+                 alt="Unit 3D: a tower and its neighbours in grey, the unit's window highlighted, and the day strip of direct sun below.">
+          </div>
+          <div class="frame inset">
+            <img src="images/plan-light-tab.webp" srcset="images/plan-light-tab-800.webp 800w, images/plan-light-tab.webp 1600w" sizes="(min-width: 1080px) 330px, 52vw" width="1600" height="1000" loading="lazy" decoding="async"
+                 alt="The floor-plan studio's light tab: a plan in 2D and 3D with sun patches on the floor.">
+          </div>
+        </figure>
+      </article>
+
+      <article class="feat flip tour-panel" id="tp-app" role="tabpanel" aria-labelledby="tt-app" style="--c: var(--tier-1)">
+        <div class="feat-copy">
+          <p class="tag"><i aria-hidden="true"></i>The app</p>
+          <h3>Install it. Take it on the tour.</h3>
+          <p>The dashboard installs from your browser as an app on a phone or a desktop, and keeps working with no connection: your search and the pages you opened are saved on the device, and a new version asks before it replaces the old one.</p>
+          <ul class="ticks">
+            <li>Light, dark or follow the system; four accents</li>
+            <li>High contrast, reduced motion and transparency, larger text</li>
+            <li>Keyboard first: <kbd>⌘K</kbd> jumps anywhere, or ask in plain words</li>
+          </ul>
+          <a class="more" href="./demo/">Open the demo <span aria-hidden="true">→</span></a>
+        </div>
+        <figure class="feat-media stack">
+          <div class="frame">
+            <img src="images/settings-menu.webp" srcset="images/settings-menu-800.webp 800w, images/settings-menu.webp 1600w" sizes="(min-width: 1080px) 700px, calc(100vw - 32px)" width="1600" height="1000" loading="lazy" decoding="async"
+                 alt="The settings menu: appearance, density, accent colours and comfort switches over the map.">
+          </div>
+          <div class="frame inset">
+            <img src="images/high-contrast.webp" srcset="images/high-contrast-800.webp 800w, images/high-contrast.webp 1600w" sizes="(min-width: 1080px) 330px, 52vw" width="1600" height="1000" loading="lazy" decoding="async"
+                 alt="The dashboard in high-contrast mode with stronger text and borders.">
+          </div>
+        </figure>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================ open the demo -->
+<section class="demo-band" id="demo" aria-labelledby="demo-h">
+  <div class="wrap">
+    <div class="band">
+      <div class="band-copy">
+        <p class="eyebrow">Live demo</p>
+        <h2 id="demo-h">Try it on a real search.</h2>
+        <p class="sub">732 Manhattan listings, scored, mapped and researched, running in your browser. Add it to your home screen or dock and it keeps working offline.</p>
+      </div>
+      <div class="band-act">
+        <a class="btn primary xl" href="./demo/">Open the live demo
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4"/></svg></a>
+        <a class="btn lg" href="./demo/?new=1">Start your own search</a>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -122,11 +347,11 @@
       </div>
       <figure class="feat-media stack">
         <div class="frame">
-          <img class="mid" src="images/map-3d.png" width="880" height="900" loading="lazy" decoding="async"
+          <img class="mid" src="images/map-3d.webp" srcset="images/map-3d-800.webp 800w, images/map-3d.webp 880w" sizes="(min-width: 1080px) 700px, calc(100vw - 32px)" width="880" height="900" loading="lazy" decoding="async"
                alt="3D buildings in Midtown Manhattan over green-to-red commute bands, with subway lines, stations and the office pin near Grand Central.">
         </div>
         <div class="frame inset tall">
-          <img src="images/map-drawer-commute.png" width="448" height="880" loading="lazy" decoding="async"
+          <img src="images/map-drawer-commute.webp" width="448" height="880" loading="lazy" decoding="async"
                alt="Commute section of a listing: best 19 minutes, subway 20, bus 21 and walk 26, then the route leg by leg.">
         </div>
       </figure>
@@ -145,7 +370,7 @@
         <a class="more" href="./demo/#list">Open the shortlist <span aria-hidden="true">→</span></a>
       </div>
       <figure class="feat-media"><div class="frame">
-        <img src="images/map-drawer.png" width="1600" height="1000" loading="lazy" decoding="async"
+        <img src="images/map-drawer.webp" srcset="images/map-drawer-800.webp 800w, images/map-drawer.webp 1600w" sizes="(min-width: 1080px) 700px, calc(100vw - 32px)" width="1600" height="1000" loading="lazy" decoding="async"
              alt="Listing drawer over the map: a credited building photo, monthly cost against gross rent, unknown fees flagged, budget headroom and why the listing ranks where it does.">
       </div></figure>
     </article>
@@ -163,7 +388,7 @@
         <a class="more" href="./demo/#research">Open the research queue <span aria-hidden="true">→</span></a>
       </div>
       <figure class="feat-media"><div class="frame">
-        <img src="images/research.png" width="1600" height="1000" loading="lazy" decoding="async"
+        <img src="images/research.webp" srcset="images/research-800.webp 800w, images/research.webp 1600w" sizes="(min-width: 1080px) 700px, calc(100vw - 32px)" width="1600" height="1000" loading="lazy" decoding="async"
              alt="Research view: the finalist standard, counts of missing size, fees and media, and a queue of listings with their missing and stale facts and points at stake.">
       </div></figure>
     </article>
@@ -181,7 +406,7 @@
         <a class="more" href="./demo/#records">Read a dossier <span aria-hidden="true">→</span></a>
       </div>
       <figure class="feat-media"><div class="frame">
-        <img src="images/records.png" width="1600" height="5049" loading="lazy" decoding="async"
+        <img src="images/records.webp" srcset="images/records-800.webp 800w, images/records.webp 1600w" sizes="(min-width: 1080px) 700px, calc(100vw - 32px)" width="1600" height="5049" loading="lazy" decoding="async"
              alt="Public records report for a building: PLUTO facts, records and street-noise scores, metric tiles and the start of the What matters table.">
       </div></figure>
     </article>
@@ -200,11 +425,11 @@
       </div>
       <figure class="feat-media stack">
         <div class="frame">
-          <img src="images/unit-orbit.png" width="1600" height="1000" loading="lazy" decoding="async"
+          <img src="images/unit-orbit.webp" srcset="images/unit-orbit-800.webp 800w, images/unit-orbit.webp 1600w" sizes="(min-width: 1080px) 700px, calc(100vw - 32px)" width="1600" height="1000" loading="lazy" decoding="async"
                alt="Unit 3D: the building among its real neighbours with the window marked, towers under construction drawn dashed, and units in the building with compass dials.">
         </div>
         <div class="frame inset">
-          <img class="mid" src="images/unit-window-21.png" width="1132" height="503" loading="lazy" decoding="async"
+          <img class="mid" src="images/unit-window-21.webp" srcset="images/unit-window-21-800.webp 800w, images/unit-window-21.webp 1140w" sizes="(min-width: 1080px) 330px, 52vw" width="1132" height="503" loading="lazy" decoding="async"
                alt="The view from a 21st-floor window in direct sun, with One Manhattan West and a permitted tower outlined.">
         </div>
       </figure>
@@ -224,11 +449,11 @@
       </div>
       <figure class="feat-media stack">
         <div class="frame">
-          <img src="images/plan-bird.png" width="1600" height="1000" loading="lazy" decoding="async"
+          <img src="images/plan-bird.webp" srcset="images/plan-bird-800.webp 800w, images/plan-bird.webp 1600w" sizes="(min-width: 1080px) 700px, calc(100vw - 32px)" width="1600" height="1000" loading="lazy" decoding="async"
                alt="Floor-plan studio: a one-bedroom plan in 2D and 3D with furniture, TV distances marked ideal, and fit checks showing ten pieces clear.">
         </div>
         <div class="frame inset">
-          <img class="mid" src="images/unit-inside.png" width="1132" height="503" loading="lazy" decoding="async"
+          <img class="mid" src="images/unit-inside.webp" srcset="images/unit-inside-800.webp 800w, images/unit-inside.webp 1140w" sizes="(min-width: 1080px) 330px, 52vw" width="1132" height="503" loading="lazy" decoding="async"
                alt="Inside the apartment in 3D: the living-room window with a patch of sun on the floor.">
         </div>
       </figure>
@@ -248,11 +473,11 @@
       </div>
       <figure class="feat-media stack">
         <div class="frame">
-          <img src="images/compare.png" width="1600" height="3548" loading="lazy" decoding="async"
+          <img src="images/compare.webp" srcset="images/compare-800.webp 800w, images/compare.webp 1600w" sizes="(min-width: 1080px) 700px, calc(100vw - 32px)" width="1600" height="3548" loading="lazy" decoding="async"
                alt="Compare view: four finalists in lettered columns with money and space rows, the best value in each row marked.">
         </div>
         <div class="frame inset">
-          <img src="images/tours.png" width="1600" height="1000" loading="lazy" decoding="async"
+          <img src="images/tours.webp" srcset="images/tours-800.webp 800w, images/tours.webp 1600w" sizes="(min-width: 1080px) 330px, 52vw" width="1600" height="1000" loading="lazy" decoding="async"
                alt="Tours board: saved picks tiered S, A and B with tour times and notes.">
         </div>
       </figure>
@@ -277,7 +502,7 @@
       <li>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 3.5h7l4 4v13h-11z"/><path d="M13.5 3.5v4h4M9.5 13h5M9.5 16.5h3" stroke-linecap="round"/></svg>
         <h3>One file, yours to keep</h3>
-        <p>Serve it locally, host it on GitHub Pages or build one self-contained HTML file. No accounts, servers or API keys.</p>
+        <p>Serve it locally, host it on GitHub Pages, build one self-contained HTML file or install it as an app. No accounts, servers or API keys.</p>
       </li>
     </ul>
   </div>
@@ -321,12 +546,12 @@
   </div>
 </section>
 
-<!-- ================================================================ how it works -->
-<section class="how" id="how" aria-labelledby="how-h">
+<!-- ================================================================ pipeline, in detail -->
+<section class="how" id="pipeline" aria-labelledby="pipeline-h">
   <div class="wrap">
     <header class="sec-h">
-      <p class="eyebrow">How it works</p>
-      <h2 id="how-h">Plain files in, a dashboard out.</h2>
+      <p class="eyebrow">Under the hood</p>
+      <h2 id="pipeline-h">Plain files in, a dashboard out.</h2>
       <p class="sub">Every stage is a CLI command over files in your search folder, so you, your agent or a spreadsheet can step in anywhere.</p>
     </header>
     <figure class="flow">
@@ -390,21 +615,21 @@
       <p class="sub">A Manhattan one-bedroom search from fall 2026 with a commute to a Midtown office near Grand Central.</p>
     </header>
     <ul class="shots">
-      <li><a class="shot" href="images/map-commute.png" data-view="map"><img src="images/map-commute.png" width="1600" height="1000" loading="lazy" decoding="async" alt="Commute bands with scored price tags"><span>Map and commute bands</span></a></li>
-      <li><a class="shot" href="images/map-drawer.png" data-view="map"><img src="images/map-drawer.png" width="1600" height="1000" loading="lazy" decoding="async" alt="Listing drawer with money and reasons"><span>Listing drawer</span></a></li>
-      <li><a class="shot" href="images/map-3d.png" data-view="map"><img class="mid" src="images/map-3d.png" width="880" height="900" loading="lazy" decoding="async" alt="3D buildings over the commute bands"><span>3D buildings</span></a></li>
-      <li><a class="shot" href="images/map-noise.png" data-view="map"><img src="images/map-noise.png" width="1600" height="1000" loading="lazy" decoding="async" alt="311 noise complaint density"><span>311 noise layer</span></a></li>
-      <li><a class="shot" href="images/shortlist.png" data-view="list"><img src="images/shortlist.png" width="1600" height="1000" loading="lazy" decoding="async" alt="Ranked shortlist table"><span>Shortlist</span></a></li>
-      <li><a class="shot" href="images/compare.png" data-view="compare"><img src="images/compare.png" width="1600" height="3548" loading="lazy" decoding="async" alt="Four finalists compared side by side"><span>Compare</span></a></li>
-      <li><a class="shot" href="images/research.png" data-view="research"><img src="images/research.png" width="1600" height="1000" loading="lazy" decoding="async" alt="Research queue with missing and stale facts"><span>Research queue</span></a></li>
-      <li><a class="shot" href="images/research-media.png" data-view="research/media"><img src="images/research-media.png" width="1600" height="1000" loading="lazy" decoding="async" alt="Licensed building photos with credits"><span>Photos with credits</span></a></li>
-      <li><a class="shot" href="images/tours.png" data-view="tours"><img src="images/tours.png" width="1600" height="1000" loading="lazy" decoding="async" alt="Tours board with tiers and tour times"><span>Tours</span></a></li>
-      <li><a class="shot" href="images/records.png" data-view="records"><img src="images/records.png" width="1600" height="5049" loading="lazy" decoding="async" alt="Building records report"><span>Building records</span></a></li>
-      <li><a class="shot" href="images/unit-orbit.png" data-view="unit"><img src="images/unit-orbit.png" width="1600" height="1000" loading="lazy" decoding="async" alt="Unit 3D with the day strip"><span>Unit 3D</span></a></li>
-      <li><a class="shot" href="images/unit-window-21.png" data-view="unit"><img class="mid" src="images/unit-window-21.png" width="1132" height="503" loading="lazy" decoding="async" alt="View from a 21st-floor window"><span>The view from the window</span></a></li>
-      <li><a class="shot" href="images/unit-inside.png" data-view="unit"><img class="mid" src="images/unit-inside.png" width="1132" height="503" loading="lazy" decoding="async" alt="Inside the apartment with a sun patch"><span>Inside the apartment</span></a></li>
-      <li><a class="shot" href="images/plan-bird.png" data-view="plan"><img src="images/plan-bird.png" width="1600" height="1000" loading="lazy" decoding="async" alt="Floor-plan studio with furniture fit checks"><span>Floor-plan studio</span></a></li>
-      <li><a class="shot phone-tile" href="images/mobile-map.png" data-view="map"><img src="images/mobile-map.png" width="630" height="1350" loading="lazy" decoding="async" alt="Phone layout of the map and results"><span>On a phone</span></a></li>
+      <li><a class="shot" href="images/map-commute.webp" data-view="map"><img src="images/map-commute.webp" srcset="images/map-commute-800.webp 800w, images/map-commute.webp 1600w" sizes="(min-width: 1080px) 380px, (min-width: 641px) 46vw, 84vw" width="1600" height="1000" loading="lazy" decoding="async" alt="Commute bands with scored price tags"><span>Map and commute bands</span></a></li>
+      <li><a class="shot" href="images/map-drawer.webp" data-view="map"><img src="images/map-drawer.webp" srcset="images/map-drawer-800.webp 800w, images/map-drawer.webp 1600w" sizes="(min-width: 1080px) 380px, (min-width: 641px) 46vw, 84vw" width="1600" height="1000" loading="lazy" decoding="async" alt="Listing drawer with money and reasons"><span>Listing drawer</span></a></li>
+      <li><a class="shot" href="images/map-3d.webp" data-view="map"><img class="mid" src="images/map-3d.webp" srcset="images/map-3d-800.webp 800w, images/map-3d.webp 880w" sizes="(min-width: 1080px) 380px, (min-width: 641px) 46vw, 84vw" width="880" height="900" loading="lazy" decoding="async" alt="3D buildings over the commute bands"><span>3D buildings</span></a></li>
+      <li><a class="shot" href="images/map-noise.webp" data-view="map"><img src="images/map-noise.webp" srcset="images/map-noise-800.webp 800w, images/map-noise.webp 1600w" sizes="(min-width: 1080px) 380px, (min-width: 641px) 46vw, 84vw" width="1600" height="1000" loading="lazy" decoding="async" alt="311 noise complaint density"><span>311 noise layer</span></a></li>
+      <li><a class="shot" href="images/shortlist.webp" data-view="list"><img src="images/shortlist.webp" srcset="images/shortlist-800.webp 800w, images/shortlist.webp 1600w" sizes="(min-width: 1080px) 380px, (min-width: 641px) 46vw, 84vw" width="1600" height="1000" loading="lazy" decoding="async" alt="Ranked shortlist table"><span>Shortlist</span></a></li>
+      <li><a class="shot" href="images/compare.webp" data-view="compare"><img src="images/compare.webp" srcset="images/compare-800.webp 800w, images/compare.webp 1600w" sizes="(min-width: 1080px) 380px, (min-width: 641px) 46vw, 84vw" width="1600" height="3548" loading="lazy" decoding="async" alt="Four finalists compared side by side"><span>Compare</span></a></li>
+      <li><a class="shot" href="images/research.webp" data-view="research"><img src="images/research.webp" srcset="images/research-800.webp 800w, images/research.webp 1600w" sizes="(min-width: 1080px) 380px, (min-width: 641px) 46vw, 84vw" width="1600" height="1000" loading="lazy" decoding="async" alt="Research queue with missing and stale facts"><span>Research queue</span></a></li>
+      <li><a class="shot" href="images/research-media.webp" data-view="research/media"><img src="images/research-media.webp" srcset="images/research-media-800.webp 800w, images/research-media.webp 1600w" sizes="(min-width: 1080px) 380px, (min-width: 641px) 46vw, 84vw" width="1600" height="1000" loading="lazy" decoding="async" alt="Licensed building photos with credits"><span>Photos with credits</span></a></li>
+      <li><a class="shot" href="images/tours.webp" data-view="tours"><img src="images/tours.webp" srcset="images/tours-800.webp 800w, images/tours.webp 1600w" sizes="(min-width: 1080px) 380px, (min-width: 641px) 46vw, 84vw" width="1600" height="1000" loading="lazy" decoding="async" alt="Tours board with tiers and tour times"><span>Tours</span></a></li>
+      <li><a class="shot" href="images/records.webp" data-view="records"><img src="images/records.webp" srcset="images/records-800.webp 800w, images/records.webp 1600w" sizes="(min-width: 1080px) 380px, (min-width: 641px) 46vw, 84vw" width="1600" height="5049" loading="lazy" decoding="async" alt="Building records report"><span>Building records</span></a></li>
+      <li><a class="shot" href="images/unit-orbit.webp" data-view="unit"><img src="images/unit-orbit.webp" srcset="images/unit-orbit-800.webp 800w, images/unit-orbit.webp 1600w" sizes="(min-width: 1080px) 380px, (min-width: 641px) 46vw, 84vw" width="1600" height="1000" loading="lazy" decoding="async" alt="Unit 3D with the day strip"><span>Unit 3D</span></a></li>
+      <li><a class="shot" href="images/unit-window-21.webp" data-view="unit"><img class="mid" src="images/unit-window-21.webp" srcset="images/unit-window-21-800.webp 800w, images/unit-window-21.webp 1140w" sizes="(min-width: 1080px) 380px, (min-width: 641px) 46vw, 84vw" width="1132" height="503" loading="lazy" decoding="async" alt="View from a 21st-floor window"><span>The view from the window</span></a></li>
+      <li><a class="shot" href="images/unit-inside.webp" data-view="unit"><img class="mid" src="images/unit-inside.webp" srcset="images/unit-inside-800.webp 800w, images/unit-inside.webp 1140w" sizes="(min-width: 1080px) 380px, (min-width: 641px) 46vw, 84vw" width="1132" height="503" loading="lazy" decoding="async" alt="Inside the apartment with a sun patch"><span>Inside the apartment</span></a></li>
+      <li><a class="shot" href="images/plan-bird.webp" data-view="plan"><img src="images/plan-bird.webp" srcset="images/plan-bird-800.webp 800w, images/plan-bird.webp 1600w" sizes="(min-width: 1080px) 380px, (min-width: 641px) 46vw, 84vw" width="1600" height="1000" loading="lazy" decoding="async" alt="Floor-plan studio with furniture fit checks"><span>Floor-plan studio</span></a></li>
+      <li><a class="shot phone-tile" href="images/mobile-map.webp" data-view="map"><img src="images/mobile-map.webp" width="630" height="1350" loading="lazy" decoding="async" alt="Phone layout of the map and results"><span>On a phone</span></a></li>
     </ul>
   </div>
   <dialog class="lightbox" id="lightbox" aria-label="Screenshot">
@@ -434,14 +659,14 @@
     <div class="code-stack">
       <div class="code">
         <div class="code-h"><span>Try the worked example</span><button class="copy" type="button" data-copy="c1">Copy</button></div>
-<pre id="c1"><code>git clone __REPO__.git
+<pre id="c1" tabindex="0" role="region" aria-label="Commands: try the worked example"><code>git clone __REPO__.git
 cd ApartmentScout
 pip install -e .
 apartmentscout serve --search examples/nyc-2026</code></pre>
       </div>
       <div class="code">
         <div class="code-h"><span>Start your own search</span><button class="copy" type="button" data-copy="c2">Copy</button></div>
-<pre id="c2"><code>apartmentscout init searches/my-search --city nyc
+<pre id="c2" tabindex="0" role="region" aria-label="Commands: start your own search"><code>apartmentscout init searches/my-search --city nyc
 export APARTMENTSCOUT_SEARCH=searches/my-search
 apartmentscout import my-listings.csv
 apartmentscout validate && apartmentscout lint
@@ -453,7 +678,7 @@ apartmentscout serve</code></pre>
       </div>
       <div class="code">
         <div class="code-h"><span>Take it with you</span><button class="copy" type="button" data-copy="c3">Copy</button></div>
-<pre id="c3"><code>apartmentscout build --standalone my-search.html  <span class="c"># one file</span>
+<pre id="c3" tabindex="0" role="region" aria-label="Commands: take it with you"><code>apartmentscout build --standalone my-search.html  <span class="c"># one file</span>
 apartmentscout export --xlsx my-search.xlsx       <span class="c"># live ranks</span>
 apartmentscout handoff pack out.zip --to codex    <span class="c"># to an agent</span></code></pre>
       </div>

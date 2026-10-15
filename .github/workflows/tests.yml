@@ -38,8 +38,8 @@ jobs:
             files: tests/e2e/test_map_features.py tests/e2e/test_lightbox.py tests/e2e/test_results_rail.py tests/e2e/test_pdf_tracer.py
           - name: wizard
             files: tests/e2e/test_wizard.py
-          - name: pwa
-            files: tests/e2e/test_pwa.py
+          - name: pwa-landing
+            files: tests/e2e/test_pwa.py tests/e2e/test_landing_page.py
     name: e2e (${{ matrix.shard.name }})
     steps:
       - uses: actions/checkout@v4
@@ -47,8 +47,8 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install -e ".[dev]"
-      - uses: actions/setup-node@v4   # the pwa shard builds the optimised site with esbuild (npx)
-        if: matrix.shard.name == 'pwa'
+      - uses: actions/setup-node@v4   # the pwa-landing shard builds the optimised site with esbuild (npx)
+        if: matrix.shard.name == 'pwa-landing'
         with:
           node-version: "22"
       - run: python -m playwright install --with-deps chromium

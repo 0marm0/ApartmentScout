@@ -337,7 +337,8 @@ h2 { margin-top: 14px; font-size: clamp(32px, 4.2vw, 52px); line-height: 1.06; f
 .foot ul { display: grid; gap: 9px; }
 .foot a { text-decoration: none; color: var(--ink-2); transition: color var(--t-fast); }
 .foot a:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
-.credits a { color: var(--ink); }
+.credits a { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--line-strong); }
+.credits a:hover { text-decoration-color: currentColor; }
 .foot .fine { margin-top: 16px; font-size: 13px; }
 
 /* --------------------------------------------------------------- light theme adjustments */
@@ -419,4 +420,99 @@ h2 { margin-top: 14px; font-size: clamp(32px, 4.2vw, 52px); line-height: 1.06; f
   .close { padding: 112px 0 104px; }
   .close .cta { max-width: 360px; }
   .foot-grid { grid-template-columns: 1fr; gap: 32px; }
+}
+
+/* --------------------------------------------------------------- how it works, short: agent, CLI, dashboard */
+.how3, .tour { padding: 136px 0 0; }
+.parts { margin-top: 56px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+.part {
+  position: relative; display: flex; flex-direction: column; padding: 28px 26px 24px; border-radius: 20px; isolation: isolate;
+  border: 1px solid var(--line); background: linear-gradient(180deg, var(--surface-1), var(--ground));
+  transition: border-color var(--t-base), transform var(--t-slow) var(--ease-out), box-shadow var(--t-slow);
+}
+.part::before {
+  content: ""; position: absolute; z-index: -1; left: 24px; right: 24px; top: -1px; height: 2px; border-radius: 2px;
+  background: linear-gradient(90deg, var(--c), transparent 70%); opacity: .9;
+}
+.part:hover { border-color: var(--line-strong); transform: translateY(-2px); box-shadow: var(--shadow-2); }
+.part-n { position: absolute; top: 22px; right: 24px; font: 500 12.5px/1 var(--font-mono); color: var(--ink-2); }
+.part svg { width: 30px; height: 30px; color: var(--c); }
+.part h3 { margin-top: 20px; font-size: 21px; line-height: 1.2; font-weight: 600; letter-spacing: -0.02em; text-wrap: balance; }
+.part p:not(.part-cmd) { margin-top: 12px; font-size: 15.5px; line-height: 1.62; color: var(--ink-2); text-wrap: pretty; }
+.part code { font-size: .88em; padding: 1px 6px; border-radius: var(--r-xs); background: var(--surface-2); border: 1px solid var(--line); color: var(--ink); }
+.part-cmd { margin-top: auto; padding-top: 20px; display: flex; flex-wrap: wrap; gap: 8px; }
+.part-cmd code { font-size: 12.5px; color: var(--accent); }
+.part + .part::after {   /* a small arrow in the gutter: the output of one part feeds the next */
+  content: ""; position: absolute; left: -17px; top: 50px; width: 14px; height: 14px; z-index: 2;
+  border-top: 1.5px solid var(--ink-3); border-right: 1.5px solid var(--ink-3); transform: rotate(45deg) scale(.7);
+}
+.how3-more { margin-top: 8px; }
+
+/* --------------------------------------------------------------- the tour: tabs over the feature panels */
+kbd {
+  display: inline-block; min-width: 1.6em; padding: 0 5px; border-radius: var(--r-xs); border: 1px solid var(--line-strong); border-bottom-width: 2px;
+  background: var(--surface-2); color: var(--ink); font: 500 .82em/1.5 var(--font-mono); text-align: center;
+}
+.tour-ui { margin-top: 48px; }
+.tabs {
+  display: none; gap: 4px; padding: 4px; width: max-content; max-width: 100%; border-radius: var(--r-pill); overflow-x: auto;
+  border: 1px solid var(--line-strong); background: color-mix(in srgb, var(--surface-1) 85%, transparent); scrollbar-width: none;
+}
+.tabs::-webkit-scrollbar { display: none; }
+.js .tabs { display: flex; }
+.tabs [role="tab"] {
+  flex: none; height: 38px; padding: 0 16px; border: 0; border-radius: var(--r-pill); background: transparent; color: var(--ink-2);
+  font: 500 14px/1 var(--font-sans); white-space: nowrap; cursor: pointer;
+  transition: color var(--t-fast), background var(--t-fast), box-shadow var(--t-base);
+}
+.tabs [role="tab"]:hover { color: var(--ink); background: var(--surface-2); }
+.tabs [role="tab"][aria-selected="true"] { color: var(--ink); background: var(--surface-3); box-shadow: inset 0 0 0 1px var(--line-strong), var(--shadow-1); }
+.tabs [role="tab"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.tour-panel { margin-top: 56px; }
+.js .tour-panel { margin-top: 48px; }
+.js .tour-panel:not(.is-on) { display: none; }
+@media (prefers-reduced-motion: no-preference) {
+  .js .tour-panel.is-on { animation: rise var(--t-page) var(--ease-out) both; }
+}
+html:not(.js) .tour-panel + .tour-panel { margin-top: 112px; }
+
+/* --------------------------------------------------------------- the demo band */
+.demo-band { padding: 136px 0 0; }
+.band {
+  position: relative; isolation: isolate; overflow: hidden; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 40px; align-items: center;
+  padding: 56px 56px; border-radius: 28px; border: 1px solid var(--line-strong);
+  background: radial-gradient(120% 160% at 0% 0%, color-mix(in srgb, var(--accent) 16%, var(--surface-1)), var(--surface-1) 60%);
+  box-shadow: var(--shadow-3);
+}
+.band::after {
+  content: ""; position: absolute; z-index: -1; right: -120px; bottom: -200px; width: 520px; height: 420px; border-radius: 50%;
+  background: color-mix(in srgb, var(--band-20) 22%, transparent); filter: blur(70px);
+}
+.band .sub { max-width: 520px; }
+.band-act { display: flex; flex-direction: column; align-items: stretch; gap: 12px; min-width: 260px; }
+.btn.xl { height: 56px; padding: 0 28px; font-size: 17px; border-radius: 14px; }
+.band-act .btn.lg { justify-content: center; }
+:root[data-theme="light"] .band::after { opacity: .5; }
+
+@media (max-width: 1080px) {
+  /* the inset screenshot may bleed past its figure on a wide screen; below that it would be cut off by the viewport edge */
+  .feat-media.stack .inset, .feat.flip .feat-media.stack .inset, .feat-media.stack .inset.tall { right: 0; left: auto; }
+  .parts { grid-template-columns: minmax(0, 1fr); max-width: 640px; }
+  .part + .part::after { left: 50px; top: -17px; transform: rotate(135deg) scale(.7); }
+  .band { grid-template-columns: minmax(0, 1fr); padding: 44px 36px; gap: 28px; }
+  .band-act { flex-direction: row; flex-wrap: wrap; }
+  .band-act .btn { flex: 1 1 220px; }
+}
+@media (max-width: 640px) {
+  .how3, .tour, .demo-band { padding-top: 96px; }
+  .parts { margin-top: 40px; }
+  .part { padding: 24px 20px 20px; }
+  .tour-ui { margin-top: 36px; }
+  .tabs { width: calc(100% + 32px); margin: 0 -16px; padding: 4px 16px; border-radius: 0; border-left: 0; border-right: 0; }
+  .js .tour-panel { margin-top: 36px; }
+  .band { padding: 36px 22px; border-radius: 22px; }
+  .band-act { flex-direction: column; }
+  .band-act .btn { flex: none; }
+  .btn.xl { height: 52px; }
+  .tabs { -webkit-mask-image: linear-gradient(90deg, #000 90%, transparent); mask-image: linear-gradient(90deg, #000 90%, transparent); }
 }
