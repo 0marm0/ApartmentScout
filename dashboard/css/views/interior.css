@@ -16,9 +16,12 @@
 .iv-src summary { cursor: pointer; }
 .iv-src p { margin: 6px 0 0; line-height: 1.5; }
 
-/* ---- "Look out of" chips (studio 3D pane and Unit 3D's Inside camera) */
-.ps-look, .u-look { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px 14px; padding: 6px 8px; border-radius: var(--r-lg, 14px); border: 1px solid var(--line); max-width: calc(100% - 20px); }
-.ps-look { left: 10px; bottom: 84px; }
+/* ---- the view picker (studio 3D pane and Unit 3D's Inside camera)
+   Closed, the switcher is one small pill ("Sofa, window") so the picture stays clear: the view out of the window is the point.
+   Open, it shows the same chips as before, a row each for the windows (by room), the seats and the daylight or sun controls.
+   It closes when a view is chosen, on Escape and when you click elsewhere; the arrow keys and [ ] still step through the views. */
+.ps-look, .u-look { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-start; gap: 6px 12px; padding: 3px; border-radius: var(--r-md); border: 1px solid var(--line); width: max-content; max-width: calc(100% - 20px); }
+.ps-look { left: 10px; bottom: 44px; }
 .ps-look[hidden], .u-look[hidden] { display: none; }
 .lk-grp { display: flex; align-items: center; gap: 2px; }
 .lk-h { font-size: var(--fs-2xs); font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); margin: 0 6px 0 4px; white-space: nowrap; }
@@ -27,28 +30,32 @@
 .lk-chip.on { background: var(--accent); color: var(--accent-ink); box-shadow: var(--shadow-1); }
 .lk-chip.wide::before { content: ""; display: inline-block; width: 10px; height: 7px; margin-right: 6px; border: 1.5px solid currentColor; border-top-width: 0; border-radius: 0 0 5px 5px; opacity: .7; transform: translateY(-1px); }
 .lk-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.lk-keys { font-size: var(--fs-2xs); color: var(--ink-3); white-space: nowrap; }
-/* Unit 3D: the room switcher sits under the camera buttons (css/views/unit.css .u-views); the old dropdown stays as the phone fallback.
-   Here the chips are drawn as buttons (a border, a fill, an accent when chosen) so they read as clickable, and the groups line up:
-   "Look out of" on its own row, then "From the" and the look-back chip. The studio's own chips (.ps-look) are unchanged. */
-.u-look { justify-content: flex-start; padding: 8px 10px; gap: 6px 14px; }
-.u-look .lk-keys { display: none; }
+.lk-keys { display: none; }
+.lk-pick { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 8px 0 10px; border: 0; border-radius: var(--r-inner); background: none; color: var(--ink); font: 500 var(--fs-xs) var(--font-sans, inherit); cursor: pointer; white-space: nowrap; }
+.lk-pick:hover { background: var(--surface-2); }
+.lk-pick:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.lk-pick svg { width: 14px; height: 14px; flex: none; color: var(--ink-2); }
+.lk-pick .lk-chev { width: 12px; height: 12px; color: var(--ink-3); transition: transform var(--t-base) var(--ease-out); }
+.lk-pick[aria-expanded="true"] .lk-chev { transform: rotate(180deg); }
+@media (min-width: 761px) {
+  .ps-look:not([data-open]) > :not(.lk-pick), .u-look:not([data-open]) > :not(.lk-pick) { display: none; }
+  .ps-look[data-open], .u-look[data-open] { padding: 3px 8px 8px; gap: 6px 14px; }
+  .ps-look[data-open] > .lk-pick, .u-look[data-open] > .lk-pick { flex-basis: 100%; margin: 0 -5px; }
+  .ps-look[data-open] > .lk-grp, .u-look[data-open] > .lk-grp { flex-basis: 100%; flex-wrap: wrap; gap: 4px; }
+  .ps-look[data-open] .lk-h, .u-look[data-open] .lk-h { min-width: 84px; margin: 0; }
+}
+/* Unit 3D: the chips are drawn as buttons (a border, a fill, an accent when chosen) so they read as clickable */
 .u-look .lk-grp { gap: 6px; }
-.u-look .lk-h { min-width: 84px; margin: 0; }
-.u-look .lk-chip { height: 30px; padding: 0 13px; border: 1px solid var(--line-strong); background: var(--surface-2); color: var(--ink); }
+.u-look .lk-chip { height: 28px; padding: 0 13px; border: 1px solid var(--line-strong); background: var(--surface-2); color: var(--ink); }
 .u-look .lk-chip:hover { background: var(--surface-hover); border-color: var(--accent-line); }
 .u-look .lk-chip.on { background: var(--accent); border-color: transparent; color: var(--accent-ink); }
 .u-lens .u-in-select { display: none; }
-@media (min-width: 761px) {
-  .u-look > .lk-grp:first-child { flex-basis: 100%; }
-}
 @media (max-width: 760px) {
-  .u-look { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  .lk-pick { display: none; }
+  .u-look { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; padding: 6px 8px; }
   .u-look .lk-grp { flex: none; }
   .u-lens .u-in-select { display: flex; }
-  .u-look .lk-h, .u-look .lk-keys { display: none; }
-}
-@media (max-width: 760px) {
-  .ps-look { top: 52px; bottom: auto; left: 10px; right: 10px; transform: none; max-width: none; justify-content: flex-start; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
-  .lk-keys, .lk-h { display: none; }
+  .u-look .lk-h { display: none; }
+  .ps-look { top: 52px; bottom: auto; left: 10px; right: 10px; transform: none; max-width: none; width: auto; justify-content: flex-start; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; padding: 6px 8px; }
+  .lk-h { display: none; }
 }

@@ -52,6 +52,10 @@
 .u-look .lx-legend { min-width: 150px; margin: 0; }
 @media (max-width: 760px) { .u-look .lk-extra { display: none; } }   /* on a phone the daylight map lives in the studio; the chip row stays short */
 
+/* "What's measured vs assumed": the coloured dots alone until it is opened (the words stay for screen readers and in the tooltip) */
+.acc-btn[aria-expanded="false"] .acc-t { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.acc-btn[aria-expanded="false"] { padding: 0 10px; }
+
 /* Play the sun (js/city3d/playbar.js): Play day and Play year, when the sun reaches the floor, the month and the tree stage during a year loop, and the strip chart of direct-sun hours by month. */
 .pb { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2) var(--s-4); margin-top: var(--s-3); }
 .pb-seg { flex: none; }
