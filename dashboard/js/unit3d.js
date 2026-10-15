@@ -1090,7 +1090,7 @@ function drawHeat(busy = false) {
   if (first) {
     $('heatPanel').innerHTML = `<h3>Direct sun by floor and month <span id="uHeatNote"></span></h3>
       <p class="u-note">Hours of direct sun on the 15th of each month at this facade, position and bearing. Click a cell to jump to that floor and month.</p>
-      <div class="u-heat-box" id="uHeatBox"></div>
+      <div class="u-heat-box" id="uHeatBox" tabindex="0" role="region" aria-label="Direct sun hours by floor and month"></div>
       <div class="legend-row"><span><i class="sw u-sw-cur"></i>Your floor</span><span><i class="sw u-sw-cmp"></i>Compare floor</span><span class="u-heat-scale"><i></i>0 h → 9 h</span></div>`;
     $('uHeatBox').addEventListener('click', (e) => {
       const c = e.target.closest('[data-fl]'); if (!c) return;
