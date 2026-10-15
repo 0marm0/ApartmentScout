@@ -1,7 +1,7 @@
 // Green space for the 3D city views: reads the site file's `green` block (OpenStreetMap parks, lawns,
 // playgrounds, woods and mapped street trees in the site's metre frame) and decides where tree canopies stand.
 // Pure and deterministic (no DOM, no three.js), so the same city draws the same trees every time and the
-// maths is testable. Drawing lives in unit/greenmesh.js.
+// maths is testable. The ground is drawn by unit/grassmesh.js, the trees by unit/treemesh.js.
 //
 // Mapped trees come straight from the file. Most real trees are not mapped, so park, wood and lawn areas also
 // get canopies on a jittered grid: a drawing aid that shows where a window looks over trees, not a survey.
@@ -17,11 +17,11 @@ const num = (v) => Number.isFinite(+v) && v !== null && v !== '' && v !== true &
 const okPt = (q) => Array.isArray(q) && num(q[0]) && num(q[1]);
 const okRing = (r) => Array.isArray(r) && r.length >= 3 && r.every(okPt);
 
-/** A cleaned copy of site.green: only well-formed polygons of known kinds and finite tree coordinates. */
+/** A cleaned copy of site.green: only well-formed polygons of known kinds and finite tree coordinates (`turf`, `src` and `on_parks` are kept for the grass layers, unit/grassplan.js). */
 export function cleanGreen(g) {
   if (!g || typeof g !== 'object') return null;
   const polys = (Array.isArray(g.polys) ? g.polys : []).filter((p) => p && KINDS.includes(p.kind) && okRing(p.ring))
-    .map((p) => ({ kind: p.kind, name: typeof p.name === 'string' ? p.name : null, hard: !!p.hard, ring: p.ring.map((q) => [+q[0], +q[1]]), holes: (Array.isArray(p.holes) ? p.holes : []).filter(okRing).map((h) => h.map((q) => [+q[0], +q[1]])) }));
+    .map((p) => ({ kind: p.kind, name: typeof p.name === 'string' ? p.name : null, hard: !!p.hard, turf: !!p.turf, src: typeof p.src === 'string' ? p.src : null, on_parks: !!p.on_parks, ring: p.ring.map((q) => [+q[0], +q[1]]), holes: (Array.isArray(p.holes) ? p.holes : []).filter(okRing).map((h) => h.map((q) => [+q[0], +q[1]])) }));
   const t = Array.isArray(g.trees) ? g.trees : [], trees = [];
   for (let i = 0; i + 1 < t.length; i += 2) if (num(t[i]) && num(t[i + 1])) trees.push(+t[i], +t[i + 1]);
   if (!polys.length && !trees.length) return null;

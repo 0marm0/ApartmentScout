@@ -48,6 +48,8 @@ function crownGeometry(lobes, detail, lumpy = 0) {
   return geo;
 }
 const NEAR_LOBES = [[0, 0, 0, 1, 0.92], [0.62, -0.22, 0.18, 0.66, 0.66], [-0.5, -0.18, -0.38, 0.7, 0.7]];
+// the three lobes reach out to ~1.3 x the unit radius (and the far blob to 1.04): scaled so a near crown spans the same width as the crown the allometry gives, not a third more
+const NEAR_SPAN = 0.84;
 function withWhite(geo) {
   const n = geo.attributes.position.count, c = new Float32Array(n * 3);
   for (let i = 0; i < n; i++) { const y = geo.attributes.position.getY(i); const t = Math.max(0, Math.min(1, (y + 1) / 2)), k = 0.7 + 0.3 * t; c[3 * i] = c[3 * i + 1] = c[3 * i + 2] = k; }
@@ -65,8 +67,12 @@ export function treeLayer(plan, opts = {}) {
   let light = !!opts.light, phone = !!opts.phone, shadows = !!opts.shadows;
   const N = Math.min(plan.n, opts.limit ?? plan.n), group = new THREE.Group(); group.name = 'trees';
   const wx = new Float32Array(N), wz = new Float32Array(N);
-  const broad = [], cones = [];
-  for (let i = 0; i < N; i++) { const [px, py] = place(plan.x[i], plan.y[i]); wx[i] = px; wz[i] = -py; (plan.grp[i] === CONIFER ? cones : broad).push(i); }
+  // [park trees] street trees and park trees are separate layers (plan.cls: 0 street, 1 park): the lists hold the trees of the layers that are on
+  const cls = plan.cls || new Uint8Array(N), on = [opts.streetTrees !== false, opts.parkTrees !== false];
+  let broad = [], cones = [], capBroad = 0, capCones = 0;
+  for (let i = 0; i < N; i++) { const [px, py] = place(plan.x[i], plan.y[i]); wx[i] = px; wz[i] = -py; if (plan.grp[i] === CONIFER) capCones++; else capBroad++; }
+  const sortLists = () => { broad = []; cones = []; for (let i = 0; i < N; i++) if (on[cls[i]]) (plan.grp[i] === CONIFER ? cones : broad).push(i); };
+  sortLists();
 
   // precomputed instance matrices: near crown, far blob, trunk (16 floats a tree) and base colour
   const M = new THREE.Matrix4(), Q = new THREE.Quaternion(), V = new THREE.Vector3(), S = new THREE.Vector3(), Y = new THREE.Vector3(0, 1, 0);
@@ -76,7 +82,7 @@ export function treeLayer(plan, opts = {}) {
     const h = plan.h[i], r = plan.r[i], bole = plan.bole[i], ch = Math.max(1.5, h - bole), mid = y0 + bole + ch / 2;
     crownMid[i] = mid;
     Q.setFromAxisAngle(Y, plan.tone[i] * 6.283);
-    M.compose(V.set(wx[i], mid, wz[i]), Q, S.set(r, ch / 2 * 1.08, r)); M.toArray(nearM, i * 16);
+    M.compose(V.set(wx[i], mid, wz[i]), Q, S.set(r * NEAR_SPAN, ch / 2 * 1.08, r * NEAR_SPAN)); M.toArray(nearM, i * 16);
     M.compose(V.set(wx[i], mid, wz[i]), Q, S.set(r * 1.04, ch / 2, r * 1.04)); M.toArray(farM, i * 16);
     const tr = Math.max(0.6, plan.dbh[i] * 0.0254 / 2 / 0.21);
     M.compose(V.set(wx[i], y0, wz[i]), Q, S.set(tr, bole + ch * 0.4, tr)); M.toArray(trunkM, i * 16);
@@ -102,9 +108,9 @@ export function treeLayer(plan, opts = {}) {
     m.receiveShadow = true; return m;
   };
   const budget = () => (phone ? [LOD.phoneNearR, LOD.phoneNearMax] : [LOD.nearR, LOD.nearMax]);
-  const nearCap = Math.min(broad.length, Math.max(LOD.nearMax, LOD.phoneNearMax));
+  const nearCap = Math.min(capBroad, Math.max(LOD.nearMax, LOD.phoneNearMax));
   const nearMesh = mk(geos.near, canopyMat, nearCap, 'tree-crowns-near'), trunkMesh = mk(geos.trunk, trunkMat, nearCap, 'tree-trunks', false);
-  const farMesh = mk(geos.far, canopyMat, broad.length, 'tree-crowns-far'), coneMesh = mk(geos.cone, canopyMat, cones.length, 'tree-cones');
+  const farMesh = mk(geos.far, canopyMat, capBroad, 'tree-crowns-far'), coneMesh = mk(geos.cone, canopyMat, capCones, 'tree-cones');
   trunkMesh.receiveShadow = false;
   group.add(trunkMesh, nearMesh, farMesh, coneMesh);
   const setCast = () => { nearMesh.castShadow = farMesh.castShadow = coneMesh.castShadow = shadows; };
@@ -141,6 +147,12 @@ export function treeLayer(plan, opts = {}) {
     stats: () => ({ ...st }),
     setTheme(l) { light = !!l; paint(); fillCones(); last.set(Infinity, Infinity, Infinity); },   // the next update() re-colours the buffers
     setShadows(on) { shadows = !!on; setCast(); },
+    /** [park trees] switch the street-tree and park-tree layers: {street, park} booleans (a missing key stays as it is). */
+    setClasses(c = {}) {
+      if ('street' in c) on[0] = !!c.street; if ('park' in c) on[1] = !!c.park;
+      sortLists(); fillCones(); last.set(Infinity, Infinity, Infinity);
+    },
+    classes: () => ({ street: on[0], park: on[1] }),
     setPhone(on) { phone = !!on; last.set(Infinity, Infinity, Infinity); },
     dispose() { Object.values(geos).forEach((g) => g.dispose()); canopyMat.dispose(); trunkMat.dispose(); nearMesh.dispose(); trunkMesh.dispose(); farMesh.dispose(); coneMesh.dispose(); },
   };

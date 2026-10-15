@@ -36,3 +36,15 @@ def _no_census_or_water(monkeypatch):
 
     monkeypatch.setattr(trees, "fetch_census", offline)
     monkeypatch.setattr(water, "fetch_water", offline)
+
+
+@pytest.fixture(autouse=True)
+def _no_parks_or_forestry(monkeypatch):
+    """NYC Parks Properties, Greenstreets and the Forestry Tree Points are network downloads too (geo/parks.py, geo/forestry.py)."""
+    from apartmentscout.geo import forestry, parks
+
+    def offline(*a, **k):
+        raise RuntimeError("offline in tests")
+
+    monkeypatch.setattr(parks, "fetch_parks", offline)
+    monkeypatch.setattr(forestry, "fetch_rows", offline)

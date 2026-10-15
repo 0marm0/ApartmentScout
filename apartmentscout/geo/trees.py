@@ -18,14 +18,22 @@ taken from the genus). Only live trees within the site radius are kept, nearest 
 
 Canopy size is NOT stored: the 3D views derive it from the diameter with the allometry below (``crown_radius_m``,
 ``tree_height_m``), so one rule serves the dashboard and the tests. It is the usual urban-forestry shape of the
-relationship (crown spread and height grow with DBH, then level off), not a per-species model:
+relationship (crown spread and height grow with DBH, then level off), fitted to rounded typical values for open-grown
+urban trees from urban-forestry crown tables (the i-Tree urban tree database, McPherson et al.): roughly a 4.5 m crown
+and 7.5 m height for a Callery pear of 8 in, 7.5 m and 12 m for a honeylocust of 12 in, 13.5 m and 18 m for a London
+plane of 24 in. The census records no crown size, so this is a typical value, not a per-tree measurement:
 
-* crown diameter = 2.0 m + 0.24 m per cm of DBH, capped at 18 m (a 20 cm trunk carries a ~6.8 m crown);
-* height = 1.3 m + 0.8 x DBH(cm)^0.8, capped at 28 m (a 20 cm trunk is ~10 m tall, a 60 cm trunk ~22 m).
+* crown diameter = 1.2 m + 0.19 m per cm of DBH, capped at 16 m (a 20 cm / 8 in trunk carries a ~5 m crown, a 30 cm /
+  12 in trunk ~7 m, a 61 cm / 24 in trunk ~12.8 m);
+* height = 1.3 m + 0.62 x DBH(cm)^0.82, capped at 24 m (a 20 cm trunk is ~8.5 m tall, a 30 cm trunk ~11.5 m, a 61 cm trunk ~19 m).
 
-The census is from 2015 and street trees add about 0.2 in of trunk a year, so the views size a census tree from its
-surveyed diameter plus ``GROWTH_IN`` (2 in, ten years of growth): ``grown_dbh_in``. Mapped OpenStreetMap trees carry
-no size and are drawn as a typical street tree (``MAPPED_DBH_IN``, in the 3D code).
+An earlier rule (2.0 m + 0.24 m/cm, +2 in of growth) drew street crowns 35-45 % too wide (about twice the crown area); its growth term was also double what the data shows (below).
+
+The census is from 2015. Comparing 1,195 census trees of a Midtown site with the same trees in the live NYC Parks
+inventory (``geo/forestry.py``), the trunk grew by a median of 1.0 in (mean 0.85 in, 10th-90th percentile 0-3 in) in
+about a decade, so the views size a census tree from its surveyed diameter plus ``GROWTH_IN`` (1 in):
+``grown_dbh_in``. Mapped OpenStreetMap trees carry no size and are drawn as a typical street tree (``MAPPED_DBH_IN``,
+in the 3D code). Census trees the current inventory records as removed are dropped (``geo/forestry.prune_census``).
 
 Trees are context only: they are never counted as obstructions in the sun hours (canopies are seasonal and porous).
 """
@@ -44,10 +52,10 @@ DATE = "2015"
 Q_M = 0.5            # coordinates are integer multiples of this many metres
 MAX_TREES = 6000
 MAX_DBH_IN = 60      # larger values in the census are data-entry errors for street trees
-GROWTH_IN = 2.0      # about ten years of trunk growth between the 2015 survey and the dashboard's present
+GROWTH_IN = 1.0      # median trunk growth between the 2015 survey and the live inventory (1,195 matched trees, ~10 years)
 CM_PER_IN = 2.54
-CROWN_BASE_M, CROWN_PER_CM, CROWN_MAX_M = 2.0, 0.24, 18.0
-HEIGHT_BASE_M, HEIGHT_COEF, HEIGHT_EXP, HEIGHT_MAX_M = 1.3, 0.8, 0.8, 28.0
+CROWN_BASE_M, CROWN_PER_CM, CROWN_MAX_M = 1.2, 0.19, 16.0
+HEIGHT_BASE_M, HEIGHT_COEF, HEIGHT_EXP, HEIGHT_MAX_M = 1.3, 0.62, 0.82, 24.0
 NOTE = ("Context only: street trees are drawn from the NYC Street Tree Census (2015) and are not counted as "
         "obstructions in the sun hours (canopies are seasonal and porous). Canopy size is estimated from trunk "
         "diameter; the census does not record crown size.")

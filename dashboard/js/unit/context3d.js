@@ -5,9 +5,10 @@
 //           texture, with holes where the water is (`unit/groundtex.js`);
 //   water   a blue plane 0.4 m under the plate, masked by the water polygons (`site.water`): flat colour in Fast,
 //           a soft sky reflection and a sun glint in Visual;
-//   green   park, lawn and wood patches (`site.green.polys`);
-//   trees   street trees from the NYC Street Tree Census sized from trunk diameter, OpenStreetMap trees, and
-//           Poisson-disc fill in parks, in two instanced levels of detail (`unit/trees.js`, `unit/treemesh.js`).
+//   green   park, lawn, wood and paved-playground ground layers, textured as grass (`site.green.polys`, `unit/grassmesh.js`);
+//   trees   street trees from the NYC Street Tree Census and park trees from the NYC Parks inventory, each sized from trunk
+//           diameter, OpenStreetMap trees, and Poisson-disc fill where no inventory describes a park, in two instanced levels
+//           of detail (`unit/trees.js`, `unit/parkfill.js`, `unit/treemesh.js`).
 //
 // Context only. Nothing here enters a sun hour, a skyline, a daylight number or a score: trees and water are never
 // obstructions (canopies are seasonal and porous; the numbers use buildings alone), and the tree shadows of Visual
@@ -22,7 +23,8 @@
 //     y0,                   // ground height (default 0)
 //     ground, light, blue,  // THREE.Color of the plain ground, the theme flag and the theme's blue
 //     visual, phone,        // render quality: tree shadows and the water glint; the phone-class LOD budget
-//     layers,               // {ground, water, green, trees} booleans, default all true
+//     layers,               // {ground, water, green, trees, streetTrees, parkTrees} booleans, default all true: `green` is the parks and the trees,
+//                           // `streetTrees` the census and street-inventory trees, `parkTrees` the park inventory and the fill in parks
 //   });
 //   ctx.group               THREE.Group to add to the scene (children named 'ground-plate', 'water', 'green', 'trees')
 //   ctx.watch(obj)          make the tree LOD follow the camera while `obj` (or an ancestor) is in a scene
@@ -32,10 +34,11 @@
 //   ctx.setInside(bool)     true while the camera is inside the apartment: crowns stop casting shadows, so the sun patches on the floor match the
 //                           numbers (trees are never obstructions)
 //   ctx.labels              [{kind: 'water' | 'park', name, x, y}] in site metres (large parks and the rivers)
-//   ctx.info                {trees: {census, mapped, fill, total, dropped}, waterBodies, streets, textures, ...}
+//   ctx.info                {trees: {census, park, street, mapped, fill, streetTrees, parkTrees, total, dropped}, waterBodies, streets, textures, ...}
 //   ctx.dispose()
 import * as THREE from 'three';
-import { greenGroup, greenColors } from './greenmesh.js';
+import { greenPlan } from './green.js';
+import { grassGroup, grassColors } from './grassmesh.js';   // [grass] parks, lawns, paved playgrounds and courts as textured ground layers
 import { treePlan } from './trees.js';
 import { treeLayer } from './treemesh.js';
 import { decodeWater, windowHalf, contextLabels, streetStrokes } from './context-core.js';
@@ -101,7 +104,7 @@ function canvasTexture(N, paint) {
 export function buildContext(site, opts = {}) {
   const { B = null, place = (x, y) => [x, y], matrix = null, center = [0, 0], radius = 640, y0 = 0 } = opts;
   let inside = false, light = !!opts.light, visual = !!opts.visual, phone = !!opts.phone, ground = (opts.ground || new THREE.Color(0x272c37)).clone(), blue = (opts.blue || new THREE.Color(0x3a93e0)).clone();
-  const vis = { ground: true, water: true, green: true, trees: true, ...(opts.layers || {}) };
+  const vis = { ground: true, water: true, green: true, trees: true, streetTrees: true, parkTrees: true, ...(opts.layers || {}) };   // [park trees] street and park trees switch separately
   const group = new THREE.Group(); group.name = 'context';
   const water = decodeWater(site?.water), half = PLATE_HALF_M, waterHalf = windowHalf(site, 1600), N = opts.phone ? 1536 : TEX_SIZE,   // a phone's textures are a little coarser (14 MB of GPU memory instead of 32)
      hasStreets = streetStrokes(site?.streets).length > 0;
@@ -152,7 +155,8 @@ export function buildContext(site, opts = {}) {
   function buildGreen() {
     if (patchGroup) { wrapOut.remove(patchGroup); disposeObj(patchGroup); patchGroup = null; }
     if (!site?.green) return;
-    patchGroup = greenGroup(site.green, { place, center, radius, y0, colors: greenColors(ground, light), trees: false });
+    const gp = greenPlan(site.green, { center, radius, limit: 0 });   // [grass] the polygons near the centre; the trees are unit/treemesh.js
+    patchGroup = grassGroup(gp ? gp.polys : [], { place, y0, colors: grassColors(ground, light, visual) });
     patchGroup.visible = vis.green; parts.green = patchGroup; wrapOut.add(patchGroup);
   }
   const wrapOut = new THREE.Group(); wrapOut.name = 'context-green'; group.add(wrapOut);
@@ -161,7 +165,7 @@ export function buildContext(site, opts = {}) {
     if (!site?.green) return;
     if (!plan) plan = treePlan(site.green, { center, radius, cap: TREE_CAP.desktop, B });
     if (!plan.n) return;
-    trees = treeLayer(plan, { place, y0, light, phone, shadows: visual && !inside, limit: phone ? TREE_CAP.phone : TREE_CAP.desktop });
+    trees = treeLayer(plan, { place, y0, light, phone, shadows: visual && !inside, limit: phone ? TREE_CAP.phone : TREE_CAP.desktop, streetTrees: vis.streetTrees !== false, parkTrees: vis.parkTrees !== false });
     trees.group.visible = vis.green && vis.trees; parts.trees = trees.group; wrapOut.add(trees.group);
   }
   buildGreen(); buildTrees();
@@ -184,12 +188,14 @@ export function buildContext(site, opts = {}) {
       if (parts.plate) parts.plate.visible = vis.ground !== false && vis.water !== false;
       if (parts.water) parts.water.visible = vis.water !== false;
       if (parts.green) parts.green.visible = !!vis.green;
-      if (parts.trees) parts.trees.visible = !!vis.green && !!vis.trees;
+      if (parts.trees) parts.trees.visible = !!vis.green && !!vis.trees && (vis.streetTrees !== false || vis.parkTrees !== false);
+      trees?.setClasses({ street: vis.streetTrees !== false, park: vis.parkTrees !== false });   // [park trees]
     },
     setQuality(q = {}) {
-      const was = phone; if ('visual' in q) visual = !!q.visual; if ('phone' in q) phone = !!q.phone;
+      const was = phone, wasVisual = visual; if ('visual' in q) visual = !!q.visual; if ('phone' in q) phone = !!q.phone;
       applyWaterColors(); trees?.setShadows(visual && !inside);
       if (phone !== was) buildTrees();
+      if (visual !== wasVisual) buildGreen();   // [grass] the grass is deepened under Visual's environment light
     },
     setTheme(t = {}) {
       if ('ground' in t) ground = t.ground.clone(); if ('light' in t) light = !!t.light; if ('blue' in t) blue = t.blue.clone();

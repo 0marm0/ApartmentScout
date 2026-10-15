@@ -30,9 +30,11 @@ def test_allometry_grows_with_diameter_then_levels_off():
     h = [trees.tree_height_m(d) for d in (1, 5, 10, 20, 40, 60)]
     assert r == sorted(r) and h == sorted(h)
     assert trees.crown_radius_m(500) == trees.CROWN_MAX_M / 2 and trees.tree_height_m(500) == trees.HEIGHT_MAX_M
-    # a Midtown street tree: 8 in trunk -> about 10 m tall with a crown 6-7 m across
-    assert 9 < trees.tree_height_m(8) < 11.5
-    assert 5.5 < 2 * trees.crown_radius_m(8) < 7.5
+    # typical open-grown NYC street trees (urban-forestry crown tables, rounded): a Callery pear of 8 in is ~7.5 m tall
+    # with a crown ~4.5 m across, a honeylocust of 12 in ~12 m and ~7.5 m, a London plane of 24 in ~18 m and ~13.5 m
+    assert 7.5 < trees.tree_height_m(8) < 9.5 and 4.0 < 2 * trees.crown_radius_m(8) < 5.6
+    assert 10.5 < trees.tree_height_m(12) < 12.5 and 6.0 < 2 * trees.crown_radius_m(12) < 8.0
+    assert 17 < trees.tree_height_m(24) < 20.5 and 11.5 < 2 * trees.crown_radius_m(24) < 14
     assert trees.crown_radius_m(0) == trees.CROWN_BASE_M / 2 and trees.tree_height_m(-3) == trees.HEIGHT_BASE_M
 
 
@@ -45,9 +47,10 @@ def test_allometry_matches_the_js_twin_fixture():
 
 
 def test_census_trunks_are_sized_with_the_growth_since_the_survey():
-    assert trees.grown_dbh_in(8) == 8 + trees.GROWTH_IN == 10.0
+    assert trees.grown_dbh_in(8) == 8 + trees.GROWTH_IN == 9.0
     assert trees.grown_dbh_in(-1) == trees.GROWTH_IN
-    assert 11.5 < trees.tree_height_m(trees.grown_dbh_in(8)) < 14.5            # a Midtown street tree after a decade of growth
+    assert trees.GROWTH_IN == 1.0                                              # the median growth of 1,195 census trees matched to the live inventory
+    assert 8.5 < trees.tree_height_m(trees.grown_dbh_in(8)) < 10.5             # a Midtown street tree after a decade of growth
 
 
 def test_water_window_reaches_past_the_far_shore_of_the_east_river():
