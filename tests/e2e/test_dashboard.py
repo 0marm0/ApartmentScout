@@ -445,6 +445,7 @@ def test_stats_strip_on_a_phone_is_a_chip_and_folds_the_rest_into_the_popover(op
     keys = [t.strip() for t in pg.locator("#kpiPop .kpi-i .k").all_inner_texts()]
     assert {"tracked", "match filters", "eligible", "shortlisted", "median / mo"} <= set(keys), keys
     pg.keyboard.press("Escape")
+    pg.wait_for_function("() => document.getElementById('kpiPop').hidden", timeout=5000)
     assert pg.evaluate("() => document.getElementById('kpiPop').hidden")
     assert not s.take()
 
