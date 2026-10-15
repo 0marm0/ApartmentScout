@@ -42,6 +42,7 @@ import { loadInventoryFile } from './plan/inventory.js';   // [furniture] the re
 import { applyLooks } from './plan/looks.js';
 import { stepView } from './plan/viewpoints.js';
 import { heightProvenance, confOf } from './city3d/facade-rules.js';   // [buildings3d] height source and confidence labels
+import { lateAt } from './city3d/facade-rules.js';   // [daycycle] how late the evening is: fewer lit windows
 import { seasonAt, quantise } from './city3d/season.js';   // [season] leaves, autumn colour and bare branches follow the date (a picture only)
 import { loadTreeLayers, saveTreeLayers, STREET_TREES_TITLE, PARK_TREES_TITLE } from './unit/treelayers.js';   // [park trees] street / park tree toggles, remembered per browser
 
@@ -853,7 +854,7 @@ function refreshTime() {
   if (!site) return;
   if (!hasWindow()) { unresolvedWindow(); return; }
   const s = curSun = sunAt(st.min), up = s.alt > 0, P = panes(), front = inFront(s.az, st.az, P);
-  { const [, mo, dd] = ymd(); stage.setSeason(quantise(seasonAt(mo, dd, site.origin.lat))); }   // [season] the trees follow the date; never an obstruction
+  { const [, mo, dd] = ymd(); stage.setSeason(quantise(seasonAt(mo, dd, site.origin.lat))); stage.setLate(lateAt(st.min)); }   // [season] the trees follow the date; never an obstruction
   const w = winPos(st.floor);
   curHit = up && front ? rayBlock(blockerSet(), w.x, w.y, w.z, s.az, s.alt) : null;
   const lit = up && front && !curHit, side = lit && P && Math.abs(angDiff(s.az, st.az)) >= 90;

@@ -50,8 +50,10 @@ export function cityGroup(ctx, opts = {}) {
   g.userData.count = C.near.length + C.far.length;
   g.userData.api = {
     city: C,
-    setSun(dir, alt) { C.ctx?.setSun({ dir, alt }); C.facU.uNight.value = nightAmount(alt, pal); },
-    setNight(v) { C.facU.uNight.value = v; },
+    setSun(dir, alt) { C.ctx?.setSun({ dir, alt }); C.setNight(nightAmount(alt, pal)); },
+    setNight(v) { C.setNight(v); },
+    /** [daycycle] how late the evening is, 0 (early) to 1 (deep night): fewer windows stay lit */
+    setLate(v) { C.setLate(v); },
     /** [season] the tree season {leaf, autumn} (city3d/season.js), a picture only; true when the trees changed */
     setSeason(s) { return C.setSeason(s); },
     setQuality(qq) { C.quality = { visual: qq === 'visual', phone: phoneClass() }; C.ctx?.setQuality(C.quality); C.facU.uQual.value = qq === 'visual' ? 1 : 0; },   // [massing] Visual: full facades
