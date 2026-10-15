@@ -41,7 +41,7 @@ import { setLookChips, bindLookChips } from './plan/look-ui.js';
 import { askedCamera, cameraParam, openingCamera, mainViewpoint, takeSeeInside, CAMERA_KEY, SAVED_CAMERAS } from './unit/camera-pref.js';   // [camera] which camera a home opens in: Inside when it has a plan
 import { resolve as resolveItem } from './plan/catalog.js';
 import { loadInventoryFile } from './plan/inventory.js';   // [furniture] the renter's pieces: colour, material and finish
-import { applyLooks } from './plan/looks.js';
+import { resolveLayout, applyInventory, savedLayoutFor } from './plan/placement.js';   // [placement] the same rule for where each piece stands as the Floor plan studio
 import { stepView } from './plan/viewpoints.js';
 import { heightProvenance, confOf } from './city3d/facade-rules.js';   // [buildings3d] height source and confidence labels
 import { loadTreeLayers, saveTreeLayers, STREET_TREES_TITLE, PARK_TREES_TITLE } from './unit/treelayers.js';   // [park trees] street / park tree toggles, remembered per browser
@@ -379,8 +379,18 @@ async function loadPlan(id) {
   if (!plan && hasFilePlan) {
     try { planRaw = await loadJSON(`${S.base}/plans/${id}.json`, null); plan = normalisePlan(planRaw); const L0 = plan.layouts[0]; planInfo = { source: 'file', label: '', saved: null, furniture: L0?.items?.length || 0, layout: L0 ? { items: L0.items } : null, layoutName: L0?.name || '' }; } catch { plan = null; planRaw = null; }
   }
-  // [furniture] the renter's own colours and materials, joined to the layout's pieces by id, so Unit 3D draws what the studio draws
-  if (planInfo.layout?.items?.length) { const inv = await loadInventoryFile(S.base, S.manifest, loadJSON); if (inv) planInfo.layout = { ...planInfo.layout, items: applyLooks(planInfo.layout.items, inv) }; }
+  // [placement] where each piece stands is decided by the same rule as in the Floor plan studio (plan/placement.js): the renter's saved layout (what they
+  // dragged there is final), the plan's default for what they have not placed, an automatic fit for what has no place yet; then [furniture] the renter's
+  // sizes, colours, materials and desk set joined to each piece by id, so Unit 3D draws exactly what the studio draws
+  if (plan) {
+    const inv = await loadInventoryFile(S.base, S.manifest, loadJSON), live = savedLayoutFor(store, S.base, id);
+    const scenarioSaved = planInfo.source === 'local scenario' && planInfo.layout ? { ok: true, layout: planInfo.layout, dropped: [] } : null;
+    const saved = planInfo.source === 'local scenario' && scenario?.from !== 'studio' ? scenarioSaved : (live || scenarioSaved);   // a scenario sent from the studio follows the studio's live layout, not the snapshot it was sent with
+    const r = resolveLayout({ model: plan, inventory: inv, saved });
+    planInfo.layout = r.items.length ? { ...(planInfo.layout || {}), items: applyInventory(r.items, inv) } : null;
+    planInfo.furniture = r.items.length;
+    if (planInfo.source === 'file') planInfo.layoutName = plan.layouts[0]?.name || (r.items.length ? 'Your furniture' : '');
+  }
 }
 const listing = () => byId(st.id) || site?.listing || {};
 /** [model project] Do any buildings use parts the renter assumed? Then the stored site study (source geometry) no longer applies. */
@@ -1720,7 +1730,7 @@ async function planForExport() {
   if (!plan || !planRaw) return null;
   try {
     const { serialiseProject } = await import('./plan/project.js');
-    const items = planInfo.source === 'local scenario' ? (planInfo.layout?.items || []) : (plan.layouts[0]?.items || []).map((x) => ({ ...x }));
+    const items = (planInfo.layout?.items || []).map((x) => ({ ...x }));   // [placement] what Unit 3D shows, which is what the studio shows
     return { id: plan.id || st.id, source: planInfo.source, label: planInfo.label, saved: planInfo.saved, project: serialiseProject(planRaw, items, scenario && useScenario ? scenario.lighting || {} : {}) };
   } catch { return null; }
 }
