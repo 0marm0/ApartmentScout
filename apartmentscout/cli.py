@@ -6,6 +6,7 @@
     apartmentscout geocode                         add coordinates (and NYC BBL/BIN)
     apartmentscout commute                         commute grids + per-listing times by mode
     apartmentscout layers                          city layers (NYC: 311 noise density)
+    apartmentscout places                          street, park and neighbourhood geometry for place filters
     apartmentscout dossier <id>|--shortlist        public building records
     apartmentscout site <id> [--floor N]           3D site model + sun and view study
     apartmentscout score                           score and rank against criteria.yaml
@@ -158,7 +159,8 @@ def cmd_commute(args):
     Ls = _listings(ws)
     only = [_find(Ls, k)["id"] for k in args.ids] if getattr(args, "ids", None) else None
     run_commute(ws, Ls, ws.criteria(), cell_m=args.cell, log=log,
-                mode_grids=False if getattr(args, "no_mode_grids", False) else None, only=only)
+                mode_grids=False if getattr(args, "no_mode_grids", False) else None, only=only,
+                only_dests=getattr(args, "dest", None))
     save(Ls, ws.listings_path)
 
 
@@ -617,6 +619,11 @@ def cmd_all(args):
         cmd_layers(args)
     except Exception as e:  # layers are optional
         log(f"  layers skipped: {e}")
+    try:   # street, park and neighbourhood geometry for place filters (optional)
+        from .commands.places import cmd_places
+        cmd_places(args)
+    except (Exception, SystemExit) as e:  # noqa: BLE001
+        log(f"  places skipped: {e}")
     cmd_score(args)
     cmd_build(args)
 
@@ -650,6 +657,9 @@ def main(argv=None):
     s.add_argument("--cell", type=float, default=None, help="grid cell size in metres (default: commute.transit.heat_cell_m or 50)")
     s.add_argument("--no-mode-grids", action="store_true",
                    help="write only the best-of-transit heat grid, not one per mode")
+    s.add_argument("--dest", nargs="+", metavar="NAME",
+                   help="route only these destinations (names as in criteria.yaml), for example a newly added one; "
+                        "the others keep their grids and per-listing minutes")
     s.add_argument("--ids", nargs="+", metavar="ID",
                    help="re-time only these listings (ids, or unique id fragments); the heat-map layers on disk "
                         "and every other listing's commute are left as they are")
