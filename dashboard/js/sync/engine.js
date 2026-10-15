@@ -19,7 +19,7 @@ import { mergeLine } from './sync-text.js';
 
 // The waits. A browser test shortens them by setting window.__AS_SYNC_TUNING before the page loads (like __AS_BOOT_MS in index.html).
 const TUNE = globalThis.__AS_SYNC_TUNING || {};
-const DEBOUNCE = TUNE.debounce ?? 5000, MIN_GAP = TUNE.gap ?? 4000, RESUME_AFTER = TUNE.resume ?? 60000, BACKOFF = TUNE.backoff ?? [30000, 60000, 120000, 300000, 600000];
+const DEBOUNCE = TUNE.debounce ?? 5000, MIN_GAP = TUNE.gap ?? 4000, RESUME_AFTER = TUNE.resume ?? 60000, POLL = TUNE.poll ?? 180000, BACKOFF = TUNE.backoff ?? [30000, 60000, 120000, 300000, 600000];
 
 let state = { phase: 'idle', error: null, retryAt: 0 };
 let gen = 0, running = null, again = false, timer = 0, stampTimer = 0, lastRun = 0, fails = 0, lastRemote = null, started = false, blocked = false;
@@ -192,6 +192,7 @@ export async function connect(tokenText, gistText = '') {
     id = made.id; htmlUrl = made.htmlUrl || '';
   }
   St.setToken(token);
+  try { navigator.storage?.persist?.(); } catch { /* the browser decides */ }   // asks the browser not to clear this site's data (the token, the queue) when space is short
   St.setConfig({ target: 'gist', gistId: id, gistUrl: htmlUrl, owner: owner || '', etag: '', dirty: true });
   lastRemote = null; blocked = false; fails = 0;
   setState({ phase: 'idle', error: null });
@@ -288,6 +289,8 @@ export async function init() {
     else if (c.target === 'gist' && Date.now() - Date.parse(c.lastSync || 0) > RESUME_AFTER) syncNow('resume');
   });
   addEventListener('pagehide', () => { clearTimeout(stampTimer); doStamp(); });
+  // an app left open on the desk hears about the other device without being touched: a "not modified" answer is free, so ask now and then
+  setInterval(() => { const c = St.config(); if (c.target === 'gist' && c.auto && document.visibilityState === 'visible') syncNow('poll'); }, POLL);
   if (St.config().target === 'gist' && St.hasToken() && St.config().gistId) {
     if (navigator.onLine === false) setState({ phase: 'offline' });
     setTimeout(() => syncNow('open'), 600);
