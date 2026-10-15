@@ -657,6 +657,33 @@
       "note": "named unit or traced owner plan; review before publishing Cleared by the owner on 2026-10-13 (private repository, permission obtained)."
     },
     {
+      "file": "docs/images/accent-amber.png",
+      "publication_status": "public",
+      "sha256": "761941174a10ed7f31272163da25637bed77b20dd7058052df8e6980c35d3b92",
+      "bytes": 1131501,
+      "width": 1600,
+      "height": 1000,
+      "note": "ApartmentScout dashboard on the public example data: accent amber"
+    },
+    {
+      "file": "docs/images/blur-up-preview.png",
+      "publication_status": "public",
+      "sha256": "384ec270ec7dc041300a6139cc618831a847d489cbf00405142b4b07cdde271a",
+      "bytes": 1050605,
+      "width": 1600,
+      "height": 1000,
+      "note": "ApartmentScout dashboard on the public example data: blur up preview"
+    },
+    {
+      "file": "docs/images/card-photo-counts.png",
+      "publication_status": "public",
+      "sha256": "cedb2a8743d0fe3ed6b338a01ef12dc3c21b0e2a596f90fb832062c5d3509e22",
+      "bytes": 761969,
+      "width": 864,
+      "height": 1848,
+      "note": "ApartmentScout dashboard on the public example data: card photo counts"
+    },
+    {
       "file": "docs/images/chart-sun-by-floor.png",
       "publication_status": "public",
       "sha256": "f1eb71e443c649946c5d621f5b3119b9d6ac85bc2dd9001c225872e74f163094",
@@ -675,6 +702,15 @@
       "note": "ApartmentScout dashboard on the public example data"
     },
     {
+      "file": "docs/images/cheatsheet.png",
+      "publication_status": "public",
+      "sha256": "e07874a2a5ab7056a6a9d1e544e6d771208c0993cae53bac865e10fd1937e186",
+      "bytes": 653303,
+      "width": 1600,
+      "height": 1000,
+      "note": "ApartmentScout dashboard on the public example data: cheatsheet"
+    },
+    {
       "file": "docs/images/cli.png",
       "publication_status": "public",
       "sha256": "8f77267c7fa187cc56b52e6e58c6278ff6ba47903c07019b3e7a716eaa6753dc",
@@ -684,55 +720,109 @@
       "note": "ApartmentScout dashboard on the public example data"
     },
     {
+      "file": "docs/images/coach-mark.png",
+      "publication_status": "public",
+      "sha256": "0c5c3fad5a72f22f22362abc786ab5c9e6582e10e94cc39279c05baae4c4e7e3",
+      "bytes": 923277,
+      "width": 1600,
+      "height": 1000,
+      "note": "ApartmentScout dashboard on the public example data: coach mark"
+    },
+    {
       "file": "docs/images/compare-light.png",
       "note": "ApartmentScout dashboard on the public example data",
       "publication_status": "public",
-      "sha256": "99b39f09fe9f509aa604a73892da6dbc3fd7dd63f918bd301a0304e318a6828e",
-      "bytes": 340251,
+      "sha256": "348e920c027bbcb46465218e936e8e975c75d676bd4c16fc1adbde86904b79fb",
+      "bytes": 346940,
       "width": 1600,
       "height": 1000
     },
     {
       "file": "docs/images/compare.png",
       "publication_status": "public",
-      "sha256": "ba546cdf300207f74e4c4bcb13633ce4961f75c0af88f32fd57b266b41549959",
-      "bytes": 658444,
+      "sha256": "c071653e6c38628f3df21a152ec2dedfd8b62fd40e085e31bb5b5846e63a3ac6",
+      "bytes": 680002,
       "width": 1600,
-      "height": 3548,
+      "height": 3658,
       "note": "ApartmentScout dashboard on the public example data"
+    },
+    {
+      "file": "docs/images/decision-tray.png",
+      "publication_status": "public",
+      "sha256": "8a01f01d914b131cab5f0d02cb17c0632416e5ba8fd1654e84fd2a7fb0d0bbbf",
+      "bytes": 1125678,
+      "width": 1600,
+      "height": 1000,
+      "note": "ApartmentScout dashboard on the public example data: decision tray"
     },
     {
       "file": "docs/images/drawer-money.png",
       "note": "ApartmentScout dashboard on the public example data",
       "publication_status": "public",
-      "sha256": "0a3d7c7acb8f317a56f59d280e84b2336f51456e7928d29a575e7ca782c550ad",
-      "bytes": 82366,
+      "sha256": "470a01eaa39189ef69d7980c5c359fabd3ed095451aad6ae5a9713bbcc8163b2",
+      "bytes": 101180,
       "width": 448,
-      "height": 880
+      "height": 904
+    },
+    {
+      "file": "docs/images/high-contrast.png",
+      "publication_status": "public",
+      "sha256": "c0d0d480de077bd5a6c7de09d65191686db429a155ad32efe012aec9c2177049",
+      "bytes": 1112813,
+      "width": 1600,
+      "height": 1000,
+      "note": "ApartmentScout dashboard on the public example data: high contrast"
+    },
+    {
+      "file": "docs/images/lightbox-floor-plan.png",
+      "publication_status": "public",
+      "sha256": "61be4ddc57338ab8ca022556089828b0cc21a955c18e816fb4caf5f1ecdcd7f7",
+      "bytes": 877733,
+      "width": 1600,
+      "height": 1000,
+      "note": "ApartmentScout dashboard on the public example data: lightbox floor plan"
+    },
+    {
+      "file": "docs/images/lightbox.png",
+      "publication_status": "public",
+      "sha256": "bd768f87bf0a270cee93b771af866317f9ed87f20e1383cc57269c1e1529e66a",
+      "bytes": 1217091,
+      "width": 1600,
+      "height": 1000,
+      "note": "ApartmentScout dashboard on the public example data: lightbox"
+    },
+    {
+      "file": "docs/images/list-split-view.png",
+      "publication_status": "public",
+      "sha256": "ef892a2afd78f08c0b924c423be45c582a0ebdc3c623e4a7230ca23214960f80",
+      "bytes": 572909,
+      "width": 1600,
+      "height": 1000,
+      "note": "ApartmentScout dashboard on the public example data: list split view"
     },
     {
       "file": "docs/images/map-3d.png",
       "publication_status": "public",
-      "sha256": "27147732048bd0b8b83d4725b77445328be062f45238aa0a08eae5e9c5daeb8d",
-      "bytes": 709398,
+      "sha256": "e58c0e0e92aba6630989eb245e8fd08950b16b10dcb56cdf729511b885b3f6c6",
+      "bytes": 801656,
       "width": 880,
-      "height": 900,
+      "height": 924,
       "note": "ApartmentScout dashboard on the public example data"
     },
     {
       "file": "docs/images/map-bus.png",
       "note": "ApartmentScout dashboard on the public example data",
       "publication_status": "public",
-      "sha256": "702573e13d6313ce3abce5d4e43f11b94d4586736403d76c6d5f9905bb85b9fb",
-      "bytes": 1053895,
+      "sha256": "b1e109767debe74bbfde29c066a4a540d4ed9add7ced585c06136681663600ad",
+      "bytes": 1077787,
       "width": 1600,
       "height": 1000
     },
     {
       "file": "docs/images/map-commute-light.png",
       "publication_status": "public",
-      "sha256": "41a0022063bd4e1a39d266e69f3d743b4082923aa124527288f4355d91da1589",
-      "bytes": 1110275,
+      "sha256": "db677feb24854c1d713efa26a12027604f20b053296336d583908a4effb6f4d0",
+      "bytes": 1127555,
       "width": 1600,
       "height": 1000,
       "note": "ApartmentScout dashboard on the public example data"
@@ -740,89 +830,152 @@
     {
       "file": "docs/images/map-commute.png",
       "publication_status": "public",
-      "sha256": "255250c718a36a583fef4e1561e750ac6a86c6217a698ef9cbb504f44afdeb80",
-      "bytes": 1081329,
+      "sha256": "69db551441c7ee13abebe886320c9cf15cc12a818816dfef5dd0f8adde955c34",
+      "bytes": 1131157,
       "width": 1600,
       "height": 1000,
       "note": "ApartmentScout dashboard on the public example data"
     },
     {
+      "file": "docs/images/map-compact.png",
+      "publication_status": "public",
+      "sha256": "b7631b85fc5fb163fb10d72564ae78cbabad66c2f89d465739db02734f732c41",
+      "bytes": 1106145,
+      "width": 1600,
+      "height": 1000,
+      "note": "ApartmentScout dashboard on the public example data: map compact"
+    },
+    {
       "file": "docs/images/map-drawer-commute.png",
       "publication_status": "public",
-      "sha256": "29c33d21fedd46b2bdc1eac0559db107712a8fb4ca98de343982d090b60af69e",
-      "bytes": 84213,
+      "sha256": "7900f06eb55c7e5ea58d43c6f70ed1c54820e70ab0e109a101258b6da9074ab8",
+      "bytes": 104424,
       "width": 448,
-      "height": 880,
+      "height": 904,
       "note": "ApartmentScout dashboard on the public example data"
     },
     {
       "file": "docs/images/map-drawer.png",
       "publication_status": "public",
-      "sha256": "57e29cd18fd97a5187669494f6de653cee7b9a659299ef94ea0269682ba46b15",
-      "bytes": 956361,
+      "sha256": "ae31a7f8fee53cd88f84d7526104778cf33890d2545d1d1e526905632c907e6f",
+      "bytes": 1057427,
       "width": 1600,
       "height": 1000,
       "note": "ApartmentScout dashboard on the public example data"
     },
     {
+      "file": "docs/images/map-filter-chips.png",
+      "publication_status": "public",
+      "sha256": "a6f6391963d1ca7fdcad89d0fd94945b9f587e3d52dcc746b603c6b3f152f9e7",
+      "bytes": 1108269,
+      "width": 1600,
+      "height": 1000,
+      "note": "ApartmentScout dashboard on the public example data: map filter chips"
+    },
+    {
       "file": "docs/images/map-light-drawer.png",
       "note": "ApartmentScout dashboard on the public example data",
       "publication_status": "public",
-      "sha256": "3352e6871e4c9871b3a40c19626acffcfd7731530df09a59ccb0feb9a31b1a59",
-      "bytes": 994597,
+      "sha256": "fbca48cd1bf8436e2be9b5dd2fe9b87ba8a87ee45ee9f5d991ad578bc173053b",
+      "bytes": 1154255,
       "width": 1600,
       "height": 1000
     },
     {
       "file": "docs/images/map-noise.png",
       "publication_status": "public",
-      "sha256": "0389bd5233b7e4c28515fcebd9525832b35bb18c3056275650be110c98d12ef8",
-      "bytes": 1115659,
+      "sha256": "c6eb7deca18a79908dcac185b5dc4c43e4a49169915bd5cb149ee83c3dbb0831",
+      "bytes": 1152489,
       "width": 1600,
       "height": 1000,
       "note": "ApartmentScout dashboard on the public example data"
+    },
+    {
+      "file": "docs/images/map-paramount.png",
+      "publication_status": "public",
+      "sha256": "55f907106be6e5486cc9437ddc32eed2e0fbadad6ff5f75d79c6e0d25ca47641",
+      "note": "dashboard screenshot of the example search",
+      "bytes": 991747,
+      "width": 1600,
+      "height": 1000
+    },
+    {
+      "file": "docs/images/map-rank-changes.png",
+      "publication_status": "public",
+      "sha256": "3fa6daf598d367dd3da2a7d48aa7e919aa82ae8320cd0c4cee819980d0e678e3",
+      "bytes": 1155461,
+      "width": 1600,
+      "height": 1000,
+      "note": "ApartmentScout dashboard on the public example data: map rank changes"
     },
     {
       "file": "docs/images/map-rent.png",
       "publication_status": "public",
-      "sha256": "6fe45472046579fdee63d9ba4b05a4b24904b8df38c143a0512246245b195351",
-      "bytes": 1030512,
+      "sha256": "54785777acb0f4d6b9d6aca8cda3cfaf7cba679ece5289db920aab733e6151aa",
+      "bytes": 1060146,
       "width": 1600,
       "height": 1000,
       "note": "ApartmentScout dashboard on the public example data"
     },
     {
+      "file": "docs/images/map-route-preview.png",
+      "publication_status": "public",
+      "sha256": "252681acc45992da11480f67e3c761c4c1d1db1531ea79b06d7148b8c330d281",
+      "bytes": 1341463,
+      "width": 1600,
+      "height": 1000,
+      "note": "ApartmentScout dashboard on the public example data: map route preview"
+    },
+    {
       "file": "docs/images/map-score.png",
       "publication_status": "public",
-      "sha256": "cfde51d6a33a8ceafe3c12668b3d26a5e68f11d2832fbf2866062671bccd056e",
-      "bytes": 1021826,
+      "sha256": "16ba06ae232bf9d43457a84345490c9e3b9cc796c850dcf26ec270bcc402b438",
+      "bytes": 1065599,
       "width": 1600,
       "height": 1000,
       "note": "ApartmentScout dashboard on the public example data"
+    },
+    {
+      "file": "docs/images/map-starred-lens.png",
+      "publication_status": "public",
+      "sha256": "4f61bef60d8660688e069619e6ee8748938c27e4d80ef696ad9ccc8565e94d6b",
+      "bytes": 1268835,
+      "width": 1600,
+      "height": 1000,
+      "note": "ApartmentScout dashboard on the public example data: map starred lens"
+    },
+    {
+      "file": "docs/images/map-sun-lens.png",
+      "publication_status": "public",
+      "sha256": "09f2b77b7ae11bb3cbcc907c72ca3177285e245c449401992f8de2a38e3ac984",
+      "bytes": 896150,
+      "width": 1600,
+      "height": 1000,
+      "note": "ApartmentScout dashboard on the public example data: map sun lens"
     },
     {
       "file": "docs/images/map-walk.png",
       "note": "ApartmentScout dashboard on the public example data",
       "publication_status": "public",
-      "sha256": "651a1fe062ef0b4df38d08c28161ce5825c7c64e85b14d75d2904d983d3b8f7a",
-      "bytes": 484784,
+      "sha256": "959c88fe2027b4718e87ef975a8bc3b0c723911181de75de6d8e60177760b885",
+      "bytes": 508877,
       "width": 880,
-      "height": 900
+      "height": 924
     },
     {
       "file": "docs/images/mobile-drawer.png",
       "note": "ApartmentScout dashboard on the public example data",
       "publication_status": "public",
-      "sha256": "734c2c7bb5b66b871586a7c9aed120f16bef6faf9a0759b1061895f88e29f814",
-      "bytes": 404410,
+      "sha256": "eb31602b2407aa5ba2cb78062ef44be4ee2c581947e3cc2529a4317bd949fd00",
+      "bytes": 477615,
       "width": 630,
       "height": 1350
     },
     {
       "file": "docs/images/mobile-map.png",
       "publication_status": "public",
-      "sha256": "164b5d17b56f35ae2aefb778eccd47d9da9df2a5d04a8b6da595008ce0ed9fab",
-      "bytes": 582949,
+      "sha256": "0b42a29acef12330343432fb12bb186a89ab8dc16656f3c3bb3bf3592bf6e282",
+      "bytes": 601137,
       "width": 630,
       "height": 1350,
       "note": "ApartmentScout dashboard on the public example data"
@@ -832,15 +985,24 @@
       "note": "ApartmentScout dashboard on the public example data",
       "publication_status": "public",
       "sha256": "94bcff4094e97f41b8828647fdd86c1c1698de76f177d1ad6d021a4fc9b454db",
-      "bytes": 208399,
+      "bytes": 360137,
       "width": 630,
       "height": 1350
+    },
+    {
+      "file": "docs/images/palette-plain-words.png",
+      "publication_status": "public",
+      "sha256": "579b9acbc30bbdd4bb23bc11ec5fe9d44f84ea3d15deb7d272315b64ec4926c1",
+      "bytes": 958004,
+      "width": 1600,
+      "height": 1000,
+      "note": "ApartmentScout dashboard on the public example data: palette plain words"
     },
     {
       "file": "docs/images/plan-bird.png",
       "publication_status": "public",
       "sha256": "d7bd6bdb3ac3055b947b06e6f036f0fb346e6e60d1624fbf547af724a4c277d9",
-      "bytes": 271883,
+      "bytes": 361120,
       "width": 1600,
       "height": 1000,
       "note": "ApartmentScout dashboard on the public example data"
@@ -850,7 +1012,16 @@
       "note": "ApartmentScout dashboard on the public example data",
       "publication_status": "public",
       "sha256": "f6c25c19989da24dab47b6969d00164a2fac79ebb93b6dacc911581307b39da9",
-      "bytes": 285210,
+      "bytes": 375735,
+      "width": 1600,
+      "height": 1000
+    },
+    {
+      "file": "docs/images/plan-paramount.png",
+      "publication_status": "public",
+      "sha256": "2f08d18dd91ac98303da66c0220ae59d130e65762795e1beafe3ce9db611c862",
+      "note": "dashboard screenshot of the example search",
+      "bytes": 367405,
       "width": 1600,
       "height": 1000
     },
@@ -858,8 +1029,8 @@
       "file": "docs/images/plan-top.png",
       "publication_status": "public",
       "sha256": "2ab1092869b2741604aaf4ef54f6dcbb758553f3ba5087a61245d65c4d8f0f5c",
-      "bytes": 46800,
-      "width": 582,
+      "bytes": 102213,
+      "width": 586,
       "height": 711,
       "note": "ApartmentScout dashboard on the public example data"
     },
@@ -867,34 +1038,43 @@
       "file": "docs/images/plan-tracer.png",
       "note": "ApartmentScout dashboard on the public example data",
       "publication_status": "public",
-      "sha256": "b13386d5793f69419eaf1c610879b7c8932f16ff3432f2b2669e395ee3b8396b",
-      "bytes": 72906,
+      "sha256": "b4589cdb7c6fb657bcdcfa3f5a978dd4aef04747ceff96226f5c345ff2e87b68",
+      "bytes": 75858,
       "width": 1600,
       "height": 1000
     },
     {
+      "file": "docs/images/rail-collapsed.png",
+      "publication_status": "public",
+      "sha256": "cdd7303989d1a09c4123f1cf0ba971de39a0a54a94dd630e99814050d4ac993f",
+      "bytes": 1149439,
+      "width": 1600,
+      "height": 1000,
+      "note": "ApartmentScout dashboard on the public example data: rail collapsed"
+    },
+    {
       "file": "docs/images/records.png",
       "publication_status": "public",
-      "sha256": "78a5a37229e744c958e431eacd26163adfada175827b13f3a42fa0e1eb8f5493",
-      "bytes": 940452,
+      "sha256": "e5e4a6f9798f42b2e76ce24555b67dd60b0a20ec51b3c8c84b1c9a8c7dd4947e",
+      "bytes": 961605,
       "width": 1600,
-      "height": 5049,
+      "height": 5117,
       "note": "ApartmentScout dashboard on the public example data"
     },
     {
       "file": "docs/images/research-gone.png",
       "note": "ApartmentScout dashboard on the public example data",
       "publication_status": "public",
-      "sha256": "0f2bd15505aea14b6194a4f0499b407eaa2b45ec2d0d35af133a6d7b33b24b49",
-      "bytes": 102790,
+      "sha256": "aaf7c91a489ef042cb402593731e09eab203790a4fb1f9992375ce38a7970bb7",
+      "bytes": 105880,
       "width": 1600,
       "height": 1000
     },
     {
       "file": "docs/images/research-media.png",
       "publication_status": "public",
-      "sha256": "39536662d3b2da23fc8cdaa96e7c284cb661347fdb950dec9e979b8e328c3763",
-      "bytes": 192621,
+      "sha256": "edeb024932f1c0f530dbac7ff91986a6d515f18479d681743730473bbc503c02",
+      "bytes": 1181304,
       "width": 1600,
       "height": 1000,
       "note": "ApartmentScout dashboard on the public example data"
@@ -902,53 +1082,107 @@
     {
       "file": "docs/images/research.png",
       "publication_status": "public",
-      "sha256": "bfd410bdabe1f60c2d323b653da3f1a944ded5668a6118f65e1b3283b1796bdf",
-      "bytes": 247000,
+      "sha256": "9d0791750944367bec4a68ce7049e6367a09f01837c4ba5c0d845717b67f5c46",
+      "bytes": 298599,
       "width": 1600,
       "height": 1000,
       "note": "ApartmentScout dashboard on the public example data"
+    },
+    {
+      "file": "docs/images/settings-menu.png",
+      "publication_status": "public",
+      "sha256": "94990c7a4b48654ad81b9b0943cc4372400d4096e8e7055efbf2f619f53de19f",
+      "bytes": 1066301,
+      "width": 1600,
+      "height": 1000,
+      "note": "ApartmentScout dashboard on the public example data: settings menu"
     },
     {
       "file": "docs/images/settings.png",
       "note": "ApartmentScout dashboard on the public example data",
       "publication_status": "public",
-      "sha256": "fe1bb854c5397dbb078364d5d2b28cc61956b717bcfb2cb03c9dae377d55a53e",
-      "bytes": 582070,
+      "sha256": "06ff3707fa06e4e8ffe8405eba43bb1d1ffe4f583b145d7c19705b6486f6fb0d",
+      "bytes": 1121426,
       "width": 1600,
       "height": 1000
     },
     {
+      "file": "docs/images/share-decision-memo.png",
+      "publication_status": "public",
+      "sha256": "48706c720f0920776c7b2af293569c707e49fd137c0e4503716f8d83fe00705a",
+      "bytes": 305044,
+      "width": 1600,
+      "height": 1000,
+      "note": "ApartmentScout dashboard on the public example data: share decision memo"
+    },
+    {
+      "file": "docs/images/share-shortlist-page.png",
+      "publication_status": "public",
+      "sha256": "22cfbe383b06b3c7e4bfa540aa05c2df37b2c1ca46009ae886eace3b43be1ce4",
+      "bytes": 244705,
+      "width": 1600,
+      "height": 1000,
+      "note": "ApartmentScout dashboard on the public example data: share shortlist page"
+    },
+    {
       "file": "docs/images/shortlist.png",
       "publication_status": "public",
-      "sha256": "13a2cbec13e94c764580e492521aa0a49312fa92984a98a8abdb879999ad13a8",
-      "bytes": 325221,
+      "sha256": "d3d69ab6ce0e3b6176b5becc608e43dd352bac4b6994ee9a96905bd163632983",
+      "bytes": 373584,
       "width": 1600,
       "height": 1000,
       "note": "ApartmentScout dashboard on the public example data"
     },
     {
+      "file": "docs/images/tour-day-planner.png",
+      "publication_status": "public",
+      "sha256": "81961df1b177bc6b01695c3abc860e957204bf5f3a9b980f0d707a3636424b80",
+      "bytes": 251743,
+      "width": 1600,
+      "height": 1580,
+      "note": "ApartmentScout dashboard on the public example data: tour day planner"
+    },
+    {
       "file": "docs/images/tours.png",
       "publication_status": "public",
-      "sha256": "9d84447445933c3f10c8e7bac9ee8d5c77ac63d89fbe30f9ebe7f95dfd6cff93",
-      "bytes": 179430,
+      "sha256": "5b7bda2be274e4e12613eae2ac7e43247b015d54bb9e455222cfebe87d45bfb5",
+      "bytes": 202284,
       "width": 1600,
       "height": 1000,
       "note": "ApartmentScout dashboard on the public example data"
+    },
+    {
+      "file": "docs/images/tradeoff-pad.png",
+      "publication_status": "public",
+      "sha256": "bcc12569c7c2bd87d97ec70f3cf6e517a8199aad22472360e18324c2cfc1c012",
+      "bytes": 1135141,
+      "width": 1600,
+      "height": 1000,
+      "note": "ApartmentScout dashboard on the public example data: tradeoff pad"
+    },
+    {
+      "file": "docs/images/undo-toast.png",
+      "publication_status": "public",
+      "sha256": "3453488713d910880bd9394af697f1d8f8b00aae129e58547fe3fa6ceedc1e1c",
+      "bytes": 1128209,
+      "width": 1600,
+      "height": 1000,
+      "note": "ApartmentScout dashboard on the public example data: undo toast"
     },
     {
       "file": "docs/images/unit-daylight.png",
       "note": "ApartmentScout dashboard on the public example data",
       "publication_status": "public",
-      "sha256": "9e56da48080daec10bd38df57205ff6abf4f00c25c641243ff1b53e49feb86db",
-      "bytes": 79585,
+      "sha256": "7cbf39ed023447f0c40c768f1e8b43960354638451bf43587022506817787856",
+      "bytes": 88538,
       "width": 404,
-      "height": 1093
+      "height": 1134
     },
     {
       "file": "docs/images/unit-floors.png",
       "publication_status": "public",
       "sha256": "ae268f10b5f2489177d0ba8b7745664f861fa7975bda957332d5ed89db034863",
-      "bytes": 79193,
+      "bytes": 79161,
       "width": 404,
       "height": 555,
       "note": "ApartmentScout dashboard on the public example data"
@@ -957,61 +1191,88 @@
       "file": "docs/images/unit-inside.png",
       "publication_status": "public",
       "sha256": "3a4f0ff3ae0d4643009a3d050b6cc16c949364b21c83b0b6b16bb70882b2a06d",
-      "bytes": 54867,
-      "width": 1132,
-      "height": 503,
+      "bytes": 64429,
+      "width": 1140,
+      "height": 524,
       "note": "ApartmentScout dashboard on the public example data"
     },
     {
       "file": "docs/images/unit-light-theme.png",
       "note": "ApartmentScout dashboard on the public example data",
       "publication_status": "public",
-      "sha256": "8762df8547dd856ce51b216f1961cb9c68dbbfc6f42952643e5b973ffe4b91f9",
-      "bytes": 404192,
+      "sha256": "6250eff317511c5307ee2c86bc9f599fa7f7f555e4e0863ff885c5d33f91716a",
+      "bytes": 659722,
       "width": 1600,
       "height": 1000
     },
     {
       "file": "docs/images/unit-maybury.png",
       "publication_status": "public",
-      "sha256": "fd61929803fee85581ee8a6fdeeca50c50260c74e3d3662f6c5bfd92755b789a",
-      "bytes": 195393,
-      "width": 1132,
-      "height": 503,
+      "sha256": "8d27bd066deb28440ff9d67f8fa76169957d16de60a9c49d2a55c466f1e068aa",
+      "bytes": 310626,
+      "width": 1140,
+      "height": 524,
       "note": "ApartmentScout dashboard on the public example data"
     },
     {
       "file": "docs/images/unit-orbit-dec.png",
       "publication_status": "public",
-      "sha256": "2d16bba909ac8b533ceee08b0685c2485ab45b098fa8917005a1f07ba8c69266",
-      "bytes": 264639,
-      "width": 1132,
-      "height": 503,
+      "sha256": "99bf5f60f836d1f3c7786a0f7c0caddb34666d078e73072231a6459d32818f9a",
+      "bytes": 512346,
+      "width": 1140,
+      "height": 524,
       "note": "ApartmentScout dashboard on the public example data"
     },
     {
       "file": "docs/images/unit-orbit.png",
       "publication_status": "public",
-      "sha256": "7c7a2c402fd353134c6eebf0e02755b8e8efa1902f7aec477afe59aeec33a241",
-      "bytes": 427489,
+      "sha256": "3c22d8884e2c716bb5c2e31f773b23ed65af4dcb949ad1303a82847319290368",
+      "bytes": 707668,
       "width": 1600,
       "height": 1000,
       "note": "ApartmentScout dashboard on the public example data"
     },
     {
+      "file": "docs/images/unit-paramount-inside.png",
+      "publication_status": "public",
+      "sha256": "c23f714a2a195d0562f0eaee84eeb400e79136e41abcb5ff157f3d515b023915",
+      "note": "dashboard screenshot of the example search",
+      "bytes": 143813,
+      "width": 1140,
+      "height": 498
+    },
+    {
+      "file": "docs/images/unit-paramount-window.png",
+      "publication_status": "public",
+      "sha256": "33262a938125af556e67395c0363554f73c85ee3f3a9af415791498c9d3c2d56",
+      "note": "dashboard screenshot of the example search",
+      "bytes": 253177,
+      "width": 1140,
+      "height": 498
+    },
+    {
+      "file": "docs/images/unit-paramount.png",
+      "publication_status": "public",
+      "sha256": "ee92bc6d49d1ff9d1dfbec9c5e2cf4ebcb8fd442c6b0955de7a7cef4811957ad",
+      "note": "dashboard screenshot of the example search",
+      "bytes": 788651,
+      "width": 1600,
+      "height": 1000
+    },
+    {
       "file": "docs/images/unit-plan-view.png",
       "publication_status": "public",
-      "sha256": "472f901f82f52b9d2981266835f98c3581bb901f46ee42793a103b89baab96f1",
-      "bytes": 361496,
-      "width": 1132,
-      "height": 503,
+      "sha256": "06baadab7bd0a205339fa7ffa454c1c18f4c3d549cf2b7bf983d7f052f984b06",
+      "bytes": 345386,
+      "width": 1140,
+      "height": 524,
       "note": "ApartmentScout dashboard on the public example data"
     },
     {
       "file": "docs/images/unit-sunpath.png",
       "publication_status": "public",
       "sha256": "99029dafef7419f994bea2c1154ff1e8b1d8379cb49416f2044aa3d143c4039d",
-      "bytes": 29760,
+      "bytes": 29715,
       "width": 362,
       "height": 240,
       "note": "ApartmentScout dashboard on the public example data"
@@ -1019,50 +1280,47 @@
     {
       "file": "docs/images/unit-window-12.png",
       "publication_status": "public",
-      "sha256": "00e100ca76c886a33c4a8a43ace2e64ab7e85bc60076ee28782e3589e62cb67c",
-      "bytes": 80722,
-      "width": 1132,
-      "height": 503,
+      "sha256": "c099e3d55816787c038d3b2cb5cdb9348ad8f50e51b8e1ef4c417a5b32738c96",
+      "bytes": 145834,
+      "width": 1140,
+      "height": 524,
       "note": "ApartmentScout dashboard on the public example data"
     },
     {
       "file": "docs/images/unit-window-21.png",
       "publication_status": "public",
-      "sha256": "373f48f758dd9352b4ab8d33c5db2c2a8c97acddfd31a58d9d24a4d71794d629",
-      "bytes": 149972,
-      "width": 1132,
-      "height": 503,
+      "sha256": "4b0e84737ce39491b4401a9f6f1a1dad5648966ba4b1ca4a3fc44c53186f0635",
+      "bytes": 243316,
+      "width": 1140,
+      "height": 524,
       "note": "ApartmentScout dashboard on the public example data"
     },
     {
-      "file": "docs/images/map-paramount.png",
+      "file": "docs/images/wizard-basics.png",
       "publication_status": "public",
-      "sha256": "8258c289a08e6d7e4c6efc830e0e1a5ec8d7f45496069544eea00a9a5aed1e8d",
-      "note": "dashboard screenshot of the example search"
+      "sha256": "1067a92224ca08c9ca83a71f0cb5bd5e54d5272a24cb1b1a17f85b7da9606a08",
+      "bytes": 400442,
+      "width": 1600,
+      "height": 1000,
+      "note": "ApartmentScout dashboard on the public example data: wizard basics"
     },
     {
-      "file": "docs/images/plan-paramount.png",
+      "file": "docs/images/wizard-pick-on-map.png",
       "publication_status": "public",
-      "sha256": "2f08d18dd91ac98303da66c0220ae59d130e65762795e1beafe3ce9db611c862",
-      "note": "dashboard screenshot of the example search"
+      "sha256": "4f83e33dceefa6b14061f61c4989b753c9c63d29340e57a0c3f30ae87947a14d",
+      "bytes": 1131419,
+      "width": 1600,
+      "height": 1000,
+      "note": "ApartmentScout dashboard on the public example data: wizard pick on map"
     },
     {
-      "file": "docs/images/unit-paramount-inside.png",
+      "file": "docs/images/wizard-review.png",
       "publication_status": "public",
-      "sha256": "c23f714a2a195d0562f0eaee84eeb400e79136e41abcb5ff157f3d515b023915",
-      "note": "dashboard screenshot of the example search"
-    },
-    {
-      "file": "docs/images/unit-paramount-window.png",
-      "publication_status": "public",
-      "sha256": "38aa8903fdd61b29ebbad7890c5a6bb3a741767de2acbd8c27911c8af4c8de08",
-      "note": "dashboard screenshot of the example search"
-    },
-    {
-      "file": "docs/images/unit-paramount.png",
-      "publication_status": "public",
-      "sha256": "a3e322c277d2f6cd53136c7b848a17ca22d1d6f3f97a477813cf73f2c80c07c0",
-      "note": "dashboard screenshot of the example search"
+      "sha256": "2f2757574692446cc57c3a7fc9c359743aebde053b8a2210a31f878e10275b32",
+      "bytes": 395357,
+      "width": 1600,
+      "height": 1000,
+      "note": "ApartmentScout dashboard on the public example data: wizard review"
     }
   ],
   "policy": {

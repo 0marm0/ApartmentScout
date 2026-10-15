@@ -12,7 +12,7 @@ Every image here is marked `public` in [`gallery/manifest.json`](gallery/manifes
 
 ### Map
 
-The home view: a filter rail with budget tiers, histograms, must-haves and live weight sliders; ranked
+The home view: a filter rail with budget tiers, histograms, must-haves and live weight sliders (the sections fold away); ranked
 listing cards with walk, subway and bus minutes; and a vector map with heat layers, official subway
 lines, price tags and a floating listing drawer.
 
@@ -27,7 +27,7 @@ lines, price tags and a floating listing drawer.
 ### Shortlist
 
 <table>
-<tr><td><img src="images/shortlist.png" alt="Shortlist table"><br><sub>Every filtered listing ranked live by your weights: monthly cost, budget tier, size and $/ft², commute, floor and exposure, laundry, doorman and gym (? means unconfirmed), score, the share of the score resting on known facts, and status. Keyboard: arrows move, Enter opens, s saves, c compares.</sub></td></tr>
+<tr><td><img src="images/shortlist.png" alt="Shortlist table"><br><sub>Every filtered listing ranked live by your weights: monthly cost, budget tier, size and $/ft², commute, floor and exposure, laundry, doorman and gym (? means unconfirmed), score, the share of the score resting on known facts, and status. Keyboard: arrows move, Enter opens, s saves, c compares. Share shortlist (top right) is for your saved picks; the Map button docks a mini map.</sub></td></tr>
 </table>
 
 ### Compare
@@ -80,7 +80,7 @@ Records now sit inside the Research tab, next to the research queue and media.
 ### Research
 
 <table>
-<tr><td width="50%"><img src="images/research.png" alt="Research queue"><br><sub>The finalist standard and its gaps, then the research queue: missing and stale facts, points at stake, last check and copyable questions</sub></td><td width="50%"><img src="images/research-media.png" alt="Research media"><br><sub>Media: licensed building photos with author and licence, plans and aerial fallbacks, filtered by scope</sub></td></tr>
+<tr><td width="50%"><img src="images/research.png" alt="Research queue"><br><sub>The finalist standard and its gaps, then the research queue: missing and stale facts, points at stake, last check and copyable questions</sub></td><td width="50%"><img src="images/research-media.png" alt="Research media"><br><sub>Media: every image of a home grouped by listing, with scope tabs and counts, a broker-mark filter and the credit on hover; details under Photos below</sub></td></tr>
 </table>
 
 ### Shortlist: tours
@@ -88,7 +88,59 @@ Records now sit inside the Research tab, next to the research queue and media.
 Tours are a section of the Shortlist tab.
 
 <table>
-<tr><td><img src="images/tours.png" alt="Tours"><br><sub>Saved picks on a tier board (S, A, B, C, Pass) with tour times and notes, a backup file, and a tour plan in nearest-next order from the office with walking and viewing minutes.</sub></td></tr>
+<tr><td><img src="images/tours.png" alt="Tours"><br><sub>Saved picks on a tier board (S, A, B, C, Pass) with tour times and notes, and below it the tour plan in nearest-next order from the office with walking and viewing minutes and a route map. The tour-day planner above it is shown under "Deciding".</sub></td></tr>
+</table>
+
+### Map lenses and route preview
+
+Hover a home and its commute route is drawn; the star and sun lenses change what the pins mean; the Shortlist can dock a
+map beside its table. The picks used in the starred, tray and tour shots are five example saves, not data from the search.
+
+<table>
+<tr><td width="50%"><img src="images/map-route-preview.png" alt="Route preview on hover"><br><sub>Route preview, subway lens: hovering the Emerald Green 24D card draws its trip to Grand Central on the map, an 11-minute walk (dashed), the S shuttle on its own line, a short walk at the end, and a 17-minute pill</sub></td><td width="50%"><img src="images/map-starred-lens.png" alt="Starred-only lens"><br><sub>The "★ 5" chip counts your saved picks and shows only those pins, ringed in gold, with a fit button and <b>+ List</b> to filter the cards too; the Shortlist tab counts the same five</sub></td></tr>
+<tr><td width="50%"><img src="images/map-sun-lens.png" alt="Sun lens"><br><sub>Sun lens: pins and price tags coloured by direct-sun hours in October (0.0 to 5.7 h) for the four homes that have a site model; every other home is grey and marked "?" and the legend says so, with a month stepper</sub></td><td width="50%"><img src="images/list-split-view.png" alt="Shortlist split view"><br><sub>Shortlist split view: the table's 60 filtered homes beside a docked mini map of exactly those homes; hovering a row (Orion Condominium 14D) previews its route, here a bus trip marked "path approximate"</sub></td></tr>
+</table>
+
+### Filters, rail and ranking
+
+<table>
+<tr><td width="50%"><img src="images/map-filter-chips.png" alt="Filter chips"><br><sub>Filter chips above the results: Target ≤ $5,000, ≤ 25 min · Best, Full-time doorman and Gym, each removable with its ×, plus Clear all; the list is down to 40 homes</sub></td><td width="50%"><img src="images/rail-collapsed.png" alt="Collapsible rail sections"><br><sub>Collapsible rail: Search, Budget, Must-haves and Status are folded to one-line summaries ("Within budget ≤ $5,450", "None", "Active") so the weight controls fit on screen</sub></td></tr>
+<tr><td width="50%"><img src="images/tradeoff-pad.png" alt="Trade-off pad"><br><sub>Trade-off pad: one dot trades Cost, Commute and Space against each other; pointing at a preset ring (Biggest and nicest) previews how the top ten would re-order and who falls out, before you click to apply it</sub></td><td width="50%"><img src="images/map-rank-changes.png" alt="Rank-change badges"><br><sub>After switching the weight preset to Cheapest good enough, ▲ and ▼ badges beside each card's rank show how far it moved (▲7 on the new #1, ▲175 on #6, ▼1 on #5)</sub></td></tr>
+<tr><td width="50%"><img src="images/map-compact.png" alt="Compact density"><br><sub>Compact density: smaller photos, two badges per card and a tighter rail, so more cards fit on screen</sub></td><td width="50%"><img src="images/card-photo-counts.png" alt="Card photo counts" width="300"><br><sub>The results column at 2x: each photo shows its count by group ("2 unit · 24 building", "20 building"); the count is a button that opens the lightbox</sub></td></tr>
+</table>
+
+Price-history sparklines and the "since your last visit" pill are not shown: the example data records no price changes
+or snapshots, and the dashboard draws neither without them.
+
+### Undo, search, shortcuts and comfort
+
+<table>
+<tr><td width="50%"><img src="images/undo-toast.png" alt="Undo toast"><br><sub>Starring Orion Condominium 23A shows a toast with an Undo button and the ⌘Z hint; the star, the Shortlist count and the "★ 1" chip have already changed</sub></td><td width="50%"><img src="images/palette-plain-words.png" alt="Plain-language search"><br><sub>⌘K with a sentence typed: the first row previews what it understood ("1 bd · ≤ $5,000 · ≤ 20 min subway to Grand Central · W/D", 20 of 434 active homes) before anything changes</sub></td></tr>
+<tr><td width="50%"><img src="images/cheatsheet.png" alt="Keyboard cheat sheet"><br><sub>The <kbd>?</kbd> cheat sheet: searchable, with the keys for the view you are on (Map and results) listed first and Shortlist, Compare and Unit 3D beside them; 50 shortcuts in all</sub></td><td width="50%"><img src="images/coach-mark.png" alt="First-run tour"><br><sub>First-run tour (<code>?coach=1</code>): step 1 of 5 spotlights the filter rail with Skip tour and Next</sub></td></tr>
+<tr><td width="50%"><img src="images/settings-menu.png" alt="Settings menu"><br><sub>The settings menu: theme, density, search and picks actions including Share shortlist and Decision memo, accent swatches, the golden-hour tint, the three comfort switches, text size and Take the tour</sub></td><td width="50%"><img src="images/accent-amber.png" alt="Amber accent"><br><sub>The Amber accent: the active budget tiers, histogram, commute slider and the map pins follow it; nothing else changes</sub></td></tr>
+<tr><td width="50%"><img src="images/high-contrast.png" alt="High contrast"><br><sub>High contrast: every card and control gets a solid outline, text is brighter and the Top match link is underlined</sub></td><td></td></tr>
+</table>
+
+### Photos
+
+<table>
+<tr><td width="50%"><img src="images/lightbox.png" alt="Photo lightbox"><br><sub>The lightbox on Orion Condominium 23A: tabs by group with counts (All 41, Unit 12, Building 28, Floor plans 1), a thumbnail strip, the group, credit and position under the photo, zoom controls and the Plan switch</sub></td><td width="50%"><img src="images/lightbox-floor-plan.png" alt="Lightbox with floor plan"><br><sub>Plan set to Side by side: the unit photo beside the listing's own floor plan for 23A</sub></td></tr>
+<tr><td width="50%"><img src="images/blur-up-preview.png" alt="Blur-up previews"><br><sub>Blur-up: with the photo files held back, each card already shows a blurred preview of its photo and the unit and building counts</sub></td><td width="50%"><img src="images/research-media.png" alt="Research media gallery"><br><sub>Research &gt; Media: a justified gallery with scope filters and counts, <b>Hide broker-marked</b>, and By listing, By building and All images; tiles carry their group, and "2 units" marks photos shared with another unit</sub></td></tr>
+</table>
+
+### Deciding: tray, share and tours
+
+<table>
+<tr><td colspan="2"><img src="images/decision-tray.png" alt="Decision tray"><br><sub>The decision tray along the bottom: Compare picks A, B and C with photo, price and score, an empty slot D to drag a home onto, a Compare button with the count and a fold control; it is the same list as the Compare tab</sub></td></tr>
+<tr><td width="50%"><img src="images/share-shortlist-page.png" alt="Share shortlist page"><br><sub>The Share shortlist page (<code>dashboard/share/snapshot.html</code>): read-only, five homes, summary figures, a schematic map with the subway lines and a ranked list; each home below gets its photos, price and reasons</sub></td><td width="50%"><img src="images/share-decision-memo.png" alt="Decision memo"><br><sub>The decision memo: a ranked table with money, size, commute, score, tier and open items, the weights that mattered, then a page per home; use Print or save as PDF</sub></td></tr>
+<tr><td colspan="2"><img src="images/tour-day-planner.png" alt="Tour-day planner"><br><sub>Tour-day planner at the top of Shortlist &gt; Tours: day, start, where you set off from, viewing time and buffer; a timeline of five stops (4 h 45 min, 1 h 12 min of estimated travel), when to leave by for each hop, and "Arrive early, wait" flags where a booked time is later than the plan; Add to calendar and Copy plan sit top right</sub></td></tr>
+</table>
+
+### New search wizard
+
+<table>
+<tr><td width="50%"><img src="images/wizard-basics.png" alt="New search wizard: basics"><br><sub><code>?new=1</code>: step 1 of 8, with every step's answer summarised in the left rail and the draft saved in the browser</sub></td><td width="50%"><img src="images/wizard-pick-on-map.png" alt="Placing a destination on the map"><br><sub>Places: <b>Place on map</b> hides the dialog and asks you to click the map to drop the destination pin</sub></td></tr>
+<tr><td colspan="2"><img src="images/wizard-review.png" alt="Wizard review step"><br><sub>Review: the generated criteria.yaml, a diff against the open search (13 differences), and, because this page cannot write files, Copy YAML, Apply as preview and Download criteria.yaml</sub></td></tr>
 </table>
 
 ### The CLI
