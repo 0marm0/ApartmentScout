@@ -122,9 +122,10 @@ export const GOVERNOR = {
   upPredictMs: 28,     // ... if the lighter neighbour is predicted under this (well under downMs: the hysteresis gap)
   window: 24,          // frames the median is taken over
   minDown: 10,         // frames needed before a step down (severeMin for a severe one)
-  severeMin: 6,
+  severeMin: 8,
   minUp: 20,           // frames needed before a step up (within one run: the window is cleared when the view has been idle)
-  warm: 3,             // frames ignored after a view opens or a level changes (shader compiles, buffer uploads)
+  warm: 4,             // frames ignored after a level changes (the shadow map and materials rebuild)
+  warmOpen: 8,         // ... and after a view opens (every shader compiles, every texture uploads: on a slow phone those first frames take seconds)
   holdUpMs: 8000,      // the least time at a level before a step back up; doubles after a step-up that was undone within flapMs
   maxHoldMs: 300000,
   flapMs: 30000,
@@ -142,7 +143,7 @@ export function createGovernor(opts = {}) {
   const c = { ...GOVERNOR, ...opts }, cost = opts.cost || LEVEL_COST, maxLevel = opts.maxLevel ?? MAX_LEVEL;
   const down = opts.stepDown || ((l) => (l < maxLevel ? l + 1 : null)), up = opts.stepUp || ((l) => (l > 0 ? l - 1 : null));
   let level = clampLevel(opts.level), skip = c.warm, dts = [], works = [], lastChange = -Infinity, lastDir = null, hold = c.holdUpMs;
-  const restart = (t) => { dts = []; works = []; skip = c.warm; if (t != null) lastChange = t; };
+  const restart = (t, warm = c.warm) => { dts = []; works = []; skip = warm; if (t != null) lastChange = t; };
   const change = (to, dir, t, med) => { const from = level; level = to; restart(t); lastDir = dir; return { from, to, dir, median: med }; };
   return {
     get level() { return level; },
@@ -150,9 +151,9 @@ export function createGovernor(opts = {}) {
     get samples() { return dts.length; },
     get median() { return median(dts); },
     /** A view opened (or the scene was rebuilt): forget the samples and ignore the warm-up frames. The level stays. */
-    reset(t) { restart(t); },
+    reset(t) { restart(t, c.warmOpen); },
     /** The view was idle and drew again: start a fresh run of samples without touching the time of the last change. */
-    newRun() { dts = []; works = []; skip = c.warm; },
+    newRun() { dts = []; works = []; skip = Math.min(c.warm, 2); },
     /** Set the level from outside (the renter's choice, a remembered hint). */
     setLevel(l, t) { level = clampLevel(l); restart(t); },
     frame(dt, t, workMs) {
@@ -266,7 +267,7 @@ function setLevel(l, source = 'manual', t = nowMs()) {
 }
 
 // ------------------------------------------------------------------ measuring: engines call attach / opened / pulse
-const PROBE_FRAMES = 26, PROBE_MAX_MS = 6000, PERIOD_MS = 45000, GAP_MS = 250;
+const PROBE_FRAMES = 30, PROBE_MAX_MS = 9000, PERIOD_MS = 45000, GAP_MS = 250;
 function attach(name, o) {
   const e = st.engines.get(name) || { last: 0, run: 0, probe: 0, probeEnd: 0, streamAt: 0, probeAt: 0, name };
   Object.assign(e, o); st.engines.set(name, e);
@@ -276,7 +277,7 @@ function startProbe(e, now) { e.probe = PROBE_FRAMES; e.probeEnd = now + PROBE_M
 /** A 3D view opened or its scene was rebuilt: time its first frames. */
 function opened(name, now = nowMs()) {
   const e = st.engines.get(name); if (!e) return;
-  governor().reset(now); e.run = 0; e.last = 0; e.streamAt = now;
+  governor().reset(now); e.run = 0; e.last = 0; e.streamAt = now; e.recheck = st.level > 0 ? now + GOVERNOR.holdUpMs + 600 : 0;
   if (!st.pinned) startProbe(e, now);
 }
 /**
@@ -294,12 +295,13 @@ function pulse(name, now, drew, ms) {
     if (gap < GAP_MS) {
       e.run++; e.streamAt = now;
       res = governor().frame(gap, now, ms);
-      if (res) { setLevel(res.to, 'auto', now); e.run = 0; }
+      if (res) { setLevel(res.to, 'auto', now); e.run = 0; e.recheck = quality.level > 0 ? now + GOVERNOR.holdUpMs + 600 : 0; }   // a lowered level is looked at again soon, not only at the next 45 s probe
     } else { e.run = 0; governor().newRun(); }
     if (e.probe > 0) { e.probe--; if (e.probe > 0 && now < e.probeEnd) e.kick?.(); else e.probe = 0; }
   } else if (e.probe > 0 && now > e.probeEnd) e.probe = 0;
   else if (e.probe > 0) e.kick?.();
-  else if (now - e.streamAt > PERIOD_MS && now - e.probeAt > PERIOD_MS) {
+  else if ((e.recheck && now >= e.recheck) || (now - e.streamAt > PERIOD_MS && now - e.probeAt > PERIOD_MS)) {
+    e.recheck = 0;
     // the view has been idle: a short timed burst, only when the page is in front
     let hidden = false; try { hidden = document.hidden; } catch { /* no document */ }
     if (!hidden) startProbe(e, now); else e.probeAt = now;

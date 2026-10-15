@@ -36,7 +36,7 @@ jobs:
           - name: decide-and-shell
             files: tests/e2e/test_decision.py tests/e2e/test_shell_extras.py tests/e2e/test_tour_findings.py
           - name: lighting
-            files: tests/e2e/test_lighting.py
+            files: tests/e2e/test_lighting.py tests/e2e/test_quality3d.py
           - name: map-media-results
             files: tests/e2e/test_map_features.py tests/e2e/test_lightbox.py tests/e2e/test_media_tiers.py tests/e2e/test_results_rail.py tests/e2e/test_pdf_tracer.py tests/e2e/test_plan_upload.py
           - name: wizard
@@ -97,8 +97,13 @@ jobs:
         run: apartmentscout build --search examples/nyc-2026 --out /tmp/as-data --standalone /tmp/as-standalone.html
       - name: First-load budget
         run: python scripts/perf_check.py --site _site --standalone /tmp/as-standalone.html --check --runs 3 --cpu 1 --net broadband --json perf.json
+      - name: 3D render budget (draw calls, triangles and texture memory per quality level, desktop and a throttled phone)
+        run: python scripts/perf_check.py --render --check --devices desktop,mobile --mobile-cpu 4 --frames 6 --no-auto --json perf-render.json
+        timeout-minutes: 12
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: perf
-          path: perf.json
+          path: |
+            perf.json
+            perf-render.json

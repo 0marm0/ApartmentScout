@@ -113,9 +113,12 @@ test('single long frames (a garbage collection, a shader compile) do not step do
 test('the first frames after a view opens or a level changes are ignored (shader compiles, buffer uploads)', () => {
   const g = createGovernor();
   g.reset(0);
-  for (let i = 0; i < GOVERNOR.warm; i++) assert.equal(g.frame(900, i * 900, 900), null);
+  for (let i = 0; i < GOVERNOR.warmOpen; i++) assert.equal(g.frame(900, i * 900, 900), null);
   assert.equal(g.samples, 0, 'warm-up frames are not samples');
-  g.frame(16.7, 3000, 8); assert.equal(g.samples, 1);
+  g.frame(16.7, 9000, 8); assert.equal(g.samples, 1);
+  g.setLevel(1, 9000);                            // a level change has a shorter warm-up than an opening
+  for (let i = 0; i < GOVERNOR.warm; i++) assert.equal(g.frame(900, 9000 + i * 900, 900), null);
+  assert.equal(g.samples, 0);
 });
 
 test('it steps back up when there is headroom, but not before the hold time, and never to a level that would be too slow', () => {
@@ -294,4 +297,24 @@ test('renderBudget reads draw calls, triangles and an estimate of texture memory
   assert.ok(Math.abs(b.textureMB - expected / 1048576) < 0.02, `${b.textureMB} MB`);
   assert.equal(shadowBytes(scene), 2048 * 2048 * 20, 'a soft shadow map is two half-float targets and a depth buffer');
   assert.ok(b.memoryMB > b.textureMB && b.pixelRatio === 2 && b.canvas[0] === 780);
+});
+
+test('a level lowered by the slow first frames of a view is looked at again within seconds, not left until the next idle probe', () => {
+  quality._reset();
+  const store = memStore(); quality.bind(store); quality.setDevice({ dpr: 2 }); quality.setMode('visual', { user: true });
+  let want = false;
+  quality.attach('unit', { renderer: () => null, scene: () => null, kick: () => { want = true; } });
+  quality.opened('unit', 0);
+  let t = 0, tDown = null, tUp = null;
+  const lv = [];
+  quality.onChange((s, ch) => { if (ch.level) { lv.push([Math.round(t), s.level]); if (s.level > 0 && tDown == null) tDown = t; if (s.level === 0) tUp = t; } });
+  // the first 3 seconds: a phone compiling shaders, 160 ms a frame; then it is a fast phone (16.7 ms)
+  for (let step = 0; step < 6000 && t < 60000; step++) {
+    const slow = t < 3000, dt = slow ? 160 : 16.7;
+    t += dt;
+    if (want) { want = false; quality.pulse('unit', t, true, slow ? 60 : 5); } else quality.pulse('unit', t, false, 0);
+  }
+  assert.ok(tDown != null && tDown < 3000, `it stepped down on the slow start (${JSON.stringify(lv)})`);
+  assert.equal(quality.level, 0, `and came back (${JSON.stringify(lv)})`);
+  assert.ok(tUp < 25000, `within seconds, at ${Math.round(tUp)} ms`);
 });
