@@ -50,3 +50,4 @@
 .lk-sel { display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-xs); color: var(--ink-3); }
 .lk-sel select { height: 26px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface-2); color: var(--ink-2); font: 500 var(--fs-xs) var(--font-sans, inherit); padding: 0 8px; }
 .u-look .lx-legend { min-width: 150px; margin: 0; }
+@media (max-width: 760px) { .u-look .lk-extra { display: none; } }   /* on a phone the daylight map lives in the studio; the chip row stays short */
