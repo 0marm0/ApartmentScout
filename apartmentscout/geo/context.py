@@ -18,13 +18,21 @@ from . import water as water_mod
 
 
 def build_green(lat: float, lon: float, radius: float, city: str | None, cache_dir=None, refresh: bool = False,
-                say: Callable[..., None] = lambda *a: None, census: bool = True) -> dict | None:
-    """The ``green`` block: OpenStreetMap parks and trees, plus the census trees in New York. None if nothing loaded."""
+                say: Callable[..., None] = lambda *a: None, census: bool = True, keep: dict | None = None) -> dict | None:
+    """The ``green`` block: OpenStreetMap parks and trees, plus the census trees in New York. None if nothing loaded.
+
+    ``keep``: an existing ``green`` block whose OpenStreetMap parks and trees are kept as they are (no Overpass call),
+    so only the census is added or refreshed (``--keep-osm``; Overpass is slow and rate-limited).
+    """
     block = None
-    try:
-        block = green_mod.fetch_green(lat, lon, radius, cache_dir, refresh)
-    except RuntimeError as e:
-        say(f"  green space unavailable: {e}")
+    if keep is not None and keep.get("polys") is not None:
+        block = {k: v for k, v in keep.items() if k != "census"}
+        block["counts"] = {k: v for k, v in (keep.get("counts") or {}).items() if k != "census_trees"}
+    else:
+        try:
+            block = green_mod.fetch_green(lat, lon, radius, cache_dir, refresh)
+        except RuntimeError as e:
+            say(f"  green space unavailable: {e}")
     if census and city == "nyc":
         try:
             c = trees_mod.fetch_census(lat, lon, radius, cache_dir, refresh)

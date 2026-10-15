@@ -23,6 +23,10 @@ relationship (crown spread and height grow with DBH, then level off), not a per-
 * crown diameter = 2.0 m + 0.24 m per cm of DBH, capped at 18 m (a 20 cm trunk carries a ~6.8 m crown);
 * height = 1.3 m + 0.8 x DBH(cm)^0.8, capped at 28 m (a 20 cm trunk is ~10 m tall, a 60 cm trunk ~22 m).
 
+The census is from 2015 and street trees add about 0.2 in of trunk a year, so the views size a census tree from its
+surveyed diameter plus ``GROWTH_IN`` (2 in, ten years of growth): ``grown_dbh_in``. Mapped OpenStreetMap trees carry
+no size and are drawn as a typical street tree (``MAPPED_DBH_IN``, in the 3D code).
+
 Trees are context only: they are never counted as obstructions in the sun hours (canopies are seasonal and porous).
 """
 from __future__ import annotations
@@ -40,6 +44,7 @@ DATE = "2015"
 Q_M = 0.5            # coordinates are integer multiples of this many metres
 MAX_TREES = 6000
 MAX_DBH_IN = 60      # larger values in the census are data-entry errors for street trees
+GROWTH_IN = 2.0      # about ten years of trunk growth between the 2015 survey and the dashboard's present
 CM_PER_IN = 2.54
 CROWN_BASE_M, CROWN_PER_CM, CROWN_MAX_M = 2.0, 0.24, 18.0
 HEIGHT_BASE_M, HEIGHT_COEF, HEIGHT_EXP, HEIGHT_MAX_M = 1.3, 0.8, 0.8, 28.0
@@ -83,6 +88,11 @@ def tree_height_m(dbh_in: float) -> float:
     """Tree height in metres from trunk diameter in inches (see the module docstring)."""
     cm = max(0.0, float(dbh_in)) * CM_PER_IN
     return min(HEIGHT_MAX_M, HEIGHT_BASE_M + HEIGHT_COEF * cm ** HEIGHT_EXP)
+
+
+def grown_dbh_in(dbh_in: float) -> float:
+    """The surveyed trunk diameter plus the growth since the 2015 survey (what the views size the crown from)."""
+    return max(0.0, float(dbh_in)) + GROWTH_IN
 
 
 def census_query(lat: float, lon: float, radius_m: float) -> dict:
