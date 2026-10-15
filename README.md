@@ -29,28 +29,42 @@ as a worked example.
 
 ## What you get
 
+Five steps, in the order a search goes. The [gallery](docs/GALLERY.md) shows every screen.
+
 <table>
+<tr><th colspan="2" align="left">1. Find</th></tr>
 <tr>
-<td width="50%" valign="top"><img src="docs/images/find-route-preview.png" alt="Hovering a home draws its route to the office on the map"><br><b>Commute by walking, subway and bus</b><br>A built-in GTFS router gives door-to-door minutes for every home, heat maps on a 150 m grid, and the route drawn leg by leg when you hover a card.</td>
-<td width="50%" valign="top"><img src="docs/images/find-price-audit.png" alt="A listing's money section: a price marked unverified, monthly fees shown as unknown, and the cost over the lease"><br><b>The true monthly cost</b><br>Fees and free months counted, unknown fees left unknown, a price nobody read off the unit page marked "price unverified", and real price history behind every "price drop".</td>
+<td width="50%" valign="top"><img src="docs/images/find-map-clusters.png" alt="The map zoomed out: nearby homes merged into bubbles that count homes and show the lowest monthly cost, over door-to-door commute bands"><br><b>A calmer map</b><br>Zoomed out, homes merge into bubbles that count them and show the lowest cost; a building is one pin with its units, and hovering a pin previews the home. Commute by walking, subway and bus comes from a built-in GTFS router.</td>
+<td width="50%" valign="top"><img src="docs/images/find-rank-moves.png" alt="A listing drawer explaining why a home fell 40 places since Oct 13, with the points each change moved and the unknowns that could move it back"><br><b>Why a home ranks where it does</b><br>"↓40 since Oct 13" on a card opens the reasons, dimension by dimension, in plain sentences. Fees and free months are counted, unknown fees stay unknown, and a price nobody read off the unit page says so.</td>
+</tr>
+<tr><th colspan="2" align="left">2. Compare</th></tr>
+<tr>
+<td valign="top"><img src="docs/images/compare-four.png" alt="Four finalists in lettered columns with the best value in each row marked and unknowns shown as unknown"><br><b>Finalists, row by row</b><br>Up to four homes on money, space, commute, building, light and score. The best value in each row is marked, and unknowns never count as the worst. Drag one dot to trade cost, commute and space.</td>
+<td valign="top"><img src="docs/images/compare-side-by-side-3d.png" alt="Two Paramount Tower homes side by side in 3D, the 25th floor and the 41st, with direct-sun hours for each window"><br><b>Two units side by side in 3D</b><br>The same date, time and camera in both panes, each with its own direct-sun hours. <b>Unknowns that move this score</b>: type the real size or fee and see the rank you would get.</td>
+</tr>
+<tr><th colspan="2" align="left">3. See inside</th></tr>
+<tr>
+<td valign="top"><img src="docs/images/inside-furniture.png" alt="Inside the living room: a black leather futon, a wall-mounted 55-inch TV, a desk with a monitor and a task chair, and a basket-weave parquet floor"><br><b>Your own furniture, at the real floor</b><br>Unit 3D opens inside the apartment: the futon, desk, monitor, chair, dresser, bed and TVs you actually own, finishes read from the listing photos, and the real city through the glass.</td>
+<td valign="top"><img src="docs/images/inside-walk-window.png" alt="Standing at the living-room window on the 25th floor, looking out over neighbouring towers, a park and the river"><br><b>Walk to the window</b><br>Click the floor to walk, drag to look, or choose <i>Go to the window</i>. Real footprints and heights, a natural sky, and a measuring tape, "Does it fit?" checks and match-a-photo to test what you see.</td>
 </tr>
 <tr>
-<td valign="top"><img src="docs/images/find-place-search.png" alt="The command menu previewing what it understood from 'east of 3rd ave under 5k with w/d'"><br><b>Ask in plain words</b><br>"East of 3rd Ave under 5k with w/d" previews what it understood, with a count, before anything changes. Streets, parks, neighbourhoods and several destinations work.</td>
-<td valign="top"><img src="docs/images/inside-skyline-dusk.png" alt="Unit 3D at dusk: the Empire State Building and the Chrysler Building drawn from their parts, with lit windows across Midtown"><br><b>Light and view in 3D</b><br>Real footprints and heights, facades with lit windows at night, the Empire State and Chrysler Buildings drawn from their parts, street and park trees, grass and water, and direct sun for every floor and month.</td>
+<td valign="top"><img src="docs/images/inside-orbit-night.png" alt="Unit 3D at night: facades with lit windows around Paramount Tower, the window marked, a tower under construction drawn dashed"><br><b>The city at night</b><br>Lit windows, street lamps and the buildings that will be there: towers filed or rising are drawn where they will stand.</td>
+<td valign="top"><img src="docs/images/inside-play-year.png" alt="The Inside view from the bay window with the Play day and Play year bar showing September and leaves on the trees"><br><b>Play the day, play the year</b><br>Sun, shadows and the season's trees move with the bar. Trees are context and never count as shade in the sun hours.</td>
 </tr>
+<tr><th colspan="2" align="left">4. Decide</th></tr>
 <tr>
-<td valign="top"><img src="docs/images/inside-furniture.png" alt="Inside the apartment from the sofa: a bright room with a desk, a chair and the sofa, and the city outside the bay window"><br><b>Step inside with your own furniture</b><br>A bright room at the real floor height, with the furniture you actually own, and the real city through the window. A "measured vs assumed" chip says what the picture rests on.</td>
-<td valign="top"><img src="docs/images/compare-four.png" alt="Four finalists in lettered columns with the best value in each row marked and unknowns shown as unknown"><br><b>Compare finalists</b><br>Up to four homes side by side on money, space, commute, building, light and score. The best value in each row is marked, and unknowns never count as the worst.</td>
+<td valign="top"><img src="docs/images/phone-tour-day.png" alt="Tour day on a phone: three homes in time order with directions and the minutes to the next stop" width="260"><br><b>Tour day, on your phone</b><br>Today's tours in order with directions and leave-by times, a one-hand checklist at each home (light, noise, water, signal), and a noise check that keeps one number and no audio. The answers flow into the visit notes and the score.</td>
+<td valign="top"><img src="docs/images/decide-office-questions.png" alt="A drafted email to a building's leasing office with a checklist of questions and why each is asked"><br><b>Questions for the leasing office</b><br>Drafts built from what the score is unsure about, a checkbox per question and the evidence behind it. Copy it or open it in your mail app: nothing is sent from the page. Then a tour planner, a share page and a decision memo.</td>
 </tr>
+<tr><th colspan="2" align="left">5. Set up</th></tr>
 <tr>
-<td valign="top"><img src="docs/images/decide-visit-history.png" alt="Visit notes in the listing drawer: measured rooms, water pressure, noise, signal and whether the listing's claims held"><br><b>Visit notes and a paper trail</b><br>Measure rooms, rate the noise and check the listing's claims on your phone at the home. Findings sit beside the listing's facts, and every decision is dated. Then the tour planner, a share page and a decision memo.</td>
-<td valign="top"><img src="docs/images/setup-wizard-city.png" alt="The new search wizard on its first step, with Another city chosen and Chicago typed in"><br><b>Set up for any city</b><br>A wizard in the dashboard, an interview in the terminal, or your agent: any city OpenStreetMap knows, with its transit feed. The dashboard installs as an app and works offline.</td>
+<td valign="top"><img src="docs/images/setup-wizard-city.png" alt="The new search wizard on its first step, with Another city chosen and Chicago typed in"><br><b>Any city</b><br>A wizard in the dashboard, an interview in the terminal, or your agent: any city OpenStreetMap knows, with its transit feed. Everything is plain files in a folder you own.</td>
+<td valign="top"><img src="docs/images/setup-menu.png" alt="The one menu at the top right: this search, data, appearance, comfort and help"><br><b>One menu, an app</b><br>Light or dark, density, comfort settings and backups in one menu. The dashboard installs as an app and works offline.</td>
 </tr>
 </table>
 
 More: agent playbooks for every stage, floor plans traced from a listing's PDF, a 311 noise layer and building records for New York,
 licensed building photos with credits, a workbook whose weights drive live ranks, and checksummed handoff packs between agents.
-The [full gallery](docs/GALLERY.md) walks through it in order: find, compare, see inside, decide, set up.
 
 ## Try the demo
 
@@ -126,9 +140,9 @@ and the sun and skyline model, and says what each one leaves out. The [agent gui
 
 <table>
 <tr>
-<td width="33%"><a href="docs/GALLERY.md#find"><img src="docs/images/find-commute-map.png" alt="Commute bands over Manhattan"></a><br><sub><b>Find</b>: the map, the money, the photos</sub></td>
+<td width="33%"><a href="docs/GALLERY.md#find"><img src="docs/images/find-map-clusters.png" alt="The map zoomed out into bubbles over commute bands"></a><br><sub><b>Find</b>: the map, the money, the reasons</sub></td>
 <td width="33%"><a href="docs/GALLERY.md#see-inside"><img src="docs/images/inside-orbit-night.png" alt="Unit 3D at night with lit windows"></a><br><sub><b>See inside</b>: Unit 3D, day and night</sub></td>
-<td width="33%"><a href="docs/GALLERY.md#decide"><img src="docs/images/decide-memo.png" alt="A decision memo"></a><br><sub><b>Decide</b>: visits, tours and the memo</sub></td>
+<td width="33%"><a href="docs/GALLERY.md#decide"><img src="docs/images/decide-office-questions.png" alt="Questions for a building's leasing office"></a><br><sub><b>Decide</b>: tour day, questions, the memo</sub></td>
 </tr>
 </table>
 

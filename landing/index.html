@@ -146,124 +146,123 @@
   <div class="wrap">
     <header class="sec-h">
       <p class="eyebrow">A tour of the demo</p>
-      <h2 id="tour-h">Six things worth trying.</h2>
+      <h2 id="tour-h">Five steps, in the order a search goes.</h2>
       <p class="sub">All of it runs in the live demo on the example search. Nothing to install and nothing to sign up for.</p>
     </header>
     <div class="tour-ui" data-tour>
       <div class="tabs" role="tablist" aria-label="Dashboard tour">
         <button type="button" role="tab" id="tt-map" aria-controls="tp-map" aria-selected="true">Find</button>
-        <button type="button" role="tab" id="tt-photos" aria-controls="tp-photos" aria-selected="false" tabindex="-1">The real cost</button>
-        <button type="button" role="tab" id="tt-3d" aria-controls="tp-3d" aria-selected="false" tabindex="-1">Inside the unit</button>
-        <button type="button" role="tab" id="tt-decide" aria-controls="tp-decide" aria-selected="false" tabindex="-1">Deciding</button>
-        <button type="button" role="tab" id="tt-wizard" aria-controls="tp-wizard" aria-selected="false" tabindex="-1">New search</button>
-        <button type="button" role="tab" id="tt-app" aria-controls="tp-app" aria-selected="false" tabindex="-1">The app</button>
+        <button type="button" role="tab" id="tt-compare" aria-controls="tp-compare" aria-selected="false" tabindex="-1">Compare</button>
+        <button type="button" role="tab" id="tt-3d" aria-controls="tp-3d" aria-selected="false" tabindex="-1">See inside</button>
+        <button type="button" role="tab" id="tt-decide" aria-controls="tp-decide" aria-selected="false" tabindex="-1">Decide</button>
+        <button type="button" role="tab" id="tt-setup" aria-controls="tp-setup" aria-selected="false" tabindex="-1">Set up</button>
       </div>
 
       <article class="feat tour-panel is-on" id="tp-map" role="tabpanel" aria-labelledby="tt-map" style="--c: var(--band-20)">
         <div class="feat-copy">
-          <p class="tag"><i aria-hidden="true"></i>Find</p>
-          <h3>Hover a home and see how you would get there.</h3>
-          <p>Rest the pointer on a card, a pin or a price tag and that home's route is drawn for the mode you chose: walking legs dashed, the subway along its line and the door-to-door minutes in a pill. Type a sentence into the command menu and it previews what it understood before anything changes.</p>
+          <p class="tag"><i aria-hidden="true"></i>1 · Find</p>
+          <h3>A calmer map, and a reason for every rank.</h3>
+          <p>Zoomed out, nearby homes merge into a bubble that counts them and shows the lowest monthly cost; a building with several homes is one pin with its unit count. Rest the pointer on a pin or a card and the home previews, with its route drawn for the mode you chose. Type a sentence into the command menu and it shows what it understood before anything changes.</p>
           <ul class="ticks">
             <li>Plain words: &ldquo;east of 3rd ave under 5k with w/d&rdquo;, near a park, or within 25 minutes of work and 30 of a partner</li>
-            <li>Several destinations, each with its own limit, and a heat map of the farthest of all</li>
-            <li>Real price history behind every price drop, and a sun lens that colours each pin by direct-sun hours</li>
+            <li>&ldquo;&darr;40 since Oct 13&rdquo; on a card opens why it moved, dimension by dimension, in plain sentences</li>
+            <li>A price nobody read off the unit page says so, and a fee nobody confirmed stays unknown</li>
           </ul>
           <a class="more" href="./demo/#map">Open the map <span aria-hidden="true">→</span></a>
         </div>
         <figure class="feat-media stack">
           <div class="frame">
-            <img src="images/find-route-preview.webp" srcset="images/find-route-preview-800.webp 800w, images/find-route-preview.webp 1600w" sizes="(min-width: 1080px) 700px, calc(100vw - 32px)" width="1600" height="1000" loading="lazy" decoding="async"
-                 alt="Hovering a listing draws its subway route on the map: a dashed walk, the S shuttle on its own line and a pill with the minutes.">
+            <img src="images/find-map-clusters.webp" srcset="images/find-map-clusters-800.webp 800w, images/find-map-clusters.webp 1600w" sizes="(min-width: 1080px) 700px, calc(100vw - 32px)" width="1600" height="1000" loading="lazy" decoding="async"
+                 alt="The map zoomed out: nearby homes merged into bubbles that count them and show the lowest monthly cost, over door-to-door commute bands.">
           </div>
           <div class="frame inset">
-            <img src="images/find-place-search.webp" srcset="images/find-place-search-800.webp 800w, images/find-place-search.webp 1600w" sizes="(min-width: 1080px) 330px, 52vw" width="1600" height="1000" loading="lazy" decoding="async"
-                 alt="The command menu understanding a plain-words search for homes east of 3rd Avenue under $5,000 with a washer and dryer, with a count before anything changes.">
+            <img src="images/find-rank-moves.webp" srcset="images/find-rank-moves-800.webp 800w, images/find-rank-moves.webp 1600w" sizes="(min-width: 1080px) 330px, 52vw" width="1600" height="1000" loading="lazy" decoding="async"
+                 alt="A listing's drawer explaining why a home fell 40 places since Oct 13, with the points each change moved.">
           </div>
         </figure>
       </article>
 
-      <article class="feat flip tour-panel" id="tp-photos" role="tabpanel" aria-labelledby="tt-photos" style="--c: var(--sun)">
+      <article class="feat flip tour-panel" id="tp-compare" role="tabpanel" aria-labelledby="tt-compare" style="--c: var(--sun)">
         <div class="feat-copy">
-          <p class="tag"><i aria-hidden="true"></i>The real cost</p>
-          <h3>A price you can trust, or one that says it is not.</h3>
-          <p>Budget tiers judge the first-lease monthly cost after free months and fees. A fee nobody has confirmed stays unknown, and a price nobody read off the unit page is marked &ldquo;price unverified&rdquo;: it is ranked with a range and the drawer says where it came from. Open the lightbox to zoom up to six times and lay the listing's floor plan beside the photo.</p>
+          <p class="tag"><i aria-hidden="true"></i>2 · Compare</p>
+          <h3>From a long list to a short one you can defend.</h3>
+          <p>Put up to four finalists side by side on money, space, commute, building, light and score, or open two in 3D with the same date, time and camera. Drag one dot on the trade-off pad to shift weight between cost, commute and space and watch the ranking move. For a home the scorer had to guess, the drawer lists the unknowns that move its score: type the real size or fee and see the rank you would get.</p>
           <ul class="ticks">
-            <li>Move-in cash, paid month and headroom in each budget tier</li>
-            <li>Unit photos first, then the same line and the building, with the credit on every image</li>
-            <li>Floor-plan overlay with an opacity slider, or side by side</li>
+            <li>The best value in each row is marked; unknowns never count as the worst</li>
+            <li>Two homes in 3D, each with its own direct-sun hours for its window</li>
+            <li>A number you type is kept as yours and never replaces the listing's own facts</li>
           </ul>
-          <a class="more" href="./demo/#map">Open a listing <span aria-hidden="true">→</span></a>
+          <a class="more" href="./demo/#compare">Compare finalists <span aria-hidden="true">→</span></a>
         </div>
         <figure class="feat-media stack">
           <div class="frame">
-            <img src="images/find-price-audit.webp" srcset="images/find-price-audit-800.webp 800w, images/find-price-audit.webp 1600w" sizes="(min-width: 1080px) 700px, calc(100vw - 32px)" width="1600" height="1000" loading="lazy" decoding="async"
-                 alt="A listing's money section for a price marked unverified: the cost with an estimated fee, monthly fees shown as unknown and the cost over the lease.">
+            <img src="images/compare-four.webp" srcset="images/compare-four-800.webp 800w, images/compare-four.webp 1600w" sizes="(min-width: 1080px) 700px, calc(100vw - 32px)" width="1600" height="1000" loading="lazy" decoding="async"
+                 alt="Compare view: four finalists in lettered columns with money and space rows and the best value in each row marked.">
           </div>
           <div class="frame inset">
-            <img src="images/find-lightbox.webp" srcset="images/find-lightbox-800.webp 800w, images/find-lightbox.webp 1600w" sizes="(min-width: 1080px) 330px, 52vw" width="1600" height="1000" loading="lazy" decoding="async"
-                 alt="The photo lightbox with a living room on the left and the listing's floor plan beside it.">
+            <img src="images/compare-side-by-side-3d.webp" srcset="images/compare-side-by-side-3d-800.webp 800w, images/compare-side-by-side-3d.webp 1600w" sizes="(min-width: 1080px) 330px, 52vw" width="1600" height="1000" loading="lazy" decoding="async"
+                 alt="Two homes in the same tower side by side in 3D, the 25th floor and the 41st, with direct-sun hours for each window.">
           </div>
         </figure>
       </article>
 
       <article class="feat tour-panel" id="tp-3d" role="tabpanel" aria-labelledby="tt-3d" style="--c: var(--tier-1)">
         <div class="feat-copy">
-          <p class="tag"><i aria-hidden="true"></i>Inside the unit</p>
+          <p class="tag"><i aria-hidden="true"></i>3 · See inside</p>
           <h3>Stand in the apartment before the tour.</h3>
-          <p>The 3D tab puts the rooms at the real floor height inside the real city. The room is bright, your own furniture is in it, and the window shows what is actually outside: neighbouring towers, street and park trees, grass and water. A &ldquo;what's measured vs assumed&rdquo; chip says what the picture rests on.</p>
+          <p>The 3D tab opens inside the unit at the real floor height and bearing, in the real city. The room holds the furniture you actually own, its floor and walls are read from the listing's photos, and the window shows what is outside: neighbouring towers, trees, a park, the river. Click the floor to walk, or go to the window; then play the day or the year and watch the sun and the seasons move.</p>
           <ul class="ticks">
-            <li>Facades with lit windows at night, and the Empire State and Chrysler Buildings built from their parts</li>
-            <li>Direct-sun hours for every floor and month; trees are drawn but never counted as shade</li>
-            <li>A floor-plan studio with fit checks, TV distances and a plan traced from a PDF or an image</li>
+            <li>A measuring tape, &ldquo;Does it fit?&rdquo; for any piece you might buy, and match-a-photo to test the model against a listing photo</li>
+            <li>The city at night with lit windows; towers that are filed or rising drawn where they will stand</li>
+            <li>A &ldquo;what's measured vs assumed&rdquo; chip says what the picture rests on</li>
           </ul>
           <a class="more" href="./demo/#unit">Open the 3D tab <span aria-hidden="true">→</span></a>
         </div>
         <figure class="feat-media stack">
           <div class="frame">
-            <img src="images/inside-bay.webp" srcset="images/inside-bay-800.webp 800w, images/inside-bay.webp 1140w" sizes="(min-width: 1080px) 700px, calc(100vw - 32px)" width="1140" height="716" loading="lazy" decoding="async"
-                 alt="Inside a bedroom looking out of its angled windows at the river, a park's canopy and neighbouring towers.">
+            <img src="images/inside-furniture.webp" srcset="images/inside-furniture-800.webp 800w, images/inside-furniture.webp 1560w" sizes="(min-width: 1080px) 700px, calc(100vw - 32px)" width="1560" height="954" loading="lazy" decoding="async"
+                 alt="Inside the living room: a black leather futon, a wall-mounted TV, a desk with a monitor and a task chair, and a basket-weave parquet floor.">
           </div>
           <div class="frame inset">
-            <img src="images/inside-skyline-dusk.webp" srcset="images/inside-skyline-dusk-800.webp 800w, images/inside-skyline-dusk.webp 1140w" sizes="(min-width: 1080px) 330px, 52vw" width="1140" height="716" loading="lazy" decoding="async"
-                 alt="The Midtown skyline at dusk from Unit 3D, with the Empire State and Chrysler Buildings and lit windows.">
+            <img src="images/inside-walk-window.webp" srcset="images/inside-walk-window-800.webp 800w, images/inside-walk-window.webp 1560w" sizes="(min-width: 1080px) 330px, 52vw" width="1560" height="954" loading="lazy" decoding="async"
+                 alt="Standing at the living-room window on the 25th floor, looking out over neighbouring towers, a park and the river.">
           </div>
         </figure>
       </article>
 
       <article class="feat flip tour-panel" id="tp-decide" role="tabpanel" aria-labelledby="tt-decide" style="--c: var(--score-4)">
         <div class="feat-copy">
-          <p class="tag"><i aria-hidden="true"></i>Decision tools</p>
-          <h3>From a long list to a choice you can defend.</h3>
-          <p>Put up to four finalists side by side, drag one dot on the trade-off pad to shift weight between cost, commute and space, and plan the tour day. At the home, take visit notes on your phone: they sit beside the listing's facts and never overwrite them. Then share a read-only page or a printable memo.</p>
+          <p class="tag"><i aria-hidden="true"></i>4 · Decide</p>
+          <h3>Tour day on your phone, questions for the office.</h3>
+          <p>On the day, Tour day is a full-screen mode for one hand: today's tours in order with directions and leave-by times, a checklist at each home, and a noise check that keeps one number and no audio. Before and after, the dashboard drafts the questions your score is unsure about for the leasing office: copy them or open your mail app, and nothing is sent from the page. Then share a read-only page or a printable memo.</p>
           <ul class="ticks">
-            <li>Visit notes: measured rooms, noise, signal and whether the listing's claims held</li>
+            <li>Visit notes sit beside the listing's facts and never overwrite them</li>
             <li>Every star, tier and status change dated, with an optional reason</li>
-            <li>A tour-day planner with leave-by times and a calendar file; your notes stay out of a shared page unless you tick them</li>
+            <li>Your notes stay out of a shared page unless you tick them</li>
           </ul>
-          <a class="more" href="./demo/#compare">Compare finalists <span aria-hidden="true">→</span></a>
+          <a class="more" href="./demo/#list/tours">Plan a tour day <span aria-hidden="true">→</span></a>
         </div>
         <figure class="feat-media stack">
           <div class="frame">
-            <img src="images/decide-visit-history.webp" srcset="images/decide-visit-history-800.webp 800w, images/decide-visit-history.webp 1600w" sizes="(min-width: 1080px) 700px, calc(100vw - 32px)" width="1600" height="1000" loading="lazy" decoding="async"
-                 alt="Visit notes in a listing's drawer: measured rooms, water pressure, noise, signal and the listing's claims checked.">
+            <img src="images/decide-office-questions.webp" srcset="images/decide-office-questions-800.webp 800w, images/decide-office-questions.webp 1600w" sizes="(min-width: 1080px) 700px, calc(100vw - 32px)" width="1600" height="1000" loading="lazy" decoding="async"
+                 alt="Questions for a building's leasing office: a checklist of questions, why each is asked, and Copy email and Open in my email app.">
           </div>
           <div class="frame inset">
-            <img src="images/decide-memo.webp" srcset="images/decide-memo-800.webp 800w, images/decide-memo.webp 1600w" sizes="(min-width: 1080px) 330px, 52vw" width="1600" height="1000" loading="lazy" decoding="async"
-                 alt="A printable decision memo with a ranked table of five homes and the weights behind it.">
+            <img src="images/decide-visit-history.webp" srcset="images/decide-visit-history-800.webp 800w, images/decide-visit-history.webp 1600w" sizes="(min-width: 1080px) 330px, 52vw" width="1600" height="1000" loading="lazy" decoding="async"
+                 alt="Visit notes in a listing's drawer: measured rooms, water pressure, noise, signal and the listing's claims checked.">
           </div>
         </figure>
       </article>
 
-      <article class="feat tour-panel" id="tp-wizard" role="tabpanel" aria-labelledby="tt-wizard" style="--c: var(--accent)">
+      <article class="feat tour-panel" id="tp-setup" role="tabpanel" aria-labelledby="tt-setup" style="--c: var(--accent)">
         <div class="feat-copy">
-          <p class="tag"><i aria-hidden="true"></i>New search</p>
+          <p class="tag"><i aria-hidden="true"></i>5 · Set up</p>
           <h3>Start your own search, in any city.</h3>
-          <p>Eight short steps ask what an agent would ask: the city (looked up when you run it locally, so the time zone and the map are right), the places you travel to, the transit timetable, your budget and what matters most. The terminal and your agent ask the same questions, and all three write the same <code>criteria.yaml</code>.</p>
+          <p>Eight short steps ask what an agent would ask: the city (looked up when you run it locally, so the time zone and the map are right), the places you travel to, the transit timetable, your budget and what matters most. The terminal and your agent ask the same questions, and all three write the same <code>criteria.yaml</code>. Everything personal then sits in one menu, and the dashboard installs as an app that keeps working offline.</p>
           <ul class="ticks">
             <li>Any city OpenStreetMap knows; New York also gets the city's open data</li>
             <li>A review step with the finished <code>criteria.yaml</code> and a diff against the open search</li>
-            <li>A half-finished draft is kept in your browser</li>
+            <li>Light, dark or follow the system; high contrast, reduced motion and larger text; <kbd>⌘K</kbd> jumps anywhere</li>
           </ul>
           <a class="more" href="./demo/?new=1">Try the wizard <span aria-hidden="true">→</span></a>
         </div>
@@ -273,32 +272,8 @@
                  alt="The new search wizard on its first step, with Another city chosen and Chicago typed in.">
           </div>
           <div class="frame inset">
-            <img src="images/setup-wizard-review.webp" srcset="images/setup-wizard-review-800.webp 800w, images/setup-wizard-review.webp 1600w" sizes="(min-width: 1080px) 330px, 52vw" width="1600" height="1000" loading="lazy" decoding="async"
-                 alt="The wizard's review step: the generated criteria.yaml and a diff against the open search.">
-          </div>
-        </figure>
-      </article>
-
-      <article class="feat flip tour-panel" id="tp-app" role="tabpanel" aria-labelledby="tt-app" style="--c: var(--tier-1)">
-        <div class="feat-copy">
-          <p class="tag"><i aria-hidden="true"></i>The app</p>
-          <h3>One menu. Install it. Take it on the tour.</h3>
-          <p>Everything personal sits in one menu at the top right: edit your criteria, back up your picks, share, theme, accent, density and comfort settings. The dashboard installs from your browser as an app on a phone or a desktop and keeps working with no connection; a new version asks before it replaces the old one.</p>
-          <ul class="ticks">
-            <li>Light, dark or follow the system; four accents</li>
-            <li>High contrast, reduced motion and transparency, larger text</li>
-            <li>Keyboard first: <kbd>⌘K</kbd> jumps anywhere, <kbd>?</kbd> lists the shortcuts</li>
-          </ul>
-          <a class="more" href="./demo/">Open the demo <span aria-hidden="true">→</span></a>
-        </div>
-        <figure class="feat-media stack">
-          <div class="frame">
-            <img src="images/setup-menu.webp" srcset="images/setup-menu-800.webp 800w, images/setup-menu.webp 1600w" sizes="(min-width: 1080px) 700px, calc(100vw - 32px)" width="1600" height="1000" loading="lazy" decoding="async"
+            <img src="images/setup-menu.webp" srcset="images/setup-menu-800.webp 800w, images/setup-menu.webp 1600w" sizes="(min-width: 1080px) 330px, 52vw" width="1600" height="1000" loading="lazy" decoding="async"
                  alt="The one menu at the top right: this search, data, appearance, comfort and help.">
-          </div>
-          <div class="frame inset">
-            <img src="images/find-light-theme.webp" srcset="images/find-light-theme-800.webp 800w, images/find-light-theme.webp 1600w" sizes="(min-width: 1080px) 330px, 52vw" width="1600" height="1000" loading="lazy" decoding="async"
-                 alt="The map with a listing open in the light theme.">
           </div>
         </figure>
       </article>
@@ -330,12 +305,12 @@
     <header class="sec-h">
       <p class="eyebrow">Features</p>
       <h2 id="features-h">Everything a careful renter checks,<br> for every listing at once.</h2>
-      <p class="sub">It came out of a real Manhattan search. The questions were the same for every finalist, so the answers became tools.</p>
+      <p class="sub">It came out of a real Manhattan search. The questions were the same for every finalist, so the answers became tools. In the order a search goes: find, compare, see inside, decide.</p>
     </header>
 
     <article class="feat" style="--c: var(--band-30)">
       <div class="feat-copy">
-        <p class="tag"><i aria-hidden="true"></i>Commute by mode</p>
+        <p class="tag"><i aria-hidden="true"></i>Find · Commute by mode</p>
         <h3>Walk, subway or bus. Every minute, door to door.</h3>
         <p>A built-in router turns any city's GTFS feeds into door-to-door minutes by walking, subway, bus and the best of transit, with transfers, for every listing and on a 150 m grid. Checked against an independent router on 208 buildings, it lands within a minute on average.</p>
         <ul class="ticks">
@@ -345,39 +320,119 @@
         </ul>
         <a class="more" href="./demo/#map">Explore the map <span aria-hidden="true">→</span></a>
       </div>
-      <figure class="feat-media">
+      <figure class="feat-media stack">
         <div class="frame">
           <img src="images/find-commute-map.webp" srcset="images/find-commute-map-800.webp 800w, images/find-commute-map.webp 1600w" sizes="(min-width: 1080px) 700px, calc(100vw - 32px)" width="1600" height="1000" loading="lazy" decoding="async"
                  alt="Door-to-door commute bands over Manhattan with scored price tags, a filter rail and ranked listing cards.">
+        </div>
+        <div class="frame inset">
+          <img src="images/find-pin-preview.webp" srcset="images/find-pin-preview-800.webp 800w, images/find-pin-preview.webp 1600w" sizes="(min-width: 1080px) 330px, 52vw" width="1600" height="1000" loading="lazy" decoding="async"
+                 alt="Hovering a pin on the map previews the home with its photo, rank, price and score without opening it.">
         </div>
       </figure>
     </article>
 
     <article class="feat flip" style="--c: var(--score-5)">
       <div class="feat-copy">
-        <p class="tag"><i aria-hidden="true"></i>Your criteria, honest money</p>
+        <p class="tag"><i aria-hidden="true"></i>Compare · Your criteria, honest money</p>
         <h3>Your weights. The real monthly cost.</h3>
-        <p>Pick a weight preset, then drag any weight or the one dot on the trade-off pad: every card, pin and rank updates as you drag, with the reasons in plain sentences. Budget tiers judge the first-lease monthly cost after free months and fees, and a fee nobody has confirmed stays unknown instead of becoming $0.</p>
+        <p>Pick a weight preset, then drag any weight or the one dot on the trade-off pad: every card, pin and rank updates as you drag, with the reasons in plain sentences. Budget tiers judge the first-lease monthly cost after free months and fees, and a fee nobody has confirmed stays unknown instead of becoming $0. Where a home's score rests on a guess, the drawer lists the unknowns and what each could swing.</p>
         <ul class="ticks">
           <li>Point at a preset to see how the top ten would re-order before you apply it</li>
           <li>Disputed prices become scenarios, ranked on the cautious one</li>
-          <li>Licensed building photos with credits, or an aerial view</li>
+          <li>Type the real size or fee and the home re-ranks at once</li>
         </ul>
         <a class="more" href="./demo/#list">Open the shortlist <span aria-hidden="true">→</span></a>
       </div>
-      <figure class="feat-media">
+      <figure class="feat-media stack">
         <div class="frame">
           <img src="images/compare-tradeoff-pad.webp" srcset="images/compare-tradeoff-pad-800.webp 800w, images/compare-tradeoff-pad.webp 1600w" sizes="(min-width: 1080px) 700px, calc(100vw - 32px)" width="1600" height="1000" loading="lazy" decoding="async"
                  alt="The trade-off pad in the rail with a preset previewed: the top ten as it would re-order, with the places that change marked.">
         </div>
+        <div class="frame inset">
+          <img src="images/find-unknowns.webp" srcset="images/find-unknowns-800.webp 800w, images/find-unknowns.webp 1600w" sizes="(min-width: 1080px) 330px, 52vw" width="1600" height="1000" loading="lazy" decoding="async"
+                 alt="Unknowns that move this score: typing an 800 square-foot size shows the score and rank the home would get.">
+        </div>
       </figure>
     </article>
 
-    <article class="feat" style="--c: var(--accent)">
+    <article class="feat" style="--c: var(--sun)">
       <div class="feat-copy">
-        <p class="tag"><i aria-hidden="true"></i>Research quality</p>
+        <p class="tag"><i aria-hidden="true"></i>See inside · Light &amp; view in 3D</p>
+        <h3>Will the window see the sky or a wall?</h3>
+        <p>Real footprints and heights around the unit, sun and shadows for any date and time, a natural sky, and the view from the window. Facades carry lit windows at night, the Empire State and Chrysler Buildings are drawn from their parts, and street and park trees, grass and water are in the picture as context, changing with the season. The day strip names the building that shades the window.</p>
+        <ul class="ticks">
+          <li>Direct-sun hours for every floor and month; play the day or the year</li>
+          <li>Towers that are filed or rising drawn where they will stand</li>
+          <li>Exposure worked out from listing photos and video</li>
+        </ul>
+        <a class="more" href="./demo/#unit">Open Unit 3D <span aria-hidden="true">→</span></a>
+      </div>
+      <figure class="feat-media stack">
+        <div class="frame">
+          <img src="images/inside-orbit-day.webp" srcset="images/inside-orbit-day-800.webp 800w, images/inside-orbit-day.webp 1560w" sizes="(min-width: 1080px) 700px, calc(100vw - 32px)" width="1560" height="954" loading="lazy" decoding="async"
+                 alt="Unit 3D by day: the tower among its real neighbours with the window marked, a sun ray, a tower under construction drawn dashed and street trees.">
+        </div>
+        <div class="frame inset">
+          <img src="images/inside-orbit-night.webp" srcset="images/inside-orbit-night-800.webp 800w, images/inside-orbit-night.webp 1560w" sizes="(min-width: 1080px) 330px, 52vw" width="1560" height="954" loading="lazy" decoding="async"
+                 alt="The same view at night: facades with lit windows and street lamps around the tower.">
+        </div>
+      </figure>
+    </article>
+
+    <article class="feat flip" style="--c: var(--tier-1)">
+      <div class="feat-copy">
+        <p class="tag"><i aria-hidden="true"></i>See inside · Floor-plan studio</p>
+        <h3>Move in before you move in.</h3>
+        <p>A plan becomes a 2D plan and a 3D room side by side. Place the furniture you own, at its real size and colour, or pick from a cited catalogue, and every piece is checked against walls, door swings and clearances. &ldquo;Does it fit?&rdquo; takes any piece you might buy, by name or by size, and says what is in the way.</p>
+        <ul class="ticks">
+          <li>Fit graded clear, tight or blocked; TV distance per seat</li>
+          <li>A piece you placed stays where you put it, in the studio and in Unit 3D</li>
+          <li>PNG and GLB export, with the assumptions</li>
+        </ul>
+        <a class="more" href="./demo/#plan">Open the floor plan <span aria-hidden="true">→</span></a>
+      </div>
+      <figure class="feat-media stack">
+        <div class="frame">
+          <img src="images/inside-floor-plan.webp" srcset="images/inside-floor-plan-800.webp 800w, images/inside-floor-plan.webp 1600w" sizes="(min-width: 1080px) 700px, calc(100vw - 32px)" width="1600" height="1000" loading="lazy" decoding="async"
+                 alt="Floor-plan studio: a one-bedroom plan in 2D and 3D with furniture, ten pieces placed and all clear, and TV distances marked.">
+        </div>
+        <div class="frame inset">
+          <img src="images/inside-fits.webp" srcset="images/inside-fits-800.webp 800w, images/inside-fits.webp 1600w" sizes="(min-width: 1080px) 330px, 52vw" width="1600" height="1240" loading="lazy" decoding="async"
+                 alt="Does it fit? A 36 by 12 by 72 inch bookshelf dropped into the living room, with the space around it on each side.">
+        </div>
+      </figure>
+    </article>
+
+    <article class="feat" style="--c: var(--sun)">
+      <div class="feat-copy">
+        <p class="tag"><i aria-hidden="true"></i>See inside · Walk, measure, match</p>
+        <h3>Test the picture against the real thing.</h3>
+        <p>Walk the floor with a click and stand at the window; read a width off the glass with the measuring tape, which snaps to wall corners, window edges and furniture; or lay a listing photo over the 3D view and mark landmarks to check that the model's window, floor and bearing agree with what the photographer saw.</p>
+        <ul class="ticks">
+          <li>Walls, sills, furniture and glass stop you, as they would in the room</li>
+          <li>In the studio the readings survive a reload and show in the 2D plan and the 3D room alike</li>
+          <li>Match-a-photo fits the camera to your landmarks and saves the result in this browser</li>
+        </ul>
+        <a class="more" href="./demo/#unit">Walk the unit <span aria-hidden="true">→</span></a>
+      </div>
+      <figure class="feat-media stack">
+        <div class="frame">
+          <img src="images/inside-measure-tape.webp" srcset="images/inside-measure-tape-800.webp 800w, images/inside-measure-tape.webp 1560w" sizes="(min-width: 1080px) 700px, calc(100vw - 32px)" width="1560" height="954" loading="lazy" decoding="async"
+                 alt="The measuring tape reading 5 feet 2 inches across the living-room bay window.">
+        </div>
+        <div class="frame inset">
+          <img src="images/inside-match-photo.webp" srcset="images/inside-match-photo-800.webp 800w, images/inside-match-photo.webp 1600w" sizes="(min-width: 1080px) 330px, 52vw" width="1600" height="1000" loading="lazy" decoding="async"
+                 alt="Match a photo: a listing photo laid over the 3D view while landmarks are marked.">
+        </div>
+      </figure>
+    </article>
+
+    <article class="feat flip" style="--c: var(--accent)">
+      <div class="feat-copy">
+        <p class="tag"><i aria-hidden="true"></i>Decide · Research quality</p>
         <h3>Know what you still don't know.</h3>
-        <p>Before you spend a visit, the CLI checks the data and the listing. <code>validate</code> catches bad rows, <code>lint</code> flags 14 listing traps, and <code>coverage</code> measures every listing against a 15-fact finalist standard, with the points each gap could swing.</p>
+        <p>Before you spend a visit, the CLI checks the data and the listing. <code>validate</code> catches bad rows, <code>lint</code> flags 14 listing traps, and <code>coverage</code> measures every listing against a 15-fact finalist standard, with the points each gap could swing. The leasing-office drafts ask for exactly what is missing.</p>
         <ul class="ticks">
           <li>Junior 1BRs, building laundry sold as in-unit, fees passed off as price drops</li>
           <li>A research queue with questions ready to send</li>
@@ -385,17 +440,21 @@
         </ul>
         <a class="more" href="./demo/#research">Open the research queue <span aria-hidden="true">→</span></a>
       </div>
-      <figure class="feat-media">
+      <figure class="feat-media stack">
         <div class="frame">
           <img src="images/decide-research-queue.webp" srcset="images/decide-research-queue-800.webp 800w, images/decide-research-queue.webp 1600w" sizes="(min-width: 1080px) 700px, calc(100vw - 32px)" width="1600" height="1000" loading="lazy" decoding="async"
                  alt="Research view: the finalist standard, counts of missing size, fees and media, and a queue of listings with their missing and stale facts and points at stake.">
         </div>
+        <div class="frame inset">
+          <img src="images/decide-tour-planner.webp" srcset="images/decide-tour-planner-800.webp 800w, images/decide-tour-planner.webp 1600w" sizes="(min-width: 1080px) 330px, 52vw" width="1600" height="1000" loading="lazy" decoding="async"
+                 alt="The tour-day planner: five stops with leave-by times, viewing times and buffers.">
+        </div>
       </figure>
     </article>
 
-    <article class="feat flip" style="--c: var(--warn)">
+    <article class="feat" style="--c: var(--warn)">
       <div class="feat-copy">
-        <p class="tag"><i aria-hidden="true"></i>Building records</p>
+        <p class="tag"><i aria-hidden="true"></i>Decide · Building records</p>
         <h3>Read the building before the lease.</h3>
         <p>One command pulls the city's records for your shortlist: HPD violations and complaints, DOB and ECB filings, permits on the block, bedbug reports, 311 noise and nearby crime. The report leads with what matters, the evidence and what it means in practice.</p>
         <ul class="ticks">
@@ -409,78 +468,6 @@
         <div class="frame">
           <img src="images/decide-records.webp" srcset="images/decide-records-800.webp 800w, images/decide-records.webp 1600w" sizes="(min-width: 1080px) 700px, calc(100vw - 32px)" width="1600" height="1000" loading="lazy" decoding="async"
                  alt="Public records report for a building: a records score and a street-noise score, four areas to check, metric tiles and the start of the What matters table.">
-        </div>
-      </figure>
-    </article>
-
-    <article class="feat" style="--c: var(--sun)">
-      <div class="feat-copy">
-        <p class="tag"><i aria-hidden="true"></i>Light &amp; view in 3D</p>
-        <h3>Will the window see the sky or a wall?</h3>
-        <p>Real footprints and heights around the unit, sun and shadows for any date and time, and the view from the window. Facades carry lit windows at night, the Empire State and Chrysler Buildings are drawn from their parts, and street and park trees, grass and water are in the picture as context. The day strip names the building that shades the window.</p>
-        <ul class="ticks">
-          <li>Direct-sun hours for every floor and month</li>
-          <li>Towers that are filed or rising drawn where they will stand</li>
-          <li>Exposure worked out from listing photos and video</li>
-        </ul>
-        <a class="more" href="./demo/#unit">Open Unit 3D <span aria-hidden="true">→</span></a>
-      </div>
-      <figure class="feat-media stack">
-        <div class="frame">
-          <img src="images/inside-orbit-day.webp" srcset="images/inside-orbit-day-800.webp 800w, images/inside-orbit-day.webp 1140w" sizes="(min-width: 1080px) 700px, calc(100vw - 32px)" width="1140" height="716" loading="lazy" decoding="async"
-                 alt="Unit 3D by day: the tower among its real neighbours with the window marked, a sun ray, a tower under construction drawn dashed and street trees.">
-        </div>
-        <div class="frame inset">
-          <img src="images/inside-park-trees.webp" srcset="images/inside-park-trees-800.webp 800w, images/inside-park-trees.webp 1140w" sizes="(min-width: 1080px) 330px, 52vw" width="1140" height="716" loading="lazy" decoding="async"
-                 alt="A park drawn in Unit 3D as a lawn with its trees among the surrounding towers.">
-        </div>
-      </figure>
-    </article>
-
-    <article class="feat flip" style="--c: var(--tier-1)">
-      <div class="feat-copy">
-        <p class="tag"><i aria-hidden="true"></i>Floor-plan studio</p>
-        <h3>Move in before you move in.</h3>
-        <p>A plan becomes a 2D plan and a 3D room side by side. Place the furniture you own or pick from a cited catalogue, and every piece is checked against walls, door swings and clearances. Then step inside: Unit 3D shows the same room at the real floor height in the real city.</p>
-        <ul class="ticks">
-          <li>Fit graded clear, tight or blocked; TV distance per seat</li>
-          <li>Layout presets, eye-level cameras and a walk mode</li>
-          <li>PNG and GLB export, with the assumptions</li>
-        </ul>
-        <a class="more" href="./demo/#plan">Open the floor plan <span aria-hidden="true">→</span></a>
-      </div>
-      <figure class="feat-media stack">
-        <div class="frame">
-          <img src="images/inside-floor-plan.webp" srcset="images/inside-floor-plan-800.webp 800w, images/inside-floor-plan.webp 1600w" sizes="(min-width: 1080px) 700px, calc(100vw - 32px)" width="1600" height="1000" loading="lazy" decoding="async"
-                 alt="Floor-plan studio: a one-bedroom plan in 2D and 3D with furniture, ten pieces placed and all clear, and TV distances marked ideal.">
-        </div>
-        <div class="frame inset">
-          <img src="images/inside-furniture.webp" srcset="images/inside-furniture-800.webp 800w, images/inside-furniture.webp 1140w" sizes="(min-width: 1080px) 330px, 52vw" width="1140" height="716" loading="lazy" decoding="async"
-                 alt="Inside the living room from the sofa: a desk, a chair and the sofa in a bright room with the city outside the bay window.">
-        </div>
-      </figure>
-    </article>
-
-    <article class="feat" style="--c: var(--score-4)">
-      <div class="feat-copy">
-        <p class="tag"><i aria-hidden="true"></i>Compare &amp; tours</p>
-        <h3>Finalists side by side, then a decision.</h3>
-        <p>Put up to four finalists next to each other on money, space, commute, building, light and score. Tier your picks, plan the tour in walking order and finish with a decision memo.</p>
-        <ul class="ticks">
-          <li>Best value in each row marked; unknowns never count as worst</li>
-          <li>A shortlist beside a map of exactly those homes</li>
-          <li>Tour times, notes and printable call sheets</li>
-        </ul>
-        <a class="more" href="./demo/#compare">Compare finalists <span aria-hidden="true">→</span></a>
-      </div>
-      <figure class="feat-media stack">
-        <div class="frame">
-          <img src="images/compare-four.webp" srcset="images/compare-four-800.webp 800w, images/compare-four.webp 1600w" sizes="(min-width: 1080px) 700px, calc(100vw - 32px)" width="1600" height="1000" loading="lazy" decoding="async"
-                 alt="Compare view: four finalists in lettered columns with money and space rows and the best value in each row marked.">
-        </div>
-        <div class="frame inset">
-          <img src="images/compare-split-view.webp" srcset="images/compare-split-view-800.webp 800w, images/compare-split-view.webp 1600w" sizes="(min-width: 1080px) 330px, 52vw" width="1600" height="1000" loading="lazy" decoding="async"
-                 alt="The shortlist table beside a docked map of the same homes, with a route previewed on hover.">
         </div>
       </figure>
     </article>
@@ -614,23 +601,26 @@
     <header class="sec-h">
       <p class="eyebrow">Gallery</p>
       <h2 id="gallery-h">A few views, from the worked example.</h2>
-      <p class="sub">A Manhattan one-bedroom search from fall 2026 with a commute to a Midtown office near Grand Central. Click one to enlarge it, or open the same view in the demo.</p>
+      <p class="sub">A Manhattan one-bedroom search from fall 2026 with a commute to a Midtown office near Grand Central: find, compare, see inside, decide. Click one to enlarge it, or open the same view in the demo.</p>
     </header>
     <ul class="shots">
       <li><a class="shot" href="images/hero-map.webp" data-view="map"><img src="images/hero-map.webp" srcset="images/hero-map-800.webp 800w, images/hero-map.webp 1600w" sizes="(min-width: 1080px) 380px, (min-width: 641px) 46vw, 84vw" width="1600" height="1000" loading="lazy" decoding="async" alt="A listing's drawer over the commute map"><span>Map and listing drawer</span></a></li>
-      <li><a class="shot" href="images/find-commute-map.webp" data-view="map"><img src="images/find-commute-map.webp" srcset="images/find-commute-map-800.webp 800w, images/find-commute-map.webp 1600w" sizes="(min-width: 1080px) 380px, (min-width: 641px) 46vw, 84vw" width="1600" height="1000" loading="lazy" decoding="async" alt="Door-to-door commute bands with scored price tags"><span>Commute bands</span></a></li>
+      <li><a class="shot" href="images/find-map-clusters.webp" data-view="map"><img src="images/find-map-clusters.webp" srcset="images/find-map-clusters-800.webp 800w, images/find-map-clusters.webp 1600w" sizes="(min-width: 1080px) 380px, (min-width: 641px) 46vw, 84vw" width="1600" height="1000" loading="lazy" decoding="async" alt="The map zoomed out into bubbles that count homes"><span>A calmer map</span></a></li>
+      <li><a class="shot" href="images/find-rank-moves.webp" data-view="map"><img src="images/find-rank-moves.webp" srcset="images/find-rank-moves-800.webp 800w, images/find-rank-moves.webp 1600w" sizes="(min-width: 1080px) 380px, (min-width: 641px) 46vw, 84vw" width="1600" height="1000" loading="lazy" decoding="async" alt="Why a home moved: the points behind a rank change"><span>Why a home moved</span></a></li>
       <li><a class="shot" href="images/find-route-preview.webp" data-view="map"><img src="images/find-route-preview.webp" srcset="images/find-route-preview-800.webp 800w, images/find-route-preview.webp 1600w" sizes="(min-width: 1080px) 380px, (min-width: 641px) 46vw, 84vw" width="1600" height="1000" loading="lazy" decoding="async" alt="A subway route drawn on hover"><span>Route on hover</span></a></li>
-      <li><a class="shot" href="images/find-lightbox.webp" data-view="map"><img src="images/find-lightbox.webp" srcset="images/find-lightbox-800.webp 800w, images/find-lightbox.webp 1600w" sizes="(min-width: 1080px) 380px, (min-width: 641px) 46vw, 84vw" width="1600" height="1000" loading="lazy" decoding="async" alt="The photo lightbox beside the listing's floor plan"><span>Photos and floor plan</span></a></li>
-      <li><a class="shot" href="images/compare-four.webp" data-view="compare"><img src="images/compare-four.webp" srcset="images/compare-four-800.webp 800w, images/compare-four.webp 1600w" sizes="(min-width: 1080px) 380px, (min-width: 641px) 46vw, 84vw" width="1600" height="1000" loading="lazy" decoding="async" alt="Four finalists compared side by side"><span>Compare</span></a></li>
-      <li><a class="shot" href="images/inside-orbit-day.webp" data-view="unit"><img src="images/inside-orbit-day.webp" srcset="images/inside-orbit-day-800.webp 800w, images/inside-orbit-day.webp 1140w" sizes="(min-width: 1080px) 380px, (min-width: 641px) 46vw, 84vw" width="1140" height="716" loading="lazy" decoding="async" alt="Unit 3D by day"><span>Unit 3D by day</span></a></li>
-      <li><a class="shot" href="images/inside-orbit-night.webp" data-view="unit"><img src="images/inside-orbit-night.webp" srcset="images/inside-orbit-night-800.webp 800w, images/inside-orbit-night.webp 1140w" sizes="(min-width: 1080px) 380px, (min-width: 641px) 46vw, 84vw" width="1140" height="716" loading="lazy" decoding="async" alt="Unit 3D at night with lit windows"><span>Unit 3D at night</span></a></li>
-      <li><a class="shot" href="images/inside-skyline-dusk.webp" data-view="unit"><img src="images/inside-skyline-dusk.webp" srcset="images/inside-skyline-dusk-800.webp 800w, images/inside-skyline-dusk.webp 1140w" sizes="(min-width: 1080px) 380px, (min-width: 641px) 46vw, 84vw" width="1140" height="716" loading="lazy" decoding="async" alt="The Midtown skyline at dusk"><span>The skyline</span></a></li>
-      <li><a class="shot" href="images/inside-bay.webp" data-view="unit"><img src="images/inside-bay.webp" srcset="images/inside-bay-800.webp 800w, images/inside-bay.webp 1140w" sizes="(min-width: 1080px) 380px, (min-width: 641px) 46vw, 84vw" width="1140" height="716" loading="lazy" decoding="async" alt="Inside a bedroom looking out of its bay"><span>Through the bay window</span></a></li>
-      <li><a class="shot" href="images/inside-furniture.webp" data-view="unit"><img src="images/inside-furniture.webp" srcset="images/inside-furniture-800.webp 800w, images/inside-furniture.webp 1140w" sizes="(min-width: 1080px) 380px, (min-width: 641px) 46vw, 84vw" width="1140" height="716" loading="lazy" decoding="async" alt="Inside the living room from the sofa"><span>Your own furniture</span></a></li>
+      <li><a class="shot" href="images/compare-four.webp" data-view="compare"><img src="images/compare-four.webp" srcset="images/compare-four-800.webp 800w, images/compare-four.webp 1600w" sizes="(min-width: 1080px) 380px, (min-width: 641px) 46vw, 84vw" width="1600" height="1000" loading="lazy" decoding="async" alt="Four finalists compared side by side"><span>Compare four</span></a></li>
+      <li><a class="shot" href="images/compare-side-by-side-3d.webp" data-view="pair/paramount-tower-25e,paramount-tower-41a"><img src="images/compare-side-by-side-3d.webp" srcset="images/compare-side-by-side-3d-800.webp 800w, images/compare-side-by-side-3d.webp 1600w" sizes="(min-width: 1080px) 380px, (min-width: 641px) 46vw, 84vw" width="1600" height="1000" loading="lazy" decoding="async" alt="Two homes in 3D, side by side"><span>Two homes in 3D</span></a></li>
+      <li><a class="shot" href="images/inside-furniture.webp" data-view="unit"><img src="images/inside-furniture.webp" srcset="images/inside-furniture-800.webp 800w, images/inside-furniture.webp 1560w" sizes="(min-width: 1080px) 380px, (min-width: 641px) 46vw, 84vw" width="1560" height="954" loading="lazy" decoding="async" alt="Inside the living room with the renter's own furniture"><span>Your own furniture</span></a></li>
+      <li><a class="shot" href="images/inside-walk-window.webp" data-view="unit"><img src="images/inside-walk-window.webp" srcset="images/inside-walk-window-800.webp 800w, images/inside-walk-window.webp 1560w" sizes="(min-width: 1080px) 380px, (min-width: 641px) 46vw, 84vw" width="1560" height="954" loading="lazy" decoding="async" alt="Standing at the window, looking out over the city"><span>Walk to the window</span></a></li>
+      <li><a class="shot" href="images/inside-measure-tape.webp" data-view="unit"><img src="images/inside-measure-tape.webp" srcset="images/inside-measure-tape-800.webp 800w, images/inside-measure-tape.webp 1560w" sizes="(min-width: 1080px) 380px, (min-width: 641px) 46vw, 84vw" width="1560" height="954" loading="lazy" decoding="async" alt="The measuring tape reading a window's width"><span>Measuring tape</span></a></li>
+      <li><a class="shot" href="images/inside-orbit-day.webp" data-view="unit"><img src="images/inside-orbit-day.webp" srcset="images/inside-orbit-day-800.webp 800w, images/inside-orbit-day.webp 1560w" sizes="(min-width: 1080px) 380px, (min-width: 641px) 46vw, 84vw" width="1560" height="954" loading="lazy" decoding="async" alt="Unit 3D by day"><span>Unit 3D by day</span></a></li>
+      <li><a class="shot" href="images/inside-orbit-night.webp" data-view="unit"><img src="images/inside-orbit-night.webp" srcset="images/inside-orbit-night-800.webp 800w, images/inside-orbit-night.webp 1560w" sizes="(min-width: 1080px) 380px, (min-width: 641px) 46vw, 84vw" width="1560" height="954" loading="lazy" decoding="async" alt="Unit 3D at night with lit windows"><span>The city at night</span></a></li>
+      <li><a class="shot" href="images/inside-skyline-dusk.webp" data-view="unit"><img src="images/inside-skyline-dusk.webp" srcset="images/inside-skyline-dusk-800.webp 800w, images/inside-skyline-dusk.webp 1560w" sizes="(min-width: 1080px) 380px, (min-width: 641px) 46vw, 84vw" width="1560" height="954" loading="lazy" decoding="async" alt="The Midtown skyline at dusk"><span>The skyline</span></a></li>
       <li><a class="shot" href="images/inside-floor-plan.webp" data-view="plan"><img src="images/inside-floor-plan.webp" srcset="images/inside-floor-plan-800.webp 800w, images/inside-floor-plan.webp 1600w" sizes="(min-width: 1080px) 380px, (min-width: 641px) 46vw, 84vw" width="1600" height="1000" loading="lazy" decoding="async" alt="Floor-plan studio with furniture fit checks"><span>Floor-plan studio</span></a></li>
-      <li><a class="shot" href="images/decide-visit-history.webp" data-view="map"><img src="images/decide-visit-history.webp" srcset="images/decide-visit-history-800.webp 800w, images/decide-visit-history.webp 1600w" sizes="(min-width: 1080px) 380px, (min-width: 641px) 46vw, 84vw" width="1600" height="1000" loading="lazy" decoding="async" alt="Visit notes in a listing's drawer"><span>Visit notes</span></a></li>
+      <li><a class="shot" href="images/decide-office-questions.webp" data-view="map"><img src="images/decide-office-questions.webp" srcset="images/decide-office-questions-800.webp 800w, images/decide-office-questions.webp 1600w" sizes="(min-width: 1080px) 380px, (min-width: 641px) 46vw, 84vw" width="1600" height="1000" loading="lazy" decoding="async" alt="Questions for a building's leasing office"><span>Leasing-office questions</span></a></li>
       <li><a class="shot" href="images/decide-tour-planner.webp" data-view="tours"><img src="images/decide-tour-planner.webp" srcset="images/decide-tour-planner-800.webp 800w, images/decide-tour-planner.webp 1600w" sizes="(min-width: 1080px) 380px, (min-width: 641px) 46vw, 84vw" width="1600" height="1000" loading="lazy" decoding="async" alt="The tour-day planner"><span>Tour-day planner</span></a></li>
       <li><a class="shot" href="images/decide-records.webp" data-view="research/records"><img src="images/decide-records.webp" srcset="images/decide-records-800.webp 800w, images/decide-records.webp 1600w" sizes="(min-width: 1080px) 380px, (min-width: 641px) 46vw, 84vw" width="1600" height="1000" loading="lazy" decoding="async" alt="A building's public records report"><span>Building records</span></a></li>
+      <li><a class="shot phone-tile" href="images/phone-tour-day.webp" data-view="map"><img src="images/phone-tour-day.webp" width="585" height="1266" loading="lazy" decoding="async" alt="Tour day on a phone: today's tours in order"><span>Tour day on a phone</span></a></li>
       <li><a class="shot phone-tile" href="images/phone-map.webp" data-view="map"><img src="images/phone-map.webp" width="585" height="1266" loading="lazy" decoding="async" alt="Phone layout of the map and results"><span>On a phone</span></a></li>
     </ul>
   </div>
@@ -661,7 +651,7 @@
     <div class="code-stack">
       <div class="code">
         <div class="code-h"><span>Try the worked example</span><button class="copy" type="button" data-copy="c1">Copy</button></div>
-<pre id="c1" tabindex="0" role="region" aria-label="Commands: try the worked example"><code>git clone __REPO__.git
+<pre id="c1" tabindex="0" role="region" aria-label="Commands: try the worked example"><code>git clone --depth 1 __REPO__.git
 cd ApartmentScout
 pip install -e .
 apartmentscout serve --search examples/nyc-2026</code></pre>
