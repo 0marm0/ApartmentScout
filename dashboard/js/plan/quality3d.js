@@ -59,6 +59,7 @@ function apply() {
   }
   recompileMaterials(scene);
   scene.environment = s.environment ? environmentFor(renderer, { intensity: 0.35 }) : null;
+  G3.cityQuality(s.softShadows);   // [buildings3d]
   rebuildAO(s.contact);
   G3.resize(); G3.setLighting({});   // re-runs the lighting mood so the hemisphere level follows the mode
 }
