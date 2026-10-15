@@ -449,7 +449,7 @@ def test_j_in_buildings_view_continues_from_a_unit_opened_inside_a_building(open
     p.wait_for_function("async (id) => (await import('/js/app.js')).S.sel === id", arg=uid, timeout=T)
     pos = p.evaluate("async (id) => (await import('/js/features/card-list.js')).cardPos(id)", uid)
     nxt = p.evaluate("async (i) => (await import('/js/features/card-list.js')).cardIds()[i + 1]", pos)
-    p.mouse.click(1000, 62)
+    p.evaluate("() => document.activeElement && document.activeElement.blur()")   # focus off the row (a click at a fixed spot landed on the drawer's photo, which opens the lightbox)
     p.keyboard.press("j")
     p.wait_for_function("async (id) => (await import('/js/app.js')).S.sel === id", arg=nxt, timeout=T)
     assert not s.take()
