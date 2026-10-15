@@ -215,14 +215,13 @@ An evidence-labelled view and light model for six Knox one-bedrooms, with obstru
 <tr><td width="50%"><img src="gallery/layout--layout_preview.jpg" alt="Bedroom TV layout options"><br><sub>Bedroom TV layout options</sub></td><td width="50%"><img src="gallery/layout--queen_primary_options.jpg" alt="Queen bed options"><br><sub>Queen bed options</sub></td></tr>
 </table>
 
-### Floor-plan fit check: three apartments
+### Floor-plan fit check: two apartments
 
-Three real plans in 3D (Emerald Green 620, Paramount, 49th St) with a furniture kit, AC units and space checks. 
+Two real plans in 3D (Emerald Green 620 and 49th St) with a furniture kit, AC units and space checks. 
 
 <table>
 <tr><td width="50%"><img src="gallery/fitcheck--fitcheck-eg620-angle.jpg" alt="Emerald Green 620, angle"><br><sub>Emerald Green 620, angle</sub></td><td width="50%"><img src="gallery/fitcheck--fitcheck-eg620-top.jpg" alt="Emerald Green 620, top"><br><sub>Emerald Green 620, top</sub></td></tr>
-<tr><td width="50%"><img src="gallery/fitcheck--fitcheck-eg620-bedroom.jpg" alt="Emerald Green 620, bedroom"><br><sub>Emerald Green 620, bedroom</sub></td><td width="50%"><img src="gallery/fitcheck--fitcheck-paramount-angle.jpg" alt="Paramount, angle"><br><sub>Paramount, angle</sub></td></tr>
-<tr><td width="50%"><img src="gallery/fitcheck--fitcheck-paramount-living.jpg" alt="Paramount, living room"><br><sub>Paramount, living room</sub></td><td width="50%"><img src="gallery/fitcheck--fitcheck-49th-angle.jpg" alt="49th St, angle"><br><sub>49th St, angle</sub></td></tr>
+<tr><td width="50%"><img src="gallery/fitcheck--fitcheck-eg620-bedroom.jpg" alt="Emerald Green 620, bedroom"><br><sub>Emerald Green 620, bedroom</sub></td><td width="50%"><img src="gallery/fitcheck--fitcheck-49th-angle.jpg" alt="49th St, angle"><br><sub>49th St, angle</sub></td></tr>
 <tr><td width="50%"><img src="gallery/fitcheck--fitcheck-49th-top.jpg" alt="49th St, top"><br><sub>49th St, top</sub></td></tr>
 </table>
 

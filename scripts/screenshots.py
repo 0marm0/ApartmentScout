@@ -117,7 +117,7 @@ SHOTS = [
     ("find-lightbox", "#map", DESK,
      [("click", "#cards .card >> nth=1 >> .nph", 500), ("wait_for", ".lbx-img", 2500), ("click", ".lbx-plan [data-pm=side]", 6000)], 9000, None),
     ("find-light-theme", "?theme=light&layer=commute&open=paramount-tower-25e#map", DESK, [], 9000, None),
-    ("find-map-clusters", "?layer=none#map", DESK, [("eval", "__asMap.jumpTo({center: [-73.975, 40.755], zoom: 11.9})"), ("wait", 2500)], 9000, None),
+    ("find-map-clusters", "?layer=commute#map", DESK, [("eval", "__asMap.jumpTo({center: [-73.975, 40.755], zoom: 11.9})"), ("wait", 2500)], 9000, None),
     ("find-building-pin", "?layer=none#map", DESK,
      [("goto_map", BUILDING, 15.2), ("wait", 2500), ("hover_map", BUILDING, 2200)], 9000, None),
     ("find-pin-preview", "?layer=commute#map", DESK,
@@ -131,9 +131,10 @@ SHOTS = [
     ("phone-unit-3d", f"?{PARAMOUNT}", PHONE, [("eval", "document.getElementById('stage').scrollIntoView({block: 'start'})")], 10000, None),
     ("phone-visit-notes", "?visit=paramount-tower-25e#map", PHONE, [("seed", SEEDS)], 9000, None),
     ("phone-tour-day", "?tourday=1#map", PHONE, [("seed", TOUR_DAY)], 9000, None),
-    ("phone-tour-checklist", "?tourday=1#map", PHONE, [("seed", TOUR_DAY), ("click", "#tourDay [data-open='paramount-tower-25e']", 2000)], 9000, None),
+    ("phone-tour-checklist", "?tourday=1#map", PHONE, [("seed", TOUR_DAY), ("click", "#tourDay [data-open='paramount-tower-25e']", 1500),
+      ("click", "#tourDay [data-ans='light'][data-v='4']", 400)], 9000, None),
     # ---- Compare
-    ("compare-four", "#compare/paramount-tower-25e,orion-condominium-23a,7-platt-14g,one-manhattan-square-57g", DESK, [], 4500, None),
+    ("compare-four", "#compare/paramount-tower-25e,emerald-green-24d,7-platt-14g,one-manhattan-square-57g", DESK, [], 4500, None),
     ("compare-tradeoff-pad", "#map", DESK,
      [("click", "#rail button[aria-expanded]:has-text('Search')", 300), ("click", "#rail button[aria-expanded]:has-text('Budget')", 300),
       ("click", "#rail button[aria-expanded]:has-text('Commute')", 300), ("click", "#rail button[aria-expanded]:has-text('Must-haves')", 300),
@@ -147,20 +148,20 @@ SHOTS = [
     ("inside-orbit-night", "?date=2026-10-15&min=1230&mode=orbit#unit/paramount-tower-25e", STAGE, [], 11000, "#stage"),
     ("inside-skyline-dusk", "?date=2026-10-15&min=1110&mode=orbit#unit/paramount-tower-25e", STAGE, [cam(500, 330, -150, -500, 120, 250, ray=False), ("wait", 2500)], 11000, "#stage"),
     ("inside-bay", "?date=2026-10-15&min=690&mode=in#unit/paramount-tower-25e", STAGE, [("look", "corner:Bedroom:0", 3500)], 11000, "#stage"),
-    ("inside-furniture", "?date=2026-10-15&min=690&mode=in#unit/paramount-tower-25e", STAGE, [("look", "seat:sofa", 3500)], 11000, "#stage"),
-    ("inside-bedroom", "?date=2026-10-15&min=690&mode=in#unit/paramount-tower-25e", STAGE, [("look", "room:Bedroom:0", 2500), ("look", "into-room", 3500)], 11000, "#stage"),
+    ("inside-furniture", "?date=2026-10-15&min=690&mode=in#unit/paramount-tower-25e", STAGE, [("look", "room:Bedroom:0", 2500), ("look", "into-room", 3500)], 11000, "#stage"),
+    ("inside-bedroom", "?date=2026-10-15&min=690&mode=in#unit/paramount-tower-25e", STAGE, [("look", "corner:Bedroom:0", 2500), ("drag", "#stage", 300, 500, 1300, 480, 2500)], 11000, "#stage"),
     ("inside-walk-window", "?date=2026-10-15&min=690&mode=in#unit/paramount-tower-25e", STAGE, [("look", "seat:sofa", 2500), ("walk_window", 2500)], 11000, "#stage"),
     ("inside-night-window", "?date=2026-10-15&min=1230&mode=in#unit/paramount-tower-25e", STAGE, [("look", "seat:sofa", 2500), ("walk_window", 2500)], 11000, "#stage"),
-    ("inside-play-year", "?date=2026-07-10&min=780&mode=in#unit/paramount-tower-25e", DESK, [("look", "bay:Living room:1", 2500), ("click", "#uPlayBar [data-pb=year]", 2500)], 11000, None),
+    ("inside-play-year", "?date=2026-11-24&min=780&mode=in#unit/paramount-tower-25e", DESK, [("look", "bay:Living room:1", 2500), ("click", "#uPlayBar [data-pb=year]", 1800)], 11000, None),
     ("inside-measure-tape", "?date=2026-10-15&min=690&mode=in#unit/paramount-tower-25e", STAGE,
      [("look", "bay:Living room:1", 3000), ("click", "#unitMeasureTool", 800), ("click_frac", "#stage", 0.30, 0.55, 500), ("click_frac", "#stage", 0.70, 0.55, 1500)], 11000, "#stage"),
     ("inside-fits", "#plan/paramount-tower-25e", (1600, 1240),
      [("wait_for", "#tfText", 800), ("fill", "#tfText", "Bookshelf 36 x 12 x 72 in", 600), ("click", "[data-tf=drop-text]", 2500)], 11000, None),
     ("inside-match-photo", "?date=2026-10-15&min=780&mode=win#unit/paramount-tower-25e", DESK,
      [("click", "#uMatch", 1500), ("click", ".vm-card .vm-thumb:not(.gone) >> nth=0", 3500)], 11000, None),
-    ("compare-side-by-side-3d", "#compare/paramount-tower-25e,paramount-tower-9j", DESK,
+    ("compare-side-by-side-3d", "#compare/paramount-tower-25e,paramount-tower-41a", DESK,
      [("click", "#cmpPair", 1000), ("wait_pair", 1500), ("click", "#prModes [data-mode=win]", 3500)], 6000, None),
-    ("inside-measured-chip", f"?{PARAMOUNT}", STAGE_TALL, [("click", ".acc-btn", 800), ("eval", "document.querySelectorAll('.acc-pop').forEach((e) => { e.style.maxHeight = 'none'; })")], 11000, ("crop", "#stage", 1140, 716)),
+    ("inside-measured-chip", f"?{PARAMOUNT}", STAGE_TALL, [("click", ".acc-btn", 800), ("eval", "document.querySelectorAll('.acc-pop').forEach((e) => { e.style.maxHeight = 'none'; })")], 11000, ("crop", "#stage", 1560, 954)),
     ("inside-park-trees", "?date=2026-10-15&min=840&mode=orbit#unit/atlas-38d", STAGE, [cam(270, 175, 70, -10, 0, 300, ray=False), ("wait", 2500)], 11000, "#stage"),
     ("inside-river", "?date=2026-06-21&min=1140&mode=orbit#unit/henry-hall-23j", STAGE, [cam(350, 160, -250, -350, 20, 450, ray=False), ("wait", 2500)], 11000, "#stage"),
     ("inside-sun-by-floor", "?date=2026-10-15&min=780#unit/emerald-green-1211", (1600, 1300),
@@ -259,6 +260,14 @@ def run_action(page, kind, args, out, name, w):
                       " if (b && getComputedStyle(b).display !== 'none' && h.dataset.open !== '1') b.click(); }", None)
         page.click(f"[data-vp='{args[0]}']")
         page.wait_for_timeout(_pause(args[1:], 3000))
+    elif kind == "drag":
+        # drag inside an element (Unit 3D: drag to look around), from (x0, y0) to (x1, y1) in that element's pixels
+        box = page.locator(args[0]).bounding_box()
+        page.mouse.move(box["x"] + args[1], box["y"] + args[2])
+        page.mouse.down()
+        page.mouse.move(box["x"] + args[3], box["y"] + args[4], steps=25)
+        page.mouse.up()
+        page.wait_for_timeout(_pause(args[5:], 2000))
     elif kind == "walk_window":
         page.click("#uLook [data-act=to-window]")
         page.wait_for_function("() => window.__unit3d.walk && window.__unit3d.walk.walking()", timeout=5000)
