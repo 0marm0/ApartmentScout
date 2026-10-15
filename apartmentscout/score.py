@@ -25,6 +25,7 @@ from typing import Any
 
 from . import renterfacts
 from . import tours as tours_mod
+from .commute.slots import enabled as times_enabled, score_setting, scored_minutes
 from .config import DIMENSION_LABELS
 from .listings import (PRICE_BASES, cost_model, headroom, is_studio, normalise_laundry, normalise_service,
                        parse_date, price_per_sqft, size_info)
@@ -423,9 +424,11 @@ def part_commute(L: dict, crit: dict) -> Part:
     city = (crit.get("search") or {}).get("city")
     tot, wsum = 0.0, 0.0
     items: list[tuple[float, str]] = []
+    choice = score_setting(crit) if times_enabled(crit) else "am"
+    time_phrase = "" if choice == "am" else "(weighted over the day)" if choice == "weighted" else f"({choice} trip)"
     for d in dests:
         e = cm.get(d["name"]) or {}
-        m = e.get("minutes")
+        m = scored_minutes(e, crit)   # the arrive_by trip's minutes unless commute.times.score says otherwise
         if m is None:
             continue
         mx = d.get("max_minutes", 30)
@@ -433,7 +436,7 @@ def part_commute(L: dict, crit: dict) -> Part:
         w = d.get("weight", 1.0)
         tot += s * w
         wsum += w
-        phrase = " ".join(x for x in (f"{m:.0f} min to {d['name']}", _mode_phrase(e, city)) if x)
+        phrase = " ".join(x for x in (f"{m:.0f} min to {d['name']}", _mode_phrase(e, city), time_phrase) if x)
         items.append((w, phrase + (f" (limit {mx})" if m > mx else "")))
     if not wsum:
         return Part(None, "commute not computed, counted as neutral")

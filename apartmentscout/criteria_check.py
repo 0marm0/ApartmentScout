@@ -231,6 +231,8 @@ def _check_commute(raw: dict[str, Any], r: Report) -> None:
             r.errors.append("commute.transit.feeds: a list of {name, url} entries (or {name, path} for a zip on this computer).")
         if tr.get("service_date") is not None and _date(tr["service_date"]) is None:
             r.errors.append("commute.transit.service_date: use YYYY-MM-DD.")
+    from .commute.slots import check as check_times   # commute by time of day
+    r.errors.extend(check_times({"commute": c}))
 
 
 _PLACEHOLDER = re.compile(r"\b1 main st\b.*\banytown\b", re.I)

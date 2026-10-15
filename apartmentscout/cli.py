@@ -254,7 +254,7 @@ def cmd_layers(args):
     crit = ws.criteria()
     from .commute.run import _bbox, feed_paths
     bbox = list(_bbox(_listings(ws), crit["commute"]["destinations"], 1500))
-    feeds = feed_paths(ws, crit, log=log)
+    feeds = [] if getattr(args, "hours_only", False) else feed_paths(ws, crit, log=log)
     if feeds:
         from .commute.lines import transit_lines
         pad = 0.01
@@ -270,7 +270,22 @@ def cmd_layers(args):
         log("No built-in city noise layer for this city yet. See docs/guides/new-city.md to add one.")
         return
     from .layers import nyc_noise_layer
-    nyc_noise_layer(ws, bbox, months=args.months, log=log)
+    if not getattr(args, "hours_only", False):
+        nyc_noise_layer(ws, bbox, months=args.months, log=log)
+    if not getattr(args, "no_hours", False):
+        _noise_hours(ws, bbox, args.months)
+
+
+def _noise_hours(ws, bbox, months: int) -> None:
+    """layers/noise-hours.json on the same cells as noise.json (so the overlays line up), and the by-hour profile of every dossier."""
+    from .noise_hours import nyc_noise_hours, patch_dossiers
+    like = ws.layers_dir / "noise.json"
+    pin = {}
+    if like.exists():   # the cells of the layer already there, whatever the listings are now
+        old = json.loads(like.read_text())
+        bbox, pin = old["bbox"], {"rows": old["rows"], "cols": old["cols"], "cell_m": old.get("cell_m", 150)}
+    nyc_noise_hours(ws, list(bbox), months=months, log=log, **pin)
+    patch_dossiers(ws, log)
 
 
 def cmd_dossier(args):
@@ -723,6 +738,10 @@ def _inline_vendor(html: str) -> str:
                   html, count=1, flags=re.S)
 
 
+#: layer files that are loaded on demand, not at map start: commute by time of day, noise by hour
+LAZY_LAYER = re.compile(r"^(commute-.+-times|noise-hours)\.json$")
+
+
 def _export(ws: Workspace, out: Path):
     out.mkdir(parents=True, exist_ok=True)
     crit = ws.criteria()
@@ -742,7 +761,13 @@ def _export(ws: Workspace, out: Path):
     (out / "listings.json").write_text(json.dumps(slim, separators=(",", ":"), ensure_ascii=False))
     previews = build_sidecar(slim, ws.root / "media", out, cache_path=ws.cache_dir / "lqip.json", log=log,   # blur-up previews: the full set,
                              fallback=[ws.root / "media-lite"])                                                  # else the last sidecar, else the starter set
-    (out / "criteria.json").write_text(json.dumps(crit, default=str, indent=1))
+    crit_out = crit
+    if any(e.get("times") for L in Ls for e in (L.get("commute") or {}).values() if isinstance(e, dict)):
+        from .commute.slots import export_block   # the time-of-day slots in force, for the selector and the drawer
+        blk = export_block(crit)
+        if blk:
+            crit_out = {**crit, "commute": {**(crit.get("commute") or {}), "times": blk}}
+    (out / "criteria.json").write_text(json.dumps(crit_out, default=str, indent=1))
     for sub in ("layers", "sites", "plans", "view-calibrations"):
         src = ws.root / sub
         dst = out / sub
@@ -770,7 +795,7 @@ def _export(ws: Workspace, out: Path):
         notes[p.stem] = p.read_text()
     (out / "notes.json").write_text(json.dumps(notes))
     manifest = {"generated": dt.datetime.now().isoformat(timespec="seconds"), "version": __version__,
-                "search": crit["search"].get("name"), "layers": sorted(p.name for p in (out / "layers").glob("*.json")) if (out / "layers").exists() else [],
+                "search": crit["search"].get("name"), "layers": sorted(p.name for p in (out / "layers").glob("*.json") if not LAZY_LAYER.match(p.name)) if (out / "layers").exists() else [],
                 "sites": sorted(p.stem for p in (out / "sites").glob("*.json")) if (out / "sites").exists() else [],
                 "plans": sorted(p.stem for p in (out / "plans").glob("*.json")) if (out / "plans").exists() else [],
                 "view_calibrations": sorted(p.stem for p in (out / "view-calibrations").glob("*.json")) if (out / "view-calibrations").exists() else [],
@@ -787,6 +812,8 @@ def _export(ws: Workspace, out: Path):
         log(f"  search.default_listing {dl!r} is not in listings.json: left out of the manifest")
     from .exports import run_all
     manifest["extra"] = run_all(ws, out, log=log)   # history, coverage and other optional data files
+    # layers the dashboard fetches only when they are asked for (a time of day, an hour of the day), like the combined surfaces
+    manifest["extra"] += sorted(f"layers/{p.name}" for p in (out / "layers").glob("*.json") if LAZY_LAYER.match(p.name)) if (out / "layers").exists() else []
     (out / "manifest.json").write_text(json.dumps(manifest, indent=1))
 
 
@@ -906,6 +933,8 @@ def build_parser() -> argparse.ArgumentParser:
     s = add("layers", cmd_layers, "city map layers (NYC: 311 noise)")
     s.add_argument("--months", type=int, default=12)
     s.add_argument("--transit-only", action="store_true", help="only rebuild the transit lines layer")
+    s.add_argument("--no-hours", action="store_true", help="skip the 311 noise by hour of the day layer (a few minutes of downloading)")
+    s.add_argument("--hours-only", action="store_true", help="only the noise by hour layer and the by-hour profile in each dossier")
     s = add("dossier", cmd_dossier, "public building records (NYC built in)")
     s.add_argument("ids", nargs="*")
     s = add("site", cmd_site, "3D site model and sun/view study for one listing")
