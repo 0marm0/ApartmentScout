@@ -3,11 +3,12 @@
 import { normalisePlan, UNIT_IN, ROOM_KINDS, FIXTURE_KINDS } from './model.js';
 import { validateLayout, serialiseLayout, MAX_BYTES } from './layout.js';
 import { validateExtras } from './lighting-model.js';   // [feature J] daylight inputs and luminaires
+import { validateInventory } from './inventory.js';   // [furniture] the renter's own pieces travel with the project
 
 export const MAX_PROJECT_BYTES = MAX_BYTES;
 const ID = /^[A-Za-z0-9_-]{1,80}$/;
 const FIELDS = {
-  project: 'schema kind plan layout lighting',
+  project: 'schema kind plan layout lighting inventory',
   plan: 'schema id title units ceiling wall up_bearing floor source provenance rooms walls windows doors open_walls fixtures keepout layouts',
   rooms: 'name kind x y w h poly stated est',
   walls: 'a b t',
@@ -24,6 +25,8 @@ const FIELDS = {
   layout: 'schema kind plan units items saved',
   item: 'id ref x y rot w d h elev variant label hidden product',
   lighting: 'directSun ambient glazing blinds daylight luminaires',   // [feature J] daylight, luminaires
+  inventory: 'schema kind name source pieces',   // [furniture]
+  piece: 'id ref label room w d h elev variant product note source',
 };
 const fin = (v) => typeof v === 'number' && Number.isFinite(v);
 const own = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
@@ -182,15 +185,22 @@ export function parseProject(input, { planId = null } = {}) {
       if (own(l, 'blinds') && !['open', 'sheer', 'half', 'closed'].includes(l.blinds)) fail('lighting.blinds must be open, sheer, half or closed');
       try { validateExtras(l); } catch (e) { fail(e.message); }   // [feature J]
     }
-    return { ok: true, project, model, layout };
+    if (own(project, 'inventory')) {   // [furniture] strict like the layout: plain objects, known fields, then the inventory's own checks
+      object(project.inventory, 'inventory'); array(project.inventory.pieces, 'inventory.pieces', 60);
+      project.inventory.pieces.forEach((q, i) => object(q, 'piece', `inventory.pieces[${i}]`));
+      const inv = validateInventory(project.inventory);
+      if (!inv.ok) fail(inv.error);
+      project.inventory = inv.inventory;
+    }
+    return { ok: true, project, model, layout, inventory: project.inventory || null };
   } catch (e) { return { ok: false, error: e.message || 'Invalid project' }; }
 }
 
 /** Build a validated portable object; throws on invalid geometry or layout. */
-export function serialiseProject(rawPlan, items, lighting = {}) {
+export function serialiseProject(rawPlan, items, lighting = {}, inventory = null) {
   // Validate original numbers before serialiseLayout rounds them (NaN must never become null).
-  jsonTree({ plan: rawPlan, items, lighting });
-  const r = parseProject({ schema: 1, kind: 'apartmentscout-project', plan: rawPlan, layout: serialiseLayout(rawPlan.id, items), lighting });
+  jsonTree({ plan: rawPlan, items, lighting, inventory });
+  const r = parseProject({ schema: 1, kind: 'apartmentscout-project', plan: rawPlan, layout: serialiseLayout(rawPlan.id, items), lighting, ...(inventory?.pieces?.length ? { inventory } : {}) });
   if (!r.ok) fail(r.error);
   return r.project;
 }

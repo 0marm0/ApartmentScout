@@ -104,6 +104,23 @@
  ],
  "layouts": [
   {
+   "id": "your-furniture",
+   "name": "Your furniture",
+   "note": "Your ten pieces from the earlier fit-check tools, placed with the studio's checks: all ten clear. The bed is pulled 13 in off the partition so the 55-inch TV is 7.9 ft from the pillows (an ideal view) with both sides free; the futon faces the living-room TV 7.5 ft away; the desk sits on the left wall past that TV and the dining table by the kitchen. Sizes are the tools' own; no saved positions survived, so the positions are the checks' work.",
+   "items": [
+    {"id": "bed", "ref": "queen-bed", "x": 230, "y": 238.5, "rot": 270, "w": 64, "d": 84, "h": 40, "label": "Queen bed"},
+    {"id": "nightstand-1", "ref": "nightstand", "x": 198, "y": 280.0, "rot": 270, "w": 18, "d": 16, "h": 24, "label": "Nightstand"},
+    {"id": "nightstand-2", "ref": "nightstand", "x": 198, "y": 197.0, "rot": 270, "w": 18, "d": 16, "h": 24, "label": "Nightstand"},
+    {"id": "tv-bed", "ref": "tv-55", "x": 306.75, "y": 238.5, "rot": 90, "w": 48.4, "d": 3.5, "h": 27.8, "elev": 32, "label": "55-inch TV, bedroom"},
+    {"id": "dresser", "ref": "dresser", "x": 294.2, "y": 159.5, "rot": 180, "w": 27.6, "d": 19.7, "h": 38.6, "label": "Dresser, 4 drawers"},
+    {"id": "desk", "ref": "desk", "x": 33, "y": 306, "rot": 270, "w": 60, "d": 24, "h": 30, "label": "Desk and chair"},
+    {"id": "futon", "ref": "futon", "x": 118.0, "y": 238.5, "rot": 90, "w": 80, "d": 36, "h": 34, "label": "Futon, 3 seats"},
+    {"id": "coffee", "ref": "coffee-table", "x": 72.0, "y": 238.5, "rot": 90, "w": 44, "d": 24, "h": 17, "label": "Coffee table"},
+    {"id": "tv", "ref": "tv-55", "x": 21.75, "y": 238.5, "rot": 270, "w": 48.4, "d": 3.5, "h": 27.8, "elev": 32, "label": "55-inch TV, living room"},
+    {"id": "dining", "ref": "dining-4", "x": 71.0, "y": 163.5, "rot": 0, "w": 48, "d": 30, "h": 30, "label": "Dining table, 4 seats"}
+   ]
+  },
+  {
    "id": "bed-living-wall",
    "name": "Bed on the living-room wall, floating sofa",
    "note": "Headboard on the solid partition with both sides free and a 65-inch TV on the far wall past the bay; the sofa floats 1 ft off the partition so the TV is about 9 ft away, with a round table by the kitchen.",
