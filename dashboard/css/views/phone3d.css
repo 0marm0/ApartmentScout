@@ -20,8 +20,8 @@
   .rnq-dock-play:focus-visible, .rnq-dock-range:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
   /* ---- Unit 3D */
-  #view-unit .u-modes { top: auto; bottom: 64px; left: 8px; right: 8px; max-width: none; overflow-x: auto; scrollbar-width: none; }
-  #view-unit .u-modes button { flex: 1 0 auto; height: 38px; padding: 0 12px; }
+  /* the camera buttons sit with the room switcher at the top of the picture (css/views/unit.css .u-views): they are in that flow, so no bottom offset here */
+  #view-unit .u-modes { max-width: none; }
   #view-unit .u-look { top: 8px; left: 8px; right: 56px; }
   #view-unit .u-tools { top: 8px; right: 8px; max-height: calc(100% - 128px); overflow-y: auto; scrollbar-width: none; }
   #view-unit .u-tools button { width: 36px; height: 36px; }

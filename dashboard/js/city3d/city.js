@@ -9,12 +9,17 @@ import { buildContext } from '../unit/context3d.js';
 import { loadTreeLayers } from '../unit/treelayers.js';
 import { decorate, facadeExtras } from './facade.js';
 import { mergeBuildings, edgeGeo, outlineGeo } from './buildings.js';
+import { nightLights } from './nightlights.js';
+import { quality } from '../room3d/quality.js';   // [quality] the night lamps, their halo and the sky's stars sit behind quality.has('nightLights' | 'nightGlow' | 'skyDetail')
 
 export const CITY_RADIUS_M = 640;     // trees, parks and grass are drawn within this many metres of the building
 export const NEAR_M = 900;            // buildings closer than this cast shadows (Unit 3D); farther ones are a second, cheaper mesh
 
 /** The shared facade-shader uniforms: uNight 0..1 (lit windows after dusk), uFloorH, uDetail, uLitCol. */
-export const facadeUniforms = (pal) => ({ uNight: { value: 0 }, uFloorH: { value: 3.2 }, uDetail: { value: 1 }, uLitCol: { value: (pal?.lit || new THREE.Color(1, 0.8, 0.5)).clone() }, ...facadeExtras() });
+export const facadeUniforms = (pal) => ({ uNight: { value: 0 }, uLate: { value: 0 }, uFloorH: { value: 3.2 }, uDetail: { value: 1 }, uLitCol: { value: (pal?.lit || new THREE.Color(1, 0.8, 0.5)).clone() }, ...facadeExtras() });
+
+/** How much of its daylight colour the ground, grass and trees keep in the dead of night (the walls: city3d/facade-rules.js NIGHT_DIM). */
+export const NIGHT_WORLD_DIM = 0.42;
 
 /** Lit windows fade in through dusk: 0 by day, 1 when the sun is 6 degrees under the horizon. */
 export const nightAmount = (alt, pal) => Math.max(0, Math.min(1, (3 - alt) / 9)) * (pal?.light ? 0.75 : 1);
@@ -30,7 +35,7 @@ export function buildCityContext(data, o) {
   const f = o.frame || {}, q = o.quality || {}, pal = o.pal;
   return buildContext({ green: data.green, water: data.water, streets: data.streets }, {
     B: data.B, place: f.place, matrix: f.matrix, center: o.center, radius: o.radius ?? CITY_RADIUS_M, y0: f.y0 ?? 0,
-    ground: pal.ground, light: pal.light, blue: pal.blue, visual: !!q.visual, phone: !!q.phone, quality: q,
+    ground: pal.ground, light: pal.light, blue: pal.blue, visual: !!q.visual, phone: !!q.phone, quality: q, season: o.season,
     layers: { green: true, water: true, ...loadTreeLayers(), ...(o.layers || {}) },
   });
 }
@@ -91,18 +96,49 @@ export function createCity(data, o) {
       if (extra.pal) c.pal = extra.pal;
       if (extra.quality) c.quality = extra.quality;
       if (extra.layers) c.layers = { ...c.layers, ...extra.layers };
-      c.ctx = buildCityContext(data, { pal: c.pal, center: o.center, frame: o.frame, quality: c.quality, layers: c.layers, ...extra });
+      c.ctx = buildCityContext(data, { pal: c.pal, center: o.center, frame: o.frame, quality: c.quality, layers: c.layers, season: c.season, ...extra });
       if (c.ctx) { group.add(c.ctx.group); c.ctx.watch(group); }   // (the tree LOD follows the camera once the city's own group is in a scene)
       c.syncGroundBase();
+      c.buildLights();
+      c.ctx?.setDim?.(c.dim);
       return c.ctx;
     },
+    /** The night lamps (city3d/nightlights.js): street lamps along the streets, bridge and river lights, one draw call. Rebuilt with the context. */
+    buildLights() {
+      if (c.lights) { group.remove(c.lights.group); c.lights.dispose(); c.lights = null; }
+      if (!(data.streets || []).length && !data.water) return null;
+      c.lights = nightLights({ streets: data.streets, water: data.water }, { center: o.center, radius: CITY_RADIUS_M, place, y0, phone: !!c.quality?.phone, uNight: facU.uNight });
+      c.setNightFeatures(); group.add(c.lights.group);
+      return c.lights;
+    },
+    /**
+     * Night, 0 (day) to 1 (deep night): the lit windows and the lamps come on (they share the facade's uNight), and the ground, grass and trees
+     * go dark with it (the walls do it in the facade shader). Every engine drives the night through here.
+     */
+    setNight(v) {
+      facU.uNight.value = v;
+      const dim = 1 - (1 - NIGHT_WORLD_DIM) * Math.max(0, Math.min(1, v));
+      if (Math.abs(dim - c.dim) > 0.004) { c.dim = dim; groundMat.color.copy(c.pal.ground).multiplyScalar(dim); c.ctx?.setDim?.(dim); }
+      c.setNightFeatures();
+    },
+    /** The lamps show only at night and only where the quality level allows them (`nightLights`); their halo is `nightGlow`. Lit windows are shader-only and stay. */
+    setNightFeatures() {
+      if (!c.lights) return;
+      c.lights.group.visible = facU.uNight.value > 0.01 && quality.has('nightLights'); c.lights.setGlow(quality.has('nightGlow'));
+    },
+    /** How late the evening is, 0 (early) to 1 (deep night): fewer windows stay lit (city3d/facade-rules.js lateAt, NIGHT_RULES). */
+    setLate(v) { facU.uLate.value = Math.max(0, Math.min(1, +v || 0)); },
+    dim: 1, lights: null,
     /** The plate stands in for the base ground where it is on; the base drops under the water so the plate's holes show it. */
     syncGroundBase() { groundBase.position.y = y0 + (c.ctx?.hasGround && c.layers.water !== false ? -0.9 : -0.02); },
-    pal, quality: o.quality || { visual: false, phone: false }, layers: o.layers || {},
+    pal, quality: o.quality || { visual: false, phone: false }, layers: o.layers || {}, season: { leaf: 1, autumn: 0 },
+    /** The tree season ({leaf, autumn}, city3d/season.js): remembered across a rebuild of the context. A picture only. True when the trees changed. */
+    setSeason(s) { c.season = { leaf: +s?.leaf, autumn: +s?.autumn }; return !!c.ctx?.setSeason(c.season); },
     setPalette(p) {
-      c.pal = p; groundMat.color.copy(p.ground); edgeMat.color.copy(p.edge); edgeMat.opacity = p.edgeOp; outlineMat.color.copy(p.outline); outlineMat.opacity = p.outlineOp; facU.uLitCol.value.copy(p.lit);
+      c.pal = p; groundMat.color.copy(p.ground).multiplyScalar(c.dim); edgeMat.color.copy(p.edge); edgeMat.opacity = p.edgeOp; outlineMat.color.copy(p.outline); outlineMat.opacity = p.outlineOp; facU.uLitCol.value.copy(p.lit);
     },
-    dispose() { group.traverse((m) => { m.geometry?.dispose?.(); }); bMat.dispose(); groundMat.dispose(); edgeMat.dispose(); outlineMat.dispose(); c.ctx?.dispose(); c.ctx = null; },
+    dispose() { unsub(); c.lights?.dispose(); group.traverse((m) => { m.geometry?.dispose?.(); }); bMat.dispose(); groundMat.dispose(); edgeMat.dispose(); outlineMat.dispose(); c.ctx?.dispose(); c.ctx = null; },
   };
+  const unsub = quality.onChange(() => c.setNightFeatures());
   return c;
 }
