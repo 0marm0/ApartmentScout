@@ -422,7 +422,7 @@ function setBed(choice) {
   if (!inv || !raw || !plan) return;
   const next = applyChoice(raw, inv, 'bed', choice);
   if (next.every((x, i) => x === raw[i])) return;
-  planInfo.raw = next; planInfo.layout = { ...(planInfo.layout || {}), items: applyInventory(next, inv) };
+  planInfo.raw = next; planInfo.layout = { ...(planInfo.layout || {}), items: applyInventory(next, inv) }; planInfo.furniture = next.filter((x) => !x.hidden).length;
   if (planInfo.persist) { try { store.set(layoutKey(S.base, st.id), serialiseLayout(st.id, next, { removed: planInfo.removed || [] })); planInfo.stamp = layoutStamp(st.id); } catch { /* storage unavailable: the choice holds for this visit */ } }
   rebuildFurniture();
   bedUI?.update(); accChip(); mh?.refresh(true);
@@ -447,10 +447,10 @@ async function loadPlan(id) {
   let pref = null; try { pref = localStorage.getItem('as:unit-scenario-use:' + id); } catch { pref = null; }
   useScenario = !!scenario && pref !== '0';
   if (scenario && useScenario) {
-    try { plan = normalisePlan(scenario.plan); planRaw = scenario.plan; planInfo = { source: 'local scenario', label: scenario.label || 'edited plan', saved: scenario.saved, layout: scenario.layout, furniture: scenario.layout?.items?.length || 0 }; } catch { plan = null; }
+    try { plan = normalisePlan(scenario.plan); planRaw = scenario.plan; planInfo = { source: 'local scenario', label: scenario.label || 'edited plan', saved: scenario.saved, layout: scenario.layout, furniture: (scenario.layout?.items || []).filter((x) => !x.hidden).length }; } catch { plan = null; }
   }
   if (!plan && hasFilePlan) {
-    try { planRaw = await loadJSON(`${S.base}/plans/${id}.json`, null); plan = normalisePlan(planRaw); const L0 = plan.layouts[0]; planInfo = { source: 'file', label: '', saved: null, furniture: L0?.items?.length || 0, layout: L0 ? { items: L0.items } : null, layoutName: L0?.name || '' }; } catch { plan = null; planRaw = null; }
+    try { planRaw = await loadJSON(`${S.base}/plans/${id}.json`, null); plan = normalisePlan(planRaw); const L0 = plan.layouts[0]; planInfo = { source: 'file', label: '', saved: null, furniture: (L0?.items || []).filter((x) => !x.hidden).length, layout: L0 ? { items: L0.items } : null, layoutName: L0?.name || '' }; } catch { plan = null; planRaw = null; }
   }
   // [placement] where each piece stands is decided by the same rule as in the Floor plan studio (plan/placement.js): the renter's saved layout (what they
   // dragged there is final), the plan's default for what they have not placed, an automatic fit for what has no place yet; then [furniture] the renter's
@@ -462,7 +462,7 @@ async function loadPlan(id) {
     const r = resolveLayout({ model: plan, inventory: inv, saved });
     planInfo.layout = r.items.length ? { ...(planInfo.layout || {}), items: applyInventory(r.items, inv) } : null;
     Object.assign(planInfo, { raw: r.items, inventory: inv, removed: r.removed, persist: planInfo.source === 'file' || scenario?.from === 'studio', stamp: layoutStamp(id) });   // [bed option] what the Bed control switches and saves
-    planInfo.furniture = r.items.length;
+    planInfo.furniture = r.items.filter((x) => !x.hidden).length;   // [bed option] the pieces shown, not the ones waiting hidden (a bed the renter may buy)
     if (planInfo.source === 'file') planInfo.layoutName = plan.layouts[0]?.name || (r.items.length ? 'Your furniture' : '');
   }
 }

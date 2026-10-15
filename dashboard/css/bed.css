@@ -45,5 +45,8 @@
   .bd-short { display: inline; }
   .bd-seg button, .bd-fit { padding: 0 8px; }
   .bed-ctl.in-p2d, .bed-ctl.in-p3d { max-width: calc(100% - 16px); }
+  .bed-ctl { padding: 2px; gap: 4px; }
+  .bd-seg button, .bd-fit { height: 24px; }
+  .bd-l { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { .bd-seg button, .bd-fit { transition: none; } }

@@ -46,6 +46,10 @@ def _floor_spot(pg, candidates=((80, 240), (60, 260), (100, 262), (60, 215), (12
     raise AssertionError("no floor point is visible on the canvas")
 
 
+def _without_candidate(items: dict) -> dict:
+    return {k: v for k, v in items.items() if k != "bed-latitude"}
+
+
 def _need_webgl(webgl: bool) -> None:
     if not webgl:
         pytest.skip("no WebGL in this browser (SwiftShader unavailable)")
@@ -105,8 +109,10 @@ def test_both_views_place_every_piece_identically_and_nothing_moves_on_a_reload_
     unit = s.page.evaluate(UNIT_ITEMS)
     assert unit == studio, "the two views place every piece identically, at the same size"
     meshes = s.page.evaluate(UNIT_MESHES)
+    assert "bed-latitude" not in meshes, "the bed the renter may buy is in the layout but not drawn until they switch to it"
     for i in unit:
-        assert meshes[i["id"]] == [i["x"], i["y"]], f"{i['id']} is drawn where its item is"
+        if i["id"] != "bed-latitude":
+            assert meshes[i["id"]] == [i["x"], i["y"]], f"{i['id']} is drawn where its item is"
     # a reload of either view changes nothing, and neither does going back and forth
     _reload(s)
     s.page.wait_for_function("() => window.__unit3d && window.__unit3d.stage && window.__unit3d.stage.interior && window.__unit3d.walk", timeout=120000)
@@ -180,10 +186,10 @@ def test_a_layout_saved_before_pieces_were_marked_keeps_what_the_renter_moved_an
     saved = _stored(pg)
     assert saved["ver"] == 2 and next(i for i in saved["items"] if i["id"] == "desk")["placed"] is True, "saved again in the new form, the desk marked as the renter's"
     _unit(s)
-    assert {i["id"]: i for i in pg.evaluate(UNIT_ITEMS)} == now
+    assert _without_candidate({i["id"]: i for i in pg.evaluate(UNIT_ITEMS)}) == _without_candidate(now)
     _reload(s)
     pg.wait_for_function("() => window.__unit3d && window.__unit3d.stage && window.__unit3d.stage.interior && window.__unit3d.walk", timeout=120000)
-    assert {i["id"]: i for i in pg.evaluate(UNIT_ITEMS)} == now
+    assert _without_candidate({i["id"]: i for i in pg.evaluate(UNIT_ITEMS)}) == _without_candidate(now), "a layout saved before the candidate bed existed gets it hidden, and nothing else changes"
     assert not s.take()
 
 
@@ -198,7 +204,7 @@ def test_one_unreadable_piece_in_a_saved_layout_does_not_send_everything_back_to
     _studio(s)
     bed = next(i for i in pg.evaluate(STUDIO_ITEMS) if i["id"] == "bed")
     assert (bed["x"], bed["y"], bed["rot"]) == (120, 200, 0)
-    assert len(pg.evaluate(STUDIO_ITEMS)) == 10, "the other nine pieces were filled in from the default"
+    assert len(pg.evaluate(STUDIO_ITEMS)) == 11, "the other ten pieces (the candidate bed hidden among them) were filled in from the default"
     assert not s.take()
 
 
