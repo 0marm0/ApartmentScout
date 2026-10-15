@@ -235,3 +235,23 @@ test('the evidence panel says which way the target building was matched, includi
   }
   assert.equal(panels.TARGET.name[1], 'good'); assert.equal(panels.TARGET.nearest[1], 'warn', 'a guess is flagged, a name match is not');
 });
+
+test('compact parts: an absent base is the ground, an absent confidence on an OpenStreetMap part is medium, hconf is read from the rule when not stored', () => {
+  const q = S.prepPart({ ring: [[0, 0], [5, 0], [5, 5]], top_m: 10, source: 'osm way 7' });
+  assert.equal(q.base_m, 0); assert.equal(q.confidence, 'medium');
+  assert.equal(S.prepPart({ ring: [[0, 0], [5, 0], [5, 5]], top_m: 10, source: 'osm way 7', confidence: 'low' }).confidence, 'low');
+  assert.equal(S.prepPart({ ring: [[0, 0], [5, 0], [5, 5]], top_m: 10, source: 'manual: a diagram', confidence: 'high' }).confidence, 'high');
+  assert.equal(F.confOf({ height_src: 'roof', geom_src: 'photogrammetric' }), 'high');
+  assert.equal(F.confOf({ height_src: 'roof', hconf: 'low', hflag: 'floors' }), 'low');
+  assert.equal(F.heightProvenance({ height_src: 'roof', geom_src: 'manual' }).conf, 'medium');
+});
+
+test('parts without a colour take their building\'s colour; a spire keeps its own', () => {
+  const site = { b: [[60, 0, 0, [0, 0, 20, 0, 20, 20, 0, 20]]], target: null, bmeta: [{ bin: '9' }], components: { 0: [
+    { ring: [[0, 0], [20, 0], [20, 20], [0, 20]], base_m: 0, top_m: 30, kind: 'podium', source: 't', col: '#9c817e', mat: 'brick' },
+    { ring: [[2, 2], [12, 2], [12, 12], [2, 12]], base_m: 30, top_m: 60, kind: 'tower', source: 't' },
+    { ring: [[5, 5], [6, 5], [6, 6], [5, 6]], base_m: 60, top_m: 80, kind: 'spire', source: 't' }] } };
+  const { entries } = M.buildingEntries(site, {});
+  const by = Object.fromEntries(entries[0].parts.map((q) => [q.kind, q]));
+  assert.equal(by.podium.col, '#9c817e'); assert.equal(by.tower.col, '#9c817e'); assert.ok(!by.spire.col);
+});

@@ -149,3 +149,28 @@ def test_a_landmark_with_dozens_of_parts_validates():
     out, problems = validate_components({"5": parts}, 10)
     assert problems == [] and len(out["5"]) == 79
     assert validate_components({"5": parts * 3}, 10)[1] and MAX_PARTS >= 79
+
+
+def test_derived_parts_are_stored_compactly():
+    """A base of 0, a medium confidence and a rooftop box under 8 m2 are left out of the site file; the readers default them."""
+    lot = _box(0, 0, 60, 40)
+    site = {"origin": {"lat": LAT, "lon": LON}, "b": [[80, 0, 0, [v for p in lot for v in p]]], "bmeta": [{"bin": "1", "height_src": "roof"}]}
+    ways = [_way(1, lot, height="80"), _way(2, _box(10, 10, 12, 12), height="86", min_height="80"),      # a 4 m2 box: dropped
+            _way(3, _box(20, 10, 30, 20), **{"building:levels": "25", "building:min_level": "22"})]       # from levels: low confidence
+    comps, info = derive_components(site, parse_osm_parts(ways))
+    got = comps["0"]
+    assert info["dropped_small"] == 1 and len(got) == 2
+    assert "base_m" not in got[0] and "confidence" not in got[0] and "ref" not in got[0]
+    assert got[1]["base_m"] > 0 and got[1]["confidence"] == "low"
+
+
+def test_one_material_and_colour_for_a_building_is_stored_once():
+    lot = _box(0, 0, 60, 40)
+    site = {"origin": {"lat": LAT, "lon": LON}, "b": [[80, 0, 0, [v for p in lot for v in p]]], "bmeta": [{"bin": "1", "height_src": "roof"}]}
+    tags = {"building:material": "brick", "building:colour": "#9c817e"}
+    ways = [_way(1, lot, height="30", **tags), _way(2, _box(10, 10, 40, 30), height="80", min_height="30", **tags)]
+    got = derive_components(site, parse_osm_parts(ways))[0]["0"]
+    assert [("mat" in c, "col" in c) for c in got] == [(True, True), (False, False)]
+    mixed = [_way(1, lot, height="30", **tags), _way(2, _box(10, 10, 40, 30), height="80", min_height="30", **{"building:material": "glass"})]
+    got = derive_components(site, parse_osm_parts(mixed))[0]["0"]
+    assert [c.get("mat") for c in got] == ["brick", "glass"]                  # different materials stay on their parts

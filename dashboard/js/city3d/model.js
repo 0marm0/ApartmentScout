@@ -76,9 +76,9 @@ export function buildingEntries(site, o = {}) {
 export function entryOf(b, i, m, o = {}) {
   m = m || {};
   const id = stableId(m, i), roof = b.top - Math.max(b.g, 0), raw = b.parts && b.parts.length ? b.parts : null;
-  const bmat = raw ? dominant(raw.map((q) => q.mat).filter(Boolean)) : null;
+  const bmat = raw ? dominant(raw.map((q) => q.mat).filter(Boolean)) : null, bcol = raw ? dominant(raw.map((q) => q.col).filter(Boolean)) : null;
   const style = facadeStyle(m, roof, bmat), seed = seedOf(id);
-  const parts = (raw || [wholePart(b)]).map((q) => normalPart(q, b, m, bmat, style, seed)).sort((a, c) => a.top - c.top || a.base - c.base);
+  const parts = (raw || [wholePart(b)]).map((q) => normalPart(q.col || !bcol || q.kind === 'spire' ? q : { ...q, col: bcol }, b, m, bmat, style, seed)).sort((a, c) => a.top - c.top || a.base - c.base);
   markExposed(parts);
   const near = o.near !== false, cx = (b.bb[0] + b.bb[2]) / 2, cy = (b.bb[1] + b.bb[3]) / 2;
   const e = { i, id, g: b.g, top: b.top, roof, p: b.p, holes: b.holes || [], bb: b.bb, cx, cy, dist: o.dist ?? 0, near, meta: m, style, seed, parts, whole: !raw, floors: +m.floors > 0 ? +m.floors : null };

@@ -72,7 +72,7 @@ export function prepPart(c, g = 0) {
   return {
     p, n: p.length / 2, bb: bboxOf(p), holes, g, base: g + base, top: g + top, base_m: base, top_m: top,
     kind: COMPONENT_KINDS.includes(c.kind) ? c.kind : base > 0 ? 'setback' : 'podium',
-    source: typeof c.source === 'string' ? c.source : '', confidence: typeof c.confidence === 'string' ? c.confidence : '', ref: typeof c.ref === 'string' && c.ref ? c.ref : osmRef(c.source),
+    source: typeof c.source === 'string' ? c.source : '', confidence: typeof c.confidence === 'string' ? c.confidence : typeof c.source === 'string' && /^osm /.test(c.source) ? 'medium' : '', ref: typeof c.ref === 'string' && c.ref ? c.ref : osmRef(c.source),
     // [building massing] appearance only (drawn by city3d/buildings.js, never in an obstruction): roof shape, wall top, material, colour
     roof: typeof c.roof === 'string' ? c.roof : '', eave_m: Number.isFinite(+c.eave_m) && c.eave_m != null ? +c.eave_m : null, dir: Number.isFinite(+c.dir) && c.dir != null ? +c.dir : null, mat: typeof c.mat === 'string' ? c.mat : '', col: typeof c.col === 'string' && /^#[0-9a-f]{6}$/i.test(c.col) ? c.col : '',
   };

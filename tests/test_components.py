@@ -124,7 +124,7 @@ def test_derive_components_cover_and_height_rules():
     parts = parse_osm_parts([_way(1, LOT, height="20"), _way(2, TOWER, height="100", min_height="20")])
     comps, info = derive_components(site, parts)
     assert list(comps) == ["0"] and info["buildings"] == 1
-    assert [(c["kind"], c["base_m"], c["top_m"], c["confidence"]) for c in comps["0"]] == \
+    assert [(c["kind"], c.get("base_m", 0.0), c["top_m"], c.get("confidence", "medium")) for c in comps["0"]] == \
         [("podium", 0.0, 20.0, "medium"), ("tower", 20.0, 100.0, "medium")]
     assert comps["0"][1]["source"] == "osm way 2" and "ref" not in comps["0"][1]     # the link is rebuilt from the source (dashboard osmRef)
     assert comps["0"][1]["ring"][0] == pytest.approx([-10, -60], abs=0.15)

@@ -107,6 +107,8 @@ export function heightConfidence(m) {
   return src === 'osm-height' ? 'medium' : 'low';
 }
 /** A building's id in every view: its BIN, else its OpenStreetMap element, else b<index>. Twin of buildings.py stable_id. */
+/** The stored confidence, else the rule over height_src / geom_src / fcode (the site file stores it only when the floor count overrides the rule). */
+export const confOf = (m) => (m && m.hconf) || heightConfidence(m);
 export function stableId(m, index) {
   for (const k of ['bin', 'id']) { const v = m && m[k]; if (v !== null && v !== undefined && v !== '') return String(v); }
   return `b${index}`;
@@ -122,7 +124,7 @@ export function heightProvenance(m) {
     default: ['Default height (unknown)', 'No height in any source: a 10 m placeholder'],
   };
   const src = (m && m.height_src) || 'default', [text, tip] = SRC[src] || [src, ''];
-  const conf = (m && m.hconf) || heightConfidence(m);
+  const conf = confOf(m);
   const flag = m && m.hflag === 'floors' ? ' The roof height does not fit the floor count (a footprint of a lower part, or a wrong count), so it is not trusted.' : '';
   return { text, conf, flag: !!flag, tip: `${tip}. Confidence ${conf}.${flag}` };
 }

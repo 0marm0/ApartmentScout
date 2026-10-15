@@ -349,7 +349,7 @@ def build_site(listing: dict, buildings: list[dict], source: str, landmark_names
         m = {"id": sid if sid != str(b.get("bin")) else None, "bin": b.get("bin"), "bbl": b.get("bbl"), "address": b.get("address"),
              "name": b.get("name"), "year": b.get("year"), "floors": b.get("floors"), "cls": b.get("cls"),
              "height_src": b.get("height_src") or "default",
-             "hconf": "low" if floors_disagree(b) else height_confidence(b), "hflag": "floors" if floors_disagree(b) else None,
+             "hconf": "low" if floors_disagree(b) else None, "hflag": "floors" if floors_disagree(b) else None,   # otherwise the rule reads height_src, geom_src, fcode
              "src": b.get("src") or ("osm" if str(b.get("id", "")).startswith("osm") else "nyc-footprints"),
              "geom_src": b.get("geom_src"), "edited": b.get("edited"), "fcode": b.get("fcode")}
         meta.append({k: v for k, v in m.items() if v is not None})

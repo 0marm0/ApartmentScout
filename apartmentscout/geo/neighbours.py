@@ -13,6 +13,7 @@ import math
 from typing import Iterable
 
 from . import compass
+from .buildings import height_confidence
 from .shapes import point_in_poly
 
 EYE_M = 1.6
@@ -160,7 +161,7 @@ def neighbour_records(site: dict, face: dict | None = None, radius_m: float = 30
             "bin": m.get("bin") or "", "bbl": m.get("bbl") or "", "dist_m": d, "bearing": brg,
             "compass": compass(brg), "in_front": "" if not w else ("yes" if _ang(brg, w["bearing"]) < 90 else "no"),
             "height_m": h, "height_ft": round(h / 0.3048), "top_rel_m": top, "floors": m.get("floors") or "",
-            "height_src": m.get("height_src") or "", "height_conf": m.get("hconf") or "", "id": m.get("id") or m.get("bin") or "",
+            "height_src": m.get("height_src") or "", "height_conf": (m.get("hconf") or height_confidence(m)) if m.get("height_src") else "", "id": m.get("id") or m.get("bin") or "",
             "class": m.get("cls") or "", "parts": len((site.get("components") or {}).get(str(b)) or []) if b >= 0 else "",
             "geom_src": m.get("geom_src") or "", "edited": m.get("edited") or "",
             "year": m.get("year") or "", "source": m.get("src") or "",
