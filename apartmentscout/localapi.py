@@ -36,9 +36,11 @@ from . import __version__
 from .config import Workspace
 from .criteria_check import check_text, summary_lines
 from .intake import city_profile, init_search
+from .tourapi import MAX_PHOTO_BYTES, TourError, TourFiles, pillow_available   # tour findings and photos
 
 MAX_BODY = 256 * 1024
 FOLDER = re.compile(r"^[a-z0-9][a-z0-9-]{0,59}$")
+TOUR_PHOTO = re.compile(r"^/tours/(?P<id>[A-Za-z0-9][A-Za-z0-9._-]{0,119})/photos/(?P<name>[a-z0-9]{6,32}\.webp)$")
 BACKUPS_KEPT = 30
 REPO = Path(__file__).resolve().parent.parent
 EXAMPLES = REPO / "examples"
@@ -133,8 +135,18 @@ class ServeState:
         except (OSError, ValueError, yaml.YAMLError):
             name = None
         return {"api": 1, "version": __version__, "can_save": bool(ws and not self.read_only), "example": self.read_only,
+                "tours": {"save": bool(ws and not self.read_only), "photos": bool(ws and not self.read_only and pillow_available()),
+                          "max_photo_bytes": MAX_PHOTO_BYTES},
                 "search": {"folder": ws.root.name, "name": name, "path": self.display(ws.root)} if ws else None,
                 "searches_dir": self.display(self.searches_dir), "searches": self.searches(), "cities": self.cities()}
+
+    # -- tour findings and photos (apartmentscout/tourapi.py)
+    def tour_files(self) -> TourFiles:
+        if self.ws is None:
+            raise ApiError(409, "No search is open.")
+        if self.read_only:
+            raise ApiError(403, "This is a bundled example search and is read-only. Your visit notes stay in this browser.")
+        return TourFiles(self.ws.root, self.lock)
 
     # -- writes
     def save_criteria(self, text: str) -> dict[str, Any]:
@@ -243,6 +255,7 @@ class ServeState:
 def make_handler(state: ServeState) -> type[http.server.SimpleHTTPRequestHandler]:
     class Handler(http.server.SimpleHTTPRequestHandler):
         server_version = "ApartmentScout"
+        extensions_map = {**http.server.SimpleHTTPRequestHandler.extensions_map, ".webp": "image/webp"}   # tour photos (Python 3.10 does not know it)
 
         def __init__(self, *a: Any, **kw: Any) -> None:
             super().__init__(*a, directory=str(state.dash), **kw)
@@ -253,6 +266,14 @@ def make_handler(state: ServeState) -> type[http.server.SimpleHTTPRequestHandler
         # -- static files
         def translate_path(self, path: str) -> str:
             clean = path.split("?", 1)[0].split("#", 1)[0]
+            if clean.startswith("/tours/"):   # the renter's own tour photos, and nothing else under tours/
+                m = TOUR_PHOTO.match(clean)
+                with state.lock:
+                    base = (state.ws.root / "tours").resolve() if state.ws is not None and not state.read_only else None
+                if not m or base is None:
+                    return str(state.dash / "__forbidden__")
+                target = (base / m["id"] / "photos" / m["name"]).resolve()
+                return str(target) if target.parent.parent.parent == base else str(state.dash / "__forbidden__")
             with state.lock:
                 routes = {"/data/": state.data_dir.resolve(), "/media/": state.media_dir.resolve() if state.media_dir else None}
             for prefix, root in routes.items():
@@ -302,6 +323,39 @@ def make_handler(state: ServeState) -> type[http.server.SimpleHTTPRequestHandler
             if not isinstance(v, dict):
                 raise ApiError(400, "The request body must be a JSON object.")
             return v
+
+        def _raw(self, limit: int) -> bytes:
+            """A photo body: an image content type, a Content-Length within `limit`, nothing else."""
+            if not (self.headers.get("Content-Type") or "").startswith("image/"):
+                raise ApiError(415, "Send the photo as an image.")
+            try:
+                n = int(self.headers.get("Content-Length") or "0")
+            except ValueError as e:
+                raise ApiError(400, "Bad Content-Length.") from e
+            if n <= 0:
+                raise ApiError(400, "No photo was sent.")
+            if n > limit:
+                raise ApiError(413, f"That photo is larger than {limit // (1024 * 1024)} MB.")
+            return self.rfile.read(n)
+
+        def _tours(self, method: str, route: str) -> dict[str, Any] | None:
+            """/api/tours, /api/tours/<id>, /api/tours/<id>/photos and /api/tours/<id>/photos/delete."""
+            parts = route.split("/")   # ['', 'api', 'tours', <id>, ...]
+            try:
+                files = state.tour_files()
+                if len(parts) == 3 and method == "GET":
+                    return {"tours": files.all()}
+                if len(parts) == 4 and method == "GET":
+                    return {"id": parts[3], "findings": files.get(parts[3])}
+                if len(parts) == 4 and method == "POST":
+                    return {"ok": True, "findings": files.save(parts[3], self._body().get("findings"))}
+                if len(parts) == 5 and parts[4] == "photos" and method == "POST":
+                    return {"ok": True, "photo": files.add_photo(parts[3], self._raw(MAX_PHOTO_BYTES))}
+                if len(parts) == 6 and parts[4:] == ["photos", "delete"] and method == "POST":
+                    return {"ok": True, "findings": files.delete_photo(parts[3], str(self._body().get("photo", "")))}
+            except TourError as e:
+                raise ApiError(e.status, e.message) from e
+            return None
 
         # -- routing
         def do_GET(self) -> None:  # noqa: N802
@@ -369,11 +423,20 @@ def make_handler(state: ServeState) -> type[http.server.SimpleHTTPRequestHandler
                     if ws is None:
                         raise ApiError(404, "No search is open.")
                     return {"yaml": ws.criteria_path.read_text(encoding="utf-8"), "folder": ws.root.name, "can_save": not state.read_only}
+                if route == "/api/tours" or route.startswith("/api/tours/"):
+                    out = self._tours(method, route)
+                    if out is not None:
+                        return out
                 if route.startswith("/api/jobs/"):
                     job = state.jobs.get(route.rsplit("/", 1)[1])
                     if job is None:
                         raise ApiError(404, "Unknown job.")
                     return job.view()
+                raise ApiError(404, "Unknown endpoint.")
+            if route.startswith("/api/tours/"):
+                out = self._tours(method, route)
+                if out is not None:
+                    return out
                 raise ApiError(404, "Unknown endpoint.")
             body = self._body()
             if route == "/api/validate":
