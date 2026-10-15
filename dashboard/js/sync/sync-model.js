@@ -239,7 +239,7 @@ export const newLedger = () => ({ v: 1, born: null, items: {} });
 /** Compare what is stored now (`values`: key -> value) with the ledger and give every changed item a time. Returns the new ledger, the local
  *  items (live ones with their value, deleted ones as tombstones) and which keys changed. `established` is false on the very first run
  *  of a ledger: items that were already there get the time their data carries, not "now". */
-export function reconcile(ledger, values, { clock, device, hints = {}, now = iso(Date.now()) }) {
+export function reconcile(ledger, values, { clock, device, hints = {}, hold = null, now = iso(Date.now()) }) {
   const old = ledger?.items || {};
   const established = !!ledger?.born;
   const items = {}, local = {}, changed = [];
@@ -255,6 +255,7 @@ export function reconcile(ledger, values, { clock, device, hints = {}, now = iso
   }
   for (const [key, prev] of Object.entries(old)) {
     if (key in values) continue;
+    if (hold?.has(key)) { items[key] = prev; continue; }   // too big to sync, but still here: not a deletion, not sent
     if (prev.x) { items[key] = prev; local[key] = { t: prev.t, d: prev.d, x: 1 }; continue; }
     items[key] = { t: clock.tick(), d: device, h: null, x: 1 };
     local[key] = { t: items[key].t, d: device, x: 1 };

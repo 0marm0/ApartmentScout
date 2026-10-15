@@ -82,6 +82,12 @@ async function idb(fn) {
 const idbPut = (id, pid, blob) => idb((s) => s.put({ k: pk(id, pid), blob, type: blob.type, at: nowZ() }));
 export const idbGet = async (id, pid) => (await idb((s) => s.get(pk(id, pid))))?.blob || null;
 const idbDel = (id, pid) => idb((s) => s.delete(pk(id, pid)));
+// For the sync layer (sync/photos.js): the bytes of a photo of any search's visits, named by that search's findings key.
+const pkFor = (k, id, pid) => `${k}|${id}|${pid}`;
+export const syncPhotoPut = (k, id, pid, blob) => idb((s) => s.put({ k: pkFor(k, id, pid), blob, type: blob.type, at: nowZ() }));
+export const syncPhotoHas = async (k, id, pid) => !!(await idb((s) => s.get(pkFor(k, id, pid))))?.blob;
+export const syncPhotoGet = async (k, id, pid) => (await idb((s) => s.get(pkFor(k, id, pid))))?.blob || null;
+export const syncPhotoDel = (k, id, pid) => idb((s) => s.delete(pkFor(k, id, pid)));
 
 // ------------------------------------------------------------------ saving
 async function push(id) {
@@ -128,6 +134,24 @@ export function importRecords(map) {
   }
   if (n) { persist(); notify(null); }
   return n;
+}
+/** The sync layer wrote this search's visits to storage (sync/sync-store.js): read them again. Visits that changed go to the search folder too,
+ *  and photos that were deleted on the other device are deleted here. Returns the ids that changed. */
+export function reloadFromStorage() {
+  if (!ready) return [];
+  const local = store.get(key, {}) || {}, next = {};
+  for (const [id, f] of Object.entries(local)) { const n = normalize(f); if (Object.keys(n).length > 1) next[id] = n; }
+  const changed = [...new Set([...Object.keys(recs), ...Object.keys(next)])].filter((id) => JSON.stringify(recs[id]) !== JSON.stringify(next[id]));
+  for (const id of changed) {
+    for (const p of recs[id]?.photos || []) {
+      if ((next[id]?.photos || []).some((x) => x.id === p.id)) continue;
+      if (p.store === 'idb') idbDel(id, p.id);
+      else if (p.store === 'disk' && mode.server) api('POST', `/api/tours/${encodeURIComponent(id)}/photos/delete`, { photo: p.id }).catch(() => {});
+    }
+  }
+  recs = next;
+  if (changed.length) { persist(); notify(null); if (mode.server) for (const id of changed) if (next[id]) push(id); }
+  return changed;
 }
 /** The visits for a picks backup: everything except photos, which stay where they were taken. */
 export function exportRecords() {
