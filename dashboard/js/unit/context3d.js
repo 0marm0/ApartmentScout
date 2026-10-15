@@ -104,7 +104,7 @@ function canvasTexture(N, paint) {
 
 export function buildContext(site, opts = {}) {
   const { B = null, place = (x, y) => [x, y], matrix = null, center = [0, 0], radius = 640, y0 = 0 } = opts;
-  let inside = false, season = { leaf: 1, autumn: 0, ...(opts.season || {}) }, light = !!opts.light, visual = !!opts.visual, phone = !!opts.phone, ground = (opts.ground || new THREE.Color(0x272c37)).clone(), blue = (opts.blue || new THREE.Color(0x3a93e0)).clone();
+  let inside = false, dim = 1, season = { leaf: 1, autumn: 0, ...(opts.season || {}) }, light = !!opts.light, visual = !!opts.visual, phone = !!opts.phone, ground = (opts.ground || new THREE.Color(0x272c37)).clone(), blue = (opts.blue || new THREE.Color(0x3a93e0)).clone();
   const vis = { ground: true, water: true, green: true, trees: true, streetTrees: true, parkTrees: true, ...(opts.layers || {}) };   // [park trees] street and park trees switch separately
   const group = new THREE.Group(); group.name = 'context';
   const water = decodeWater(site?.water), half = PLATE_HALF_M, waterHalf = windowHalf(site, 1600), N = opts.phone ? 1536 : TEX_SIZE,   // a phone's textures are a little coarser (14 MB of GPU memory instead of 32)
@@ -153,12 +153,18 @@ export function buildContext(site, opts = {}) {
 
   // ---- green patches and trees
   let plan = null, trees = null, patchGroup = null;
+  function applyDim() {
+    if (parts.plate) parts.plate.material.color.setScalar(dim);
+    patchGroup?.traverse((m) => { if (m.material?.color) { m.userData.c0 ??= m.material.color.clone(); m.material.color.copy(m.userData.c0).multiplyScalar(dim); } });
+    trees?.setDim(dim);
+  }
   function buildGreen() {
     if (patchGroup) { wrapOut.remove(patchGroup); disposeObj(patchGroup); patchGroup = null; }
     if (!site?.green) return;
     const gp = greenPlan(site.green, { center, radius, limit: 0 });   // [grass] the polygons near the centre; the trees are unit/treemesh.js
     patchGroup = grassGroup(gp ? gp.polys : [], { place, y0, colors: grassColors(ground, light, visual) });
     patchGroup.visible = vis.green; parts.green = patchGroup; wrapOut.add(patchGroup);
+    if (dim !== 1) applyDim();
   }
   const wrapOut = new THREE.Group(); wrapOut.name = 'context-green'; group.add(wrapOut);
   function buildTrees() {
@@ -166,7 +172,8 @@ export function buildContext(site, opts = {}) {
     if (!site?.green) return;
     if (!plan) plan = treePlan(site.green, { center, radius, cap: TREE_CAP.desktop, B });
     if (!plan.n) return;
-    trees = treeLayer(plan, { place, y0, light, phone, season, shadows: visual && !inside, limit: phone ? TREE_CAP.phone : TREE_CAP.desktop, streetTrees: vis.streetTrees !== false, parkTrees: vis.parkTrees !== false });
+    trees = treeLayer(plan, { place, y0, light, phone, season, dim, shadows: visual && !inside, limit: phone ? TREE_CAP.phone : TREE_CAP.desktop, streetTrees: vis.streetTrees !== false, parkTrees: vis.parkTrees !== false });
+    trees.setDim(dim);
     trees.group.visible = vis.green && vis.trees; parts.trees = trees.group; wrapOut.add(trees.group);
   }
   buildGreen(); buildTrees();
@@ -213,6 +220,8 @@ export function buildContext(site, opts = {}) {
       waterMat.uniforms.uSunCol.value.setRGB(1, 0.93 - 0.2 * Math.max(0, 1 - a / 25), 0.8 - 0.3 * Math.max(0, 1 - a / 25));
     },
     setInside(on) { inside = !!on; trees?.setShadows(visual && !inside); },
+    /** Night: scale the plate, the grass and the trees' own colour (1 by day, less in the dead of night, set by city3d/city.js setNight), so the lamps and lit windows carry the night. */
+    setDim(f) { dim = Math.max(0, Math.min(1, Number.isFinite(+f) ? +f : 1)); applyDim(); },
     /** The tree season ({leaf, autumn}, city3d/season.js seasonAt): leaves, autumn colour and bare branches. A picture only: trees are never obstructions in any month. True when the picture changed. */
     setSeason(s = {}) { season = { leaf: Number.isFinite(+s.leaf) ? +s.leaf : 1, autumn: Number.isFinite(+s.autumn) ? +s.autumn : 0 }; return !!trees?.setSeason(season); },
     season: () => ({ ...season }),

@@ -138,7 +138,7 @@ function leafMaterial(leafU, floor) {
  */
 export function treeLayer(plan, opts = {}) {
   const { place = (x, y) => [x, y], y0 = 0 } = opts;
-  let light = !!opts.light, phone = !!opts.phone, shadows = !!opts.shadows, season = { leaf: 1, autumn: 0, ...(opts.season || {}) };
+  let dim = Math.max(0, Math.min(1, opts.dim ?? 1)), light = !!opts.light, phone = !!opts.phone, shadows = !!opts.shadows, season = { leaf: 1, autumn: 0, ...(opts.season || {}) };
   const leafU = { value: season.leaf };
   const N = Math.min(plan.n, opts.limit ?? plan.n), group = new THREE.Group(); group.name = 'trees';
   const wx = new Float32Array(N), wz = new Float32Array(N);
@@ -174,8 +174,9 @@ export function treeLayer(plan, opts = {}) {
       if (plan.grp[i] !== CONIFER) tmp.lerp(twig, bare);   // a bare far crown reads as grey-brown twigs; a conifer stays green
       baseFar[3 * i] = tmp.r; baseFar[3 * i + 1] = tmp.g; baseFar[3 * i + 2] = tmp.b;
     }
-    trunkMat.color.copy(trunkColor(light)); branchMat.color.copy(trunkColor(light)).multiplyScalar(0.8);
+    trunkMat.color.copy(trunkColor(light)).multiplyScalar(dim); branchMat.color.copy(trunkColor(light)).multiplyScalar(0.8 * dim);
   };
+  const applyDim = () => { for (const m of [canopyNear, canopyFar, canopyMat]) m.color.setScalar(dim); };
 
   const canopyNear = leafMaterial(leafU, 0), canopyFar = leafMaterial(leafU, 0.16), canopyMat = new THREE.MeshStandardMaterial({ color: 0xffffff, vertexColors: true, roughness: 0.95, metalness: 0 });   // (canopyMat: the conifers, which keep their needles)
   const trunkMat = new THREE.MeshStandardMaterial({ color: trunkColor(light), roughness: 1, metalness: 0 });
@@ -223,12 +224,14 @@ export function treeLayer(plan, opts = {}) {
     st.near = cand.length; st.far = f;
   }
 
-  paint(); fillCones(); setCast(); showBranches();
+  paint(); applyDim(); fillCones(); setCast(); showBranches();
   return {
     group, update,
     stats: () => ({ ...st }),
     setTheme(l) { light = !!l; paint(); fillCones(); last.set(Infinity, Infinity, Infinity); },   // the next update() re-colours the buffers
     setShadows(on) { shadows = !!on; setCast(); },
+    /** Night: scale the trees' own colour (1 by day; city3d/city.js setNight): the lamps and the lit windows carry the night. */
+    setDim(f) { const d = Math.max(0, Math.min(1, Number.isFinite(+f) ? +f : 1)); if (d === dim) return; dim = d; paint(); applyDim(); fillCones(); last.set(Infinity, Infinity, Infinity); },
     /**
      * The season as {leaf, autumn} (city3d/season.js seasonAt): leaves on the broadleaf crowns (0 bare .. 1 full) and how far their colour has turned.
      * A picture only. The next camera pass re-sorts the instances with the new colours, so a caller marks its view dirty.

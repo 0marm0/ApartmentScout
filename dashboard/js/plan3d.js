@@ -36,6 +36,7 @@ import { getPin, pinOption } from './unit/anchor.js';   // [model project] the w
 import { facingSummary } from './plan/facing.js';   // [model project] host facade bearing, bays as a range
 import { anchorNoteHTML } from './plan/anchor-note.js';   // [model project] where the plan sits, source vs assumed
 import { cityGroup } from './plan/citymesh.js';
+import { lateAt } from './city3d/facade-rules.js';   // [daycycle] how late the evening is: fewer lit windows
 import { seasonAt, quantise } from './city3d/season.js';   // [season] leaves, autumn colour and bare branches follow the date (a picture only)
 import { sunGroupHTML, stripAt, setHandoff } from './room3d/sunlink.js';   // [room3d] sun today in the studio's eye-level views, and the way into Unit 3D
 import { accuracyRows, accuracyChip, loadFurnitureMeta } from './room3d/accuracy.js';   // [room3d] the measured-vs-assumed chip, shared with Unit 3D
@@ -47,6 +48,7 @@ import { planEmpty, missingNotice } from './features/plan-empty.js';   // [featu
 import { renderOptions } from './plan/options.js';
 import * as Q3 from './plan/quality3d.js';   // [feature J] render quality (Fast / Visual) and progressive export
 import * as LX from './plan/lighting-ui.js';   // [feature J] daylight grid, glass/surface inputs, luminaires, annual summary
+G3.setRealLampsProbe(() => LX.count() > 0);   // [daycycle] a luminaire placed in the Light tab replaces the assumed ceiling lights
 import { validateInventory, fitInventory, pieceItem, placedIds } from './plan/inventory.js';   // [furniture] the renter's own pieces
 import { inventoryHTML } from './plan/inventory-ui.js';
 import { mountSelbar } from './plan/selbar.js';   // [furniture] the floating toolbar beside the selected piece
@@ -949,6 +951,7 @@ function refreshSun() {
   const s = sunPos(zonedMs(y, m - 1, d, st.min, tz), lat, lon);
   sunCtx = { lat, lon, tz, y, m, d };   // [room3d]
   G3.setSeason(quantise(seasonAt(m, d, lat)));   // [season]
+  G3.setLate(lateAt(st.min));   // [daycycle]
   { const u = document.querySelector('#psLook .rc-strip u'); if (u) u.style.left = `${stripAt(st.min)}%`; if (sunMemo.key && !sunMemo.key.startsWith(st.date)) lookChips(); }
   const sunny = st.site?.study?.sunshine?.fraction;   // [feature J] lighting tab: the sun now and the place's sunshine table
   LX.refresh({ az: s.az, alt: s.alt, lat, lon, tz, y, m, d, fraction: Array.isArray(sunny) && sunny.length === 12 ? sunny.map(Number) : SUNSHINE[S.crit.search?.city]?.fraction || null, place: st.site?.study?.sunshine?.place || (SUNSHINE[S.crit.search?.city] ? SUNSHINE[S.crit.search.city].place : '') });
@@ -969,7 +972,7 @@ function refreshSun() {
   const tv = $('pTimeV'); if (tv) tv.textContent = fmtT(st.min);
   const t = $('pTime'); if (t) t.style.setProperty('--p', `${((st.min - 300) / 930) * 100}%`);
   const lamps = R.filter((x) => !x.hidden && x.kind === 'lamp').length + LX.count(), mn = G3.moodNow();
-  $('phud').innerHTML = `<span>${esc(st.date)} ${fmtT(st.min)}${mn !== 'day' ? ` · ${mn === 'night' ? 'night' : 'evening'}, ${lamps ? `${lamps} lamp${lamps > 1 ? 's' : ''} on` : 'no lamps placed'}` : ''}</span><span class="${light.directional ? 'lit' : 'shade'}">${!placementKnown ? 'Window placement unresolved · direct sun withheld' : !light.orientationKnown ? 'Orientation unknown · direct sun unresolved' : !up ? 'Night' : blocked ? (perWin ? 'Every window shaded by neighbours' : 'Site observation point shaded') : nWh && nWh === model.windows.length ? 'Windows not in open air · sun withheld' : nBlk ? `Sun blocked at ${nBlk} of ${perWin.length} windows${nWh ? ` · ${nWh} withheld` : ''}` : !st.directSun ? 'Direct sun hidden in preview' : `Sun ${Math.round(s.alt)}° up, ${compass(s.az)}`}</span>`;
+  $('phud').innerHTML = `<span>${esc(st.date)} ${fmtT(st.min)}${mn !== 'day' ? ` · ${mn === 'night' ? 'night' : 'evening'}, ${lamps ? `${lamps} lamp${lamps > 1 ? 's' : ''} on` : 'no lamps placed, a warm ceiling light assumed'}` : ''}</span><span class="${light.directional ? 'lit' : 'shade'}">${!placementKnown ? 'Window placement unresolved · direct sun withheld' : !light.orientationKnown ? 'Orientation unknown · direct sun unresolved' : !up ? 'Night' : blocked ? (perWin ? 'Every window shaded by neighbours' : 'Site observation point shaded') : nWh && nWh === model.windows.length ? 'Windows not in open air · sun withheld' : nBlk ? `Sun blocked at ${nBlk} of ${perWin.length} windows${nWh ? ` · ${nWh} withheld` : ''}` : !st.directSun ? 'Direct sun hidden in preview' : `Sun ${Math.round(s.alt)}° up, ${compass(s.az)}`}</span>`;
   const el = $('psLight'); if (!el) return;
   if (!el.querySelector('#psLightResults')) {
     el.innerHTML = `<div class="ps-light-controls"><label class="tg"><input id="psDirectSun" type="checkbox"> Show directional sunlight</label>${onSite ? `<label class="tg ps-city-tg"><input id="psCityTg" type="checkbox"> Show the city in the bird’s-eye view too</label>` : ''}<div class="field"><label for="psAmbient">Background light preview <span id="psAmbientValue"></span></label><input id="psAmbient" type="range" min="0" max="2" step="0.05"></div><p class="ps-note faint">Background intensity is a display preference, not measured brightness or lux.</p>
