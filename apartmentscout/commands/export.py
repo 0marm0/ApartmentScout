@@ -22,6 +22,7 @@ import sys
 from pathlib import Path
 from typing import Any, Callable, Iterable
 
+from .. import tours as tours_mod
 from ..handoff.facts import focus_listings, is_active, missing_facts, parse_date, questions_for
 from ..handoff.safety import safe_cell
 
@@ -65,7 +66,7 @@ def cmd_export(args: Any) -> None:
         sys.exit("Nothing to export: pass --xlsx FILE and/or --csv FILE.")
     ws = ws_from(args)
     crit = ws.criteria()
-    Ls = scored(load(ws.listings_path) if ws.listings_path.exists() else [], crit)
+    Ls = scored(load(ws.listings_path) if ws.listings_path.exists() else [], crit, tours_mod.load_all(ws.root))
     if args.csv:
         n = write_csv(Ls, crit, Path(args.csv))
         log(f"CSV: {n} listings -> {Path(args.csv).resolve()}")
@@ -74,11 +75,11 @@ def cmd_export(args: Any) -> None:
         log(f"Workbook: {', '.join(f'{k} ({v})' for k, v in sheets.items())} -> {Path(args.xlsx).resolve()}")
 
 
-def scored(listings: list[dict], crit: dict) -> list[dict]:
+def scored(listings: list[dict], crit: dict, tours: dict[str, dict] | None = None) -> list[dict]:
     """Score a copy with the current criteria, so the export never depends on a stale `score` and never writes."""
     from ..score import score_all
     Ls = copy.deepcopy(listings)
-    score_all(Ls, crit)
+    score_all(Ls, crit, tours=tours)
     return Ls
 
 

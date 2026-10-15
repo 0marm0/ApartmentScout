@@ -5,7 +5,8 @@
 //   tradeoff.js  the 2-D trade-off pad for the ranking weights
 //   share.js     Share shortlist (read-only HTML) and the decision memo
 //   tour-plan.js the tour-day planner under Shortlist > Tours
-const FEATURES = [() => import('./visit.js'), () => import('./tray.js'), () => import('./tradeoff.js'), () => import('./share.js'), () => import('./tour-plan.js')];
+//   tour-findings.js visit notes, promoted facts and the decision trail (tour-sheet.js, findings-store.js, decision-trail.js)
+const FEATURES = [() => import('./visit.js'), () => import('./tray.js'), () => import('./tradeoff.js'), () => import('./share.js'), () => import('./tour-plan.js'), () => import('./tour-findings.js')];
 
 export async function initFeatures() {
   for (const load of FEATURES) {
