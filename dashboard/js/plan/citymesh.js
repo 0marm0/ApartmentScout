@@ -2,6 +2,7 @@
 // frame (metres, x = plan x, z = -plan y, y up from the apartment floor). Placement comes from plan/city.js.
 import * as THREE from 'three';
 import { buildContext } from '../unit/context3d.js';   // [city context] ground plate, water, parks and trees
+import { loadTreeLayers } from '../unit/treelayers.js';   // [park trees] the street / park tree choice made in Unit 3D
 
 const M = 0.0254;
 
@@ -9,7 +10,7 @@ const M = 0.0254;
  * Nearby buildings as one merged mesh in the plan-metre frame, heights measured from the apartment floor,
  * plus the unit's own building below its floor as a faint podium and the ground. Never casts shadows: the
  * per-window skylines decide which windows the city shades. Parks, lawns and trees from the site file's `green`
- * block (unit/greenmesh.js) are drawn on the street, so a window over a park shows one.
+ * block (unit/context3d.js: grass, paved ground and trees) are drawn on the street, so a window over a park shows one.
  */
 export function cityGroup(ctx, opts = {}) {
   const R = opts.radius ?? 260, g = new THREE.Group(); g.name = 'city';
@@ -65,7 +66,7 @@ export function cityGroup(ctx, opts = {}) {
   const hasCtx = ctx.green || ctx.water || (ctx.streets || []).length;
   const cx = hasCtx && opts.trees !== false ? buildContext({ green: ctx.green, water: ctx.water, streets: ctx.streets }, {
     B: ctx.B, place: (x, y) => ctx.toPlanM([x, y]), matrix: siteToPlan(ctx), center: ctx.anchor, radius: R + 20, y0: ground,
-    ground: groundCol, light: !!opts.light, blue: opts.blue ? new THREE.Color(opts.blue) : undefined, visual: !!opts.visual, phone: !!opts.phone }) : null;
+    ground: groundCol, light: !!opts.light, blue: opts.blue ? new THREE.Color(opts.blue) : undefined, visual: !!opts.visual, phone: !!opts.phone, layers: loadTreeLayers() }) : null;
   if (!cx?.hasGround) {
     const gr = new THREE.Mesh(new THREE.PlaneGeometry(2 * R + 200, 2 * R + 200), new THREE.MeshStandardMaterial({ color: groundCol, roughness: 1 }));
     gr.rotation.x = -Math.PI / 2; gr.position.set(ctx.frame.xc * M, ground - 0.05, -ctx.frame.yw * M); gr.name = 'street level'; g.add(gr);
