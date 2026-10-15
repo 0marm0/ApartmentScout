@@ -255,6 +255,8 @@ def test_accuracy_chip_in_both_engines_links_to_the_evidence(open_page, webgl: b
     a.page.wait_for_function("() => document.querySelectorAll('.acc-chip:not([hidden]) .acc-dots i').length === 7")
     a.page.wait_for_function("() => document.querySelector('.acc-list li[data-row=furniture] .acc-pill')?.textContent === 'confirmed'")
     assert a.page.evaluate(rows) == expect
+    furn = a.page.locator(".acc-list li[data-row=furniture]").inner_text()
+    assert "black leather" in furn and "No colours or materials" not in furn   # the renter's recorded looks reach the chip
     assert a.page.locator(".acc-chip").inner_text().startswith("What's measured vs assumed")
     a.page.click(".acc-btn")
     assert a.page.evaluate("() => !document.querySelector('.acc-pop').hidden")
@@ -264,6 +266,7 @@ def test_accuracy_chip_in_both_engines_links_to_the_evidence(open_page, webgl: b
     _unit(b)
     b.page.wait_for_function("() => document.querySelector('.acc-list li[data-row=furniture] .acc-pill')?.textContent === 'confirmed'")
     assert b.page.evaluate(rows) == expect                                               # the same seven rows in the same states
+    assert "black leather" in b.page.locator(".acc-list li[data-row=furniture]").inner_text()
     b.page.click(".acc-btn")
     b.page.click(".acc-open")
     assert b.page.evaluate("() => { const r = document.getElementById('evPanel').getBoundingClientRect(); return r.top < innerHeight; }")   # it scrolled to the evidence panel
