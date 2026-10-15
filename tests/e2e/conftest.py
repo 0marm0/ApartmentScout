@@ -14,6 +14,14 @@ for the rest. APARTMENTSCOUT_E2E_MEDIA=full answers /media/ from the full set (e
 
 APARTMENTSCOUT_E2E_CPU_THROTTLE=<n> slows every page's JavaScript n times (Chromium's CPU throttling), to reproduce a
 slow CI runner locally; 6 is about a GitHub-hosted runner.
+
+Parallel runs (pytest-xdist): `pytest -m e2e tests/e2e -n auto --dist loadgroup`. Every worker is its own process and so has its own
+session fixtures: one Playwright, one Chromium, one static server on a free port (`("127.0.0.1", 0)`), its own temp folders
+(`tmp_path_factory` is per worker) and its own browser contexts (service workers, storage and caches are per context). Nothing in
+the suite uses a fixed port, a shared temp folder or an environment variable another test sets. The one thing a process may
+start is ONE sync Playwright (a second one in the same process fails inside the first one's event loop), so a test file never
+starts its own: it uses the session `browser` below. Test files whose module-scoped fixtures are costly to build (a built site,
+a temp search) are kept on one worker with an `xdist_group` mark added in `pytest_collection_modifyitems`.
 """
 from __future__ import annotations
 
@@ -180,3 +188,37 @@ def webgl(browser) -> bool:
     ok = p.evaluate("() => !!document.createElement('canvas').getContext('webgl2') || !!document.createElement('canvas').getContext('webgl')")
     ctx.close()
     return ok
+
+
+# ------------------------------------------------------------------ waiting on a condition instead of a fixed sleep
+# Resolves once timers fire on time `ticks` times running (a tick is 50 ms; 8 is about half a second of an idle main thread).
+# Opening a view that builds a WebGL scene (the map, Unit 3D, the floor plan studio) blocks the page's one thread for seconds,
+# many times longer with software GL on a two-core CI runner; an action started in the meantime waits behind it, so a test that
+# clicks on without waiting piles those blocks up until one of its own timeouts fires. The cap only stops a page that never
+# idles (an endless busy loop) from hanging the run.
+SETTLED_JS = """([capMs, ticks]) => new Promise((resolve) => {
+  const t0 = performance.now(); let quiet = 0, last = t0;
+  const iv = setInterval(() => {
+    const now = performance.now(); quiet = now - last < 130 ? quiet + 1 : 0; last = now;
+    if (quiet >= ticks || now - t0 > capMs) { clearInterval(iv); resolve(quiet >= ticks); }
+  }, 50);
+})"""
+
+
+def settled(page, cap_ms: int = 120_000, ticks: int = 8) -> bool:
+    """Wait until the page's main thread is idle again (see SETTLED_JS); False when it never was within the cap."""
+    return page.evaluate(SETTLED_JS, [cap_ms, ticks])
+
+
+# ------------------------------------------------------------------ parallel runs
+# Test files whose module-scoped fixtures are costly (a site built with esbuild, a temp search built with the CLI, a second static
+# server): under `--dist loadgroup` each stays on ONE worker, so the fixture is built once instead of once per worker that gets
+# one of its tests. Every other test is its own unit of work and goes to whichever worker is free.
+XDIST_GROUPED = {"test_pwa", "test_landing_page", "test_places_multidest", "test_tour_findings", "test_media_tiers"}
+
+
+def pytest_collection_modifyitems(items) -> None:
+    for item in items:
+        mod = item.module.__name__.rsplit(".", 1)[-1]
+        if mod in XDIST_GROUPED and not item.get_closest_marker("xdist_group"):
+            item.add_marker(pytest.mark.xdist_group(name=mod))

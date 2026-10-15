@@ -9,7 +9,6 @@ scripts/landing_images.py), without the dashboard demo. Needs Pillow.
 from __future__ import annotations
 
 import http.server
-import os
 import re
 import shutil
 import subprocess
@@ -21,16 +20,7 @@ import pytest
 
 pytestmark = pytest.mark.e2e
 ROOT = Path(__file__).resolve().parents[2]
-MODE = os.environ.get("APARTMENTSCOUT_E2E", "")
 AXE = Path(__file__).parent / "vendor" / "axe.min.js"
-GPU_ARGS = (["--use-angle=metal", "--ignore-gpu-blocklist", "--enable-gpu"] if sys.platform == "darwin" and not os.environ.get("CI")
-            else ["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"])
-
-
-def _need(reason: str) -> None:
-    if MODE == "1":
-        pytest.fail(reason, pytrace=False)
-    pytest.skip(reason)
 
 
 @pytest.fixture(scope="module")
@@ -66,23 +56,6 @@ def origin(site: Path):
     srv.shutdown()
 
 
-@pytest.fixture(scope="module")
-def browser(origin):
-    try:
-        from playwright.sync_api import Error, sync_playwright
-    except ImportError:
-        _need("playwright is not installed")
-    pw = sync_playwright().start()
-    try:
-        b = pw.chromium.launch(args=GPU_ARGS)
-    except Error as e:
-        pw.stop()
-        _need(f"Chromium is not installed for Playwright: {str(e)[:160]}")
-    yield b
-    b.close()
-    pw.stop()
-
-
 def open_landing(browser, origin: str, width: int, height: int, theme: str, *, js: bool = True):
     ctx = browser.new_context(viewport={"width": width, "height": height}, color_scheme=theme, reduced_motion="reduce", java_script_enabled=js)
     foreign: list[str] = []
@@ -104,13 +77,13 @@ def open_landing(browser, origin: str, width: int, height: int, theme: str, *, j
 
 def scroll_through(page) -> None:
     """Scroll to the bottom in steps, so every lazy image is requested."""
-    h = page.evaluate("document.documentElement.scrollHeight")
-    y = 0
-    while y < h:
-        page.evaluate(f"window.scrollTo(0, {y})")
-        page.wait_for_timeout(60)
-        y += 600
-    page.evaluate("window.scrollTo(0, 0)")
+    # one round trip for the whole walk: a Python call per step took 16 s for this page on a busy machine, the walk itself 0.6 s
+    page.evaluate("""async () => {
+      const h = document.documentElement.scrollHeight;
+      for (let y = 0; y < h; y += 600) { window.scrollTo(0, y); await new Promise((r) => requestAnimationFrame(() => setTimeout(r, 60))); }
+      window.scrollTo(0, 0);
+    }""")
+    page.wait_for_load_state("networkidle")   # the requests the walk started have finished
 
 
 @pytest.mark.parametrize("width,theme", [(390, "dark"), (390, "light"), (768, "dark"), (1440, "dark"), (1440, "light"), (2200, "light")])
@@ -118,7 +91,6 @@ def test_no_horizontal_scroll_and_nothing_foreign(browser, origin, width: int, t
     ctx, page, foreign, errors = open_landing(browser, origin, width, 900, theme)
     page.wait_for_load_state("load")
     scroll_through(page)
-    page.wait_for_timeout(400)
     assert page.evaluate("() => { window.scrollTo(300, 0); return window.scrollX; }") == 0, "the page scrolls sideways"
     wide = page.evaluate("""() => [...document.querySelectorAll('body *')].filter((e) => !e.closest('.tabs, .shots, pre, .code') && e.getBoundingClientRect().right > innerWidth + 1
         && getComputedStyle(e).position !== 'fixed' && !e.closest('.hero-shot') && !e.closest('.feat-media')).map((e) => e.className || e.tagName).slice(0, 5)""")
