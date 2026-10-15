@@ -15,6 +15,8 @@ import { applySurfaceTint, setSurfaceState } from './surfaces3d.js';   // [featu
 import * as I3 from './interior3d.js';   // [interior] reveals, sills, casings, framed glass, door frames, baseboards, ceiling trims, floor finishes
 import * as SKY from './sky3d.js';   // [interior] the sky and haze behind the city in eye-level views
 import * as F3 from './furniture3d.js';   // [interior] low-poly furniture models
+import * as R3F from '../room3d/furniture.js';   // [room3d] the shared, refined furniture models (tried first)
+import { roomQuality } from '../room3d/quality.js';
 
 export const M = 0.0254;
 const DEG = Math.PI / 180;
@@ -432,7 +434,7 @@ export function buildItem(it, env = {}) {
   const box = (w, h, d, color, x, y, z, o) => mk(new THREE.BoxGeometry(w, h, d), color, x, y, z, o);
   const cyl = (r, h, color, x, y, z, seg = 24, r2 = r) => mk(new THREE.CylinderGeometry(r, r2, h, seg), color, x, y, z);
   const { w, d, h, kind } = it, col = it.base?.color ?? 0x8899aa, hw = w / 2, hd = d / 2;
-  if (F3.build(it, { s, std, fabric: fabricMat })) { /* [interior] drawn by plan/furniture3d.js: rounded cushions, arms, headboards, drawers */ }
+  if (R3F.build(it, { s, std, fabric: fabricMat, quality: roomQuality(), texture }) || F3.build(it, { s, std, fabric: fabricMat })) { /* [interior] drawn by plan/furniture3d.js: rounded cushions, arms, headboards, drawers */ }
   else if (kind === 'bed') {
     const [mw0, md0] = it.productInfo?.mattress || it.base.mattress || [w - 4, d - 4], mw = Math.min(mw0, w - 2), md = Math.min(md0, d - 3);
     const storage = !!it.base.storage, deck = storage ? 14 : 11;

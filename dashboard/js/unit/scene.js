@@ -12,109 +12,15 @@ import { heightClass, pickLabels } from './heights.js';
 // [city context] ground plate, water, parks and trees (unit/context3d.js) and the river and park labels
 import { buildContext } from './context3d.js';
 import { contextLabels } from './context-core.js';
+import { palette, skyAt, SKY_VS, SKY_FS, glowTexture } from '../city3d/look.js';   // [city3d] the shared look of the city: palette, sky keyframes and dome, sun glow
+import { decorate } from '../city3d/facade.js';   // [city3d] the shared facade shader
+import { shapeOf, prism, prismsOf, solidGeo, heightColor, mergeBuildings, edgeGeo, outlineGeo } from '../city3d/buildings.js';   // [city3d] THE building mesher
 
 const isLight = () => document.documentElement.dataset.theme === 'light';
 const col = (name, fb) => { const v = css(name); return new THREE.Color(/^#[0-9a-f]{3,8}$/i.test(v) ? v.slice(0, 7) : fb); };
 const mix = (a, b, t) => a.clone().lerp(b, t);
 const W3 = (x, y, z = 0) => new THREE.Vector3(x, z, -y);   // local metres (x east, y north, z up) -> three.js
 
-/** Colours for the scene, derived from the design tokens of the current theme. */
-export function palette() {
-  const L = isLight();
-  const ground = col('--ground', '#08090c'), s1 = col('--surface-1', '#0e1015'), s2 = col('--surface-2', '#13161d'), s3 = col('--surface-3', '#1a1e27');
-  const ink = col('--ink', '#eef1f6'), ink2 = col('--ink-2', '#a9b1bf'), ink3 = col('--ink-3', '#6f7889'), ink4 = col('--ink-4', '#4a5160');
-  const accent = col('--accent', '#8b96ff'), sun = col('--sun', '#f5b547'), warn = col('--warn', '#f0b04c'), bad = col('--bad', '#f2735f');
-  const blue = col('--band-30', '#3a93e0'), coral = col('--score-1', '#e5604f'), violet = col('--band-45', '#6a55b8');
-  const white = new THREE.Color(1, 1, 1);
-  // height classes (unit/heights.js HCLASS): light theme runs pale to deep blue, dark theme muted to bright
-  const hcls = L
-    ? [mix(s1, blue, 0.06), mix(s1, blue, 0.22), mix(s1, blue, 0.42), mix(s1, blue, 0.68), blue.clone(), mix(blue, ink, 0.4), mix(violet, ink, 0.5)]
-    : [mix(s3, ink4, 0.55), mix(s3, blue, 0.3), mix(s3, blue, 0.55), mix(s3, blue, 0.8), mix(blue, ink, 0.22), mix(blue, ink, 0.48), mix(violet, ink, 0.5)];
-  const lit = mix(sun, white, 0.45);
-  return L ? {
-    hcls, lit, blue,
-    tBase: accent.clone(),
-    light: true, ground: mix(s3, ink4, 0.22), bLow: mix(s3, ink4, 0.42), bHigh: mix(s1, s3, 0.25), street: mix(s1, s3, 0.2), streetOp: 0.95,
-    outline: ink3, outlineOp: 0.32, edge: ink3, edgeOp: 0.22, accent, sun, warn, bad, ink, white,
-    sky: {
-      zen: [mix(ink, violet, 0.35), mix(ink2, violet, 0.45), mix(s1, blue, 0.5), mix(s1, blue, 0.58)],
-      hor: [mix(ink, blue, 0.22), mix(s1, coral, 0.42), mix(s1, sun, 0.42), mix(s1, blue, 0.14)],
-    },
-    hemiDay: 1.9, hemiNight: 0.9, sunMax: 3.4,
-  } : {
-    hcls, lit, blue,
-    tBase: mix(accent, ground, 0.42),
-    light: false, ground: mix(s3, ink4, 0.3), bLow: mix(s3, ink4, 0.5), bHigh: mix(ink4, ink3, 0.4), street: mix(s3, ink4, 0.55), streetOp: 0.9,
-    outline: ink3, outlineOp: 0.3, edge: ground, edgeOp: 0.45, accent, sun, warn, bad, ink, white,
-    sky: {
-      zen: [ground.clone(), mix(ground, violet, 0.3), mix(s2, blue, 0.32), mix(s2, blue, 0.42)],
-      hor: [mix(s2, s3, 0.5), mix(s3, coral, 0.38), mix(s3, sun, 0.42), mix(s3, blue, 0.24)],
-    },
-    hemiDay: 1.35, hemiNight: 1.1, sunMax: 4.6,
-  };
-}
-// sky keyframes by sun altitude: night, dusk, golden, day
-const SKY_ALT = [-10, -2, 5, 22];
-function skyAt(stops, alt) {
-  if (alt <= SKY_ALT[0]) return stops[0].clone();
-  for (let i = 1; i < SKY_ALT.length; i++) if (alt <= SKY_ALT[i]) return mix(stops[i - 1], stops[i], (alt - SKY_ALT[i - 1]) / (SKY_ALT[i] - SKY_ALT[i - 1]));
-  return stops[stops.length - 1].clone();
-}
-
-const SKY_VS = `varying vec3 vDir; void main() { vDir = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`;
-const SKY_FS = `uniform vec3 zen; uniform vec3 hor; uniform vec3 gnd; uniform vec3 sunDir; uniform vec3 sunCol; uniform float glow;
-varying vec3 vDir;
-void main() {
-  vec3 d = normalize(vDir); float h = d.y;
-  vec3 c = h > 0.0 ? mix(hor, zen, pow(clamp(h, 0.0, 1.0), 0.6)) : mix(hor, gnd, clamp(-h * 6.0, 0.0, 1.0));
-  float s = max(dot(d, normalize(sunDir)), 0.0);
-  c += sunCol * (pow(s, 900.0) * 1.2 + pow(s, 48.0) * 0.32 + pow(s, 6.0) * 0.1) * glow;
-  gl_FragColor = vec4(c, 1.0);
-  #include <colorspace_fragment>
-}`;
-
-function glowTexture() {
-  const c = document.createElement('canvas'); c.width = c.height = 128;
-  const g = c.getContext('2d'), gr = g.createRadialGradient(64, 64, 0, 64, 64, 64);
-  gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.25, 'rgba(255,255,255,.45)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
-  g.fillStyle = gr; g.fillRect(0, 0, 128, 128);
-  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
-}
-
-/**
- * Facade detail for the building materials, all in the shader (no textures, no extra geometry): a hint of a
- * window grid on walls (one row per floor height, a bay every 3 m) that fades to its average as cells get smaller
- * than a few pixels, a darker band at the foot of every wall (cheap ambient occlusion where walls meet the street),
- * and after dusk a scatter of lit windows. `U` holds the shared uniforms: uNight 0..1, uFloorH, uDetail, uLitCol.
- */
-function decorate(mat, U, key) {
-  mat.onBeforeCompile = (sh) => {
-    Object.assign(sh.uniforms, U);
-    sh.vertexShader = sh.vertexShader
-      .replace('#include <common>', '#include <common>\nvarying vec3 vWP; varying vec3 vWN;')
-      .replace('#include <project_vertex>', '#include <project_vertex>\nvWP = (modelMatrix * vec4(transformed, 1.0)).xyz; vWN = normalize(mat3(modelMatrix) * objectNormal);');
-    sh.fragmentShader = sh.fragmentShader
-      .replace('#include <common>', `#include <common>
-varying vec3 vWP; varying vec3 vWN; uniform float uNight; uniform float uFloorH; uniform float uDetail; uniform vec3 uLitCol;
-float uHash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }`)
-      .replace('#include <color_fragment>', `#include <color_fragment>
-float uWall = 1.0 - smoothstep(0.35, 0.6, abs(vWN.y));
-vec2 uT = normalize(vec2(-vWN.z, vWN.x) + 1e-5);
-float uV = vWP.y;
-vec2 uCell = vec2(dot(vWP.xz, uT) / 3.0, uV / uFloorH);
-vec2 uF = fract(uCell), uW = fwidth(uCell);
-float uFar = smoothstep(0.3, 0.75, max(uW.x, uW.y));
-float uWin = smoothstep(0.2 - uW.x, 0.2 + uW.x, uF.x) * (1.0 - smoothstep(0.8 - uW.x, 0.8 + uW.x, uF.x))
-  * smoothstep(0.3 - uW.y, 0.3 + uW.y, uF.y) * (1.0 - smoothstep(0.86 - uW.y, 0.86 + uW.y, uF.y));
-uWin = mix(uWin, 0.36, uFar) * step(4.0, uV) * uWall;
-float uAo = mix(1.0, mix(0.58, 1.0, smoothstep(0.0, 24.0, uV)), uWall);
-diffuseColor.rgb *= uAo * (1.0 - 0.3 * uWin * uDetail);
-float uSeed = uHash(floor(uCell) + vec2(floor(dot(vWP.xz, normalize(vWN.xz + 1e-5)) * 0.37), 7.0));
-float uLit = mix(step(0.66, uSeed) * uWin, 0.045 * step(4.0, uV) * uWall, uFar) * uDetail;`)
-      .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\ntotalEmissiveRadiance += uLitCol * uLit * uNight;');
-  };
-  mat.customProgramCacheKey = () => key;
-}
 
 function disposeTree(o) {
   o.traverse((m) => { m.geometry?.dispose?.(); const ms = Array.isArray(m.material) ? m.material : m.material ? [m.material] : []; ms.forEach((x) => { x.map?.dispose?.(); x.dispose?.(); }); });
@@ -273,43 +179,11 @@ export class UnitStage {
   /** [city context] Render quality from unit/quality3d.js: tree shadows (Visual) and the water's sky reflection and sun glint. */
   setContextQuality(q) { this.quality = { visual: !!q.visual, phone: !!q.phone }; this.ctx?.setQuality(this.quality); this.dirty = true; }
   distTo(b) { return Math.hypot((b.bb[0] + b.bb[2]) / 2 - this.cxy[0], (b.bb[1] + b.bb[3]) / 2 - this.cxy[1]); }
-  shapeOf(b) {
-    const sh = new THREE.Shape();
-    for (let j = 0; j < b.n; j++) { const x = b.p[2 * j], y = b.p[2 * j + 1]; j ? sh.lineTo(x, y) : sh.moveTo(x, y); }
-    for (const h of b.holes || []) { const pa = new THREE.Path(); for (let j = 0; j < h.length / 2; j++) { j ? pa.lineTo(h[2 * j], h[2 * j + 1]) : pa.moveTo(h[2 * j], h[2 * j + 1]); } sh.holes.push(pa); }
-    return sh;
-  }
-  /** A prism geometry for b in world space (bottom buried a little so buildings on lower ground do not float). */
-  prism(b, z0 = null, z1 = null, grow = 0) {
-    const bottom = z0 ?? Math.min(b.g, 0) - 1.5, top = z1 ?? b.top;
-    const geo = new THREE.ExtrudeGeometry(this.shapeOf(b), { depth: Math.max(0.5, top - bottom), bevelEnabled: false, curveSegments: 1 });
-    geo.rotateX(-Math.PI / 2); geo.translate(0, bottom, 0);
-    if (grow) { // push outward a little for the floor band so it sits on the facade
-      geo.computeBoundingBox(); const c = new THREE.Vector3(); geo.boundingBox.getCenter(c);
-      const s = 1 + grow / Math.max(8, Math.max(b.bb[2] - b.bb[0], b.bb[3] - b.bb[1]));
-      geo.translate(-c.x, 0, -c.z); geo.scale(s, 1, s); geo.translate(c.x, 0, c.z);
-    }
-    return geo;
-  }
-  /**
-   * The prisms that draw building b: its components (podium, tower, setback, bulkhead; each from its own base to
-   * its own top, the lowest buried like a footprint) when the site file has them, else the footprint prism.
-   */
-  prismsOf(b) {
-    if (!b.parts) return [{ geo: this.prism(b), h: b.top - Math.max(b.g, 0) }];
-    return b.parts.map((q) => ({ geo: this.prism(q, q.base_m <= 0.5 ? Math.min(b.g, 0) - 1.5 : q.base, q.top), h: q.top - Math.max(b.g, 0) }));
-  }
-  /** One geometry for building b (its components merged), for the target mesh. */
-  solidGeo(b) {
-    const list = this.prismsOf(b);
-    if (list.length === 1) return list[0].geo;
-    const P = [], N = [];
-    for (const { geo } of list) { P.push(...geo.attributes.position.array); N.push(...geo.attributes.normal.array); geo.dispose(); }
-    const g = new THREE.BufferGeometry();
-    g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(P), 3));
-    g.setAttribute('normal', new THREE.BufferAttribute(new Float32Array(N), 3));
-    g.computeBoundingSphere(); return g;
-  }
+  // [city3d] the buildings are meshed by city3d/buildings.js (prismsOf is its single entry point), the same code the studio uses
+  shapeOf(b) { return shapeOf(b); }
+  prism(b, z0 = null, z1 = null, grow = 0) { return prism(b, z0, z1, grow); }
+  prismsOf(b) { return prismsOf(b); }
+  solidGeo(b) { return solidGeo(b); }
   /** Unit-height outward-offset walls (no caps) around b, for floor bands. */
   wallsGeo(b, off) {
     const P = [];
@@ -326,62 +200,17 @@ export class UnitStage {
     }
     const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(P), 3)); return g;
   }
-  heightColor(h) {
-    const t = Math.max(0, Math.min(1, Math.log(Math.max(h, 6) / 6) / Math.log(260 / 6)));
-    return mix(this.pal.bLow, this.pal.bHigh, Math.pow(t, 0.85));
-  }
+  heightColor(h) { return heightColor(this.pal, h); }
   merged(idx, cast) {
-    const { B } = this.data, P = [], N = [], C = [], H = [], starts = [], ids = [];
-    let v = 0;
-    const mesh = { r: [] };
-    for (const i of idx) {
-      starts.push(v); ids.push(i); mesh.r.push([i, v]);
-      for (const { geo, h } of this.prismsOf(B[i])) {
-        const pos = geo.attributes.position.array, nor = geo.attributes.normal.array;
-        const c = this.heightColor(h), roof = mix(c, this.pal.white, this.pal.light ? 0.25 : 0.08);
-        for (let k = 0; k < pos.length; k += 3) {
-          P.push(pos[k], pos[k + 1], pos[k + 2]); N.push(nor[k], nor[k + 1], nor[k + 2]); H.push(h);
-          const cc = nor[k + 1] > 0.9 ? roof : c; C.push(cc.r, cc.g, cc.b);
-        }
-        v += pos.length / 3; geo.dispose();
-      }
-    }
-    const g = new THREE.BufferGeometry();
-    g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(P), 3));
-    g.setAttribute('normal', new THREE.BufferAttribute(new Float32Array(N), 3));
-    g.setAttribute('color', new THREE.BufferAttribute(new Float32Array(C), 3));
-    g.computeBoundingSphere();
-    const m = new THREE.Mesh(g, this.bMat); m.castShadow = cast; m.receiveShadow = true;
-    m.userData.starts = Int32Array.from(starts); m.userData.ids = Int32Array.from(ids); m.userData.h = Float32Array.from(H);
-    mesh.r.forEach(([i, s0], k) => this.vrange.set(i, [m, s0, k + 1 < mesh.r.length ? mesh.r[k + 1][1] : v]));
+    const { geometry, starts, ids, H, ranges } = mergeBuildings(this.data.B, idx, { pal: this.pal });
+    const m = new THREE.Mesh(geometry, this.bMat); m.castShadow = cast; m.receiveShadow = true;
+    m.userData.starts = starts; m.userData.ids = ids; m.userData.h = H;
+    ranges.forEach(([i, a, b]) => this.vrange.set(i, [m, a, b]));
     return m;
   }
   /** Roof outlines plus vertical lines at real corners. */
-  edgeGeo(idx, all = false) {
-    const { B } = this.data, P = [];
-    for (const i of idx) {
-      const B0 = B[i];
-      for (const b of B0.parts || [B0]) {
-        const bot = b === B0 || b.base_m <= 0.5 ? Math.min(B0.g, 0) - 1.5 : b.base;
-        for (const p of [b.p, ...(b.holes || [])]) {
-          const n = p.length / 2;
-          for (let j = 0; j < n; j++) {
-            const j2 = (j + 1) % n, j0 = (j - 1 + n) % n;
-            const x = p[2 * j], y = p[2 * j + 1], x2 = p[2 * j2], y2 = p[2 * j2 + 1];
-            P.push(x, b.top, -y, x2, b.top, -y2);
-            const a1 = Math.atan2(y - p[2 * j0 + 1], x - p[2 * j0]), a2 = Math.atan2(y2 - y, x2 - x);
-            if (all || Math.abs(((a2 - a1 + 3 * Math.PI) % (2 * Math.PI)) - Math.PI) > 0.4) P.push(x, bot, -y, x, b.top, -y);
-          }
-        }
-      }
-    }
-    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(P), 3)); return g;
-  }
-  outlineGeo(idx, z = 0.25) {
-    const { B } = this.data, P = [];
-    for (const i of idx) for (const p of [B[i].p, ...(B[i].holes || [])]) { const n = p.length / 2; for (let j = 0; j < n; j++) { const j2 = (j + 1) % n; P.push(p[2 * j], z, -p[2 * j + 1], p[2 * j2], z, -p[2 * j2 + 1]); } }
-    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(P), 3)); return g;
-  }
+  edgeGeo(idx, all = false) { return edgeGeo(this.data.B, idx, all); }
+  outlineGeo(idx, z = 0.25) { return outlineGeo(this.data.B, idx, z); }
   streetMesh(streets) {
     if (!streets.length) return null;
     const P = [];
