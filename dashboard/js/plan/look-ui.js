@@ -4,6 +4,8 @@
 import { esc } from '../util.js';
 
 const WINDOW_KINDS = ['room', 'bay', 'corner'];
+const EYE = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1.5 8S4 3.5 8 3.5 14.5 8 14.5 8 12 12.5 8 12.5 1.5 8 1.5 8z"/><circle cx="8" cy="8" r="2"/></svg>';
+const CHEV = '<svg class="lk-chev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6l4 4 4-4"/></svg>';
 
 /** The chips as HTML. `views` = viewpoints (plan/viewpoints.js), `current` = the active key or null. */
 export function lookChipsHTML(views, current, { label = 'Look out of the window', extra = '' } = {}) {
@@ -11,7 +13,9 @@ export function lookChipsHTML(views, current, { label = 'Look out of the window'
   if (!win.length && !seat.length) return '';
   const first = views[0];
   const chip = (v) => `<button type="button" role="radio" class="lk-chip${v.key === current ? ' on' : ''}${v.kind === 'bay' || v.kind === 'corner' ? ' wide' : ''}" data-vp="${esc(v.key)}" aria-checked="${v.key === current}" tabindex="${v.key === current || (!current && v === first) ? 0 : -1}" title="${esc(v.kind === 'seat' ? `Look out of the window from the ${v.label.toLowerCase()}` : v.kind === 'inward' ? 'Stand at the window and look back into the apartment' : `Stand at the ${v.room ? v.room.toLowerCase() + ' ' : ''}window${v.kind === 'room' ? '' : ` (${v.kind})`}`)}">${esc(v.label)}</button>`;
-  return `${win.length ? `<div class="lk-grp" role="radiogroup" aria-label="${esc(label)}"><span class="lk-h">Look out of</span>${win.map(chip).join('')}</div>` : ''}${seat.length ? `<div class="lk-grp" role="radiogroup" aria-label="Look out from a seat"><span class="lk-h">From the</span>${seat.map(chip).join('')}</div>` : ''}${back.length ? `<div class="lk-grp" role="radiogroup" aria-label="Look back into the room">${back.map(chip).join('')}</div>` : ''}<span class="lk-keys" aria-hidden="true">← → to switch</span>${extra ? `<div class="lk-grp lk-extra">${extra}</div>` : ''}`;   // [room3d] extra: the studio's sun-today group
+  const cur = views.find((v) => v.key === current);
+  const pick = `<button type="button" class="lk-pick" aria-haspopup="true" aria-expanded="false" title="Choose where to look from: a window or a seat">${EYE}<span class="lk-cur">${esc(cur ? cur.label : 'Look out of the window')}</span>${CHEV}</button>`;
+  return `${pick}${win.length ? `<div class="lk-grp" role="radiogroup" aria-label="${esc(label)}"><span class="lk-h">Look out of</span>${win.map(chip).join('')}</div>` : ''}${seat.length ? `<div class="lk-grp" role="radiogroup" aria-label="Look out from a seat"><span class="lk-h">From the</span>${seat.map(chip).join('')}</div>` : ''}${back.length ? `<div class="lk-grp" role="radiogroup" aria-label="Look back into the room">${back.map(chip).join('')}</div>` : ''}<span class="lk-keys" aria-hidden="true">← → to switch</span>${extra ? `<div class="lk-grp lk-extra">${extra}</div>` : ''}`;   // [room3d] extra: the studio's sun-today group
 }
 
 /**
@@ -23,9 +27,12 @@ export function setLookChips(host, views, current, opts) {
   if (host.dataset.sig !== sig) {
     const had = host.contains(document.activeElement), keep = document.activeElement?.dataset?.vp;
     host.innerHTML = lookChipsHTML(views, current, opts); host.dataset.sig = sig;
+    host.querySelector('.lk-pick')?.setAttribute('aria-expanded', String(host.dataset.open === '1'));
     if (had && keep) host.querySelector(`[data-vp="${CSS.escape(keep)}"]`)?.focus();
   } else {
     const first = views[0]?.key;
+    const cur = views.find((v) => v.key === current), lab = host.querySelector('.lk-cur');
+    if (lab) lab.textContent = cur ? cur.label : 'Look out of the window';
     for (const b of host.querySelectorAll('[data-vp]')) { const on = b.dataset.vp === current; b.classList.toggle('on', on); b.setAttribute('aria-checked', String(on)); b.tabIndex = on || (!current && b.dataset.vp === first) ? 0 : -1; }
   }
   return !!host.querySelector('[data-vp]');
@@ -36,7 +43,21 @@ export function setLookChips(host, views, current, opts) {
  * Returns a function to call after the chips are redrawn (it restores focus to the active chip when it had it).
  */
 export function bindLookChips(host, { pick, order }) {
-  host.addEventListener('click', (e) => { const b = e.target.closest('[data-vp]'); if (b) pick(b.dataset.vp); });
+  // the chips live behind one small picker ("Sofa, window"): it opens on click, and closes when a view is chosen by click or Enter,
+  // on Escape (focus goes back to the picker) and when the pointer or focus goes elsewhere. Arrow keys step through the views and keep it open.
+  const trig = () => host.querySelector('.lk-pick');
+  const setOpen = (on) => {
+    if (on === (host.dataset.open === '1')) return;
+    if (on) host.dataset.open = '1'; else delete host.dataset.open;
+    trig()?.setAttribute('aria-expanded', String(on));
+  };
+  host.addEventListener('click', (e) => {
+    if (e.target.closest('.lk-pick')) { const on = host.dataset.open !== '1'; setOpen(on); if (on) (host.querySelector('.lk-chip[tabindex="0"]') || host.querySelector('.lk-chip'))?.focus(); return; }
+    const b = e.target.closest('[data-vp]'); if (b) { pick(b.dataset.vp); setOpen(false); trig()?.focus({ preventScroll: true }); }
+  });
+  document.addEventListener('pointerdown', (e) => { if (host.dataset.open === '1' && !host.contains(e.target)) setOpen(false); });
+  host.addEventListener('focusout', (e) => { if (host.dataset.open === '1' && e.relatedTarget && !host.contains(e.relatedTarget)) setOpen(false); });
+  host.addEventListener('keydown', (e) => { if (e.key === 'Escape' && host.dataset.open === '1') { e.preventDefault(); e.stopPropagation(); setOpen(false); trig()?.focus(); } });
   host.addEventListener('keydown', (e) => {
     const b = e.target.closest('[data-vp]'); if (!b || e.altKey || e.ctrlKey || e.metaKey) return;
     const keys = order(); if (!keys.length) return;
