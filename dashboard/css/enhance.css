@@ -88,6 +88,8 @@ img.err { opacity: 0 !important; }
   transition: background var(--t-fast), color var(--t-fast), border-color var(--t-fast), opacity var(--t-base), transform var(--t-base) var(--ease-out); }
 .c-acts .qa svg { width: 12px; height: 12px; flex: none; }
 .c-acts a.qa { padding: 0; width: 22px; }
+.c-acts a.qa.qa-in { width: auto; padding: 0 8px 0 6px; color: var(--accent); border-color: var(--accent-line); background: var(--accent-soft); }   /* [camera] "See inside": a labelled pill on a home that has a floor plan */
+.c-acts a.qa.qa-in:hover { color: var(--accent-strong); }
 .c-acts .qa:hover { color: var(--ink); background: var(--surface-hover); border-color: var(--accent-line); }
 .c-acts .qa.on { color: var(--accent); border-color: var(--accent-line); background: var(--accent-soft); }
 .c-acts .qa:not(.on) { opacity: 0; transform: translateY(3px); pointer-events: none; }

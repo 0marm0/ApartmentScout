@@ -38,6 +38,7 @@ import { buildFurniture, addRoomView } from './unit/furniture.js';   // [model p
 import { modelHooks } from './unit/model-hooks.js';   // [model project] Model panel, project import and the comparison board
 import { insideViews, viewForWindow } from './unit/inside-views.js';   // [interior] the Inside camera's rooms, bays, corners and seats
 import { setLookChips, bindLookChips } from './plan/look-ui.js';
+import { askedCamera, cameraParam, openingCamera, mainViewpoint, takeSeeInside, CAMERA_KEY, SAVED_CAMERAS } from './unit/camera-pref.js';   // [camera] which camera a home opens in: Inside when it has a plan
 import { resolve as resolveItem } from './plan/catalog.js';
 import { loadInventoryFile } from './plan/inventory.js';   // [furniture] the renter's pieces: colour, material and finish
 import { applyLooks } from './plan/looks.js';
@@ -51,7 +52,11 @@ const st = {
   manual: {}, moved: null, sel: null, first: true, bay: false, src: null, lmSel: new Set(), slabOff: null, inWin: -1, cal: undefined, air: null, showFurniture: true,
   nbSort: { key: 'dist', dir: 1 }, nbOpen: false, allLm: false, photo: null, video: false,
   study: 'heights', ifBi: null,
+  asked: null, picked: false,   // [camera] the camera a page address named; whether the renter picked one in this visit
 };
+let seeInsideIntent = false;   // [camera] "See inside" was pressed for the home being opened (read in show())
+/** The camera the renter chose last (orbit, window or inside), or null. */
+const savedCamera = () => { const v = store.get(CAMERA_KEY, ''); return SAVED_CAMERAS.includes(v) ? v : null; };
 // [model project] which plan the Inside view shows: the source file or a local scenario the renter sent from the Floor plan studio
 let pendingView = null;
 let planInfo = { source: 'none', label: '', saved: null, furniture: 0, layout: null }, scenario = null, useScenario = false, hasFilePlan = false, planRaw = null, mh = null;
@@ -67,7 +72,23 @@ const BASE = () => Math.max(T.g, 0);
 const slabOff = () => CAL.s0 - BASE();
 const maxFloor = () => CAL.maxFloor(T.top);
 const MONTHS = 'Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec'.split(' ');
-const MODES = [['orbit', 'Orbit', 'Orbit the block'], ['win', 'Window', 'From the window'], ['in', 'Inside', 'Inside the apartment: its floor plan at the real floor and bearing'], ['plan', 'Plan', 'Street plan, north up'], ['top', 'Top', 'Top down']];
+// The camera control: the three ways of looking at a home are the big labelled buttons (a home with a plan opens on the first), the
+// street plan and the top-down view are small tools beside them. Keys are Unit 3D's own (in, win, orbit, plan, top).
+const MODES = [
+  ['in', 'Inside', 'Stand inside the apartment (its floor plan at the real floor and bearing) and look out of the windows'],
+  ['win', 'Window view', 'The view from the window: the skyline, the sun, and a photo you can match'],
+  ['orbit', 'Outside', 'Orbit the building and the block around it'],
+  ['plan', 'Street plan', 'Street plan, north up'],
+  ['top', 'Top down', 'Top down'],
+];
+const MODE_NAME = { orbit: 'Outside', win: 'Window view', in: 'Inside', plan: 'Street plan', top: 'Top down' };
+const MODE_ICON = {
+  in: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M1.8 7.2L8 2l6.2 5.2M3.2 6.3V14h9.6V6.3"/><path d="M6.6 14V9.6h2.8V14"/></svg>',
+  win: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="2" width="11" height="12" rx="1.3"/><path d="M8 2v12M2.5 8h11"/></svg>',
+  orbit: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" aria-hidden="true"><path d="M8 1.8l5.5 3v6.4L8 14.2l-5.5-3V4.8z"/><path d="M2.5 4.8L8 7.8l5.5-3M8 7.8v6.4"/></svg>',
+};
+const FLOORPLAN_ICON = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="2" y="2" width="12" height="12" rx="1.5"/><path d="M2 8h5V2M10 14V9h4"/></svg>';
+const modeButtons = (keys, cls) => MODES.filter(([k]) => keys.includes(k)).map(([k, t, tip]) => `<button type="button" class="${cls}" data-mode="${k}" title="${tip}" aria-pressed="false">${MODE_ICON[k] || ''}<span class="um-t">${t.replace(/ view$/, '<span class="um-x"> view</span>')}</span></button>`).join('');
 const PROV = {
   established: ['Established', 'good'], plan: ['Floor plan', 'good'], listing: ['Listing says', 'accent'], agent: ['Agent says', 'accent'],
   'photo-landmarks': ['Photo landmarks', 'accent'], model: ['Model', ''], assumed: ['Assumed', 'warn'], inferred: ['Inferred', 'warn'], manual: ['Your setting', ''], measured: ['Measured', 'good'],
@@ -117,14 +138,19 @@ export function init() {
           <canvas id="gl" tabindex="0" aria-label="3D model of the building and its neighbours. Arrow keys turn the view, plus and minus zoom."></canvas>
           <img class="u-photo" id="uPhoto" alt="" hidden><video class="u-photo" id="uVid" muted playsinline preload="auto" hidden></video>
           <div class="u-labels" id="uLabels" aria-hidden="true"></div>
-          <div class="float u-modes" id="uModes" role="group" aria-label="Camera">${MODES.map(([k, t, tip]) => `<button type="button" data-mode="${k}" title="${tip}" aria-pressed="false">${t}</button>`).join('')}</div>
-          <div class="float u-look" id="uLook" role="toolbar" aria-label="Look out of the windows" hidden></div>
+          <div class="u-views" id="uViews">
+            <div class="float u-modes" id="uModes" role="group" aria-label="Where to look from">
+              ${modeButtons(['in', 'win', 'orbit'], 'um-b')}<span class="um-sep" aria-hidden="true"></span>${modeButtons(['plan', 'top'], 'um-s')}
+              <a class="um-fp" id="uFpLink" href="#plan" hidden title="The Floor plan studio: trace, furnish and light this layout">${FLOORPLAN_ICON}<span class="um-t">Floor plan</span></a>
+            </div>
+            <div class="float u-look" id="uLook" role="toolbar" aria-label="Look out of the windows" hidden></div>
+          </div>
+          <button type="button" class="u-compass" id="uCompass" title="North. Click to face north" aria-label="Compass, click to face north"><svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="18.5"/><g id="uNeedle"><path d="M20 5l4 15h-8z" class="n"/><path d="M20 35l4-15h-8z" class="s"/><text x="20" y="4.2" text-anchor="middle">N</text></g></svg></button>
           <div class="float u-tools" id="uTools" role="group" aria-label="Layers">
             ${[['shadows', 'Shadows'], ['labels', 'Labels'], ['heights', 'Heights: colour by height class, label roofs, 150 m and 300 m rings'], ['streets', 'Street names and centrelines'], ['future', 'Proposed buildings'], ['green', 'Parks, lawns and trees: grass from NYC Parks Properties, Greenstreets and OpenStreetMap. Context only: trees are never counted as shade in the sun hours'], ['streetTrees', STREET_TREES_TITLE], ['parkTrees', PARK_TREES_TITLE], ['water', 'Water and ground: rivers, streets and sidewalks. Context only'], ['ray', 'Sun ray'], ['cone', 'View cone']].map(([k, t]) => `<button type="button" data-tg="${k}" title="${t}" aria-label="${t}" aria-pressed="false">${ICON[k]}</button>`).join('')}
             <hr><button type="button" id="uTarget" title="This building: solid" aria-label="This building display: solid">${ICON.target}<i class="u-tmode">S</i></button>
             <button type="button" id="uHome" title="Reset the camera" aria-label="Reset the camera">${ICON.reset}</button>
           </div>
-          <button type="button" class="u-compass" id="uCompass" title="North. Click to face north" aria-label="Compass, click to face north"><svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="18.5"/><g id="uNeedle"><path d="M20 5l4 15h-8z" class="n"/><path d="M20 35l4-15h-8z" class="s"/><text x="20" y="4.2" text-anchor="middle">N</text></g></svg></button>
           <div class="hud u-hud" id="hud" aria-live="polite"></div>
           <div class="float u-card" id="uCard" hidden></div>
           <div class="float u-lens" id="uLens" hidden>
@@ -186,7 +212,10 @@ export async function show(id) {
   id = chooseHome({ want: id, current: st.id, saved: store.get(SAVED_KEY, null), preferred: S.manifest.default_listing, ids });
   if (asked) store.set(SAVED_KEY, asked);
   $('unitSel').value = id;
+  seeInsideIntent = takeSeeInside(id);   // [camera] a "See inside" button, link or palette command was pressed for this home
   if (id !== st.id) await load(id);
+  else if (seeInsideIntent && plan && stage && hasWindow()) { seeInsideIntent = false; st.picked = false; goView(mainViewpoint(views)?.key); setMode('in'); revealStage(); }   // already open on this home: stand inside it
+  seeInsideIntent = false;
   stage?.resize(); drawPathChart();
   if (!loopOn) { loopOn = true; requestAnimationFrame(frame); }
 }
@@ -204,6 +233,7 @@ function fitGrid() {
 
 // ------------------------------------------------------------------ load
 async function load(id) {
+  const prevId = st.id;
   $('uLoad').hidden = false;
   const data = await loadJSON(`${S.base}/sites/${id}.json`, null);
   if (!data || !Array.isArray(data.b) || !data.b.length) {
@@ -250,14 +280,23 @@ async function load(id) {
     st.floor = Math.max(1, Math.min(maxFloor(), pin.floor)); st.cmp = Math.min(maxFloor(), Math.max(1, st.floor + 9 > maxFloor() ? Math.max(1, st.floor - 9) : st.floor + 9));
     st.manual = { face: true, pos: true, az: true, floor: true };
   }
+  const firstLoad = st.first;
   if (st.first) {
     const mi = moveIn();
     st.date = /^\d{4}-\d{2}-\d{2}$/.test(qs.get('date') || '') ? qs.get('date') : mi || new Date().toISOString().slice(0, 10);
     st.min = clampMin(+(qs.get('min') || 780));
-    const m = qs.get('mode'); st.mode = m === 'window' || m === 'win' ? 'win' : m === 'inside' || m === 'in' ? 'in' : ['plan', 'top', 'orbit'].includes(m) ? m : 'orbit';
+    st.asked = askedCamera(qs.get('mode'));   // [camera] a page address that names the camera wins over everything below
     // window settings carried in the page address besides the scenario: bay, photo-matched facing, slab height
     if (!qs.has('sv')) applyScenarioExtras(readScenarioExtras(qs)); // older unversioned links
     st.first = false;
+  }
+  // [camera] a home with a floor plan opens Inside, at the main seat, looking out of its windows; the renter's saved camera, a camera
+  // they picked earlier in this visit and a "See inside" press are all respected (unit/camera-pref.js has the order). Resetting the
+  // window of the home already open leaves the camera alone.
+  const intent = seeInsideIntent; seeInsideIntent = false;
+  if (firstLoad || intent || (prevId !== id && !st.picked)) {
+    st.mode = openingCamera({ asked: firstLoad ? st.asked : null, intent, saved: savedCamera(), hasPlan: !!plan });
+    if (intent) st.picked = false;
   }
   if (!pendingView) { const h = takeHandoff(id); if (h) pendingView = { ...h, id }; }   // [room3d] the Floor plan studio's "Sun path in Unit 3D": its date, time and the Inside camera
   if (pendingView && pendingView.id === id) {   // [model project] the view saved in an imported project
@@ -311,6 +350,7 @@ async function load(id) {
   stage.resetOrbit(false); if (st.mode === 'top') stage.topDown(false);
   closeCard();
   $('uLoad').hidden = true;
+  if (st.mode === 'in') revealStage();
   mh?.refresh(true);
 }
 /** [model project] The plan for the Inside view: the renter's local scenario when they sent one on purpose (and have not switched it off), else the source file. */
@@ -358,6 +398,7 @@ function header() {
   if ((S.manifest.plans || []).includes(st.id)) links.push(`<a class="btn ghost" href="#plan/${esc(st.id)}">${ICONS.plan}Floor plan</a>`);
   if ((S.manifest.dossiers || []).includes(st.id)) links.push(`<a class="btn ghost" href="#records/${esc(st.id)}">${ICONS.doc}Records</a>`);
   $('uLinks').innerHTML = links.join('');
+  const fp = $('uFpLink'); if (fp) { fp.hidden = !(S.manifest.plans || []).includes(st.id); fp.href = `#plan/${encodeURIComponent(st.id)}`; }   // [camera] the studio, one click from the camera buttons
   subline();
 }
 function provenance() {
@@ -415,7 +456,7 @@ function tryUnit(id) {
 
 // ------------------------------------------------------------------ stage wiring
 function wireStage() {
-  $('uModes').querySelectorAll('[data-mode]').forEach((b) => b.addEventListener('click', () => setMode(b.dataset.mode)));
+  $('uModes').querySelectorAll('[data-mode]').forEach((b) => b.addEventListener('click', () => pickMode(b.dataset.mode)));
   $('uTools').querySelectorAll('[data-tg]').forEach((b) => b.addEventListener('click', () => {
     const k = b.dataset.tg; stage.opts[k] = !stage.opts[k]; stage.applyOpts(); syncTools();
     if (k === 'streetTrees' || k === 'parkTrees') { saveTreeLayers(stage.opts); return; }   // [park trees] no sun number depends on a tree
@@ -545,6 +586,19 @@ function syncLens() {
   $('uFovV').textContent = Math.round(L.fov) + '°'; $('uYawV').textContent = (L.yaw > 0 ? '+' : '') + Math.round(L.yaw) + '°'; $('uPitchV').textContent = Math.round(L.pitch) + '°';
   for (const id of ['uFov', 'uYaw', 'uPitch']) fill($(id));
 }
+/** A camera button was pressed: switch, keep it for the other homes of this visit, and remember it (inside, window or outside) for next time. */
+function pickMode(m) {
+  st.picked = true;
+  if (SAVED_CAMERAS.includes(m)) store.set(CAMERA_KEY, m);
+  setMode(m);
+}
+/** On a phone the model sits below the title and the numbers: bring it to the top of the screen when it opens inside the home. */
+function revealStage() {
+  const root = $('view-unit'), s = $('stage');
+  if (!root || !s || !matchMedia('(max-width: 760px)').matches || root.hidden) return;
+  const top = s.getBoundingClientRect().top - root.getBoundingClientRect().top + root.scrollTop;
+  root.scrollTo({ top: Math.max(0, top - 8), behavior: 'auto' });
+}
 function setMode(m, quiet = false) {
   if (!hasWindow() && (m === 'win' || m === 'in')) m = 'orbit';
   if (m === 'in' && !interior) buildApartment();
@@ -594,7 +648,7 @@ function buildApartment() {
   const model = plan || genericPlan(), R = (planInfo.layout?.items?.length && st.showFurniture !== false ? planInfo.layout.items : []).map((x) => resolveItem(x)).filter(Boolean);
   views = insideViews(model, R, interior.frame);
   const keep = views.find((v) => v.key === curView?.key);
-  curView = keep || viewForWindow(views, st.inWin);
+  curView = keep || (st.inWin >= 0 ? viewForWindow(views, st.inWin) : mainViewpoint(views)) || viewForWindow(views, st.inWin);   // [camera] no window named: the sofa, looking out
   if (curView?.win != null) st.inWin = curView.win;
   if (curView) stage.setInteriorView(curView, { animate: false });
   lookChips();
@@ -845,7 +899,7 @@ function unresolvedWindow() {
   $('hud').textContent = 'Window unresolved · City context only';
   const air = st.air?.ok === false ? `<p class="u-note warn" role="alert">${esc(st.air.message)} Move the window (facade, position, floor or height) to open air.</p>` : '';
   $('sunPanel').innerHTML = `<h3>Sunlight unresolved</h3><p>No valid window placement. No unit-specific sunlight estimate is available.</p>${air}`;
-  $('seePanel').innerHTML = '<h3>Outlook unresolved</h3><p>Inspect the building context in Orbit or Plan. This does not establish an apartment view.</p>';
+  $('seePanel').innerHTML = '<h3>Outlook unresolved</h3><p>Inspect the building context from Outside or the Street plan. This does not establish an apartment view.</p>';
   $('heatPanel').innerHTML = ''; $('nbPanel').innerHTML = ''; $('annualPanel').innerHTML = '';
   const cv = $('pathCv'); cv.getContext('2d')?.clearRect(0, 0, cv.width, cv.height);
   $('pathNote').textContent = ''; $('pathLegend').innerHTML = '';
@@ -1191,7 +1245,7 @@ function closeCard() { st.sel = null; stage?.select(null); $('uCard').hidden = t
 let accUI = null, furnMeta = null;
 function accChip() {
   if (!site || !CAL) return;
-  if (!accUI) { accUI = accuracyChip({ host: 'unit', onOpen: openEvidence, openLabel: 'Open the evidence' }); $('gl').parentElement.append(accUI.el); loadFurnitureMeta(S.base, S.manifest).then((m) => { furnMeta = m; accChip(); }); }
+  if (!accUI) { accUI = accuracyChip({ host: 'unit', onOpen: openEvidence, openLabel: 'Open the evidence' }); $('uViews').append(accUI.el);   /* [camera] under the camera controls, in the same column */ loadFurnitureMeta(S.base, S.manifest).then((m) => { furnMeta = m; accChip(); }); }
   const n = planInfo.layout?.items?.length || 0;
   accUI.update(accuracyRows({ site, plan: plan || null, cal: { state: CAL.state, fh: CAL.fh, slab: CAL.slabAt(st.floor) }, floor: st.floor, facing: st.az, t: st.t,
     furniture: n ? { name: furnMeta?.name || 'Furniture', confirmed: furnMeta?.confirmed || null, count: n } : null }));
@@ -1444,7 +1498,7 @@ function renderStudy() {
     const cam = stage.currentCam(), aspect = Math.max(1.2, Math.min(1.9, ($('stage').clientWidth || 16) / ($('stage').clientHeight || 10)));
     renderSeasons({ stage, cv: canvas, width: W, aspect, cam, rows, theme: th });
     cap.textContent = `The current ${{ orbit: 'orbit', win: 'window', in: 'inside', plan: 'plan', top: 'top-down' }[st.mode]} camera on the solstices and equinoxes at 9 am, noon, 3 pm and 6 pm (clock time, daylight saving included). Badges: the window on floor ${st.floor}. Move the camera and press Refresh to compare another view.`;
-    note.textContent = `${{ orbit: 'Orbit', win: 'Window', in: 'Inside', plan: 'Plan', top: 'Top' }[st.mode]} camera · floor ${st.floor}`;
+    note.textContent = `${MODE_NAME[st.mode]} camera · floor ${st.floor}`;
   }
 }
 const fmtDay = () => { const [y, m, d] = ymd(); return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' }); };
@@ -1510,7 +1564,7 @@ function syncUrl() {
   writeScenario(qs, st, FACES[st.face], stage.look, stage.opts.future);
   qs.set('date', st.date); qs.set('min', String(Math.round(st.min / 5) * 5)); qs.set('floor', String(st.floor));
   if (edits.size) qs.set('wh', `${st.id}|${[...edits].map(([bi, h]) => `${bi}:${Math.round(h * 10) / 10}`).join(',')}`); else qs.delete('wh');
-  if (st.mode === 'orbit') qs.delete('mode'); else qs.set('mode', st.mode === 'win' ? 'window' : st.mode === 'in' ? 'inside' : st.mode);
+  qs.set('mode', cameraParam(st.mode));   // [camera] always written: a home with a plan opens Inside when the address says nothing, so Outside has to be said
   const url = `${location.pathname}?${qs}#unit/${encodeURIComponent(st.id)}`;
   if (url !== location.pathname + location.search + location.hash) history.replaceState(history.state, '', url);
 }
