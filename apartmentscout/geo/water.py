@@ -13,7 +13,7 @@ Sources, in order of preference:
 
 Site JSON ``"water"``::
 
-    {"source", "fetched", "half_m": 800, "q_m": 0.5, "polys": [{"name"?, "kind", "rings": [[x, y, x, y, ...], ...]}],
+    {"source", "fetched", "half_m": 1600, "q_m": 0.5, "polys": [{"name"?, "kind", "rings": [[x, y, x, y, ...], ...]}],
      "labels": [{"name", "x", "y"}], "counts": {"polys", "rings", "points"}, "note"}
 
 Rings are flat lists of integer multiples of ``q_m`` metres (east, north, in the footprints' local frame), clipped
@@ -33,7 +33,7 @@ from .shapes import point_in_ring, ring_area, stitch
 HYDRO_DATASET = "pjs3-c3z5"
 SOURCE_NYC = "NYC Planimetric Database: Hydrography (NYC Open Data, pjs3-c3z5)"
 SOURCE_OSM = "OpenStreetMap contributors (ODbL), Overpass API"
-HALF_M = 800.0       # half the side of the square window the 3D views paint (the site radius plus a margin)
+HALF_M = 1600.0      # half the side of the square window the 3D views paint: it reaches past the far shore of the East River
 PAD_M = 40.0         # rings are clipped a little beyond the window so the clip edges never show
 Q_M = 0.5
 SIMPLIFY_M = 0.8

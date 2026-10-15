@@ -44,6 +44,16 @@ def test_allometry_matches_the_js_twin_fixture():
         assert trees.tree_height_m(dbh) == pytest.approx(height, abs=0.005)
 
 
+def test_census_trunks_are_sized_with_the_growth_since_the_survey():
+    assert trees.grown_dbh_in(8) == 8 + trees.GROWTH_IN == 10.0
+    assert trees.grown_dbh_in(-1) == trees.GROWTH_IN
+    assert 11.5 < trees.tree_height_m(trees.grown_dbh_in(8)) < 14.5            # a Midtown street tree after a decade of growth
+
+
+def test_water_window_reaches_past_the_far_shore_of_the_east_river():
+    assert water.HALF_M >= 1500 and water.Q_M == 0.5
+
+
 def test_species_groups_by_genus():
     g = trees.GROUPS
     assert g[trees.species_group("Platanus x acerifolia")] == "plane"
@@ -251,3 +261,18 @@ def test_add_green_context_only_adds_water_and_census(monkeypatch):
 def test_add_green_raises_when_nothing_loads():
     with pytest.raises(RuntimeError):
         site_mod.add_green({"origin": {"lat": LAT, "lon": LON}, "b": []}, radius=600)
+
+
+def test_keep_osm_reuses_the_parks_and_adds_only_the_census_and_water(monkeypatch):
+    def boom(*a, **k):
+        raise AssertionError("Overpass must not be called with keep_osm")
+
+    monkeypatch.setattr(green_mod, "fetch_green", boom)
+    monkeypatch.setattr(trees, "fetch_census", fake_census)
+    monkeypatch.setattr(water, "fetch_water", fake_water)
+    s = {"origin": {"lat": LAT, "lon": LON}, "b": [], "green": {**osm_green(), "polys": [{"kind": "park", "ring": [[0, 0], [10, 0], [10, 10]], "osm": "way/1"}],
+                                                                 "counts": {"polys": 1, "trees": 1, "census_trees": 99}, "census": {"n": 99, "pts": []}}}
+    assert site_mod.add_green(s, radius=600, city="nyc", water=True, keep_osm=True) is True
+    assert s["green"]["polys"][0]["osm"] == "way/1" and s["green"]["trees"] == [1.0, 2.0]       # the OpenStreetMap part is untouched
+    assert s["green"]["census"]["n"] == 2 and s["green"]["counts"]["census_trees"] == 2         # the census is fresh
+    assert s["water"]["polys"]

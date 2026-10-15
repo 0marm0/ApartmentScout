@@ -357,10 +357,13 @@ def merge_receipts(site: dict, fresh: list[dict]) -> None:
 
 
 def add_green(site: dict, cache_dir: Path | None = None, radius: float | None = None, refresh: bool = False,
-              say: Callable[..., None] = lambda *a: None, city: str | None = None, water: bool = False) -> bool:
+              say: Callable[..., None] = lambda *a: None, city: str | None = None, water: bool = False,
+              keep_osm: bool = False) -> bool:
     """Add (or refresh) the ``green`` block of an existing site JSON (parks and mapped trees, plus the street tree
     census when ``city`` is ``"nyc"``) and the window's ``study.green_view``, without rebuilding anything else.
-    ``water=True`` also adds the ``water`` block (``--context-only``). Returns False when the site has no origin."""
+    ``water=True`` also adds the ``water`` block (``--context-only``); ``keep_osm=True`` keeps the parks and mapped trees
+    already in the file and adds only the census and water (``--keep-osm``: no Overpass call). Returns False when the site
+    has no origin."""
     from .context import build_green, build_water   # [city context]
     from .sightline import green_view
     origin = site.get("origin") or {}
@@ -368,7 +371,7 @@ def add_green(site: dict, cache_dir: Path | None = None, radius: float | None = 
         return False
     r = radius or float((site.get("green") or {}).get("radius_m") or 600)
     with collect_receipts() as rc:
-        g = build_green(origin["lat"], origin["lon"], r, city, cache_dir, refresh, say)
+        g = build_green(origin["lat"], origin["lon"], r, city, cache_dir, refresh, say, keep=site.get("green") if keep_osm else None)
         if g is None:
             raise RuntimeError("green space unavailable")
         site["green"] = g
