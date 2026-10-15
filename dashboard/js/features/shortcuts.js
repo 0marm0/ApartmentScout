@@ -21,7 +21,7 @@ export const GROUPS = [
   { id: 'global', title: 'Anywhere', views: null, rows: [
     { combos: [c('mod', 'K'), c('/')], desc: 'Search homes, views and actions, or ask in plain words', tags: 'command palette find jump filter query' },
     { combos: [c('?')], desc: 'Open this cheat sheet', tags: 'help keyboard shortcuts keys' },
-    { combos: [c('1'), c('2'), c('3'), c('4'), c('5'), c('6')], desc: 'Switch tab: Map, Shortlist, Compare, Unit 3D, Floor plan, Research', tags: 'navigate view tab number', range: '1–6' },
+    { combos: [c('1'), c('2'), c('3'), c('4'), c('5')], desc: 'Switch tab: Map, Shortlist, Compare, Home (Unit 3D or Floor plan; press 4 again to flip), Research', tags: 'navigate view tab number home unit plan', range: '1–5' },
     { combos: [c('t')], desc: 'Flip between the light and dark theme', tags: 'theme appearance' },
     { combos: [c('Esc')], desc: 'Close the open panel, menu or dialog', tags: 'close dismiss cancel' },
     { combos: [c('mod', 'Z')], desc: 'Undo the last pick, compare, filter, weight or commute change', tags: 'undo revert back' },
