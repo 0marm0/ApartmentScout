@@ -28,6 +28,23 @@
 .menu-pop > button[role="menuitem"]:focus-visible, .mn-seg button:focus-visible { outline-offset: -2px; }
 .menu-pop kbd { background: transparent; }
 
+/* ------------------------------------------------------------------ stats strip: collapsed to one chip by default
+   The summary line is a chip in the top bar ("289 matches") whose chevron opens the full strip; the choice is kept per viewer
+   (js/app.js statsOpen). Closed, the strip row takes no height at all (the map and the list get it), unless the "since your
+   last visit" pill or the criteria-preview banner is in it: body[data-stats-row] says the row is in use. */
+.kpi-chip { display: inline-flex; align-items: center; gap: 5px; flex: none; height: 28px; padding: 0 9px 0 11px; border-radius: var(--r-md); border: 1px solid var(--line); background: var(--surface-2);
+  color: var(--ink-2); font: 500 var(--fs-xs) var(--font-sans, inherit); white-space: nowrap; cursor: pointer; transition: background var(--t-fast), border-color var(--t-fast), color var(--t-fast); }
+.kpi-chip[hidden] { display: none; }
+.kpi-chip b { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+.kpi-chip:hover, .kpi-chip[aria-expanded="true"] { background: var(--surface-hover); border-color: var(--line-strong); color: var(--ink); }
+.kpi-chip .chev { width: 10px; height: 10px; margin-left: 1px; transition: transform var(--t-base) var(--ease-out); }
+.kpi-chip[aria-expanded="true"] .chev { transform: rotate(180deg); }
+body:not([data-view="map"]):not([data-view="list"]) .kpi-chip { display: none; }
+body:not([data-stats-row]) .kpis { display: none; }
+body:not([data-stats-row]) .topbar { border-bottom: 1px solid var(--line); }
+body:not([data-stats-open]) .kpis :is(.kpi:not(.pv-banner), .gen, .kpi-row .spacer, .kpi-wrap) { display: none; }
+@media (max-width: 760px) { .kpi-chip { order: 1; height: 30px; } }   /* after the brand mark: css/app.css gives the brand and the actions an order on a phone */
+
 /* ------------------------------------------------------------------ stats strip: fold on narrow screens */
 .kpi-wrap { position: relative; flex: none; display: none; align-items: center; height: 100%; }
 .kpi-more { display: grid; place-items: center; width: 24px; height: 18px; padding: 0; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface-2); color: var(--ink-3); cursor: pointer;

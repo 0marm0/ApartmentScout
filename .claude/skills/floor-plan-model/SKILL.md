@@ -45,6 +45,9 @@ The full format is in `docs/guides/floor-plans.md`. Write schema 2; every field 
    rectangles (split L-shapes). AC units are `est: true` unless you have a measurement; set `reserve`
    to the clear depth needed in front (AC default 18 in, closet 24 in). Use `keepout` for paths that
    must stay clear, such as the walk from the front door.
+5b. **Finishes**: if the unit has photos, run `apartmentscout finishes --listing <id>` after saving the plan: it writes `finishes` (floor pattern and tone, walls, window
+   frames, kitchen cabinets, counters, backsplash) with `basis: photos` / `listing_text` and the photo numbers as `evidence`. Check it against two photos, fix what is wrong
+   with `basis: renter`, never invent a finish without evidence (`docs/guides/floor-plans.md#finishes-what-the-room-is-made-of`). The old `floor_finish` still works.
 6. **Orient it**: `up_bearing` is the compass bearing the top of the drawing faces (the window
    wall's outward direction, from the unit-light-and-view skill). Add `floor` for the storey.
 7. **Propose 2 to 4 layouts** in `layouts`, each with an `id`, a short `name` and a one-line `note`
@@ -56,7 +59,7 @@ The full format is in `docs/guides/floor-plans.md`. Write schema 2; every field 
    the piece's back points, in degrees clockwise from the top of the drawing (0 top wall, 90 right,
    180 bottom, 270 left). Use the renter's own furniture sizes when you know them (`w`, `d`, `h` in
    inches): list them once in `furniture.json` beside `listings.json` (schema in `docs/guides/floor-plans.md#your-furniture`,
-   with a `source` for each piece, never a guess) and make the first layout `your-furniture`, fitted with the checks. Place each piece against the wall face (room edge plus half the wall thickness).
+   with a `source` for each piece, never a guess; add each piece's `look` (colour, material, finish, with `basis: renter` only for what the renter said and the rest listed in `assumed`) so the 3D views draw their real furniture) and make the first layout `your-furniture`, fitted with the checks. Place each piece against the wall face (room edge plus half the wall thickness).
 8. **Check the layouts** before you hand them over: run the plan through the checks in node (they
    are pure ES modules) and fix anything tight or blocked, or say in the `note` why it is acceptable.
 

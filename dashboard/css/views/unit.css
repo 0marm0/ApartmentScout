@@ -33,10 +33,27 @@
 .u-stage canvas:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: var(--r-lg); }
 
 /* ------------------------------------------------------------------ stage chrome */
-.u-modes { top: 12px; left: 12px; display: flex; gap: 2px; padding: 3px; border-radius: var(--r-md); }
-.u-modes button { border: 0; background: none; height: 28px; padding: 0 12px; border-radius: 7px; font-size: var(--fs-xs); font-weight: 500; color: var(--ink-2); cursor: pointer; white-space: nowrap; transition: color var(--t-fast), background var(--t-fast); }
-.u-modes button:hover { color: var(--ink); }
-.u-modes button.on { background: var(--surface-3); color: var(--ink); box-shadow: var(--shadow-1); }
+/* the camera controls: a block at the top left of the stage (the camera buttons and the measured-vs-assumed chip on a row, the room
+   switcher under them), so none of them can land on another. Inside / Window view / Outside are the big labelled buttons. The
+   compass sits left of the layer tools. */
+.u-views { position: absolute; z-index: 6; top: 12px; left: 12px; right: 108px; display: flex; flex-wrap: wrap; align-items: flex-start; gap: 8px; pointer-events: none; }
+#uViews > .acc-chip { order: 2; }
+#uViews > .u-look { order: 4; }
+#uViews > * { pointer-events: auto; position: relative; top: auto; left: auto; right: auto; bottom: auto; }
+.u-modes { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; padding: 4px; border-radius: var(--r-lg, 14px); max-width: 100%; }
+.u-modes .um-b { display: inline-flex; align-items: center; gap: 8px; border: 0; background: none; height: 38px; padding: 0 15px 0 12px; border-radius: var(--r-md); font: 600 var(--fs-sm) var(--font-sans, inherit); color: var(--ink-2); cursor: pointer; white-space: nowrap; transition: color var(--t-fast), background var(--t-fast), box-shadow var(--t-fast); }
+.u-modes .um-b svg { width: 18px; height: 18px; flex: none; }
+.u-modes .um-b:hover:not(:disabled) { color: var(--ink); background: var(--surface-2); }
+.u-modes .um-b.on { background: var(--accent); color: var(--accent-ink); box-shadow: var(--shadow-1); }
+.u-modes .um-b:disabled { opacity: .4; cursor: default; }
+.u-modes .um-sep { width: 1px; height: 22px; margin: 0 4px; background: var(--line-strong); flex: none; }
+.u-modes .um-s, .u-modes .um-fp { display: inline-flex; align-items: center; gap: 6px; border: 0; background: none; height: 30px; padding: 0 10px; border-radius: var(--r-md); font: 500 var(--fs-xs) var(--font-sans, inherit); color: var(--ink-3); cursor: pointer; white-space: nowrap; text-decoration: none; transition: color var(--t-fast), background var(--t-fast); }
+.u-modes .um-fp { color: var(--accent); }
+.u-modes .um-fp svg { width: 14px; height: 14px; }
+.u-modes .um-fp[hidden] { display: none; }
+.u-modes .um-s:hover, .u-modes .um-fp:hover { color: var(--ink); background: var(--surface-2); }
+.u-modes .um-s.on { background: var(--surface-3); color: var(--ink); box-shadow: var(--shadow-1); }
+.u-modes :is(.um-b, .um-s, .um-fp):focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .u-tools { top: 12px; right: 12px; display: flex; flex-direction: column; gap: 2px; padding: 3px; border-radius: var(--r-md); }
 .u-tools button { position: relative; width: 30px; height: 30px; border: 0; background: none; border-radius: 7px; display: grid; place-items: center; color: var(--ink-3); cursor: pointer; transition: color var(--t-fast), background var(--t-fast); }
 .u-tools button:hover:not(:disabled) { background: var(--surface-3); color: var(--ink); }
@@ -45,7 +62,7 @@
 .u-tools svg { width: 16px; height: 16px; }
 .u-tools hr { border: 0; border-top: 1px solid var(--line); margin: 2px 4px; }
 .u-tmode { position: absolute; right: 2px; bottom: 1px; font: 700 8px/1 var(--font-mono); font-style: normal; color: inherit; }
-.u-compass { position: absolute; z-index: 5; top: 54px; left: 12px; width: 40px; height: 40px; padding: 0; border-radius: 50%; cursor: pointer;
+.u-compass { position: absolute; z-index: 5; top: 12px; right: 56px; width: 40px; height: 40px; padding: 0; border-radius: 50%; cursor: pointer;
   background: var(--overlay); backdrop-filter: var(--glass); -webkit-backdrop-filter: var(--glass); border: 1px solid var(--line-strong); box-shadow: var(--shadow-2); }
 .u-compass svg { width: 100%; height: 100%; display: block; overflow: visible; }
 .u-compass circle { fill: none; stroke: var(--line-strong); }
@@ -216,7 +233,10 @@
 .u-unit { flex: none; display: flex; align-items: center; gap: 10px; min-width: 196px; max-width: 250px; padding: 9px 12px 9px 9px; border-radius: var(--r-md); border: 1px solid var(--line); background: var(--surface-1); color: var(--ink); text-align: left; cursor: pointer; font: inherit; transition: border-color var(--t-fast), background var(--t-fast); }
 .u-unit:hover { border-color: var(--line-strong); background: var(--surface-2); }
 .u-unit.cur { border-color: var(--accent-line); background: var(--accent-soft); cursor: default; }
-.u-unit.gone { opacity: .55; }
+.u-unit.cur small { color: var(--ink-2); }   /* on the accent tint (light theme) the quiet text colour is too faint */
+.u-unit.cur .pill.accent { color: var(--ink); }
+.u-unit.gone { border-style: dashed; }   /* dimmed by a dashed edge and a quiet dial, not by opacity: faded text fails the contrast check */
+.u-unit.gone > svg { opacity: .55; }
 .u-unit-t { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .u-unit-t b { font-size: var(--fs-sm); font-weight: 600; }
 .u-unit-t small { font-size: var(--fs-2xs); color: var(--ink-3); font-variant-numeric: tabular-nums; }
@@ -326,7 +346,6 @@
   .u-head .actions > .u-pick, .u-head .actions > .u-links { grid-column: 1 / -1; }
   .u-head .actions > .btn { justify-content: center; }
   .u-pick { flex: 1 1 100%; } .u-pick select { min-width: 0; width: 100%; }
-  .u-modes button { padding: 0 9px; }
   .u-hud-x { display: none; }
   .u-hud { max-width: calc(100% - 64px); }
   .u-card { left: 8px; right: 52px; top: auto; bottom: 8px; width: auto; max-width: none; }
@@ -469,3 +488,61 @@
 .u-lab.water { font-style: italic; letter-spacing: .24em; color: color-mix(in srgb, var(--band-30) 78%, var(--ink)); }
 .u-lab.park { letter-spacing: .12em; color: color-mix(in srgb, var(--ok, #3fa56b) 62%, var(--ink-2)); }
 .u-lab.water::after, .u-lab.park::after { display: none; }
+
+/* ------------------------------------------------------------------ camera controls on a phone
+   The stage is narrow and the layer tools take its right edge: the three big buttons share the first row (the label "view" drops
+   below 460 px), the small tools and the Floor plan link take the second, and the compass steps aside inside the home. */
+@media (max-width: 760px) {
+  .u-views { right: 56px; }
+  .u-modes .um-b { height: 36px; padding: 0 9px 0 8px; gap: 6px; font-size: var(--fs-xs); }
+  .u-modes .um-b svg { width: 16px; height: 16px; }
+  .u-modes .um-sep { flex-basis: 100%; height: 0; margin: 0; background: none; }
+  .u-compass { top: 150px; left: 12px; right: auto; width: 36px; height: 36px; }
+  .u-stage[data-mode="in"] .u-compass, .u-stage[data-mode="win"] .u-compass { display: none; }
+}
+@media (max-width: 460px) { .u-modes .um-x { display: none; } }
+
+/* ---- the lens panel: closed by default (a small icon at the corner), open for Lens, Turn and Tilt */
+.u-lens .ul-tog { display: inline-flex; align-items: center; gap: var(--s-2); align-self: flex-start; height: 28px; padding: 0 6px; border: 0; border-radius: var(--r-inner); background: none; color: var(--ink-2); font: 500 var(--fs-xs) var(--font-sans, inherit); cursor: pointer; white-space: nowrap; }
+.u-lens .ul-tog:hover { color: var(--ink); background: var(--surface-2); }
+.u-lens .ul-tog:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.u-lens .ul-tog svg { width: 16px; height: 16px; flex: none; }
+.u-lens:not(.open) .ul-tog span { display: none; }
+.u-lens:not(.open) .ul-tog { padding: 0; width: 28px; justify-content: center; }
+.u-lens:not(.open) { width: auto; padding: 3px; }
+.u-stage[data-mode="win"] .u-lens:not(.open) { padding: 8px; }
+.u-lens:not(.open) .field:has(#uFov), .u-lens:not(.open) .field:has(#uYaw), .u-lens:not(.open) .field:has(#uPitch) { display: none; }
+@media (max-width: 760px) { .u-lens .ul-tog { display: none; } .u-lens:not(.open) { padding: 8px 10px; } }
+@media (min-width: 761px) { .u-lens { right: 56px; } }   /* beside the layer tools, never over them */
+
+/* ------------------------------------------------------------------ the model first
+   One compact line above the model (the name, and two small folds for the facts and the other units); the model fills the width and
+   the height of the screen, with its inspector panels below it (the panels button puts them beside it again); the overlays are
+   slim controls at the edges. */
+.u-head { align-items: center; margin-bottom: var(--s-3); }
+.u-head .u-eyebrow { display: none; }
+.u-tline { display: flex; align-items: center; flex-wrap: wrap; gap: var(--s-2); }
+.u-head h1 { margin: 0; font-size: var(--fs-xl); line-height: 28px; }
+.u-fold { display: inline-flex; align-items: center; gap: 4px; height: 26px; padding: 0 8px 0 10px; border: 1px solid var(--line); border-radius: var(--r-pill); background: var(--surface-2); color: var(--ink-3); font: 500 var(--fs-xs) var(--font-sans, inherit); cursor: pointer; }
+.u-fold:hover { color: var(--ink); border-color: var(--line-strong); }
+.u-fold:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.u-fold svg { width: 12px; height: 12px; transition: transform var(--t-base) var(--ease-out); }
+.u-fold[aria-expanded="true"] { color: var(--ink); background: var(--accent-soft); border-color: var(--accent-line); }
+.u-fold[aria-expanded="true"] svg { transform: rotate(180deg); }
+.u-pad:has(#uUnits[hidden]) #uUnitsBtn { display: none; }
+#view-unit:not([data-facts]) .u-sub { display: none; }
+#view-unit:not([data-units]) #uUnits { display: none !important; }
+#view-unit .u-units { margin-bottom: var(--s-3); }
+.u-hud { flex-wrap: nowrap; overflow: hidden; }
+.u-hud span { white-space: nowrap; }
+.u-stage .u-hud .u-hud-x { display: none; }
+.u-stage:hover .u-hud .u-hud-x, .u-stage:focus-within .u-hud .u-hud-x { display: inline-block; }
+@media (min-width: 1181px) {
+  #view-unit[data-wide="1"] .u-grid { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto; height: auto; }
+  #view-unit[data-wide="1"] .u-side { overflow: visible; margin: 0; padding: 0; -webkit-mask-image: none; mask-image: none; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; }
+}
+@media (max-width: 760px) { #uFull, #uWide { display: none; } }
+.u-hud span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 1360px) { .u-links a[href^="#plan"] { display: none; } }   /* the camera buttons carry the Floor plan link */
+
+#view-unit .u-tools { max-height: calc(100% - 24px); overflow-y: auto; scrollbar-width: none; }

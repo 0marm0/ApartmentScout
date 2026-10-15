@@ -32,7 +32,7 @@ from typing import Any
 
 import yaml
 
-from . import __version__, planfile
+from . import __version__, planfile, renterfacts, viewcal
 from . import cities as city_lookup   # [onboarding] city and address lookups, feed checks
 from .config import Workspace
 from .criteria_check import check_text, summary_lines
@@ -42,6 +42,7 @@ from .tourapi import MAX_PHOTO_BYTES, TourError, TourFiles, pillow_available   #
 
 MAX_BODY = 256 * 1024
 FOLDER = re.compile(r"^[a-z0-9][a-z0-9-]{0,59}$")
+REVALIDATE = re.compile(r"(/|\.html|\.js|\.mjs|\.css|\.json|\.webmanifest)$")   # what changes with each build: never served stale
 TOUR_PHOTO = re.compile(r"^/tours/(?P<id>[A-Za-z0-9][A-Za-z0-9._-]{0,119})/photos/(?P<name>[a-z0-9]{6,32}\.webp)$")
 BACKUPS_KEPT = 30
 REPO = Path(__file__).resolve().parent.parent
@@ -151,6 +152,7 @@ class ServeState:
             name = None
         return {"api": 1, "version": __version__, "can_save": bool(ws and not self.read_only), "example": self.read_only,
                 "plans": {"save": bool(ws and not self.read_only), "folder": "plans"},
+                "facts": {"save": bool(ws and not self.read_only)},
                 "tours": {"save": bool(ws and not self.read_only), "photos": bool(ws and not self.read_only and pillow_available()),
                           "max_photo_bytes": MAX_PHOTO_BYTES},
                 "search": {"folder": ws.root.name, "name": name, "path": self.display(ws.root)} if ws else None,
@@ -215,6 +217,33 @@ class ServeState:
         return {"ok": True, **out, "folder": ws.root.name,
                 "next": [f"apartmentscout build --search {self.display(ws.root)}"]}
 
+    # -- [photo match] a window view matched to a listing photo, saved into the search folder (apartmentscout/viewcal.py)
+    def save_view_calibration(self, record: Any, overwrite: bool) -> dict[str, Any]:
+        ws = self.ws
+        if ws is None:
+            raise ApiError(409, "No search is open, so there is no view-calibrations folder to save into.")
+        if self.read_only:
+            raise ApiError(403, "This is a bundled example search and is read-only. The match stays in this browser; use Export to keep it.")
+        with self.lock:
+            try:
+                out = viewcal.save(ws.root, record, overwrite=bool(overwrite))
+            except viewcal.ViewCalError as e:
+                raise ApiError(422, str(e)) from e
+            # the page's data folder is a copy made at start: put the record in it so a reload shows it without a re-build
+            try:
+                dst = self.data_dir / viewcal.FOLDER
+                dst.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(ws.root / out["path"], dst / Path(out["path"]).name)
+                mf = self.data_dir / "manifest.json"
+                if mf.exists():
+                    m = json.loads(mf.read_text(encoding="utf-8"))
+                    m["view_calibrations"] = sorted({*m.get("view_calibrations", []), Path(out["path"]).stem})
+                    mf.write_text(json.dumps(m, indent=1), encoding="utf-8")
+            except OSError:
+                pass
+        return {"ok": True, **out, "folder": ws.root.name,
+                "next": [f"apartmentscout site {record.get('site') if isinstance(record, dict) else '<id>'}   # to carry it into the site file's sun and sky numbers"]}
+
     # -- tour findings and photos (apartmentscout/tourapi.py)
     def tour_files(self) -> TourFiles:
         if self.ws is None:
@@ -222,6 +251,14 @@ class ServeState:
         if self.read_only:
             raise ApiError(403, "This is a bundled example search and is read-only. Your visit notes stay in this browser.")
         return TourFiles(self.ws.root, self.lock)
+
+    # -- the values the renter typed for a home's unknowns (apartmentscout/renterfacts.py)
+    def facts_file(self) -> renterfacts.FactsFile:
+        if self.ws is None:
+            raise ApiError(409, "No search is open.")
+        if self.read_only:
+            raise ApiError(403, "This is a bundled example search and is read-only. Your numbers stay in this browser.")
+        return renterfacts.FactsFile(self.ws.root, self.lock)
 
     # -- writes
     def save_criteria(self, text: str) -> dict[str, Any]:
@@ -338,6 +375,19 @@ def make_handler(state: ServeState) -> type[http.server.SimpleHTTPRequestHandler
         def log_message(self, *a: Any) -> None:
             pass
 
+        # -- caching: the page, its scripts and its data are revalidated on every load (a 304 when unchanged), so a browser never
+        #    mixes a cached old module with new ones after an update; photos keep the browser's default caching
+        def send_header(self, keyword: str, value: str) -> None:
+            if keyword.lower() == "cache-control":
+                self._cache_set = True
+            super().send_header(keyword, value)
+
+        def end_headers(self) -> None:
+            if not getattr(self, "_cache_set", False) and REVALIDATE.search(self.path.split("?", 1)[0].split("#", 1)[0]):
+                super().send_header("Cache-Control", "no-cache")
+            self._cache_set = False
+            super().end_headers()
+
         # -- static files
         def translate_path(self, path: str) -> str:
             clean = path.split("?", 1)[0].split("#", 1)[0]
@@ -446,6 +496,19 @@ def make_handler(state: ServeState) -> type[http.server.SimpleHTTPRequestHandler
                 raise ApiError(e.status, e.message) from e
             return None
 
+        def _facts(self, method: str, route: str) -> dict[str, Any] | None:
+            """/api/facts (all of them) and /api/facts/<id> (replace one home's)."""
+            parts = route.split("/")   # ['', 'api', 'facts', <id>]
+            files = state.facts_file()
+            if len(parts) == 3 and method == "GET":
+                return {"facts": files.all()}
+            if len(parts) == 4 and method == "POST":
+                try:
+                    return {"ok": True, "facts": files.save(parts[3], self._body().get("facts"))}
+                except ValueError as e:
+                    raise ApiError(400, str(e)) from e
+            return None
+
         # -- routing
         def do_GET(self) -> None:  # noqa: N802
             route = self.path.split("?", 1)[0]
@@ -540,6 +603,10 @@ def make_handler(state: ServeState) -> type[http.server.SimpleHTTPRequestHandler
                     out = self._tours(method, route)
                     if out is not None:
                         return out
+                if route == "/api/facts":
+                    out = self._facts(method, route)
+                    if out is not None:
+                        return out
                 if route.startswith("/api/jobs/"):
                     job = state.jobs.get(route.rsplit("/", 1)[1])
                     if job is None:
@@ -548,6 +615,11 @@ def make_handler(state: ServeState) -> type[http.server.SimpleHTTPRequestHandler
                 raise ApiError(404, "Unknown endpoint.")
             if route.startswith("/api/tours/"):
                 out = self._tours(method, route)
+                if out is not None:
+                    return out
+                raise ApiError(404, "Unknown endpoint.")
+            if route.startswith("/api/facts/"):
+                out = self._facts(method, route)
                 if out is not None:
                     return out
                 raise ApiError(404, "Unknown endpoint.")
@@ -573,6 +645,8 @@ def make_handler(state: ServeState) -> type[http.server.SimpleHTTPRequestHandler
                 return state.feed_check(body.get("url"))
             if route == "/api/plans":
                 return state.save_plan(body.get("plan"), body.get("overwrite"))
+            if route == "/api/view-calibrations":
+                return state.save_view_calibration(body.get("record"), body.get("overwrite", True))
             raise ApiError(404, "Unknown endpoint.")
 
     return Handler

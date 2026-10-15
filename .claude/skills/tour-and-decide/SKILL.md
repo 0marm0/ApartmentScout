@@ -14,6 +14,15 @@ description: Plan apartment tours (including night and noise checks), capture wh
 - Bring: a phone level and compass app (check exposure), tape measure (furniture fit), a speaker
   test (play audio in the next room), a water pressure check, phone signal check.
 
+## Tour day on the phone
+
+Book each tour's time on the Tours board; on the day a **Tour day** button appears on the dashboard (also in the command palette
+and at `?tourday=1`). It lists today's tours in order with directions, gives each home a checklist built from the renter's
+criteria and the listing's unknowns (including questions for the leasing office), and offers a 10-second microphone noise
+estimate (approximate, nothing uploaded). Answers land in the same tour findings as the visit sheet. Anything the findings schema
+has no field for is written into `findings.json`'s `note` after a `— Tour day answers —` marker: read it, but treat it like any other
+finding (an observation, never a listing fact).
+
 ## During and after each tour
 
 The renter takes the dashboard to the visit: the drawer's **Visit** section (or `?visit=<id>`) opens the phone-first visit notes, and

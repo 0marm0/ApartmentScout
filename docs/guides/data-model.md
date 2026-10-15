@@ -9,10 +9,12 @@ searches/my-search/
   listings.template.csv  CSV headers for bulk import
   research/              notes (<listing-id>.md), dossiers/, charts/
   plans/                 floor plans (<listing-id>.json)
+  furniture.json         the renter's own furniture: sizes, colours, materials (docs/guides/floor-plans.md#your-furniture)
   sites/                 3D site models (generated)
   layers/                map heat layers (generated)
   cache/                 downloads and geocoder cache (generated)
-  history/               claims.jsonl (append-only) and snapshots/ (one per build day)
+  history/               claims.jsonl (append-only), snapshots/ (one per build day) and ranks.json (one run per `score`)
+  renter_facts.json      numbers you typed for a home's unknowns (written by the dashboard; read by `score`)
   tours/<id>/            findings.json and photos/<photo id>.webp from your visits (written by the dashboard)
   shortlist.md           report (generated)
 ```
@@ -249,6 +251,15 @@ Every dashboard surface (cards, drawer, lightbox, Research gallery, Shortlist th
 **street**, and floor plans are **plan**. The order is unit, same line, building, floor plans, street; inside a group a photo
 flagged in `photo_flags` goes last and otherwise the data order holds. A card's photo is the first unit, line or building image,
 never a plan. The card's count reads "8 unit · 22 building".
+
+### The home the 3D views open: `search.default_listing`
+
+`search.default_listing` in `criteria.yaml` is the id of one listing. `criteria --check` rejects a value that is not an id and warns
+when `listings.json` has no such listing (or marks it `gone` or `rejected`); `apartmentscout build` copies a listing that exists into
+`manifest.json` as `default_listing`, so no listing id lives in the dashboard's code. Unit 3D, the Floor plan studio (so the 3D tab) and
+Records open that home when the address names none (`#unit`, `#plan`), in this order: the home in the address; the home the view showed
+earlier in the session; the home the renter opened last in this browser (local storage `as:home-id`, written when the address names a
+home, never for the default); `default_listing`; the first home in the list. The bundled example sets it to Paramount Tower 25E.
 
 ### Where a saved photo comes from: `media/`, `media-lite/`, `media_base_url`
 
@@ -597,6 +608,26 @@ day (listing `available`, else `search.move_in.earliest`) and of Mar 20, Jun 21 
 and altitude, the state (`night`, `behind`, `lit`, `shaded`) and, when shaded, the blocking building's name or
 address, BIN, roof and distance.
 
+### Photo match: `view-calibrations/<id>.json`
+
+Unit 3D's Window camera has a guided **Match a photo** (three steps: pick a listing photo, mark two or more landmarks in it and name each from the
+site's `lm` list or by clicking it in the 3D view, check the fit and save). A small solver (`dashboard/js/unit/view-solver.js`) works out which way
+the photo looks (`bearing_deg`), its tilt, its lens (`vfov_deg`, vertical) and the height the camera stood at (`eye_height_m`), with the residual
+(`rms_deg`, the angular distance between where each landmark was clicked and where the model puts it). Two landmarks fit bearing, tilt and height
+with the lens assumed (55 degrees unless set); three or more also fit the lens. Heights and lens are only reported as measured when the clicks can
+fix them (`eye_determined`, `lens_determined`; `sigma` holds the one-sigma uncertainties): landmarks that are all far away cannot separate tilt from
+camera height, and then the model's height stays. A neighbouring roof clicked in the 3D view usually fixes it.
+
+The record (`kind: "apartmentscout-view-calibration"`, `schema: 1`) holds `site`, `saved`, `photo` (`n` its place in the gallery, `floor` where it was
+taken, `scope`, `aspect`), `eye` (the window point and the eye height the fit started from), `landmarks` (`name`, `kind` named or picked, `x`, `y`, `z` in
+site metres, `u`, `v` the click as fractions of the picture), `result` and `applied` (`az_deg`, `floor`, `facade_offset_deg`). `apartmentscout serve`
+saves it to `<search>/view-calibrations/<id>.json` (a bundled example is read-only, so the page keeps it in the browser and offers **Export**);
+`apartmentscout viewcal import FILE` takes an export into a search folder and `viewcal list` shows them; `build` copies the folder to the page and
+lists the ids in the manifest's `view_calibrations`. `apartmentscout site <id>` then uses the match: the photo's bearing as the window's facing
+(when within 12 degrees of a wall; `--bearing` still wins, `--no-view-calibration` ignores it), and the camera height as a measured `--eye-height`
+(scaled to the unit's floor when the photo was taken on another floor: every storey is stretched to fit). The site file keeps what it used in
+`calibration.view`, and the accuracy chip reads "measured from photo N" for the facade bearing and, when the photo fixed it, the floor height.
+
 ### Unit aliases
 
 A listing can declare other listing ids for the same unit in `aliases`, or other spellings of its unit in
@@ -622,6 +653,27 @@ Every request is listed in `research/<id>-noise-ledger.csv` (date, closed date, 
 street, agency, resolution text and its class); the ledger is not copied to the dashboard. `receipts` lists
 each dataset queried, in the same shape as the site model's.
 
+## Renter facts
+
+`renter_facts.json` in the search folder holds the numbers the renter typed for a home's unknowns in the dashboard's *Unknowns that move
+this score* section. It never changes `listings.json`: `apartmentscout score` applies each one to a copy of the listing, marks it in
+`score.renter` (`{"size": {"value": 640, "at": "2026-10-15", "source": "renter"}}`) and flags it `renter:size` in `score.flags`.
+
+```json
+{"v": 1, "facts": {"the-knox-6b": {"size": {"value": 640, "at": "2026-10-15", "source": "renter"}}}}
+```
+
+| Kind | Value | Read as |
+|---|---|---|
+| `size` | ft² (50 to 20,000) | the unit's reported size: no estimate, no range |
+| `fees` | $ a month (0 to 20,000) | the required monthly fees, known (0 means none) |
+| `price` | $ a month (100 to 100,000) | the rent you will pay each month after free months, from a written quote (`price.basis: renter_quote`): ends a price dispute and an unverified-price gate |
+| `wd` | true / false | the in-unit washer/dryer: confirmed, or a failed must-have |
+| `floor` | 1 to 120 | the floor, no longer inferred |
+
+The dashboard computes the same re-score in the browser (`dashboard/js/features/facts-model.js`), so a typed number re-ranks the home at
+once; `tests/test_renterfacts_parity.py` keeps the two in step.
+
 ## History
 
 See [research quality](research-quality.md#history) for the rules. Files in the search folder:
@@ -635,6 +687,15 @@ See [research quality](research-quality.md#history) for the rules. Files in the 
 - `history/snapshots/YYYY-MM-DD.json`: `{"schema_version": 1, "date", "fields": [...], "listings": {id: [values]}}`
   with `fields` = `status, gross, net, fees_monthly, free_months, lease_months, available, checked, key`
   (`key` = normalised building address + unit, used to spot relists under a new id).
+
+- `history/ranks.json`: where every home stood on each `apartmentscout score` run, so the dashboard can say why a home moved.
+  Columnar and small (about 40 KB a run for 738 homes; six runs at most; a rescore on the same day with the same scoring version
+  replaces that day's run, and a run that repeats the last is not stored). `{"v": 1, "dims": [...], "vocab": [...], "versions": {"2.1":
+  "what it changed"}, "ids": [...], "runs": [{"at": "2026-10-13T23:45", "version": "2.0", "k": 10, "w": [weights in dims order],
+  "n": 335, "a": [action rank, 0 = none], "f": [fit rank], "s": [overall x 10, -1 = none], "c": [monthly cost, -1 = unknown],
+  "p": "two hex digits per dimension per home, ff = unknown", "g": ["dot-joined indexes into vocab: the flags and gates", ...]}]}`.
+  `build` copies it to the dashboard as `ranks.json` once it holds two runs. The bundled example's history was seeded from the git
+  history of its scored `listings.json`.
 
 Optional listing fields read by history and lint: `price_history` (`[{"date", "gross"}]`, earlier prices from
 a portal's history), `listed_at` (the date the source says the unit was listed; never inferred from a check
@@ -683,6 +744,11 @@ monitor:
 | `gone_fast[]` | Every listing seen going gone. `listed` comes from `listed_at`, or the first snapshot that saw it active when that is not the very first snapshot; otherwise null, and so is `days`. Sorted fastest first, unknown last. |
 | `price_history` | Listings with two or more distinct price points (snapshots and dated price claims). |
 | `availability` | The availability ladder state for every listing (extension). |
+
+## Questions
+
+`questions.json` (dashboard export, written by `apartmentscout build`): each active unit's open questions for its building's leasing
+office, with the wording stored once per merge key. Schema and the dashboard flow: [leasing-office questions](leasing-office-questions.md#the-data-file).
 
 ## Coverage
 

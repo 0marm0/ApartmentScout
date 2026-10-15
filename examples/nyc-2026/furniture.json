@@ -12,6 +12,17 @@
    "w": 64,
    "d": 84,
    "h": 40,
+   "look": {
+    "color": "grey",
+    "material": "fabric",
+    "finish": "matte",
+    "basis": "renter",
+    "assumed": [
+     "finish",
+     "shade"
+    ],
+    "note": "Upholstered grey fabric frame and headboard. The renter gave the colour and the upholstery; the exact shade is a mid grey."
+   },
    "note": "Mattress 60 x 80 in on a 64 x 84 in frame with a 40 in headboard.",
    "source": "Fit check; Room to live uses a 62 x 84 in frame; the TV study uses a 60 x 80 in mattress."
   },
@@ -23,6 +34,17 @@
    "w": 18,
    "d": 16,
    "h": 24,
+   "look": {
+    "color": "black",
+    "material": "paint",
+    "finish": "matte",
+    "basis": "renter",
+    "assumed": [
+     "material",
+     "finish"
+    ],
+    "note": "Black, matching the dresser."
+   },
    "note": "18 x 16 x 24 in.",
    "source": "Fit check (two nightstands)."
   },
@@ -34,6 +56,17 @@
    "w": 18,
    "d": 16,
    "h": 24,
+   "look": {
+    "color": "black",
+    "material": "paint",
+    "finish": "matte",
+    "basis": "renter",
+    "assumed": [
+     "material",
+     "finish"
+    ],
+    "note": "Black, matching the dresser."
+   },
    "note": "The second nightstand; the Apartment layout studio kept it hidden by default.",
    "source": "Fit check (two nightstands)."
   },
@@ -45,6 +78,18 @@
    "w": 27.6,
    "d": 19.7,
    "h": 38.6,
+   "look": {
+    "color": "black",
+    "material": "paint",
+    "finish": "matte",
+    "basis": "renter",
+    "assumed": [
+     "material",
+     "finish",
+     "pulls"
+    ],
+    "note": "IKEA Storklinta 4-drawer chest in black. The renter gave the colour; the handles are the model's own."
+   },
    "note": "IKEA Storklinta, 70 x 50 x 98 cm.",
    "source": "Fit check."
   },
@@ -56,6 +101,24 @@
    "w": 60,
    "d": 24,
    "h": 30,
+   "look": {
+    "color": "brown",
+    "material": "wood",
+    "finish": "satin",
+    "basis": "renter",
+    "assumed": [
+     "finish",
+     "chair"
+    ],
+    "parts": {
+     "chair": {
+      "color": "charcoal",
+      "material": "fabric",
+      "finish": "matte"
+     }
+    },
+    "note": "Brown wood desk with a chair and a monitor. The chair's look is a stand-in."
+   },
    "note": "60 x 24 in, 30 in tall, with a chair; adjustable from 36 to 84 in long.",
    "source": "Fit check; Room to live uses 72 x 24 in, the Apartment layout studio 54 x 24 in."
   },
@@ -67,6 +130,24 @@
    "w": 80,
    "d": 36,
    "h": 34,
+   "look": {
+    "color": "black",
+    "material": "leather",
+    "finish": "sheen",
+    "basis": "renter",
+    "assumed": [
+     "finish",
+     "frame"
+    ],
+    "parts": {
+     "frame": {
+      "color": "black",
+      "material": "metal",
+      "finish": "satin"
+     }
+    },
+    "note": "Black leather futon: a leather mattress seat and back on a frame. The renter gave black leather; the frame (black metal, no wooden arms) is a stand-in."
+   },
    "note": "80 x 36 in as a sofa; opens to about 80 x 56 in as a bed.",
    "source": "Fit check; Room to live checks an IKEA Nyhamn, 78.75 x 38.25 in."
   },
@@ -78,6 +159,16 @@
    "w": 44,
    "d": 24,
    "h": 17,
+   "look": {
+    "color": "brown",
+    "material": "wood",
+    "finish": "satin",
+    "basis": "renter",
+    "assumed": [
+     "finish"
+    ],
+    "note": "Brown wood, like the desk."
+   },
    "note": "Standard coffee table, 44 x 24 x 17 in.",
    "source": "Fit check."
   },
@@ -90,6 +181,13 @@
    "d": 3.5,
    "h": 27.8,
    "elev": 32,
+   "look": {
+    "color": "black",
+    "material": "plastic",
+    "finish": "gloss",
+    "basis": "assumed",
+    "note": "A 55-inch TV is a black panel; the exact casing is assumed."
+   },
    "note": "Wall-mounted, 48.4 x 27.8 in, centre about 46 in off the floor. The Emerald Green study weighs an LG 55 in (48.1 in wide) against a 48 in (42.2 in wide).",
    "source": "Fit check; Room to live (Samsung 55 in spec); Emerald Green 1211 bedroom TV study."
   },
@@ -102,6 +200,13 @@
    "d": 3.5,
    "h": 27.8,
    "elev": 32,
+   "look": {
+    "color": "black",
+    "material": "plastic",
+    "finish": "gloss",
+    "basis": "assumed",
+    "note": "A 55-inch TV is a black panel; the exact casing is assumed."
+   },
    "note": "Wall-mounted, 48.4 x 27.8 in, centre about 46 in off the floor.",
    "source": "Fit check; Room to live."
   },
@@ -113,6 +218,24 @@
    "w": 48,
    "d": 30,
    "h": 30,
+   "look": {
+    "color": "brown",
+    "material": "wood",
+    "finish": "satin",
+    "basis": "renter",
+    "assumed": [
+     "finish",
+     "chairs"
+    ],
+    "parts": {
+     "chairs": {
+      "color": "dark-brown",
+      "material": "wood",
+      "finish": "satin"
+     }
+    },
+    "note": "Brown wood table for four. The chairs' look is a stand-in."
+   },
    "note": "48 x 30 in rectangle with four chairs.",
    "source": "Fit check; Room to live."
   }
@@ -120,6 +243,6 @@
  "confirmed": {
   "by": "renter",
   "date": "2026-10-15",
-  "note": "The renter confirmed these are their own pieces."
+  "note": "The renter confirmed these are their own pieces, and on 2026-10-15 their colours and materials (each piece's `look`, where its basis is renter). A field listed in `assumed`, the TVs' casing and the chairs are stand-ins."
  }
 }

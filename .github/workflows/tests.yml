@@ -34,25 +34,27 @@ jobs:
           - name: views
             files: tests/e2e/test_dashboard.py
           - name: decide-and-shell
-            files: tests/e2e/test_decision.py tests/e2e/test_shell_extras.py tests/e2e/test_tour_findings.py
+            files: tests/e2e/test_decision.py tests/e2e/test_shell_extras.py tests/e2e/test_tour_findings.py tests/e2e/test_office_questions.py tests/e2e/test_tourday.py tests/e2e/test_moves_unknowns.py
           - name: lighting
-            files: tests/e2e/test_lighting.py
+            files: tests/e2e/test_lighting.py tests/e2e/test_quality3d.py
           - name: map-media-results
             files: tests/e2e/test_map_features.py tests/e2e/test_lightbox.py tests/e2e/test_media_tiers.py tests/e2e/test_results_rail.py tests/e2e/test_pdf_tracer.py tests/e2e/test_plan_upload.py
           - name: wizard
             files: tests/e2e/test_wizard.py tests/e2e/test_onboarding.py tests/e2e/test_boot_recovery.py tests/e2e/test_menu_nav.py
           - name: model-project
-            files: tests/e2e/test_model_project.py
+            files: tests/e2e/test_model_project.py tests/e2e/test_furniture_studio.py tests/e2e/test_view_match.py
           - name: interior-views
-            files: tests/e2e/test_interior_view.py
+            files: tests/e2e/test_interior_view.py tests/e2e/test_eye_level_look.py tests/e2e/test_finishes_render.py
+          - name: measure-fit-pair
+            files: tests/e2e/test_measure.py tests/e2e/test_fit_check.py tests/e2e/test_pair3d.py
           - name: city-context
             files: tests/e2e/test_context3d.py
           - name: buildings-3d
             files: tests/e2e/test_buildings3d.py
           - name: one-city
-            files: tests/e2e/test_one_city.py
+            files: tests/e2e/test_one_city.py tests/e2e/test_daycycle.py
           - name: places-destinations
-            files: tests/e2e/test_places_multidest.py
+            files: tests/e2e/test_places_multidest.py tests/e2e/test_map_clusters.py
           - name: pwa-landing
             files: tests/e2e/test_pwa.py tests/e2e/test_landing_page.py
     name: e2e (${{ matrix.shard.name }})
@@ -97,8 +99,13 @@ jobs:
         run: apartmentscout build --search examples/nyc-2026 --out /tmp/as-data --standalone /tmp/as-standalone.html
       - name: First-load budget
         run: python scripts/perf_check.py --site _site --standalone /tmp/as-standalone.html --check --runs 3 --cpu 1 --net broadband --json perf.json
+      - name: 3D render budget (draw calls, triangles and texture memory per quality level, desktop and a throttled phone)
+        run: python scripts/perf_check.py --render --check --devices desktop,mobile --mobile-cpu 4 --frames 6 --no-auto --json perf-render.json
+        timeout-minutes: 12
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: perf
-          path: perf.json
+          path: |
+            perf.json
+            perf-render.json

@@ -27,6 +27,62 @@
  "wall": 5,
  "up_bearing": 118.7,
  "floor": 25,
+ "floor_finish": "basket",
+ "finishes": {
+  "floor": {
+   "pattern": "basket",
+   "tone": "#916b42",
+   "basis": "photos",
+   "evidence": "tone sampled from the floor of photos 1-8, 10; pattern from the listing's words: \"parquet and bay windows (read as block parquet)\"",
+   "confidence": "medium"
+  },
+  "walls": {
+   "colour": "#f6f5f1",
+   "basis": "photos",
+   "evidence": "upper walls of photos 1-10",
+   "confidence": "medium"
+  },
+  "window_frames": {
+   "colour": "#e0e2e0",
+   "basis": "photos",
+   "evidence": "pale edge around the glass in photos 1-2, 5, 9, 12",
+   "confidence": "medium"
+  },
+  "kitchen": {
+   "cabinets": {
+    "colour": "#ffffff",
+    "basis": "photos",
+    "evidence": "kitchen photos 11-12",
+    "confidence": "medium"
+   },
+   "counters": {
+    "colour": "#171815",
+    "basis": "photos",
+    "evidence": "dark counter in kitchen photos 11-12; words: granite",
+    "confidence": "low"
+   },
+   "backsplash": {
+    "colour": "#0e0e0b",
+    "basis": "photos",
+    "evidence": "dark backsplash in kitchen photos 11-12",
+    "confidence": "low"
+   },
+   "floor": {
+    "pattern": "tile",
+    "tone": "#2b2a22",
+    "basis": "photos",
+    "evidence": "dark floor in kitchen photo 12",
+    "confidence": "low"
+   }
+  },
+  "bath": {
+   "tile": {
+    "colour": "#ebe9e4",
+    "basis": "listing_text",
+    "evidence": "\"granite kitchens and marble baths\""
+   }
+  }
+ },
  "rooms": [
   {
    "name": "Bath",

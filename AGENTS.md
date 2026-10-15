@@ -56,7 +56,7 @@ Work through these stages in order. Each has a skill with the detail.
 | 6 | Noise deep dive where noise is a risk | `noise-deep-dive` | section in the research note |
 | 7 | The buildings around each home, then the light and view study | `unit-light-and-view` | `apartmentscout surroundings`, `sites/<id>.json`, charts |
 | 8 | Floor plans: ask for one for every finalist; trace, write or add it | `floor-plan-model` | `plans/<id>.json` (`apartmentscout plans`) |
-| 9 | Lease, fees and concessions check | `lease-and-fees` | price fields, questions list |
+| 9 | Lease, fees and concessions check | `lease-and-fees` | price fields, `apartmentscout questions` drafts |
 | 10 | Tour prep and decision memo | `tour-and-decide` | `templates/` filled in |
 
 Loop back to stage 2 regularly: inventory changes daily. Mark listings `gone` instead of deleting
@@ -82,8 +82,11 @@ apartmentscout dossier [id ...]                   # NYC public records (default:
 apartmentscout surroundings                       # buildings, parks and streets around the shortlist (--all, --status, --rebuild ID, --refresh)
 apartmentscout site <id> --floor 12 --charts      # one home's 3D site model, sun and view study (surroundings runs this for many)
 apartmentscout plans                              # which homes have a floor plan; `plans add FILE --id <listing-id>` adds one
+apartmentscout finishes                           # fill each plan's floor, walls, window frames and kitchen from its photos (--listing ID, --dry-run)
+apartmentscout viewcal import FILE                # a photo match exported from Unit 3D (Match a photo); `viewcal list`; `site <id>` then uses it
 apartmentscout score                              # score and rank
 apartmentscout report                             # shortlist.md
+apartmentscout questions --building knox --units 6B 7BA   # draft the leasing-office questions per building (never sends)
 apartmentscout share --picks picks.json --out shortlist.html   # read-only shortlist page; --memo for the decision memo
 apartmentscout tours-import picks.json            # visit findings from a picks backup into tours/ (score reads promoted facts)
 apartmentscout build && apartmentscout serve      # dashboard at http://127.0.0.1:8765

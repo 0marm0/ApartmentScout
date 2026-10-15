@@ -220,6 +220,9 @@ export const ICONS = {
   walk: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="8.5" cy="2.6" r="1.3"/><path d="M7.6 5.4L6 9l2.4 1.6L9 14.5M7.6 5.4l2.4 1.4 1.6 2.2M6 9l-1.6 1.2M8.4 10.6L6.6 14.5"/></svg>',
   train: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="4" y="1.8" width="8" height="9.4" rx="2.4"/><path d="M4 7h8M6 14.2l1-3M10 14.2l-1-3"/><circle cx="6.3" cy="9.2" r=".5" fill="currentColor"/><circle cx="9.7" cy="9.2" r=".5" fill="currentColor"/></svg>',
   bus: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="3" y="2" width="10" height="10" rx="2"/><path d="M3 7.5h10M5 14v-2M11 14v-2"/><circle cx="5.6" cy="10" r=".5" fill="currentColor"/><circle cx="10.4" cy="10" r=".5" fill="currentColor"/></svg>',
+  inside: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M1.8 7.2L8 2l6.2 5.2M3.2 6.3V14h9.6V6.3"/><path d="M6.6 14V9.6h2.8V14"/></svg>',
+  warn: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M8 2.2l6 10.6H2z"/><path d="M8 6.6v2.8M8 11.3v.1"/></svg>',
+  camera: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" aria-hidden="true"><path d="M2 5.2h2.4l1-1.7h5.2l1 1.7H14v7.3H2z"/><circle cx="8" cy="8.7" r="2.2"/></svg>',
   plan: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="2" y="2" width="12" height="12" rx="1.5"/><path d="M2 8h5V2M10 14V9h4"/></svg>',
 };
 

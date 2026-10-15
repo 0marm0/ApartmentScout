@@ -340,3 +340,15 @@ def pytest_collection_modifyitems(items) -> None:
         return (1, 0) if "accessibility" in it.name else (2, 0)
     for i, it in zip(spots, sorted(mine, key=weight)):
         items[i] = it
+
+
+def look_open(pg, root: str) -> None:
+    """Open the view picker (#psLook in the studio, #uLook in Unit 3D) when it is closed. On a phone the chips are always shown."""
+    pg.evaluate("""(r) => { const h = document.querySelector(r), b = h && h.querySelector('.lk-pick');
+      if (b && getComputedStyle(b).display !== 'none' && h.dataset.open !== '1') b.click(); }""", root)
+
+
+def look_click(pg, selector: str) -> None:
+    """Click a chip inside the view picker, opening the picker first (it closes whenever a view is chosen)."""
+    look_open(pg, selector.split()[0])
+    pg.click(selector)

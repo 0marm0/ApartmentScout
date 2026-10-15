@@ -1,0 +1,59 @@
+/* ------------------------------------------------------------------ the 3D views on a phone (<= 760 px; checked at 375)
+   Unit 3D and the Floor plan studio share one layout rule: the PICTURE comes first. The stage is as tall as the screen allows, the camera buttons and
+   the time of day sit along the bottom edge (a thumb rests there: 44 px targets, see room3d/dock.js), and the rows that used to stack over the middle
+   of the picture (the tool rail, the room chips, the Render switch, the Cut / Full / Outline group, the readouts) are moved to the edges, so the
+   middle stays clear. Nothing is removed: every control is still there. Loaded after the views' own CSS. */
+.rnq-dock { display: none; }
+
+@media (max-width: 760px) {
+  /* the picture: the screen minus the app bar, the tab row and the bottom nav */
+  #view-unit .u-stage.canvas-stage { height: clamp(380px, calc(100vh - 170px), 720px); height: clamp(380px, calc(100dvh - 170px), 720px); }
+  #view-plan .ps-panes:not([data-mode="both"]) { height: clamp(380px, calc(100vh - 170px), 720px); height: clamp(380px, calc(100dvh - 170px), 720px); }
+
+  /* the thumb dock: play, time slider, clock */
+  .rnq-dock { display: flex; position: absolute; z-index: 7; left: 8px; right: 8px; bottom: 8px; align-items: center; gap: 8px; padding: 4px 14px 4px 4px; border-radius: var(--r-lg); }
+  .rnq-dock-play { flex: none; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 50%; display: grid; place-items: center; background: var(--surface-3); color: var(--ink); cursor: pointer; }
+  .rnq-dock-play[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); }
+  .rnq-dock-play svg { width: 18px; height: 18px; }
+  .rnq-dock-range { flex: 1 1 auto; min-width: 0; width: 100%; height: 44px; margin: 0; accent-color: var(--accent); touch-action: pan-y; }
+  .rnq-dock-t { flex: none; min-width: 62px; text-align: right; font: 600 var(--fs-sm) var(--font-mono, monospace); color: var(--ink); font-variant-numeric: tabular-nums; }
+  .rnq-dock-play:focus-visible, .rnq-dock-range:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* ---- Unit 3D */
+  /* the camera buttons sit with the room switcher at the top of the picture (css/views/unit.css .u-views): they are in that flow, so no bottom offset here */
+  #view-unit .u-modes { max-width: none; }
+  #view-unit .u-look { top: 8px; left: 8px; right: 56px; }
+  #view-unit .u-tools { top: 8px; right: 8px; max-height: calc(100% - 128px); overflow-y: auto; scrollbar-width: none; }
+  #view-unit .u-tools button { width: 36px; height: 36px; }
+  #view-unit .u-compass { top: 58px; left: 8px; width: 36px; height: 36px; }
+  #view-unit .u-lens { padding: 6px 8px; gap: 2px; }   /* slimmer: it only holds the room picker (and the photo controls in Window) */
+  #view-unit .u-lens .lbl, #view-unit .u-lens label { font-size: var(--fs-2xs); }
+  #view-unit .u-lens, #view-unit .u-card { bottom: 112px; left: 8px; right: 56px; }
+  #view-unit .u-hud { bottom: 112px; left: 8px; max-width: calc(100% - 64px); }
+  #view-unit .u-stage[data-mode="win"] .u-hud { display: none; }
+  #view-unit .acc-chip[data-host="unit"] { top: auto; bottom: 112px; left: 8px; }
+  #view-unit .rnq-auto { top: 56px; bottom: auto; left: 8px; }
+  #view-unit .u-stage[data-mode="in"] .rnq-auto { top: 56px; left: 52px; }
+  #view-unit .rnq-note { top: 100px; bottom: auto; right: 56px; }
+  #view-unit .rnq-prog { bottom: 112px; }
+
+  /* ---- Floor plan studio */
+  #view-plan .ps-cams { top: auto; bottom: 64px; left: 8px; right: 8px; max-width: none; }
+  #view-plan .ps-cams button { height: 38px; padding: 0 13px; }
+  #view-plan .ps-look { top: 8px; left: 8px; right: 8px; }
+  #view-plan .ps-walls { top: 56px !important; bottom: auto !important; right: 8px; }
+  #view-plan .ps-walls button { height: 30px; }
+  #view-plan .rnq { top: 56px; bottom: auto; left: 8px; right: auto; max-width: calc(100% - 180px); }
+  #view-plan .rnq .rnq-lbl { display: none; }
+  #view-plan .rnq button { height: 30px; }
+  #view-plan #phud { bottom: 112px; left: 8px; right: 8px; }
+  #view-plan .acc-chip[data-host="studio"] { top: auto; bottom: 148px; left: 8px; }
+  #view-plan .rnq-auto { top: 100px; bottom: auto; left: 8px; }
+  #view-plan .rnq-note { top: 140px; bottom: auto; right: 8px; }
+  #view-plan .rnq-prog { bottom: 112px; }
+}
+
+@media (max-width: 760px) {
+  /* the measured-vs-assumed dots flow with the camera buttons and the room chips instead of being shifted up by the old bottom offset */
+  #view-unit #uViews > .acc-chip[data-host="unit"] { bottom: auto; top: auto; left: auto; }
+}

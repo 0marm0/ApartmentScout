@@ -109,6 +109,7 @@
 <link rel="stylesheet" href="css/views/lighting.css">
 <link rel="stylesheet" href="css/views/interior.css">
 <link rel="stylesheet" href="css/views/room3d.css">
+<link rel="stylesheet" href="css/views/phone3d.css">
 <link rel="stylesheet" href="css/views/tracer.css">
 <link rel="stylesheet" href="css/views/records.css">
 <link rel="stylesheet" href="css/views/tours.css">
@@ -126,6 +127,8 @@
 <link rel="stylesheet" href="css/share.css">
 <link rel="stylesheet" href="css/tour-plan.css">
 <link rel="stylesheet" href="css/tour-findings.css">
+<link rel="stylesheet" href="css/tourday.css">
+<link rel="stylesheet" href="css/moves.css">
 <link rel="stylesheet" href="css/a11y.css">
 <link rel="stylesheet" href="css/accents.css">
 <link rel="stylesheet" href="css/empty.css">
@@ -133,10 +136,16 @@
 <link rel="stylesheet" href="css/cheatsheet.css">
 <link rel="stylesheet" href="css/coach.css">
 <link rel="stylesheet" href="css/comfort.css">
+<link rel="stylesheet" href="css/measure.css">
+<link rel="stylesheet" href="css/tryfit.css">
+<link rel="stylesheet" href="css/pair.css">
 <link rel="stylesheet" href="css/results-rail.css">
 <link rel="stylesheet" href="css/views/model.css">
+<link rel="stylesheet" href="css/views/viewmatch.css">
 <link rel="stylesheet" href="css/multidest.css">
 <link rel="stylesheet" href="css/pwa.css">
+<link rel="stylesheet" href="css/office.css">
+<link rel="stylesheet" href="css/calm.css">
 <script src="vendor/maplibre-gl/maplibre-gl.js"></script>
 <script type="importmap">
 { "imports": {
@@ -155,6 +164,7 @@
     <span>ApartmentScout</span>
   </a>
   <button class="search-switch" type="button" id="searchSwitch" title="This search"><i class="dot"></i><b id="searchName">Search</b><svg class="chev" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M2 4l3 3 3-3"/></svg></button>
+  <button class="kpi-chip" type="button" id="kpiChip" aria-expanded="false" aria-controls="kpis" hidden><b id="kpiChipN"></b><span class="kc-t">matches</span><svg class="chev" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M2 4l3 3 3-3"/></svg></button>
   <nav class="nav" id="tabs" aria-label="Views">
     <a href="#map" data-view="map"><svg class="ni" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" aria-hidden="true"><path d="M1.8 3.9l4.2-1.7 4 1.7 4.2-1.7v10l-4.2 1.7-4-1.7-4.2 1.7z"/><path d="M6 2.2v10M10 3.9v10"/></svg><span class="nl">Map</span></a>
     <a href="#list" data-view="list"><svg class="ni" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" aria-hidden="true"><path d="M8 1.8l1.9 4 4.4.5-3.3 3 .9 4.3L8 11.4 4.1 13.6 5 9.3 1.7 6.3l4.4-.5z"/></svg><span class="nl">Shortlist</span><span class="count" id="savedCount" hidden></span></a>
@@ -279,6 +289,7 @@
     <section class="view" id="view-compare" aria-label="Compare" hidden></section>
     <section class="view" id="view-unit" aria-label="Unit 3D" hidden></section>
     <section class="view" id="view-plan" aria-label="Floor plan" hidden></section>
+    <section class="view" id="view-pair" aria-label="Compare in 3D" hidden></section>
     <section class="view" id="view-records" aria-label="Records" hidden></section>
     <section class="view" id="view-tours" aria-label="Tours" hidden></section>
     <section class="view" id="view-research" aria-label="Research" hidden></section>

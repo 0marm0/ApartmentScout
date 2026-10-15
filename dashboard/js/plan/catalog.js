@@ -199,6 +199,10 @@ export const CATALOG = {
   },
 };
 
+// [fit] A piece the renter typed in ("Bookshelf 36 x 12 x 72 in") that the catalogue has no match for: a plain box at the size they
+// gave. Its category is not listed in CATEGORIES, so it never appears among the "Add furniture" chips.
+CATALOG['custom-box'] = { name: 'Piece (your size)', cat: 'custom', kind: 'box', w: 24, d: 24, h: 30, color: MAT.fabricWarm, src: 'A piece at the size you typed in. The size is yours, not a catalogue figure.' };
+
 export const refs = () => Object.keys(CATALOG);
 
 // Resolve a layout item ({ref, x, y, rot, w?, d?, h?, variant?, ...}) into a full spec with sizes.

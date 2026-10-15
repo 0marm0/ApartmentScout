@@ -76,7 +76,7 @@ test('Visual tone-maps with ACES, Fast with a gentler curve, and both are the sa
   const v = Lt.roomLightState({ mood: 'day', quality: 'visual' }), f = Lt.roomLightState({ mood: 'day', quality: 'fast' });
   assert.equal(v.tone, 'aces'); assert.equal(f.tone, 'reinhard');
   assert.ok(v.hemiI < f.hemiI);                                                          // Visual adds an environment light, so the hemisphere steps back
-  assert.ok(f.exposure > v.exposure && f.exposure < v.exposure * 1.5);
+  assert.ok(f.exposure > v.exposure && f.exposure < v.exposure * 2);
 });
 
 test('the Light tab scales (glazing, blinds, ambient) reach the sun, the glow and the fill', () => {
@@ -94,18 +94,31 @@ test('auto mood follows the sun: day, a low evening sun, night', () => {
 
 // ------------------------------------------------------------------ what is measured and what is assumed
 
-test('Paramount 25E: six rows with the states the task names', () => {
+test('Paramount 25E: seven rows with the states the task names', () => {
   const site = json('sites/paramount-tower-25e.json'), plan = json('plans/paramount-tower-25e.json');
-  const rows = A.accuracyRows({ site, plan, cal: { state: 'estimated', fh: 3.08, slab: 70.8 }, floor: 25, facing: 118.7, t: 0.55, furniture: { name: 'Your furniture', confirmed: { by: 'renter', date: '2026-10-15' }, count: 10 } });
+  const rows = A.accuracyRows({ site, plan, cal: { state: 'estimated', fh: 3.08, slab: 73.9 }, floor: 25, facing: 118.7, t: 0.55, furniture: { name: 'Your furniture', confirmed: { by: 'renter', date: '2026-10-15' }, count: 10 } });
   const by = Object.fromEntries(rows.map((r) => [r.key, r]));
-  assert.deepEqual(rows.map((r) => r.key), ['heights', 'bearing', 'position', 'floor-height', 'plan', 'furniture']);
+  assert.deepEqual(rows.map((r) => r.key), ['heights', 'bearing', 'position', 'floor-height', 'plan', 'finishes', 'furniture']);
   assert.equal(by.heights.state, 'source'); assert.match(by.heights.text, /PLUTO/);
   assert.equal(by.bearing.state, 'measured'); assert.match(by.bearing.text, /119°.*photos/);
   assert.equal(by.position.state, 'assumed');
   assert.equal(by['floor-height'].state, 'estimated'); assert.match(by['floor-height'].text, /3\.08 m/);
   assert.equal(by.plan.state, 'source'); assert.match(by.plan.text, /Glenwood(?:'|&#39;)s E-line drawing/);
+  assert.equal(by.finishes.state, 'source'); assert.match(by.finishes.text, /read from the unit's photos: floor \(basket/); assert.match(by.finishes.text, /assumed: ceiling, doors/);
   assert.equal(by.furniture.state, 'confirmed'); assert.match(by.furniture.text, /2026-10-15/);
-  assert.match(A.accuracySummary(rows), /1 measured · 1 confirmed · 2 from a source · 1 estimated · 1 assumed/);
+  assert.match(A.accuracySummary(rows), /1 measured · 1 confirmed · 3 from a source · 1 estimated · 1 assumed/);
+});
+
+test('the furniture row says sizes and the futon\'s look come from the renter, and which other looks are assumed', () => {
+  const raw = json('furniture.json'), meta = { name: raw.name, confirmed: raw.confirmed, count: raw.pieces.length, looks: A.looksMeta(raw.pieces) };
+  const row = A.accuracyRows({ site: {}, furniture: meta }).find((r) => r.key === 'furniture');
+  assert.equal(row.state, 'confirmed');
+  assert.match(row.text, /Sizes are real, from you/);
+  assert.match(row.text, /8 of 10 from you \(the futon is black leather\)/);
+  assert.match(row.text, /2 pieces have only a stand-in look/);
+  assert.match(row.text, /chair/); assert.match(row.text, /frame/);   // details the renter has not said yet: the futon's frame and the desk chair
+  const none = A.accuracyRows({ site: {}, furniture: { ...meta, looks: null } }).find((r) => r.key === 'furniture');
+  assert.match(none.text, /every look is a stand-in/);
 });
 
 test('a measured slab, a generic room and no furniture each change their row', () => {

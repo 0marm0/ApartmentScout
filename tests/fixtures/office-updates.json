@@ -1,0 +1,27 @@
+{
+ "input": {
+  "unit_id": "the-knox-6b",
+  "day": "2026-10-15",
+  "how": "email",
+  "text": "Confirmed: $5,250 a month with 1 month free on a 10-month lease.",
+  "changes": [
+   {"path": "price.gross", "value": 5250},
+   {"path": "price.free_months", "value": 1},
+   {"path": "price.lease_months", "value": 10}
+  ]
+ },
+ "doc": {
+  "schema": "apartmentscout-updates/1",
+  "from": "renter",
+  "generated_at": "2026-10-15",
+  "unit_updates": [
+   {
+    "id": "the-knox-6b",
+    "checked_at": "2026-10-15",
+    "source": "leasing office reply (email), 2026-10-15",
+    "changes": {"price.gross": 5250, "price.free_months": 1, "price.lease_months": 10},
+    "note": "Confirmed: $5,250 a month with 1 month free on a 10-month lease."
+   }
+  ]
+ }
+}

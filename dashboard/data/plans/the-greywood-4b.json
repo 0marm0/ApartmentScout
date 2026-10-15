@@ -25,6 +25,33 @@
  "wall": 0.4,
  "up_bearing": 299,
  "floor": 4,
+ "finishes": {
+  "floor": {
+   "pattern": "plank",
+   "tone": "#bba78e",
+   "basis": "photos",
+   "evidence": "tone sampled from the floor of photo 1 (no warm wood tones in the photos: the foot of the picture); pattern from the listing's words: \"light plank floors\"",
+   "confidence": "low"
+  },
+  "window_frames": {
+   "colour": "#222326",
+   "basis": "listing_text",
+   "evidence": "\"large dark-framed windows\""
+  },
+  "kitchen": {
+   "cabinets": {
+    "colour": "#f7f4ef",
+    "basis": "listing_text",
+    "evidence": "\"white cabinets\""
+   }
+  },
+  "walls": {
+   "colour": "#ffffff",
+   "basis": "photos",
+   "evidence": "upper walls of photo 1",
+   "confidence": "low"
+  }
+ },
  "rooms": [
   {
    "name": "Living room",
