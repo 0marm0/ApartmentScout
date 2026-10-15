@@ -7,7 +7,7 @@ import json
 from pathlib import Path
 
 import pytest
-from conftest import look_click
+from conftest import look_click, settled, studio_city_ready
 
 pytestmark = pytest.mark.e2e
 
@@ -63,14 +63,14 @@ def _unit(s, unit: str) -> None:
     s.page.wait_for_function(
         "(id) => window.__unit3d && window.__unit3d.st.id === id && window.__unit3d.stage && window.__unit3d.stage.interior && window.__unit3d.views.length > 2 && document.getElementById('uLoad').hidden",
         arg=unit, timeout=120000)
-    s.page.wait_for_timeout(800)
+    settled(s.page, 20000, ticks=5)
 
 
 def _studio(s, unit: str) -> None:
     s.page.goto(f"{s.origin}/?date=2026-10-15&pmin=720#plan/{unit}")
     s.page.wait_for_function("() => window.__plan3d && !!document.querySelector('#psLook .lk-chip')", timeout=90000)
     look_click(s.page, "#psLook .lk-chip:has-text('Living room')")   # an eye-level view: full-height walls and windows
-    s.page.wait_for_timeout(1500)
+    studio_city_ready(s.page)
 
 
 def _check(probe: dict, p: dict) -> None:

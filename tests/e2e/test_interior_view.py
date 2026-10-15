@@ -7,7 +7,7 @@ import json
 from pathlib import Path
 
 import pytest
-from conftest import look_click, look_open
+from conftest import look_click, look_open, settled
 
 pytestmark = pytest.mark.e2e
 
@@ -29,7 +29,7 @@ def _studio(s, uid: str = UNIT) -> None:
     pg = s.page
     pg.goto(f"{s.origin}/#plan/{uid}")
     pg.wait_for_function("() => window.__plan3d && window.__plan3d.items.length > 0 && !!document.querySelector('#psLook .lk-chip')", timeout=90000)
-    pg.wait_for_timeout(600)
+    settled(pg, 20000, ticks=5)
 
 
 def _unit(s, uid: str = UNIT, query: str = "?mode=inside") -> None:
@@ -37,7 +37,7 @@ def _unit(s, uid: str = UNIT, query: str = "?mode=inside") -> None:
     s.page.wait_for_function(
         "(id) => window.__unit3d && window.__unit3d.st.id === id && window.__unit3d.stage && window.__unit3d.stage.interior && window.__unit3d.views.length > 4 && document.getElementById('uLoad').hidden",
         arg=uid, timeout=120000)
-    s.page.wait_for_timeout(600)
+    settled(s.page, 20000, ticks=5)
 
 
 def _settle(pg) -> None:
@@ -177,7 +177,7 @@ def test_studio_stands_at_the_window_and_sits_on_the_sofa_with_the_real_city_out
     assert inside("Bedroom", bed["at"]) and bed["dir"][1] > 0.9     # from the bed, the windows are up the drawing: on the right of someone lying in it
     # evening and night give the window a different sky; leaving puts the bird's-eye view back
     pg.click("#pMood [data-mood=evening]")
-    pg.wait_for_timeout(300)
+    pg.wait_for_function("async () => (await import('/js/plan/scene3d.js')).parts().scene.fog.color.getHexString() !== 'cddcec'", timeout=10000)
     assert pg.evaluate("async () => (await import('/js/plan/scene3d.js')).parts().scene.fog.color.getHexString()") != "cddcec"
     pg.keyboard.press("Escape")
     pg.wait_for_function("() => window.__plan3d.eye === 'orbit' && !window.__plan3d.hasCity")
@@ -190,7 +190,8 @@ def test_the_chips_are_an_accessible_radio_group_on_a_phone_too(open_page, webgl
     pg = s.page
     _studio(s)
     pg.click('#psMode [data-m="3d"]')
-    pg.wait_for_timeout(400)
+    pg.wait_for_selector("#psLook .lk-chip", state="visible", timeout=10000)
+    settled(pg, 20000, ticks=4)   # the toolbar has finished laying itself out
     box = pg.evaluate("() => { const r = document.getElementById('psLook').getBoundingClientRect(), c = document.getElementById('psCams').getBoundingClientRect(), n = document.querySelector('.rnq').getBoundingClientRect(); return { look: [r.top, r.bottom], cams: [c.top, c.bottom], rnq: [n.top, n.bottom], scrolls: document.getElementById('psLook').scrollWidth > document.getElementById('psLook').clientWidth }; }")
     # phone layout (css/views/phone3d.css): the room chips run along the top, the render switch sits under them, the camera row is in the thumb zone
     assert box["look"][1] <= box["rnq"][0] + 1, box                                # the render switch is under the chips, not on them
@@ -260,7 +261,7 @@ def test_inside_camera_glides_between_rooms_unless_motion_is_reduced(open_page, 
     pg.wait_for_timeout(250)
     mid = pg.evaluate("() => ({ w: window.__unit3d.stage.interior.group.children.filter((o) => o.name === 'wall').every((o) => !o.visible), ceil: window.__unit3d.stage.interior.group.children.find((o) => o.name === 'ceiling').visible })")
     assert mid == {"w": True, "ceil": False}                                          # between rooms the walls step aside, so the camera never cuts through one
-    pg.wait_for_function("() => !window.__unit3d.stage.inTween", timeout=5000)
+    pg.wait_for_function("() => !window.__unit3d.stage.inTween", timeout=30000)   # a glide ends on a frame; software GL draws a frame in a second or more
     done = pg.evaluate("() => ({ w: window.__unit3d.stage.interior.group.children.filter((o) => o.name === 'wall').every((o) => o.visible), ceil: window.__unit3d.stage.interior.group.children.find((o) => o.name === 'ceiling').visible, yaw: window.__unit3d.stage.look.yaw })")
     assert done == {"w": True, "ceil": True, "yaw": 0}
     pg.emulate_media(reduced_motion="reduce")

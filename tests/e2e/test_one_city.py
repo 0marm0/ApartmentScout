@@ -8,7 +8,7 @@ from __future__ import annotations
 import math
 
 import pytest
-from conftest import look_click, look_open
+from conftest import camera_still as _camera_still, look_click, look_open
 
 pytestmark = pytest.mark.e2e
 
@@ -28,7 +28,8 @@ def _studio(s, chip: str = "room:Living", extra: str = "") -> None:
     pg.click('#psMode [data-m="3d"]')
     look_click(pg, f"#psLook [data-vp^='{chip}']")
     pg.wait_for_function("() => window.__plan3d.eye === 'eye' && window.__plan3d.hasCity", timeout=60000)
-    pg.wait_for_timeout(1500)
+    pg.wait_for_function("""async () => { const api = (await import('/js/plan/scene3d.js')).cityApi(); return !!api && api.city.near.length + api.city.far.length > 500; }""", timeout=60000)
+    _camera_still(pg, "studio")
 
 
 def _unit(s, chip: str = "room:Living", date: str = DATE, minute: int = 780) -> None:
@@ -38,7 +39,8 @@ def _unit(s, chip: str = "room:Living", date: str = DATE, minute: int = 780) -> 
         "(id) => window.__unit3d && window.__unit3d.st.id === id && window.__unit3d.stage && window.__unit3d.stage.interior && window.__unit3d.views.length > 4 && document.getElementById('uLoad').hidden",
         arg=UNIT, timeout=120000)
     look_click(pg, f"#uLook [data-vp^='{chip}']")
-    pg.wait_for_timeout(1500)
+    pg.wait_for_function("() => !window.__unit3d.stage.inTween", timeout=20000)
+    _camera_still(pg, "unit")
     pg.evaluate("() => { const s = window.__unit3d.stage; s.dirty = true; s.frame(true); }")
 
 
@@ -234,10 +236,10 @@ def test_the_chips_and_the_seats_behave_the_same_in_both_engines(open_page, webg
     # the sofa chip: the same seat (40 in eye height) in both, and the same eye point in the site frame
     look_click(a.page, "#psLook [data-vp='seat:sofa']")
     a.page.wait_for_function("() => window.__plan3d.view === 'seat:sofa'")
-    a.page.wait_for_timeout(800)
+    _camera_still(a.page, "studio")
     look_click(b.page, "#uLook [data-vp='seat:sofa']")
-    b.page.wait_for_function("() => window.__unit3d.curView.seat === 'sofa'")
-    b.page.wait_for_timeout(1200)
+    b.page.wait_for_function("() => window.__unit3d.curView.seat === 'sofa' && !window.__unit3d.stage.inTween", timeout=20000)
+    _camera_still(b.page, "unit")
     b.page.evaluate("() => { const s = window.__unit3d.stage; s.dirty = true; s.frame(true); }")
     ps, pu = a.page.evaluate(STUDIO_JS)["pose"], b.page.evaluate(UNIT_JS)["pose"]
     assert math.dist(ps["p"], pu["p"]) < 0.03 and ps["fov"] == pu["fov"]
@@ -294,7 +296,7 @@ def test_unit_inside_shows_the_studios_blinds_and_daylight_map(open_page, webgl:
     before = b.page.evaluate("() => window.__unit3d.stage.sunL.intensity")
     look_open(b.page, "#uLook")
     b.page.select_option('#uLook [data-act="blinds"]', "closed")                          # the studio's saved blinds, written where the studio reads them
-    b.page.wait_for_timeout(300)
+    b.page.wait_for_function("(b) => window.__unit3d.stage.sunL.intensity < b * 0.2", arg=before, timeout=10000)
     assert b.page.evaluate("() => window.__unit3d.stage.sunL.intensity") < before * 0.2
     assert "closed" in b.page.evaluate("() => localStorage.getItem('as:plan-light.data.paramount-tower-25e')")
     look_click(b.page, '#uLook [data-act="dl"]')

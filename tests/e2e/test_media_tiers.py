@@ -15,6 +15,8 @@ from pathlib import Path
 from typing import Iterator
 
 import pytest
+from conftest import block_foreign
+from conftest import settled
 
 pytestmark = pytest.mark.e2e
 
@@ -118,7 +120,7 @@ def tiers() -> Iterator[Tiers]:
 def clone_page(browser, tiers: Tiers):
     """A page on the static server, with only the two local servers reachable. Yields (page, errors)."""
     ctx = browser.new_context(viewport={"width": 1440, "height": 900}, device_scale_factor=1, reduced_motion="reduce", service_workers="block")
-    ctx.route("**/*", lambda r: r.continue_() if r.request.url.startswith((tiers.page_url, tiers.published_url.rsplit("/media/", 1)[0], "data:", "blob:")) else r.abort())
+    block_foreign(ctx, tiers.page_url, tiers.published_url.rsplit("/media/", 1)[0])
     tiers.page_log.clear()
     tiers.published_log.clear()
     tiers.published_down = False
@@ -145,7 +147,10 @@ def _drawer_sources(page, tiers: Tiers, id_: str) -> list[dict]:
     page.wait_for_selector("#drawer.open #dTrack img", timeout=15000)
     # slides after the second are lazy: ask for all of them now, then wait for every one to load or give up
     page.evaluate("() => document.querySelectorAll('#dTrack > img').forEach((i) => { i.loading = 'eager'; })")
-    page.wait_for_function("""() => [...document.querySelectorAll('#dTrack > img')].every((i) => i.complete)""", timeout=20000)
+    # a photo that failed on one tier is `complete` for a moment before the chain gives it its next source: wait for it to have
+    # loaded (or been given up on), not merely to be complete. Links to other sites are blocked here and stay out of it.
+    page.wait_for_function("""(local) => [...document.querySelectorAll('#dTrack > img')].filter((i) => local.some((p) => (i.src || '').startsWith(p)))
+      .every((i) => i.complete && (i.naturalWidth > 0 || i.dataset.mediaGone === '1'))""", arg=[tiers.page_url, tiers.published_url], timeout=30000)
     # slides that are links to other sites (licensed Commons building photos) are not saved photos: the test blocks them, leave them out
     return page.evaluate("""(local) => [...document.querySelectorAll('#dTrack > img')].map((i) => ({ src: i.currentSrc || i.src, ok: i.naturalWidth > 0, gone: i.dataset.mediaGone === '1' }))
       .filter((s) => local.some((p) => s.src.startsWith(p)))""", [tiers.page_url, tiers.published_url])
@@ -178,7 +183,9 @@ def test_the_rest_show_one_or_two_starter_photos_and_the_published_set_fills_in(
 
 def test_cards_show_their_hero_from_the_starter_set(clone_page, tiers: Tiers) -> None:
     page, _ = clone_page
-    page.wait_for_timeout(1500)
+    page.wait_for_function("""(page) => [...document.querySelectorAll('#cards .card .media > img')].filter((i) => i.complete && i.currentSrc.startsWith(page)).length >= 5""",
+                           arg=tiers.page_url, timeout=20000)
+    settled(page, 20000, ticks=4)
     shown = page.evaluate("""(page) => [...document.querySelectorAll('#cards .card .media > img')].filter((i) => i.complete && i.currentSrc.startsWith(page)).map((i) => ({ src: i.currentSrc, ok: i.naturalWidth > 0 }))""", tiers.page_url)
     assert len(shown) >= 5
     assert all(s["ok"] for s in shown), shown
@@ -189,7 +196,7 @@ def test_cards_show_their_hero_from_the_starter_set(clone_page, tiers: Tiers) ->
 def test_a_missing_folder_is_not_asked_again_for_every_photo(clone_page, tiers: Tiers) -> None:
     page, _ = clone_page
     top, lite = _ids()
-    page.wait_for_timeout(1500)
+    page.wait_for_load_state("networkidle")   # every photo the first screen asks for has been asked for
     first = [p for p in tiers.page_log if p.startswith("/media/")]
     assert len(first) <= 40, f"{len(first)} requests for the folder that is not there"
     _drawer_sources(page, tiers, top)

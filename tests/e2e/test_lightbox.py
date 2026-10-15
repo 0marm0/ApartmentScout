@@ -8,6 +8,8 @@ import json
 from pathlib import Path
 
 import pytest
+from conftest import block_foreign
+from conftest import map_opened, settled
 
 pytestmark = pytest.mark.e2e
 
@@ -34,10 +36,10 @@ def _zoom_pct(pg) -> int:
 
 def _open_drawer(s, id_: str) -> None:
     pg = s.page
-    pg.wait_for_timeout(1000)          # the map module finishes loading just after the first cards; opening earlier can be undone by it
+    map_opened(pg)                     # the map module finishes loading just after the first cards; opening earlier can be undone by it
     pg.evaluate("async (id) => (await import('/js/app.js')).openDrawer(id, { instant: true })", id_)
     pg.wait_for_selector("#drawer.open #dTrack img", timeout=15000)
-    pg.wait_for_timeout(300)
+    settled(pg, 20000, ticks=3)
 
 
 # ------------------------------------------------------------------ cards
@@ -99,7 +101,8 @@ def test_caption_names_credit_and_licence(open_page) -> None:
     pg = s.page
     _open_card_lightbox(s)
     pg.locator(f'{LB} [role=tab][data-tab="building"]').click()
-    pg.wait_for_timeout(200)
+    pg.wait_for_function("(sel) => document.querySelector(sel)?.textContent.toUpperCase().includes('BUILDING')", arg=f"{LB} .lbx-cap", timeout=10000)
+    pg.wait_for_function("(sel) => document.querySelector(sel)?.textContent.startsWith('Photo 1 of')", arg=f"{LB} .lbx-live", timeout=10000)   # the screen-reader announcement follows the caption
     cap = pg.locator(f"{LB} .lbx-cap").inner_text()
     assert "BUILDING" in cap.upper()
     assert pg.locator(f"{LB} .lbx-credit").inner_text().strip(), "building photos carry a credit line"
@@ -208,7 +211,8 @@ def test_drawer_carousel_opens_the_lightbox_at_the_same_photo(open_page) -> None
     assert pg.locator("#dExpand").count() == 1
     count = pg.locator("#dCount").inner_text()
     assert " · " in count and count.startswith("1 / "), f"the counter names the group: {count}"
-    pg.click("#dNext"); pg.wait_for_timeout(500)
+    pg.click("#dNext")
+    pg.wait_for_function("() => document.getElementById('dCount').textContent.startsWith('2 / ')", timeout=10000)
     assert pg.locator("#dCount").inner_text().startswith("2 / ")
     pg.locator("#dTrack").focus()
     pg.keyboard.press("Enter")
@@ -382,7 +386,7 @@ def test_a_flagged_first_photo_goes_behind_a_clean_one(browser, base_url: str) -
 
 def test_card_photo_grows_into_the_drawer_with_a_view_transition(browser, base_url: str) -> None:
     ctx = browser.new_context(viewport={"width": 1440, "height": 900}, reduced_motion="no-preference")
-    ctx.route("**/*", lambda r: r.continue_() if r.request.url.startswith((base_url, "data:", "blob:")) else r.abort())
+    block_foreign(ctx, base_url)
     pg = ctx.new_page()
     errors: list[str] = []
     pg.on("pageerror", lambda e: errors.append(str(e)))

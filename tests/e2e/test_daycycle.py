@@ -6,7 +6,7 @@ from __future__ import annotations
 import re
 
 import pytest
-from conftest import look_open
+from conftest import camera_still, look_open, settled, studio_city_ready
 
 pytestmark = pytest.mark.e2e
 
@@ -23,14 +23,14 @@ def _unit(s, query: str) -> None:
     s.page.wait_for_function(
         "(id) => window.__unit3d && window.__unit3d.st.id === id && window.__unit3d.stage && window.__unit3d.stage.interior && window.__unit3d.views.length > 4 && document.getElementById('uLoad').hidden",
         arg=UNIT, timeout=120000)
-    s.page.wait_for_timeout(800)
+    settled(s.page, 20000, ticks=5)
 
 
 def _studio(s, query: str = "date=2026-10-15&pmin=720") -> None:
     pg = s.page
     pg.goto(f"{s.origin}/?{query}#plan/{UNIT}")
     pg.wait_for_function("() => window.__plan3d && window.__plan3d.items.length > 0 && !!document.querySelector('#psLook .lk-chip')", timeout=90000)
-    pg.wait_for_timeout(800)
+    settled(pg, 20000, ticks=5)
 
 
 SEASON = "() => window.__unit3d.stage.ctx.season()"
@@ -72,7 +72,7 @@ def test_the_season_changes_the_trees_and_never_the_sun_numbers(open_page, webgl
     winter = pg.evaluate("() => window.__unit3d.stage.ctx.info.trees.total")
     sun_dec = pg.evaluate("() => document.querySelector('#sunPanel .metric .v').textContent")
     pg.evaluate("() => { const u = window.__unit3d; u.st.date = '2026-07-21'; document.getElementById('uDate').value = '2026-07-21'; document.getElementById('uDate').dispatchEvent(new Event('change')); }")
-    pg.wait_for_timeout(600)
+    pg.wait_for_function("() => window.__unit3d.stage.ctx.season().leaf === 1", timeout=20000)
     assert pg.evaluate(SEASON)["leaf"] == 1
     assert pg.evaluate("() => window.__unit3d.stage.ctx.info.trees.total") == winter, "the same trees, drawn differently"
     pg.evaluate("() => { document.getElementById('uDate').value = '2026-12-21'; document.getElementById('uDate').dispatchEvent(new Event('change')); }")
@@ -92,7 +92,8 @@ def test_play_day_advances_the_time_the_sun_and_the_readout_and_stops(open_page,
     _unit(s, "date=2026-10-15&min=420&mode=inside")
     look_open(pg, '#uLook')   # the chips are behind the view picker
     pg.locator('#uLook .lk-chip', has_text=re.compile("^Living room$")).first.click()
-    pg.wait_for_timeout(500)
+    pg.wait_for_function("() => !window.__unit3d.stage.inTween", timeout=30000)
+    camera_still(pg, "unit")
     assert re.search(r"Sun on the floor \d+:\d\d (am|pm) to \d+:\d\d (am|pm)", pg.inner_text(".pb-sun"))     # "Sun on the floor 8:00 am to 1:42 pm"
     t0 = pg.evaluate("() => window.__unit3d.st.min")
     sun0 = pg.evaluate("() => window.__unit3d.stage.sunDir.toArray()")
@@ -216,7 +217,7 @@ def test_the_studio_plays_the_day_and_the_year_with_the_same_trees_and_night(ope
     _studio(s)
     look_open(pg, '#psLook')
     pg.locator('#psLook .lk-chip', has_text=re.compile("^Sofa, window$")).first.click()
-    pg.wait_for_timeout(1000)
+    studio_city_ready(pg)
     assert re.search(r"Sun on the floor", pg.inner_text(".pb-sun"))
     t0 = int(pg.input_value('#pTime'))
     pg.click('#pPlayBar [data-pb=day]')

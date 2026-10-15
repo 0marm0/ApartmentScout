@@ -11,6 +11,8 @@ import threading
 from pathlib import Path
 
 import pytest
+from conftest import block_foreign
+from conftest import poll
 
 pytestmark = pytest.mark.e2e
 
@@ -292,7 +294,7 @@ def served_search(tmp_path_factory):
 def test_served_by_the_local_api_a_visit_and_its_photos_land_in_the_search_folder(browser, served_search) -> None:
     root, base = served_search
     ctx = browser.new_context(viewport={"width": 1440, "height": 900}, reduced_motion="reduce")
-    ctx.route("**/*", lambda r: r.continue_() if r.request.url.startswith((base, "data:", "blob:")) else r.abort())
+    block_foreign(ctx, base)
     page = ctx.new_page()
     errors = []
     page.on("pageerror", lambda e: errors.append(str(e)))
@@ -304,9 +306,11 @@ def test_served_by_the_local_api_a_visit_and_its_photos_land_in_the_search_folde
     sh.locator("[data-f='note']").fill("quiet corridor")
     sh.locator("input[data-photo]").first.set_input_files({"name": "w.jpg", "mimeType": "image/jpeg", "buffer": jpeg((3200, 2400))})
     page.wait_for_function("() => document.querySelectorAll('#visitSheet .vs-ph img').length === 1", timeout=15000)
-    page.wait_for_timeout(1200)
     home = HOMES[0]["id"]
-    f = json.loads((root / "tours" / home / "findings.json").read_text())
+    findings = root / "tours" / home / "findings.json"
+    # the page saves into the search folder after a short pause: wait for the file to hold all three things typed
+    poll(lambda: (lambda d: d.get("water") == 4 and d.get("note") == "quiet corridor" and d["photos"][0]["store"] == "disk")(json.loads(findings.read_text())), page, timeout=20)
+    f = json.loads(findings.read_text())
     assert f["water"] == 4 and f["note"] == "quiet corridor" and f["photos"][0]["store"] == "disk"
     webp = root / "tours" / home / "photos" / f"{f['photos'][0]['id']}.webp"
     data = webp.read_bytes()
@@ -324,7 +328,7 @@ def test_served_by_the_local_api_a_visit_and_its_photos_land_in_the_search_folde
     sh.locator("[data-verdict='wd'][data-v='differs']").click()
     sh.locator("[data-obs='wd'][data-v='false']").click()
     sh.locator("[data-promote='wd']").click()
-    page.wait_for_timeout(1200)
+    poll(lambda: "wd" in (json.loads(findings.read_text()).get("promoted") or {}), page, timeout=20)   # the verdict and the promotion are in the folder (the page saves 0.6 s after a change)
     from apartmentscout import tours
     from apartmentscout.score import score_all
     from apartmentscout.listings import load

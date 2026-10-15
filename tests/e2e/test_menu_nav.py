@@ -12,6 +12,8 @@ import json
 from pathlib import Path
 
 import pytest
+from conftest import settled
+from playwright.sync_api import TimeoutError as PlaywrightTimeout
 
 pytestmark = pytest.mark.e2e
 
@@ -225,7 +227,7 @@ def test_menu_stays_above_the_compare_tray(open_page) -> None:
     pg.wait_for_selector(".tray", state="visible")
     _open_menu(pg)
     pg.locator("#mnTour").scroll_into_view_if_needed()
-    pg.wait_for_timeout(300)
+    settled(pg, 20000, ticks=3)
     assert pg.evaluate("""() => { const r = document.getElementById('mnTour').getBoundingClientRect(), e = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
       return !!e && !!e.closest('#mnTour'); }"""), "the last row is not covered by the tray"
     assert not s.take()
@@ -293,7 +295,8 @@ def test_sliding_indicator_follows_the_active_tab(open_page) -> None:
     assert abs(first["x"] - first["ax"]) < 1 and abs(first["w"] - first["aw"]) < 1
     pg.click('#tabs a[data-view="compare"]')
     pg.wait_for_function("() => document.querySelector('#tabs a.on').dataset.view === 'compare'")
-    pg.wait_for_timeout(300)
+    pg.wait_for_function("""() => { const i = document.querySelector('.nav-ink'), a = document.querySelector('#tabs a.on');
+      return Math.abs(new DOMMatrix(getComputedStyle(i).transform).m41 - a.offsetLeft) < 1 && Math.abs(parseFloat(i.style.width) - a.offsetWidth) < 1; }""", timeout=10000)   # the indicator is under the new tab
     second = ink()
     assert second["x"] > first["x"] + 50 and abs(second["x"] - second["ax"]) < 1 and abs(second["w"] - second["aw"]) < 1
     # the context asks for reduced motion: the indicator jumps (no transition)
@@ -339,7 +342,8 @@ def test_deep_links_still_open_the_unit_and_plan(open_page, view: str) -> None:
 def test_number_keys_and_chords_follow_the_tabs(open_page) -> None:
     s = open_page("#map", width=1440, height=900)
     pg = s.page
-    pg.wait_for_timeout(1500)   # let the map settle so the first keys are not racing its opening
+    pg.wait_for_function("() => !!window.__asMap && window.__asMap.loaded()", timeout=30000)
+    settled(pg, 30000)   # the map has opened, so the first keys are not racing it
     hash_ = lambda: pg.evaluate("() => location.hash.split('/')[0]")  # noqa: E731
     for key, want in (("2", "#list"), ("3", "#compare"), ("5", "#research"), ("1", "#map")):
         pg.keyboard.press(key)
@@ -364,7 +368,7 @@ def test_top_bar_stays_one_clean_line(open_page, width: int, height: int) -> Non
     s = open_page("#map", width=width, height=height)
     pg = s.page
     pg.evaluate("() => document.fonts.ready")
-    pg.wait_for_timeout(800)   # fonts and the search name are in, the tabs have their final width
+    settled(pg, 20000, ticks=6)   # fonts and the search name are in, the tabs have their final width
     r = pg.evaluate("""() => {
       const t = document.querySelector('.topbar').getBoundingClientRect(), out = { h: t.height, bad: [] };
       for (const el of document.querySelectorAll('.topbar > *, .top-actions > *')) {
@@ -388,7 +392,11 @@ def test_top_bar_on_a_phone_has_no_tabs_row(open_page) -> None:
     assert bar["y"] > 700 and bar["height"] >= 54
     # the compare tray and the toast clear the bar
     pg.evaluate("() => import('/js/app.js').then((m) => m.toggleCompare(document.querySelector('#cards .card[data-id]').dataset.id))")
-    pg.wait_for_timeout(600)
+    try:
+        pg.wait_for_selector(".tray", state="visible", timeout=5000)
+    except PlaywrightTimeout:
+        pass   # the tray is optional here: when it shows, it has to clear the bar
+    settled(pg, 20000, ticks=3)
     tray = pg.locator(".tray")
     if tray.count() and tray.first.is_visible():
         tb = tray.first.bounding_box()
@@ -402,7 +410,8 @@ def test_tabs_and_home_switch_have_no_serious_axe_violations(open_page, theme: s
     s = open_page("#unit/" + EMERALD, theme=theme, width=1440, height=900)
     pg = s.page
     pg.wait_for_function("() => document.body.dataset.view === 'unit'", timeout=30000)
-    pg.wait_for_timeout(2500)
+    pg.wait_for_function("() => !!(window.__unit3d && window.__unit3d.stage && window.__unit3d.stage.scene) && document.getElementById('uLoad')?.hidden !== false", timeout=60000)
+    settled(pg, 30000, ticks=6)
     assert _axe(pg, [".topbar", "#subnav"]) == [], "the top bar and the Home switch (the 3D views have their own checks)"
     s2 = open_page("#map", theme=theme, width=390, height=844)
     assert _axe(s2.page) == []

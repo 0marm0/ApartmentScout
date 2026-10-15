@@ -14,6 +14,15 @@ for the rest. APARTMENTSCOUT_E2E_MEDIA=full answers /media/ from the full set (e
 
 APARTMENTSCOUT_E2E_CPU_THROTTLE=<n> slows every page's JavaScript n times (Chromium's CPU throttling), to reproduce a
 slow CI runner locally; 6 is about a GitHub-hosted runner.
+
+Parallel runs (pytest-xdist): `pytest -m e2e tests/e2e -n auto --dist loadgroup`. Every worker is its own process and so has its own
+session fixtures: one Playwright, one Chromium, one static server on a free port (`("127.0.0.1", 0)`), its own temp folders
+(`tmp_path_factory` is per worker) and its own browser contexts (service workers, storage and caches are per context). Nothing in
+the suite uses a fixed port, a shared temp folder or an environment variable another test sets. The one thing a process may
+start is ONE sync Playwright (a second one in the same process fails inside the first one's event loop), so a test file never
+starts its own: it uses the session `browser` below. The tests of a file that use one of its module-scoped fixtures (a built site, a
+temp search) are kept on one worker with an `xdist_group` mark added in `pytest_collection_modifyitems`. `--dist loadgroup` is what
+reads it; the default `--dist load` is also correct, only slower for those files.
 """
 from __future__ import annotations
 
@@ -70,6 +79,12 @@ def serve(dashboard: Path, media: list[Path] | Path) -> http.server.ThreadingHTT
                             return str(target)
                     return str(folders[0] / "__missing__")
             return super().translate_path(path)
+
+        def handle(self) -> None:
+            try:
+                super().handle()
+            except (BrokenPipeError, ConnectionResetError):
+                pass   # the page went away (a test navigated, or closed its context) while a file was on its way
 
         def log_message(self, *a) -> None:
             pass
@@ -140,6 +155,17 @@ def build_url(base: str, path: str, theme: str = "dark") -> str:
     return f"{base}/{'?' + '&'.join(params) if params else ''}#{h}"
 
 
+def block_foreign(ctx, *allowed: str) -> None:
+    """Abort every request that is not for one of the `allowed` URL prefixes (data: and blob: always are).
+
+    Only the requests to be blocked go through the route handler; the local ones are never intercepted. A handler that said
+    `continue_()` for each of them needed this Python process to answer every request of the page, so a test that was busy in
+    Python (reading a file, polling a folder) stalled the page it was waiting for, and each page load paid one round trip per file."""
+    import re
+    prefixes = [*allowed, "data:", "blob:"]
+    ctx.route(re.compile(r"^(?!(?:" + "|".join(re.escape(p) for p in prefixes) + "))"), lambda r: r.abort())
+
+
 @pytest.fixture
 def open_page(browser, base_url: str):
     """open_page(path, theme='dark', width=1440, height=900) -> Session, with the network outside base_url blocked."""
@@ -150,7 +176,7 @@ def open_page(browser, base_url: str):
                                   device_scale_factor=1, reduced_motion="reduce",
                                   service_workers="block")   # [pwa] only tests/e2e/test_pwa.py runs with the service worker
         contexts.append(ctx)
-        ctx.route("**/*", lambda r: r.continue_() if r.request.url.startswith((base_url, "data:", "blob:")) else r.abort())
+        block_foreign(ctx, base_url)
         page = ctx.new_page()
         if THROTTLE > 1:
             ctx.new_cdp_session(page).send("Emulation.setCPUThrottlingRate", {"rate": THROTTLE})
@@ -180,6 +206,165 @@ def webgl(browser) -> bool:
     ok = p.evaluate("() => !!document.createElement('canvas').getContext('webgl2') || !!document.createElement('canvas').getContext('webgl')")
     ctx.close()
     return ok
+
+
+# ------------------------------------------------------------------ waiting on a condition instead of a fixed sleep
+# Resolves once timers fire on time `ticks` times running (a tick is 50 ms; 8 is about half a second of an idle main thread).
+# Opening a view that builds a WebGL scene (the map, Unit 3D, the floor plan studio) blocks the page's one thread for seconds,
+# many times longer with software GL on a two-core CI runner; an action started in the meantime waits behind it, so a test that
+# clicks on without waiting piles those blocks up until one of its own timeouts fires. The cap only stops a page that never
+# idles (an endless busy loop) from hanging the run.
+SETTLED_JS = """([capMs, ticks]) => new Promise((resolve) => {
+  const t0 = performance.now(); let quiet = 0, last = t0;
+  const iv = setInterval(() => {
+    const now = performance.now(); quiet = now - last < 130 ? quiet + 1 : 0; last = now;
+    if (quiet >= ticks || now - t0 > capMs) { clearInterval(iv); resolve(quiet >= ticks); }
+  }, 50);
+})"""
+
+
+def settled(page, cap_ms: int = 120_000, ticks: int = 8) -> bool:
+    """Wait until the page's main thread is idle again (see SETTLED_JS); False when it never was within the cap."""
+    return page.evaluate(SETTLED_JS, [cap_ms, ticks])
+
+
+# Playwright's wait_for_function does NOT await a promise: `async () => (await import('/js/app.js')).S.sel === id` is a Promise, which is
+# truthy, so the wait returned at once and the test went on racing the page. This runs such a predicate to completion instead.
+ASYNC_UNTIL_JS = """async ([src, arg, timeoutMs]) => {
+  const pred = (0, eval)('(' + src + ')'), t0 = performance.now();
+  while (performance.now() - t0 < timeoutMs) {
+    try { if (await pred(arg)) return true; } catch (e) { /* the module or the state is not there yet */ }
+    await new Promise((r) => setTimeout(r, 50));
+  }
+  return false;
+}"""
+
+
+def until(page, predicate_js: str, arg=None, timeout_ms: float = 30000) -> None:
+    """Wait for a (possibly async) JS predicate to hold; raises AssertionError on timeout, like a failed assertion."""
+    if not page.evaluate(ASYNC_UNTIL_JS, [predicate_js, arg, timeout_ms]):
+        raise AssertionError(f"timed out after {timeout_ms:g} ms waiting for: {predicate_js.strip()[:240]}")
+
+
+def _await_async_predicates() -> None:
+    """Make Page.wait_for_function await an `async` predicate (see ASYNC_UNTIL_JS) for every test in the suite."""
+    try:
+        from playwright.sync_api import Page
+    except ImportError:
+        return
+    original = Page.wait_for_function
+    if getattr(original, "_awaits_async", False):
+        return
+
+    def wait_for_function(self, expression, *, arg=None, timeout=None, polling=None):
+        if isinstance(expression, str) and expression.lstrip().startswith("async"):
+            return until(self, expression, arg, 30000 if timeout is None else timeout)
+        return original(self, expression, arg=arg, timeout=timeout, polling=polling)
+    wait_for_function._awaits_async = True
+    wait_for_function.__doc__ = original.__doc__
+    Page.wait_for_function = wait_for_function
+
+
+_await_async_predicates()
+
+
+# Resolves when the camera has not moved for six frames running: the glide to a chip is over (what a fixed sleep stood in for).
+CAMERA_STILL_JS = """async (getCam) => {
+  const get = await (async () => { if (getCam === 'studio') { const G3 = await import('/js/plan/scene3d.js'); return () => G3.getCamera(); } return () => window.__unit3d.stage.winCam; })();
+  let last = null, still = 0;
+  return await new Promise((resolve) => { const t0 = performance.now(); const tick = () => {
+    const c = get(), p = [...c.position.toArray(), c.fov, ...(c.getWorldDirection ? c.getWorldDirection(new c.position.constructor()).toArray() : [])];
+    still = last && p.every((v, i) => Math.abs(v - last[i]) < 1e-6) ? still + 1 : 0; last = p;
+    if (still >= 6 || performance.now() - t0 > 20000) resolve(still >= 6); else requestAnimationFrame(tick); }; tick(); });
+}"""
+
+
+def camera_still(pg, engine: str) -> None:
+    """Wait until the camera of the floor plan studio ("studio") or of Unit 3D's Inside view ("unit") has come to rest: a glide is over."""
+    assert pg.evaluate(CAMERA_STILL_JS, engine), f"the {engine} camera never came to rest"
+    settled(pg, 20000, ticks=3)
+
+
+
+
+def studio_city_ready(pg) -> None:
+    """The floor plan studio has built the city outside (every building by id) and its camera has come to rest."""
+    pg.wait_for_function("""async () => { const api = (await import('/js/plan/scene3d.js')).cityApi(); return !!api && api.city.near.length + api.city.far.length > 500; }""", timeout=60000)
+    camera_still(pg, "studio")
+
+
+def frames(page, n: int = 3) -> None:
+    """Wait for n animation frames: what a handler scheduled with requestAnimationFrame (the windowed card list after a scroll or a resize) has run."""
+    page.evaluate("(n) => new Promise((resolve) => { const step = () => (--n > 0 ? requestAnimationFrame(step) : resolve()); requestAnimationFrame(step); })", n)
+
+
+def poll(fn, page, timeout: float = 10.0, interval_ms: int = 50):
+    """Call fn() until it returns something truthy or `timeout` seconds pass; returns the last value (the caller asserts on it).
+    For conditions that live outside the page (a file the local API writes) where a fixed sleep would stand in for them. The
+    wait between tries is `page.wait_for_timeout`, not time.sleep: Playwright's sync API only serves the page's route handlers,
+    events and downloads while the test is inside one of its calls."""
+    import time
+    end = time.monotonic() + timeout
+    while True:
+        try:
+            v = fn()
+        except (OSError, ValueError, KeyError, IndexError):   # the file is not there yet, or half written
+            v = None
+        if v or time.monotonic() >= end:
+            return v
+        page.wait_for_timeout(interval_ms)
+
+
+def map_opened(page, timeout_ms: int = 15000) -> None:
+    """Wait until the map module has finished opening (the style and sources are loaded), then until the page is quiet.
+    Without WebGL the map never reports loaded, so the wait gives up after `timeout_ms` and the caller goes on."""
+    from playwright.sync_api import TimeoutError as PlaywrightTimeout
+    try:
+        page.wait_for_function("() => !!window.__asMap && window.__asMap.loaded()", timeout=timeout_ms)
+    except PlaywrightTimeout:
+        pass
+    settled(page, 20000, ticks=4)
+
+
+# ------------------------------------------------------------------ parallel runs
+# A test that uses a module-scoped fixture (a site built with esbuild, a temp search built with the CLI, a second static server) is
+# kept with the other tests of its file on ONE worker under `--dist loadgroup`, so the fixture is built once instead of once per worker
+# that gets one of them. Tests of the same file that use none of those (they only need the browser) are free to go anywhere, and so is
+# every test of a file with no module-scoped fixture: each is its own unit of work for whichever worker is idle.
+def _uses_module_fixture(item) -> bool:
+    info = getattr(item, "_fixtureinfo", None)
+    for name in item.fixturenames:
+        defs = info.name2fixturedefs.get(name) if info else None
+        if defs and str(getattr(defs[-1], "scope", "")) == "module":
+            return True
+    return False
+
+
+@pytest.hookimpl(tryfirst=True)   # before pytest-xdist reads the marks to put the group name into the test ids
+def pytest_collection_modifyitems(items) -> None:
+    for item in items:
+        if item.get_closest_marker("xdist_group") or getattr(item, "module", None) is None:
+            continue
+        if _uses_module_fixture(item):
+            item.add_marker(pytest.mark.xdist_group(name=item.module.__name__.rsplit(".", 1)[-1]))
+    # Under --dist loadgroup the work units (a group, or a single test) are handed out in collection order. The long ones go first, so
+    # the run does not end with one worker alone on a 30 s group while the others are idle: groups, largest first, then the axe sweeps
+    # (the longest single tests), then everything else in the order it was collected. Only the browser tests move, among their own places.
+    spots = [i for i, it in enumerate(items) if "e2e" in Path(str(it.fspath)).parts]
+    mine = [items[i] for i in spots]
+    size: dict[str, int] = {}
+    for it in mine:
+        m = it.get_closest_marker("xdist_group")
+        if m:
+            size[m.kwargs.get("name") or m.args[0]] = size.get(m.kwargs.get("name") or m.args[0], 0) + 1
+
+    def weight(it) -> tuple[int, int]:
+        m = it.get_closest_marker("xdist_group")
+        if m:
+            return (0, -size[m.kwargs.get("name") or m.args[0]])
+        return (1, 0) if "accessibility" in it.name else (2, 0)
+    for i, it in zip(spots, sorted(mine, key=weight)):
+        items[i] = it
 
 
 def look_open(pg, root: str) -> None:

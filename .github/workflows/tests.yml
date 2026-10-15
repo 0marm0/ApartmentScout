@@ -9,9 +9,15 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install -e ".[dev]"
-      - run: pytest -q
+      - run: pytest -q -n auto
         env:
           APARTMENTSCOUT_E2E: "0"   # the browser suite runs in its own job below
+      - name: every e2e file belongs to exactly one shard
+        run: |
+          for f in tests/e2e/test_*.py; do
+            n=$(grep -c "$f" .github/workflows/tests.yml)
+            [ "$n" = "1" ] || { echo "$f is in $n e2e shards (it must be in exactly one)"; exit 1; }
+          done
       - run: python scripts/release_check.py --skip-tests --only privacy,ignored,photos
       - run: python scripts/make_media_lite.py examples/nyc-2026 --check   # the starter photos still match what listings.json calls for
       - uses: actions/setup-node@v4
@@ -22,41 +28,31 @@ jobs:
     # every dashboard view in dark and light at 1440 and 390 px, key interactions and axe-core, in headless Chromium
     # (SwiftShader WebGL; checks that need WebGL skip themselves if it is missing). Tiles and photos are blocked.
     # Software GL makes opening the map, Unit 3D and the floor plan studio block the page for seconds, so tests wait for
-    # each heavy view to go idle before the next action (see SETTLED_JS in tests/e2e/test_dashboard.py) instead of
+    # each heavy view to be drawn and the page to go quiet (conftest.settled, camera_still ...) instead of sleeping or
     # leaning on long timeouts. Reproduce a slow runner locally with APARTMENTSCOUT_E2E_CPU_THROTTLE=6.
-    # Split across parallel runners by file so each shard stays well inside the timeout.
+    # The files are split over a few runners so that each shard takes about the same time (the weights are the files' serial
+    # times with software GL; a new file goes into the lightest shard), and each shard runs its files in parallel with pytest-xdist:
+    # one Chromium, one static server and one set of temp folders per worker (tests/e2e/conftest.py). `-n auto` is
+    # three workers per four cores, 2 to 8 (tests/conftest.py). `--dist loadgroup` keeps the tests that share a module-scoped
+    # fixture (a built site, a temp search) on one worker.
     runs-on: ubuntu-latest
     timeout-minutes: 25
     strategy:
       fail-fast: false
       matrix:
         shard:
-          - name: views
-            files: tests/e2e/test_dashboard.py
-          - name: decide-and-shell
-            files: tests/e2e/test_decision.py tests/e2e/test_shell_extras.py tests/e2e/test_tour_findings.py tests/e2e/test_office_questions.py tests/e2e/test_tourday.py tests/e2e/test_moves_unknowns.py
-          - name: lighting
-            files: tests/e2e/test_lighting.py tests/e2e/test_quality3d.py
-          - name: map-media-results
-            files: tests/e2e/test_map_features.py tests/e2e/test_lightbox.py tests/e2e/test_media_tiers.py tests/e2e/test_results_rail.py tests/e2e/test_pdf_tracer.py tests/e2e/test_plan_upload.py
-          - name: wizard
-            files: tests/e2e/test_wizard.py tests/e2e/test_onboarding.py tests/e2e/test_boot_recovery.py tests/e2e/test_menu_nav.py
-          - name: model-project
-            files: tests/e2e/test_model_project.py tests/e2e/test_furniture_studio.py tests/e2e/test_view_match.py
-          - name: interior-views
-            files: tests/e2e/test_interior_view.py tests/e2e/test_eye_level_look.py tests/e2e/test_finishes_render.py tests/e2e/test_placement_walk.py
-          - name: measure-fit-pair
-            files: tests/e2e/test_measure.py tests/e2e/test_fit_check.py tests/e2e/test_pair3d.py
-          - name: city-context
-            files: tests/e2e/test_context3d.py
-          - name: buildings-3d
-            files: tests/e2e/test_buildings3d.py
-          - name: one-city
-            files: tests/e2e/test_one_city.py tests/e2e/test_daycycle.py
-          - name: places-destinations
-            files: tests/e2e/test_places_multidest.py tests/e2e/test_map_clusters.py
-          - name: pwa-landing
-            files: tests/e2e/test_pwa.py tests/e2e/test_landing_page.py
+          - name: 1-of-6
+            files: tests/e2e/test_dashboard.py tests/e2e/test_lightbox.py tests/e2e/test_onboarding.py tests/e2e/test_pwa.py tests/e2e/test_results_rail.py tests/e2e/test_tourday.py
+          - name: 2-of-6
+            files: tests/e2e/test_landing_page.py tests/e2e/test_map_clusters.py tests/e2e/test_media_tiers.py tests/e2e/test_menu_nav.py tests/e2e/test_pair3d.py tests/e2e/test_placement_walk.py
+          - name: 3-of-6
+            files: tests/e2e/test_daycycle.py tests/e2e/test_decision.py tests/e2e/test_furniture_studio.py tests/e2e/test_pdf_tracer.py tests/e2e/test_places_multidest.py tests/e2e/test_wizard.py
+          - name: 4-of-6
+            files: tests/e2e/test_interior_view.py tests/e2e/test_office_questions.py tests/e2e/test_one_city.py tests/e2e/test_plan_upload.py tests/e2e/test_quality3d.py tests/e2e/test_shell_extras.py
+          - name: 5-of-6
+            files: tests/e2e/test_boot_recovery.py tests/e2e/test_buildings3d.py tests/e2e/test_lighting.py tests/e2e/test_model_project.py tests/e2e/test_moves_unknowns.py tests/e2e/test_tour_findings.py tests/e2e/test_view_match.py
+          - name: 6-of-6
+            files: tests/e2e/test_context3d.py tests/e2e/test_eye_level_look.py tests/e2e/test_finishes_render.py tests/e2e/test_fit_check.py tests/e2e/test_map_features.py tests/e2e/test_measure.py
     name: e2e (${{ matrix.shard.name }})
     steps:
       - uses: actions/checkout@v4
@@ -64,20 +60,13 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install -e ".[dev]"
-      - uses: actions/setup-node@v4   # the pwa-landing shard builds the optimised site with esbuild (npx)
-        if: matrix.shard.name == 'pwa-landing'
+      - uses: actions/setup-node@v4   # the pwa and results-rail tests build the optimised site with esbuild (npx)
         with:
           node-version: "22"
       - run: python -m playwright install --with-deps chromium
-      - run: pytest -m e2e ${{ matrix.shard.files }} -q -rs --durations=10   # the slowest tests show where a runner struggles
+      - run: pytest -m e2e ${{ matrix.shard.files }} -q -rs --durations=10 -n auto --dist loadgroup   # the slowest tests show where a runner struggles
         env:
           APARTMENTSCOUT_E2E: "1"
-      - name: every e2e file belongs to a shard
-        if: matrix.shard.name == 'views'
-        run: |
-          for f in tests/e2e/test_*.py; do
-            grep -q "$f" .github/workflows/tests.yml || { echo "$f is not in any e2e shard"; exit 1; }
-          done
   perf:
     # first-load budget of the published site and of the standalone file: bundle, data and CSS sizes (gzip, what Pages sends),
     # request count, LCP and TBT in Chromium. Limits live in scripts/perf_budget.json; `python scripts/perf_check.py --help`.

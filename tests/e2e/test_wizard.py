@@ -12,7 +12,9 @@ import warnings
 from pathlib import Path
 
 import pytest
+from conftest import block_foreign
 import yaml
+from conftest import settled
 
 from apartmentscout import cli
 from apartmentscout.config import Workspace, load_criteria
@@ -56,7 +58,8 @@ def _to_review(page, address: str = "1 Kendall Sq, Cambridge, MA") -> None:
 def _open(open_page, path: str = "?new=1#map", **kw):
     s = open_page(path, **kw)
     s.page.wait_for_selector(WIZARD, timeout=10000)
-    s.page.wait_for_timeout(300)
+    s.page.wait_for_selector(".wz-scrim.on", timeout=10000)
+    settled(s.page, 20000, ticks=3)
     return s
 
 
@@ -125,7 +128,7 @@ def test_empty_name_blocks_next_and_says_why(open_page) -> None:
     s = _open(open_page)
     pg = s.page
     pg.click("[data-act=next]")
-    pg.wait_for_timeout(200)
+    pg.wait_for_function("() => document.querySelector('[data-err=name]')?.textContent.includes('Give the search a name')", timeout=10000)
     assert "What are we looking for" in pg.inner_text("#wzStepTitle")
     assert "Give the search a name" in pg.inner_text("[data-err=name]")
     assert pg.get_attribute("#f-name", "aria-invalid") == "true"
@@ -157,7 +160,8 @@ def test_escape_closes_and_the_draft_survives_a_reload(open_page) -> None:
     s = _open(open_page)
     pg = s.page
     pg.fill("#f-name", "Half finished")
-    _next(pg); pg.fill("#f-dest\\.0\\.address", "Somewhere"); pg.wait_for_timeout(500)
+    _next(pg); pg.fill("#f-dest\\.0\\.address", "Somewhere")
+    pg.wait_for_function("() => (localStorage.getItem('as:wizard:new') || '').includes('Somewhere')", timeout=10000)   # the draft is saved
     pg.keyboard.press("Escape")
     pg.wait_for_function("() => !document.querySelector('.wz-scrim.on')")
     pg.reload()
@@ -169,7 +173,7 @@ def test_escape_closes_and_the_draft_survives_a_reload(open_page) -> None:
     assert pg.input_value("#f-name") == "Half finished"
     assert "unfinished draft" in pg.inner_text(".wz-main")
     pg.click("[data-act=fresh]")
-    pg.wait_for_timeout(300)
+    pg.wait_for_function("() => document.querySelector('#f-name')?.value === ''", timeout=10000)
     assert pg.input_value("#f-name") == ""
     assert not s.take()
 
@@ -307,7 +311,7 @@ def served(tmp_path: Path, browser):
     threading.Thread(target=lambda: httpd.serve_forever(0.02), daemon=True).start()
     base = f"http://127.0.0.1:{state.port}"
     ctx = browser.new_context(viewport={"width": 1440, "height": 900}, reduced_motion="reduce", accept_downloads=True)
-    ctx.route("**/*", lambda r: r.continue_() if r.request.url.startswith((base, "data:", "blob:")) else r.abort())
+    block_foreign(ctx, base)
     page = ctx.new_page()
     errors: list[str] = []
     page.on("pageerror", lambda e: errors.append(str(e)))
