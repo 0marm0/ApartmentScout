@@ -249,7 +249,7 @@ export function normalisePlan(raw) {
 
   return {
     schema: raw.schema === 2 ? 2 : 1, id: cleanStr(raw.id || '', 80), title: cleanStr(raw.title || '', 80), units, k,
-    ceiling, wallT, up_bearing: num(raw.up_bearing) ? raw.up_bearing : null, floor: num(raw.floor) ? raw.floor : null,
+    ceiling, wallT, up_bearing: num(raw.up_bearing) ? raw.up_bearing : null, floor: num(raw.floor) ? raw.floor : null, floor_finish: ['basket', 'parquet', 'oak'].includes(raw.floor_finish) ? raw.floor_finish : null,   // [floor] the finish of the dry rooms, read from the listing's photos
     source: cleanStr(raw.source || '', 600), provenance,
     rooms, walls, pieces, windows, doors, doorways, open, fixtures, keepout, layouts, bounds, centre, warnings,
     area: rooms.reduce((s, r) => s + r.sqft, 0),

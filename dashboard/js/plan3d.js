@@ -102,7 +102,7 @@ const PILL = { clear: 'good', tight: 'warn', blocked: 'bad' };
 
 // ------------------------------------------------------------------ view contract
 export function init() {
-  window.__plan3d = { get views() { return viewsNow(); }, get cam() { return G3.getCamera(); }, get eye() { return G3.viewMode(); }, get hasCity() { return G3.hasCity(); }, get view() { return st.view; }, get items() { return items; }, get inventory() { return inventory; } };   // [interior] test and debugging handle, like __unit3d
+  window.__plan3d = { get views() { return viewsNow(); }, get cam() { return G3.getCamera(); }, get eye() { return G3.viewMode(); }, get hasCity() { return G3.hasCity(); }, get cityApi() { return G3.cityApi(); }, get parts() { return G3.parts(); }, get view() { return st.view; }, get items() { return items; }, get inventory() { return inventory; } };   // [interior] test and debugging handle, like __unit3d
   $('view-plan').innerHTML = `<div class="view-pad ps">
     <header class="page-h ps-head">
       <div class="t"><h1 id="psTitle">Floor plan</h1><p id="psSub">Lay out your furniture at true size and check it fits.</p></div>
@@ -1045,7 +1045,7 @@ function applyCity() {
   const dark = document.documentElement.dataset.theme !== 'light', css = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
   const colors = eye ? { low: '#7f8996', high: '#b9c2cf', roof: '#dde1e7', own: css('--accent'), ground: '#6e7378' }
     : { low: dark ? css('--surface-3') : css('--ink-4'), high: css('--ink-3'), roof: dark ? css('--ink-3') : css('--surface-1'), own: css('--accent'), ground: dark ? css('--surface-1') : css('--surface-3') };
-  G3.setCity(cityGroup(onSite, { light: eye || !dark, colors }));
+  G3.setCity(cityGroup(onSite, { daylight: eye, light: eye || !dark, colors }));
 }
 let cityKey = '';
 
