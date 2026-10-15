@@ -93,11 +93,12 @@ test('Poisson fill gives believable densities per kind and none on hard surfaces
   const area = 100 * 100;
   const count = (kind, extra = {}) => T.fillTrees([{ kind, ring: sq(0, 0, 100, 100), holes: [], ...extra }], {}).length;
   const park = ha(count('park'), area), wood = ha(count('wood'), area), grass = ha(count('grass'), area);
-  assert.ok(park > 30 && park < 130, `park ${park}/ha`);
-  assert.ok(wood > 120 && wood < 330, `wood ${wood}/ha`);
+  assert.ok(park > 90 && park < 170, `park ${park}/ha`);          // St. Vartan Park holds about 95 a hectare in the Parks inventory, malls 165-245
+  assert.ok(wood > 150 && wood < 330, `wood ${wood}/ha`);
   assert.ok(grass > 8 && grass < 60, `lawn ${grass}/ha`);
   assert.ok(wood > park && park > grass, 'woods are denser than parks, parks than lawns');
   assert.equal(count('park', { hard: true }), 0);
+  assert.equal(count('grass', { turf: true }), 0);
   assert.equal(count('play'), 0);
 });
 
