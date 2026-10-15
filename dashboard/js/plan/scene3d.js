@@ -12,6 +12,7 @@ import { MAT, LAMP_K } from './catalog.js';
 import { axes, footprint, toWorld, swingPoly } from './checks.js';
 import { pointInPoly, fmtIn } from './model.js';
 import { applySurfaceTint, setSurfaceState } from './surfaces3d.js';   // [feature J] reflectance -> colours
+import { applyFinishes, doorColour, fixtureFinish, backsplashMeshes, TOP_T } from './finishes3d.js';   // [finishes] the unit's own paint, cabinets, counters and doors
 import * as I3 from './interior3d.js';   // [interior] reveals, sills, casings, framed glass, door frames, baseboards, ceiling trims, floor finishes
 import * as SKY from './sky3d.js';   // [interior] the sky and haze behind the city in eye-level views
 import * as F3 from './furniture3d.js';   // [interior] low-poly furniture models
@@ -216,7 +217,8 @@ export function setLighting(options = {}) {
  * Build a plan's fixed parts into `T` ({shell, proxies, labels} groups). Used by the studio and by the
  * side-by-side compare. Returns the per-window shadow shades.
  */
-export function buildShellInto(T, m, C, mode = 'cut', opts = {}) {
+export function buildShellInto(T, m, C0, mode = 'cut', opts = {}) {
+  const C = applyFinishes(C0, m);   // [finishes] wall and ceiling paint from the plan's finishes
   const cut = CUT[mode], H = m.ceiling, out = { shades: [] };
   const b = m.bounds, cx = (b.x0 + b.x1) / 2, cy = (b.y0 + b.y1) / 2;
   if (opts.ground !== false) {
@@ -226,7 +228,7 @@ export function buildShellInto(T, m, C, mode = 'cut', opts = {}) {
   for (const r of m.rooms) {
     const shape = new THREE.Shape(r.poly.map(([x, y]) => new THREE.Vector2(x * M, y * M)));
     const g = new THREE.ShapeGeometry(shape); g.rotateX(-Math.PI / 2);
-    const fk = r.kind === 'closet' ? 'carpet' : I3.floorKind(r, m), base = fk === 'carpet' ? C.carpet : I3.floorBase(fk, C);   // [interior] parquet, oak or tile by room type
+    const fk = r.kind === 'closet' ? 'carpet' : I3.floorKind(r, m), base = I3.floorBase(fk, C, r, m);   // [interior] parquet, oak or tile by room type
     const ftex = fk === 'carpet' ? texture('carpet', base) : I3.floorTexture(fk, base);
     const mat = std(0xffffff, { roughness: fk === 'carpet' ? 0.95 : I3.floorRoughness(fk), map: ftex, ...(ftex.userData.bump ? { bumpMap: ftex.userData.bump, bumpScale: 1.4 } : {}) });   // [floor] wood: boards and joints catch the light
     const mm = new THREE.Mesh(g, mat); mm.position.y = 0.001; mm.receiveShadow = true; mm.name = `floor: ${r.name}`; T.shell.add(mm);
@@ -260,7 +262,7 @@ export function buildShellInto(T, m, C, mode = 'cut', opts = {}) {
     const top = Math.min(w.head, cut); if (top <= w.sill + 0.5) continue;
     T.shell.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([W(w.a[0], w.a[1], top + 0.3), W(w.b[0], w.b[1], top + 0.3)]), new THREE.LineBasicMaterial({ color: C.cap })));
   }
-  const leafMat = std(C.wall.clone().lerp(new THREE.Color(0x8a7560), 0.25), { roughness: 0.6 }), arcMat = new THREE.LineDashedMaterial({ color: C.cap, dashSize: 0.06, gapSize: 0.05, transparent: true, opacity: 0.55 });
+  const leafMat = std(doorColour(C, C.wall.clone().lerp(new THREE.Color(0x8a7560), 0.25)), { roughness: 0.6 }), arcMat = new THREE.LineDashedMaterial({ color: C.cap, dashSize: 0.06, gapSize: 0.05, transparent: true, opacity: 0.55 });
   for (const d of m.doorways) {
     if (!d.swingDir) continue;
     const leafH = cut == null ? Math.min(d.head, H) : Math.min(d.head, cut), L = d.leaf;
@@ -275,12 +277,18 @@ export function buildShellInto(T, m, C, mode = 'cut', opts = {}) {
     if (top - f.elev < 0.2) continue;
     if (f.kind === 'radiator') { radiatorFixture(T.shell, f, top); continue; }
     const shape = new THREE.Shape(f.poly.map(([x, y]) => new THREE.Vector2(x * M, y * M)));
-    const g = new THREE.ExtrudeGeometry(shape, { depth: (top - f.elev) * M, bevelEnabled: false }); g.rotateX(-Math.PI / 2);
-    const col = f.kind === 'ac' || f.kind === 'ptac' ? new THREE.Color(MAT.ac) : C.fixture;
-    const mats = cut != null && f.height > 48 ? [capMat, std(col, { roughness: 0.8 })] : std(col, { roughness: f.kind === 'counter' || f.kind === 'island' ? 0.35 : 0.8, transparent: f.est, opacity: f.est ? 0.92 : 1 });
+    const ff = fixtureFinish(f, C), slab = ff?.top && top - f.elev > TOP_T + 2;   // [finishes] cabinet body and stone top in the colours the photos show
+    const g = new THREE.ExtrudeGeometry(shape, { depth: (top - f.elev - (slab ? TOP_T : 0)) * M, bevelEnabled: false }); g.rotateX(-Math.PI / 2);
+    const col = f.kind === 'ac' || f.kind === 'ptac' ? new THREE.Color(MAT.ac) : ff?.body || C.fixture;
+    const mats = cut != null && f.height > 48 ? [capMat, std(col, { roughness: 0.8 })] : std(col, { roughness: ff?.top ? 0.55 : f.kind === 'counter' || f.kind === 'island' ? 0.35 : 0.8, transparent: f.est, opacity: f.est ? 0.92 : 1 });
     const mm = new THREE.Mesh(g, mats); mm.position.y = f.elev * M; mm.castShadow = true; mm.receiveShadow = true; mm.name = `fixture: ${f.label || f.kind}`; T.shell.add(mm);
+    if (slab) {
+      const tg = new THREE.ExtrudeGeometry(shape, { depth: TOP_T * M, bevelEnabled: false }); tg.rotateX(-Math.PI / 2);
+      const tm = new THREE.Mesh(tg, std(ff.top, { roughness: 0.28, metalness: 0.04 })); tm.position.y = (top - TOP_T) * M; tm.castShadow = true; tm.receiveShadow = true; tm.name = `counter top: ${f.label || f.kind}`; T.shell.add(tm);
+    }
     if (f.kind === 'ac' || f.kind === 'ptac') acGrille(T.shell, f, top);
   }
+  for (const b of backsplashMeshes(m, C, W, cut)) T.shell.add(b);   // [finishes] tile behind the counters
   return out;
 }
 function buildShell() {

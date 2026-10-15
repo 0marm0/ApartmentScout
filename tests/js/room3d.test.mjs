@@ -94,18 +94,19 @@ test('auto mood follows the sun: day, a low evening sun, night', () => {
 
 // ------------------------------------------------------------------ what is measured and what is assumed
 
-test('Paramount 25E: six rows with the states the task names', () => {
+test('Paramount 25E: seven rows with the states the task names', () => {
   const site = json('sites/paramount-tower-25e.json'), plan = json('plans/paramount-tower-25e.json');
   const rows = A.accuracyRows({ site, plan, cal: { state: 'estimated', fh: 3.08, slab: 70.8 }, floor: 25, facing: 118.7, t: 0.55, furniture: { name: 'Your furniture', confirmed: { by: 'renter', date: '2026-10-15' }, count: 10 } });
   const by = Object.fromEntries(rows.map((r) => [r.key, r]));
-  assert.deepEqual(rows.map((r) => r.key), ['heights', 'bearing', 'position', 'floor-height', 'plan', 'furniture']);
+  assert.deepEqual(rows.map((r) => r.key), ['heights', 'bearing', 'position', 'floor-height', 'plan', 'finishes', 'furniture']);
   assert.equal(by.heights.state, 'source'); assert.match(by.heights.text, /PLUTO/);
   assert.equal(by.bearing.state, 'measured'); assert.match(by.bearing.text, /119°.*photos/);
   assert.equal(by.position.state, 'assumed');
   assert.equal(by['floor-height'].state, 'estimated'); assert.match(by['floor-height'].text, /3\.08 m/);
   assert.equal(by.plan.state, 'source'); assert.match(by.plan.text, /Glenwood(?:'|&#39;)s E-line drawing/);
+  assert.equal(by.finishes.state, 'source'); assert.match(by.finishes.text, /read from the unit's photos: floor \(basket/); assert.match(by.finishes.text, /assumed: ceiling, doors/);
   assert.equal(by.furniture.state, 'confirmed'); assert.match(by.furniture.text, /2026-10-15/);
-  assert.match(A.accuracySummary(rows), /1 measured · 1 confirmed · 2 from a source · 1 estimated · 1 assumed/);
+  assert.match(A.accuracySummary(rows), /1 measured · 1 confirmed · 3 from a source · 1 estimated · 1 assumed/);
 });
 
 test('the furniture row says sizes and the futon\'s look come from the renter, and which other looks are assumed', () => {
