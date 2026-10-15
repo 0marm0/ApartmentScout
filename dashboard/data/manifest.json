@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-15T02:52:31",
+ "generated": "2026-10-15T10:00:02",
  "version": "0.1.0",
  "search": "Manhattan 1BR, fall 2026",
  "layers": [
@@ -72,6 +72,7 @@
  ],
  "furniture": true,
  "lqip": true,
+ "media_base_url": "https://0marm0.github.io/ApartmentScout/demo/media/",
  "extra": [
   "coverage.json",
   "digest.json",
