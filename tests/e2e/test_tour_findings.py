@@ -80,7 +80,8 @@ def test_a_contradiction_is_flagged_and_changes_no_score_until_it_is_promoted(op
     s.page.locator(".vs-done").click()
     s.page.wait_for_selector("#visitSheet", state="detached")
     # the card says so, and the drawer shows both sides with the observation dated
-    assert "differs on tour" in s.page.locator(f".card[data-id='{HOME}']").inner_text().lower()
+    warn = s.page.locator(f".card[data-id='{HOME}'] .c-warn")   # the card's one warning mark carries it (label and tooltip)
+    assert "differs on tour" in (warn.get_attribute("aria-label") or "").lower()
     d = s.page.locator("#dVisit")
     assert re.search(r"observed on \w+ \d+, \d{4}", d.inner_text()), d.inner_text()
     assert "Found no in-unit washer/dryer, the listing says in-unit washer/dryer" in d.inner_text()
