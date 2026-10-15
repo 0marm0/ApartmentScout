@@ -63,6 +63,7 @@ export function applyInventory(items, inventory) {
     if (!own) { for (const k of SIZE_KEYS) if (o[k] == null && p[k] != null) o[k] = p[k]; if (!o.variant && p.variant) o.variant = p.variant; if (!o.product && p.product) o.product = p.product; }
     if (!o.label && p.label) o.label = p.label;
     if (p.set && !o.set) o.set = p.set;
+    if (p.spec && !o.spec) o.spec = p.spec;   // [bed option] the maker's dimensions by part (plan/bedspec.js), joined by id like the size
     if (p.assumed && !o.assumed) o.assumed = p.assumed;
     return o;
   });
