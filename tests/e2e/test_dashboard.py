@@ -395,6 +395,7 @@ def test_stats_strip_is_collapsed_to_a_chip_until_asked_for(open_page) -> None:
     s = open_page("#map", width=1440)
     pg = s.page
     chip = pg.locator("#kpiChip")
+    chip.wait_for(state="visible", timeout=10000)   # the app has booted and laid the top bar out (the shared open_page returns a little earlier)
     assert chip.is_visible() and chip.get_attribute("aria-expanded") == "false"
     assert chip.inner_text().split()[1] == "matches" and int(pg.locator("#kpiChipN").inner_text()) > 0
     assert not pg.locator("#kpis").is_visible(), "collapsed: no stats row"
@@ -429,6 +430,7 @@ def test_stats_strip_on_a_phone_is_a_chip_and_folds_the_rest_into_the_popover(op
     s = open_page("#map", width=375, height=812)
     pg = s.page
     chip = pg.locator("#kpiChip")
+    chip.wait_for(state="visible", timeout=10000)   # the app has booted and laid the top bar out (the shared open_page returns a little earlier)
     assert chip.is_visible() and not pg.locator("#kpis").is_visible()
     box = chip.bounding_box()
     assert box["x"] + box["width"] < 375 and pg.evaluate("() => document.documentElement.scrollWidth <= window.innerWidth + 1")
