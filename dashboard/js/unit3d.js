@@ -42,6 +42,7 @@ import { loadInventoryFile } from './plan/inventory.js';   // [furniture] the re
 import { applyLooks } from './plan/looks.js';
 import { stepView } from './plan/viewpoints.js';
 import { heightProvenance, confOf } from './city3d/facade-rules.js';   // [buildings3d] height source and confidence labels
+import { seasonAt, quantise } from './city3d/season.js';   // [season] leaves, autumn colour and bare branches follow the date (a picture only)
 import { loadTreeLayers, saveTreeLayers, STREET_TREES_TITLE, PARK_TREES_TITLE } from './unit/treelayers.js';   // [park trees] street / park tree toggles, remembered per browser
 
 let site = null, B0 = [], FUTB = [], edits = new Map(), B = [], T = null, FACES = [], LM = [], FUT = [], BF = null, stage = null, plan = null, interior = null;
@@ -852,6 +853,7 @@ function refreshTime() {
   if (!site) return;
   if (!hasWindow()) { unresolvedWindow(); return; }
   const s = curSun = sunAt(st.min), up = s.alt > 0, P = panes(), front = inFront(s.az, st.az, P);
+  { const [, mo, dd] = ymd(); stage.setSeason(quantise(seasonAt(mo, dd, site.origin.lat))); }   // [season] the trees follow the date; never an obstruction
   const w = winPos(st.floor);
   curHit = up && front ? rayBlock(blockerSet(), w.x, w.y, w.z, s.az, s.alt) : null;
   const lit = up && front && !curHit, side = lit && P && Math.abs(angDiff(s.az, st.az)) >= 90;
@@ -1432,7 +1434,7 @@ function renderStudy() {
   } else if (k === 'seasons') {
     const y = +st.date.slice(0, 4), o = site.origin, w = winPos(st.floor), P = panes();
     const dates = [[2, 20, 'Mar 20'], [5, 21, 'Jun 21'], [8, 22, 'Sep 22'], [11, 21, 'Dec 21']], times = [540, 720, 900, 1080];
-    const rows = dates.map(([m, d, lbl]) => ({ label: lbl, cells: times.map((min) => {
+    const rows = dates.map(([m, d, lbl]) => ({ label: lbl, season: quantise(seasonAt(m + 1, d, o.lat)), cells: times.map((min) => {   // [season] each row's trees as they are on that date
       const s = sunPos(zonedMs(y, m, d, min, tz()), o.lat, o.lon), up = s.alt > 0, fr = inFront(s.az, st.az, P);
       const hit = up && fr ? rayBlock(blockerSet(), w.x, w.y, w.z, s.az, s.alt) : null;
       const state = !up ? 'night' : !fr ? 'behind' : hit ? 'shade' : P && Math.abs(angDiff(s.az, st.az)) >= 90 ? 'side' : 'lit';

@@ -31,6 +31,7 @@
 //   ctx.update(camera)      re-sort the tree LOD for this camera (called for you once watched)
 //   ctx.setLayers({...})    show / hide layers; ctx.hasGround says whether the plate replaces the base ground
 //   ctx.setQuality({visual, phone}), ctx.setTheme({ground, light, blue}), ctx.setSun({dir, alt})
+//   ctx.setSeason({leaf, autumn})  the tree season, a picture only (city3d/season.js): leaf share 0..1 and how far the colour has turned 0..1
 //   ctx.setInside(bool)     true while the camera is inside the apartment: crowns stop casting shadows, so the sun patches on the floor match the
 //                           numbers (trees are never obstructions)
 //   ctx.labels              [{kind: 'water' | 'park', name, x, y}] in site metres (large parks and the rivers)
@@ -103,7 +104,7 @@ function canvasTexture(N, paint) {
 
 export function buildContext(site, opts = {}) {
   const { B = null, place = (x, y) => [x, y], matrix = null, center = [0, 0], radius = 640, y0 = 0 } = opts;
-  let inside = false, light = !!opts.light, visual = !!opts.visual, phone = !!opts.phone, ground = (opts.ground || new THREE.Color(0x272c37)).clone(), blue = (opts.blue || new THREE.Color(0x3a93e0)).clone();
+  let inside = false, season = { leaf: 1, autumn: 0, ...(opts.season || {}) }, light = !!opts.light, visual = !!opts.visual, phone = !!opts.phone, ground = (opts.ground || new THREE.Color(0x272c37)).clone(), blue = (opts.blue || new THREE.Color(0x3a93e0)).clone();
   const vis = { ground: true, water: true, green: true, trees: true, streetTrees: true, parkTrees: true, ...(opts.layers || {}) };   // [park trees] street and park trees switch separately
   const group = new THREE.Group(); group.name = 'context';
   const water = decodeWater(site?.water), half = PLATE_HALF_M, waterHalf = windowHalf(site, 1600), N = opts.phone ? 1536 : TEX_SIZE,   // a phone's textures are a little coarser (14 MB of GPU memory instead of 32)
@@ -165,7 +166,7 @@ export function buildContext(site, opts = {}) {
     if (!site?.green) return;
     if (!plan) plan = treePlan(site.green, { center, radius, cap: TREE_CAP.desktop, B });
     if (!plan.n) return;
-    trees = treeLayer(plan, { place, y0, light, phone, shadows: visual && !inside, limit: phone ? TREE_CAP.phone : TREE_CAP.desktop, streetTrees: vis.streetTrees !== false, parkTrees: vis.parkTrees !== false });
+    trees = treeLayer(plan, { place, y0, light, phone, season, shadows: visual && !inside, limit: phone ? TREE_CAP.phone : TREE_CAP.desktop, streetTrees: vis.streetTrees !== false, parkTrees: vis.parkTrees !== false });
     trees.group.visible = vis.green && vis.trees; parts.trees = trees.group; wrapOut.add(trees.group);
   }
   buildGreen(); buildTrees();
@@ -212,6 +213,9 @@ export function buildContext(site, opts = {}) {
       waterMat.uniforms.uSunCol.value.setRGB(1, 0.93 - 0.2 * Math.max(0, 1 - a / 25), 0.8 - 0.3 * Math.max(0, 1 - a / 25));
     },
     setInside(on) { inside = !!on; trees?.setShadows(visual && !inside); },
+    /** The tree season ({leaf, autumn}, city3d/season.js seasonAt): leaves, autumn colour and bare branches. A picture only: trees are never obstructions in any month. True when the picture changed. */
+    setSeason(s = {}) { season = { leaf: Number.isFinite(+s.leaf) ? +s.leaf : 1, autumn: Number.isFinite(+s.autumn) ? +s.autumn : 0 }; return !!trees?.setSeason(season); },
+    season: () => ({ ...season }),
     treeStats: () => trees?.stats() || { near: 0, far: 0, cones: 0, n: 0 },
     dispose() { disposed = true; scenes.forEach((s) => unhook(s, api)); scenes.clear(); trees?.dispose(); disposeObj(group); own.tex.forEach((t) => t.dispose()); own.mats.forEach((m) => m.dispose()); },
   };

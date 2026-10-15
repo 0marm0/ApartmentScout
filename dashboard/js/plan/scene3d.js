@@ -199,7 +199,11 @@ function syncCity(now) {
   api.setSun(v, Math.asin(Math.max(-1, Math.min(1, v.y))) / DEG);
   api.setNight(now === 'night' ? 1 : now === 'evening' ? 0.5 : 0);
   api.setQuality(roomQuality());
+  if (seasonWant && api.setSeason(seasonWant)) dirty = true;   // [season] leaves, autumn colour or bare branches (a picture)
 }
+let seasonWant = null;
+/** [season] The tree season ({leaf, autumn}, city3d/season.js) for the city outside; a picture only. Applied now and to any city built later. */
+export function setSeason(s) { seasonWant = s ? { leaf: s.leaf, autumn: s.autumn } : null; const api = city?.userData.api; if (api && seasonWant && api.setSeason(seasonWant)) dirty = true; }
 export const hasCity = () => !!city;
 /** [city3d] the city outside's handle (setSun, setNight, setQuality, anchorsOf) or null. */
 export const cityApi = () => city?.userData.api || null;

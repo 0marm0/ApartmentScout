@@ -36,6 +36,7 @@ import { getPin, pinOption } from './unit/anchor.js';   // [model project] the w
 import { facingSummary } from './plan/facing.js';   // [model project] host facade bearing, bays as a range
 import { anchorNoteHTML } from './plan/anchor-note.js';   // [model project] where the plan sits, source vs assumed
 import { cityGroup } from './plan/citymesh.js';
+import { seasonAt, quantise } from './city3d/season.js';   // [season] leaves, autumn colour and bare branches follow the date (a picture only)
 import { sunGroupHTML, stripAt, setHandoff } from './room3d/sunlink.js';   // [room3d] sun today in the studio's eye-level views, and the way into Unit 3D
 import { accuracyRows, accuracyChip, loadFurnitureMeta } from './room3d/accuracy.js';   // [room3d] the measured-vs-assumed chip, shared with Unit 3D
 import { accessRoutes, entryPoint } from './plan/route.js';
@@ -947,6 +948,7 @@ function refreshSun() {
   const [y, m, d] = st.date.split('-').map(Number);
   const s = sunPos(zonedMs(y, m - 1, d, st.min, tz), lat, lon);
   sunCtx = { lat, lon, tz, y, m, d };   // [room3d]
+  G3.setSeason(quantise(seasonAt(m, d, lat)));   // [season]
   { const u = document.querySelector('#psLook .rc-strip u'); if (u) u.style.left = `${stripAt(st.min)}%`; if (sunMemo.key && !sunMemo.key.startsWith(st.date)) lookChips(); }
   const sunny = st.site?.study?.sunshine?.fraction;   // [feature J] lighting tab: the sun now and the place's sunshine table
   LX.refresh({ az: s.az, alt: s.alt, lat, lon, tz, y, m, d, fraction: Array.isArray(sunny) && sunny.length === 12 ? sunny.map(Number) : SUNSHINE[S.crit.search?.city]?.fraction || null, place: st.site?.study?.sunshine?.place || (SUNSHINE[S.crit.search?.city] ? SUNSHINE[S.crit.search.city].place : '') });
@@ -1045,7 +1047,7 @@ function applyCity() {
   const dark = document.documentElement.dataset.theme !== 'light', css = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
   const colors = eye ? { low: '#7f8996', high: '#b9c2cf', roof: '#dde1e7', own: css('--accent'), ground: '#6e7378' }
     : { low: dark ? css('--surface-3') : css('--ink-4'), high: css('--ink-3'), roof: dark ? css('--ink-3') : css('--surface-1'), own: css('--accent'), ground: dark ? css('--surface-1') : css('--surface-3') };
-  G3.setCity(cityGroup(onSite, { daylight: eye, light: eye || !dark, colors }));
+  G3.setCity(cityGroup(onSite, { daylight: eye, light: eye || !dark, colors, season: sunCtx ? quantise(seasonAt(sunCtx.m, sunCtx.d, sunCtx.lat)) : undefined }));
 }
 let cityKey = '';
 
