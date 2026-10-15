@@ -224,7 +224,7 @@ def test_the_chips_and_the_seats_behave_the_same_in_both_engines(open_page, webg
     b = open_page("#unit/" + UNIT)
     _unit(b)
     un = names(b.page, "#uLook")
-    assert st == un[: len(st)] and st[:7] == ["Living room", "Bay", "Bedroom", "Corner", "Sofa", "Bed", "Desk"]
+    assert st == un[: len(st)] and st[:6] == ["Living room", "Bay", "Bedroom", "Corner", "Sofa", "Sofa, window"]
     # the sofa chip: the same seat (40 in eye height) in both, and the same eye point in the site frame
     a.page.click("#psLook [data-vp='seat:sofa']")
     a.page.wait_for_function("() => window.__plan3d.view === 'seat:sofa'")

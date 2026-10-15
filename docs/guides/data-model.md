@@ -9,6 +9,7 @@ searches/my-search/
   listings.template.csv  CSV headers for bulk import
   research/              notes (<listing-id>.md), dossiers/, charts/
   plans/                 floor plans (<listing-id>.json)
+  furniture.json         the renter's own furniture: sizes, colours, materials (docs/guides/floor-plans.md#your-furniture)
   sites/                 3D site models (generated)
   layers/                map heat layers (generated)
   cache/                 downloads and geocoder cache (generated)

@@ -10,10 +10,12 @@
 // marked userData.shared so the studio's disposal keeps them, and never at import time (the module loads in Node too).
 import * as THREE from 'three';
 import { MAT } from '../plan/catalog.js';
+import { lookOf, partLook } from '../plan/looks.js';   // the renter's colour, material and finish for each piece (furniture.json `look`)
 
-const TAU = Math.PI * 2, IN = 0.0254;
+const TAU = Math.PI * 2, IN = 0.0254, COLOR_CHAIR = 0x35383d;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const sat = (v) => clamp(v, 0, 1);
+const lum = (c) => { const [r, g, b] = [0, 1, 2].map((i) => srgb(c)[i] / 255); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
 const tone = (c, k) => new THREE.Color(c).multiplyScalar(k);
 const mix = (a, b, t) => new THREE.Color(a).lerp(new THREE.Color(b), t);
 const hexOf = (c) => new THREE.Color(c).getHexString();
@@ -22,6 +24,14 @@ const hashStr = (str) => [...String(str)].reduce((a, ch) => (a * 31 + ch.charCod
 /** sRGB 0..255 components of a colour (THREE.Color keeps linear values). */
 function srgb(c, k = 1) { const o = { r: 0, g: 0, b: 0 }; new THREE.Color(c).getRGB(o, THREE.SRGBColorSpace); return [o.r, o.g, o.b].map((v) => clamp(Math.round(v * k * 255), 0, 255)); }
 const css = (c, k = 1, a = 1) => { const [r, g, b] = srgb(c, k); return `rgba(${r},${g},${b},${a})`; };
+/** Roughness by material and finish (a matte paint scatters, a gloss one shows the room in it). */
+const ROUGH = {
+  leather: { matte: 0.62, satin: 0.5, sheen: 0.4, gloss: 0.28 }, wood: { matte: 0.72, satin: 0.5, sheen: 0.4, gloss: 0.26 },
+  metal: { matte: 0.55, satin: 0.38, sheen: 0.3, gloss: 0.18 }, paint: { matte: 0.78, satin: 0.5, sheen: 0.38, gloss: 0.22 },
+  fabric: { matte: 0.93, satin: 0.9, sheen: 0.85, gloss: 0.8 },
+};
+/** A copy of a look with its colour scaled (a darker leg, a lighter drawer front). */
+const shade = (spec, k) => ({ ...spec, color: tone(spec.color, k).getHex() });
 const isLight = (c) => { const [r, g, b] = srgb(c); return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255 > 0.72; };
 
 // Accent colours for pillows, throws and books (data, not UI chrome).
@@ -59,6 +69,20 @@ const weaveTex = () => canvasTex('r3-weave', 256, 256, (g, W, H) => {
   g.putImageData(im, 0, 0);
   for (let k = 0; k < 170; k++) { const x = r() * W, y = r() * H, L = 4 + r() * 16; g.fillStyle = r() < 0.5 ? `rgba(255,255,255,${0.05 + r() * 0.07})` : `rgba(0,0,0,${0.04 + r() * 0.05})`; g.fillRect(x, y, L, 1.5); g.fillRect(x - W, y, L, 1.5); }
 }, { repeat: [5, 5] });
+/** Pebbled leather as a grey height map (a bump map: it adds grain to the light, not a colour); one tile is 16 cm. */
+const leatherTex = () => canvasTex('r3-leather', 256, 256, (g, W, H) => {
+  const r = rng(23); g.fillStyle = '#8c8c8c'; g.fillRect(0, 0, W, H);
+  // a jittered grid of soft pebbles with darker creases between them, wrapped so the tile repeats cleanly
+  const n = 22, cw = W / n;
+  for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) {
+    const cx = (i + 0.5 + (r() - 0.5) * 0.7) * cw, cy = (j + 0.5 + (r() - 0.5) * 0.7) * cw, rad = cw * (0.5 + r() * 0.16), v = 150 + r() * 70;
+    for (const ox of [-W, 0, W]) for (const oy of [-H, 0, H]) {
+      const x = cx + ox, y = cy + oy; if (x < -rad || y < -rad || x > W + rad || y > H + rad) continue;
+      const gr = g.createRadialGradient(x, y, 0, x, y, rad); gr.addColorStop(0, `rgb(${v},${v},${v})`); gr.addColorStop(0.7, `rgb(${v * 0.78 | 0},${v * 0.78 | 0},${v * 0.78 | 0})`); gr.addColorStop(1, 'rgba(60,60,60,0)');
+      g.fillStyle = gr; g.beginPath(); g.arc(x, y, rad, 0, TAU); g.fill();
+    }
+  }
+}, { repeat: [6.25, 6.25] });
 /** A switched-off screen: dark glass with a soft diagonal reflection and a vignette. */
 const screenTex = () => canvasTex('r3-screen', 256, 160, (g, W, H) => {
   const k = g.createLinearGradient(0, 0, W * 0.35, H); k.addColorStop(0, '#202938'); k.addColorStop(1, '#06080b'); g.fillStyle = k; g.fillRect(0, 0, W, H);
@@ -256,7 +280,7 @@ function kit(it, ctx) {
   const fast = ctx.quality !== 'visual', s = ctx.s, geos = new Map(), mats = new Map();
   const once = (map, key, fn) => { let v = map.get(key); if (v === undefined) { v = fn(); map.set(key, v); } return v; };
   const K = {
-    fast, s, ctx, it,
+    fast, s, ctx, it, look: lookOf(it),
     geo: (key, fn) => once(geos, key, fn),
     mat: (key, fn) => once(mats, key, fn),
     /** Soft box; Fast drops to one bevel step and its own k (`kf`, default 1 x 1 x 1). */
@@ -272,6 +296,31 @@ function kit(it, ctx) {
     paint(col, rough = 0.45) { return K.mat(`paint|${hexOf(col)}|${rough}`, () => ctx.std(col, { roughness: rough })); },
     fabric(col, o = {}) { return K.mat(`fab|${hexOf(col)}|${o.side ? 2 : 1}`, () => { const t = weaveTex(); return (ctx.fabric || ctx.std)(col, { roughness: 0.93, ...(t ? { map: t } : {}), ...o }); }); },
     metal(col, rough = 0.35, metal = 0.55) { return K.mat(`metal|${hexOf(col)}|${rough}|${metal}`, () => ctx.std(col, { roughness: rough, metalness: metal })); },
+    /** Leather: a pebbled grain and a soft sheen. Visual adds a velvety rim (sheen) and a thin clear coat; Fast keeps the grain and the specular only. */
+    leather(col, finish = 'sheen') {
+      return K.mat(`leather|${hexOf(col)}|${finish}|${fast ? 1 : 2}`, () => {
+        const t = leatherTex(), rough = ROUGH.leather[finish] ?? 0.42, o = { roughness: rough, ...(t ? { bumpMap: t, bumpScale: fast ? 0.6 : 0.7 } : {}) };
+        if (fast) return ctx.std(col, o);
+        const m = new THREE.MeshPhysicalMaterial({ color: tone(col, 0.7), ...o, sheen: 0.4, sheenRoughness: 0.5, sheenColor: mix(col, 0xffffff, 0.22), clearcoat: finish === 'matte' ? 0 : 0.18, clearcoatRoughness: 0.5 });
+        return m;
+      });
+    },
+    /** The material for a look `{color, material, finish}`: the piece's own, over `def` (the model's default, always an assumption). */
+    skin(spec, def = {}) {
+      const s = { color: MAT.wood, material: 'paint', finish: 'satin', ...def, ...spec }, fin = s.finish, rough = (ROUGH[s.material] || ROUGH.paint)[fin] ?? 0.5;
+      switch (s.material) {
+        case 'leather': return K.leather(s.color, fin);
+        case 'fabric': return K.fabric(s.color);
+        case 'wood': return K.wood(s.color, rough);
+        case 'metal': return K.metal(s.color, rough, fast ? 0.15 : 0.6);   // Fast has no environment light, so a full metal would render near black
+        case 'glass': return K.mat(`glass|${hexOf(s.color)}`, () => ctx.std(s.color, { roughness: 0.08, metalness: 0.2 }));
+        default: return K.paint(s.color, rough);   // paint, laminate, plastic
+      }
+    },
+    /** The piece's own look over the model's default. */
+    spec(def = {}) { return { ...def, ...K.look }; },
+    /** A named part's look (the futon's frame, the desk's chair, ...) over the model's default for that part. */
+    part(name, def = {}) { return { ...def, ...partLook(it, name) }; },
     add(geo, mat, x = 0, y = 0, z = 0, o = {}) {
       const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z);
       if (o.rx || o.ry || o.rz) m.rotation.set(o.rx || 0, o.ry || 0, o.rz || 0, 'YXZ');
@@ -292,8 +341,8 @@ function seating(it, K) {
   return sofa(it, K);
 }
 function sofa(it, K) {
-  const { w, d, h } = it, hw = w / 2, hd = d / 2, chair = it.kind === 'chair', f = K.fast, col = it.base?.color ?? MAT.fabric;
-  const fab = K.fabric(col), frameM = K.fabric(tone(col, 0.84)), armM = K.fabric(tone(col, 0.94)), weltM = K.fabric(tone(col, 0.55)), legM = K.wood(MAT.woodDark, 0.5);
+  const { w, d, h } = it, hw = w / 2, hd = d / 2, chair = it.kind === 'chair', f = K.fast, spec = K.spec({ color: it.base?.color ?? MAT.fabric, material: 'fabric', finish: 'matte' });
+  const fab = K.skin(spec), frameM = K.skin(shade(spec, 0.84)), armM = K.skin(shade(spec, 0.94)), weltM = K.skin(shade(spec, 0.55)), legM = K.wood(MAT.woodDark, 0.5);
   const legH = clamp(h * 0.13, 3.5, 5), armW = chair ? clamp(w * 0.17, 4.5, 6.5) : clamp(w * 0.08, 5, 7.5), armH = clamp(h * 0.66, 17, 25);
   const backT = clamp(d * 0.17, 4.5, 7), baseTop = legH + clamp(h * 0.2, 5.5, 7.5), inner = w - 2 * armW;
   const n = chair ? 1 : clamp(Math.round(inner / 24), 1, 4), cw = inner / n, seatT = clamp(h * 0.17, 4.8, 6.2), seatTop = baseTop + seatT, seatD = d - backT - 0.3;
@@ -318,71 +367,63 @@ function sofa(it, K) {
     spots.forEach((sx, i) => K.add(pg, K.fabric(cols[i]), chair ? 0 : sx * (inner / 2 - 8.5), seatTop - 0.6, -hd + backT + backCT + 4.6, { rx: -0.2, ry: -sx * 0.32, rz: sx * 0.05 }));
   }
 }
-// A futon: a solid-wood frame (posts that are the legs, armrests, side rails and slats, a slatted back deck) carrying a thick
-// tufted mattress folded into seat and back, with bolsters. Opened (variant 'bed') the mattress lies flat on a low deck.
+// A futon: a thick mattress (leather, fabric ...) folded into a seat and a back, built as rows of padded channels so the seams are real
+// grooves, on a tubular frame (black metal unless the renter says otherwise: rail arms, raked back stiles, a slatted deck). Opened
+// (variant 'bed') the mattress lies flat across a low deck. The renter's `look` colours the mattress; its `frame` part colours the metal.
 function futon(it, K) {
   const { w, d, h } = it, hw = w / 2, hd = d / 2, f = K.fast, flat = it.variant === 'bed' || d > 48;
-  const col = it.base?.color ?? MAT.green, matM = K.fabric(col), btnM = K.fabric(tone(col, 0.45)), wood = K.wood(MAT.wood, 0.55), slatM = K.wood(tone(MAT.wood, 0.9), 0.6);
-  const armT = 2.6, inner = w - 2 * armT, armTop = flat ? h : clamp(h * 0.66, 18, 24), deckY = flat ? 6 : 11, mt = flat ? 6 : 6.5;
-  // arms: two posts (the legs), an armrest, a side rail and slats
-  const postG = K.board(armT - 0.5, armTop - 1.3, armT - 0.3, 0.25), restG = K.board(armT, 1.3, d - 0.2, 0.45), railG = K.board(armT - 1, 3, d - 2 * armT, 0, true);
-  const slatN = f ? 2 : 3, slatG = K.board(0.9, armTop - 1.3 - (deckY - 0.5), 1.8, 0.2);
-  for (const sx of [-1, 1]) {
-    const x = sx * (hw - armT / 2);
-    for (const sz of [-1, 1]) K.add(postG, wood, x, 0, sz * (hd - armT / 2));
-    K.add(restG, wood, x, armTop - 1.3, 0);
-    K.add(railG, wood, x, deckY - 3.5, 0);
-    for (let i = 0; i < slatN; i++) K.add(slatG, slatM, x, deckY - 0.5, -hd + armT + ((d - 2 * armT) * (i + 1)) / (slatN + 1));
-  }
-  K.add(K.board(inner + 0.4, 3.4, 1.4, 0.3), wood, 0, deckY - 3.6, hd - 1.1); K.add(K.board(inner + 0.4, 3.4, 1.4, 0, true), wood, 0, deckY - 3.6, -hd + 1.1);
-  if (!f && w > 60) { const cl = K.board(1.8, deckY - 3.6, 1.2, 0, true); for (const sz of [-1, 1]) K.add(cl, wood, 0, 0, sz * (hd - 1.1)); }
-  const tuftsAt = (xs, vs) => xs.flatMap((x) => vs.map((v) => [x, v])), cols5 = [-2, -1, 0, 1, 2].map((i) => (i * (inner - 6)) / 5.4);
-  const buttons = (pts, axis, surf, parent) => {   // merged button discs on a cushion face (cushion-local coordinates)
-    if (f || !pts.length) return;
-    const bg = new THREE.CylinderGeometry(0.55, 0.6, 0.4, 8, 1);
-    const parts = pts.map(([u, v]) => ({ g: bg, m: axis === 'y' ? mtx(u, surf(u, v), v) : mtx(u, v, surf(u, v), Math.PI / 2) }));
-    K.add(mergeParts(parts), btnM, 0, 0, 0, { parent, cast: false }); bg.dispose();
+  const spec = K.spec({ color: it.base?.color ?? MAT.green, material: 'fabric', finish: 'matte' }), mat = K.skin(spec);
+  const fm = K.skin(K.part('frame', { color: 0x1e1f22, material: 'metal', finish: 'satin' })), cap = K.paint(0x0b0b0c, 0.7);
+  const seg = f ? 6 : 10, rr = 0.85, hx = hw - 1.5, mW = 2 * hx - 0.8;
+  const armTop = flat ? 14 : clamp(h * 0.7, 20, 25), deckY = flat ? 7 : 12.5, mt = flat ? 6 : 6.5;
+  const UP = new THREE.Vector3(0, 1, 0), tubeG = K.geo(`tube|${seg}`, () => new THREE.CylinderGeometry(1, 1, 1, seg, 1)), ballG = K.geo(`ball|${seg}`, () => new THREE.SphereGeometry(1, seg, Math.max(4, seg >> 1)));
+  const tube = (a, b, r, m = fm) => {   // a rod between two points [x, y, z]
+    const A = new THREE.Vector3(...a), B = new THREE.Vector3(...b), dir = B.clone().sub(A), L = dir.length();
+    const mesh = K.add(tubeG, m, (a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2, { scale: [r, L, r] }); mesh.quaternion.setFromUnitVectors(UP, dir.normalize()); return mesh;
   };
-  if (flat) {   // opened as a bed: one flat tufted mattress, a bolster along the back
-    const md = d - 1.6, pts = tuftsAt(cols5, [-md * 0.28, 0, md * 0.28]);
-    const pf = { py: 0.7 }, mg = K.soft(inner - 0.5, mt, md, { r: 2.6, k: [8, 1, 8], puff: pf, pow: 0.8, tufts: { axis: 1, side: 1, pts, depth: 0.8, rad: 2.1 } });
-    const m = K.add(mg, matM, 0, deckY, 0);
-    buttons(pts, 'y', (u, v) => mt + crownAt(0.7, u, v, (inner - 0.5) / 2, md / 2, 0.8) - 0.3, m);
-    const br = Math.min(2.8, (h - deckY - mt) / 2 + 0.25), bl = Math.max(4, inner - 10 - 2 * br);
-    K.add(K.geo(`bolster|${br}|${bl}`, () => new THREE.CapsuleGeometry(br, bl, f ? 2 : 4, f ? 8 : 14)), K.fabric(ACC.cream), 0, deckY + mt + br - 0.5, -hd + 2.5 + br, { rz: Math.PI / 2 });
+  const ball = (p, r) => K.add(ballG, fm, p[0], p[1], p[2], { scale: r });
+  const zf = hd - 1.8, zr = -hd + 1.8;
+  for (const sx of [-1, 1]) {   // each side: two posts that are the legs, an arm rail with rounded ends, a lower rail
+    const x = sx * hx;
+    tube([x, 0.5, zf], [x, armTop, zf], rr); tube([x, 0.5, zr], [x, armTop, zr], rr);
+    tube([x, armTop, zr], [x, armTop, zf], rr * 1.2); ball([x, armTop, zr], rr * 1.2); ball([x, armTop, zf], rr * 1.2);
+    tube([x, deckY - 2.2, zr], [x, deckY - 2.2, zf], rr * 0.75);
+    if (!f) for (const t of [0.34, 0.67]) tube([x, deckY - 2.2, zr + (zf - zr) * t], [x, armTop, zr + (zf - zr) * t], rr * 0.5);
+    for (const z of [zr, zf]) K.add(K.geo('cap', () => legGeo(1.0, 1.0, 0.6, seg)), cap, x, 0, z);
+  }
+  tube([-hx, deckY - 2.2, zf], [hx, deckY - 2.2, zf], rr * 0.75); tube([-hx, deckY - 2.2, zr], [hx, deckY - 2.2, zr], rr * 0.75);
+  const slatN = f ? 3 : 6, slatG = K.board(2 * hx, 0.5, 2.0, 0, true);   // the slatted deck under the mattress
+  for (let i = 0; i < slatN; i++) K.add(slatG, fm, 0, deckY - 1.1, zr + ((zf - zr) * (i + 0.5)) / slatN);
+  const chan = (len, depth, thick, o) => K.soft(len, thick, depth, { r: Math.min(1.4, thick / 2.3, depth / 2.3), ...o });
+  if (flat) {   // opened as a bed: one flat mattress made of padded channels across its length
+    const nC = f ? 5 : 7, md = d - 2.4, cd = md / nC, cg = chan(mW, cd + 0.5, mt, { puff: { py: 0.6 }, pow: 0.8, kf: [2, 1, 1], k: [3, 1, 2], s: 1, keepPuff: true });
+    for (let i = 0; i < nC; i++) K.add(cg, mat, 0, deckY, -md / 2 + cd * (i + 0.5));
     return;
   }
-  // the back deck: two raked stiles and slats behind the back cushion
-  const by0 = deckY, bz0 = -hd + 5.5, by1 = h - 1.2, bz1 = -hd + 1.4, len = Math.hypot(by1 - by0, bz1 - bz0), lean = Math.atan2(bz0 - bz1, by1 - by0);
-  const stileG = K.board(1.6, len, 2.2, 0.25);
-  for (const sx of [-1, 1]) K.add(stileG, wood, sx * (inner / 2 - 1.1), by0, bz0, { rx: -lean });
-  const bsN = f ? 2 : 4, bsG = K.board(inner - 0.6, 2.6, 0.9, 0, true), topRailG = K.board(inner - 0.6, 2.6, 1.2, 0.3);
-  for (let i = 0; i < bsN; i++) { const t = (i + 1) / bsN; K.add(i === bsN - 1 ? topRailG : bsG, i === bsN - 1 ? wood : slatM, 0, by0 + (by1 - by0) * t - 2.6, bz0 + (bz1 - bz0) * t - 0.4, { rx: -lean }); }
-  // mattress: the seat runs back under the back section; the back leans on the deck
-  const seatD = hd - 0.6 - (bz0 - 0.5), seatZ = (hd - 0.6 + bz0 - 0.5) / 2, exposedMid = ((bz0 + mt + hd) / 2) - seatZ;
-  const seatPts = tuftsAt(cols5, [exposedMid]), backLen = (h - 2.6 - (deckY + mt - 1.4)) / Math.cos(lean);
-  const sg = K.soft(inner - 0.6, mt, seatD, { r: 2.8, k: [8, 1, 5], puff: { py: 0.8, pz: 0.5 }, pow: 0.8, tufts: { axis: 1, side: 1, pts: seatPts, depth: 0.8, rad: 2.1 } });
-  const sm = K.add(sg, matM, 0, deckY, seatZ);
-  buttons(seatPts, 'y', (u, v) => mt + crownAt(0.8, u, v, (inner - 0.6) / 2, seatD / 2, 0.8) - 0.3, sm);
-  const backPts = tuftsAt(cols5, [-backLen * 0.18, backLen * 0.16]);   // face-centred (x, y)
-  const bgeo = K.soft(inner - 0.6, backLen, mt, { r: 2.8, k: [8, 5, 1], puff: { pz: 0.8, py: 0.3 }, pow: 0.8, tufts: { axis: 2, side: 1, pts: backPts, depth: 0.8, rad: 2.1 } });
-  const bm = K.add(bgeo, matM, 0, deckY + mt - 1.4, bz0 + mt / 2 + 1.0, { rx: -lean });
-  // softGeo centres y before lifting it by h/2, so back tufts at local v sit at y = v + backLen / 2
-  buttons(backPts.map(([x, v]) => [x, v + backLen / 2]), 'z', (u, v) => mt / 2 + crownAt(0.8, u, v - backLen / 2, (inner - 0.6) / 2, backLen / 2, 0.8) - 0.3, bm);
-  // bolsters against the arms and, in Visual, a throw pillow
-  const br = 3.3, bl = Math.max(4, Math.min(16, hd - (bz0 + mt) - 2 - 2 * br));
-  const bolG = K.geo(`bolster|${br}|${bl}`, () => new THREE.CapsuleGeometry(br, bl, f ? 2 : 4, f ? 8 : 14)), bolM = K.fabric(ACC.cream);
-  for (const sx of [-1, 1]) K.add(bolG, bolM, sx * (inner / 2 - br - 0.4), deckY + mt + br - 0.4, (bz0 + mt + hd) / 2 + 0.5, { rx: Math.PI / 2 });
-  if (!f) K.add(K.soft(15, 15, 4.6, { r: 1, k: [2, 2, 1], puff: { pz: 1.7, nz: 1.5 }, pow: 0.6 }), K.fabric(ACC.rust), inner * 0.14, deckY + mt - 0.6, bz0 + mt + 3.4, { rx: -lean - 0.12, ry: -0.18, rz: 0.04 });
+  // the back: two raked stiles and rails carrying the back cushion
+  const by0 = deckY - 1, bz0 = -hd + 5.5, by1 = h - 1.2, bz1 = -hd + 1.4, lean = Math.atan2(bz0 - bz1, by1 - by0), bx = hx - 2.5;
+  for (const sx of [-1, 1]) tube([sx * bx, by0, bz0], [sx * bx, by1, bz1], rr * 0.9);
+  tube([-bx, by1, bz1], [bx, by1, bz1], rr); if (!f) { ball([-bx, by1, bz1], rr); ball([bx, by1, bz1], rr); }
+  tube([-bx, by0 + (by1 - by0) * 0.5, bz0 + (bz1 - bz0) * 0.5], [bx, by0 + (by1 - by0) * 0.5, bz0 + (bz1 - bz0) * 0.5], rr * 0.7);
+  // the seat: padded channels from the back stiles to the front rail, each crowned like a soft roll
+  const zb = bz0 - 0.5, seatD = hd - 0.6 - zb, nS = f ? 3 : 5, cd = seatD / nS;
+  const sg = chan(mW, cd + 0.5, mt, { puff: { py: 0.6 }, pow: 0.8, kf: [2, 1, 1], k: [3, 1, 2], s: 1, keepPuff: true });
+  for (let i = 0; i < nS; i++) K.add(sg, mat, 0, deckY, zb + cd * (i + 0.5));
+  // the back cushion leans on the stiles: channels stacked up its length, crowned toward the sitter
+  const baseY = deckY + mt - 1.4, backLen = (h - 2.4 - baseY) / Math.cos(lean), nB = f ? 3 : 6, bl = backLen / nB;
+  const bg = K.group(0, baseY, bz0 + mt / 2 + 1.0, 0); bg.rotation.x = -lean;
+  const bgeo = chan(mW, mt, bl + 0.5, { puff: { pz: 0.6 }, pow: 0.8, kf: [2, 2, 1], k: [3, 2, 1], s: 1, keepPuff: true });
+  for (let i = 0; i < nB; i++) K.add(bgeo, mat, 0, bl * i, 0, { parent: bg });
 }
 
 // ------------------------------------------------------------------ beds
 function bed(it, K) {
-  const { w, d, h } = it, hw = w / 2, hd = d / 2, f = K.fast, storage = !!it.base?.storage, col = it.base?.color ?? MAT.fabric;
+  const { w, d, h } = it, hw = w / 2, hd = d / 2, f = K.fast, storage = !!it.base?.storage, spec = K.spec({ color: it.base?.color ?? MAT.fabric, material: 'fabric', finish: 'matte' });
   const [mw0, md0] = it.productInfo?.mattress || it.base?.mattress || [w - 4, d - 4];
   const hbT = clamp(d * 0.04, 2.6, 3.6), mw = Math.min(mw0, w - 3), md = Math.min(md0, d - hbT - 1.5);
-  const upM = K.fabric(col), upDark = K.fabric(tone(col, 0.62)), legM = K.wood(MAT.woodDark, 0.5);
-  const tick = K.fabric(0xece8e0), sheet = K.fabric(MAT.pillow), duvetM = K.fabric(MAT.duvet, { side: THREE.DoubleSide }), foldM = K.fabric(mix(MAT.duvet, 0xffffff, 0.5));
+  const upM = K.skin(spec), upDark = K.skin(shade(spec, 0.62)), legM = K.skin(K.part('legs', { color: MAT.woodDark, material: 'wood', finish: 'satin' }));
+  // bedding is generic decor, not the renter's: plain whites, no colour accents
+  const tick = K.fabric(0xece8e0), sheet = K.fabric(MAT.pillow), duvetM = K.fabric(0xdddad3, { side: THREE.DoubleSide }), foldM = K.fabric(0xeceae4);
   const legH = storage ? 2 : 4.5, deck = storage ? 14 : 11, mT = 10, headZ = -hd + hbT, footZ = headZ + md, mz = (headZ + footZ) / 2;
   const mBot = deck - 1.5, mTop = mBot + mT;
   // headboard: a panel with rounded shoulders, bevelled edges and (Visual) puffed vertical channels
@@ -431,15 +472,9 @@ function bed(it, K) {
     nTopX: f ? 3 : 8, nTopZ: f ? 3 : 22, nArc: 2 + (f ? 0 : 1), nDrop: f ? 1 : 4 }));
   K.add(dg, duvetM, 0, 0, 0);
   K.add(K.soft(2 * (ax + R) + 0.3, 2.4, 11, { r: 1.1, k: [3, 1, 1], puff: { py: 0.5, pz: 0.3 }, pow: 0.8 }), foldM, 0, top - 0.95, z0 + 4.6);
-  // pillows: two sleeping pillows propped on the headboard and (Visual) a lumbar cushion in front
+  // pillows: two sleeping pillows propped on the headboard
   const pw = Math.min(26, mw / 2 - 2.5), pd = 17, pillowG = K.soft(pw, 6, pd, { r: 1.2, k: [2, 1, 2], puff: { py: 1.7, ny: 0.9 }, pow: 0.6 });
   for (const sx of [-1, 1]) K.add(pillowG, sheet, sx * (pw / 2 + 0.6), mTop + 1.4, headZ + pd / 2 + 1.6, { rx: 0.42, ry: sx * 0.03 });
-  if (!f) K.add(K.soft(Math.min(22, mw * 0.36), 11, 4.5, { r: 1, k: [2, 1, 1], puff: { pz: 1.6, nz: 1.3 }, pow: 0.6 }), K.fabric(ACC.ochre), 0, mTop + 0.6, headZ + pd + 3.2, { rx: -0.42 });
-  // a throw folded across the foot: draped over both sides in Visual, a folded slab in Fast
-  if (!f) {
-    const tg = K.geo('throw', () => drapeGeo({ ax: ax + 0.15, z0: z1 - 19, z1: z1 - 6, top: top + 0.75, R: R + 0.55, dropX: Math.min(6.5, dropX - 1.5), dropZ: 0, flareX: 0, fold: 0.22, period: 7, nTopX: 6, nTopZ: 4, nArc: 3, nDrop: 3 }));
-    K.add(tg, K.fabric(ACC.rust, { side: THREE.DoubleSide }), 0, 0, 0);
-  } else K.add(K.soft(mw * 0.94, 1.5, 13, { r: 0.6 }), K.fabric(ACC.rust), 0, top - 0.2, z1 - 12.5);
 }
 
 // ------------------------------------------------------------------ nightstands, dressers, wardrobes (case goods)
@@ -470,12 +505,13 @@ function vase(K, x, y, z, ht = 7, col = 0xd9d2c3) {
   K.add(stem, K.paint(0x6f7a52, 0.8), x, y + ht * 0.7, z, { cast: false });
 }
 function caseGood(it, K, o) {
-  const { w, d, h } = it, hw = w / 2, hd = d / 2, f = K.fast, col = it.base?.color ?? MAT.wood, painted = isLight(col);
-  const body = painted ? K.paint(col, 0.45) : K.wood(col, 0.6), front = painted ? K.paint(tone(col, 1.02), 0.42) : K.wood(tone(col, 1.07), 0.56);
-  const topM = painted ? K.paint(tone(col, 0.96), 0.4) : K.wood(tone(col, 0.9), 0.52), legM = K.wood(painted ? MAT.oak : MAT.woodDark, 0.55);
-  const gapM = K.paint(0x221e1a, 0.95), pullM = K.metal(painted ? 0x2c2e33 : MAT.brass, 0.32, painted ? 0.4 : 0.6);
+  const { w, d, h } = it, hw = w / 2, hd = d / 2, f = K.fast, col0 = it.base?.color ?? MAT.wood;
+  const spec = K.spec({ color: col0, material: isLight(col0) ? 'paint' : 'wood', finish: 'satin' }), onWood = spec.material === 'wood', dark = !isLight(spec.color) && lum(spec.color) < 0.12;
+  const body = K.skin(shade(spec, onWood ? 1 : 1)), front = K.skin(shade(spec, onWood ? 1.07 : 1.03)), topM = K.skin(shade(spec, onWood ? 0.9 : 0.97));
+  const legM = K.skin(K.part('legs', onWood ? { color: MAT.woodDark, material: 'wood', finish: 'satin' } : { ...shade(spec, 0.9), material: spec.material, finish: spec.finish }));
+  const gapM = K.paint(0x221e1a, 0.95), pullM = K.skin(K.part('pulls', { color: onWood ? MAT.brass : dark ? 0x74787e : 0x2c2e33, material: 'metal', finish: 'satin' }));
   const legH = o.legH, topT = o.topT ?? 1.0, cd = d - 1.6, fz = hd - 1.6;
-  if (o.plinth) K.add(K.board(w - 2, legH, d - 2.4), painted ? K.paint(tone(col, 0.78), 0.5) : K.wood(tone(col, 0.7), 0.6), 0, 0, -0.4);
+  if (o.plinth) K.add(K.board(w - 2, legH, d - 2.4), K.skin(shade(spec, onWood ? 0.7 : 0.78)), 0, 0, -0.4);
   else if (legH > 0) { const lg = K.geo(`cg-leg|${legH}`, () => legGeo(0.85, 0.55, legH, 4, true)); for (const sx of [-1, 1]) for (const sz of [-1, 1]) K.add(lg, legM, sx * (hw - 1.7), 0, sz * (hd - 1.7), { rz: sx * 0.04, rx: -sz * 0.04 }); }
   K.add(K.soft(w - 0.5, h - legH - topT + 0.2, cd, { r: 0.35 }), body, 0, legH, -0.8);
   K.add(K.soft(w, topT, d, { r: Math.min(0.45, topT / 2.2) }), topM, 0, h - topT, 0);
@@ -490,11 +526,10 @@ function caseGood(it, K, o) {
     const px = o.doors ? x + (i === 0 ? 1 : -1) * (cw / 2 - 2.2) : x, py = o.doors ? y + rh * 0.55 : y + (rh - gap) * (rows > 2 ? 0.55 : 0.6);
     K.add(pg, pullM, px, py, fz + 0.77, { cast: false });
   }
-  if (o.decor === 'night') decorBooks(K, hw - 4.2, h, -hd * 0.25, 2, 0.25, hashStr(it.id || 'n'), 0.72);   // off to one side: a table lamp may stand in the middle
-  if (o.decor === 'dresser') { decorBooks(K, -hw + 5.5, h, -hd * 0.15, 3, -0.12, 5); vase(K, hw - 5, h, -hd * 0.2, Math.min(8, h * 0.2)); }
 }
-const nightstand = (it, K) => caseGood(it, K, { rows: 2, legH: clamp(it.h * 0.2, 3.5, 6), decor: 'night' });
-const dresser = (it, K) => caseGood(it, K, { rows: clamp(Math.round((it.h - 4) / 9), 3, 6), cols: it.w > 44 ? 2 : 1, legH: clamp(it.h * 0.1, 3, 4.5), decor: 'dresser' });
+const nightstand = (it, K) => caseGood(it, K, { rows: 2, legH: clamp(it.h * 0.2, 3.5, 6) });
+// a flat-front chest of drawers (IKEA Storklinta-style: plain drawer fronts, short legs, a simple bar handle on each)
+const dresser = (it, K) => caseGood(it, K, { rows: clamp(Math.round((it.h - 4) / 9), 3, 6), cols: it.w > 44 ? 2 : 1, legH: clamp(it.h * 0.1, 3, 4.5) });
 const wardrobe = (it, K) => caseGood(it, K, { rows: 1, cols: it.w > 26 ? 2 : 1, doors: true, legH: 3, plinth: true, topT: 1.4 });
 
 function bookcase(it, K) {
@@ -538,8 +573,8 @@ function chairSpots(it) {
   return out;
 }
 /** A dining chair (back at local -z): upholstered seat, tapered legs, raked back posts and a curved back rail. */
-function diningChair(K, x, z, a) {
-  const g = K.group(x, 0, z, a), f = K.fast, wood = K.wood(MAT.woodDark, 0.52), seatM = K.fabric(MAT.fabricWarm);
+function diningChair(K, x, z, a, wood, seatM) {
+  const g = K.group(x, 0, z, a), f = K.fast;
   const legG = K.geo('dc-leg', () => legGeo(0.62, 0.45, 15.6, 4, true)), postG = K.geo('dc-post', () => legGeo(0.55, 0.62, 33.5, 4, true));
   for (const sx of [-1, 1]) { K.add(legG, wood, sx * 7.1, 0, 6.8, { parent: g }); K.add(postG, wood, sx * 7.1, 0, -6.9, { parent: g, rx: -0.07 }); }
   if (!f) K.add(K.board(16.4, 1.3, 16.2, 0.35), wood, 0, 15.5, 0, { parent: g });
@@ -549,7 +584,8 @@ function diningChair(K, x, z, a) {
   if (!f) { K.add(K.board(14.2, 1.1, 0.9, 0, true), wood, 0, 20.5, -8.4, { parent: g, rx: -0.07 }); const st = K.board(0.7, 0.7, 13.2, 0, true); for (const sx of [-1, 1]) K.add(st, wood, sx * 7.1, 5.5, -0.1, { parent: g }); }
 }
 function table(it, K) {
-  const { w, d, h } = it, hw = w / 2, hd = d / 2, f = K.fast, col = it.base?.color ?? MAT.wood, top = K.wood(col, 0.5), wood = K.wood(MAT.woodDark, 0.52);
+  const { w, d, h } = it, hw = w / 2, hd = d / 2, f = K.fast, spec = K.spec({ color: it.base?.color ?? MAT.wood, material: 'wood', finish: 'satin' }), top = K.skin(spec), wood = K.skin(shade(spec, 0.86));
+  const chairWood = K.skin(K.part('chairs', { color: MAT.woodDark, material: 'wood', finish: 'satin' })), chairSeat = K.fabric(MAT.fabricWarm);
   if (it.base?.round) {
     const R = Math.min(w, d) / 2, t = 1.5;
     K.add(K.geo('rtop', () => lathe([[0, 0], [R - 0.7, 0], [R - 0.2, 0.15], [R, t * 0.5], [R - 0.2, t - 0.15], [R - 0.7, t], [0, t]], f ? 20 : 48)), top, 0, h - t, 0);
@@ -560,25 +596,21 @@ function table(it, K) {
     const lg = K.geo(`tleg|${h}`, () => legGeo(1.3, 0.85, h - 1.5, 4, true));
     for (const sx of [-1, 1]) for (const sz of [-1, 1]) K.add(lg, wood, sx * (hw - 2.6), 0, sz * (hd - 2.6));
   }
-  for (const [x, z, a] of chairSpots(it)) diningChair(K, x, z, a);
-  if (!f && !it.base?.round) vase(K, w * 0.12, h, -d * 0.05, 7, 0xe2dccf);
+  for (const [x, z, a] of chairSpots(it)) diningChair(K, x, z, a, chairWood, chairSeat);
 }
 function coffeeTable(it, K) {
-  const { w, d, h } = it, hw = w / 2, hd = d / 2, f = K.fast, col = it.base?.color ?? MAT.wood, top = K.wood(col, 0.5), wood = K.wood(MAT.woodDark, 0.52);
+  const { w, d, h } = it, hw = w / 2, hd = d / 2, f = K.fast, spec = K.spec({ color: it.base?.color ?? MAT.wood, material: 'wood', finish: 'satin' }), top = K.skin(spec), wood = K.skin(shade(spec, 0.86));
   K.add(K.soft(w, 1.6, d, { r: 0.65 }), top, 0, h - 1.6, 0);
   K.add(K.board(w - 5, 1.8, d - 5, 0.2), wood, 0, h - 3.4, 0);
   K.add(K.board(w - 6.5, 0.8, d - 6.5, 0.2), top, 0, 4.2, 0);
   const lg = K.geo(`ctleg|${h}`, () => legGeo(1.05, 0.62, h - 1.6, f ? 6 : 10));
   for (const sx of [-1, 1]) for (const sz of [-1, 1]) K.add(lg, wood, sx * (hw - 2.6), 0, sz * (hd - 2.6), { rz: sx * 0.05, rx: -sz * 0.05 });
-  if (!f) {
-    decorBooks(K, -w * 0.2, h, 0, 2, 0.35, 9);
-    K.add(K.geo('bowl', () => lathe([[0, 0], [1.8, 0], [3.4, 0.9], [4.2, 2.2], [4.0, 2.3], [3.2, 1.2], [0, 0.7]], 18)), K.paint(0xd9cbb4, 0.4), w * 0.22, h, -1);
-  }
 }
 
 // ------------------------------------------------------------------ desk, monitor, lamp, task chair
 function taskChair(K, x, z, a) {
-  const g = K.group(x, 0, z, a), f = K.fast, frame = K.metal(0x2b2e33, 0.4, 0.5), fab = K.fabric(MAT.fabric), seatY = 17;
+  const g = K.group(x, 0, z, a), f = K.fast, frame = K.metal(0x24262a, 0.4, 0.5), seatY = 17;
+  const fab = K.skin(K.part('chair', { color: COLOR_CHAIR, material: 'fabric', finish: 'matte' }));   // the chair's look is an assumption until the renter says
   if (f) K.add(K.geo('tc-disc', () => legGeo(9, 10, 1.2, 10)), frame, 0, 0.4, 0, { parent: g });
   else {
     const spoke = new THREE.BoxGeometry(10, 1.1, 1.5), caster = new THREE.SphereGeometry(1.1, 8, 5), parts = [];
@@ -603,50 +635,31 @@ function monitor(K, x, y, z, mw) {
   K.add(K.soft(mw, mh, 0.7, { r: 0.22, s: 1 }), dark, x, by, z - 0.2);
   const sc = new THREE.Mesh(K.geo(`scr|${mw}`, () => new THREE.PlaneGeometry(mw - 2 * bez, mh - 2 * bez)), screen); sc.position.set(x, by + mh / 2, z + 0.16); K.s.add(sc);
 }
-function deskLamp(K, x, y, z, ry) {
-  const g = K.group(x, y, z, ry), dark = K.metal(0x2a2c30, 0.4, 0.5), brass = K.metal(MAT.brass, 0.3, 0.6);
-  K.add(K.geo('dl-base', () => legGeo(2.9, 3.1, 0.8, 16)), dark, 0, 0, 0, { parent: g });
-  const rod = K.geo('dl-rod', () => { const c = new THREE.CylinderGeometry(0.28, 0.28, 1, 8, 1); c.translate(0, 0.5, 0); return c; });
-  const a1 = 0.35, L1 = 13, a2 = 1.95, L2 = 10, j = [0, 0.8 + L1 * Math.cos(a1), L1 * Math.sin(a1)], e = [0, j[1] + L2 * Math.cos(a2), j[2] + L2 * Math.sin(a2)];
-  K.add(rod, brass, 0, 0.8, 0, { parent: g, rx: a1, scale: [1, L1, 1] });
-  K.add(rod, brass, 0, j[1], j[2], { parent: g, rx: a2, scale: [1, L2, 1] });
-  const head = new THREE.Group(); head.position.set(e[0], e[1] + 1.2, e[2]); head.rotation.x = 0.45; g.add(head);   // the shade and its bulb tilt together
-  K.add(K.geo('dl-shade', () => { const c = new THREE.CylinderGeometry(1.1, 3, 4.6, 18, 1, true); c.translate(0, -2.3, 0); return c; }), K.mat('dl-shade', () => K.ctx.std(0x2a2c30, { roughness: 0.45, metalness: 0.4, side: THREE.DoubleSide })), 0, 0, 0, { parent: head });
-  K.add(K.geo('dl-bulb', () => new THREE.SphereGeometry(0.85, 10, 6)), K.mat('dl-bulb', () => K.ctx.std(0xfff3dc, { emissive: 0xffd9a0, emissiveIntensity: 0.35, roughness: 0.4 })), 0, -2.9, 0, { parent: head, cast: false });
-}
 function desk(it, K) {
-  const { w, d, h } = it, hw = w / 2, hd = d / 2, f = K.fast, col = it.base?.color ?? MAT.oak, topM = K.wood(col, 0.5), wood = K.wood(tone(col, 0.82), 0.55), legM = K.wood(MAT.woodDark, 0.52);
-  const tT = 1.2, under = h - tT, pw = clamp(w * 0.27, 13, 17);
-  K.add(K.soft(w, tT, d, { r: 0.45 }), topM, 0, under, 0);
-  // a two-drawer pedestal on the right, tapered legs on the left, a modesty apron at the back
-  const px = hw - pw / 2 - 0.4, legH = 3.2, pg = K.soft(pw, under - legH, d - 1.6, { r: 0.3 });
-  K.add(pg, wood, px, legH, -0.8);
-  const plg = K.geo('pleg', () => legGeo(0.7, 0.5, legH, 4, true)); for (const sx of [-1, 1]) for (const sz of [-1, 1]) K.add(plg, legM, px + sx * (pw / 2 - 1.4), 0, sz * (hd - 2.2));
-  const fz = hd - 1.6, dh = (under - legH - 1.2) / 2, frG = K.soft(pw - 1.4, dh - 0.35, 0.7, { r: 0.15, s: 1 }), pull = pullGeo(K, Math.min(6, pw * 0.4)), brass = K.metal(MAT.brass, 0.3, 0.6);
-  const rv = new THREE.Mesh(K.geo('dreveal', () => new THREE.PlaneGeometry(pw - 0.9, under - legH - 0.9)), K.paint(0x221e1a, 0.95)); rv.position.set(px, legH + (under - legH) / 2, fz + 0.02); K.s.add(rv);
-  for (let i = 0; i < 2; i++) { const y = legH + 0.6 + dh * i; K.add(frG, topM, px, y, fz); K.add(pull, brass, px, y + dh * 0.55, fz + 0.72, { cast: false }); }
-  const lg = K.geo(`dleg|${under}`, () => legGeo(1.05, 0.62, under, 4, true));
-  for (const sz of [-1, 1]) K.add(lg, legM, -hw + 2, 0, sz * (hd - 2), { rz: -0.04, rx: -sz * 0.04 });
-  K.add(K.board(w - pw - 3, 7, 0.75, 0.15), wood, -pw / 2 - 0.6, under - 7, -hd + 2);
-  // the things on it: a monitor (both modes); keyboard, mouse, mug, books and a lamp in Visual
-  const mw = clamp(w * 0.4, 14, 24), mx = -pw / 2 + 1;
-  monitor(K, mx, h, -hd + 5.5, mw);
-  if (!f) {
-    const keys = K.mat('keys', () => { const t = keysTex(); return K.ctx.std(t ? 0xffffff : 0xd0d3d6, { roughness: 0.5, metalness: 0.2, ...(t ? { map: t } : {}) }); });
-    K.add(K.soft(Math.min(16, mw * 0.7), 0.55, 5, { r: 0.22, s: 1, uv: 'top' }), keys, mx, h, Math.min(hd - 4, -hd + 15));
-    K.add(K.soft(2.4, 1.1, 4, { r: 1.0, s: 1, puff: { py: 0.3 } }), K.paint(0xe6e7e8, 0.35), mx + Math.min(16, mw * 0.7) / 2 + 3.5, h, Math.min(hd - 4, -hd + 15));
-    const mug = K.geo('mug', () => { const c = new THREE.CylinderGeometry(1.6, 1.45, 3.7, 14, 1); c.translate(0, 1.85, 0); const hdl = new THREE.TorusGeometry(1.0, 0.24, 6, 10, Math.PI); hdl.rotateZ(-Math.PI / 2); return mergeParts([{ g: c, tmp: true }, { g: hdl, m: mtx(1.6, 1.9, 0), tmp: true }]); });
-    K.add(mug, K.paint(ACC.ink, 0.35), hw - pw * 0.5, h, -hd * 0.05, { ry: 0.6 });
-    decorBooks(K, hw - pw * 0.5, h, -hd + 5.5, 3, 0.1, 21);
-    deskLamp(K, -hw + 4.5, h, -hd + 4.5, 0.75);
-  }
+  const { w, d, h } = it, hw = w / 2, hd = d / 2, f = K.fast, spec = K.spec({ color: it.base?.color ?? MAT.oak, material: 'wood', finish: 'satin' });
+  const topM = K.skin(spec), legM = K.skin(K.part('legs', shade(spec, 0.82))), apronM = K.skin(shade(spec, 0.9));
+  const tT = 1.4, under = h - tT;
+  // a plain table desk: a rounded top, a shallow apron on four sides and four tapered legs set in from the corners, splayed a touch
+  K.add(K.soft(w, tT, d, { r: 0.55 }), topM, 0, under, 0);
+  const apH = 3.4, inset = 1.6;
+  K.add(K.board(w - 2 * inset - 1.6, apH, 0.8, 0.15), apronM, 0, under - apH, -hd + inset + 0.4);
+  K.add(K.board(w - 2 * inset - 1.6, apH, 0.8, 0.15), apronM, 0, under - apH, hd - inset - 0.4);
+  for (const sx of [-1, 1]) K.add(K.board(0.8, apH, d - 2 * inset, 0.15), apronM, sx * (hw - inset - 0.4), under - apH, 0);
+  const lg = K.geo(`dleg|${under}`, () => legGeo(1.15, 0.7, under, 4, true));
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) K.add(lg, legM, sx * (hw - inset - 1.1), 0, sz * (hd - inset - 1.1), { rz: sx * 0.05, rx: -sz * 0.05 });
+  // the things on it: a monitor on its stand, and a keyboard and mouse (the chair is in front)
+  const mw = clamp(w * 0.4, 14, 24), mx = -w * 0.08;
+  monitor(K, mx, h, -hd + 6.2, mw);
+  const keys = K.mat('keys', () => { const t = keysTex(); return K.ctx.std(t ? 0xffffff : 0xd0d3d6, { roughness: 0.5, metalness: 0.2, ...(t ? { map: t } : {}) }); });
+  K.add(K.soft(Math.min(16, mw * 0.7), 0.55, 5, { r: 0.22, s: 1, uv: 'top' }), keys, mx, h, Math.min(hd - 4, -hd + 15));
+  if (!f) K.add(K.soft(2.4, 1.1, 4, { r: 1.0, s: 1, puff: { py: 0.3 } }), K.paint(0xe6e7e8, 0.35), mx + Math.min(16, mw * 0.7) / 2 + 3.5, h, Math.min(hd - 4, -hd + 15));
   taskChair(K, mx, hd + 9, Math.PI);
 }
 
 // ------------------------------------------------------------------ TVs
 function tv(it, K) {
   const { w, d, h } = it, hd = d / 2, f = K.fast, scrW = it.screen || w, scrH = it.mount === 'wall' ? h : scrW * 0.574, bez = 0.4;
-  const body = K.metal(0x16181b, 0.32, 0.35), metal = K.metal(0x3a3d42, 0.4, 0.5);
+  const body = K.skin(K.spec({ color: 0x16181b, material: 'plastic', finish: 'satin' })), metal = K.metal(0x3a3d42, 0.4, 0.5);
   const glass = K.mat('tvglass', () => { const t = screenTex(); return K.ctx.std(t ? 0xffffff : 0x0d0f12, { roughness: 0.08, metalness: 0.2, ...(t ? { map: t } : {}) }); });
   const panel = (y0, zBack) => {
     K.add(K.soft(scrW, scrH, 0.95, { r: 0.25, s: 1 }), body, 0, y0, zBack + 0.48);

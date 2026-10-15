@@ -108,6 +108,18 @@ test('Paramount 25E: six rows with the states the task names', () => {
   assert.match(A.accuracySummary(rows), /1 measured · 1 confirmed · 2 from a source · 1 estimated · 1 assumed/);
 });
 
+test('the furniture row says sizes and the futon\'s look come from the renter, and which other looks are assumed', () => {
+  const raw = json('furniture.json'), meta = { name: raw.name, confirmed: raw.confirmed, count: raw.pieces.length, looks: A.looksMeta(raw.pieces) };
+  const row = A.accuracyRows({ site: {}, furniture: meta }).find((r) => r.key === 'furniture');
+  assert.equal(row.state, 'confirmed');
+  assert.match(row.text, /Sizes are real, from you/);
+  assert.match(row.text, /8 of 10 from you \(the futon is black leather\)/);
+  assert.match(row.text, /2 pieces have only a stand-in look/);
+  assert.match(row.text, /chair/); assert.match(row.text, /frame/);   // details the renter has not said yet: the futon's frame and the desk chair
+  const none = A.accuracyRows({ site: {}, furniture: { ...meta, looks: null } }).find((r) => r.key === 'furniture');
+  assert.match(none.text, /every look is a stand-in/);
+});
+
 test('a measured slab, a generic room and no furniture each change their row', () => {
   const site = json('sites/paramount-tower-25e.json');
   const rows = A.accuracyRows({ site, plan: null, cal: { state: 'measured', fh: 3.2, slab: 70 }, floor: 25, furniture: null });
