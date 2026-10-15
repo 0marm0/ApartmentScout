@@ -21,7 +21,7 @@ import { validateLayout } from './layout.js';
 
 const SIZE_KEYS = ['w', 'd', 'h', 'elev'];
 const near = (a, b, eps = 0.6) => Math.abs(a - b) <= eps;
-const angNear = (a, b) => { const d = Math.abs((((a || 0) - (b || 0)) % 360 + 540) % 360 - 180); return 180 - d <= 0.6 || d >= 179.4; };
+const angNear = (a, b) => Math.abs((((a || 0) - (b || 0)) % 360 + 540) % 360 - 180) <= 0.6;
 
 /** Key of the renter's saved layout for a plan in browser storage (the studio writes it; Unit 3D reads it). */
 export const layoutKey = (base, id) => `plan.${base}.${id}`;
