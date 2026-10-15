@@ -68,7 +68,7 @@ export async function sequenceFor(id, o = {}) {
   const S = await import('./shots.js'), plan = V.plan(), space = V.space();
   if (!plan || !space) return null;
   const fps = o.fps || 30;
-  return o.shot === 'day' ? S.daySequence(plan, space, V.altAt, { seconds: o.seconds ?? 14, fps, from: V.range[0], to: V.range[1] }) : S.tourSequence(plan, space, { seconds: o.seconds ?? 15, fps });
+  return o.shot === 'day' ? S.daySequence(plan, space, V.altAt, { seconds: o.seconds ?? 14, fps, from: V.range[0], to: V.range[1] }) : S.tourSequence(plan, space, { seconds: o.seconds ?? 15, fps, minSeconds: o.minSeconds });
 }
 
 /**
@@ -190,6 +190,7 @@ export function openSheet(id, kind, opener = null) {
       const r = await makePhoto(id, { scale: sz.scale, seconds: bg.s, dof: opts.dof, signal: w.signal, onProgress: w.onProgress });
       if (sheet !== S) return;
       if (!r) { fail(new Error('There is nothing to render in this view yet')); return; }
+      S.working = false;
       const png = await blobOf(r.canvas, 'image/png'); if (sheet !== S) return;
       S.result = { canvas: r.canvas, png, info: b.info() }; S.result.pngUrl = url(png);
       const jpg = await blobOf(r.canvas, 'image/jpeg', 0.92); S.result.jpg = jpg;
@@ -209,6 +210,7 @@ export function openSheet(id, kind, opener = null) {
       const r = await makeVideo(id, { shot: opts.shot, time: opts.time, seconds: opts.seconds, look: opts.look, res: opts.res, signal: w.signal, onProgress: w.onProgress, preview: w.preview });
       if (sheet !== S) return;
       if (!r) { if (w.signal.aborted) { await options(); return; } fail(new Error('The floor plan has no way through to a window')); return; }
+      S.working = false;
       const name = fileName([b.info().stem, 'tour'], r.ext), file = new File([r.blob], name, { type: r.type.split(';')[0] }), share = canShareFiles(navigator, [file]);
       S.result = { blob: r.blob, name, file }; const u = url(r.blob);
       set(`<figure class="rnd-fig"><video src="${u}" controls playsinline loop muted autoplay width="${r.width}" height="${r.height}"></video><figcaption>${r.width} × ${r.height} · ${r.fps} fps · ${(r.durationMs / 1000).toFixed(1)} s · ${r.ext.toUpperCase()} ${fmtMB(r.blob.size)}${r.when ? ` · ${esc(TIMES.find((t) => t.key === r.when.key)?.label || '')} ${clock(r.when.min)}` : ''}</figcaption></figure>

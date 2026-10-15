@@ -1,6 +1,6 @@
 /* "Render a photo" and "Make a video" (js/render/ui.js): the two buttons in the 3D views' render controls and the sheet with the choices, the progress and the result. */
 [data-rnd] svg { width: 13px; height: 13px; flex: none; }
-.rnq-inline button[data-rnd], .rnq button[data-rnd] { display: inline-flex; align-items: center; gap: 5px; }
+.rnq-inline button[data-rnd], .rnq button[data-rnd], .rnd-bar button[data-rnd] { display: inline-flex; align-items: center; gap: 5px; }
 .rnq-inline button[data-rnd]:hover, .rnq button[data-rnd]:hover { color: var(--ink); }
 .rnq-inline button[data-rnd]:focus-visible, .rnq button[data-rnd]:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 
@@ -46,3 +46,14 @@
   .rnd-act .btn { flex: 1 1 40%; }
 }
 @media (prefers-reduced-motion: no-preference) { .rnd-sheet { animation: rnd-in var(--t-base) var(--ease-out); } @keyframes rnd-in { from { opacity: 0; transform: translateY(8px); } } }
+
+/* the studio's own small bar (the studio's render control is already as wide as the camera chips beside it): right edge, above the Fast / Visual control */
+.rnd-bar { position: absolute; z-index: 5; right: 10px; bottom: 96px; display: flex; align-items: center; gap: 2px; padding: 3px; border-radius: var(--r-md); }
+.rnd-bar .rnd-sep { display: none; }
+.rnd-bar button { border: 0; background: none; height: 26px; padding: 0 10px; border-radius: 7px; font-size: var(--fs-xs); font-weight: 500; color: var(--ink-2); cursor: pointer; white-space: nowrap; }
+.rnd-bar button:hover { color: var(--ink); background: var(--surface-3); }
+#view-plan .rnq-note { bottom: 134px; }
+@media (max-width: 760px) {
+  #view-plan .rnd-bar { top: 100px; bottom: auto; left: 8px; right: auto; }
+  #view-plan .rnd-bar button { height: 30px; }
+}

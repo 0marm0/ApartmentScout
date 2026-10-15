@@ -121,11 +121,11 @@ function dirAt(pts, i) {
  * Plan a tour.
  * @param {object} model normalised plan (plan/model.js)
  * @param {object} space plan/walkcore.js walkSpace for the plan with its furniture
- * @param {{seconds?: number, fov?: number, eye?: number}} [o]
+ * @param {{seconds?: number, fov?: number, eye?: number, minSeconds?: number}} [o] `minSeconds` lowers the 10 s floor (the tests record short videos)
  * @returns {null | {seconds, fov, eye, stops, path, length, timeline, pose(t), frames(fps), warnings}}
  */
 export function planTour(model, space, o = {}) {
-  const seconds = clamp(+o.seconds || TOUR.defaultSeconds, TOUR.minSeconds, TOUR.maxSeconds), fov = o.fov || TOUR.fov, eye = o.eye || EYE_IN, warnings = [];
+  const seconds = clamp(+o.seconds || TOUR.defaultSeconds, o.minSeconds ?? TOUR.minSeconds, TOUR.maxSeconds), fov = o.fov || TOUR.fov, eye = o.eye || EYE_IN, warnings = [];
   if (!model?.rooms?.length || !space) return null;
 
   // ---- the stops: the door, the rooms, the window
