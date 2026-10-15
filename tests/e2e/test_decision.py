@@ -11,7 +11,7 @@ import re
 from pathlib import Path
 
 import pytest
-from conftest import frames, poll, settled
+from conftest import frames, map_opened, poll, settled
 
 pytestmark = pytest.mark.e2e
 
@@ -175,6 +175,9 @@ def test_tray_takes_a_dragged_map_tag_and_a_table_row(open_page, webgl) -> None:
     s = open_page("#map")
     s.page.wait_for_selector(".price-tag[data-id]:visible", timeout=SLOW)
     s.page.wait_for_selector("#tray .tray-pill", state="visible", timeout=SLOW)
+    map_opened(s.page)                     # the camera has stopped and the tags are placed: under load the map may still be easing in
+    s.page.wait_for_function("() => !window.__asMap || !window.__asMap.isMoving()", timeout=SLOW)
+    settled(s.page)
     tag = s.page.locator(".price-tag[data-id]:visible").first
     tag_id, before = tag.get_attribute("data-id"), tag.bounding_box()
     s.page.drag_and_drop(".price-tag[data-id]:visible >> nth=0", "#tray")
