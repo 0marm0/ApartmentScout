@@ -44,7 +44,7 @@ jobs:
           - name: model-project
             files: tests/e2e/test_model_project.py tests/e2e/test_furniture_studio.py
           - name: interior-views
-            files: tests/e2e/test_interior_view.py tests/e2e/test_eye_level_look.py
+            files: tests/e2e/test_interior_view.py tests/e2e/test_eye_level_look.py tests/e2e/test_finishes_render.py
           - name: city-context
             files: tests/e2e/test_context3d.py
           - name: buildings-3d

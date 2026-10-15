@@ -3,11 +3,18 @@ eye cameras show the same city (one builder, facades), a bright natural sky, gre
 windows with no horizontal bar across the glass. Needs WebGL, otherwise skipped."""
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
 import pytest
 
 pytestmark = pytest.mark.e2e
 
 UNIT = "paramount-tower-25e"
+PLAN = json.loads((Path(__file__).resolve().parents[2] / "dashboard" / "data" / "plans" / f"{UNIT}.json").read_text())
+# the frame colour the plan's finishes name (read from the unit's photos), else the default bronze
+FRAME_HEX = int((PLAN.get("finishes", {}).get("window_frames", {}).get("colour") or "#3b3a38")[1:], 16)
+FLOOR_TONE = tuple(int(PLAN["finishes"]["floor"]["tone"][i:i + 2], 16) for i in (1, 3, 5))
 
 # the share of the picture that shows the outside: render, hide sky + sun + city + context, render again, count the cells that changed
 OUTSIDE_JS = """() => {
@@ -42,14 +49,14 @@ TREES_JS = """async () => {
 }"""
 
 # horizontal frame members of every window of an engine's room, as heights above the floor (metres), and the window's own sill and head
-BARS_JS = """(root) => {
+BARS_JS = """(root, frameHex) => {
   const out = [];
   root.traverse((o) => {
     if (!o.isMesh || o.name === 'glass' || o.name === 'glass-sheen' || !o.geometry?.parameters) return;
     let a = o.parent, inWindows = false; while (a) { if (a.name === 'interior detail') { inWindows = true; break; } a = a.parent; }
     if (!inWindows) return;                                                                            // (the room's architecture, not the furniture)
     const p = o.geometry.parameters, m = o.material;
-    if (p.width === undefined || p.height === undefined || !m?.color || Math.abs(m.color.getHex() - 0x3b3a38) > 0x030303) return;   // the bronze frame
+    if (p.width === undefined || p.height === undefined || !m?.color || Math.abs(m.color.getHex() - frameHex) > 0x030303) return;   // the plan's frame colour
     if (p.width > p.height * 4 && p.width > 0.3) out.push({ y: o.position.y, h: p.height, w: p.width });
   });
   return out;
@@ -177,10 +184,10 @@ def test_the_floor_is_textured_honey_parquet_in_both_engines_and_both_qualities(
         unit = pg.evaluate(f"() => ({probe})(window.__unit3d.stage.interior.group)")
         assert unit and unit[0]["bump"] and unit[0]["size"] >= 1024, (quality, unit)
         r, g, b = unit[0]["mean"]
-        assert r > g > b and r > 170 and 40 < r - b < 130 and unit[0]["spread"] > 20, (quality, unit)   # a light, warm honey wood with grain and joints, not one flat tone
+        assert r > g > b and all(abs(c - t) < 30 for c, t in zip(unit[0]["mean"], FLOOR_TONE)) and unit[0]["spread"] > 20, (quality, unit, FLOOR_TONE)   # the plan's honey wood (read from its photos) with grain and joints, not one flat tone
     _studio(s)
     st = pg.evaluate(f"() => ({probe})(window.__plan3d.parts.scene)")
-    assert st and st[0]["bump"] and st[0]["size"] >= 1024 and st[0]["mean"][0] > 150, st
+    assert st and st[0]["bump"] and st[0]["size"] >= 1024 and all(abs(c - t) < 30 for c, t in zip(st[0]["mean"], FLOOR_TONE)), (st, FLOOR_TONE)
     assert not s.take()
 
 
@@ -189,11 +196,11 @@ def test_no_window_has_a_horizontal_bar_across_the_glass_in_either_engine(open_p
     s = open_page("#map", width=1600, height=1000)
     _unit(s, "date=2026-10-15&min=720&mode=inside")
     pg = s.page
-    unit = pg.evaluate(f"() => ({BARS_JS})(window.__unit3d.stage.interior.group)")
+    unit = pg.evaluate(f"() => ({BARS_JS})(window.__unit3d.stage.interior.group, {FRAME_HEX})")
     _studio(s)
     pg.click("#psLook .lk-chip:has-text('Living room')")   # (the bird's-eye view cuts the walls, and the window's head member with them: eye-level views draw full-height windows)
     pg.wait_for_timeout(1500)
-    studio = pg.evaluate(f"() => ({BARS_JS})(window.__plan3d.parts.scene)")
+    studio = pg.evaluate(f"() => ({BARS_JS})(window.__plan3d.parts.scene, {FRAME_HEX})")
     # 25E: windows from sill 20 in to head 94 in. Frame members may only be the sill (at 0.5 m) and the head (at 2.4 m): nothing in between
     for name, bars in (("unit", unit), ("studio", studio)):
         assert bars, name
