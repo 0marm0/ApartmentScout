@@ -282,7 +282,7 @@ def test_the_cheat_sheet_opens_searches_and_closes(op) -> None:
     pg.wait_for_selector(".cs-scrim", state="hidden")
     assert pg.evaluate("() => location.hash") == "#map", "Esc closed the sheet and nothing else"
     # also from the settings menu and by the key again
-    pg.click("#setBtn")
+    pg.click("#menuBtn")
     pg.click("#mnKeys")
     pg.wait_for_selector(".cs-scrim.on")
     pg.keyboard.press("Escape")
@@ -323,7 +323,7 @@ def test_the_tour_walks_five_steps_once_and_restarts_from_the_menu(op) -> None:
     pg.wait_for_selector(".coach-card", state="detached")
     assert pg.evaluate("() => JSON.parse(localStorage.getItem('as:coach')).done") is True
     # restart from the settings menu, skip with Esc
-    pg.click("#setBtn")
+    pg.click("#menuBtn")
     pg.click("#mnTour")
     pg.wait_for_selector(".coach-card", timeout=10000)
     assert pg.evaluate("() => document.activeElement.textContent") == "Next"
@@ -430,17 +430,17 @@ def calm_page(browser, base_url: str):
 def test_comfort_switches_set_attributes_and_persist(calm_page) -> None:
     pg, errs = calm_page()
     assert [_attr(pg, a) for a in ("data-transparency", "data-contrast", "data-motion", "data-text", "data-accent")] == ["full", "normal", "full", "m", "iris"]
-    pg.click("#setBtn")
+    pg.click("#menuBtn")
     pg.click("#mnTransp")
     pg.click("#mnContrast")
     pg.click("#mnMotion")
-    pg.click('#setMenu [data-text="xl"]')
-    assert pg.evaluate("() => !document.getElementById('setMenu').hidden"), "the menu stays open while you choose"
+    pg.click('#appMenu [data-text="xl"]')
+    assert pg.evaluate("() => !document.getElementById('appMenu').hidden"), "the menu stays open while you choose"
     assert [_attr(pg, a) for a in ("data-transparency", "data-contrast", "data-motion", "data-text")] == ["reduced", "high", "reduced", "xl"]
-    assert pg.get_attribute("#mnContrast", "aria-checked") == "true" and pg.get_attribute('#setMenu [data-text="xl"]', "aria-checked") == "true"
+    assert pg.get_attribute("#mnContrast", "aria-checked") == "true" and pg.get_attribute('#appMenu [data-text="xl"]', "aria-checked") == "true"
     assert pg.evaluate("() => matchMedia('(prefers-reduced-motion: reduce)').matches") is True, "JavaScript animations follow the switch too"
     # glass is gone, the type scale grew and the choice survives a reload
-    assert pg.evaluate("() => getComputedStyle(document.querySelector('#setMenu')).backdropFilter") in ("none", "")
+    assert pg.evaluate("() => getComputedStyle(document.querySelector('#appMenu')).backdropFilter") in ("none", "")
     assert pg.evaluate("() => parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ts'))") == 1.25
     pg.reload()
     pg.wait_for_selector("#cards .card")
@@ -452,7 +452,7 @@ def test_a_setting_the_system_asks_for_is_on_and_cannot_be_switched_off(op) -> N
     s = op("#map")   # this context asks for reduced motion
     pg = s.page
     assert _attr(pg, "data-motion") == "reduced"
-    pg.click("#setBtn")
+    pg.click("#menuBtn")
     assert pg.get_attribute("#mnMotion", "aria-checked") == "true" and pg.get_attribute("#mnMotion", "aria-disabled") == "true"
     assert "system" in pg.inner_text("#mnMotion").lower()
     pg.click("#mnMotion", force=True)
@@ -465,8 +465,8 @@ def test_accents_apply_in_both_themes_and_persist(calm_page) -> None:
     iris = pg.evaluate("() => getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()")
     seen = {"iris": iris}
     for name in ("jade", "amber", "rose"):
-        pg.click("#setBtn") if pg.evaluate("() => document.getElementById('setMenu').hidden") else None
-        pg.click(f'#setMenu [data-accent="{name}"]')
+        pg.click("#menuBtn") if pg.evaluate("() => document.getElementById('appMenu').hidden") else None
+        pg.click(f'#appMenu [data-accent="{name}"]')
         assert _attr(pg, "data-accent") == name
         seen[name] = pg.evaluate("() => getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()")
     assert len(set(seen.values())) == 4, seen
@@ -482,7 +482,7 @@ def test_accents_apply_in_both_themes_and_persist(calm_page) -> None:
 def test_golden_hour_tint_is_off_by_default_and_follows_the_sun(calm_page, base_url: str) -> None:
     pg, errs = calm_page()
     assert pg.evaluate("() => parseFloat(getComputedStyle(document.getElementById('goldenTint')).opacity)") == 0
-    pg.click("#setBtn")
+    pg.click("#menuBtn")
     pg.click("#mnGolden")
     assert pg.evaluate("() => document.documentElement.hasAttribute('data-golden')")
     pg.close()

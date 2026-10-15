@@ -39,7 +39,7 @@ jobs:
           - name: map-media-results
             files: tests/e2e/test_map_features.py tests/e2e/test_lightbox.py tests/e2e/test_results_rail.py tests/e2e/test_pdf_tracer.py
           - name: wizard
-            files: tests/e2e/test_wizard.py tests/e2e/test_boot_recovery.py
+            files: tests/e2e/test_wizard.py tests/e2e/test_boot_recovery.py tests/e2e/test_menu_nav.py
           - name: model-project
             files: tests/e2e/test_model_project.py
           - name: places-destinations

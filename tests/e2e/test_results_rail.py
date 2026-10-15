@@ -572,12 +572,12 @@ def test_density_setting_in_the_menu_changes_cards_rail_and_tables_and_is_rememb
     p = s.page
     h_comfy = p.evaluate("() => document.querySelector('#cards .card').offsetHeight")
     rail_comfy = p.evaluate("() => document.getElementById('rail').scrollHeight")
-    p.locator("#setBtn").click()
+    p.locator("#menuBtn").click()
     assert p.locator('button[data-density="comfortable"]').get_attribute("aria-checked") == "true"
     p.locator('button[data-density="compact"]').click()
     assert p.evaluate("() => document.documentElement.dataset.density") == "compact"
     assert p.locator('button[data-density="compact"]').get_attribute("aria-checked") == "true"
-    assert p.locator("#setMenu").is_visible()                                       # the menu stays open, like the theme switch
+    assert p.locator("#appMenu").is_visible()                                       # the menu stays open, like the theme switch
     p.wait_for_timeout(500)
     h_compact = p.evaluate("() => document.querySelector('#cards .card').offsetHeight")
     assert h_compact <= h_comfy - 12, (h_comfy, h_compact)

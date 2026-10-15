@@ -15,7 +15,7 @@ import pytest
 pytestmark = pytest.mark.e2e
 
 AXE = Path(__file__).parent / "vendor" / "axe.min.js"
-# the six tabs in the top bar; Tours sits under Shortlist and Records under Research (old links redirect, see below)
+# every view: five tabs in the top bar (Unit 3D and Floor plan share Home); Tours sits under Shortlist and Records under Research (old links redirect, see below)
 VIEWS = ["map", "list", "compare", "unit", "plan", "research"]
 SUBVIEWS = ["list/tours", "research/records/emerald-green-1211"]
 # the section that shows for a route: Tours has its own section, Records is hosted inside Research
@@ -115,17 +115,21 @@ def test_every_view_loads_clean(open_page, theme: str, width: int) -> None:
 
 
 def test_all_view_tabs_reachable_on_a_phone(open_page) -> None:
+    """Five tabs in a bottom tab bar, all on screen at once (Unit 3D and Floor plan share the Home tab)."""
     s = open_page("#map", width=390, height=844)
-    assert s.page.locator("#tabs a").count() == len(VIEWS)
+    tabs = ["map", "list", "compare", "home", "research"]
+    assert s.page.locator("#tabs a").count() == len(tabs)
     assert _settled(s), "the map never finished opening"
-    for v in VIEWS:
+    nav = s.page.locator("#tabs").bounding_box()
+    assert nav and abs(nav["y"] + nav["height"] - 844) <= 1 and nav["width"] == 390, f"the tab bar sits along the bottom edge: {nav}"
+    for v in tabs:
         tab = s.page.locator(f'#tabs a[data-view="{v}"]')
-        tab.scroll_into_view_if_needed()
         box = tab.bounding_box()
-        assert box and box["x"] >= 0 and box["x"] + box["width"] <= 390 + 1, f"tab {v} cannot be brought on screen: {box}"
+        assert box and box["x"] >= 0 and box["x"] + box["width"] <= 390 + 1 and box["width"] >= 60 and box["height"] >= 44, f"tab {v}: {box}"
         tab.click()
-        s.page.wait_for_function("(v) => document.body.dataset.view === v", arg=v, timeout=30000)
+        s.page.wait_for_function("(v) => v === 'home' ? ['unit', 'plan'].includes(document.body.dataset.view) : document.body.dataset.view === v", arg=v, timeout=30000)
         assert _settled(s), f"view {v} kept the page busy for two minutes"
+        assert s.page.locator("#tabs a.on").get_attribute("data-view") == v
     assert not s.take()
 
 
@@ -268,7 +272,7 @@ def _sweep(s, views: list[str]) -> tuple[list[dict], list[dict]]:
 
 @pytest.mark.parametrize("theme", ["dark", "light"])
 def test_accessibility(open_page, theme: str, tmp_path_factory) -> None:
-    """All six tabs plus Tours and Records: no critical and no serious axe violation, in both themes."""
+    """Every view (Unit 3D and Floor plan under Home) plus Tours and Records: no critical and no serious axe violation, in both themes."""
     s = open_page("#map", theme=theme)
     critical, serious = _sweep(s, VIEWS + SUBVIEWS)
     out = tmp_path_factory.mktemp("axe") / f"axe-{theme}.json"
@@ -332,15 +336,15 @@ def test_theme_modes_menu_and_shortcut(open_page) -> None:
     theme = lambda: pg.evaluate("() => document.documentElement.dataset.theme")  # noqa: E731
     assert theme() == "dark"
     assert pg.locator("#themeBtn").count() == 0                         # the toggle moved into the menu
-    pg.locator("#setBtn").click()
-    pg.wait_for_selector("#setMenu:not([hidden])")
+    pg.locator("#menuBtn").click()
+    pg.wait_for_selector("#appMenu:not([hidden])")
     pg.locator("[data-theme-mode=light]").click()
     assert theme() == "light" and pg.locator("[data-theme-mode=light]").get_attribute("aria-checked") == "true"
     pg.keyboard.press("Escape")
-    assert pg.evaluate("() => document.getElementById('setMenu').hidden")
+    assert pg.evaluate("() => document.getElementById('appMenu').hidden")
     pg.keyboard.press("t")
     assert theme() == "dark"
-    pg.locator("#setBtn").click()
+    pg.locator("#menuBtn").click()
     pg.locator("[data-theme-mode=system]").click()
     assert pg.evaluate("() => localStorage.getItem('as:theme')") == '"system"'
     pg.emulate_media(color_scheme="light")

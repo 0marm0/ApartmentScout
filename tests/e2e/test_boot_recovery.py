@@ -8,10 +8,13 @@ Covers dashboard/js/state-guard.js (every localStorage read is shape-checked) an
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import pytest
 
 pytestmark = pytest.mark.e2e
+
+ROOT = Path(__file__).resolve().parents[2]
 
 CARD = "#as-boot"
 READY = "() => document.documentElement.dataset.boot === 'ready'"
@@ -94,10 +97,12 @@ def test_partly_valid_picks_keep_the_good_entries(browser, base_url: str) -> Non
 def test_a_script_that_breaks_shows_the_recovery_card(browser, base_url: str, how: str) -> None:
     ctx = _context(browser, base_url)
     page = ctx.new_page()
+    # the app's entry script: js/app.js in the source tree, dist/app-<hash>.js in the split build
+    entry = lambda url: "/js/app.js" in url or "/dist/app-" in url  # noqa: E731
     if how == "syntax":
-        ctx.route("**/js/shell.js", lambda r: r.fulfill(status=200, content_type="text/javascript", body="export const broken = ;"))
+        ctx.route(entry, lambda r: r.fulfill(status=200, content_type="text/javascript", body="export const broken = ;"))
     else:
-        ctx.route("**/js/shell.js", lambda r: r.abort())
+        ctx.route(entry, lambda r: r.abort())
     try:
         page.goto(f"{base_url}/#map")
         page.wait_for_selector(CARD, timeout=15000)
@@ -149,8 +154,8 @@ def test_reset_clears_settings_keeps_picks_and_reloads(browser, base_url: str) -
     try:
         page.goto(f"{base_url}/manifest.webmanifest")
         name = _search_name(page, base_url)
-        keep = {"as:picks": json.dumps({"somewhere": {"saved": True, "note": "mine"}}), f"as:findings:{name}": '{"x":{"y":1}}',
-                f"as:trail:{name}": "[]", "as:plan-projects.data": "{}"}
+        keep = {"as:picks": json.dumps({"somewhere": {"saved": True, "note": "mine"}}), "as:findings:Another search": '{"x":{"y":1}}',
+                "as:trail:Another search": "[]", "as:plan-projects.data": "{}"}
         drop = {"as:weights": '{"cost":30}', "as:theme": '"light"', "as:comfort": '{"motion":true}', "as:filters2": '{"over":true}', "as:draft:new": "{}"}
         page.evaluate("(items) => { for (const [k, v] of Object.entries(items)) localStorage.setItem(k, v); }", {**keep, **drop})
         page.evaluate("async () => { await caches.open('as-test-cache'); }")
@@ -169,5 +174,30 @@ def test_reset_clears_settings_keeps_picks_and_reloads(browser, base_url: str) -
         for k in drop:
             assert stored[k] is None, f"{k} must be cleared by the reset"
         assert page.evaluate("async () => (await caches.keys()).includes('as-test-cache')") is False
+    finally:
+        ctx.close()
+
+
+def test_the_standalone_file_has_the_watchdog_and_the_menu(browser, tmp_path) -> None:
+    """The single-file build carries the inline watchdog (it runs before any module) and boots with the new menu and tabs."""
+    from apartmentscout.cli import standalone
+    out = standalone(ROOT / "dashboard" / "data", tmp_path / "one.html")
+    ctx = browser.new_context(viewport={"width": 1280, "height": 800})
+    page = ctx.new_page()
+    errors: list[str] = []
+    page.on("pageerror", lambda e: errors.append(str(e)))
+    try:
+        page.goto(out.as_uri())
+        page.wait_for_function(READY, timeout=60000)
+        assert page.locator("#appMenu").count() == 1 and page.locator("#tabs a").count() == 5
+        page.evaluate("() => window.__asBoot.fail(new Error('forced in the standalone file'))")
+        page.wait_for_selector(CARD)
+        assert "forced in the standalone file" in page.locator("#as-boot-err").text_content()
+        page.evaluate("() => localStorage.setItem('as:weights', '{}')")
+        with page.expect_navigation(timeout=15000):
+            page.click("#as-boot-reset")
+        page.wait_for_function(READY, timeout=60000)
+        assert page.evaluate("() => localStorage.getItem('as:weights')") is None
+        assert not errors, errors
     finally:
         ctx.close()
