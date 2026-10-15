@@ -82,6 +82,7 @@ apartmentscout dossier [id ...]                   # NYC public records (default:
 apartmentscout surroundings                       # buildings, parks and streets around the shortlist (--all, --status, --rebuild ID, --refresh)
 apartmentscout site <id> --floor 12 --charts      # one home's 3D site model, sun and view study (surroundings runs this for many)
 apartmentscout plans                              # which homes have a floor plan; `plans add FILE --id <listing-id>` adds one
+apartmentscout viewcal import FILE                # a photo match exported from Unit 3D (Match a photo); `viewcal list`; `site <id>` then uses it
 apartmentscout score                              # score and rank
 apartmentscout report                             # shortlist.md
 apartmentscout share --picks picks.json --out shortlist.html   # read-only shortlist page; --memo for the decision memo
