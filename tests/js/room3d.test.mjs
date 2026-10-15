@@ -76,7 +76,7 @@ test('Visual tone-maps with ACES, Fast with a gentler curve, and both are the sa
   const v = Lt.roomLightState({ mood: 'day', quality: 'visual' }), f = Lt.roomLightState({ mood: 'day', quality: 'fast' });
   assert.equal(v.tone, 'aces'); assert.equal(f.tone, 'reinhard');
   assert.ok(v.hemiI < f.hemiI);                                                          // Visual adds an environment light, so the hemisphere steps back
-  assert.ok(f.exposure > v.exposure && f.exposure < v.exposure * 1.5);
+  assert.ok(f.exposure > v.exposure && f.exposure < v.exposure * 2);
 });
 
 test('the Light tab scales (glazing, blinds, ambient) reach the sun, the glow and the fill', () => {

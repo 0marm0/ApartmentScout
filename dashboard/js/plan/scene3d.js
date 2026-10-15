@@ -68,7 +68,7 @@ export function themeColors() {
   const bg = (dark ? s2 : s3).clone();
   return {
     dark, bg, night: bg.clone().lerp(new THREE.Color(0x000000), dark ? 0.45 : 0.55),
-    ground: bg.clone().lerp(ink, dark ? 0.03 : -0.02),
+    ground: new THREE.Color(0xe3e7ec), daySky: new THREE.Color(0xd9e5f1),   // [daylight] the bird's-eye and top views stand in a bright, soft daylight in either UI theme (the ground is pale, the backdrop a pale sky)
     // [room3d] interior paint: bright white walls and ceiling, white trim, a light oak floor in both themes (room3d/palette.js), so the room reads as a room, not as UI chrome
     wall: new THREE.Color(ROOM_HEX.wall), ceiling: new THREE.Color(ROOM_HEX.ceiling),
     cap: dark ? tok('--ground', '#08090c') : tok('--ink-2', '#4b5261'),
@@ -226,8 +226,9 @@ export function buildShellInto(T, m, C, mode = 'cut', opts = {}) {
   for (const r of m.rooms) {
     const shape = new THREE.Shape(r.poly.map(([x, y]) => new THREE.Vector2(x * M, y * M)));
     const g = new THREE.ShapeGeometry(shape); g.rotateX(-Math.PI / 2);
-    const fk = r.kind === 'closet' ? 'carpet' : I3.floorKind(r), base = fk === 'carpet' ? C.carpet : I3.floorBase(fk, C);   // [interior] parquet, oak or tile by room type
-    const mat = std(0xffffff, { roughness: fk === 'carpet' ? 0.95 : I3.floorRoughness(fk), map: fk === 'carpet' ? texture('carpet', base) : I3.floorTexture(fk, base) });
+    const fk = r.kind === 'closet' ? 'carpet' : I3.floorKind(r, m), base = fk === 'carpet' ? C.carpet : I3.floorBase(fk, C);   // [interior] parquet, oak or tile by room type
+    const ftex = fk === 'carpet' ? texture('carpet', base) : I3.floorTexture(fk, base);
+    const mat = std(0xffffff, { roughness: fk === 'carpet' ? 0.95 : I3.floorRoughness(fk), map: ftex, ...(ftex.userData.bump ? { bumpMap: ftex.userData.bump, bumpScale: 1.4 } : {}) });   // [floor] wood: boards and joints catch the light
     const mm = new THREE.Mesh(g, mat); mm.position.y = 0.001; mm.receiveShadow = true; mm.name = `floor: ${r.name}`; T.shell.add(mm);
     if (cut == null) { // ceiling: faces down, so it is culled from above and only seen from inside
       const cg = new THREE.ShapeGeometry(new THREE.Shape(r.poly.map(([x, y]) => new THREE.Vector2(x * M, -y * M)))); cg.rotateX(Math.PI / 2);
@@ -406,7 +407,7 @@ function applyMood() {
       SKY.show(true); scene.background = haze.color; scene.fog = new THREE.Fog(haze.color, haze.near, haze.far);
     } else {
       SKY.show(false); scene.fog = null;
-      scene.background = (day ? colors.bg : eve ? colors.bg.clone().lerp(colors.night, 0.5) : colors.night).clone();
+      scene.background = (day ? colors.daySky : eve ? colors.daySky.clone().lerp(colors.night, 0.55) : colors.night).clone();
     }
   }
   for (const f of moodHooks) f(now);   // [feature J] lamps, quality mode
