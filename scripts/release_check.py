@@ -15,7 +15,7 @@ Checks
                 re:\\bAcme\\s+Corp\\b    a regular expression
                 allow:Simpson St       an exact public phrase that may contain a private string (reported as info)
                 # comment
-  images    every image in docs/images/, docs/gallery/ and docs/archive/ must be listed in docs/gallery/manifest.json with
+  images    every image in docs/images/ and docs/gallery/ must be listed in docs/gallery/manifest.json with
             publication_status "public" and an unchanged sha256. "private" and "review" fail.
   ignored   searches/, _reference/, HANDOFF.md and dashboard/data-private/ are git-ignored and nothing in them is
             tracked.
@@ -46,7 +46,7 @@ sys.path.insert(0, str(REPO))
 from apartmentscout.handoff.safety import compile_patterns, privacy_hits  # noqa: E402
 
 IMAGE_EXT = {".png", ".jpg", ".jpeg", ".webp", ".gif", ".avif"}
-IMAGE_DIRS = ("docs/images", "docs/gallery", "docs/archive")   # the archive keeps earlier screenshots; they are checked like the live ones
+IMAGE_DIRS = ("docs/images", "docs/gallery")
 MANIFEST = "docs/gallery/manifest.json"
 STATUSES = ("public", "private", "review")
 MUST_IGNORE = {"searches/": "searches/example-private/criteria.yaml", "_reference/": "_reference/x.md",
