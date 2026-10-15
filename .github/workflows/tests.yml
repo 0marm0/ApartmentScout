@@ -34,7 +34,7 @@ jobs:
           - name: views
             files: tests/e2e/test_dashboard.py
           - name: decide-and-shell
-            files: tests/e2e/test_decision.py tests/e2e/test_shell_extras.py tests/e2e/test_tour_findings.py tests/e2e/test_office_questions.py
+            files: tests/e2e/test_decision.py tests/e2e/test_shell_extras.py tests/e2e/test_tour_findings.py tests/e2e/test_office_questions.py tests/e2e/test_tourday.py
           - name: lighting
             files: tests/e2e/test_lighting.py
           - name: map-media-results
