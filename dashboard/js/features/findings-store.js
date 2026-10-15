@@ -9,9 +9,14 @@ import { normalize, VERSION } from './findings-model.js';
 
 const listeners = new Set();
 let recs = {}, key = '', mode = { server: false, photos: false, maxBytes: 12 * 1024 * 1024 }, ready = false;
-const timers = new Map(), inflight = new Set();
+const timers = new Map(), inflight = new Set(), unsent = new Set();   // unsent: visits whose latest write has not reached the search folder
 let state = { phase: 'idle', where: 'device', error: '' };   // idle | saving | saved | error
 
+/** Is this page one that has a local API to save to (served by `apartmentscout serve`)? Static copies keep visits in the browser only. */
+export const apiExpected = () => !!token() && location.protocol.startsWith('http');
+/** Visits written in this browser that the search folder has not received yet (the API was away). */
+export const pending = () => [...unsent];
+function markSent(id) { if (unsent.delete(id)) store.set(key + ':unsent', [...unsent]); }
 export const searchKey = () => `findings:${S.crit0?.search?.name || S.base}`;
 export const onChange = (fn) => { listeners.add(fn); return () => listeners.delete(fn); };
 const notify = (id) => listeners.forEach((fn) => { try { fn(id); } catch (e) { console.warn('findings listener failed', e); } });
@@ -84,7 +89,7 @@ async function push(id) {
   try {
     const f = recs[id];
     await api('POST', `/api/tours/${encodeURIComponent(id)}`, { findings: f });
-    inflight.delete(id);
+    inflight.delete(id); markSent(id);
     if (!inflight.size && !timers.size) setState({ phase: 'saved', where: 'folder', error: '' });
   } catch (e) {
     inflight.delete(id);
@@ -99,6 +104,7 @@ export function update(id, fn) {
   const fresh = cur.observed ? {} : { observed: `${day.getFullYear()}-${p(day.getMonth() + 1)}-${p(day.getDate())}`, visited_at: `${day.getFullYear()}-${p(day.getMonth() + 1)}-${p(day.getDate())}T${p(day.getHours())}:${p(day.getMinutes())}` };
   const next = normalize({ ...fresh, ...fn(cur), updated: nowZ(), v: VERSION });
   recs = { ...recs, [id]: next };
+  if (apiExpected()) { unsent.add(id); store.set(key + ':unsent', [...unsent]); }
   persist();
   notify(id);
   setState({ phase: 'saving', where: mode.server ? 'folder' : 'device', error: '' });
@@ -203,25 +209,41 @@ async function syncPhotos() {
 }
 
 // ------------------------------------------------------------------ start
+/** Reach the local API (if there is one): merge its visits with this browser's and send whatever it lacks. */
+async function connect(force = false) {
+  const sess = await getSession(force).catch(() => null);
+  if (!sess?.tours?.save) return false;
+  mode = { server: true, photos: !!sess.tours.photos, maxBytes: sess.tours.max_photo_bytes || mode.maxBytes };
+  try {
+    const { tours } = await api('GET', '/api/tours');
+    for (const [id, f] of Object.entries(tours || {})) {
+      const remote = normalize(f), mine = recs[id], merged = mergeRecord(mine, remote);
+      recs[id] = merged;
+      if (mine && (mine.updated || '') > (remote.updated || '')) push(id);
+    }
+    for (const [id, f] of Object.entries(recs)) if (!tours?.[id] && Object.keys(f).length > 1) push(id);
+    for (const id of [...unsent]) if (recs[id] && !inflight.has(id)) push(id);
+  } catch (e) { setState({ phase: 'error', error: String(e.message || e) }); return false; }
+  return true;
+}
+/** Try again to reach the API and send what is waiting (a phone that was offline, or a server that was restarted). Resolves with
+ *  how many visits are still waiting. Quiet when this page has no API at all. */
+export async function resync() {
+  if (!ready || !apiExpected()) return unsent.size;
+  if (mode.server) { for (const id of [...unsent]) if (recs[id] && !inflight.has(id)) await push(id); }
+  else if (await connect(true)) { persist(); notify(null); setTimeout(syncPhotos, 300); await new Promise((r) => setTimeout(r, 800)); }
+  return unsent.size;
+}
+
 /** Load this search's visits: from the browser, then merged with the search folder's when the API is there. */
 export async function init() {
   key = searchKey();
   const local = store.get(key, {}) || {};
   recs = {};
   for (const [id, f] of Object.entries(local)) { const n = normalize(f); if (Object.keys(n).length > 1) recs[id] = n; }
-  const sess = await getSession().catch(() => null);
-  if (sess?.tours?.save) {
-    mode = { server: true, photos: !!sess.tours.photos, maxBytes: sess.tours.max_photo_bytes || mode.maxBytes };
-    try {
-      const { tours } = await api('GET', '/api/tours');
-      for (const [id, f] of Object.entries(tours || {})) {
-        const remote = normalize(f), mine = recs[id], merged = mergeRecord(mine, remote);
-        recs[id] = merged;
-        if (mine && (mine.updated || '') > (remote.updated || '')) push(id);
-      }
-      for (const [id, f] of Object.entries(recs)) if (!tours?.[id] && Object.keys(f).length > 1) push(id);
-    } catch (e) { setState({ phase: 'error', error: String(e.message || e) }); }
-  }
+  unsent.clear();
+  for (const id of store.get(key + ':unsent', []) || []) if (typeof id === 'string' && recs[id]) unsent.add(id);
+  await connect();
   persist();
   ready = true;
   notify(null);
