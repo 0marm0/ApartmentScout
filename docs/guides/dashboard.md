@@ -66,6 +66,10 @@ density, accent, text size), `Home` `End` jump to the first and last row, a lett
 screens; on a phone the menu is a bottom sheet with a grab handle and a scrim, rows are at least 44 px tall and the keyboard hints are
 dropped.
 
+### One room, one city: Unit 3D and the Floor plan
+
+Unit 3D's Inside and Window cameras and the Floor plan studio's eye-level views share one renderer for the room (bright white walls, a light oak floor, the same windows without a bar across them, ACES in Visual and a gentle curve in Fast, warm lamps at night) and one city (every building by id, the same sky, haze, trees, grass and water). A **What's measured vs assumed** chip over both says what the picture rests on. The studio's look panel shows the direct sun through the window you are looking out of and opens the same view in Unit 3D; Unit 3D's Inside look panel shows the studio's daylight map and blinds. Detail in [floor plans](floor-plans.md#one-room-one-city).
+
 ## Keyboard
 
 | Key | Does |

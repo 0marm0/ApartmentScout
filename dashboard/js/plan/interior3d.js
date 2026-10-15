@@ -7,6 +7,7 @@
 // A VISUAL PREVIEW: trim, glass and finishes are drawn for looking at; no number depends on them.
 import * as THREE from 'three';
 import { pointInPoly } from './model.js';
+import { windowGroup } from '../room3d/windows.js';   // [room3d]
 
 const M = 0.0254;
 
@@ -80,19 +81,7 @@ export function floorBase(kind, C) {
   return tile.clone().lerp(new THREE.Color(0xcfd6d8), 0.4);
 }
 
-// ------------------------------------------------------------------ glass sheen (a soft reflection without an environment map)
-let sheenTex = null;
-/** A faint diagonal highlight, drawn on a plane just inside each pane of glass: a cheap reflection for Fast mode. */
-export function sheenTexture() {
-  if (sheenTex) return sheenTex;
-  const c = document.createElement('canvas'); c.width = 256; c.height = 256; const g = c.getContext('2d');
-  const k = g.createLinearGradient(0, 0, 256, 256);
-  k.addColorStop(0, 'rgba(255,255,255,0.0)'); k.addColorStop(0.28, 'rgba(255,255,255,0.0)'); k.addColorStop(0.34, 'rgba(255,255,255,0.55)'); k.addColorStop(0.41, 'rgba(255,255,255,0.0)');
-  k.addColorStop(0.55, 'rgba(255,255,255,0.0)'); k.addColorStop(0.60, 'rgba(255,255,255,0.32)'); k.addColorStop(0.64, 'rgba(255,255,255,0.0)'); k.addColorStop(1, 'rgba(255,255,255,0.0)');
-  g.fillStyle = k; g.fillRect(0, 0, 256, 256);
-  const v = g.createLinearGradient(0, 0, 0, 256); v.addColorStop(0, 'rgba(255,255,255,0.18)'); v.addColorStop(0.5, 'rgba(255,255,255,0)'); g.fillStyle = v; g.fillRect(0, 0, 256, 256);
-  sheenTex = new THREE.CanvasTexture(c); sheenTex.colorSpace = THREE.SRGBColorSpace; sheenTex.userData.shared = true; return sheenTex;
-}
+export { sheenTexture } from '../room3d/windows.js';   // [room3d] moved with the windows
 
 // ------------------------------------------------------------------ the detail group
 const std = (color, o = {}) => new THREE.MeshStandardMaterial({ color, roughness: 0.7, metalness: 0, ...o });
@@ -107,7 +96,7 @@ const std = (color, o = {}) => new THREE.MeshStandardMaterial({ color, roughness
  * @returns {THREE.Group & {userData: {shared: boolean}}}
  */
 export function detailGroup(model, opts = {}) {
-  const [ox, oy] = opts.origin || [0, 0], cut = opts.cut ?? null, dark = !!opts.dark, H = model.ceiling;
+  const [ox, oy] = opts.origin || [0, 0], cut = opts.cut ?? null, dark = false /* [room3d] the room is bright white trim in both UI themes: the dark-room look is gone */, H = model.ceiling;
   const g = new THREE.Group(); g.name = 'interior detail';
   const L = (p) => [(p[0] - ox) * M, -(p[1] - oy) * M];
   const trim = std(dark ? 0xe4e0d8 : 0xfbf9f4, { roughness: 0.55 }), frame = std(0x2b2d31, { roughness: 0.38, metalness: 0.55 }), leaf = std(dark ? 0xd9d4ca : 0xf4f1ea, { roughness: 0.5 });
@@ -132,45 +121,8 @@ export function detailGroup(model, opts = {}) {
     }
   }
 
-  // windows: reveal, stool (sill board), apron, casings, frame with mullions, glass with a soft reflection
-  const joined = (w, end) => model.windows.some((o) => o !== w && [o.a, o.b].some((q) => Math.hypot(q[0] - end[0], q[1] - end[1]) < 4));
-  const glassMat = new THREE.MeshStandardMaterial({ color: 0xa9cbe6, transparent: true, opacity: dark ? 0.2 : 0.26, roughness: 0.03, metalness: 0.1, side: THREE.DoubleSide, depthWrite: false });
-  glassMat.userData.shared = false;
-  for (const w of model.windows) {
-    const top = cut == null ? w.head : Math.min(w.head, cut); if (top <= w.sill + 0.5) continue;
-    const dx = w.b[0] - w.a[0], dy = w.b[1] - w.a[1], len = w.len, ux = dx / len, uy = dy / len, ang = Math.atan2(dy, dx);
-    const nin = [-w.normal[0], -w.normal[1]], mid = w.mid;
-    const at = (s, d) => [mid[0] + ux * s + nin[0] * d, mid[1] + uy * s + nin[1] * d];   // s along the wall from the middle, d inward from the centre line
-    const inner = wallT / 2;
-    // stool: the interior sill board, standing 1.6 in proud of the wall; apron beneath it
-    bar(trim, ang, at(0, (inner + 1.6 - 0.6) / 2), len + 4.4, inner + 1.6 + 0.6, w.sill - 1.2, w.sill, [0, 0], true);
-    if (cut == null || w.sill - 5 < cut) bar(trim, ang, at(0, inner + 0.35), len + 1.6, 0.7, w.sill - 5.2, w.sill - 1.2);
-    // reveal: the thickness of the wall reads as a jamb, lit differently from the glass plane
-    for (const sgn of [-1, 1]) {
-      const end = sgn < 0 ? w.a : w.b;
-      if (joined(w, end)) continue;
-      bar(trim, ang, at(sgn * (len / 2 + 1.5), inner + 0.35), 3, 0.7, w.sill, top, [0, 0]);
-    }
-    if (cut == null) bar(trim, ang, at(0, inner + 0.35), len + 6, 0.7, w.head, w.head + 3);
-    // frame: perimeter and mullions every ~40 in, slim and dark, set into the reveal
-    const n = Math.max(1, Math.round(len / 40)), fd = 2.6, fw = 1.5;
-    bar(frame, ang, at(0, 0), len, fd, w.sill, w.sill + fw);
-    if (cut == null) bar(frame, ang, at(0, 0), len, fd, w.head - fw, w.head);
-    for (let k = 0; k <= n; k++) {
-      const s = -len / 2 + (len * k) / n; if ((k === 0 && joined(w, w.a)) || (k === n && joined(w, w.b))) { /* the neighbour pane draws this post */ }
-      bar(frame, ang, at(s, 0), k === 0 || k === n ? fw * 1.4 : fw, fd, w.sill, top);
-    }
-    if (cut == null && w.head - w.sill > 66) bar(frame, ang, at(0, 0), len, fd, w.sill + (w.head - w.sill) * 0.68, w.sill + (w.head - w.sill) * 0.68 + 1.2);   // a transom rail on tall glass
-    // glass and its sheen
-    const gl = new THREE.Mesh(new THREE.PlaneGeometry(len * M, up(top - w.sill)), glassMat);
-    const [gx, gz] = L(mid); gl.position.set(gx, up((w.sill + top) / 2), gz); gl.rotation.y = ang; gl.name = 'glass'; g.add(gl);
-    if (opts.sheen !== false) {
-      const sh = new THREE.Mesh(new THREE.PlaneGeometry(len * M, up(top - w.sill)), new THREE.MeshBasicMaterial({ map: sheenTexture(), transparent: true, opacity: dark ? 0.42 : 0.32, depthWrite: false, toneMapped: false, side: THREE.FrontSide }));
-      const [sx, sz] = L(at(0, 0.5)); sh.position.set(sx, up((w.sill + top) / 2), sz);
-      // the plane faces +z in its own frame; turn it to face into the room
-      sh.rotation.y = Math.atan2(nin[0], -nin[1]); sh.userData.sheen = true; g.add(sh);
-    }
-  }
+  // [room3d] windows: reveal, stool, apron, casings, a slim frame with posts only where panes meet, glass with a faint reflection (room3d/windows.js, shared by both engines)
+  for (const c of [...windowGroup(model, { origin: [ox, oy], cut, sheen: opts.sheen }).children]) g.add(c);   // (flat, so glass panes stay children of the detail group)
 
   // doors: jambs and head casing on both faces, a panelled leaf with a lever handle where the swing is known
   for (const d of model.doorways) {

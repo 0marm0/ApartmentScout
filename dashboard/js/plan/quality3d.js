@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import * as G3 from './scene3d.js';
 import * as RQ from '../features/render-quality.js';
 import { environmentFor, recompileMaterials } from '../features/render-env.js';
+import { setRoomQuality } from '../room3d/quality.js';   // [room3d] both engines' room shares one quality
 
 const M = 0.0254;
 let mode = 'fast', ui = null, prog = null, note = null, noteT = 0, mounted = false, aoRoot = null, getModel = () => null, toastFn = () => {}, store = null, aoTex = null, stripTex = null;
@@ -28,19 +29,17 @@ function strip() {
 export function mount(o) {
   if (mounted) return;
   getModel = o.model; toastFn = o.toast; store = o.store; mounted = true;
-  mode = RQ.readMode(store);
+  mode = RQ.readMode(store); setRoomQuality(mode);   // [room3d]
   ui = RQ.modeControl({ mode, onChange: (m) => setMode(m, true) });
   note = document.createElement('div'); note.className = 'float rnq-note'; note.hidden = true; note.setAttribute('role', 'status');
   o.stage.append(ui.el, note);
   prog = RQ.progressStrip(o.stage);
-  G3.onMood(() => { if (mode === 'visual') dimHemi(); });
   if (mode === 'visual') apply();
 }
 export const current = () => mode;
-function dimHemi() { const { hemi } = G3.parts(); hemi.intensity *= 0.62; }
 
 export function setMode(m, announce) {
-  mode = m === 'visual' ? 'visual' : 'fast';
+  mode = m === 'visual' ? 'visual' : 'fast'; setRoomQuality(mode); G3.cityApi()?.setQuality(mode);   // [room3d]
   RQ.saveMode(store, mode); ui?.set(mode); apply();
   if (announce && note) { note.hidden = false; note.textContent = `${RQ.MODES[mode].label}: ${RQ.MODES[mode].note}`; clearTimeout(noteT); noteT = setTimeout(() => { note.hidden = true; }, 7000); }
 }
@@ -59,7 +58,6 @@ function apply() {
   }
   recompileMaterials(scene);
   scene.environment = s.environment ? environmentFor(renderer, { intensity: 0.35 }) : null;
-  G3.cityQuality(s.softShadows);   // [buildings3d]
   rebuildAO(s.contact);
   G3.resize(); G3.setLighting({});   // re-runs the lighting mood so the hemisphere level follows the mode
 }

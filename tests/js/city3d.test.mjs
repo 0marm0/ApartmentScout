@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
 const root = new URL('../../', import.meta.url);
-const F = await import(new URL('dashboard/js/city3d/facades.js', root));
+const F = await import(new URL('dashboard/js/city3d/facade-rules.js', root));
 const M = await import(new URL('dashboard/js/city3d/model.js', root));
 const G = await import(new URL('dashboard/js/city3d/geometry.js', root));
 const S = await import(new URL('dashboard/js/sun.js', root));
@@ -53,7 +53,7 @@ test('palettes are complete and a building keeps its palette', () => {
 });
 
 test('the shader chunks declare what they read', () => {
-  for (const u of ['uNight', 'uDetail', 'uLod', 'uTintMix', 'uLitCol', 'uSkyCol', 'uSty', 'uSty2', 'uTint', 'uGlass']) assert.ok(F.FRAG_PARS.includes(u), u);
+  for (const u of ['uNight', 'uQual', 'uTintMix', 'uLitCol', 'uSkyCol', 'uSty', 'uSty2', 'uTint', 'uGlass']) assert.ok(F.FRAG_PARS.includes(u), u);
   assert.ok(F.VERT_PARS.includes('aFa') && F.VERT_PARS.includes('aFb') && F.VERT_MAIN.includes('vFa'));
   assert.ok(F.FRAG_COLOR.includes('fLit') && F.FRAG_EMISSIVE.includes('uNight'));
 });
@@ -216,4 +216,12 @@ test('a sloping roof rises toward the side away from the way it falls, and a pit
 test('the triangle estimate tracks the real count', () => {
   const p = pack(fx.site), est = M.estimateTriangles(p.entries);
   assert.ok(est > 0.5 * p.triangles && est < 2 * p.triangles, `${est} vs ${p.triangles}`);
+});
+
+test('a landmark with dozens of parts (the Chrysler Building has 62) is a valid site: a project export and import accept it', async () => {
+  const P = await import(new URL('dashboard/js/unit/parts.js', root));
+  const parts = Array.from({ length: 79 }, (_, k) => ({ ring: [[0, 0], [10 + k, 0], [10 + k, 10], [0, 10]], base_m: 0, top_m: 20 + k, kind: k % 9 === 8 ? 'spire' : 'tower', source: `osm way ${k + 1}`, roof: 'dome', eave_m: 10 + k, mat: 'glass', col: '#aabbcc' }));
+  const { map, problems } = P.validateParts({ 5: parts }, 10);
+  assert.deepEqual(problems, []); assert.equal(map['5'].length, 79);
+  assert.equal(P.validateParts({ 5: Array.from({ length: P.MAX_PARTS + 1 }, () => parts[0]) }, 10).problems.length, 1, 'but not without bound');
 });

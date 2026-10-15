@@ -3,13 +3,15 @@
 // triangulator (three's ShapeUtils in the browser) so node tests can run it too. Site frame in, three.js frame out
 // (x east, y up, z = -north), the same as the other 3D modules.
 import { repPoint, centroid, inRing } from './model.js';
-import { roofColour, paletteOf } from './facades.js';
+import { roofColour, paletteOf } from './facade-rules.js';
 
-const hex = (s) => { const v = parseInt(String(s).slice(1), 16); return [((v >> 16) & 255) / 255, ((v >> 8) & 255) / 255, (v & 255) / 255]; };
+const lin = (v) => Math.pow(v / 255, 2.2);
+/** #rrggbb as linear r, g, b (three.js vertex colours are linear). */
+const hex = (s) => { const v = parseInt(String(s).slice(1), 16); return [lin((v >> 16) & 255), lin((v >> 8) & 255), lin(v & 255)]; };
 const mixc = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
 
 export class Pack {
-  constructor() { this.pos = []; this.nor = []; this.col = []; this.fa = []; this.fb = []; this.hh = []; this.idx = []; this.n = 0; }
+  constructor() { this.own = false; this.pos = []; this.nor = []; this.col = []; this.fa = []; this.fb = []; this.hh = []; this.idx = []; this.n = 0; }
   /** A vertex at site (x, y, z) with a site-frame normal. fa = (u, v, bays, floorH), fb = (style, seed, kind, jitter). */
   v(x, y, z, n, c, fa, fb, h) {
     this.pos.push(x, z, -y); this.nor.push(n[0], n[2], -n[1]); this.col.push(c[0], c[1], c[2]); this.fa.push(fa[0], fa[1], fa[2], fa[3]); this.fb.push(fb[0], fb[1], fb[2], fb[3]); this.hh.push(h);
@@ -58,16 +60,41 @@ export function buildPack(entries, o) {
   return { arrays: pk.arrays(), starts: Int32Array.from(starts), ids: Int32Array.from(ids), stats, triangles: pk.triangles };
 }
 
-function drawPart(pk, e, q, eps, o, tri2, stats) {
+/**
+ * The solids of one building entry, one Pack per part (and one for its roof furniture) so every solid keeps its own height for the colour
+ * ramp. o: {triangulate, colorFor}. Returns [{pack, h}].
+ */
+export function entryParts(e, o) {
+  const out = [], stats = { walls: 0, caps: 0, parapets: 0, pitched: 0, decor: 0 }, multi = e.parts.length > 1;
+  e.parts.forEach((q, rank) => { const pk = new Pack(); drawPart(pk, e, q, multi ? Math.min(0.4, 0.02 * rank) : 0, o, o.triangulate, stats); out.push({ pack: pk, h: q.h }); });
+  if (e.decor.length) { const pk = new Pack(); for (const d of e.decor) drawDecor(pk, e, d, o); out.push({ pack: pk, h: e.roof }); }
+  return out;
+}
+
+/** A Pack as plain non-indexed triangle arrays (what city3d/buildings.js mergeBuildings concatenates); `color` only when the part has its own colour. */
+export function nonIndexed(pk) {
+  const n = pk.idx.length, position = new Float32Array(n * 3), normal = new Float32Array(n * 3), aFa = new Float32Array(n * 4), aFb = new Float32Array(n * 4), color = pk.own ? new Float32Array(n * 3) : null;
+  for (let k = 0; k < n; k++) {
+    const i = pk.idx[k];
+    position.set(pk.pos.slice(3 * i, 3 * i + 3), 3 * k); normal.set(pk.nor.slice(3 * i, 3 * i + 3), 3 * k);
+    aFa.set(pk.fa.slice(4 * i, 4 * i + 4), 4 * k); aFb.set(pk.fb.slice(4 * i, 4 * i + 4), 4 * k);
+    if (color) color.set(pk.col.slice(3 * i, 3 * i + 3), 3 * k);
+  }
+  return { position, normal, aFa, aFb, color, vertices: n };
+}
+
+function drawPart(pk, e, q, eps, o, tri2, stats) {   // pk: the Pack this part draws into
   const st = q.style, plain = st.style === 9;
   const ramp = o.colorFor(q.h, false), rampRoof = o.colorFor(q.h, true);
   const own = !!q.col;
-  const wallCol = own ? mixc(ramp, hex(q.col), 0.7) : ramp;
-  const roofCol = own ? mixc(rampRoof, hex(q.col), 0.5) : rampRoof;
+  const wallCol = own ? hex(q.col) : ramp;
+  const roofCol = own ? mixc(hex(q.col), [1, 1, 1], 0.12) : rampRoof;
+  if (pk) pk.own = own;
   const jit = ((((e.seed * 977) % 1) + 1) % 1);
   let pal = paletteOf(e.seed);
   if (st.brick === 1) pal = st.style === 0 ? 0 : 1; else if (st.brick === 2) pal = st.style === 0 ? 1 : 2;     // an OpenStreetMap material picks the palette
-  const fbWall = [plain ? 9 : st.style, e.seed, plain ? 2 : 0, (own ? 1 : 0) + (pal + 0.1 + 0.8 * jit) / 4];
+  const sd = e.seed * 0.999 + (e.near ? 0 : 2);   // seed in [0, 1); +2 marks the far level of detail for the shader
+  const fbWall = [plain ? 9 : st.style, sd, plain ? 2 : 0, (own ? 1 : 0) + (pal + 0.1 + 0.8 * jit) / 4];
   const z0 = q.base_m <= 0.5 ? Math.min(e.g, 0) - 1.5 : q.base;
   const ring = inflate(q.p, eps);
   const pitched = q.roofShape !== 'flat';

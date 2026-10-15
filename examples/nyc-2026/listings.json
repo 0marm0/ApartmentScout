@@ -5135,7 +5135,10 @@
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
   },
-  "listed_at": "2026-09-24"
+  "listed_at": "2026-09-24",
+  "site": {
+   "file": "sites/the-greywood-4b.json"
+  }
  },
  {
   "id": "the-greywood-9b",
@@ -29423,7 +29426,7 @@
     2.5,
     3.2,
     2.9,
-    2.1,
+    2.2,
     0.2,
     0.0,
     0.0,
@@ -29453,20 +29456,21 @@
      3.7,
      3.5,
      2.4,
-     0.8,
+     0.7,
      0.0,
      0.0,
      0.0
     ]
    },
-   "skyline_ahead_deg": 32.2,
-   "open_sky_share": 0.598,
-   "sky_view": 0.598,
-   "daylight_factor_est": 1.46,
+   "skyline_ahead_deg": 29.1,
+   "open_sky_share": 0.609,
+   "sky_view": 0.611,
+   "daylight_factor_est": 1.49,
    "sun_year": {
-    "possible": 368,
-    "expected": 215
+    "possible": 371,
+    "expected": 217
    },
+   "exposure_source": "listing",
    "sun_hours_expected": [
     0.0,
     0.0,
@@ -29475,13 +29479,12 @@
     1.42,
     1.82,
     1.71,
-    1.32,
+    1.39,
     0.12,
     0.0,
     0.0,
     0.0
-   ],
-   "exposure_source": "listing"
+   ]
   },
   "score": {
    "version": "2.1",
@@ -39589,7 +39592,7 @@
     3.5,
     4.9,
     5.4,
-    5.2,
+    5.3,
     4.6,
     2.7,
     1.5,
@@ -39603,7 +39606,7 @@
      1.6,
      3.3,
      4.7,
-     5.0,
+     5.1,
      5.1,
      4.5,
      2.2,
@@ -39626,14 +39629,15 @@
      0.9
     ]
    },
-   "skyline_ahead_deg": 15.5,
-   "open_sky_share": 0.663,
-   "sky_view": 0.687,
-   "daylight_factor_est": 1.67,
+   "skyline_ahead_deg": 9.8,
+   "open_sky_share": 0.666,
+   "sky_view": 0.691,
+   "daylight_factor_est": 1.68,
    "sun_year": {
-    "possible": 1037,
-    "expected": 600
+    "possible": 1040,
+    "expected": 602
    },
+   "exposure_source": "listing",
    "sun_hours_expected": [
     0.54,
     0.72,
@@ -39641,14 +39645,13 @@
     1.99,
     2.79,
     3.08,
-    3.07,
+    3.13,
     2.9,
     1.59,
     0.92,
     0.61,
     0.43
-   ],
-   "exposure_source": "listing"
+   ]
   },
   "score": {
    "version": "2.1",
@@ -189071,7 +189074,7 @@
    "bearing": 209.1,
    "sun_hours": [
     6.2,
-    6.8,
+    6.9,
     9.2,
     8.5,
     9.3,
@@ -189100,7 +189103,7 @@
     ],
     "hi": [
      6.4,
-     7.0,
+     7.4,
      9.3,
      8.7,
      9.3,
@@ -189114,16 +189117,17 @@
     ]
    },
    "skyline_ahead_deg": 3.3,
-   "open_sky_share": 0.831,
-   "sky_view": 0.835,
-   "daylight_factor_est": 2.04,
+   "open_sky_share": 0.834,
+   "sky_view": 0.841,
+   "daylight_factor_est": 2.05,
    "sun_year": {
-    "possible": 2954,
-    "expected": 1683
+    "possible": 2957,
+    "expected": 1685
    },
+   "exposure_source": "listing",
    "sun_hours_expected": [
     3.35,
-    3.74,
+    3.8,
     5.24,
     4.84,
     5.3,
@@ -189134,8 +189138,7 @@
     4.94,
     3.31,
     2.98
-   ],
-   "exposure_source": "listing"
+   ]
   },
   "score": {
    "version": "2.1",
@@ -373096,6 +373099,9 @@
    "evidence": "Same-building Glenwood photos only (virtually staged, other units).",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "site": {
+   "file": "sites/paramount-tower-glenwood-40k.json"
   }
  },
  {
@@ -405624,7 +405630,7 @@
      6.6,
      6.1,
      4.9,
-     1.6,
+     1.8,
      0.3
     ]
    },
@@ -405636,6 +405642,7 @@
     "possible": 1350,
     "expected": 789
    },
+   "exposure_source": "listing",
    "sun_hours_expected": [
     0.11,
     1.21,
@@ -405649,8 +405656,7 @@
     2.26,
     0.15,
     0.0
-   ],
-   "exposure_source": "listing"
+   ]
   },
   "score": {
    "version": "2.1",
@@ -406821,7 +406827,7 @@
     7.9,
     8.0,
     8.5,
-    8.5,
+    8.6,
     7.8,
     7.3,
     5.7,
@@ -406853,19 +406859,20 @@
      10.0,
      9.4,
      9.4,
-     7.1,
+     7.2,
      4.3,
      3.8
     ]
    },
    "skyline_ahead_deg": 9.8,
-   "open_sky_share": 0.856,
-   "sky_view": 0.657,
-   "daylight_factor_est": 1.6,
+   "open_sky_share": 0.858,
+   "sky_view": 0.658,
+   "daylight_factor_est": 1.61,
    "sun_year": {
-    "possible": 2266,
-    "expected": 1303
+    "possible": 2269,
+    "expected": 1305
    },
+   "exposure_source": "photo-landmarks",
    "sun_hours_expected": [
     1.84,
     2.42,
@@ -406873,14 +406880,13 @@
     4.5,
     4.56,
     4.84,
-    5.01,
+    5.07,
     4.91,
     4.31,
     3.48,
     1.68,
     1.49
-   ],
-   "exposure_source": "photo-landmarks"
+   ]
   },
   "window_type": "bay",
   "window_face": 1,
@@ -407581,6 +407587,9 @@
    "evidence": "Same-building Glenwood photos only (virtually staged, other units).",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "site": {
+   "file": "sites/paramount-tower-9j.json"
   }
  },
  {
@@ -408278,6 +408287,9 @@
    "evidence": "Same-building Glenwood photos only (virtually staged, other units).",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "site": {
+   "file": "sites/paramount-tower-49k.json"
   }
  },
  {
@@ -408975,6 +408987,9 @@
    "evidence": "Same-building Glenwood photos only (virtually staged, other units).",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
+  },
+  "site": {
+   "file": "sites/paramount-tower-41a.json"
   }
  },
  {
@@ -410189,6 +410204,9 @@
     "scope": "building",
     "year": null
    }
-  ]
+  ],
+  "site": {
+   "file": "sites/540-west-49th-203s.json"
+  }
  }
 ]

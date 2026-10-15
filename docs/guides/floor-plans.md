@@ -91,13 +91,22 @@ A room with two windows that face different ways gets the compass point in the c
 real). **←** and **→** on a focused chip switch the view; **[** and **]** switch from anywhere in the studio; **Esc** leaves the eye
 level. The camera glides there (no glide with reduced motion). Drag to look around, scroll to step, **W A S D** to walk as before.
 
+## One room, one city
+
+The Floor plan studio and Unit 3D's Inside and Window cameras are two engines over **one shared room and one shared city** (`dashboard/js/room3d/` and `dashboard/js/city3d/`), so the same viewpoint looks the same in both:
+
+- **The room** (`room3d/shell.js`, the studio's own builder): floors by room type, walls, per-room ceilings, doors, the fixtures (the AC and radiators under the bay, kitchen counters), baseboards, casings and framed glass. The paint is one palette in both UI themes (`room3d/palette.js`): bright white walls (`#f7f4ef`) and ceiling (`#ffffff`), white trim and a light oak floor. The old, darker Inside look is gone.
+- **The light** (`room3d/lighting.js`): a hemisphere sky light, a warm bounce fill so a room is never murky, the sun as a directional light (with the city's shadows in Unit 3D and the per-window skylines in the studio), a soft glow through each window, and warm lamps after dark. Daylight exposure is 1.15; the fill stays warm in the evening and at night, so a room with no lamp placed is not black. **Visual** tone-maps with ACES filmic and adds an environment light, soft shadows and richer furniture; **Fast** uses a gentler curve, no environment light and simpler furniture. The Light tab's glass and blinds scale the sun and the window glow in both.
+- **The city** (`city3d/city.js`): every building of the site model, meshed by one function (`city3d/buildings.js prismsOf`, the single entry point for building shapes), with the same material (colours by height, the facade window grid laid out in the site frame), the same sky and haze (`city3d/sky.js`, by sun altitude), and the same context (`buildContext`: streets and sidewalks, water, parks and grass, street and park trees). The studio bakes it into its plan frame with the anchor `placePlan` computes; Unit 3D draws it in the site frame. `tests/e2e/test_one_city.py` stands both engines at the same chip and checks that every building has the same id and roof position, the cameras coincide, and the rendered skylines agree pixel for pixel.
+- **What is measured and what is assumed** is a chip in both views (**What's measured vs assumed**) with six rows (building heights, facade bearing, position along the facade, floor height, the plan, the furniture), each marked measured, confirmed, from a source, estimated or assumed. In Unit 3D it opens the evidence panel; in the studio it opens the same unit in Unit 3D.
+- **Features travel.** In the studio's eye-level views the look panel shows **Sun today** (the direct sun through the window of this view, as hours and a day strip, from that window's skyline against the shared city) and **Sun path in Unit 3D**, which opens Unit 3D's Inside camera at the same date and time. In Unit 3D's Inside camera the look panel offers the studio's **daylight map** on the floor and the saved **blinds** (the same Light-tab inputs, stored in this browser), the layout's lamps come on after dark, and the furniture is drawn with the studio's own models.
+
 ## What the 3D room is made of
 
 A visual preview: nothing here changes a number, and the fit checks never look at it.
 
 - **Walls** have the plan's thickness (`wall`, 4.8 in by default). Each window gets a **stool** (the inside sill board, 1.6 in
-  proud of the wall) with an apron, side and head **casings**, a slim bronze **frame** with mullions about every 40 in (and a transom
-  rail on tall glass), and glass with a soft diagonal reflection (Visual mode adds the environment's reflection on top).
+  proud of the wall) with an apron, side and head **casings**, a slim bronze **frame** (members 2 in, about 5 cm: a sill and a head member and a post at each end), and glass with a faint reflection that never hides the view (Visual mode adds the environment's reflection on top). Posts stand only where the glass needs them: where the panes of a bay meet and at its outer ends. There is **no horizontal bar** across a window unless the plan says there is one (`transom`), and no mullion unless it lists one (`mullions`), see [Rooms, walls and openings](#rooms-walls-and-openings).
 - **Doors** get jamb and head casings on both faces and a lever on each side of the leaf where the swing is known.
 - **Baseboards** (5 in with a cap line) run along every wall piece that reaches the floor, on both faces.
 - **Ceiling**: a trim ring on a loose grid in each room of more than 25 ft2 (architecture, not luminaires: the Light tab's recessed
@@ -180,7 +189,7 @@ schema 2 field is optional.
 |---|---|
 | `rooms` | Rectangles `x`, `y`, `w` (along x), `h` (along y), or a `poly` of `[x, y]` points for bays and angled walls. `kind`: `living`, `bedroom`, `kitchen`, `dining`, `bath`, `hall`, `closet`, `office`, `outdoor`, `other`. `stated` is the size printed on the plan (shown in the checks); `est: true` marks a room whose size or place is a guess. |
 | `walls` | Optional explicit wall centrelines `{"a": [x, y], "b": [x, y], "t": thickness}`. Without them, walls are drawn on every room edge, and shared edges merge into one wall. |
-| `windows` | Segments on walls (`x1,y1,x2,y2` or `a`/`b`) with `sill` and `head` heights (defaults 2 ft and 7 ft). The facing comes from the wall's outward side and `up_bearing`. |
+| `windows` | Segments on walls (`x1,y1,x2,y2` or `a`/`b`) with `sill` and `head` heights (defaults 2 ft and 7 ft). The facing comes from the wall's outward side and `up_bearing`. Optional, only where the source drawing shows them: `mullions` (fractions between 0 and 1 along the window, up to 6, each a vertical 2 in member) and `transom` (the height of a horizontal rail, in the plan's units, between the sill and the head). Without them a window is clear glass between its end posts. |
 | `doors` | Segments cut to 6.9 ft (or `head`). `hinge`: `a` (the x1,y1 end) or `b`. `swing`: `+x`, `-x`, `+y`, `-y` (the side the leaf opens into), `in` (into `room`), or `slide`, `pocket`, `none`. `leaf` defaults to the door width. `kind: "entry"` marks the front door for the "From door" camera. A thick wall needs a door segment on each face; the pair is treated as one doorway. A door with no swing gets a 24 in keep-clear on both sides. |
 | `open_walls` | Segments with no wall at all (open kitchens, wide openings). |
 
