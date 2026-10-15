@@ -7,14 +7,14 @@
 import * as THREE from 'three';
 import { buildContext } from '../unit/context3d.js';
 import { loadTreeLayers } from '../unit/treelayers.js';
-import { decorate } from './facade.js';
+import { decorate, facadeExtras } from './facade.js';
 import { mergeBuildings, edgeGeo, outlineGeo } from './buildings.js';
 
 export const CITY_RADIUS_M = 640;     // trees, parks and grass are drawn within this many metres of the building
 export const NEAR_M = 900;            // buildings closer than this cast shadows (Unit 3D); farther ones are a second, cheaper mesh
 
 /** The shared facade-shader uniforms: uNight 0..1 (lit windows after dusk), uFloorH, uDetail, uLitCol. */
-export const facadeUniforms = (pal) => ({ uNight: { value: 0 }, uFloorH: { value: 3.2 }, uDetail: { value: 1 }, uLitCol: { value: (pal?.lit || new THREE.Color(1, 0.8, 0.5)).clone() } });
+export const facadeUniforms = (pal) => ({ uNight: { value: 0 }, uFloorH: { value: 3.2 }, uDetail: { value: 1 }, uLitCol: { value: (pal?.lit || new THREE.Color(1, 0.8, 0.5)).clone() }, ...facadeExtras() });
 
 /** Lit windows fade in through dusk: 0 by day, 1 when the sun is 6 degrees under the horizon. */
 export const nightAmount = (alt, pal) => Math.max(0, Math.min(1, (3 - alt) / 9)) * (pal?.light ? 0.75 : 1);
@@ -49,6 +49,7 @@ export function createCity(data, o) {
   const group = new THREE.Group(); group.name = 'city';
   const distTo = (b) => Math.hypot((b.bb[0] + b.bb[2]) / 2 - cx, (b.bb[1] + b.bb[3]) / 2 - cy);
   const skip = new Set(o.skip || []);
+  B.forEach((b, i) => { if (data.meta?.[i]) b.meta = data.meta[i]; });   // [massing] class, year and floors choose each building's facade style
   const near = [], far = [];
   B.forEach((b, i) => { if (b === T || skip.has(i)) return; (distTo(b) < NEAR_M ? near : far).push(i); });
 
@@ -67,9 +68,10 @@ export function createCity(data, o) {
   const bMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9, metalness: 0 });
   facU.uLitCol.value.copy(pal.lit);
   decorate(bMat, facU, 'unit-city');
+  facU.uQual.value = o.quality?.visual ? 1 : 0;   // Fast: grid, tint and lights; Visual: the full facades
   const vrange = new Map(), meshes = [];
   for (const [idx, cast, name] of [[near, !!o.castShadow, 'neighbours'], [far, false, 'neighbours-far']]) {
-    const { geometry, starts, ids, H, ranges } = mergeBuildings(B, idx, { pal, matrix: bakeM });
+    const { geometry, starts, ids, H, ranges } = mergeBuildings(B, idx, { pal, matrix: bakeM, near: idx === near });
     const m = new THREE.Mesh(geometry, bMat); m.castShadow = cast; m.receiveShadow = true; m.name = name;
     m.userData.starts = starts; m.userData.ids = ids; m.userData.h = H;
     for (const [i, a, b] of ranges) vrange.set(i, [m, a, b]);

@@ -53,7 +53,7 @@ export function placePlan(site, model, floor, opts = {}) {
   const frame = planFrame(model);
   const toSite = (p) => { const dx = (p[0] - frame.xc) * M, dy = (p[1] - frame.yw) * M; return [anchor[0] + rx * dx + ux * dy, anchor[1] + ry * dx + uy * dy]; };
   const toPlanM = (q) => { const dx = q[0] - anchor[0], dy = q[1] - anchor[1]; return [dx * rx + dy * ry + frame.xc * M, dx * ux + dy * uy + frame.yw * M]; };
-  return { B, T, ti: B.indexOf(T), face, t, az, ux, uy, rx, ry, anchor, slab, fh, cal, pinned: !!pinned, floor: floor || 5, frame, toSite, toPlanM, green: site.green || null, water: site.water || null, streets: Array.isArray(site.streets) ? site.streets : null };   // [city context] water and streets for unit/context3d.js
+  return { B, T, ti: B.indexOf(T), meta: site.bmeta || null, face, t, az, ux, uy, rx, ry, anchor, slab, fh, cal, pinned: !!pinned, floor: floor || 5, frame, toSite, toPlanM, green: site.green || null, water: site.water || null, streets: Array.isArray(site.streets) ? site.streets : null };   // [city context] water and streets for unit/context3d.js
 }
 
 /**

@@ -344,12 +344,17 @@ of stacked prisms ("components": podium, tower, setback, bulkhead), each with it
 top. Two sources, both optional and both recorded per component with a confidence:
 
 - OpenStreetMap `building:part` outlines with `height` and `min_height` (or levels x 3.2 m, marked low
-  confidence) within 400 m, read through Overpass with a receipt like every other download. A part
+  confidence) within 600 m (and, for the skyline's landmarks, around every footprint 120 m or taller beyond that, up to 40 of them, in chunks so one failing request costs only its chunk), read through Overpass with a receipt like every other download. A part
   belongs to the footprint containing its centroid. A footprint takes its parts only when they cover at
   least 90 % of it (sampled on a grid) and their tallest top is within max(8 m, 20 %) of the footprint's
   own roof; otherwise it stays one prism and the reason is counted (in Midtown about half of the
   buildings with mapped parts pass). Kinds are inferred: tower (reaches 85 % of the top), podium (from
   the ground to at most half the top), bulkhead (small, short and raised), setback (anything else).
+  A part may also carry `roof:shape` / `roof:height` (a pyramid, hip, dome or sloping roof rising over walls to the part's `top_m`), a
+  `building:material` and a `building:colour`: those are kept for the 3D drawing only. A slim raised mast (under 60 m², 15 m or more) is kind
+  `spire`. Parts and spires count as prisms to their `top_m`, so a pitched roof is treated as flat at its apex: never lower than the real roof.
+  Reading the landmarks' parts is what turns the Empire State Building (one 380 m prism over a 7,900 m² lot) into its five-storey base, its
+  setbacks and its 443 m mast, and the Chrysler Building into its stepped shaft, arched crown and spire.
 - `<search>/sites/<id>.components.yaml`, written by hand for the target and the blockers that matter,
   from a zoning diagram, a section drawing or a measured photo. Every component needs a `source`; a
   manual entry replaces the OpenStreetMap parts of that building. Format in `apartmentscout/geo/components.py`.
@@ -368,6 +373,38 @@ Floor plan studio's skylines, exports and the comparison board all read the same
 podium-and-tower pair and a full-footprint tower of the same height give different sun hours (a slimmer tower casts less shade;
 `tests/test_anchor.py` and `tests/js/model-anchor.test.mjs` check it, in Python and JavaScript, against the same fixture). The stored study in
 the site file describes the source geometry, so it is not shown for a scenario with assumed parts.
+
+**Building shapes: what was considered for New York.** The city's own 3D data comes in three forms. (1) The *NYC 3D Building Model*
+(Office of Technology and Innovation, formerly DoITT; LoD2 with roof structures, from the 2014 aerial survey) is published only as
+citywide archives, CityGML (917 MB), ESRI multipatch (257 MB) and MicroStation DGN (762 MB), and by DCP as one Rhino .3dm per
+community district; there is no query service, nothing in it is newer than 2014 (no tower built since), and a search would have to
+cache hundreds of megabytes to use a few buildings. It is **not used**. (2) The *Building Footprints* (`5zhs-2jue`) carry one roof height
+(`height_roof`, from the 2017 survey) and a ground elevation per footprint: **used for every building**, as before. (3) OpenStreetMap
+`building:part` with `height` and `min_height` carries podiums, setbacks, crowns and masts for most of the landmarks and many ordinary
+towers at a few kilobytes a building: **used where it covers the footprint** (above). Where none of them gives a shape, the building stays its
+footprint pushed up to its roof height, and a part list from a zoning diagram (`<id>.components.yaml`) still replaces it. A model of a
+single building from the LoD2 files can be turned into such a file by hand; the trade-off is size and age, not licence (NYC Open Data terms).
+
+**Confidence in a height.** Every building carries `hconf` beside `height_src`: `high` for a roof height measured on a photogrammetric
+outline, `medium` for one on a hand-drawn outline or an OpenStreetMap height, `low` for one built from a floor count, from levels or from the
+default 10 m, and `low` for any building the footprints mark as under construction, or whose measured roof height cannot be a storey height for its floor count (under 2.2 m or over 5.2 m a floor from 4 floors up: in Midtown East a 36-floor building drawn at 18 m is the footprint of a lower part): those carry `hflag: floors` and a warning chip. The neighbours table, a building's card and the evidence
+panel show source and confidence; each part carries its own `source` and `confidence`. Every building keeps one stable id (its BIN, else its
+OpenStreetMap element), which both 3D views, the neighbours CSV and the obstruction maths share.
+
+**How the 3D views draw buildings (a look, not a measurement).** One function (`buildBuildings` in `dashboard/js/city3d/buildings.js`) draws
+every building of a site file, for Unit 3D and for the Floor plan studio's "City outside", from the same prepared buildings and parts that
+the sun, skyline and sky-view calculations read, so the two views show one city and the numbers use the shapes drawn. Facades are drawn in
+the shader, with no mesh per window: a window grid per storey height (the roof height over PLUTO's floors, clamped to 2.9-4.8 m, so floors
+line up across the parts of a building), and a style chosen from the PLUTO building class and the year built: masonry (brick or limestone,
+before 1945), punched windows (post-war and low-rise residential), ribbon windows (1945-74 offices), a glass curtain wall (offices and
+hotels from the late 1970s on) or floor-to-ceiling residential glass (1995 and later towers); an OpenStreetMap `building:material` and
+`building:colour` override the era. Each building picks one of four wall palettes by a hash of its id. Visual quality adds mullions,
+spandrels, window frames and sills, grain, and glass that reflects the environment; Fast keeps the grid, the tint and the lights. After dusk
+windows light by a hash of their cell (whole floors in offices, single windows in homes): they say nothing about who is home. Windows fade to
+their average colour as they shrink under a few pixels, walls are shaded darker at the street, flat roofs get a parapet, pitched roofs
+and spires are drawn as such, and near flat roofs carry a generic bulkhead and, on older mid-rise buildings, a rooftop water tank: those
+are not surveyed, rise at most 6 m, and are in no part. Buildings within 600 m of the view's centre are drawn in detail and cast shadows, the
+rest are plain prisms with a flat tint. None of this enters a sun hour, a skyline, a sky view or a score.
 
 **City context (trees, water, ground).** Around the buildings, the 3D views draw what is not a building, all of it read from the site
 file and none of it entering a sun hour, a skyline, a daylight number or a score.
@@ -455,10 +492,16 @@ assumed parts, the plan with furniture, saved scenarios and version metadata, op
 network. A project is the model as it was when exported: it does not re-query any source and says nothing about what changed afterwards.
 
 **Which building.** The listing's own BIN, then its tax lot (BBL), pick the building before the
-geocoded point does: address points often land in the street or on the neighbour. Only without a
-match is the footprint containing the point used (if it is tall enough for the listing's floor),
-else the nearest tall-enough footprint within 45 m. The site file says which rule matched and how far
-the address point lies outside the building.
+geocoded point does: address points often land in the street or on the neighbour. Without them (outside New York there are none), the
+listing's building name and street address are matched against the footprints within 250 m of the point: an OpenStreetMap `name` (or the
+city footprint's own name) that contains, or is contained in, the listing's building name with a shared word that is not generic ("Tower",
+"Apartments" alone never match), then `addr:housenumber` + `addr:street` against the listing's house number and street (with the usual
+abbreviations: `225 N Columbus Dr` is `225 North Columbus Drive`). Where several buildings share a name (the four Presidential Towers) the
+street number picks one, else the one holding the point, else the nearest. Only without any of these is the footprint containing the point
+used (if it is tall enough for the listing's floor), else the nearest tall-enough footprint within 45 m: in Chicago the nearest footprint to
+Aqua's geocoded point was the Fairmont Hotel across the street, and to Presidential Towers' 540 West Madison, which is why names and
+addresses come first. The site file says which rule matched (`bin`, `bbl`, `name`, `address`, `point`, `nearest`: the last two are guesses and
+are flagged) and how far the address point lies outside the building; Unit 3D's evidence panel and building card show it.
 
 **Floor heights.** Eye height is (floor - 1) x storey height + 1.6 m. The storey height is the
 target's measured roof height divided by its PLUTO number of floors, clamped to 2.8-4.2 m; roof

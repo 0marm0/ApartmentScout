@@ -39,6 +39,7 @@ import { insideViews, viewForWindow } from './unit/inside-views.js';   // [inter
 import { setLookChips, bindLookChips } from './plan/look-ui.js';
 import { resolve as resolveItem } from './plan/catalog.js';
 import { stepView } from './plan/viewpoints.js';
+import { heightProvenance, confOf } from './city3d/facade-rules.js';   // [buildings3d] height source and confidence labels
 import { loadTreeLayers, saveTreeLayers, STREET_TREES_TITLE, PARK_TREES_TITLE } from './unit/treelayers.js';   // [park trees] street / park tree toggles, remembered per browser
 
 let site = null, B0 = [], FUTB = [], edits = new Map(), B = [], T = null, FACES = [], LM = [], FUT = [], BF = null, stage = null, plan = null, interior = null;
@@ -284,7 +285,7 @@ async function load(id) {
   Object.assign(stage.opts, loadTreeLayers());   // [park trees] the renter's last street / park tree choice
   if (restored) Object.assign(stage.look, restored.look);
   await new Promise((r) => requestAnimationFrame(r)); // let the loading state paint before the heavy build
-  stage.build({ B: B0, T, ti: B0.indexOf(T), streets: Array.isArray(site.streets) ? site.streets : [], future: FUT, green: site.green || null, water: site.water || null, lm: LM, ownLabel: site.listing?.building || L.building || 'This building' }); UQ.adopt(stage);   // [feature J] the scene was rebuilt
+  stage.build({ B: B0, T, ti: B0.indexOf(T), meta: site.bmeta, streets: Array.isArray(site.streets) ? site.streets : [], future: FUT, green: site.green || null, water: site.water || null, lm: LM, ownLabel: site.listing?.building || L.building || 'This building' }); UQ.adopt(stage);   // [feature J] the scene was rebuilt
   stage.setFloorH(FH());
   for (const [bi, h] of edits) stage.setHeight(bi, h / Math.max(0.01, B0[bi].top - B0[bi].g), B0[bi].g, B);
   stage.resize();
@@ -364,7 +365,7 @@ const provChip = (k) => { const [t, c] = PROV[k] || [String(k), '']; return `<sp
 function subline() {
   const L = listing(), p = provenance(), P = site.provenance || {};
   if (!hasWindow()) { $('uSub').textContent = `${L.address || site.listing?.address || ''} · Window unresolved`; return; }
-  const tgt = P.target === 'bin' ? 'Matched by BIN' : P.target === 'bbl' ? 'Matched by tax lot' : P.target === 'nearest' ? 'Nearest footprint' : '';
+  const tgt = P.target === 'bin' ? 'Matched by BIN' : P.target === 'bbl' ? 'Matched by tax lot' : P.target === 'name' ? 'Matched by name' : P.target === 'address' ? 'Matched by address' : P.target === 'nearest' ? 'Nearest footprint' : '';
   $('uSub').innerHTML = `<span class="u-addr">${esc(L.address || site.listing?.address || '')}</span>
     <span class="u-fact"><b>Floor ${st.floor}</b>${provChip(p.floor)}</span>
     <span class="u-fact"><b>Faces ${compass(st.az)} ${Math.round(st.az)}°${st.bay ? ' · bay' : ''}</b>${provChip(p.exposure)}</span>
@@ -1036,7 +1037,7 @@ function computeNeighbours() {
     out.push({
       bi, name: fut ? f.name || 'Proposed building' : lm?.name || m.name || (m.address ? m.address.replace(/,.*$/, '') : `${Math.round(h)} m building`),
       sub: fut ? `proposed · ${f.status || ''}` : lm || m.name ? m.address || '' : '', lmName: lm?.name || m.name || '', address: m.address || '', bin: m.bin, bbl: m.bbl,
-      h, g: b.g, dist: d, brg, off, view, floors: m.floors || m.numfloors || null, hsrc: fut ? f.h_src || 'filing' : m.height_src || (b.eg ? 'default' : ''),
+      h, g: b.g, dist: d, brg, off, view, floors: m.floors || m.numfloors || null, hsrc: fut ? f.h_src || 'filing' : m.height_src || (b.eg ? 'default' : ''), hconf: fut ? '' : confOf(m), cls: m.cls || '', bid: fut ? '' : m.id || m.bin || '', nparts: b.parts ? b.parts.length : 0,
       geom: fut ? 'proposed' : gs.includes('manual') ? 'manual' : gs.includes('photo') ? 'photogrammetric' : m.src === 'osm' ? 'osm' : gs || '', src: fut ? f.source : m.src,
       year: m.year, edited, stale: !!edited && now - +edited >= STALE_YEARS, future: fut, sel: st.sel === bi,
     });
@@ -1130,14 +1131,17 @@ function openCard(bi) {
     gs.includes('manual') ? ['Manually mapped outline', 'warn', 'The city drew this outline by hand rather than from the aerial survey'] : null,
     edited && new Date().getFullYear() - +edited >= STALE_YEARS ? [`Height last edited ${edited}`, 'warn', 'Newer additions or demolitions may be missing'] : null,
     m?.height_src === 'default' ? ['Height unknown', 'bad', 'A default height: the real building may be much taller or shorter'] : null,
+    m?.hflag === 'floors' ? ['Height vs floors', 'warn', heightProvenance(m).tip] : null,   // [buildings3d]
     ['5100', '1003'].includes(String(m?.fcode)) || /construct/i.test(String(m?.status || '')) ? ['Under construction', 'warn', 'The footprint data marks this as under construction: its height may change'] : null,
     String(m?.fcode) === '1006' ? ['Cantilevered', '', 'Part of this building overhangs its footprint'] : null,
-    isT && ['bin', 'bbl'].includes(site.provenance?.target) ? [site.provenance.target === 'bin' ? 'Matched by BIN' : 'Matched by tax lot', 'good', 'Picked by the listing’s building number, not the address point'] : null,
+    isT && ['bin', 'bbl', 'name', 'address'].includes(site.provenance?.target) ? [{ bin: 'Matched by BIN', bbl: 'Matched by tax lot', name: 'Matched by name', address: 'Matched by address' }[site.provenance.target], 'good', site.provenance.target === 'name' || site.provenance.target === 'address' ? 'Picked by the listing’s building name or street address among the nearby footprints, not by the address point alone' : 'Picked by the listing’s building number, not the address point'] : null,
   ].filter(Boolean);
   const blkMin = blkRows.find((r) => r.bi === bi);
   const rows = [
     ['Roof', `${Math.round(h)} m · ${Math.round(h * 3.281)} ft${Math.abs(b.g) > 1 ? ` <span class="faint">(ground ${b.g > 0 ? '+' : ''}${b.g.toFixed(0)} m)</span>` : ''}`],
-    ['Height from', esc(m?.height_src ? HSRC[m.height_src] || m.height_src : b.eg ? 'Estimated' : 'Roof height in the footprint data')],
+    ['Height from', `${esc(m?.height_src ? HSRC[m.height_src] || m.height_src : b.eg ? 'Estimated' : 'Roof height in the footprint data')}${m?.height_src ? ` <span class="pill ${confOf(m) === 'high' ? 'good' : confOf(m) === 'low' ? 'warn' : ''}" title="${esc(heightProvenance(m).tip)}">${esc(confOf(m))} confidence</span>` : ''}`],   // [buildings3d]
+    m?.id || m?.bin ? ['Building id', `<span class="mono">${esc(m.id || m.bin)}</span> <span class="faint">same in every view</span>`] : null,
+    m?.cls ? ['Class', `${esc(m.cls)} <span class="faint">PLUTO building class, picks the facade style</span>`] : null,
     ['Data', esc(m?.src ? DSRC[m.src] || m.src : site.source || 'Footprints')],
     gs ? ['Outline', esc(GSRC[gs] || m.geom_src)] : null,
     m?.address && (lm || isT || m?.name) ? ['Address', esc(m.address)] : null,
@@ -1160,7 +1164,7 @@ function openCard(bi) {
   $('uCardX').addEventListener('click', closeCard);
   $('nbPanel').querySelectorAll('tr[data-bi]').forEach((r) => r.classList.toggle('on', +r.dataset.bi === bi));
 }
-const KIND = { podium: 'Podium', tower: 'Tower', setback: 'Setback', bulkhead: 'Bulkhead' };
+const KIND = { podium: 'Podium', tower: 'Tower', setback: 'Setback', bulkhead: 'Bulkhead', spire: 'Spire' };
 /** The components a building is modelled with: kind, height band, source and confidence. */
 function partsBlock(b) {
   const list = [...b.parts].sort((p, q) => q.top - p.top), shown = list.slice(0, 6);
@@ -1224,7 +1228,8 @@ function evidencePanel() {
     <div class="u-caveat"><b>A footprint is not the tower's real shape.</b> ${nParts ? `${nParts.toLocaleString()} building${nParts > 1 ? 's are' : ' is'} split into podium, tower and setback parts${partSrc}; every other building is its outline pushed straight up to its roof height.` : 'Every building is its outline pushed straight up to its roof height: no setbacks, crowns, podiums or bays.'} ${T.parts ? 'This building is drawn from its parts.' : area > 2500 ? `This building's footprint covers ${Math.round(area).toLocaleString()} m², likely more than one mass on one lot, so use the faint or hidden display to check the window.` : 'Shade from a stepped tower can be overstated.'}</div>
     <dl class="u-src">
       <dt>Buildings</dt><dd>${B.length.toLocaleString()} footprints: ${srcs}${manualAll ? `; ${manualAll.toLocaleString()} outlines mapped by hand` : ''}.</dd>
-      ${hs ? `<dt>Heights</dt><dd>${hs}.</dd>` : ''}
+      ${hs ? `<dt>Heights</dt><dd>${hs}.${heightConfNote(bm)}</dd>` : ''}
+      <dt>Facades</dt><dd>Windows, wall materials, parapets and the lit windows at night are a look chosen from each building's class and year (a glass curtain wall for newer offices, brick or limestone before 1945); bulkheads and water tanks on roofs are generic, not surveyed. None of it enters a sun hour, a skyline or a score. Parts, where there are any, are the only shapes the numbers use, and they carry their own source and confidence.</dd>
       ${ex.rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('')}
       ${greenRow()}
       ${(site.streets || []).length ? `<dt>Streets</dt><dd>${site.streets.length} centrelines (centre of the road, not the kerb).</dd>` : ''}
@@ -1234,6 +1239,12 @@ function evidencePanel() {
     </dl>
     ${receiptsBlock(site.sources || site.receipts, safeUrl)}
     <p class="u-rule">Only a floor plan with a compass, exact-unit photos or the building's own data establish which way a unit faces. Everything else is a working assumption: check it on a visit at the same time of day.</p>`;
+}
+/** [buildings3d] "Confidence in the roof height: 700 high, 200 medium, 129 low ..." from bmeta.hconf, or ''. */
+function heightConfNote(bm) {
+  if (!bm.some((m) => m.height_src)) return '';
+  const n = (k) => bm.filter((m) => m.height_src && confOf(m) === k).length, out = ['high', 'medium', 'low'].filter((k) => n(k)).map((k) => `${n(k).toLocaleString()} ${k}`);
+  return ` Confidence in the roof height: ${out.join(', ')} (measured on a photogrammetric outline is high; a hand-drawn outline or an OpenStreetMap tag medium; a floor count or a default low).`;
 }
 /** The Parks and trees row of the evidence panel: what was drawn, from where, and what the window sees of it. */
 function greenRow() {
@@ -1581,7 +1592,7 @@ async function rebuildScene() {
   FACES = canonicalFaces(facesOf(T, 8, B), site.faces, site.version); calcCal();
   const look = { ...stage.look }, mode = st.mode;
   $('uLoad').hidden = false; await new Promise((r) => requestAnimationFrame(r));
-  stage.build({ B: B0, T, ti: B0.indexOf(T), streets: Array.isArray(site.streets) ? site.streets : [], future: FUT, green: site.green || null, water: site.water || null, lm: LM, ownLabel: site.listing?.building || listing().building || 'This building' });
+  stage.build({ B: B0, T, ti: B0.indexOf(T), meta: site.bmeta, streets: Array.isArray(site.streets) ? site.streets : [], future: FUT, green: site.green || null, water: site.water || null, lm: LM, ownLabel: site.listing?.building || listing().building || 'This building' });
   stage.setFloorH(FH());
   for (const [bi, h] of edits) stage.setHeight(bi, h / Math.max(0.01, B0[bi].top - B0[bi].g), B0[bi].g, B);
   stage.resize(); Object.assign(stage.look, look);

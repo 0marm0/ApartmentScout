@@ -79,7 +79,7 @@ def month_tracks(year: int, lat: float, lon: float, tz: str, day: int = 15) -> l
 
 # --------------------------------------------------------------------------- skyline
 
-COMPONENT_KINDS = ("podium", "tower", "setback", "bulkhead")
+COMPONENT_KINDS = ("podium", "tower", "setback", "bulkhead", "spire")
 
 
 def _ring_ok(ring) -> bool:
