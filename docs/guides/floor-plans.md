@@ -61,6 +61,46 @@ renter has. `room` (`bedroom`, `living`, `dining`, `office`, `kitchen`, `other`)
 auto-placer; `variant` and `product` work as in a layout item. Plain text only, at most 60 pieces and 200 KB; the studio refuses a
 file with an unknown `ref`, a duplicate `id`, markup or an absurd size.
 
+### What a piece looks like: `look`
+
+Each piece may carry a `look`: its colour, material and finish, and who said so. Both 3D views (Unit 3D's Inside camera and the
+studio) draw it, joined to the layout's piece by `id`, so a plan never repeats it and **a colour the renter tells you later is a
+data edit, not a code change**.
+
+```json
+{"id": "futon", "ref": "futon", "w": 80, "d": 36, "h": 34,
+ "look": {"color": "black", "material": "leather", "finish": "sheen", "basis": "renter", "assumed": ["finish", "frame"],
+          "parts": {"frame": {"color": "black", "material": "metal", "finish": "satin"}},
+          "note": "Black leather futon; the frame is a stand-in."}}
+```
+
+| Field | Values |
+|---|---|
+| `color` | a name (`black`, `brown`, `dark-brown`, `grey`, `charcoal`, `white`, `cream`, `beige`, `tan`, `walnut`, `oak`, `navy`, `sage`, ... the list is `COLOR_NAMES` in `dashboard/js/plan/looks.js`) or a hex code (`#2e6f4f`) |
+| `material` | `leather`, `fabric`, `wood`, `metal`, `paint`, `laminate`, `plastic`, `glass` |
+| `finish` | `matte`, `satin`, `sheen`, `gloss` (how much the surface shines) |
+| `basis` | `renter` when they told you, `assumed` (the default) when it is the model's stand-in |
+| `assumed` | for a `renter` look, the fields or parts that are still guesses (`["finish", "frame"]`) |
+| `parts` | named parts of a model with their own look: the futon's `frame`, the desk's `chair` and `legs`, the dining table's `chairs`, a chest's `pulls`, a bed's `legs`; a part you do not name keeps the model's default, which is an assumption |
+| `note` | plain text, up to 300 characters |
+
+A piece with no `look` is drawn in the catalogue's stand-in colours and counts as assumed. The studio's furniture list shows each
+piece's colour and material (italic and "(assumed)" for a stand-in), and the *What's measured vs assumed* chip's furniture row says
+how many looks come from the renter and which details are still guesses. A layout item may also carry its own `look`, which wins
+over the inventory's; saved layouts do not copy the inventory's looks.
+
+Both 3D views share one set of models (`dashboard/js/room3d/furniture.js`): a futon is padded leather channels on a tubular frame,
+a chest has flat drawer fronts with simple handles, a desk is a plain table desk with a monitor and a chair, and a wall-mounted TV
+is a thin black panel hung at its `elev`. Fast stays within about 1,500 triangles a piece, Visual 6,000.
+
+### Looking from a seat, and moving a piece
+
+The camera chips offer a *Sofa*, *Bed* and *Desk* view: the sofa and the bed look at the TV they face, the desk at its monitor, and a
+second chip (*Sofa, window*, ...) looks out of the window as before. Click a piece (in the plan, in 3D or in the furniture list) and a
+toolbar appears beside it in both panes: **Rotate 90°** (R; Shift+R the other way), **Rotate** to any angle with a dial and the four
+square angles, **Move** (an arrow pad with 1 in, 6 in and 1 ft steps for touch and fine nudges; dragging the piece snaps it to a wall
+within 4 in; the arrow keys nudge it), **Remove** (Delete; Undo brings it back) and **Done** (Esc).
+
 - **Use your furniture layout** applies a plan's `your-furniture` preset; on a plan without one the button reads **Fit your furniture
   here** and places every piece with the fit checks (`plan/inventory.js`). A plan with no presets at all opens on that fit.
 - **Add** puts one piece, at its own size, in the kind of room it lives in. A layout item carries the renter's sizes (`w`, `d`, `h`,

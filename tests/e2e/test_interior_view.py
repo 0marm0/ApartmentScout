@@ -116,7 +116,7 @@ def test_studio_stands_at_the_window_and_sits_on_the_sofa_with_the_real_city_out
     s = open_page("#map", width=1600, height=1000)
     pg = s.page
     _studio(s)
-    assert _chips(pg, "#psLook") == ["Living room", "Bay", "Bedroom", "Corner", "Sofa", "Bed", "Desk"]
+    assert _chips(pg, "#psLook") == ["Living room", "Bay", "Bedroom", "Corner", "Sofa", "Sofa, window", "Bed", "Bed, window", "Desk", "Desk, window"]
     assert pg.evaluate("() => window.__plan3d.eye") == "orbit" and not pg.evaluate("() => window.__plan3d.hasCity")   # the bird's-eye view stays the layout view
     plan = pg.evaluate("""async () => { const { normalisePlan, pointInPoly } = await import('/js/plan/model.js');
       const m = normalisePlan(await (await fetch('/data/plans/paramount-tower-25e.json')).json());
@@ -154,12 +154,23 @@ def test_studio_stands_at_the_window_and_sits_on_the_sofa_with_the_real_city_out
     sofa = pg.evaluate(POSE_JS)
     futon = pg.evaluate("() => window.__plan3d.items.find((i) => i.id === 'futon')")
     assert abs(sofa["at"][0] - futon["x"]) < 24 and abs(sofa["at"][1] - futon["y"]) < 24 and 36 < sofa["h"] < 44   # sitting on the futon, at a seated eye height
-    assert sofa["dir"][1] > 0.5                                                    # looking out of the bay
+    tv = pg.evaluate("() => window.__plan3d.items.find((i) => i.id === 'tv')")
+    assert sofa["dir"][0] < -0.95 and abs(sofa["dir"][1]) < 0.3 and tv["x"] < futon["x"]   # from the sofa you look at the living-room TV on the far wall
+    pg.keyboard.press("]")                                                          # the second sofa chip: out of the bay
+    pg.wait_for_function("() => window.__plan3d.view === 'seat:sofa-window'")
+    _settle(pg)
+    assert pg.evaluate(POSE_JS)["dir"][1] > 0.5
+    pg.keyboard.press("[")
     pg.keyboard.press("[")
     pg.wait_for_function("() => window.__plan3d.view.startsWith('corner:')")
-    # from the bed: the bedroom's corner window
+    # from the bed: the bedroom TV, and from the bed, window: the bedroom's corner window
     pg.click("#psLook [data-vp='seat:bed']")
     pg.wait_for_function("() => window.__plan3d.view === 'seat:bed'")
+    _settle(pg)
+    tvb = pg.evaluate(POSE_JS)
+    assert inside("Bedroom", tvb["at"]) and tvb["dir"][0] > 0.95                      # the bedroom TV is on the partition, to the right of the bed
+    pg.click("#psLook [data-vp='seat:bed-window']")
+    pg.wait_for_function("() => window.__plan3d.view === 'seat:bed-window'")
     _settle(pg)
     bed = pg.evaluate(POSE_JS)
     assert inside("Bedroom", bed["at"]) and bed["dir"][0] > 0.4 and bed["dir"][1] > 0.6
@@ -201,8 +212,8 @@ def test_inside_view_has_room_chips_with_the_renters_furniture_and_switches_by_k
     pg = s.page
     _unit(s)
     assert pg.evaluate("() => !document.getElementById('uLook').hidden")
-    assert _chips(pg, "#uLook") == ["Living room", "Bay", "Bedroom", "Corner", "Sofa", "Bed", "Desk", "Into the room"]
-    assert _on(pg, "#uLook") == "Sofa"                                               # opens at the main seat, looking out
+    assert _chips(pg, "#uLook") == ["Living room", "Bay", "Bedroom", "Corner", "Sofa", "Sofa, window", "Bed", "Bed, window", "Desk", "Desk, window", "Into the room"]
+    assert _on(pg, "#uLook") == "Sofa, window"                                       # opens at the main seat, looking out of the window
     pg.click("#uLook [data-vp^='room:Living']")
     pg.wait_for_function("() => window.__unit3d.curView.key.startsWith('room:Living')")
     assert _on(pg, "#uLook") == "Living room"
@@ -298,7 +309,7 @@ def test_a_home_with_a_plan_opens_inside_from_the_card_with_big_labelled_camera_
     pill.evaluate("(e) => e.click()")   # the quick actions show on hover; the click is the same
     _opened(pg)
     cam = _cam(pg)
-    assert cam["mode"] == "in" and cam["view"] == "seat:sofa", cam                      # standing at the main seat, looking out
+    assert cam["mode"] == "in" and cam["view"] == "seat:sofa-window", cam                      # standing at the main seat, looking out
     assert "mode=inside" in cam["url"]
     assert pg.evaluate("() => !!window.__unit3d.interior && !document.getElementById('uLook').hidden")
     # the camera choice is a labelled control: Inside, Window view, Outside, then the small tools and the Floor plan link
@@ -316,7 +327,7 @@ def test_a_home_with_a_plan_opens_inside_from_the_card_with_big_labelled_camera_
     assert _cam(pg)["mode"] == "orbit" and pg.locator("#uModes .um-b.on").inner_text().strip() == "Outside"
     assert pg.evaluate("() => document.getElementById('uLook').hidden")
     pg.click("#uModes [data-mode=in]")
-    assert _cam(pg)["mode"] == "in" and _cam(pg)["view"] == "seat:sofa"                  # Inside again: the same seat
+    assert _cam(pg)["mode"] == "in" and _cam(pg)["view"] == "seat:sofa-window"                  # Inside again: the same seat
     assert not s.take()
 
 
@@ -331,7 +342,7 @@ def test_see_inside_is_in_the_drawer_the_3d_tab_and_the_command_palette(open_pag
     assert "primary" in pg.locator("#drawer [data-see-inside]").get_attribute("class")
     pg.click("#drawer [data-see-inside]")
     _opened(pg)
-    assert _cam(pg)["mode"] == "in" and _cam(pg)["view"] == "seat:sofa"
+    assert _cam(pg)["mode"] == "in" and _cam(pg)["view"] == "seat:sofa-window"
     # a home with a site model but no plan keeps one plain Unit 3D button and opens Outside
     pg.goto(f"{s.origin}/?open={NO_PLAN}#map")
     pg.wait_for_selector("#drawer.open .d-actions")
@@ -390,7 +401,7 @@ def test_the_renters_saved_camera_and_a_deep_link_still_win_but_see_inside_is_al
     pg.wait_for_selector("#cards .card")
     pg.locator(f'#cards .card[data-id="{UNIT}"] a[data-see-inside]').evaluate("(e) => e.click()")
     _opened(pg)
-    assert _cam(pg)["mode"] == "in" and _cam(pg)["view"] == "seat:sofa" and _cam(pg)["saved"] == '"orbit"'
+    assert _cam(pg)["mode"] == "in" and _cam(pg)["view"] == "seat:sofa-window" and _cam(pg)["saved"] == '"orbit"'
     # a home with no plan never opens in a made-up room, even for a renter who last chose Inside
     pg.click("#uModes [data-mode=in]")
     assert _cam(pg)["saved"] == '"in"'

@@ -48,7 +48,7 @@ test('every standing view is inside its room, back from the glass, looking out o
 test('25E offers Living room, Bay, Bedroom and Corner, then the sofa, bed and desk', () => {
   const { m, R } = load('paramount-tower-25e');
   assert.deepEqual(lookOutViews(m).map((v) => v.label), ['Living room', 'Bay', 'Bedroom', 'Corner']);
-  assert.deepEqual(seatViews(m, R).map((v) => v.label), ['Sofa', 'Bed', 'Desk']);
+  assert.deepEqual(seatViews(m, R).map((v) => v.label), ['Sofa', 'Sofa, window', 'Bed', 'Bed, window', 'Desk', 'Desk, window']);
   const all = allViews(m, R);
   assert.equal(new Set(all.map((v) => v.key)).size, all.length, 'unique keys');
   // the bay and corner are closer and wider than the room view of the same window
@@ -58,7 +58,7 @@ test('25E offers Living room, Bay, Bedroom and Corner, then the sofa, bed and de
 
 test('a seat looks out of the window of its own room, from the height a person sits', () => {
   const { m, R } = load('paramount-tower-25e'), groups = windowGroups(m);
-  const by = Object.fromEntries(seatViews(m, R).map((v) => [v.seat, v]));
+  const by = Object.fromEntries(seatViews(m, R).filter((v) => v.toward === 'window').map((v) => [v.seat, v]));
   assert.equal(m.rooms.find((r) => pointInPoly(by.bed.at, r.poly)).name, 'Bedroom');
   assert.equal(groups[by.bed.group].room, 'Bedroom');
   assert.equal(groups[by.sofa.group].room, 'Living room');
@@ -69,10 +69,29 @@ test('a seat looks out of the window of its own room, from the height a person s
     assert.ok(clearSight(m, v.at, g.mid), `${v.label}: a clear line to the window`);
   }
   // no sofa in the layout, no sofa view
-  assert.deepEqual(seatViews(m, R.filter((x) => x.kind !== 'sofa')).map((v) => v.seat), ['bed', 'desk']);
+  assert.deepEqual([...new Set(seatViews(m, R.filter((x) => x.kind !== 'sofa')).map((v) => v.seat))], ['bed', 'desk']);
   // a plan with no windows has no views at all
   const blind = normalisePlan({ units: 'ft', rooms: [{ name: 'Box', kind: 'living', x: 0, y: 0, w: 10, h: 10 }] });
   assert.deepEqual(allViews(blind, []), []);
+});
+
+test('from the sofa you see the living-room TV, from the bed the bedroom TV, from the desk your monitor', () => {
+  const { m, R } = load('paramount-tower-25e'), by = Object.fromEntries(seatViews(m, R).filter((v) => v.toward !== 'window').map((v) => [v.seat, v]));
+  const at = (id) => R.find((x) => x.id === id);
+  assert.deepEqual(Object.keys(by).sort(), ['bed', 'desk', 'sofa']);
+  for (const [seat, id] of [['sofa', 'tv'], ['bed', 'tv-bed']]) {
+    const tv = at(id), v = by[seat], to = [tv.x - v.at[0], tv.y - v.at[1]], d = Math.hypot(...to);
+    assert.equal(v.target, id, `${seat} looks at ${id}`);
+    assert.ok((to[0] * v.dir[0] + to[1] * v.dir[1]) / d > 0.999, `${seat} faces the TV`);
+    assert.ok(clearSight(m, v.at, [tv.x, tv.y]), `${seat}: a clear line to the TV`);
+    assert.ok(v.pitch > -0.06 && v.pitch < 0.2, `${seat}: a level gaze at a TV mounted at ${tv.elev} in`);
+  }
+  assert.equal(by.desk.target, 'desk');
+  // the sofa's TV is the one in the living room, not the bedroom's
+  assert.ok(at('tv').x < 60 && at('tv-bed').x > 250);
+  // a layout with no TV: the sofa keeps its one window view
+  const noTv = seatViews(m, R.filter((x) => x.kind !== 'tv'));
+  assert.deepEqual(noTv.filter((v) => v.seat === 'sofa').map((v) => [v.key, v.toward]), [['seat:sofa', 'window']]);
 });
 
 test('two windows of one room get different names (the way each faces)', () => {

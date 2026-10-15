@@ -113,27 +113,52 @@ export function seatPoint(it) {
   return { at: s ? toWorld(it, s[1], s[2]) : [it.x, it.y], h: it.kind === 'bed' ? EYE_SEAT.bed : EYE_SEAT.sofa, facing: null };
 }
 
+/** The wall-mounted or stand-mounted TV a seat faces: within 55 degrees of where the seat looks, in line of sight, within 25 ft. Null when none. */
+export function tvFacing(model, R, it, at) {
+  const f = toWorld(it, 0, -100), o = toWorld(it, 0, 0), face = unit([f[0] - o[0], f[1] - o[1]]);
+  let best = null;
+  for (const tv of R) {
+    if (tv.hidden || tv.kind !== 'tv') continue;
+    const to = [tv.x - at[0], tv.y - at[1]], dist = Math.hypot(to[0], to[1]), u = unit(to), cos = u[0] * face[0] + u[1] * face[1];
+    if (dist > 300 || dist < 20 || cos < Math.cos(55 * DEG) || !clearSight(model, at, [tv.x, tv.y])) continue;
+    if (!best || cos > best.cos) best = { tv, dir: u, dist, cos };
+  }
+  return best;
+}
+
 /**
- * "From the sofa / bed / desk": the seat's eye looking out of the window group in the same room (else the nearest one).
- * `R` are the resolved items. Seats with no window to look at are left out.
+ * "From the sofa / bed / desk": the seat's eye. A sofa or a bed that faces a TV looks at the TV and a desk looks at its own monitor
+ * (what a person sitting there sees: `seat:sofa`, `seat:bed`, `seat:desk`); each also has a second view out of the window
+ * (`seat:sofa-window` ...). A seat with no TV in line looks out of the window group in the same room (else the nearest one), as before.
+ * `R` are the resolved items. Seats with no window and nothing to look at are left out.
  */
 export function seatViews(model, R) {
-  const groups = windowGroups(model); if (!groups.length) return [];
+  const groups = windowGroups(model);
   const out = [];
-  const make = (key, label, it) => {
+  const make = (key, label, it, focus) => {
     if (!it) return;
     const { at, h } = seatPoint(it), room = model.rooms.find((r) => pointInPoly(at, r.poly))?.name || '';
-    const same = groups.map((g, i) => [g, i]).filter(([g]) => g.room === room);
-    const pool = same.length ? same : groups.map((g, i) => [g, i]);
-    const [g, gi] = pool.reduce((a, b) => (Math.hypot(b[0].mid[0] - at[0], b[0].mid[1] - at[1]) < Math.hypot(a[0].mid[0] - at[0], a[0].mid[1] - at[1]) ? b : a));
-    const dir = unit([g.mid[0] - at[0], g.mid[1] - at[1]]);
-    out.push({ key: `seat:${key}`, label, room, kind: 'seat', seat: key, id: it.id, at, dir, h, pitch: -0.02, fov: 74, group: gi });
+    const grp = groups.length ? nearestGroup(groups, room, at) : null;
+    let near = null;   // what the seat looks at: a TV in line, or the desk's own top
+    if (focus === 'tv') { const t = tvFacing(model, R, it, at); if (t) near = { dir: t.dir, dist: t.dist, aim: Math.min(52, (t.tv.elev || 0) + (t.tv.h || 28) / 2), toward: 'tv', target: t.tv.id }; }
+    else if (focus === 'desk') { const to = [it.x - at[0], it.y - at[1]], dist = Math.hypot(to[0], to[1]); near = { dir: unit(to), dist, aim: it.h + 8, toward: 'desk', target: it.id }; }
+    if (near) {
+      const rise = Math.atan2(near.aim - h, near.dist);
+      out.push({ key: `seat:${key}`, label, room, kind: 'seat', seat: key, id: it.id, at, dir: near.dir, h, pitch: Math.max(-0.2, Math.min(0.2, rise)), fov: 70, group: grp ? grp[1] : -1, toward: near.toward, target: near.target });
+    }
+    if (!grp) return;
+    const dir = unit([grp[0].mid[0] - at[0], grp[0].mid[1] - at[1]]);
+    out.push({ key: near ? `seat:${key}-window` : `seat:${key}`, label: near ? `${label}, window` : label, room, kind: 'seat', seat: key, id: it.id, at, dir, h, pitch: -0.02, fov: 74, group: grp[1], toward: 'window' });
   };
-  make('sofa', 'Sofa', firstOf(R, 'sofa', 'chair'));
-  make('bed', 'Bed', firstOf(R, 'bed'));
-  make('desk', 'Desk', firstOf(R, 'desk'));
+  make('sofa', 'Sofa', firstOf(R, 'sofa', 'chair'), 'tv');
+  make('bed', 'Bed', firstOf(R, 'bed'), 'tv');
+  make('desk', 'Desk', firstOf(R, 'desk'), 'desk');
   return out;
 }
+const nearestGroup = (groups, room, at) => {
+  const same = groups.map((g, i) => [g, i]).filter(([g]) => g.room === room), pool = same.length ? same : groups.map((g, i) => [g, i]);
+  return pool.reduce((a, b) => (Math.hypot(b[0].mid[0] - at[0], b[0].mid[1] - at[1]) < Math.hypot(a[0].mid[0] - at[0], a[0].mid[1] - at[1]) ? b : a));
+};
 
 /** True when nothing solid and tall stands between two points at eye height (walls only, ignoring window panes and doors). */
 export function clearSight(model, a, b) {

@@ -39,6 +39,8 @@ import { insideViews, viewForWindow } from './unit/inside-views.js';   // [inter
 import { setLookChips, bindLookChips } from './plan/look-ui.js';
 import { askedCamera, cameraParam, openingCamera, mainViewpoint, takeSeeInside, CAMERA_KEY, SAVED_CAMERAS } from './unit/camera-pref.js';   // [camera] which camera a home opens in: Inside when it has a plan
 import { resolve as resolveItem } from './plan/catalog.js';
+import { loadInventoryFile } from './plan/inventory.js';   // [furniture] the renter's pieces: colour, material and finish
+import { applyLooks } from './plan/looks.js';
 import { stepView } from './plan/viewpoints.js';
 import { heightProvenance, confOf } from './city3d/facade-rules.js';   // [buildings3d] height source and confidence labels
 import { loadTreeLayers, saveTreeLayers, STREET_TREES_TITLE, PARK_TREES_TITLE } from './unit/treelayers.js';   // [park trees] street / park tree toggles, remembered per browser
@@ -361,6 +363,8 @@ async function loadPlan(id) {
   if (!plan && hasFilePlan) {
     try { planRaw = await loadJSON(`${S.base}/plans/${id}.json`, null); plan = normalisePlan(planRaw); const L0 = plan.layouts[0]; planInfo = { source: 'file', label: '', saved: null, furniture: L0?.items?.length || 0, layout: L0 ? { items: L0.items } : null, layoutName: L0?.name || '' }; } catch { plan = null; planRaw = null; }
   }
+  // [furniture] the renter's own colours and materials, joined to the layout's pieces by id, so Unit 3D draws what the studio draws
+  if (planInfo.layout?.items?.length) { const inv = await loadInventoryFile(S.base, S.manifest, loadJSON); if (inv) planInfo.layout = { ...planInfo.layout, items: applyLooks(planInfo.layout.items, inv) }; }
 }
 const listing = () => byId(st.id) || site?.listing || {};
 /** [model project] Do any buildings use parts the renter assumed? Then the stored site study (source geometry) no longer applies. */

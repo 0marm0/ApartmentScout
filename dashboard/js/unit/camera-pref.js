@@ -36,10 +36,12 @@ export function openingCamera({ asked = null, intent = false, saved = null, hasP
   return hasPlan ? 'in' : 'orbit';
 }
 
-/** The viewpoint to stand at when Inside opens with no window named: the sofa, else the living room, else the first room. */
+/** The viewpoint to stand at when Inside opens with no window named: the main seat looking out of the window ("Sofa, window"; with
+ *  no TV in line the plain Sofa already looks out), else the living room, else the first room. */
 export function mainViewpoint(views) {
   const list = Array.isArray(views) ? views : [];
-  return list.find((v) => v.kind === 'seat' && v.seat === 'sofa')
+  return list.find((v) => v.kind === 'seat' && v.seat === 'sofa' && /-window$/.test(v.key || ''))
+    || list.find((v) => v.kind === 'seat' && v.seat === 'sofa')
     || list.find((v) => v.kind === 'room' && /living/i.test(v.room || v.label || ''))
     || list.find((v) => v.kind === 'room') || list[0] || null;
 }

@@ -56,7 +56,7 @@ The full format is in `docs/guides/floor-plans.md`. Write schema 2; every field 
    the piece's back points, in degrees clockwise from the top of the drawing (0 top wall, 90 right,
    180 bottom, 270 left). Use the renter's own furniture sizes when you know them (`w`, `d`, `h` in
    inches): list them once in `furniture.json` beside `listings.json` (schema in `docs/guides/floor-plans.md#your-furniture`,
-   with a `source` for each piece, never a guess) and make the first layout `your-furniture`, fitted with the checks. Place each piece against the wall face (room edge plus half the wall thickness).
+   with a `source` for each piece, never a guess; add each piece's `look` (colour, material, finish, with `basis: renter` only for what the renter said and the rest listed in `assumed`) so the 3D views draw their real furniture) and make the first layout `your-furniture`, fitted with the checks. Place each piece against the wall face (room edge plus half the wall thickness).
 8. **Check the layouts** before you hand them over: run the plan through the checks in node (they
    are pure ES modules) and fix anything tight or blocked, or say in the `note` why it is acceptable.
 
