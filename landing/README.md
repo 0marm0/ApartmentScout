@@ -13,8 +13,7 @@ accent stays the tokens' `--accent`.
 | `landing.css` | Page styles. Only token colours (and `color-mix` of them), self-hosted Geist (`fonts/`) |
 | `landing.js` | Glass nav on scroll, theme toggle, the tour's tabs, copy buttons, gallery lightbox. The page works without it (the tour then shows every panel) |
 
-The tour (`#tour`) is an ARIA tab set over six panels (map interactions, photos and the lightbox, decision tools, the new search wizard, light and 3D,
-the installable app), each with a main screenshot, an inset, three points and a link to the same view in the demo. Without JavaScript the tabs are not
+The tour (`#tour`) is an ARIA tab set over six panels (Find, the real cost, inside the unit, deciding, the new search wizard, the app), each with a main screenshot, an inset, three points and a link to the same view in the demo. Without JavaScript the tabs are not
 drawn and the six panels stack. The "Open the live demo" button is in the nav, the hero, the demo band and the closing section.
 
 ## How the site is assembled
@@ -57,8 +56,9 @@ from 390 to 2200 px, no request to another origin, and axe-core (WCAG 2.1 AA) on
 
 ## Screenshots
 
-Hero and tour: `map-commute`, `mobile-map`, `map-route-preview`, `map-starred-lens`, `lightbox`, `lightbox-floor-plan`, `decision-tray`,
-`share-decision-memo`, `wizard-basics`, `wizard-pick-on-map`, `unit-paramount`, `plan-light-tab`, `settings-menu`, `high-contrast`. Features and gallery:
-`map-drawer`, `map-drawer-commute`, `map-3d`, `map-noise`, `shortlist`, `compare`, `research`, `research-media`, `tours`, `records`, `unit-orbit`,
-`unit-window-21`, `unit-inside`, `plan-bird`. Desktop shots are laid out as 16:10 (any taller shot is cropped from the top) and the phone shot as 630 x 1350.
-Re-shooting them with `scripts/screenshots.py` under the same names updates the landing page with no other change.
+The page uses 26 of the images in `docs/images/` (shot by `scripts/screenshots.py`; `docs/GALLERY.md` shows all 35). Hero and tour: `hero-map`, `phone-map`,
+`find-route-preview`, `find-place-search`, `find-price-audit`, `find-lightbox`, `inside-bay`, `inside-skyline-dusk`, `decide-visit-history`, `decide-memo`,
+`setup-wizard-city`, `setup-wizard-review`, `setup-menu`, `find-light-theme`. Features and gallery: `find-commute-map`, `compare-tradeoff-pad`, `decide-research-queue`,
+`decide-records`, `inside-orbit-day`, `inside-orbit-night`, `inside-park-trees`, `inside-floor-plan`, `inside-furniture`, `compare-four`, `compare-split-view`,
+`decide-tour-planner`. Desktop shots are 1600 x 1000 and the 3D panes 1140 x 716 (both drawn as 16:10), and the phone shot is 390 x 844 at 1.5x. Re-shooting them under the same
+names updates the landing page with no other change; the earlier set is in `docs/archive/images-2026-10-15/`.
