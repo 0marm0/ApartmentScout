@@ -323,6 +323,8 @@ export const quality = {
   has(name) { const k = FEATURE_KEY[name]; return !!k && !!cur()[k]; },
   levelName: () => LEVELS[st.level].name,
   bind, setMode, forceVisual, pin, setLevel, attach, opened, pulse, hold,
+  /** Ask an attached engine to draw its next frame (the timed burst after a view opens; scripts/perf_check.py). */
+  kick(name) { st.engines.get(name)?.kick?.(); },
   /** Tell the module what the GPU allows ({maxTexture, dpr, phone}); engines call it once their renderer exists. */
   setDevice(d = {}) { const o = device(); const n = { ...o, ...d }; if (JSON.stringify(n) === JSON.stringify(o)) return; st.device = n; st.cache = null; emit({ mode: false, level: false, pinned: false, device: true }); },
   /** Call fn(settings, change) after every change of mode, level or pin; returns the unsubscribe function. */
@@ -346,3 +348,6 @@ export const furnitureQuality = () => (cur().richFurniture ? 'visual' : 'fast');
 export function setRoomQuality(m) { return setMode(m, { persist: false }); }
 /** Call fn(mode) after the mode or the furniture's detail changes; returns the unsubscribe function. */
 export function onRoomQuality(fn) { st.roomSubs.add(fn); return () => st.roomSubs.delete(fn); }
+
+// read-only handle for headless checks (Playwright, scripts/perf_check.py): the page itself never reads it
+try { if (typeof window !== 'undefined') window.__quality = quality; } catch { /* no window */ }
