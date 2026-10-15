@@ -6,6 +6,8 @@ name: Landing page and dashboard demo on GitHub Pages
 #   /assets/     dashboard/assets/ (brand icon, favicon)
 #   /fonts/      dashboard/vendor/fonts/ (self-hosted Geist, no Google Fonts)
 #   /demo/       dashboard/ with its example data, bundled and split by scripts/optimize_site.py, installable and offline-capable
+#   /demo/media/ the example's full photo set, from the GitHub release (scripts/fetch_media.sh): the public photo host that
+#                search.media_base_url points at, so clones and the standalone file fetch the photos they lack from here
 on:
   push:
     branches: [main]
