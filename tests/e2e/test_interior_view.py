@@ -116,7 +116,7 @@ def test_studio_stands_at_the_window_and_sits_on_the_sofa_with_the_real_city_out
     s = open_page("#map", width=1600, height=1000)
     pg = s.page
     _studio(s)
-    assert _chips(pg, "#psLook") == ["Living room", "Bay", "Bedroom", "Corner", "Sofa", "Bed", "Desk"]
+    assert _chips(pg, "#psLook") == ["Living room", "Bay", "Bedroom", "Corner", "Sofa", "Sofa, window", "Bed", "Bed, window", "Desk", "Desk, window"]
     assert pg.evaluate("() => window.__plan3d.eye") == "orbit" and not pg.evaluate("() => window.__plan3d.hasCity")   # the bird's-eye view stays the layout view
     plan = pg.evaluate("""async () => { const { normalisePlan, pointInPoly } = await import('/js/plan/model.js');
       const m = normalisePlan(await (await fetch('/data/plans/paramount-tower-25e.json')).json());
@@ -154,12 +154,23 @@ def test_studio_stands_at_the_window_and_sits_on_the_sofa_with_the_real_city_out
     sofa = pg.evaluate(POSE_JS)
     futon = pg.evaluate("() => window.__plan3d.items.find((i) => i.id === 'futon')")
     assert abs(sofa["at"][0] - futon["x"]) < 24 and abs(sofa["at"][1] - futon["y"]) < 24 and 36 < sofa["h"] < 44   # sitting on the futon, at a seated eye height
-    assert sofa["dir"][1] > 0.5                                                    # looking out of the bay
+    tv = pg.evaluate("() => window.__plan3d.items.find((i) => i.id === 'tv')")
+    assert sofa["dir"][0] < -0.95 and abs(sofa["dir"][1]) < 0.3 and tv["x"] < futon["x"]   # from the sofa you look at the living-room TV on the far wall
+    pg.keyboard.press("]")                                                          # the second sofa chip: out of the bay
+    pg.wait_for_function("() => window.__plan3d.view === 'seat:sofa-window'")
+    _settle(pg)
+    assert pg.evaluate(POSE_JS)["dir"][1] > 0.5
+    pg.keyboard.press("[")
     pg.keyboard.press("[")
     pg.wait_for_function("() => window.__plan3d.view.startsWith('corner:')")
-    # from the bed: the bedroom's corner window
+    # from the bed: the bedroom TV, and from the bed, window: the bedroom's corner window
     pg.click("#psLook [data-vp='seat:bed']")
     pg.wait_for_function("() => window.__plan3d.view === 'seat:bed'")
+    _settle(pg)
+    tvb = pg.evaluate(POSE_JS)
+    assert inside("Bedroom", tvb["at"]) and tvb["dir"][0] > 0.95                      # the bedroom TV is on the partition, to the right of the bed
+    pg.click("#psLook [data-vp='seat:bed-window']")
+    pg.wait_for_function("() => window.__plan3d.view === 'seat:bed-window'")
     _settle(pg)
     bed = pg.evaluate(POSE_JS)
     assert inside("Bedroom", bed["at"]) and bed["dir"][0] > 0.4 and bed["dir"][1] > 0.6
@@ -201,7 +212,7 @@ def test_inside_view_has_room_chips_with_the_renters_furniture_and_switches_by_k
     pg = s.page
     _unit(s)
     assert pg.evaluate("() => !document.getElementById('uLook').hidden")
-    assert _chips(pg, "#uLook") == ["Living room", "Bay", "Bedroom", "Corner", "Sofa", "Bed", "Desk", "Into the room"]
+    assert _chips(pg, "#uLook") == ["Living room", "Bay", "Bedroom", "Corner", "Sofa", "Sofa, window", "Bed", "Bed, window", "Desk", "Desk, window", "Into the room"]
     assert _on(pg, "#uLook") == "Living room"
     info = pg.evaluate("() => ({ src: window.__unit3d.planInfo.source, name: window.__unit3d.planInfo.layoutName, n: window.__unit3d.stage.interior.furniture.count })")
     assert info == {"src": "file", "name": "Your furniture", "n": 10}                # the source plan's default layout, in the real city
