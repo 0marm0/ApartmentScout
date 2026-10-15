@@ -130,6 +130,16 @@ browser.
 
 ## Map interactions
 
+**A calmer map.** Zoomed out, nearby homes merge into a bubble that counts homes and shows the lowest monthly cost inside
+("from $3,075"); click it to zoom in and watch it split. A building with two or more homes is one pin with its unit count
+and, from zoom 14, "6 units · from $4,995"; hover it for the best three, click it for the full list (a row opens that
+home's drawer, Esc closes the list). Your starred picks (gold) and the ten best-ranked homes, plus the one open in the
+drawer, keep a pin of their own at any zoom, never inside a bubble or a building pin; a building pin that shares a spot with
+one of them is drawn a few pixels aside. Everything follows the filters. Hovering a pin shows a card with photo, rank, price,
+score and key facts without opening the drawer; on a phone the first tap shows the card and the second tap (or its button)
+opens the drawer. The model lives in `dashboard/js/features/map-pins.js` (pure, tested in `tests/js/map-pins.test.mjs`), the
+cards in `features/map-preview.js`.
+
 **Route preview on hover.** Hover a result card, a map pin or price tag, or a Shortlist row and that home's commute
 route is drawn for the destination and mode you have selected (`L.commute[destination].modes[mode].legs`): walk legs
 dashed, subway rides along the line's own geometry in the official colour, a dot at each transfer, route bullets and
