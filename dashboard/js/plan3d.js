@@ -27,6 +27,7 @@ import * as P2 from './plan/plan2d.js';
 import { renderCompare, cancelCompare } from './plan/compare.js';
 import { lightState, windowReach, glazingScale, roomDaylight, clampGlazing, blindsOf, BLINDS_LABEL, GLAZING_DEFAULT } from './plan/light.js';
 import { parseProject, serialiseProject } from './plan/project.js';
+import { chooseHome, homeToRemember, SAVED_KEY } from './features/default-home.js';   // the home the 3D views open: address, session, renter's last, search default
 import { editFixture, editWindow, editOrientation } from './plan/architecture.js';
 import { canonicalFaces, snapPosition } from './unit/scenario.js';
 import { placePlan, windowSkylines, windowBlocked, windowMinutes, windowWithheld } from './plan/city.js';
@@ -194,7 +195,9 @@ export async function show(id) {
   planEmpty(false);
   if (id && id !== 'compare' && !ids.includes(id)) missingNotice('floor plan', id);
   const wantCompare = id === 'compare';
-  id = id && ids.includes(id) ? id : st.id || ids[0];
+  const asked = homeToRemember({ want: id, ids });   // a home the address names is the renter's own choice: remember it, it beats the default
+  id = chooseHome({ want: id, current: st.id, saved: store.get(SAVED_KEY, null), preferred: S.manifest.default_listing, ids });
+  if (asked) store.set(SAVED_KEY, asked);
   $('planSel').value = id;
   if (id !== st.id) await load(id);
   G3.resize(); G3.markDirty();

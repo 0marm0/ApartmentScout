@@ -35,7 +35,9 @@ The tabs are Map, Shortlist, Compare, 3D and Research. **3D** holds Unit 3D and 
 between them (the same way Tours sits under Shortlist and Records under Research), and the 3D tab opens whichever you used last.
 The numbered rows above are the sections, not the shortcuts (`1` to `5` are the tabs). Views load on first visit; `#<view>/<listing-id>` opens a view on
 a listing (for example `#unit/emerald-green-1211` or `#plan/emerald-green-1211`: both routes are unchanged, and the switch under the
-bar keeps the same home when the other view has data for it).
+bar keeps the same home when the other view has data for it). With no listing in the address, Unit 3D, Floor plan and Records open the
+home the search names in `search.default_listing` (the bundled example: Paramount Tower 25E), unless you opened another home in this
+browser before ([data model](data-model.md#the-home-the-3d-views-open-searchdefault_listing)).
 
 ### The tabs
 
@@ -214,6 +216,30 @@ inferred, so with no recorded change the pill is not drawn at all (the committed
 that keep snapshots, `apartmentscout history snapshot`). Price drops and rises compare the last price on or before your
 visit with the latest; a home that is now gone or rejected is never announced as new. *Mark as seen* moves the baseline to today.
 A reload in the same tab keeps the baseline; a first visit has none.
+
+### Why a home moved, and the unknowns that move its score
+
+Code: `features/moves.js` (screen) and `moves-model.js` (the arithmetic and the sentences), `unknowns.js` (screen), `facts-model.js`
+(re-scoring) and `facts-store.js` (storage), `drawer-slots.js`; Python mirror: `apartmentscout/rankhistory.py`, `renterfacts.py`.
+
+**Why it moved.** Every `apartmentscout score` records where each home stood (see *Rank history* in the [data model](data-model.md#history)).
+A result card whose rank moved at least ten places, and that is or was in the top quarter of the ranking, says so quietly: *↓40 since
+Oct 13*. The drawer's **Why it moved** section lists the dimensions behind it, biggest first, each with the overall points it moved and a
+plain sentence built from what was recorded: *size now estimated at ~562 ft² (no size listed)*, *two prices disagree: scoring the higher
+($5,038 a month) until you have a written quote*, *the unit's own photos now count: view 2/5 ...*, *the weights in your criteria changed
+(Space 25% → 15%, ...)*, *scoring 2.1 added interior*. The lines add up to the change in the score; the section also counts the homes that
+now rank above it and did not before. The rail's **Rank moves** section picks the run to compare with (default: your last visit, else the
+first run recorded), filters the list to the homes that moved, and the sort menu gains *Biggest rank moves*. With fewer than two recorded
+runs none of this appears. Moving a weight slider never makes a note appear: the notes compare two recorded runs.
+
+**Unknowns that move this score.** For a home the scorer had to estimate or guess, the drawer lists each unknown (size, monthly fees, a
+disputed or unverified price, a washer/dryer nobody confirmed, a floor read off the unit number) with the score range it spans under your
+weights and the ranks it could land in (for the Knox 6B: *Enter the size ... #15 to #68*). Type the real value and the line under the field
+shows the score and rank you would get; **Save** keeps it. The home re-ranks at once, the number is stored as yours (source: `renter`, with
+the day), the listing's own facts are untouched, and **Clear** puts the estimate back (an Undo sits in the toast). The numbers are kept in
+this browser (`localStorage`, key `facts:<search>`) and, when the page is served by `apartmentscout serve`, also in `renter_facts.json`
+in the search folder; `apartmentscout score` reads that file, so the next run bakes them in. They ride along in the picks backup. The
+bundled example is read-only, so its numbers stay in the browser.
 
 ### Decision tray
 
@@ -587,6 +613,7 @@ landmarks, custom presets) is carried over, but comments in the old file are not
 | `GET /api/tours`, `GET /api/tours/<id>` | Every saved visit, or one |
 | `POST /api/tours/<id>` | Validate and write `<search>/tours/<id>/findings.json` (`{"findings": {...}}`) |
 | `POST /api/tours/<id>/photos`, `POST /api/tours/<id>/photos/delete` | Add a photo (a raw image body) or delete one (`{"photo": "<id>"}`) |
+| `GET /api/facts`, `POST /api/facts/<id>` | Every number the renter typed for a home's unknowns, or replace one home's (`{"facts": {"size": 640}}`; empty removes) in `<search>/renter_facts.json` |
 
 The tour calls pass the same guards. On top of those: a listing id must be a plain slug (never a path) and its folder must resolve
 directly inside `<search>/tours/` and not be a symlink; a photo body is at most 12 MB, an image Pillow can decode within 60 megapixels

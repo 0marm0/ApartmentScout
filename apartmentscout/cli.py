@@ -30,6 +30,7 @@ import webbrowser
 from pathlib import Path
 
 from . import __version__
+from . import rankhistory, renterfacts
 from . import tours as tours_mod
 from .config import Workspace, load_criteria
 from .listings import CSV_TEMPLATE_COLUMNS, load, normalize, save
@@ -496,8 +497,10 @@ def cmd_score(args):
     from .score import score_all
     ws = ws_from(args)
     Ls = _listings(ws)
-    score_all(Ls, ws.criteria(), tours=tours_mod.load_all(ws.root))
+    crit = ws.criteria()
+    score_all(Ls, crit, tours=tours_mod.load_all(ws.root), facts=renterfacts.load(ws.root))
     save(Ls, ws.listings_path)
+    rankhistory.record(ws.root, Ls, crit)   # where every home stood on this run: the dashboard's "why did this move?"
     top = sorted((L for L in Ls if L["score"].get("rank")), key=lambda L: L["score"]["rank"])[:args.top]
     log(f"{'#':>3}  {'score':>5}  {'conf':>4}  {'$/mo':>6}  listing")
     for L in top:
@@ -709,6 +712,11 @@ def _export(ws: Workspace, out: Path):
     base = media_base_url(crit)   # where photos missing from media/ and media-lite/ can be fetched (apartmentscout/mediabase.py)
     if base:
         manifest["media_base_url"] = base
+    dl = crit["search"].get("default_listing")   # the home the 3D views open when nothing else is chosen (a renter's own pick still wins)
+    if isinstance(dl, str) and dl in {L.get("id") for L in Ls}:
+        manifest["default_listing"] = dl
+    elif dl:
+        log(f"  search.default_listing {dl!r} is not in listings.json: left out of the manifest")
     from .exports import run_all
     manifest["extra"] = run_all(ws, out, log=log)   # history, coverage and other optional data files
     (out / "manifest.json").write_text(json.dumps(manifest, indent=1))
@@ -718,8 +726,10 @@ def _rescore(ws: Workspace) -> None:
     """Score and rank every listing and save: what `apartmentscout score` does, without the printout."""
     from .score import score_all
     Ls = _listings(ws)
-    score_all(Ls, ws.criteria(), tours=tours_mod.load_all(ws.root))
+    crit = ws.criteria()
+    score_all(Ls, crit, tours=tours_mod.load_all(ws.root), facts=renterfacts.load(ws.root))
     save(Ls, ws.listings_path)
+    rankhistory.record(ws.root, Ls, crit)
 
 
 def _searches_dir(args, ws: Workspace | None) -> Path:
