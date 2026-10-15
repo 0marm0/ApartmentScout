@@ -50,7 +50,7 @@ jobs:
           - name: buildings-3d
             files: tests/e2e/test_buildings3d.py
           - name: one-city
-            files: tests/e2e/test_one_city.py
+            files: tests/e2e/test_one_city.py tests/e2e/test_daycycle.py
           - name: places-destinations
             files: tests/e2e/test_places_multidest.py tests/e2e/test_map_clusters.py
           - name: pwa-landing
