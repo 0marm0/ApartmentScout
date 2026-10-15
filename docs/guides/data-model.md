@@ -485,7 +485,7 @@ files (without the newer keys) still load.
   "neighbours": {"radius_m": 300, "from": "window", "cols": ["b", "dist", "bearing", "h", "top"],
                  "rows": [[52, 0.6, 118.4, 35.9, 35.9], "..."]},
   "checks": [{"id": "anchor", "status": "pass", "msg": "window anchor is inside the target ..."}, "..."],
-  "receipts": [{"dataset": "5zhs-2jue", "name": "NYC Building Footprints", "calls": 2, "rows": 909,
+  "receipts": [{"dataset": "5zhs-2jue", "name": "NYC Building Footprints", "calls": 3, "rows": 3448,
                 "limit_hit": false, "retrieved": "2026-10-13T21:40:02+00:00",
                 "rows_updated": "2026-10-11T08:17:59+00:00",
                 "queries": [{"rows": 880, "sha256": "3f1c...", "limit_hit": false, "url": "https://..."}]}],
