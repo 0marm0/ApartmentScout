@@ -91,6 +91,7 @@ apartmentscout share --picks picks.json --out shortlist.html   # read-only short
 apartmentscout tours-import picks.json            # visit findings from a picks backup into tours/ (score reads promoted facts)
 apartmentscout build && apartmentscout serve      # dashboard at http://127.0.0.1:8765
 apartmentscout monitor --dry-run                  # plan a re-check of the watchlist; drop --dry-run to fetch allowed pages and write a digest
+apartmentscout alerts                             # what changed since the last run (new homes that fit, price drops, gone, rank jumps); --no-save to peek; docs/guides/alerts.md
 apartmentscout all                                # geocode, commute, layers, score, build
 ```
 

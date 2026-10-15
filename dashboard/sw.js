@@ -22,6 +22,8 @@
  * not allow it) or by the local `apartmentscout serve` page (js/pwa-core.js decides).
  *
  * Messages in: SKIP_WAITING, WARM {urls}, SET_PHOTO_CAP {bytes}, STATUS (answers on the MessagePort).
+ * Notifications: the page shows a local notification through this worker when the app opens with news (js/features/whatsnew.js; no push
+ * server is involved). A tap on it focuses the app and asks it to open What's new, or opens ./?whatsnew=1.
  */
 'use strict';
 
@@ -201,6 +203,18 @@ async function assets(request) {
     throw new Error('offline and not cached');
   }
 }
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  event.waitUntil((async () => {
+    const all = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    const mine = all.find((c) => c.url.startsWith(SCOPE));
+    if (mine) {
+      await mine.focus();
+      mine.postMessage({ type: 'OPEN_WHATSNEW' });
+    } else await self.clients.openWindow(new URL('./?whatsnew=1', SCOPE).href);
+  })());
+});
 
 self.addEventListener('fetch', (event) => {
   const req = event.request;

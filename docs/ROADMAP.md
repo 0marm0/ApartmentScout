@@ -40,8 +40,10 @@ the renter makes the calls in a dashboard they own, for any city.
   litigation, registration or OATH datasets, and no resolution of address aliases or condo billing lots.
 - **Commute is for the morning arrival window only.** There is no late-night trip home, no rideshare
   estimate and no route drawn on the map.
-- **There is no monitoring.** History comes only from snapshots taken at build time and from claims an agent
-  logs. Nothing rechecks listings or alerts the renter.
+- **Monitoring is limited to pages that allow it.** `apartmentscout monitor` re-reads known units on hosts the renter allowed;
+  the big portals block automated reads and are never fetched. `apartmentscout alerts` reports changes in the search data, and an
+  opt-in workflow turns the digest into a daily GitHub issue (the GitHub app notifies the phone). There is no Web Push: an alert
+  while the installed app is closed needs a push server (see docs/guides/alerts.md).
 - **Some placements are hypotheses.** Window exposure and position are often assumed (three of the four
   Emerald Green units read "Unverified"). Only one window placement can be held at a time. Daylight is
   relative, not photometric.

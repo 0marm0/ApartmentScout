@@ -59,6 +59,7 @@ import * as LX from './plan/lighting-ui.js';   // [feature J] daylight grid, gla
 G3.setRealLampsProbe(() => LX.count() > 0);   // [daycycle] a luminaire placed in the Light tab replaces the assumed ceiling lights
 import { validateInventory, fitInventory, pieceItem, placedIds } from './plan/inventory.js';   // [furniture] the renter's own pieces
 import { inventoryHTML } from './plan/inventory-ui.js';
+import { createAr, sectionHTML as arSectionHTML } from './plan/ar-ui.js';   // [ar] View in your room (AR): AR Quick Look on iPhone and iPad, .usdz and .glb downloads elsewhere
 import { mountSelbar } from './plan/selbar.js';   // [furniture] the floating toolbar beside the selected piece
 import { resolveLayout, applyInventory, savedLayoutFor, samePlaces } from './plan/placement.js';   // [placement] one rule for where the pieces stand, shared with Unit 3D
 import { allViews, stepView, windowGroups } from './plan/viewpoints.js';   // [interior] where to stand to look out of the windows
@@ -141,7 +142,8 @@ export function init() {
             <button type="button" role="menuitem" data-f="preset">Copy as plan preset</button>
             <button type="button" role="menuitem" data-f="compare">Compare with the other plans, 2D and 3D</button>
             <button type="button" role="menuitem" data-f="options">Compare the layout options</button>
-            <hr><button type="button" role="menuitem" data-f="glb">Export 3D model<span>.glb</span></button>
+            <hr><button type="button" role="menuitem" data-f="ar-usdz">Furnished room for AR<span>.usdz</span></button>
+            <button type="button" role="menuitem" data-f="glb">Export 3D model<span>.glb</span></button>
             <button type="button" role="menuitem" data-f="png">Snapshot of the 3D view<span>.png</span></button>
             <button type="button" role="menuitem" data-f="png2">High-resolution snapshot<span>2× .png</span></button>
             <button type="button" role="menuitem" data-f="png4k">Poster snapshot<span>4K .png</span></button>
@@ -391,6 +393,13 @@ function doUndo(back = true) {
 }
 
 /** Re-resolve, re-check and redraw. opts.all rebuilds every 3D item; opts.panels redraws the side. */
+/** [ar] What can be shown in AR: the whole layout, and each placed piece (a signature says when its file is stale). */
+const arSig = (it, pos) => JSON.stringify([it.ref, it.w, it.d, it.h, it.elev, it.variant, it.product, it.look, it.set, ...(pos ? [Math.round(it.x * 2), Math.round(it.y * 2), Math.round(it.rot)] : [])]);
+function arEntries() {
+  const list = R.filter((x) => !x.hidden); if (!list.length) return [];
+  return [{ key: 'room', label: `${model?.title || 'Furnished room'}, furnished`, sig: list.map((x) => `${x.id}:${arSig(x, true)}`).join(';') }, ...list.map((x) => ({ key: x.id, label: x.name, sig: arSig(x, false) }))];
+}
+const ar = createAr({ entries: arEntries, build: (ids) => G3.arModel(ids) });
 function recompute(opts = {}) {
   if (!model) return;
   R = applyInventory(items, inventory).map((x) => resolve(x)).filter(Boolean);   // [furniture] the inventory's size, colour, material and desk set ride on each piece
@@ -736,6 +745,9 @@ async function fileAction(f) {
   else if (f === 'preset') {
     const txt = JSON.stringify(asPreset(items, { k: model.k, id: 'my-layout', name: 'My layout', note: '' }), null, 2);
     try { await navigator.clipboard.writeText(txt); toast('Copied. Paste it into "layouts" in the plan file'); } catch { saveBlob(new Blob([txt], { type: 'application/json' }), `${st.id}-preset.json`); }
+  } else if (f === 'ar-usdz') {
+    if (!arEntries().length) { toast('Place some furniture first.'); return; }
+    try { toast('Building the AR model…'); const a = await ar.download('room', 'usdz'); toast(`Saved the furnished room (${a.size.map((m) => Math.round((m / 0.0254 / 12) * 10) / 10).join(' × ')} ft, true size). Open it on an iPhone or iPad for AR.`, 5200); } catch (e) { toast(`Export failed: ${e.message || e}`, 4000); }
   } else if (f === 'glb') {
     try { toast('Building the 3D model…'); const buf = await G3.exportGLB(); saveBlob(new Blob([buf], { type: 'model/gltf-binary' }), `${st.id}.glb`); } catch (e) { toast(`Export failed: ${e.message || e}`, 4000); }
   } else if (f === 'png' || f === 'png2' || f === 'png4k') {
@@ -860,8 +872,10 @@ function inspector() {
       <button class="icon-btn danger" type="button" data-a="del" title="Remove (Del)" aria-label="Remove">${IC.del}</button>
     </div>
     <div class="ps-nudge" aria-label="Nudge">${[['↑', 0, 1, 'up'], ['←', -1, 0, 'left'], ['↓', 0, -1, 'down'], ['→', 1, 0, 'right']].map(([t, x, y, n]) => `<button type="button" data-nx="${x}" data-ny="${y}" aria-label="Nudge ${n}">${t}</button>`).join('')}</div>
+    <div class="ps-ar" data-ar="${esc(it.id)}"></div>
     <div class="ps-checks">${issues}${zones}</div>
     <p class="ps-src">${esc(c.src || '')}</p>`;
+  ar.touch();
 }
 const statePill = (s) => `<span class="pill ${PILL[s]} ps-state">${GRADE_TXT[s]}</span>`;
 const shortName = (n) => (n.split(',')[0].length >= 12 ? n.split(',')[0] : n).replace(/\s*-\s*[A-Z][a-z]+ [A-Z][a-z]+$/, '').slice(0, 52);
@@ -875,6 +889,7 @@ function useProduct(it, pid) {
   }, p ? `${p.brand} ${shortName(p.name)}: ${fmtIn(resolveOne(it)?.w || 0)} × ${fmtIn(resolveOne(it)?.d || 0)}` : 'Back to the generic size');
 }
 function inspClick(e) {
+  if (ar.onClick(e, toast)) return;
   const b = e.target.closest('button'); if (!b) return;
   if (b.dataset.flash != null) { const x = ev.items[sel]?.issues[+b.dataset.flash]; if (x) flashPoly(x.at || x.zone?.poly || null); return; }
   if (b.dataset.nx != null) { nudge(+b.dataset.nx * 3, +b.dataset.ny * 3); return; }
@@ -969,7 +984,7 @@ function tab() {
   if (!model) return;
   $('psTabs').querySelectorAll('[data-t]').forEach((b) => { b.classList.toggle('on', b.dataset.t === st.tab); b.setAttribute('aria-selected', String(b.dataset.t === st.tab)); });
   const el = $('psTab');
-  if (st.tab === 'furniture') el.innerHTML = furnitureTab();
+  if (st.tab === 'furniture') { el.innerHTML = furnitureTab(); ar.touch(); }
   else if (st.tab === 'checks') el.innerHTML = checksTab();
   else if (st.tab === 'shop') el.innerHTML = shopTab();
   else if (st.tab === 'light') { el.innerHTML = '<div id="psLight"></div>'; refreshSun(); }
@@ -1009,11 +1024,11 @@ function furnitureTab() {
   const pres = model.layouts.length ? `<h3 class="label">Layouts <span>written for this plan</span></h3><div class="ps-presets">${model.layouts.map((l) => `<button type="button" class="ps-preset${st.activePreset === l.id ? ' on' : ''}" data-p="${esc(l.id)}"><b>${esc(l.name)}</b>${l.note ? `<span>${esc(l.note)}</span>` : ''}</button>`).join('')}</div>` : '';
   const list = R.length ? R.map((it) => {
     const r = ev.items[it.id], s = it.hidden ? 'off' : r?.state || 'clear';
-    return `<div class="ps-item${it.id === sel ? ' on' : ''}${it.hidden ? ' off' : ''}" data-id="${esc(it.id)}"><button type="button" class="ps-ib" data-sel="${esc(it.id)}"><span class="ps-sw" style="--c:#${(it.base.color ?? 0x888888).toString(16).padStart(6, '0')}"></span><span class="t"><b>${esc(it.name)}</b><small>${fmtIn(it.w)} × ${fmtIn(it.d)}${it.hidden ? ' · hidden' : r?.room ? ` · ${esc(r.room)}` : ''}</small></span><i class="dot g-${s}" title="${s === 'off' ? 'hidden' : GRADE_TXT[s]}"></i></button><button type="button" class="icon-btn" data-vis="${esc(it.id)}" aria-label="${it.hidden ? 'Show' : 'Hide'}" title="${it.hidden ? 'Show' : 'Hide'}">${it.hidden ? IC.eyeOff : IC.eye}</button></div>`;
+    return `<div class="ps-item${it.id === sel ? ' on' : ''}${it.hidden ? ' off' : ''}" data-id="${esc(it.id)}"><button type="button" class="ps-ib" data-sel="${esc(it.id)}"><span class="ps-sw" style="--c:#${(it.base.color ?? 0x888888).toString(16).padStart(6, '0')}"></span><span class="t"><b>${esc(it.name)}</b><small>${fmtIn(it.w)} × ${fmtIn(it.d)}${it.hidden ? ' · hidden' : r?.room ? ` · ${esc(r.room)}` : ''}</small></span><i class="dot g-${s}" title="${s === 'off' ? 'hidden' : GRADE_TXT[s]}"></i></button><button type="button" class="icon-btn" data-vis="${esc(it.id)}" aria-label="${it.hidden ? 'Show' : 'Hide'}" title="${it.hidden ? 'Show' : 'Hide'}">${it.hidden ? IC.eyeOff : IC.eye}</button>${it.hidden ? '' : `<span class="ar-row" data-ar="${esc(it.id)}" data-ar-compact></span>`}</div>`;
   }).join('') : '<p class="faint">Nothing placed yet.</p>';
   const cat = CATEGORIES.map(([k, t]) => { const refs = Object.entries(CATALOG).filter(([, c]) => c.cat === k); return refs.length ? `<div class="ps-cat"><span class="ps-cat-h">${t}</span><div class="chips">${refs.map(([r, c]) => `<button type="button" class="chip" data-add="${esc(r)}" title="${esc(c.src)}">${IC.plus}${esc(c.name)}</button>`).join('')}</div></div>` : ''; }).join('');
   const own = inventory ? inventoryHTML(inventory, { held: placedIds(inventory, items), hasPreset: model.layouts.some((l) => l.id === OWN), active: st.activePreset === OWN }) : '';   // [furniture]
-  return `${tryFitHTML({ rooms: model.rooms.filter((r) => !['bath', 'closet', 'hall'].includes(r.kind)), st: tfState() })}${own}${pres}<h3 class="label">In this layout <span>${R.filter((x) => !x.hidden).length} pieces</span></h3><div class="ps-list">${list}</div>
+  return `${tryFitHTML({ rooms: model.rooms.filter((r) => !['bath', 'closet', 'hall'].includes(r.kind)), st: tfState() })}${own}${R.some((x) => !x.hidden) ? arSectionHTML(ar.platform) : ''}${pres}<h3 class="label">In this layout <span>${R.filter((x) => !x.hidden).length} pieces</span></h3><div class="ps-list">${list}</div>
     <h3 class="label">Add furniture <span>real sizes, hover for the source</span></h3>${cat}
     <div class="ps-opts">${[['snap', 'Snap to walls'], ['zonesAll', 'Show every clearance zone'], ['sight', 'Show TV sightlines'], ['swings', 'Shade door swings in 3D']].map(([k, t]) => `<label class="tg ${st[k] ? 'on' : ''}"><input type="checkbox" class="sr" data-opt="${k}" ${st[k] ? 'checked' : ''}><span class="switch"></span><span class="lbl">${t}</span></label>`).join('')}</div>`;
 }
@@ -1074,6 +1089,7 @@ function planTab() {
     <div class="ps-files"><button class="btn" type="button" data-file="save">${IC.down}Save layout</button><button class="btn" type="button" data-file="load">${IC.up}Load layout</button><button class="btn" type="button" data-file="glb">Export .glb</button><button class="btn ghost" type="button" data-file="preset">Copy as preset</button><button class="btn ghost" type="button" data-file="compare">Compare plans</button></div>`;
 }
 function tabClick(e) {
+  if (ar.onClick(e, toast)) return;
   const b = e.target.closest('button, [data-sel]'); if (!b) return;
   if (b.dataset.p) applyPreset(b.dataset.p);
   else if (b.dataset.tf) fitClick(e);
