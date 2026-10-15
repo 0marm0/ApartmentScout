@@ -199,3 +199,19 @@ def test_no_window_has_a_horizontal_bar_across_the_glass_in_either_engine(open_p
         assert bars, name
         assert all(b["y"] < 0.6 or b["y"] > 2.3 for b in bars), (name, [b for b in bars if 0.6 <= b["y"] <= 2.3])
     assert not s.take()
+
+
+def test_inside_camera_always_stands_in_the_room_or_at_the_window(open_page, webgl: bool) -> None:
+    """Whatever state the camera was left in (no standing point yet, no room built), Inside never sits at the ground with no view out."""
+    _need_webgl(webgl)
+    s = open_page("#map", width=1600, height=1000)
+    _unit(s, "date=2026-10-15&min=720&mode=inside")
+    pg = s.page
+    height = "() => window.__unit3d.stage.activeCam().position.y"
+    room_y = pg.evaluate(height)
+    assert room_y > 50                                                  # floor 24: about 72 m up
+    pg.evaluate("() => { const s = window.__unit3d.stage; s.inEye = null; s.dirty = true; s.frame(true); }")
+    assert abs(pg.evaluate(height) - room_y) < 3 and pg.evaluate(OUTSIDE_JS) > 0.05, "no standing point: it takes the first window's"
+    pg.evaluate("() => { const s = window.__unit3d.stage, i = s.interior; s.inEye = null; s.interior = null; s.dirty = true; s.frame(true); s.interior = i; }")
+    assert pg.evaluate(height) > 50, "no room: it looks out of the window like the Window camera"
+    assert not s.take()
