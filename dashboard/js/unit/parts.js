@@ -7,7 +7,7 @@
 // Site JSON v2: "components": {"<building index>": [{ring: [[x, y], ...], base_m, top_m, kind, source, confidence, ref?}]},
 // metres in the site frame, base_m/top_m above the building's own ground. An override adds source "assumed: ..." and
 // confidence "assumed" so nothing built from it can pass for source data.
-export const KINDS = ['podium', 'tower', 'setback', 'bulkhead'];
+export const KINDS = ['podium', 'tower', 'setback', 'bulkhead', 'spire'];
 export const CONFIDENCE = ['high', 'medium', 'low', 'assumed'];
 export const MAX_PARTS = 40, MAX_BUILDINGS = 200, MAX_COORD_M = 5000, MAX_HEIGHT_M = 900;
 export const ASSUMED = 'assumed: ';

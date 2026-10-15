@@ -57,7 +57,9 @@ const bboxOf = (p) => {
   for (let j = 0; j < p.length / 2; j++) { const x = p[2 * j], y = p[2 * j + 1]; x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
   return [x0, y0, x1, y1];
 };
-export const COMPONENT_KINDS = ['podium', 'tower', 'setback', 'bulkhead'];
+/** The OpenStreetMap page of a part whose source reads "osm way 123" or "osm relation 123" (the site file stores only the source), else ''. */
+export const osmRef = (src) => { const m = /^osm (way|relation) (\d+)$/.exec(typeof src === 'string' ? src : ''); return m ? `https://www.openstreetmap.org/${m[1]}/${m[2]}` : ''; };
+export const COMPONENT_KINDS = ['podium', 'tower', 'setback', 'bulkhead', 'spire'];
 /**
  * One component of a building (site JSON "components"): a prism from ground + base_m to ground + top_m with
  * its own ring. Returns null for an unusable entry (fewer than 3 finite points, or not 0 <= base_m < top_m).
@@ -70,7 +72,9 @@ export function prepPart(c, g = 0) {
   return {
     p, n: p.length / 2, bb: bboxOf(p), holes, g, base: g + base, top: g + top, base_m: base, top_m: top,
     kind: COMPONENT_KINDS.includes(c.kind) ? c.kind : base > 0 ? 'setback' : 'podium',
-    source: typeof c.source === 'string' ? c.source : '', confidence: typeof c.confidence === 'string' ? c.confidence : '', ref: typeof c.ref === 'string' ? c.ref : '',
+    source: typeof c.source === 'string' ? c.source : '', confidence: typeof c.confidence === 'string' ? c.confidence : '', ref: typeof c.ref === 'string' && c.ref ? c.ref : osmRef(c.source),
+    // [building massing] appearance only (drawn by city3d/buildings.js, never in an obstruction): roof shape, wall top, material, colour
+    roof: typeof c.roof === 'string' ? c.roof : '', eave_m: Number.isFinite(+c.eave_m) && c.eave_m != null ? +c.eave_m : null, dir: Number.isFinite(+c.dir) && c.dir != null ? +c.dir : null, mat: typeof c.mat === 'string' ? c.mat : '', col: typeof c.col === 'string' && /^#[0-9a-f]{6}$/i.test(c.col) ? c.col : '',
   };
 }
 

@@ -25,7 +25,7 @@ from .shapes import point_in_ring, ring_area
 
 EYE_M = 1.6
 OUT_M = 0.4                       # the observation point sits this far outside the glass
-KINDS = ("podium", "tower", "setback", "bulkhead")
+KINDS = ("podium", "tower", "setback", "bulkhead", "spire")
 CONFIDENCE = ("high", "medium", "low", "assumed")
 MAX_PARTS = 40
 MAX_COORD_M = 5000.0

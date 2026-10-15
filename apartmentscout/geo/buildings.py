@@ -159,7 +159,7 @@ def nyc_pluto(bbls: list[str], cache_dir: Path | None = None, refresh: bool = Fa
     for i in range(0, len(want), 80):
         chunk = ",".join(f"'{b}'" for b in want[i:i + 80])
         try:
-            rows = socrata("64uk-42ks", {"$where": f"bbl in ({chunk})", "$select": "bbl,address,numfloors,yearbuilt",
+            rows = socrata("64uk-42ks", {"$where": f"bbl in ({chunk})", "$select": "bbl,address,numfloors,yearbuilt,bldgclass",
                                          "$limit": 1000}, cache_dir, refresh=refresh)
         except RuntimeError:
             continue
@@ -167,7 +167,7 @@ def nyc_pluto(bbls: list[str], cache_dir: Path | None = None, refresh: bool = Fa
             k = _bbl(r.get("bbl"))
             if k:
                 out[k] = {"address": (r.get("address") or "").title() or None, "numfloors": _num(r.get("numfloors")),
-                          "yearbuilt": _num(r.get("yearbuilt"))}
+                          "yearbuilt": _num(r.get("yearbuilt")), "bldgclass": (r.get("bldgclass") or "").strip().upper() or None}
     return out
 
 
@@ -194,6 +194,8 @@ def fill_heights(buildings: list[dict], pluto: dict[str, dict] | None = None,
             b["year"] = int(p["yearbuilt"])
         if p.get("numfloors") and p["numfloors"] > 0 and not b.get("floors"):
             b["floors"] = int(round(p["numfloors"]))
+        if p.get("bldgclass") and not b.get("cls"):
+            b["cls"] = p["bldgclass"]     # PLUTO building class (D8 elevator co-op, O4 tall office ...): picks the 3D facade style
     return buildings
 
 
@@ -269,11 +271,37 @@ def fetch_osm(lat: float, lon: float, radius_m: float = 600, tall_radius_m: floa
  relation["building"]["type"="multipolygon"](around:{radius_m},{lat},{lon});
  way["building"]["height"](around:{tall_radius_m},{lat},{lon});
  way["building"]["building:levels"](around:{tall_radius_m},{lat},{lon}););
-out geom tags;"""
+out geom;"""
     return parse_osm_elements(overpass(q, cache_dir, refresh=refresh), lat, lon, radius_m, tall_min_m, default_h)
 
 
 # --------------------------------------------------------------------------- site model
+
+def height_confidence(b: dict) -> str:
+    """How far the roof height can be trusted: ``high``, ``medium`` or ``low``.
+
+    A roof height measured on the aerial survey (outline photogrammetric) is high; one recorded on a hand-drawn
+    outline or in OpenStreetMap is medium; one built from a floor count, from levels or from the default is low, and so
+    is any height of a building the footprints mark as under construction (it will change).
+    """
+    src = b.get("height_src") or "default"
+    if str(b.get("fcode") or "") in ("5100", "1003"):
+        return "low"
+    if src == "roof":
+        return "medium" if b.get("geom_src") == "manual" else "high"
+    if src in ("osm-height",):
+        return "medium"
+    return "low"
+
+
+def stable_id(b: dict, index: int) -> str:
+    """The building's id in every view: its BIN, else its OpenStreetMap element (``osmw123``), else ``b<index>``."""
+    for k in ("bin", "id"):
+        v = b.get(k)
+        if v not in (None, ""):
+            return str(v)
+    return f"b{index}"
+
 
 def _local(F: LocalFrame, ring, tol: float = 0.3) -> list[tuple[float, float]]:
     """Ring in local metres, de-duplicated and with collinear vertices merged (within ``tol`` m)."""
@@ -306,8 +334,10 @@ def build_site(listing: dict, buildings: list[dict], source: str, landmark_names
                     [round(v, 1) for p in pts for v in p]])
         if holes:
             holes_out[str(i)] = [[[round(x, 1), round(y, 1)] for x, y in h] for h in holes]
-        m = {"bin": b.get("bin"), "bbl": b.get("bbl"), "address": b.get("address"), "name": b.get("name"),
-             "year": b.get("year"), "floors": b.get("floors"), "height_src": b.get("height_src") or "default",
+        sid = stable_id(b, i)
+        m = {"id": sid if sid != str(b.get("bin")) else None, "bin": b.get("bin"), "bbl": b.get("bbl"), "address": b.get("address"),
+             "name": b.get("name"), "year": b.get("year"), "floors": b.get("floors"), "cls": b.get("cls"),
+             "height_src": b.get("height_src") or "default", "hconf": height_confidence(b),
              "src": b.get("src") or ("osm" if str(b.get("id", "")).startswith("osm") else "nyc-footprints"),
              "geom_src": b.get("geom_src"), "edited": b.get("edited"), "fcode": b.get("fcode")}
         meta.append({k: v for k, v in m.items() if v is not None})
