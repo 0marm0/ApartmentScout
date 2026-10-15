@@ -117,6 +117,10 @@ const ICON = {
   down: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 2.5v8M4.5 7l3.5 3.5L11.5 7M3 13.5h10"/></svg>',
   play: '<svg viewBox="0 0 16 16" fill="currentColor"><path d="M4.5 3v10l8.5-5z"/></svg>',
   pause: '<svg viewBox="0 0 16 16" fill="currentColor"><rect x="4" y="3" width="3" height="10" rx="1"/><rect x="9" y="3" width="3" height="10" rx="1"/></svg>',
+  chev: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6l4 4 4-4"/></svg>',
+  full: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.5 2.5h4v4M6.5 13.5h-4v-4M13.5 2.5l-4.5 4.5M2.5 13.5L7 9"/></svg>',
+  panels: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="2.5" width="12" height="11" rx="1.5"/><path d="M10 2.5v11"/></svg>',
+  lens: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M2.5 4.5h6M11.5 4.5h2M2.5 11.5h2M7.5 11.5h6"/><circle cx="10" cy="4.5" r="1.5"/><circle cx="6" cy="11.5" r="1.5"/></svg>',
   reset: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 8a5 5 0 109-3M12 2v3H9"/></svg>',
   heights: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M2.5 13.5V8h3v5.5M6.5 13.5V3h3v10.5M10.5 13.5V6h3v7.5M1.5 13.5h13"/></svg>',
 };
@@ -126,7 +130,9 @@ export function init() {
   const root = document.getElementById('view-unit');
   root.innerHTML = `<div class="view-pad u-pad">
     <header class="page-h u-head">
-      <div class="t"><div class="u-eyebrow">Light and view</div><h1 id="uTitle">Unit 3D</h1><div class="u-sub" id="uSub"></div></div>
+      <div class="t"><div class="u-eyebrow">Light and view</div><div class="u-tline"><h1 id="uTitle">Unit 3D</h1>
+        <button type="button" class="u-fold" id="uFactsBtn" aria-expanded="false" aria-controls="uSub" title="Address, floor, which way it faces and where each fact comes from">Facts${ICON.chev}</button>
+        <button type="button" class="u-fold" id="uUnitsBtn" aria-expanded="false" aria-controls="uUnits" title="The other units in this building, with the way each one faces">Units${ICON.chev}</button></div><div class="u-sub" id="uSub"></div></div>
       <div class="actions"><label class="u-pick"><span class="sr">Listing</span><select id="unitSel"></select></label><span id="uLinks" class="u-links"></span>
         <button class="btn" type="button" id="uSnap" title="Download a PNG of the model with a caption">${ICON.cam}Snapshot</button>
         <button class="btn" type="button" id="uGlb" title="Download the 3D model (.glb) with its assumptions inside">${ICON.cube}3D model</button></div>
@@ -148,12 +154,15 @@ export function init() {
           <button type="button" class="u-compass" id="uCompass" title="North. Click to face north" aria-label="Compass, click to face north"><svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="18.5"/><g id="uNeedle"><path d="M20 5l4 15h-8z" class="n"/><path d="M20 35l4-15h-8z" class="s"/><text x="20" y="4.2" text-anchor="middle">N</text></g></svg></button>
           <div class="float u-tools" id="uTools" role="group" aria-label="Layers">
             ${[['shadows', 'Shadows'], ['labels', 'Labels'], ['heights', 'Heights: colour by height class, label roofs, 150 m and 300 m rings'], ['streets', 'Street names and centrelines'], ['future', 'Proposed buildings'], ['green', 'Parks, lawns and trees: grass from NYC Parks Properties, Greenstreets and OpenStreetMap. Context only: trees are never counted as shade in the sun hours'], ['streetTrees', STREET_TREES_TITLE], ['parkTrees', PARK_TREES_TITLE], ['water', 'Water and ground: rivers, streets and sidewalks. Context only'], ['ray', 'Sun ray'], ['cone', 'View cone']].map(([k, t]) => `<button type="button" data-tg="${k}" title="${t}" aria-label="${t}" aria-pressed="false">${ICON[k]}</button>`).join('')}
-            <hr><button type="button" id="uTarget" title="This building: solid" aria-label="This building display: solid">${ICON.target}<i class="u-tmode">S</i></button>
+            <hr><button type="button" id="uFull" title="Full screen" aria-label="Full screen" aria-pressed="false">${ICON.full}</button>
+            <button type="button" id="uWide" title="Show the panels beside the model" aria-label="Show the panels beside the model" aria-pressed="false">${ICON.panels}</button>
+            <button type="button" id="uTarget" title="This building: solid" aria-label="This building display: solid">${ICON.target}<i class="u-tmode">S</i></button>
             <button type="button" id="uHome" title="Reset the camera" aria-label="Reset the camera">${ICON.reset}</button>
           </div>
           <div class="hud u-hud" id="hud" aria-live="polite"></div>
           <div class="float u-card" id="uCard" hidden></div>
           <div class="float u-lens" id="uLens" hidden>
+            <button type="button" class="ul-tog" id="uLensTog" aria-expanded="false" title="Lens, turn and tilt: field of view and where the camera points" aria-label="Lens, turn and tilt">${ICON.lens}<span>Lens, turn and tilt</span></button>
             <div class="field u-in-only u-in-select"><label for="uInWin">Look out of</label><select id="uInWin"></select></div>
             <div class="field"><label for="uFov">Lens <span class="val" id="uFovV"></span></label><input type="range" id="uFov" min="35" max="110" value="70"></div>
             <div class="field"><label for="uYaw">Turn <span class="val" id="uYawV"></span></label><input type="range" id="uYaw" min="-90" max="90" value="0"></div>
@@ -226,9 +235,12 @@ export async function show(id) {
  */
 function fitGrid() {
   const root = document.getElementById('view-unit'), g = $('uGrid'); if (!root || !g) return;
+  const main = g.querySelector(':scope > .u-main');
+  if (main) main.style.height = '';
   if (!matchMedia('(min-width: 1181px)').matches || g.querySelector(':scope > .empty')) { g.style.height = ''; return; }
-  const top = g.getBoundingClientRect().top - root.getBoundingClientRect().top + root.scrollTop;
-  g.style.height = Math.max(560, root.clientHeight - top - 20) + 'px';
+  const top = g.getBoundingClientRect().top - root.getBoundingClientRect().top + root.scrollTop, h = Math.max(560, root.clientHeight - top - 20 + (root.dataset.wide === "1" ? 44 : 0));
+  if (root.dataset.wide === '1' && main) { g.style.height = ''; main.style.height = h + 'px'; return; }   // wide: the model and its time strip fill the screen, the panels follow below
+  g.style.height = h + 'px';
 }
 
 // ------------------------------------------------------------------ load
@@ -470,6 +482,17 @@ function wireStage() {
   $('uHome').addEventListener('click', () => { if (st.mode === 'plan') stage.resetPlan(); else if (st.mode === 'top') stage.topDown(true); else if (st.mode === 'win' || st.mode === 'in') { setLook(70, 0, 6); } else stage.resetOrbit(true); });
   $('uCompass').addEventListener('click', faceNorth);
   for (const [id, k] of [['uFov', 'fov'], ['uYaw', 'yaw'], ['uPitch', 'pitch']]) $(id).addEventListener('input', (e) => { stage.look[k] = +e.target.value; syncLens(); stage.dirty = true; syncUrlSoon(); if (st.study === 'floors') studyStale(); });
+  // the header is one line: the facts and the other units open on request, so the model gets the page
+  const V = document.getElementById('view-unit');
+  const fold = (btn, key) => btn.addEventListener('click', () => { const on = V.dataset[key] !== '1'; if (on) V.dataset[key] = '1'; else delete V.dataset[key]; btn.setAttribute('aria-expanded', String(on)); fitGrid(); });
+  fold($('uFactsBtn'), 'facts'); fold($('uUnitsBtn'), 'units');
+  // the model is wide by default (panels below it); the second button puts them beside it again, and the first goes full screen
+  const setWide = (on) => { if (on) V.dataset.wide = '1'; else delete V.dataset.wide; $('uWide').setAttribute('aria-pressed', String(!on)); $('uWide').title = $('uWide').ariaLabel = on ? 'Show the panels beside the model' : 'Make the model wide'; store.set('unit-wide', on); fitGrid(); };
+  setWide(store.get('unit-wide', true) !== false);
+  $('uWide').addEventListener('click', () => setWide(V.dataset.wide !== '1'));
+  $('uFull').addEventListener('click', () => { const el = $('stage'); if (document.fullscreenElement) document.exitFullscreen?.(); else el.requestFullscreen?.().catch(() => {}); });
+  document.addEventListener('fullscreenchange', () => { const on = document.fullscreenElement === $('stage'); $('uFull')?.setAttribute('aria-pressed', String(on)); stage?.resize?.(); });
+  $('uLensTog').addEventListener('click', () => { const on = !$('uLens').classList.contains('open'); $('uLens').classList.toggle('open', on); $('uLensTog').setAttribute('aria-expanded', String(on)); });   // the sliders stay closed until asked for: the picture comes first
   $('uInWin').addEventListener('change', (e) => goView(e.target.value));   // [interior] the phone fallback for the room chips
   bindLookChips($('uLook'), { pick: (k) => goView(k), order: () => views.map((v) => v.key) });
   $('uLook').addEventListener('click', onInsideAct); $('uLook').addEventListener('change', onInsideAct);   // [room3d] daylight map and blinds

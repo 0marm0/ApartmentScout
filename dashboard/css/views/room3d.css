@@ -51,3 +51,7 @@
 .lk-sel select { height: 26px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface-2); color: var(--ink-2); font: 500 var(--fs-xs) var(--font-sans, inherit); padding: 0 8px; }
 .u-look .lx-legend { min-width: 150px; margin: 0; }
 @media (max-width: 760px) { .u-look .lk-extra { display: none; } }   /* on a phone the daylight map lives in the studio; the chip row stays short */
+
+/* "What's measured vs assumed": the coloured dots alone until it is opened (the words stay for screen readers and in the tooltip) */
+.acc-btn[aria-expanded="false"] .acc-t { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.acc-btn[aria-expanded="false"] { padding: 0 10px; }
