@@ -271,6 +271,42 @@ times); **Copy plan** puts the day on the clipboard as text. Walking uses the da
 walk to its station from its commute route, a 4 min wait and a straight-line ride at 25 km/h; the faster of walking and that is
 used unless you fix the mode on the hop.
 
+### Tour day (the phone)
+
+A full-screen mode for the day of the visits, built for a 375 px phone in one hand: 17 px type, every control at least 48 px tall,
+the main actions in a bar at the bottom. Open it from the **Tour day** button that appears on the main screen while a pick has a
+tour booked for today, from the command palette (*Tour day*), from the home-screen shortcut, or at `?tourday=1`. With no tour
+booked it lets you pick the homes you are visiting. The phone's back button steps back through its screens and never leaves the app.
+
+- **Route.** Today's tours in time order (or *Shortest walk*, booked homes first), each with its time, address, how far along the
+  checklist is, a **Directions** link (a Google or, on iPhone and iPad, an Apple Maps URL built from the address: no API key, and
+  nothing is sent until you tap it) and the walk or transit estimate to the next stop. Move a stop up or down, take it off, or add
+  another saved home.
+- **Checklist per home.** Light at the window (1 to 5) and which way it faces, noise with the windows shut and open, water pressure,
+  cell signal, washer/dryer in the unit, closets, then yes/no questions for the amenities your criteria want and the listing does not
+  state, and *Ask the leasing office* ticks for what the score is unsure about (unverified fees, lease term, price, a stale check).
+  Each question says why it matters (your weights, a must-have). A photo button, a note box.
+- **Noise check.** *Measure 10 s* asks for the microphone only when you tap it, reads the level in short blocks with the Web Audio
+  API (echo cancelling, noise suppression and gain control off), keeps one number and discards the audio. Nothing is recorded or
+  uploaded. The figure is labelled **approximate**: phone microphones are not calibrated (the dashboard adds a fixed offset that puts
+  a quiet room near 40 dB), so compare homes visited with the same phone and do not treat it as a meter.
+- **Where answers go.** Into the tour findings the visit sheet already uses, so they flow into the home's flags and score exactly as
+  there: light, facing, water, signal and closets fill their fields, the W/D answer becomes the *Matches / Differs* check (a
+  difference is flagged and never scored until you use it as a fact), and the louder of the two noise answers is the noise rating
+  and dB. What the findings schema has no field for (shut and open noise separately, the amenity yes/no answers, the questions
+  asked) is kept in this browser under `tourday:<search>` and written into the note after a `— Tour day answers —` marker, so it
+  travels with the findings; your own note text always comes first.
+- **Offline.** The installed app caches the mode (it is fetched ahead once there are tours today). Answers are saved in the browser at
+  once; when the page was served by `apartmentscout serve` and the API is unreachable they are queued ("N homes waiting to sync")
+  and sent when it is back, on the `online` event, every 15 s, or with *Sync now*. Photos taken offline stay in the browser and
+  go to the search folder with the next sync.
+- **After the tour.** *Finish this home* shows a summary card (the answers as labelled values, a flag where something differs from
+  the listing, photos, the note and what is still open) with the next stop and its directions. *Summaries* keeps one card per home
+  for comparing later, with *Copy*, and *Full visit notes* opens the visit sheet to promote a finding.
+
+Code: `features/tourday-entry.js` (the button, the URL, the palette), `tourday.js` (the screens), `tourday-model.js` (pure rules, with
+node tests in `tests/js/tourday.test.mjs`), `tourday-noise.js` (the microphone), `findings-store.js` (`resync()`, `pending()`).
+
 ### Tour findings and decision history
 
 Code: `features/tour-findings.js` (wiring), `tour-sheet.js` (the sheet), `findings-model.js` and `decisions-model.js` (pure rules, with

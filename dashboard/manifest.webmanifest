@@ -22,6 +22,7 @@
     { "name": "Map", "short_name": "Map", "description": "Listings on the map with commute heat", "url": "./#map" },
     { "name": "Shortlist", "short_name": "Shortlist", "description": "Your saved homes and tours", "url": "./#list" },
     { "name": "Compare", "short_name": "Compare", "description": "Finalists side by side", "url": "./#compare" },
-    { "name": "Unit 3D", "short_name": "Unit 3D", "description": "Sun, view and skyline from the exact unit", "url": "./#unit" }
+    { "name": "Unit 3D", "short_name": "Unit 3D", "description": "Sun, view and skyline from the exact unit", "url": "./#unit" },
+    { "name": "Tour day", "short_name": "Tour day", "description": "Today's tours, a checklist for each home and a noise check", "url": "./?tourday=1" }
   ]
 }
