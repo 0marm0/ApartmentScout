@@ -1090,6 +1090,7 @@ function openCard(bi) {
     gs.includes('manual') ? ['Manually mapped outline', 'warn', 'The city drew this outline by hand rather than from the aerial survey'] : null,
     edited && new Date().getFullYear() - +edited >= STALE_YEARS ? [`Height last edited ${edited}`, 'warn', 'Newer additions or demolitions may be missing'] : null,
     m?.height_src === 'default' ? ['Height unknown', 'bad', 'A default height: the real building may be much taller or shorter'] : null,
+    m?.hflag === 'floors' ? ['Height vs floors', 'warn', heightProvenance(m).tip] : null,   // [buildings3d]
     ['5100', '1003'].includes(String(m?.fcode)) || /construct/i.test(String(m?.status || '')) ? ['Under construction', 'warn', 'The footprint data marks this as under construction: its height may change'] : null,
     String(m?.fcode) === '1006' ? ['Cantilevered', '', 'Part of this building overhangs its footprint'] : null,
     isT && ['bin', 'bbl'].includes(site.provenance?.target) ? [site.provenance.target === 'bin' ? 'Matched by BIN' : 'Matched by tax lot', 'good', 'Picked by the listing’s building number, not the address point'] : null,

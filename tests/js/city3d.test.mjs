@@ -64,6 +64,8 @@ test('height provenance labels its source and confidence', () => {
   assert.equal(F.heightProvenance({ height_src: 'pluto-floors' }).conf, 'low');
   assert.equal(F.heightProvenance({ height_src: 'osm-height' }).conf, 'medium');
   assert.equal(F.heightProvenance({}).text, 'Default height (unknown)');
+  const f = F.heightProvenance({ height_src: 'roof', hconf: 'low', hflag: 'floors' });
+  assert.equal(f.flag, true); assert.match(f.tip, /does not fit the floor count/); assert.equal(F.heightProvenance({ height_src: 'roof', hconf: 'high' }).flag, false);
 });
 
 // ------------------------------------------------------------------ parity with Python

@@ -387,7 +387,7 @@ single building from the LoD2 files can be turned into such a file by hand; the 
 
 **Confidence in a height.** Every building carries `hconf` beside `height_src`: `high` for a roof height measured on a photogrammetric
 outline, `medium` for one on a hand-drawn outline or an OpenStreetMap height, `low` for one built from a floor count, from levels or from the
-default 10 m, and `low` for any building the footprints mark as under construction. The neighbours table, a building's card and the evidence
+default 10 m, and `low` for any building the footprints mark as under construction, or whose measured roof height cannot be a storey height for its floor count (under 2.2 m or over 5.2 m a floor from 4 floors up: in Midtown East a 36-floor building drawn at 18 m is the footprint of a lower part): those carry `hflag: floors` and a warning chip. The neighbours table, a building's card and the evidence
 panel show source and confidence; each part carries its own `source` and `confidence`. Every building keeps one stable id (its BIN, else its
 OpenStreetMap element), which both 3D views, the neighbours CSV and the obstruction maths share.
 

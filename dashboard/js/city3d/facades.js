@@ -123,7 +123,8 @@ export function heightProvenance(m) {
   };
   const src = (m && m.height_src) || 'default', [text, tip] = SRC[src] || [src, ''];
   const conf = (m && m.hconf) || heightConfidence(m);
-  return { text, conf, tip: `${tip}. Confidence ${conf}.` };
+  const flag = m && m.hflag === 'floors' ? ' The roof height does not fit the floor count (a footprint of a lower part, or a wrong count), so it is not trusted.' : '';
+  return { text, conf, flag: !!flag, tip: `${tip}. Confidence ${conf}.${flag}` };
 }
 
 // ------------------------------------------------------------------ GLSL

@@ -38,7 +38,7 @@ export function cityGroup(ctx, opts = {}) {
       const mat4 = new THREE.Matrix4().makeTranslation(0, ground, 0).multiply(siteToPlan(ctx));
       const bb = buildBuildings(null, { B: ctx.B, meta: ctx.meta || [], center: ctx.anchor, radius: R, nearR: R + 40, skip: new Set([ctx.ti]), matrix: mat4, shadows: false, light: !!opts.light,
         quality: { visual: !!opts.visual, phone: !!opts.phone }, colorFor: defaultColorFor({ light: !!opts.light, low: col.low, high: col.high, roof: col.roof }) });
-      g.add(bb); g.userData.buildings = bb.userData; n = bb.userData.info.buildings;
+      bb.name = 'neighbours'; g.add(bb); g.userData.buildings = bb.userData;   // (the studio and its tests find the neighbours by this name) n = bb.userData.info.buildings;
       return true;
     } catch (e) { console.warn('rich buildings unavailable in the studio, drawing prisms', e); return false; }
   })();
