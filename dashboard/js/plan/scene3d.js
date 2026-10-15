@@ -142,13 +142,17 @@ export function init(canvasEl, stageEl, onChange) {
   for (const o of SKY.objects()) { o.visible = false; scene.add(o); }   // [interior] sky dome and sun glow, shown in eye-level views
   new ResizeObserver(resize).observe(stage);
 }
+let busy = false, resizeLater = false;
+/** A photo or video render owns the renderer: the loop and the resize observer leave it alone until it is done (then the size is read again). */
+export function setBusy(on) { busy = !!on; if (!busy && resizeLater) { resizeLater = false; resize(); } dirty = true; }
 export function resize() {
+  if (busy) { resizeLater = true; return; }
   if (!renderer) return; const w = stage.clientWidth, h = stage.clientHeight; if (!w || !h) return;
   renderer.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix(); dirty = true;
 }
 /** Draw when something changed; also advances camera glides and the guided walk. */
 export function render(force = false) {
-  if (!renderer) return false;
+  if (!renderer || busy) return false;
   const now = performance.now();
   if (glide) stepGlide(now);
   if (tourS) stepTour(now);
@@ -756,6 +760,31 @@ export function walk(fwd, turn = 0, strafe = 0) {
   applyEye();
 }
 export const eyeState = () => ({ at: [rig.pos.x / M, -rig.pos.z / M], yaw: rig.yaw });
+
+/**
+ * Stand the eye camera at a pose of a camera tour (render/tour.js): plan point in inches, compass-style yaw and pitch in degrees, eye height in inches, vertical fov.
+ * Makes the view an eye-level one first (walls full height) when it is not. Draws nothing: the video renderer draws.
+ */
+export function poseEye(p) {
+  if (rig.mode !== 'eye') { rig.prevWall = wallMode; rig.mode = 'eye'; rig.view = 'tour'; controls.enabled = false; if (wallMode !== 'full') setWallMode('full'); applyMood(); }
+  glide = null; tourS = null;
+  rig.pos.copy(W(p.at[0], p.at[1], p.h)); rig.yaw = p.yaw * DEG; rig.pitch = p.pitch * DEG; rig.fov = p.fov;
+  applyEye(); SKY.follow(cam.position);
+}
+/** The camera as it is (for putting it back after a render): pose, lens, orbit target, the eye rig and the wall mode. */
+export function saveCamera() {
+  return { pos: cam.position.clone(), quat: cam.quaternion.clone(), fov: cam.fov, target: controls.target.clone(), rig: { mode: rig.mode, view: rig.view, yaw: rig.yaw, pitch: rig.pitch, fov: rig.fov, pos: rig.pos.clone(), prevWall: rig.prevWall }, wall: wallMode };
+}
+export function restoreCamera(c) {
+  if (!c) return;
+  if (c.wall !== wallMode) setWallMode(c.wall);
+  Object.assign(rig, { mode: c.rig.mode, view: c.rig.view, yaw: c.rig.yaw, pitch: c.rig.pitch, fov: c.rig.fov, prevWall: c.rig.prevWall }); rig.pos.copy(c.rig.pos);
+  cam.position.copy(c.pos); cam.quaternion.copy(c.quat); cam.fov = c.fov; cam.updateProjectionMatrix(); controls.target.copy(c.target);
+  controls.enabled = rig.mode === 'orbit'; if (rig.mode === 'orbit') controls.update();
+  applyMood(); dirty = true;
+}
+/** Keep the sky dome on the camera before a render that is not render() (the photo and video renderers). */
+export function poseForRender() { SKY.follow(cam.position); }
 
 /** Guided walk at eye height along a plan path (inches), about 2.5 ft a second; looks ahead along the path. */
 export function tour(path, { speed = 30, h = 63, onEnd, smooth = false, endDir = null, endPitch = null, fov = 70 } = {}) {
