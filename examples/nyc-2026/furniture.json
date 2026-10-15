@@ -2,7 +2,7 @@
  "schema": 1,
  "kind": "apartmentscout-furniture",
  "name": "Your furniture",
- "source": "The furniture kit from the renter's earlier layout studios: the Fit check (three plans), Room to live (two plans) and the Apartment layout studio (Emerald Green 1211), plus the queen-bed and 55-inch TV study for Emerald Green 1211. No saved positions survived from those tools (they kept drags in the browser only), so sizes come from the tools' kit and positions are placed here with the studio's fit checks.",
+ "source": "The furniture kit from the renter's earlier layout studios: the Fit check (three plans), Room to live (two plans) and the Apartment layout studio (Emerald Green 1211), plus the queen-bed and 55-inch TV study for Emerald Green 1211. The renter then confirmed the desk (about 71 in long, brown wood, with a rolling task chair and a 32-inch monitor) and that both TVs are 55-inch. No saved positions survived from the earlier tools (they kept drags in the browser only), so positions are the renter's answers about each room, checked with the studio's fit checks.",
  "pieces": [
   {
    "id": "bed",
@@ -72,35 +72,41 @@
   },
   {
    "id": "dresser",
-   "ref": "dresser",
-   "label": "Dresser, 4 drawers",
+   "ref": "dresser-malm-6",
+   "label": "IKEA MALM 6-drawer chest",
    "room": "bedroom",
-   "w": 27.6,
-   "d": 19.7,
-   "h": 38.6,
+   "w": 63,
+   "d": 18.9,
+   "h": 30.7,
    "look": {
-    "color": "black",
-    "material": "paint",
+    "color": "#2b221d",
+    "material": "laminate",
     "finish": "matte",
     "basis": "renter",
     "assumed": [
-     "material",
      "finish",
-     "pulls"
+     "material"
     ],
-    "note": "IKEA Storklinta 4-drawer chest in black. The renter gave the colour; the handles are the model's own."
+    "note": "IKEA MALM in black-brown, the renter's own. The colour and the model are the renter's; the exact finish is a stand-in."
    },
-   "note": "IKEA Storklinta, 70 x 50 x 98 cm.",
-   "source": "Fit check."
+   "note": "IKEA MALM 6-drawer chest (the wide one), 160 x 48 x 78 cm: two columns of three flat drawers, the recessed top edge of each front is the pull, black-brown.",
+   "source": "Renter, 2026-10-15: IKEA MALM 6-drawer chest, black. Replaces the earlier Storklinta size used by the Fit check."
   },
   {
    "id": "desk",
    "ref": "desk",
-   "label": "Desk and chair",
-   "room": "bedroom",
-   "w": 60,
-   "d": 24,
+   "label": "Desk, chair and monitor",
+   "room": "living",
+   "w": 71,
+   "d": 30,
    "h": 30,
+   "set": {
+    "monitor": 32,
+    "chair": "task"
+   },
+   "assumed": [
+    "d"
+   ],
    "look": {
     "color": "brown",
     "material": "wood",
@@ -108,19 +114,31 @@
     "basis": "renter",
     "assumed": [
      "finish",
-     "chair"
+     "legs",
+     "chair",
+     "monitor"
     ],
     "parts": {
+     "legs": {
+      "color": "brown",
+      "material": "wood",
+      "finish": "satin"
+     },
      "chair": {
-      "color": "charcoal",
+      "color": "black",
       "material": "fabric",
       "finish": "matte"
+     },
+     "monitor": {
+      "color": "black",
+      "material": "plastic",
+      "finish": "satin"
      }
     },
-    "note": "Brown wood desk with a chair and a monitor. The chair's look is a stand-in."
+    "note": "Brown wood, the renter's own. The legs, the finish, the chair's black and the monitor's casing are stand-ins."
    },
-   "note": "60 x 24 in, 30 in tall, with a chair; adjustable from 36 to 84 in long.",
-   "source": "Fit check; Room to live uses 72 x 24 in, the Apartment layout studio 54 x 24 in."
+   "note": "The renter's desk, about 71 in (180 cm) long, brown wood. The depth is not known: 30 in is assumed. A rolling task chair (five-star base on casters, gas lift, padded back, armrests) and a 32-inch 16:9 monitor (28.0 x 15.8 in screen) stand with it.",
+   "source": "Renter, 2026-10-15: desk about 180 cm long, brown wood; an office chair with wheels; a 32-inch monitor. Earlier tools used 60 x 24 in (Fit check), 72 x 24 in (Room to live) and 54 x 24 in (Apartment layout studio)."
   },
   {
    "id": "futon",

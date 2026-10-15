@@ -1,0 +1,37 @@
+/* ApartmentScout: the calm pass. One height for every control in the top bar and the results header, on a 4/8 px grid, and quieter
+   section headings in the filter rail. Loaded last, so it settles the small differences the older sheets left between neighbours.
+   Tokens only; it reads the same in the dark and the light theme. */
+
+/* ------------------------------------------------------------------ top bar: controls are 32 px, the tab strip 36 px, all centred in 48 */
+.search-switch, .kpi-chip, .cmdk, .topbar .icon-btn, .topbar .btn { height: 32px; padding-top: 0; padding-bottom: 0; }
+.search-switch { border-radius: var(--r-md); }
+.cmdk { align-items: center; }
+.topbar .icon-btn { width: 32px; }
+.nav { padding: 3px; }
+@media (min-width: 761px) { .nav a { display: inline-flex; align-items: center; height: 28px; padding: 0 12px; } }   /* a phone keeps its 44 px tab targets */
+.topbar { gap: var(--s-2); }
+.topbar > .brand { margin-right: var(--s-1); }
+@media (max-width: 760px) {
+  .search-switch, .kpi-chip, .cmdk, .topbar .icon-btn, .topbar .btn { height: 32px; }
+}
+
+/* ------------------------------------------------------------------ results header: the segment and the sort match (32 px), 8 px above and below */
+.results-h { padding: var(--s-2) var(--s-3); min-height: 48px; }
+.results-h .seg { padding: 2px; }
+.results-h .seg button { height: 26px; }
+.results-h select.sel { height: 32px; }
+.results-h h2 { white-space: nowrap; }
+
+/* ------------------------------------------------------------------ filter rail: lighter section headings, even rhythm */
+.sec { padding: var(--s-3) var(--s-4); }
+.sec-h { margin-bottom: var(--s-2); min-height: 20px; }
+.sec-h h3 { font-size: var(--fs-2xs); font-weight: 500; letter-spacing: var(--tracking-caps); color: var(--ink-3); }
+.sec-h .reset { font-size: var(--fs-xs); }
+.rail .sec-tg:hover h3 { color: var(--ink-2); }
+.rail .sec.collapsed { padding-bottom: var(--s-3); }
+.tiers { gap: var(--s-2); }
+.tier { padding: 6px var(--s-3); }
+.range-h { margin-bottom: var(--s-1); }
+.tg { padding: 5px 2px; }
+.toggles { gap: 0; }
+html[data-density="compact"] .sec { padding: 8px var(--s-3); }

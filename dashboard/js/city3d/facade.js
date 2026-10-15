@@ -5,10 +5,10 @@
 import * as THREE from 'three';
 import { STYLE_PARAMS, TINTS, GLASS, VERT_PARS, VERT_MAIN, FRAG_PARS, FRAG_COLOR, FRAG_ROUGH, FRAG_EMISSIVE } from './facade-rules.js';
 
-/** The facade uniforms beyond uNight / uFloorH / uDetail / uLitCol: uQual (0 Fast | 1 Visual), uTintMix (0 under the Heights layer), uSkyCol, the style tables. */
+/** The facade uniforms beyond uNight / uFloorH / uDetail / uLitCol: uLate (0 early evening .. 1 deep night: fewer windows lit), uQual (0 Fast | 1 Visual), uTintMix (0 under the Heights layer), uSkyCol, the style tables. */
 export function facadeExtras() {
   return {
-    uQual: { value: 0 }, uTintMix: { value: 1 }, uSkyCol: { value: new THREE.Color(0.6, 0.72, 0.9) },
+    uLate: { value: 0 }, uQual: { value: 0 }, uTintMix: { value: 1 }, uSkyCol: { value: new THREE.Color(0.6, 0.72, 0.9) },
     uSty: { value: STYLE_PARAMS.map((s) => new THREE.Vector4(...s.win)) }, uSty2: { value: STYLE_PARAMS.map((s) => new THREE.Vector4(...s.opt)) },
     uTint: { value: TINTS.map((c) => new THREE.Vector3(...c)) }, uGlass: { value: GLASS.map((c) => new THREE.Vector3(...c)) },
   };

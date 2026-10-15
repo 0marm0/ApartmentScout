@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 
 import pytest
+from conftest import look_click, look_open
 
 pytestmark = pytest.mark.e2e
 
@@ -64,7 +65,7 @@ def test_the_studio_opens_on_your_furniture_and_every_piece_fits(open_page, webg
     rows = pg.evaluate("() => [...document.querySelectorAll('#psTab .iv-row')].map((r) => r.querySelector('b').textContent)")
     assert len(rows) == 10 and rows[0] == "Queen bed"
     assert pg.locator("#psTab [data-inv-use]").get_attribute("aria-pressed") == "true"
-    assert pg.evaluate("() => [...document.querySelectorAll('#psInsp .metric .v')].map((e) => e.textContent.trim())") == ["0", "0", "10"]
+    assert pg.evaluate("() => [...document.querySelectorAll('#psInsp .metric .v')].map((e) => e.textContent.trim())") == ["0", "2", "8"]   # all ten placed, none blocked; the two TVs read "workable" (9 to 10 ft), the best these rooms allow
     items = pg.evaluate("() => window.__plan3d.items.map(({id, ref, w, d, h, elev}) => ({id, ref, w, d, h, elev}))")
     by = {i["id"]: i for i in items}
     for p in inv["pieces"]:
@@ -83,7 +84,7 @@ def test_the_studio_opens_on_your_furniture_and_every_piece_fits(open_page, webg
     pg.click("#psTab [data-inv-add=desk]")
     pg.wait_for_function("() => window.__plan3d.items.length === 10")
     desk = pg.evaluate("() => window.__plan3d.items.find((i) => i.id === 'desk')")
-    assert (desk["w"], desk["d"], desk["h"]) == (60, 24, 30)
+    assert (desk["w"], desk["d"], desk["h"]) == (71, 30, 30)
     assert not s.take()
 
 
@@ -123,7 +124,7 @@ def test_studio_stands_at_the_window_and_sits_on_the_sofa_with_the_real_city_out
       return { rooms: m.rooms.filter((r) => ['Living room', 'Bedroom'].includes(r.name)).map((r) => ({ name: r.name, poly: r.poly })) }; }""")
     inside = lambda name, at: pg.evaluate("async ([poly, at]) => (await import('/js/plan/model.js')).pointInPoly(at, poly)", [next(r for r in plan["rooms"] if r["name"] == name)["poly"], at])
     # the living-room window: standing inside the room, looking out of the bay, at the city
-    pg.click("#psLook [data-vp^='room:Living']")
+    look_click(pg, "#psLook [data-vp^='room:Living']")
     pg.wait_for_function("() => window.__plan3d.eye === 'eye' && window.__plan3d.hasCity")
     _settle(pg)
     pose = pg.evaluate(POSE_JS)
@@ -134,13 +135,13 @@ def test_studio_stands_at_the_window_and_sits_on_the_sofa_with_the_real_city_out
     assert scene == {"fog": True, "sky": True, "city": True, "glass": 6}           # haze, a sky, the neighbours, six panes of glass
     assert _on(pg, "#psLook") == "Living room"
     # the bay: closer to the glass and wider than the room view
-    pg.click("#psLook [data-vp^='bay:']")
+    look_click(pg, "#psLook [data-vp^='bay:']")
     pg.wait_for_function("() => window.__plan3d.view.startsWith('bay:')")
     _settle(pg)
     bay = pg.evaluate(POSE_JS)
     assert bay["at"][1] > pose["at"][1] + 40 and bay["fov"] > pose["fov"] + 20 and inside("Living room", bay["at"])
     # arrow keys on a focused chip switch the view, [ and ] from anywhere
-    pg.focus("#psLook [data-vp^='bay:']")
+    look_open(pg, "#psLook"); pg.focus("#psLook [data-vp^='bay:']")
     pg.keyboard.press("ArrowRight")
     pg.wait_for_function("() => window.__plan3d.view.startsWith('room:Bedroom')")
     _settle(pg)
@@ -164,16 +165,16 @@ def test_studio_stands_at_the_window_and_sits_on_the_sofa_with_the_real_city_out
     pg.keyboard.press("[")
     pg.wait_for_function("() => window.__plan3d.view.startsWith('corner:')")
     # from the bed: the bedroom TV, and from the bed, window: the bedroom's corner window
-    pg.click("#psLook [data-vp='seat:bed']")
+    look_click(pg, "#psLook [data-vp='seat:bed']")
     pg.wait_for_function("() => window.__plan3d.view === 'seat:bed'")
     _settle(pg)
     tvb = pg.evaluate(POSE_JS)
-    assert inside("Bedroom", tvb["at"]) and tvb["dir"][0] > 0.95                      # the bedroom TV is on the partition, to the right of the bed
-    pg.click("#psLook [data-vp='seat:bed-window']")
+    assert inside("Bedroom", tvb["at"]) and tvb["dir"][0] < -0.95                     # the headboard is on the east wall, so the bedroom TV on the partition is dead ahead (west)
+    look_click(pg, "#psLook [data-vp='seat:bed-window']")
     pg.wait_for_function("() => window.__plan3d.view === 'seat:bed-window'")
     _settle(pg)
     bed = pg.evaluate(POSE_JS)
-    assert inside("Bedroom", bed["at"]) and bed["dir"][0] > 0.4 and bed["dir"][1] > 0.6
+    assert inside("Bedroom", bed["at"]) and bed["dir"][1] > 0.9     # from the bed, the windows are up the drawing: on the right of someone lying in it
     # evening and night give the window a different sky; leaving puts the bird's-eye view back
     pg.click("#pMood [data-mood=evening]")
     pg.wait_for_timeout(300)
@@ -194,7 +195,7 @@ def test_the_chips_are_an_accessible_radio_group_on_a_phone_too(open_page, webgl
     # phone layout (css/views/phone3d.css): the room chips run along the top, the render switch sits under them, the camera row is in the thumb zone
     assert box["look"][1] <= box["rnq"][0] + 1, box                                # the render switch is under the chips, not on them
     assert box["cams"][0] >= box["rnq"][1] and box["cams"][0] > box["look"][1], box
-    pg.click("#psLook [data-vp='seat:sofa']")
+    look_click(pg, "#psLook [data-vp='seat:sofa']")
     pg.wait_for_function("() => window.__plan3d.view === 'seat:sofa'")
     assert pg.evaluate("() => document.documentElement.scrollWidth <= window.innerWidth + 1")   # no sideways page scroll
     pg.add_script_tag(path=str(AXE))
@@ -215,20 +216,20 @@ def test_inside_view_has_room_chips_with_the_renters_furniture_and_switches_by_k
     assert pg.evaluate("() => !document.getElementById('uLook').hidden")
     assert _chips(pg, "#uLook") == ["Living room", "Bay", "Bedroom", "Corner", "Sofa", "Sofa, window", "Bed", "Bed, window", "Desk", "Desk, window", "Into the room"]
     assert _on(pg, "#uLook") == "Sofa, window"                                       # opens at the main seat, looking out of the window
-    pg.click("#uLook [data-vp^='room:Living']")
+    look_click(pg, "#uLook [data-vp^='room:Living']")
     pg.wait_for_function("() => window.__unit3d.curView.key.startsWith('room:Living')")
     assert _on(pg, "#uLook") == "Living room"
     info = pg.evaluate("() => ({ src: window.__unit3d.planInfo.source, name: window.__unit3d.planInfo.layoutName, n: window.__unit3d.stage.interior.furniture.count })")
     assert info == {"src": "file", "name": "Your furniture", "n": 10}                # the source plan's default layout, in the real city
     assert pg.evaluate("() => document.querySelector('#hud').textContent").count("Living room") == 1
     living = pg.evaluate("() => ({ off: window.__unit3d.stage.inEye.off, win: window.__unit3d.st.inWin })")
-    pg.click("#uLook [data-vp^='room:Bedroom']")
+    look_click(pg, "#uLook [data-vp^='room:Bedroom']")
     pg.wait_for_function("() => window.__unit3d.curView.key.startsWith('room:Bedroom')")
     bed = pg.evaluate("() => ({ off: window.__unit3d.stage.inEye.off, win: window.__unit3d.st.inWin, sel: document.getElementById('uInWin').value, hud: document.getElementById('hud').textContent })")
     assert bed["win"] != living["win"] and abs(bed["off"] - living["off"]) > 20 and bed["sel"] == pg.evaluate("() => window.__unit3d.curView.key")
     assert "Bedroom" in bed["hud"]
     # the corner window faces differently from the bay
-    pg.focus("#uLook [data-vp^='room:Bedroom']")
+    look_open(pg, "#uLook"); pg.focus("#uLook [data-vp^='room:Bedroom']")
     pg.keyboard.press("ArrowRight")
     pg.wait_for_function("() => window.__unit3d.curView.kind === 'corner'")
     pg.keyboard.press("End")
@@ -240,7 +241,7 @@ def test_inside_view_has_room_chips_with_the_renters_furniture_and_switches_by_k
     pg.evaluate("() => document.activeElement.blur()")
     pg.keyboard.press("]")
     pg.wait_for_function("() => window.__unit3d.curView.kind === 'bay'")
-    pg.click("#uLook [data-vp='seat:sofa']")
+    look_click(pg, "#uLook [data-vp='seat:sofa']")
     pg.wait_for_function("() => window.__unit3d.curView.seat === 'sofa'")
     eye = pg.evaluate("() => window.__unit3d.stage.inEye.local.y")
     assert 0.9 < eye < 1.2                                                           # seated, not standing
@@ -254,7 +255,7 @@ def test_inside_camera_glides_between_rooms_unless_motion_is_reduced(open_page, 
     pg = s.page
     _unit(s)
     pg.emulate_media(reduced_motion="no-preference")
-    pg.click("#uLook [data-vp^='room:Bedroom']")
+    look_click(pg, "#uLook [data-vp^='room:Bedroom']")
     assert pg.evaluate("() => !!window.__unit3d.stage.inTween")                       # moving
     pg.wait_for_timeout(250)
     mid = pg.evaluate("() => ({ w: window.__unit3d.stage.interior.group.children.filter((o) => o.name === 'wall').every((o) => !o.visible), ceil: window.__unit3d.stage.interior.group.children.find((o) => o.name === 'ceiling').visible })")
@@ -263,7 +264,7 @@ def test_inside_camera_glides_between_rooms_unless_motion_is_reduced(open_page, 
     done = pg.evaluate("() => ({ w: window.__unit3d.stage.interior.group.children.filter((o) => o.name === 'wall').every((o) => o.visible), ceil: window.__unit3d.stage.interior.group.children.find((o) => o.name === 'ceiling').visible, yaw: window.__unit3d.stage.look.yaw })")
     assert done == {"w": True, "ceil": True, "yaw": 0}
     pg.emulate_media(reduced_motion="reduce")
-    pg.click("#uLook [data-vp^='room:Living']")
+    look_click(pg, "#uLook [data-vp^='room:Living']")
     assert pg.evaluate("() => !window.__unit3d.stage.inTween && window.__unit3d.curView.key.startsWith('room:Living')")   # reduced motion: straight there
     assert not s.take()
 
@@ -322,6 +323,7 @@ def test_a_home_with_a_plan_opens_inside_from_the_card_with_big_labelled_camera_
     fp = pg.locator("#uModes .um-fp")
     assert fp.is_visible() and fp.get_attribute("href") == f"#plan/{UNIT}"
     # Outside is one click away, the room switcher is drawn as buttons, and nothing in the stage overlaps the camera buttons
+    look_open(pg, "#uLook")
     chip = pg.locator("#uLook .lk-chip").first.evaluate("(e) => { const c = getComputedStyle(e); return { b: c.borderTopWidth, h: e.getBoundingClientRect().height }; }")
     assert chip["b"] == "1px" and chip["h"] >= 28
     pg.click("#uModes [data-mode=orbit]")

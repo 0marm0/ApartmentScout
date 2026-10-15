@@ -142,7 +142,7 @@ export function looksMeta(pieces) {
   const ok = pieces.filter((p) => p && typeof p === 'object'), sum = lookSummary({ pieces: ok }), guesses = new Set();
   for (const p of ok) if (lookBasis(p.look) === 'renter' && Array.isArray(p.look.assumed)) for (const g of p.look.assumed.slice(0, 6)) if (typeof g === 'string' && g.length < 24) guesses.add(g);
   const eg = ok.find((p) => p.id === 'futon' && p.look) || ok.find((p) => lookBasis(p.look) === 'renter');
-  return { ...sum, example: eg ? `the ${String(eg.label || eg.id).split(',')[0].toLowerCase()} is ${describeLook({ color: eg.look.color, material: eg.look.material })}` : '', guesses: [...guesses].filter((g) => !/^(finish|shade)$/.test(g)).slice(0, 4) };
+  return { ...sum, example: eg ? `the ${String(eg.label || eg.id).split(',')[0].toLowerCase()} is ${describeLook({ color: eg.look.color, material: eg.look.material })}` : '', guesses: [...guesses].filter((g) => !/^(finish|shade)$/.test(g)).slice(0, 6) };
 }
 
 let furnitureMeta;

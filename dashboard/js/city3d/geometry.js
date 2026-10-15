@@ -3,7 +3,7 @@
 // triangulator (three's ShapeUtils in the browser) so node tests can run it too. Site frame in, three.js frame out
 // (x east, y up, z = -north), the same as the other 3D modules.
 import { repPoint, centroid, inRing } from './model.js';
-import { roofColour, paletteOf } from './facade-rules.js';
+import { roofColour, paletteOf, USE_CODE } from './facade-rules.js';
 
 const lin = (v) => Math.pow(v / 255, 2.2);
 /** #rrggbb as linear r, g, b (three.js vertex colours are linear). */
@@ -94,7 +94,8 @@ function drawPart(pk, e, q, eps, o, tri2, stats) {   // pk: the Pack this part d
   let pal = paletteOf(e.seed, st.style);
   if (st.brick === 1) pal = st.style === 0 ? 0 : 1; else if (st.brick === 2) pal = st.style === 0 ? 1 : 2;     // an OpenStreetMap material picks the palette
   const sd = e.seed * 0.999 + (e.near ? 0 : 2);   // seed in [0, 1); +2 marks the far level of detail for the shader
-  const fbWall = [plain ? 9 : st.style, sd, plain ? 2 : 0, (own ? 1 : 0) + (pal + 0.1 + 0.8 * jit) / 4];
+  // fb.x = style + 0.1 * use code (1 office, 2 residential, 3 other): the shader lights an office floor and a home differently after dark
+  const fbWall = [plain ? 9 : st.style + 0.1 * (USE_CODE[st.use] || 0), sd, plain ? 2 : 0, (own ? 1 : 0) + (pal + 0.1 + 0.8 * jit) / 4];
   const z0 = q.base_m <= 0.5 ? Math.min(e.g, 0) - 1.5 : q.base;
   const ring = inflate(q.p, eps);
   const pitched = q.roofShape !== 'flat';
