@@ -19,6 +19,8 @@ def _need_webgl(webgl: bool) -> None:
 
 
 def _unit(s, uid: str = UNIT, query: str = "") -> None:
+    if "mode=" not in query:   # a home with a plan opens Inside by default; these checks are about the city outside
+        query = (query + "&" if query else "?") + "mode=orbit"
     s.page.goto(f"{s.origin}/{query}#unit/{uid}")
     s.page.wait_for_function(
         "(id) => window.__unit3d && window.__unit3d.st.id === id && window.__unit3d.stage && window.__unit3d.stage.scene && document.getElementById('uLoad').hidden",

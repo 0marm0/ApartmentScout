@@ -51,6 +51,7 @@ const RULES = {
   recent: (v) => strings(v, 6),
   theme: (v) => (['system', 'dark', 'light'].includes(v) ? v : null),
   preset: (v) => (isStr(v) ? v : null),
+  'home-id': (v) => (isStr(v) && v.length <= 200 ? v : null),   // the home Unit 3D and the Floor plan studio opened last (features/default-home.js)
   criteria: (v) => (isObj(v) ? v : null),
   coach: (v) => (isObj(v) ? v : null),
   combo: (v) => (isObj(v) ? v : null),
@@ -59,6 +60,8 @@ const RULES = {
   visit: (v) => (isObj(v) ? v : null),
   tourplan: (v) => (isObj(v) ? v : null),
   findings: (v) => (isObj(v) ? v : null),
+  facts: (v) => (isObj(v) ? v : null),
+  moves: (v) => (isObj(v) ? v : null),
   trail: (v) => (Array.isArray(v) ? v : null),
   'rail:collapsed': (v) => strings(v),
 };

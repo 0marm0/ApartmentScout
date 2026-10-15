@@ -79,6 +79,11 @@ def check_plan(doc: Any) -> tuple[list[str], list[str]]:
             bad = sum(1 for o in v if not _segment(o))
             if bad:
                 warnings.append(f"{key}: {bad} entr{'ies have' if bad != 1 else 'y has'} no x1,y1,x2,y2 (or a, b) and will be skipped.")
+    if doc.get("finishes") is not None:   # [finishes] the plan's floor, paint, kitchen and window frames, each with its basis
+        from .finishes import finishes_error
+        e = finishes_error(doc["finishes"])
+        if e:
+            errors.append(e)
     ub = doc.get("up_bearing")
     if ub is not None and not (_num(ub) and 0 <= ub < 360.0001):
         errors.append("up_bearing: a compass bearing from 0 to 360 for the top of the drawing, or leave it out.")

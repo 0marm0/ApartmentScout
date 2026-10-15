@@ -249,6 +249,32 @@ def test_unit_3d_draws(open_page, webgl: bool) -> None:
     assert not s.take()
 
 
+def test_the_3d_views_open_the_search_default_and_the_renters_own_choice_wins(open_page, webgl: bool) -> None:
+    """criteria.yaml names `search.default_listing` (the manifest carries it): Unit 3D and the Floor plan studio open that home
+    when nothing else is chosen, although it is not first in their lists; a home the renter opened last (local storage) beats it."""
+    if not webgl:
+        pytest.skip("no WebGL in this browser (SwiftShader unavailable)")
+    s = open_page("#unit")
+    pg = s.page
+    default = pg.evaluate("async () => (await (await fetch('data/manifest.json')).json()).default_listing")
+    assert default == "paramount-tower-25e"
+    _show(s, "unit")
+    pg.wait_for_function("(id) => document.getElementById('unitSel')?.value === id", arg=default, timeout=20000)
+    assert pg.evaluate("() => document.getElementById('unitSel').options[0].value") != default
+    assert pg.evaluate("() => localStorage.getItem('as:home-id')") is None          # opening the default is not a choice of the renter's
+    _show(s, "plan")
+    pg.wait_for_function("(id) => document.getElementById('planSel')?.value === id", arg=default, timeout=20000)
+    other = pg.evaluate("async () => { const m = await (await fetch('data/manifest.json')).json(); return m.sites.find((v) => v !== m.default_listing && m.plans.includes(v)); }")
+    assert other
+    _show(s, f"unit/{other}")
+    pg.wait_for_function("(id) => document.getElementById('unitSel')?.value === id", arg=other, timeout=20000)
+    assert pg.evaluate("() => JSON.parse(localStorage.getItem('as:home-id'))") == other
+    pg.goto(f"{s.origin}/#unit")
+    pg.reload()
+    pg.wait_for_function("(id) => document.getElementById('unitSel')?.value === id", arg=other, timeout=30000)
+    assert not s.take()
+
+
 def _axe(page) -> list[dict]:
     if not page.evaluate("() => typeof window.axe === 'object'"):
         page.add_script_tag(path=str(AXE))
@@ -355,21 +381,61 @@ def test_theme_modes_menu_and_shortcut(open_page) -> None:
     assert not s.take()
 
 
-def test_stats_strip_is_a_thin_subline(open_page) -> None:
+def test_stats_strip_is_collapsed_to_a_chip_until_asked_for(open_page) -> None:
+    """The stats subline is one chip in the top bar ("289 matches") with a chevron; it takes no row until the renter opens it, and
+    the choice is remembered in this browser."""
     s = open_page("#map", width=1440)
-    h = s.page.locator("#kpis").bounding_box()["height"]
+    pg = s.page
+    chip = pg.locator("#kpiChip")
+    assert chip.is_visible() and chip.get_attribute("aria-expanded") == "false"
+    assert chip.inner_text().split()[1] == "matches" and int(pg.locator("#kpiChipN").inner_text()) > 0
+    assert not pg.locator("#kpis").is_visible(), "collapsed: no stats row"
+    bar, work = pg.locator(".topbar").bounding_box(), pg.locator("#work").bounding_box()
+    assert abs(work["y"] - (bar["y"] + bar["height"])) <= 1, "the map and the list start right under the top bar"
+    assert pg.locator("#kpiChip .chev").is_visible()
+    # the chevron opens the full strip: a thin subline with every figure, and the chip's count is the strip's own "match filters"
+    chip.click()
+    pg.wait_for_selector("#kpis", state="visible")
+    assert chip.get_attribute("aria-expanded") == "true"
+    h = pg.locator("#kpis").bounding_box()["height"]
     assert 24 <= h <= 30, f"stats strip is {h}px tall"
-    assert s.page.locator("#kpis .kpi.p1").count() == 3
-    # on a phone the secondary figures fold into the popover, and every figure is still in it
-    s.page.set_viewport_size({"width": 390, "height": 844})
-    s.page.wait_for_timeout(200)
-    assert s.page.locator("#kpis .kpi-more").is_visible()
-    s.page.locator("#kpis .kpi-more").click()
-    s.page.wait_for_selector("#kpiPop:not([hidden])")
-    keys = [t.strip() for t in s.page.locator("#kpiPop .kpi-i .k").all_inner_texts()]
+    assert pg.locator("#kpis .kpi.p1").count() == 3
+    keys = {t.strip(): v.strip() for t, v in zip(pg.locator("#kpis .kpi .k").all_inner_texts(), pg.locator("#kpis .kpi .v").all_inner_texts())}
+    assert keys["match filters"] == pg.locator("#kpiChipN").inner_text()
+    assert pg.evaluate("() => localStorage.getItem('as:stats-open')") == "true"
+    # remembered across a reload; closing it is remembered too
+    pg.reload()
+    pg.wait_for_selector("#cards .card")
+    assert pg.locator("#kpis").is_visible() and pg.locator("#kpiChip").get_attribute("aria-expanded") == "true"
+    pg.locator("#kpiChip").click()
+    assert not pg.locator("#kpis").is_visible() and pg.evaluate("() => localStorage.getItem('as:stats-open')") == "false"
+    # a stored value of the wrong shape falls back to collapsed
+    pg.evaluate("() => localStorage.setItem('as:stats-open', '\"nope\"')")
+    pg.reload()
+    pg.wait_for_selector("#cards .card")
+    assert not pg.locator("#kpis").is_visible() and pg.locator("#kpiChip").is_visible()
+    assert not s.take()
+
+
+def test_stats_strip_on_a_phone_is_a_chip_and_folds_the_rest_into_the_popover(open_page) -> None:
+    s = open_page("#map", width=375, height=812)
+    pg = s.page
+    chip = pg.locator("#kpiChip")
+    assert chip.is_visible() and not pg.locator("#kpis").is_visible()
+    box = chip.bounding_box()
+    assert box["x"] + box["width"] < 375 and pg.evaluate("() => document.documentElement.scrollWidth <= window.innerWidth + 1")
+    brand = pg.locator(".topbar .brand").bounding_box()
+    assert brand["x"] < box["x"], "the chip comes after the brand mark"
+    chip.click()
+    pg.wait_for_selector("#kpis", state="visible")
+    # opened, the secondary figures still fold into the popover, and every figure is in it
+    assert pg.locator("#kpis .kpi-more").is_visible()
+    pg.locator("#kpis .kpi-more").click()
+    pg.wait_for_selector("#kpiPop:not([hidden])")
+    keys = [t.strip() for t in pg.locator("#kpiPop .kpi-i .k").all_inner_texts()]
     assert {"tracked", "match filters", "eligible", "shortlisted", "median / mo"} <= set(keys), keys
-    s.page.keyboard.press("Escape")
-    assert s.page.evaluate("() => document.getElementById('kpiPop').hidden")
+    pg.keyboard.press("Escape")
+    assert pg.evaluate("() => document.getElementById('kpiPop').hidden")
     assert not s.take()
 
 

@@ -82,6 +82,7 @@ apartmentscout dossier [id ...]                   # NYC public records (default:
 apartmentscout surroundings                       # buildings, parks and streets around the shortlist (--all, --status, --rebuild ID, --refresh)
 apartmentscout site <id> --floor 12 --charts      # one home's 3D site model, sun and view study (surroundings runs this for many)
 apartmentscout plans                              # which homes have a floor plan; `plans add FILE --id <listing-id>` adds one
+apartmentscout finishes                           # fill each plan's floor, walls, window frames and kitchen from its photos (--listing ID, --dry-run)
 apartmentscout score                              # score and rank
 apartmentscout report                             # shortlist.md
 apartmentscout questions --building knox --units 6B 7BA   # draft the leasing-office questions per building (never sends)

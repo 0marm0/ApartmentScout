@@ -32,7 +32,7 @@ from typing import Any
 
 import yaml
 
-from . import __version__, planfile
+from . import __version__, planfile, renterfacts
 from . import cities as city_lookup   # [onboarding] city and address lookups, feed checks
 from .config import Workspace
 from .criteria_check import check_text, summary_lines
@@ -151,6 +151,7 @@ class ServeState:
             name = None
         return {"api": 1, "version": __version__, "can_save": bool(ws and not self.read_only), "example": self.read_only,
                 "plans": {"save": bool(ws and not self.read_only), "folder": "plans"},
+                "facts": {"save": bool(ws and not self.read_only)},
                 "tours": {"save": bool(ws and not self.read_only), "photos": bool(ws and not self.read_only and pillow_available()),
                           "max_photo_bytes": MAX_PHOTO_BYTES},
                 "search": {"folder": ws.root.name, "name": name, "path": self.display(ws.root)} if ws else None,
@@ -222,6 +223,14 @@ class ServeState:
         if self.read_only:
             raise ApiError(403, "This is a bundled example search and is read-only. Your visit notes stay in this browser.")
         return TourFiles(self.ws.root, self.lock)
+
+    # -- the values the renter typed for a home's unknowns (apartmentscout/renterfacts.py)
+    def facts_file(self) -> renterfacts.FactsFile:
+        if self.ws is None:
+            raise ApiError(409, "No search is open.")
+        if self.read_only:
+            raise ApiError(403, "This is a bundled example search and is read-only. Your numbers stay in this browser.")
+        return renterfacts.FactsFile(self.ws.root, self.lock)
 
     # -- writes
     def save_criteria(self, text: str) -> dict[str, Any]:
@@ -446,6 +455,19 @@ def make_handler(state: ServeState) -> type[http.server.SimpleHTTPRequestHandler
                 raise ApiError(e.status, e.message) from e
             return None
 
+        def _facts(self, method: str, route: str) -> dict[str, Any] | None:
+            """/api/facts (all of them) and /api/facts/<id> (replace one home's)."""
+            parts = route.split("/")   # ['', 'api', 'facts', <id>]
+            files = state.facts_file()
+            if len(parts) == 3 and method == "GET":
+                return {"facts": files.all()}
+            if len(parts) == 4 and method == "POST":
+                try:
+                    return {"ok": True, "facts": files.save(parts[3], self._body().get("facts"))}
+                except ValueError as e:
+                    raise ApiError(400, str(e)) from e
+            return None
+
         # -- routing
         def do_GET(self) -> None:  # noqa: N802
             route = self.path.split("?", 1)[0]
@@ -540,6 +562,10 @@ def make_handler(state: ServeState) -> type[http.server.SimpleHTTPRequestHandler
                     out = self._tours(method, route)
                     if out is not None:
                         return out
+                if route == "/api/facts":
+                    out = self._facts(method, route)
+                    if out is not None:
+                        return out
                 if route.startswith("/api/jobs/"):
                     job = state.jobs.get(route.rsplit("/", 1)[1])
                     if job is None:
@@ -548,6 +574,11 @@ def make_handler(state: ServeState) -> type[http.server.SimpleHTTPRequestHandler
                 raise ApiError(404, "Unknown endpoint.")
             if route.startswith("/api/tours/"):
                 out = self._tours(method, route)
+                if out is not None:
+                    return out
+                raise ApiError(404, "Unknown endpoint.")
+            if route.startswith("/api/facts/"):
+                out = self._facts(method, route)
                 if out is not None:
                     return out
                 raise ApiError(404, "Unknown endpoint.")

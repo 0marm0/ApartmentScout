@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-15T11:13:29",
+ "generated": "2026-10-15T12:06:17",
  "version": "0.1.0",
  "search": "Manhattan 1BR, fall 2026",
  "layers": [
@@ -73,12 +73,14 @@
  "furniture": true,
  "lqip": true,
  "media_base_url": "https://0marm0.github.io/ApartmentScout/demo/media/",
+ "default_listing": "paramount-tower-25e",
  "extra": [
   "coverage.json",
   "digest.json",
   "history.json",
   "places.json",
   "questions.json",
+  "ranks.json",
   "watchlist.json"
  ]
 }

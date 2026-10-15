@@ -13,7 +13,8 @@ searches/my-search/
   sites/                 3D site models (generated)
   layers/                map heat layers (generated)
   cache/                 downloads and geocoder cache (generated)
-  history/               claims.jsonl (append-only) and snapshots/ (one per build day)
+  history/               claims.jsonl (append-only), snapshots/ (one per build day) and ranks.json (one run per `score`)
+  renter_facts.json      numbers you typed for a home's unknowns (written by the dashboard; read by `score`)
   tours/<id>/            findings.json and photos/<photo id>.webp from your visits (written by the dashboard)
   shortlist.md           report (generated)
 ```
@@ -250,6 +251,15 @@ Every dashboard surface (cards, drawer, lightbox, Research gallery, Shortlist th
 **street**, and floor plans are **plan**. The order is unit, same line, building, floor plans, street; inside a group a photo
 flagged in `photo_flags` goes last and otherwise the data order holds. A card's photo is the first unit, line or building image,
 never a plan. The card's count reads "8 unit · 22 building".
+
+### The home the 3D views open: `search.default_listing`
+
+`search.default_listing` in `criteria.yaml` is the id of one listing. `criteria --check` rejects a value that is not an id and warns
+when `listings.json` has no such listing (or marks it `gone` or `rejected`); `apartmentscout build` copies a listing that exists into
+`manifest.json` as `default_listing`, so no listing id lives in the dashboard's code. Unit 3D, the Floor plan studio (so the 3D tab) and
+Records open that home when the address names none (`#unit`, `#plan`), in this order: the home in the address; the home the view showed
+earlier in the session; the home the renter opened last in this browser (local storage `as:home-id`, written when the address names a
+home, never for the default); `default_listing`; the first home in the list. The bundled example sets it to Paramount Tower 25E.
 
 ### Where a saved photo comes from: `media/`, `media-lite/`, `media_base_url`
 
@@ -623,6 +633,27 @@ Every request is listed in `research/<id>-noise-ledger.csv` (date, closed date, 
 street, agency, resolution text and its class); the ledger is not copied to the dashboard. `receipts` lists
 each dataset queried, in the same shape as the site model's.
 
+## Renter facts
+
+`renter_facts.json` in the search folder holds the numbers the renter typed for a home's unknowns in the dashboard's *Unknowns that move
+this score* section. It never changes `listings.json`: `apartmentscout score` applies each one to a copy of the listing, marks it in
+`score.renter` (`{"size": {"value": 640, "at": "2026-10-15", "source": "renter"}}`) and flags it `renter:size` in `score.flags`.
+
+```json
+{"v": 1, "facts": {"the-knox-6b": {"size": {"value": 640, "at": "2026-10-15", "source": "renter"}}}}
+```
+
+| Kind | Value | Read as |
+|---|---|---|
+| `size` | ft² (50 to 20,000) | the unit's reported size: no estimate, no range |
+| `fees` | $ a month (0 to 20,000) | the required monthly fees, known (0 means none) |
+| `price` | $ a month (100 to 100,000) | the rent you will pay each month after free months, from a written quote (`price.basis: renter_quote`): ends a price dispute and an unverified-price gate |
+| `wd` | true / false | the in-unit washer/dryer: confirmed, or a failed must-have |
+| `floor` | 1 to 120 | the floor, no longer inferred |
+
+The dashboard computes the same re-score in the browser (`dashboard/js/features/facts-model.js`), so a typed number re-ranks the home at
+once; `tests/test_renterfacts_parity.py` keeps the two in step.
+
 ## History
 
 See [research quality](research-quality.md#history) for the rules. Files in the search folder:
@@ -636,6 +667,15 @@ See [research quality](research-quality.md#history) for the rules. Files in the 
 - `history/snapshots/YYYY-MM-DD.json`: `{"schema_version": 1, "date", "fields": [...], "listings": {id: [values]}}`
   with `fields` = `status, gross, net, fees_monthly, free_months, lease_months, available, checked, key`
   (`key` = normalised building address + unit, used to spot relists under a new id).
+
+- `history/ranks.json`: where every home stood on each `apartmentscout score` run, so the dashboard can say why a home moved.
+  Columnar and small (about 40 KB a run for 738 homes; six runs at most; a rescore on the same day with the same scoring version
+  replaces that day's run, and a run that repeats the last is not stored). `{"v": 1, "dims": [...], "vocab": [...], "versions": {"2.1":
+  "what it changed"}, "ids": [...], "runs": [{"at": "2026-10-13T23:45", "version": "2.0", "k": 10, "w": [weights in dims order],
+  "n": 335, "a": [action rank, 0 = none], "f": [fit rank], "s": [overall x 10, -1 = none], "c": [monthly cost, -1 = unknown],
+  "p": "two hex digits per dimension per home, ff = unknown", "g": ["dot-joined indexes into vocab: the flags and gates", ...]}]}`.
+  `build` copies it to the dashboard as `ranks.json` once it holds two runs. The bundled example's history was seeded from the git
+  history of its scored `listings.json`.
 
 Optional listing fields read by history and lint: `price_history` (`[{"date", "gross"}]`, earlier prices from
 a portal's history), `listed_at` (the date the source says the unit was listed; never inferred from a check
