@@ -44,6 +44,21 @@ export const parts = () => ({ renderer, scene, cam, controls, sunL, hemi, amb, s
 /** Reflectances {floor, walls, ceiling} for the room colours (a visual preview), or null for the built-in look. */
 export function setSurfaces(rho) { if (setSurfaceState(rho) && model) { colors = applySurfaceTint(themeColors()); texCache.clear(); buildShell(); dirty = true; } }
 export const getCamera = () => cam;
+/** A placed piece's box on screen, in canvas pixels ({x0, y0, x1, y1}), or null when it is hidden or wholly behind the camera (the selection toolbar follows it). */
+export function screenRect(id) {
+  const g = groups.get(id), body = g?.children[0];
+  if (!g || !g.visible || !body || !renderer) return null;
+  const box = new THREE.Box3(); body.updateWorldMatrix(true, true); body.traverse((o) => { if (o.isMesh && o.name !== 'decal' && o.name !== 'outline') box.expandByObject(o); });   // the piece itself, not its floor decal or outline
+  if (box.isEmpty()) return null;
+  const el = renderer.domElement, W = el.clientWidth, H = el.clientHeight, v = new THREE.Vector3();
+  cam.updateMatrixWorld(); let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+  for (const x of [box.min.x, box.max.x]) for (const y of [box.min.y, box.max.y]) for (const z of [box.min.z, box.max.z]) {
+    v.set(x, y, z).applyMatrix4(cam.matrixWorldInverse); if (v.z > -0.05) continue;   // behind the lens
+    v.applyMatrix4(cam.projectionMatrix);
+    const px = (v.x + 1) / 2 * W, py = (1 - v.y) / 2 * H; x0 = Math.min(x0, px); x1 = Math.max(x1, px); y0 = Math.min(y0, py); y1 = Math.max(y1, py);
+  }
+  return x1 < x0 ? null : { x0, y0, x1, y1 };
+}
 export const viewMode = () => rig.mode;
 
 function tok(name, fb) { const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim(); return new THREE.Color(v || fb); }
@@ -403,7 +418,7 @@ export function setItems(items) { lastItems = items; const ids = new Set(items.m
 function disposeGroup(g) { g.traverse((o) => { o.geometry?.dispose(); if (o.material && !o.material.userData?.shared) (Array.isArray(o.material) ? o.material : [o.material]).forEach((m) => { if (m.map && !m.map.userData?.shared) m.map.dispose(); m.dispose(); }); o.dispose?.(); }); }
 onRoomQuality(() => { if (typeof rebuildAllItems === 'function' && groups.size) rebuildAllItems(); });   // [room3d] the furniture models are simpler in Fast, richer in Visual
 function rebuildAllItems() { for (const [, g] of groups) { furn.remove(g); disposeGroup(g); } groups.clear(); setItems(lastItems); }
-const sigOf = (it) => `${it.ref}|${it.w}|${it.d}|${it.h}|${it.elev}|${it.variant || ''}|${it.product || ''}`;
+const sigOf = (it) => `${it.ref}|${it.w}|${it.d}|${it.h}|${it.elev}|${it.variant || ''}|${it.product || ''}|${it.look ? JSON.stringify(it.look) : ''}`;
 /** Update an item's transform, rebuilding its meshes when its shape changed. */
 export function syncItem(it, rebuild = false) {
   let g = groups.get(it.id);

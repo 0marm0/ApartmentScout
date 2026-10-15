@@ -46,14 +46,16 @@ test('an unknown saved value is ignored', () => {
   assert.deepEqual(SAVED_CAMERAS, ['orbit', 'win', 'in']);
 });
 
-test('Inside stands on the sofa first, else in the living room, else in the first room', () => {
+test('Inside stands on the sofa looking out of the window first, else the sofa, else the living room, else the first room', () => {
   const views = [
     { key: 'room:Bedroom', kind: 'room', room: 'Bedroom', label: 'Bedroom' },
     { key: 'room:Living room', kind: 'room', room: 'Living room', label: 'Living room' },
     { key: 'seat:bed', kind: 'seat', seat: 'bed', label: 'Bed' },
     { key: 'seat:sofa', kind: 'seat', seat: 'sofa', label: 'Sofa' },
+    { key: 'seat:sofa-window', kind: 'seat', seat: 'sofa', label: 'Sofa, window' },
   ];
-  assert.equal(mainViewpoint(views).key, 'seat:sofa');
+  assert.equal(mainViewpoint(views).key, 'seat:sofa-window');
+  assert.equal(mainViewpoint(views.filter((v) => v.key !== 'seat:sofa-window')).key, 'seat:sofa', 'no TV in line: the plain Sofa already looks out');
   assert.equal(mainViewpoint(views.filter((v) => v.kind !== 'seat')).key, 'room:Living room');
   assert.equal(mainViewpoint(views.slice(0, 1)).key, 'room:Bedroom');
   assert.equal(mainViewpoint([]), null);

@@ -2,7 +2,7 @@
 // their clearances, keep-out zones and the furniture (drag to move). Drawn in inches: SVG x = plan x,
 // SVG y = -plan y. Colours come from CSS classes in css/views/plan.css (design tokens only).
 import { esc } from '../util.js';
-import { piecePoly, swingPoly, doorwayPoly } from './checks.js';
+import { piecePoly, swingPoly, doorwayPoly, footprint } from './checks.js';
 import { fmtIn } from './model.js';
 import { chairSpots } from './scene3d.js';
 
@@ -19,6 +19,15 @@ export function mount(svgEl, h) {
   svg.addEventListener('pointerup', up); svg.addEventListener('pointercancel', up);
   svg.addEventListener('wheel', wheel, { passive: false });
   svg.addEventListener('dblclick', (e) => { if (!e.target.closest('[data-id]')) { vb = { ...fit }; applyVB(); } });
+}
+
+/** A piece's footprint on screen, in pixels of the plan pane ({x0, y0, x1, y1}), or null before the plan is drawn. */
+export function screenRect(it) {
+  if (!svg || !model || !svg.getScreenCTM()) return null;
+  const m = svg.getScreenCTM(), box = svg.getBoundingClientRect(), p = svg.createSVGPoint();
+  let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+  for (const [x, y] of footprint(it)) { p.x = x; p.y = -y; const q = p.matrixTransform(m), px = q.x - box.left, py = q.y - box.top; x0 = Math.min(x0, px); x1 = Math.max(x1, px); y0 = Math.min(y0, py); y1 = Math.max(y1, py); }
+  return { x0, y0, x1, y1 };
 }
 
 /** Plan point (inches) under a client position. */
