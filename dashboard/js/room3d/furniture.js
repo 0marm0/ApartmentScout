@@ -632,10 +632,10 @@ function coffeeTable(it, K) {
 // ------------------------------------------------------------------ desk, monitor, task chair
 /** A black mesh for the back of a task chair: a fine diamond lattice, near white so it multiplies the chair's colour. */
 const meshTex = () => canvasTex('r3-mesh', 128, 128, (g, W, H) => {
-  g.fillStyle = '#d9d9d9'; g.fillRect(0, 0, W, H);
-  g.strokeStyle = 'rgba(20,20,20,0.55)'; g.lineWidth = 1.3;
+  g.clearRect(0, 0, W, H); g.fillStyle = 'rgba(205,205,205,0.28)'; g.fillRect(0, 0, W, H);   // the gaps let the room show through
+  g.strokeStyle = 'rgba(235,235,235,1)'; g.lineWidth = 2.2;
   for (let i = -H; i <= W + H; i += 8) { g.beginPath(); g.moveTo(i, 0); g.lineTo(i + H, H); g.stroke(); g.beginPath(); g.moveTo(i, H); g.lineTo(i + H, 0); g.stroke(); }
-}, { repeat: [5, 5] });
+}, { repeat: [6, 6] });
 /**
  * A rolling task chair: a five-star base on twin-wheel casters, a gas-lift column with its bellows, a tilt mechanism, a waterfall seat,
  * a curved back (mesh in Visual) on a post, and two armrests. Back at local -z, seat top about 19 in, overall about 42 in. `a` turns it.
@@ -669,7 +669,7 @@ function taskChair(K, x, z, a) {
   K.add(K.board(1.8, 14.5, 1.2, 0.3), frame, 0, seatY + 1.2, -9.6, { parent: g, rx: lean });
   if (f) K.add(K.soft(18.6, 19.5, 2.6, { r: 1.2, k: [3, 2, 1], puff: { pz: 0.7 }, bendZ: 1.4, pow: 0.8, kf: [3, 2, 1], keepPuff: true }), fab, 0, seatY + 6.2, -10.4, { parent: g, rx: lean });
   else {
-    const mesh = K.mat('tc-mesh', () => { const t = meshTex(); return K.ctx.std(K.part('chair', { color: COLOR_CHAIR }).color, { roughness: 0.85, ...(t ? { map: t } : {}) }); });
+    const mesh = K.mat('tc-mesh', () => { const t = meshTex(); const m = K.ctx.std(K.part('chair', { color: COLOR_CHAIR }).color, { roughness: 0.85, ...(t ? { map: t } : {}) }); m.transparent = !!t; m.side = THREE.DoubleSide; return m; });
     const bk = (name, geo, mat, y, zz, o = {}) => K.add(geo, mat, 0, y, zz, { parent: g, rx: lean, ...o });
     bk('panel', K.soft(16.8, 17.6, 0.7, { r: 0.3, k: [3, 3, 1], bendZ: 1.2, }), mesh, seatY + 7.4, -10.3);
     bk('top', K.soft(18.8, 1.9, 2.3, { r: 0.8, k: [3, 1, 1], bendZ: 1.2 }), plastic, seatY + 24.4, -10.6 - 0.6);
@@ -707,11 +707,13 @@ function monitor(K, x, y, z, diag) {
 function desk(it, K) {
   const { w, d, h } = it, hw = w / 2, hd = d / 2, f = K.fast, spec = K.spec({ color: it.base?.color ?? MAT.oak, material: 'wood', finish: 'satin' });
   const topM = K.skin(spec), legM = K.skin(K.part('legs', shade(spec, 0.9))), apronM = K.skin(shade(spec, 0.93)), dark = K.metal(0x1d1f22, 0.45, f ? 0.2 : 0.5);
-  const tT = 1.5, under = h - tT, leg = 2.5, lx = hw - 2.6 - leg / 2, lz = hd - 2.2 - leg / 2, apH = 4, set = it.set || {};
+  const tT = 1.5, under = h - tT, leg = 3, lx = hw - 2.6 - leg / 2, lz = hd - 2.2 - leg / 2, apH = 4, set = it.set || {};
   K.add(K.soft(w, tT, d, { r: 0.55 }), topM, 0, under, 0);   // a solid top, eased all round
   for (const sx of [-1, 1]) for (const sz of [-1, 1]) K.add(K.board(leg, under, leg, 0.35), legM, sx * lx, 0, sz * lz);
   K.add(K.board(2 * lx - leg, apH, 1, 0.2), apronM, 0, under - apH, lz);                                  // front apron
-  K.add(K.board(2 * lx - leg, 12, 0.8, 0.2), apronM, 0, under - 12 - 0.2, -lz + 0.1);                       // modesty panel: hides the cables behind
+  K.add(K.board(2 * lx - leg, 12, 0.8, 0.2), apronM, 0, under - 12 - 0.2, -lz + 0.1);
+  K.add(K.soft(24, apH - 0.7, 0.5, { r: 0.12, s: 1 }), K.skin(shade(spec, 1.06)), 0, under - apH + 0.25, lz + 0.62);   // a shallow centre drawer in the front apron
+  K.add(K.geo('dk-pull', () => boxGeo(5, 0.4, 0.5)), dark, 0, under - apH * 0.45, lz + 1.05, { cast: false });                       // modesty panel: hides the cables behind
   for (const sx of [-1, 1]) {
     K.add(K.board(1, apH, 2 * lz - leg, 0.2), apronM, sx * lx, under - apH, 0);                           // side aprons
     K.add(K.board(1, 2, 2 * lz - leg, 0.2), apronM, sx * lx, 8.5, 0);                                      // low stretchers

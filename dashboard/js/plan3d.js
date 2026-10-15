@@ -107,7 +107,7 @@ const PILL = { clear: 'good', tight: 'warn', blocked: 'bad' };
 
 // ------------------------------------------------------------------ view contract
 export function init() {
-  window.__plan3d = { get views() { return viewsNow(); }, get cam() { return G3.getCamera(); }, get eye() { return G3.viewMode(); }, get hasCity() { return G3.hasCity(); }, get cityApi() { return G3.cityApi(); }, get parts() { return G3.parts(); }, get view() { return st.view; }, get items() { return items; }, get inventory() { return inventory; } };   // [interior] test and debugging handle, like __unit3d
+  window.__plan3d = { get views() { return viewsNow(); }, get cam() { return G3.getCamera(); }, get eye() { return G3.viewMode(); }, get touring() { return G3.touring(); }, get eyeAt() { return G3.eyeState(); }, get marker() { return G3.parts().scene.getObjectByName('walk-marker')?.visible === true; }, canStand: (x, y) => G3.canStand(x, y), get hasCity() { return G3.hasCity(); }, get cityApi() { return G3.cityApi(); }, get parts() { return G3.parts(); }, get view() { return st.view; }, get items() { return applyInventory(items, inventory); }, get raw() { return items; }, get inventory() { return inventory; } };   // `items` as drawn (the inventory's sizes and look joined); `raw` as saved   // [interior] test and debugging handle, like __unit3d
   $('view-plan').innerHTML = `<div class="view-pad ps">
     <header class="page-h ps-head">
       <div class="t"><h1 id="psTitle">Floor plan</h1><p id="psSub">Lay out your furniture at true size and check it fits.</p></div>

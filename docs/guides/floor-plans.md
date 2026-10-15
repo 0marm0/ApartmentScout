@@ -61,6 +61,22 @@ renter has. `room` (`bedroom`, `living`, `dining`, `office`, `kitchen`, `other`)
 auto-placer; `variant` and `product` work as in a layout item. Plain text only, at most 60 pieces and 200 KB; the studio refuses a
 file with an unknown `ref`, a duplicate `id`, markup or an absurd size.
 
+Two optional fields say what the renter did not tell you. `assumed` lists the sizes that are stand-ins (`["d"]`: the desk's depth is
+not known, 30 in is assumed; the furniture list says "(depth assumed)"). `set`, on a desk, says what stands with it: `{"monitor": 32,
+"chair": "task"}` draws a 32-inch 16:9 monitor (28.0 x 15.8 in screen, thin bezels, on a stand) on the desk and a rolling task chair at
+it; `"monitor": false` or `"chair": false` leaves one out, and a desk with no `set` gets a 24-inch monitor and the chair.
+
+```json
+{"id": "desk", "ref": "desk", "label": "Desk, chair and monitor", "w": 71, "d": 30, "h": 30, "assumed": ["d"],
+ "set": {"monitor": 32, "chair": "task"},
+ "look": {"color": "brown", "material": "wood", "basis": "renter", "assumed": ["finish", "legs", "chair", "monitor"],
+          "parts": {"chair": {"color": "black", "material": "fabric"}, "monitor": {"color": "black", "material": "plastic"}}}}
+```
+
+The renter's desk is about 180 cm (71 in) long, brown wood, with an office chair on wheels and a 32-inch monitor; their dresser is the
+IKEA MALM 6-drawer chest in black-brown (`ref` `dresser-malm-6`, 63 x 18.9 x 30.7 in: two columns of three flat drawers with the
+recessed top edge as the pull, no knobs); both TVs are 55-inch (48.4 x 27.8 in).
+
 ### What a piece looks like: `look`
 
 Each piece may carry a `look`: its colour, material and finish, and who said so. Both 3D views (Unit 3D's Inside camera and the
@@ -90,8 +106,11 @@ how many looks come from the renter and which details are still guesses. A layou
 over the inventory's; saved layouts do not copy the inventory's looks.
 
 Both 3D views share one set of models (`dashboard/js/room3d/furniture.js`): a futon is padded leather channels on a tubular frame,
-a chest has flat drawer fronts with simple handles, a desk is a plain table desk with a monitor and a chair, and a wall-mounted TV
-is a thin black panel hung at its `elev`. Fast stays within about 1,500 triangles a piece, Visual 6,000.
+a chest has flat drawer fronts with simple handles (the MALM has slab fronts with a recessed pull along each top edge), a desk is a
+work desk (a solid top, four square legs, an apron with a shallow centre drawer, low stretchers, a modesty panel and a steel cable
+tray under the top) with a desk mat, keyboard and mouse, a slim monitor on a stand and a rolling task chair (a five-star base on
+twin-wheel casters, a gas lift, a waterfall seat, a curved back that is mesh in Visual, two armrests), and a wall-mounted TV is a thin
+black panel hung at its `elev`. Fast stays within about 1,500 triangles a piece, Visual 6,000.
 
 ### Looking from a seat, and moving a piece
 
@@ -103,16 +122,58 @@ within 4 in; the arrow keys nudge it), **Remove** (Delete; Undo brings it back) 
 
 - **Use your furniture layout** applies a plan's `your-furniture` preset; on a plan without one the button reads **Fit your furniture
   here** and places every piece with the fit checks (`plan/inventory.js`). A plan with no presets at all opens on that fit.
-- **Add** puts one piece, at its own size, in the kind of room it lives in. A layout item carries the renter's sizes (`w`, `d`, `h`,
-  `elev`, `label`), so a layout file or a plan preset keeps them without the inventory.
+- **Add** puts one piece, at its own size, in the kind of room it lives in. A layout item names the piece (`id`, `ref`) and where it
+  stands; the inventory supplies its size, label, look and desk set, so a size changed in `furniture.json` reaches every layout. A size
+  on a layout item (`w`, `d`, `h`, `elev`, a `variant` or a `product`) is a deliberate override and wins.
 - A complete plan project (**Layout ▸ Save complete plan project**) carries the inventory as `inventory`, validated like the layout,
   and the studio shows the project's pieces when you import it.
 
 **Where the example's list comes from.** The earlier layout studios kept the renter's drags in the browser only, so no saved
-positions survived. The kit (queen bed, two nightstands, IKEA Storklinta dresser, a 60 x 24 in desk with a chair, a 3-seat futon,
-a coffee table, two wall-mounted 55-inch TVs and a 4-seat dining table) and its sizes come from those tools: the Fit check, Room to
-live and the Apartment layout studio, with the TV study for Emerald Green 1211. Positions in the shipped `your-furniture` layouts for
-Paramount 25E and Emerald Green 1211 are the fit checks' work: all ten pieces grade clear in both.
+positions survived. The kit (queen bed, two nightstands, a dresser, a desk with a chair, a 3-seat futon, a coffee table, two
+wall-mounted 55-inch TVs and a 4-seat dining table) and its first sizes come from those tools: the Fit check, Room to live and the
+Apartment layout studio, with the TV study for Emerald Green 1211. The renter has since corrected the desk (71 in, brown wood, a
+task chair, a 32-inch monitor) and the dresser (IKEA MALM, 6 drawers), and answered where things go.
+
+### Where a piece stands, and why it stays there
+
+One rule (`dashboard/js/plan/placement.js`) decides it for the Floor plan studio and Unit 3D's Inside view, so the two always agree:
+**a piece the renter placed stays exactly where they put it, across reloads and in both views, until they move it; automatic placement
+may only fill pieces they have not placed.**
+
+- A layout item is *placed* when the renter dragged, turned, nudged, added or duplicated it, chose a layout for it, or the layout file
+  says so (`"placed": true`). The studio saves the whole layout in the browser (`ver` 2, each item with its `placed` mark, and
+  `removed` for pieces the renter took out so a default never puts them back) and Unit 3D reads that same layout, so a drag in the
+  studio shows in Unit 3D and survives a reload.
+- What is not placed follows the plan's own default layout (the first `layouts` entry, data in the plan file). A piece no layout
+  holds yet is fitted into the free space around the placed ones (`plan/fit.js`); the placed ones never move for it.
+- One unreadable piece in a saved layout is skipped on its own; the others keep their places. Older layouts (no `ver`) keep every piece
+  the renter moved; a piece still at a position the earlier default gave it (a layout's `replaces` lists those positions) takes the new
+  default, and sizes the older build baked in are replaced by the inventory's.
+- *Why pieces used to move.* Unit 3D drew the plan file's first preset and never read the layout the studio saved, so a drag
+  showed only in the studio; the studio's saved layout was rejected whole when one piece in it failed validation, falling back to the
+  preset; sizes baked into saved layouts hid a corrected size; and "Use your furniture layout" fitted everything again.
+
+**The shipped 25E layout** (`examples/nyc-2026/plans/paramount-tower-25e.json`, `layouts[0]`, data, every piece `placed`): the bed's
+headboard on the bedroom's east wall with the windows on the right of a person lying in it, the TV on the opposite wall over the
+MALM chest, a nightstand each side; the futon's back flat against the partition facing the living-room TV on the far wall; the
+71-inch desk on the living room's left wall beside the bay window (clear of the glass) with the chair behind it and room to pull it
+out; the dining table lengthwise by the kitchen so the walk from the door to the desk stays 37 in wide. Nothing is blocked; the two TVs
+grade *tight* because a 55-inch TV is only "workable" at the 9 to 10 ft these rooms allow. Emerald Green 1211's layout is refitted
+with the new sizes (the 63-inch chest stands in its living room: it does not fit its narrow bedroom beside the bed).
+
+### Walking around inside
+
+Unit 3D's **Inside** camera and the studio's **Walk** share one walkable floor (`plan/walkcore.js`): a person 18 in across, eye height
+63 in (about 1.6 m), who cannot pass through walls, window sills, fixtures, furniture (the desk's chair counts) or the glass, and who
+goes through the doors.
+
+- **Click or tap the floor** to walk there: a smooth glide at about 6 ft a second, easing in and out, around the furniture and through
+  the doors. A faint ring on the floor shows where a click will take you (the nearest floor you can stand on).
+- **Drag** to look around, in any direction (Unit 3D's Inside look used to stop 90 degrees from where it started).
+- **W S** or **↑ ↓** walk, **A D** or **← →** turn, **Q E** sidestep, **Shift** hurries; you slide along walls and stop at furniture.
+- **Go to the window** (in the look panel; **To window** in the studio's camera row) walks you to the nearest window, about 22 in back
+  from the glass, facing out. **Double-click a window** does the same for that window.
+- The seat views (*Sofa*, *Sofa, window*, *Bed*, *Desk*, ...) and the room chips stay as quick jumps.
 
 ## The view from inside
 
@@ -288,6 +349,11 @@ and anything you know better you set with `basis: renter`.
 `layouts` are furniture arrangements an agent proposes for this plan. Each has an `id`, a `name`, a
 one-line `note` saying why it works, and `items`. An item is `{"ref": <catalogue id>, "x", "y", "rot"}`
 in the plan's units, plus optional `id`, `w`, `d`, `h` (inches), `variant` and `label`.
+`placed: true` says the renter chose that spot: nothing automatic ever moves it (see
+[Where a piece stands](#where-a-piece-stands-and-why-it-stays-there)). The **first** layout is the plan's
+default: what loads until the renter places something. `replaces` (optional, a list of lists of
+`{"id", "x", "y", "rot"}`) records where an earlier default put each piece, so a layout a renter saved from it
+without touching it moves to the new default while a piece they moved stays.
 
 `rot` is the direction the **back** of the piece points, in degrees clockwise from the top of the
 drawing: `0` = back against the top wall, `90` = against the right wall, `180` = bottom, `270` = left.
@@ -304,7 +370,7 @@ The catalogue lives in `dashboard/js/plan/catalog.js`, with a cited source for e
 |---|---|---|
 | `queen-bed`, `full-bed`, `king-bed` | 64 x 84, 58 x 80, 80 x 84 | 22-24 beside (one side is enough), 24-30 at the foot, no window behind the headboard |
 | `nightstand` | 18 x 16 x 24 | |
-| `dresser`, `dresser-wide` | 27.6 x 19.7, 55 x 19 | 24-30 for the drawers |
+| `dresser`, `dresser-wide`, `dresser-malm-6` | 27.6 x 19.7, 55 x 19, 63 x 18.9 (IKEA MALM) | 24-30 for the drawers |
 | `wardrobe`, `bookcase` | 39.4 x 22.9 x 79, 31.5 x 11 x 79.5 | 22-30 for wardrobe doors |
 | `sofa-3`, `futon` (variant `bed`), `loveseat`, `armchair` | 84 x 36, 78.75 x 38.25 (55.1 open), 60 x 34, 32 x 34 | 18-30 legroom, not counting a coffee table |
 | `coffee-table` (variants `s`, `m`, `l`) | 36 x 20, 44 x 24, 52 x 28 | |

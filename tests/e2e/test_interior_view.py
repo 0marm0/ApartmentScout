@@ -64,7 +64,7 @@ def test_the_studio_opens_on_your_furniture_and_every_piece_fits(open_page, webg
     rows = pg.evaluate("() => [...document.querySelectorAll('#psTab .iv-row')].map((r) => r.querySelector('b').textContent)")
     assert len(rows) == 10 and rows[0] == "Queen bed"
     assert pg.locator("#psTab [data-inv-use]").get_attribute("aria-pressed") == "true"
-    assert pg.evaluate("() => [...document.querySelectorAll('#psInsp .metric .v')].map((e) => e.textContent.trim())") == ["0", "0", "10"]
+    assert pg.evaluate("() => [...document.querySelectorAll('#psInsp .metric .v')].map((e) => e.textContent.trim())") == ["0", "2", "8"]   # all ten placed, none blocked; the two TVs read "workable" (9 to 10 ft), the best these rooms allow
     items = pg.evaluate("() => window.__plan3d.items.map(({id, ref, w, d, h, elev}) => ({id, ref, w, d, h, elev}))")
     by = {i["id"]: i for i in items}
     for p in inv["pieces"]:
@@ -83,7 +83,7 @@ def test_the_studio_opens_on_your_furniture_and_every_piece_fits(open_page, webg
     pg.click("#psTab [data-inv-add=desk]")
     pg.wait_for_function("() => window.__plan3d.items.length === 10")
     desk = pg.evaluate("() => window.__plan3d.items.find((i) => i.id === 'desk')")
-    assert (desk["w"], desk["d"], desk["h"]) == (60, 24, 30)
+    assert (desk["w"], desk["d"], desk["h"]) == (71, 30, 30)
     assert not s.take()
 
 
@@ -168,12 +168,12 @@ def test_studio_stands_at_the_window_and_sits_on_the_sofa_with_the_real_city_out
     pg.wait_for_function("() => window.__plan3d.view === 'seat:bed'")
     _settle(pg)
     tvb = pg.evaluate(POSE_JS)
-    assert inside("Bedroom", tvb["at"]) and tvb["dir"][0] > 0.95                      # the bedroom TV is on the partition, to the right of the bed
+    assert inside("Bedroom", tvb["at"]) and tvb["dir"][0] < -0.95                     # the headboard is on the east wall, so the bedroom TV on the partition is dead ahead (west)
     pg.click("#psLook [data-vp='seat:bed-window']")
     pg.wait_for_function("() => window.__plan3d.view === 'seat:bed-window'")
     _settle(pg)
     bed = pg.evaluate(POSE_JS)
-    assert inside("Bedroom", bed["at"]) and bed["dir"][0] > 0.4 and bed["dir"][1] > 0.6
+    assert inside("Bedroom", bed["at"]) and bed["dir"][1] > 0.9     # from the bed, the windows are up the drawing: on the right of someone lying in it
     # evening and night give the window a different sky; leaving puts the bird's-eye view back
     pg.click("#pMood [data-mood=evening]")
     pg.wait_for_timeout(300)
