@@ -104,7 +104,7 @@ a { color: var(--accent-ink); text-decoration: none; }
 .rank .nm span { color: var(--ink3); font-size: 7.6pt; }
 .rank .mo b { font-weight: 650; font-size: 10pt; } .rank .mo span { display: block; color: var(--ink3); font-size: 7.2pt; }
 .rank .vd { font-size: 7.8pt; color: var(--ink2); line-height: 1.35; }
-.watch { margin-top: auto; border-left: 3px solid var(--warn); background: var(--warn-soft); border-radius: 0 8px 8px 0; padding: 8px 12px 9px; flex: none; }
+.watch { margin-top: 14px; border-left: 3px solid var(--warn); background: var(--warn-soft); border-radius: 0 8px 8px 0; padding: 8px 12px 9px; flex: none; }
 .watch h3 { font-size: 7.6pt; font-weight: 650; letter-spacing: .09em; text-transform: uppercase; color: var(--warn); margin-bottom: 3px; }
 .watch li { font-size: 8.3pt; color: var(--ink2); padding-left: 11px; position: relative; line-height: 1.4; }
 .watch li::before { content: ""; position: absolute; left: 1px; top: .62em; width: 4px; height: 4px; border-radius: 50%; background: var(--warn); }
@@ -247,7 +247,7 @@ table.cmp { width: 100%; border-collapse: collapse; table-layout: fixed; font-si
   "commute_mode": ["minutes", "route", "transfers", "ride_min", "walk_min"],
   "commute_leg": ["mode", "min"],
   "pick": ["tier", "note"],
-  "tour": ["observed", "visited_at", "rooms", "ceiling", "water", "noise", "signal", "closets", "laundry", "smells", "light", "view", "checks", "note", "photos"],
+  "tour": ["observed", "rooms", "ceiling", "water", "noise", "signal", "closets", "laundry", "smells", "light", "view", "checks", "note", "photos"],
   "trail": ["at", "kind", "text", "why"],
   "plan": ["units", "up_bearing", "rooms", "windows", "doors"],
   "tour_photos": { "max_per_home": 4, "thumb_px": 520, "quality": 0.76, "budget_kb": 520 },
@@ -309,7 +309,7 @@ function rows(p) {
   const sections = [];
   sections.push({ title: 'Money', rows: [
     row('True monthly cost', (h) => { const v = h.score && h.score.monthly_cost; if (!isNum(v)) return null; const c = cost(h); return { v, t: usd(v), s: c.fees_estimate ? 'fees estimated' : c.rent && c.rent.basis === 'conditional' ? 'concession terms open' : isNum(h.price && h.price.gross) ? 'gross ' + usd(h.price.gross) : '' }; }, { best: 'min', sub: 'rent after free months, plus fees' }),
-    row('Move-in cost', (h) => { const c = cost(h); if (!isNum(c.move_in_min)) return null; const u = c.move_in_unknown || []; return { v: c.move_in_min, t: usd(c.move_in_min), s: u.length ? 'plus ' + u.join(' and ') + ' (unknown)' : 'first month, deposit, fees' }; }, { best: 'min', needAll: true, sub: 'cash to sign and move in' }),
+    row('Move-in cost', (h) => { const c = cost(h); if (!isNum(c.move_in_min)) return null; const u = c.move_in_unknown || []; return { v: u.length ? null : c.move_in_min, t: usd(c.move_in_min), s: u.length ? '+ ' + u.map((x) => x.replace('one-time fees', 'fees')).join(', ') + ' unknown' : 'first month, deposit, fees' }; }, { best: 'min', sub: 'cash to sign and move in; compared only when complete' }),
     row('Renewal risk', (h) => {
       const v = parts(h).renewal_risk; if (!isNum(v)) return null;
       const pr = h.price || {}, lease = [isNum(pr.lease_months) ? pr.lease_months + '-month lease' : '', isNum(pr.free_months) && pr.free_months > 0 ? pr.free_months + ' free' : ''].filter(Boolean).join(', ');
