@@ -23,7 +23,7 @@ const DEBOUNCE = TUNE.debounce ?? 5000, MIN_GAP = TUNE.gap ?? 4000, RESUME_AFTER
 
 let state = { phase: 'idle', error: null, retryAt: 0 };
 let gen = 0, running = null, again = false, timer = 0, stampTimer = 0, lastRun = 0, fails = 0, lastRemote = null, started = false, blocked = false;
-let lastResult = null, skipped = [], summaryItems = {};
+let lastResult = null, skipped = [], summaryItems = {}, touched = false;   // touched: a write was heard and not yet looked at (the stamp waits a moment)
 const subs = new Set();
 
 export const onChange = (fn) => { subs.add(fn); return () => subs.delete(fn); };
@@ -36,7 +36,7 @@ export function status() {
   const c = St.config();
   return {
     target: c.target, phase: c.target === 'gist' ? state.phase : 'idle', error: state.error, retryAt: state.retryAt,
-    lastSync: c.lastSync, lastFileOut: c.lastFileOut, lastFileIn: c.lastFileIn, pending: !!c.dirty,
+    lastSync: c.lastSync, lastFileOut: c.lastFileOut, lastFileIn: c.lastFileIn, pending: !!c.dirty || touched,
     connected: c.target === 'gist' && !!c.gistId && St.hasToken(), gistId: c.gistId, gistUrl: c.gistUrl, owner: c.owner,
     photos: c.photos, auto: c.auto, device: c.name, deviceId: c.device, devices: lastRemote?.devices || {}, skipped, last: lastResult,
   };
@@ -53,9 +53,12 @@ function doStamp() {
   return r;
 }
 function onLocalWrite() {
+  touched = true;
+  if (St.config().target === 'gist') notify();
   clearTimeout(stampTimer);
   stampTimer = setTimeout(() => {
     const r = doStamp();
+    touched = false;
     if (r.changed.length) { notify(); schedule(DEBOUNCE); }
   }, 250);
 }
@@ -137,7 +140,7 @@ export function syncNow(reason = 'manual') {
   if (c.target !== 'gist' || !St.hasToken() || !c.gistId) return Promise.resolve(false);
   if (blocked && reason !== 'manual' && reason !== 'connect') return Promise.resolve(false);
   clearTimeout(stampTimer);
-  doStamp();
+  doStamp(); touched = false;
   if (running) { again = true; return running; }
   clearTimeout(timer);
   running = run(reason).finally(() => { running = null; if (again) { again = false; schedule(MIN_GAP); } });
@@ -202,12 +205,6 @@ export function disconnect() {
   lastRemote = null; blocked = false; fails = 0; lastResult = null;
   setState({ phase: 'idle', error: null, retryAt: 0 });
 }
-export function setTarget(target) {
-  if (!['off', 'gist', 'file'].includes(target)) return;
-  if (target === 'gist' && !St.hasToken()) St.setConfig({ target: 'off' });
-  else St.setConfig({ target });
-  notify();
-}
 export function setOption(name, value) {
   if (!['photos', 'auto'].includes(name)) return;
   St.setConfig({ [name]: !!value });
@@ -245,7 +242,7 @@ export async function buildExport({ photos = St.config().photos } = {}) {
   const copies = Object.keys(items).filter((k) => M.isBlobKey(k) && !items[k].x).length;
   return { text: JSON.stringify(doc), name: `apartmentscout-sync-${day.getFullYear()}-${p(day.getMonth() + 1)}-${p(day.getDate())}.json`, items: Object.keys(items).filter((k) => !M.isBlobKey(k) && !items[k].x).length, photos: copies, over: ph.over };
 }
-export const markExported = () => { St.setConfig({ lastFileOut: now() }); notify(); };
+export const markExported = () => { St.setConfig({ lastFileOut: now(), ...(St.config().target === 'off' ? { target: 'file' } : {}) }); notify(); };
 
 /** Merge a sync file (or any picks backup) into this browser. Returns what changed. Throws an Error with a plain message for a file that is not one. */
 export async function importText(text) {
@@ -262,7 +259,7 @@ export async function importText(text) {
   let added = 0, updated = 0;
   for (const k of applied.plan.set) { if (local[k] && !local[k].x) updated++; else added++; }
   const kept = Object.keys(doc.items).filter((k) => !M.isBlobKey(k) && local[k] && !local[k].x && !doc.items[k].x && merged[k] === local[k] && M.stable(local[k].v) !== M.stable(doc.items[k].v)).length;
-  St.setConfig({ lastFileIn: now(), dirty: St.config().dirty || applied.set + applied.del > 0 });
+  St.setConfig({ lastFileIn: now(), dirty: St.config().dirty || applied.set + applied.del > 0, ...(St.config().target === 'off' ? { target: 'file' } : {}) });
   doStamp();
   if (St.config().target === 'gist') schedule(DEBOUNCE);
   notify();
