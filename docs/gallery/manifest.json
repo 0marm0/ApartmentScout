@@ -677,7 +677,7 @@
     {
       "file": "docs/images/card-photo-counts.png",
       "publication_status": "public",
-      "sha256": "cedb2a8743d0fe3ed6b338a01ef12dc3c21b0e2a596f90fb832062c5d3509e22",
+      "sha256": "9857999d94e8cf8b6df54d3be1b754da559050e48dc00e496959255d0801d841",
       "bytes": 761969,
       "width": 864,
       "height": 1848,
@@ -749,7 +749,7 @@
     {
       "file": "docs/images/decision-tray.png",
       "publication_status": "public",
-      "sha256": "8a01f01d914b131cab5f0d02cb17c0632416e5ba8fd1654e84fd2a7fb0d0bbbf",
+      "sha256": "e801b12856ed76acc51f501e6cac2a18a8fc2a844e76489e76ea3f31d176564f",
       "bytes": 1125678,
       "width": 1600,
       "height": 1000,
@@ -821,7 +821,7 @@
     {
       "file": "docs/images/map-commute-light.png",
       "publication_status": "public",
-      "sha256": "db677feb24854c1d713efa26a12027604f20b053296336d583908a4effb6f4d0",
+      "sha256": "f48c7093d45774e898c1ea9598fce60e79f7e3da104716f727acfce916dd28fe",
       "bytes": 1127555,
       "width": 1600,
       "height": 1000,
@@ -830,7 +830,7 @@
     {
       "file": "docs/images/map-commute.png",
       "publication_status": "public",
-      "sha256": "69db551441c7ee13abebe886320c9cf15cc12a818816dfef5dd0f8adde955c34",
+      "sha256": "88d638f7d5cb618db7c7f8193e09e54743cfc88e7a8aa73d819153a6e12b6cc2",
       "bytes": 1131157,
       "width": 1600,
       "height": 1000,
@@ -857,7 +857,7 @@
     {
       "file": "docs/images/map-drawer.png",
       "publication_status": "public",
-      "sha256": "ae31a7f8fee53cd88f84d7526104778cf33890d2545d1d1e526905632c907e6f",
+      "sha256": "2ff87ed5ad6a53efddb1d83841c7025fee5bfd6a544a564913ab0d04a74e0bcb",
       "bytes": 1057427,
       "width": 1600,
       "height": 1000,
@@ -876,7 +876,7 @@
       "file": "docs/images/map-light-drawer.png",
       "note": "ApartmentScout dashboard on the public example data",
       "publication_status": "public",
-      "sha256": "fbca48cd1bf8436e2be9b5dd2fe9b87ba8a87ee45ee9f5d991ad578bc173053b",
+      "sha256": "c021402d5c535d1491c3c67f7ca5483056712150cd88829c44180416afab0496",
       "bytes": 1154255,
       "width": 1600,
       "height": 1000
@@ -966,7 +966,7 @@
       "file": "docs/images/mobile-drawer.png",
       "note": "ApartmentScout dashboard on the public example data",
       "publication_status": "public",
-      "sha256": "eb31602b2407aa5ba2cb78062ef44be4ee2c581947e3cc2529a4317bd949fd00",
+      "sha256": "8be9fdea9ab4045769f72a66aef773d91c85ee740b8328353029dc9d2a114abb",
       "bytes": 477615,
       "width": 630,
       "height": 1350
@@ -1127,7 +1127,7 @@
     {
       "file": "docs/images/shortlist.png",
       "publication_status": "public",
-      "sha256": "d3d69ab6ce0e3b6176b5becc608e43dd352bac4b6994ee9a96905bd163632983",
+      "sha256": "90538b821d10c924bfe19f9d4c9e2aea36ba90d97d06acc3ebad5afc78709636",
       "bytes": 373584,
       "width": 1600,
       "height": 1000,
