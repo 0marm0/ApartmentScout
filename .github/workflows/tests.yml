@@ -13,6 +13,7 @@ jobs:
         env:
           APARTMENTSCOUT_E2E: "0"   # the browser suite runs in its own job below
       - run: python scripts/release_check.py --skip-tests --only privacy,ignored,photos
+      - run: python scripts/make_media_lite.py examples/nyc-2026 --check   # the starter photos still match what listings.json calls for
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
@@ -37,7 +38,7 @@ jobs:
           - name: lighting
             files: tests/e2e/test_lighting.py
           - name: map-media-results
-            files: tests/e2e/test_map_features.py tests/e2e/test_lightbox.py tests/e2e/test_results_rail.py tests/e2e/test_pdf_tracer.py tests/e2e/test_plan_upload.py
+            files: tests/e2e/test_map_features.py tests/e2e/test_lightbox.py tests/e2e/test_media_tiers.py tests/e2e/test_results_rail.py tests/e2e/test_pdf_tracer.py tests/e2e/test_plan_upload.py
           - name: wizard
             files: tests/e2e/test_wizard.py tests/e2e/test_onboarding.py tests/e2e/test_boot_recovery.py tests/e2e/test_menu_nav.py
           - name: model-project
