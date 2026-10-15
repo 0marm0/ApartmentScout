@@ -21,6 +21,7 @@ import { heightMapHTML, sectorChartSVG, sectorTable, renderFloorViews, renderPan
 import { normalisePlan } from './plan/model.js';
 import { illustration } from './features/empty.js';   // [feature C] empty-state art
 import { missingNotice } from './features/plan-empty.js';   // [feature C]
+import { chooseHome, homeToRemember, SAVED_KEY } from './features/default-home.js';   // the home the 3D views open: address, session, renter's last, search default
 import * as UQ from './unit/quality3d.js';   // [feature J] render quality and progressive render
 import { annualFor, panelHTML as annualPanelHTML } from './unit/daylight-annual.js';   // [feature J] annual daylight summary
 import { resolveCal, geoFromSite, measuredFromSite, calSummary } from './unit/calibration.js';   // [model project] measured vs estimated height
@@ -179,7 +180,9 @@ export async function show(id) {
     $('uSnap').hidden = $('uGlb').hidden = true; return;
   }
   if (id && !ids.includes(id)) missingNotice('site model', id);   // [feature C]
-  id = id && ids.includes(id) ? id : st.id || ids[0];
+  const asked = homeToRemember({ want: id, ids });   // a home the address names is the renter's own choice: remember it, it beats the default
+  id = chooseHome({ want: id, current: st.id, saved: store.get(SAVED_KEY, null), preferred: S.manifest.default_listing, ids });
+  if (asked) store.set(SAVED_KEY, asked);
   $('unitSel').value = id;
   if (id !== st.id) await load(id);
   stage?.resize(); drawPathChart();
