@@ -21,7 +21,8 @@ export const floorKind = (room, model) => (model && FLOOR_FINISHES.includes(mode
 
 const texCache = new Map();
 const seeded = (seed) => { let s = seed >>> 0; return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296); };
-const shade = (base, k, a = 1) => { const x = base.clone().multiplyScalar(k); return `rgba(${Math.min(255, x.r * 255) | 0},${Math.min(255, x.g * 255) | 0},${Math.min(255, x.b * 255) | 0},${a})`; };
+const shade = (base, k, a = 1) => { const x = base.clone().multiplyScalar(k).convertLinearToSRGB();   // (a Color holds linear values; the canvas wants sRGB: without this every finish came out darker and more saturated than its colour)
+  return `rgba(${Math.min(255, x.r * 255) | 0},${Math.min(255, x.g * 255) | 0},${Math.min(255, x.b * 255) | 0},${a})`; };
 
 /**
  * Tiling canvas texture for a finish, `base` = THREE.Color. Cached; shared between rooms (never disposed by the scene clear).
@@ -64,9 +65,9 @@ export function floorTexture(kind, base) {
         }
       } else if (kind === 'basket') {  // basket-weave block parquet (the classic New York apartment floor): 8 in squares of four slats, the slats of neighbouring squares at right angles
         const nb = 4, B = N / nb, ns = 4, sw = B / ns;   // 4 x 4 squares to the tile, four slats to a square
-        g.fillStyle = sh(0.6); g.fillRect(0, 0, N, N);
+        g.fillStyle = sh(0.5); g.fillRect(0, 0, N, N);
         for (let by = 0; by < nb; by++) for (let bx = 0; bx < nb; bx++) {
-          const horiz = (bx + by) % 2 === 0, blockTone = 0.93 + rnd() * 0.12;
+          const horiz = (bx + by) % 2 === 0, blockTone = 0.88 + rnd() * 0.2;
           for (let k = 0; k < ns; k++) {
             const x = bx * B + (horiz ? 0 : k * sw), y = by * B + (horiz ? k * sw : 0), w = horiz ? B : sw, h = horiz ? sw : B, tone = blockTone * (0.94 + rnd() * 0.12);
             g.fillStyle = sh(tone); g.fillRect(x + S, y + S, w - 2 * S, h - 2 * S);
@@ -129,7 +130,7 @@ export const floorRoughness = (kind) => (kind === 'basket' ? 0.44 : kind === 'pa
 /** The theme-tinted base colour for a finish out of the studio's colour set `C` (wood, tile). */
 export function floorBase(kind, C) {
   const wood = C.wood || new THREE.Color(0xc2a27c), tile = C.tile || new THREE.Color(0xc4c6c6);
-  if (kind === 'basket') return new THREE.Color(0xe3bd88).lerp(wood, 0.1);   // honey oak, as in the listing photos (a golden mid-tone, not brown or orange)
+  if (kind === 'basket') return new THREE.Color(0xbf8847);   // honey oak, as in the listing photos (a golden mid-tone, not brown or orange)
   if (kind === 'parquet') return wood.clone().multiplyScalar(0.92).lerp(new THREE.Color(0x8a5a35), 0.12);
   if (kind === 'oak') return wood.clone().lerp(new THREE.Color(0xe0c9a2), 0.18);
   if (kind === 'tile-large') return tile.clone().lerp(new THREE.Color(0xdcd8d0), 0.5);
