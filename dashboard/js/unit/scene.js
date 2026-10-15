@@ -89,7 +89,7 @@ export class UnitStage {
     sunL.target.position.copy(this.center); scene.add(sunL); scene.add(sunL.target);
 
     // [city3d] ground, buildings, roof and footprint outlines: the city both engines share (city3d/city.js), in the site frame, near ones casting shadows
-    const C = this.cityObj = createCity({ B, T, ti: data.ti, green: data.green, water: data.water, streets: data.streets }, { pal, center: this.cxy, quality: this.quality, castShadow: true, facU: this.facU });
+    const C = this.cityObj = createCity({ B, T, ti: data.ti, meta: data.meta, green: data.green, water: data.water, streets: data.streets }, { pal, center: this.cxy, quality: this.quality, castShadow: true, facU: this.facU });
     Object.assign(this, { groundMat: C.groundMat, groundBase: C.groundBase, bMat: C.bMat, vrange: C.vrange, city: C.meshes, edgeMat: C.edgeMat, edgeIdx: C.edgeIdx, edges: C.edges, outlineMat: C.outlineMat, outlines: C.outlines });
     scene.add(C.group);
 
@@ -165,7 +165,7 @@ export class UnitStage {
   /** The plate stands in for the base ground where it is on; the base drops under the water so the plate's holes show it. */
   syncGroundBase() { if (this.cityObj) { this.cityObj.layers = { ...this.cityObj.layers, water: this.opts.water }; this.cityObj.syncGroundBase(); } }
   /** [city context] Render quality from unit/quality3d.js: tree shadows (Visual) and the water's sky reflection and sun glint. */
-  setContextQuality(q) { this.quality = { visual: !!q.visual, phone: !!q.phone }; this.ctx?.setQuality(this.quality); this.dirty = true; }
+  setContextQuality(q) { this.quality = { visual: !!q.visual, phone: !!q.phone }; this.ctx?.setQuality(this.quality); if (this.facU.uQual) this.facU.uQual.value = q.visual ? 1 : 0; this.dirty = true; }   // [massing] Visual: full facades
   distTo(b) { return Math.hypot((b.bb[0] + b.bb[2]) / 2 - this.cxy[0], (b.bb[1] + b.bb[3]) / 2 - this.cxy[1]); }
   // [city3d] the buildings are meshed by city3d/buildings.js (prismsOf is its single entry point), the same code the studio uses
   shapeOf(b) { return shapeOf(b); }
@@ -335,6 +335,7 @@ export class UnitStage {
   /** Vertex colours of the city: the continuous height ramp, or the height classes when the Heights layer is on. */
   recolor() {
     const pal = this.pal, cls = !!this.opts.heights;
+    if (this.facU.uTintMix) this.facU.uTintMix.value = cls ? 0 : 1;   // [massing] the Heights layer shows its class colours, not wall palettes
     for (const m of this.city) {
       const colA = m.geometry.attributes.color, nor = m.geometry.attributes.normal.array, H = m.userData.h, memo = new Map();
       for (let v = 0; v < colA.count; v++) {
@@ -715,8 +716,9 @@ export class UnitStage {
     const root = new THREE.Group(); root.name = meta.name || 'site'; root.userData = meta;
     const city = new THREE.Group(); city.name = 'city';
     const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9 });
-    this.city.forEach((m, i) => { const c = new THREE.Mesh(m.geometry, mat); c.name = i ? 'city-far' : 'city-near'; city.add(c); });
-    const t = new THREE.Mesh(this.tMesh.geometry, new THREE.MeshStandardMaterial({ color: this.pal.accent, roughness: 0.6 })); t.name = 'this-building';
+    const plain = (g) => { const q = g.clone(); q.deleteAttribute('aFa'); q.deleteAttribute('aFb'); return q; };   // [massing] facade attributes are shader inputs, not model data
+    this.city.forEach((m, i) => { const c = new THREE.Mesh(plain(m.geometry), mat); c.name = i ? 'city-far' : 'city-near'; city.add(c); });
+    const t = new THREE.Mesh(plain(this.tMesh.geometry), new THREE.MeshStandardMaterial({ color: this.pal.accent, roughness: 0.6 })); t.name = 'this-building';
     root.add(city, t);
     if (this.streets) { const s = new THREE.Mesh(this.streets.geometry, new THREE.MeshStandardMaterial({ color: this.pal.street, roughness: 1 })); s.name = 'streets'; root.add(s); }
     // parks, lawns and paved playgrounds (every ground layer, flat vertex colours); the instanced canopies stay out of the file

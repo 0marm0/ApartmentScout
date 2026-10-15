@@ -1,0 +1,306 @@
+{
+ "site": {
+  "version": 2,
+  "origin": {
+   "lat": 40.7549,
+   "lon": -73.984
+  },
+  "floor_height_m": 3.2,
+  "target": 2,
+  "b": [
+   [
+    90,
+    0,
+    0,
+    [
+     -30,
+     40,
+     30,
+     40,
+     30,
+     100,
+     -30,
+     100
+    ]
+   ],
+   [
+    45,
+    0,
+    0,
+    [
+     60,
+     40,
+     90,
+     40,
+     90,
+     70,
+     60,
+     70
+    ]
+   ],
+   [
+    60,
+    0,
+    1,
+    [
+     -10,
+     -30,
+     10,
+     -30,
+     10,
+     -10,
+     -10,
+     -10
+    ]
+   ]
+  ],
+  "bmeta": [
+   {
+    "bin": "1000001",
+    "bbl": "1000010001",
+    "cls": "O4",
+    "year": 1931,
+    "floors": 30,
+    "height_src": "roof",
+    "geom_src": "photogrammetric",
+    "hconf": "high"
+   },
+   {
+    "bin": "1000002",
+    "cls": "D8",
+    "year": 2004,
+    "floors": 14,
+    "height_src": "pluto-floors",
+    "hconf": "low"
+   },
+   {
+    "bin": "1000003",
+    "height_src": "roof",
+    "geom_src": "manual",
+    "hconf": "medium"
+   }
+  ],
+  "components": {
+   "0": [
+    {
+     "ring": [
+      [
+       -30,
+       40
+      ],
+      [
+       30,
+       40
+      ],
+      [
+       30,
+       100
+      ],
+      [
+       -30,
+       100
+      ]
+     ],
+     "base_m": 0,
+     "top_m": 15,
+     "kind": "podium",
+     "source": "t",
+     "mat": "stone",
+     "col": "#d6c7a1"
+    },
+    {
+     "ring": [
+      [
+       -12,
+       55
+      ],
+      [
+       12,
+       55
+      ],
+      [
+       12,
+       85
+      ],
+      [
+       -12,
+       85
+      ]
+     ],
+     "base_m": 15,
+     "top_m": 62,
+     "kind": "tower",
+     "source": "t",
+     "roof": "pyramid",
+     "eave_m": 54
+    },
+    {
+     "ring": [
+      [
+       -1.5,
+       69
+      ],
+      [
+       1.5,
+       69
+      ],
+      [
+       1.5,
+       72
+      ],
+      [
+       -1.5,
+       72
+      ]
+     ],
+     "base_m": 62,
+     "top_m": 90,
+     "kind": "spire",
+     "source": "t"
+    }
+   ]
+  }
+ },
+ "points": [
+  {
+   "p": [
+    0,
+    -9.6,
+    14.4
+   ],
+   "az": [
+    0,
+    10,
+    350,
+    20,
+    340,
+    90,
+    180
+   ],
+   "expected": [
+    43.8854,
+    35.9664,
+    35.9664,
+    0.6513,
+    0.6513,
+    0.0,
+    89.4974
+   ]
+  },
+  {
+   "p": [
+    0,
+    -9.6,
+    40.0
+   ],
+   "az": [
+    0,
+    5,
+    355,
+    90
+   ],
+   "expected": [
+    32.4618,
+    18.7401,
+    18.7401,
+    0.0
+   ]
+  }
+ ],
+ "confidence": [
+  {
+   "in": {
+    "height_src": "roof",
+    "geom_src": "photogrammetric"
+   },
+   "out": "high"
+  },
+  {
+   "in": {
+    "height_src": "roof",
+    "geom_src": "manual"
+   },
+   "out": "medium"
+  },
+  {
+   "in": {
+    "height_src": "roof"
+   },
+   "out": "high"
+  },
+  {
+   "in": {
+    "height_src": "osm-height"
+   },
+   "out": "medium"
+  },
+  {
+   "in": {
+    "height_src": "osm-levels"
+   },
+   "out": "low"
+  },
+  {
+   "in": {
+    "height_src": "pluto-floors"
+   },
+   "out": "low"
+  },
+  {
+   "in": {
+    "height_src": "default"
+   },
+   "out": "low"
+  },
+  {
+   "in": {},
+   "out": "low"
+  },
+  {
+   "in": {
+    "height_src": "roof",
+    "geom_src": "photogrammetric",
+    "fcode": "5100"
+   },
+   "out": "low"
+  }
+ ],
+ "ids": [
+  {
+   "in": [
+    {
+     "bin": "1087340"
+    },
+    5
+   ],
+   "out": "1087340"
+  },
+  {
+   "in": [
+    {
+     "bin": null,
+     "id": "osmw42"
+    },
+    5
+   ],
+   "out": "osmw42"
+  },
+  {
+   "in": [
+    {},
+    5
+   ],
+   "out": "b5"
+  },
+  {
+   "in": [
+    {
+     "bin": "",
+     "id": "osmr7"
+    },
+    0
+   ],
+   "out": "osmr7"
+  }
+ ]
+}

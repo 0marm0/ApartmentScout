@@ -21,6 +21,7 @@ in the site's local metre frame. ``kind`` is podium | tower | setback | bulkhead
 from __future__ import annotations
 
 import math
+import re
 from pathlib import Path
 
 from . import LocalFrame
@@ -31,8 +32,11 @@ from .shapes import bbox, clean_ring, point_in_poly, point_in_ring, ring_area, s
 MIN_COVER = 0.9
 HEIGHT_TOL_M = 8.0
 HEIGHT_TOL_FRAC = 0.2
-PARTS_RADIUS_M = 400.0
-KINDS = ("podium", "tower", "setback", "bulkhead")
+PARTS_RADIUS_M = 600.0
+MIN_BULKHEAD_M2 = 8.0              # rooftop boxes smaller than this (and 10 m or lower) are left out of the parts
+TALL_PARTS_M = 120.0              # footprints at least this tall beyond the radius get their parts read too (the skyline)
+TALL_PARTS_MAX = 40               # ... for at most this many landmarks, tallest first
+KINDS = ("podium", "tower", "setback", "bulkhead", "spire")
 CONFIDENCE = ("high", "medium", "low", "assumed")
 OSM_SOURCE = "OpenStreetMap contributors (ODbL), building:part"
 
@@ -53,10 +57,54 @@ def _min_height(tags: dict) -> tuple[float | None, str | None]:
     return None, None
 
 
+ROOF_SHAPES = {"flat": "flat", "pyramidal": "pyramid", "hipped": "hip", "half-hipped": "hip", "gabled": "gable",
+               "dome": "dome", "cone": "pyramid", "skillion": "slope", "round": "dome", "onion": "dome"}
+MATERIALS = {"glass": "glass", "brick": "brick", "stone": "stone", "limestone": "stone", "granite": "stone",
+             "concrete": "concrete", "cement_block": "concrete", "metal": "metal", "steel": "metal", "copper": "metal",
+             "plaster": "plaster", "stucco": "plaster"}
+_HEX = re.compile(r"^#[0-9a-fA-F]{6}$")
+_NAMED = {"white": "#f0f0f0", "grey": "#9a9a9a", "gray": "#9a9a9a", "black": "#2a2a2a", "red": "#a8483a",
+          "brown": "#8a6a52", "beige": "#d6c7a1", "tan": "#c9b28a", "blue": "#5b7fa6", "green": "#5f8a78",
+          "yellow": "#d8c47a", "silver": "#b8bec6", "cream": "#e8dcc0", "orange": "#c9803f"}
+
+
+def _colour(v) -> str | None:
+    s = str(v or "").strip().lower()
+    return s if _HEX.match(s) else _NAMED.get(s)
+
+
+def _roof(tags: dict, top: float, base: float) -> dict:
+    """``roof:shape`` / ``roof:height`` (OSM: ``height`` includes the roof) -> {"roof": shape, "eave_m": wall top}.
+
+    Only non-flat shapes are kept; ``roof:levels`` x 3.2 m stands in for a missing ``roof:height``.
+    """
+    shape = ROOF_SHAPES.get(str(tags.get("roof:shape") or "").lower())
+    if shape in (None, "flat"):
+        return {}
+    rh = _num(tags.get("roof:height"))
+    if rh is None:
+        lv = _num(tags.get("roof:levels"))
+        rh = lv * LEVEL_M if lv else None
+    if rh is None or rh <= 0.5:
+        return {}
+    eave = top - rh
+    out = {"roof": shape, "eave_m": round(max(eave, base), 1)}
+    if shape == "slope":      # skillion: the bearing the roof falls toward
+        d = _num(tags.get("roof:direction"))
+        if d is None:
+            from . import COMPASS_DEG
+            d = COMPASS_DEG.get(str(tags.get("roof:direction") or "").upper())
+        if d is not None:
+            out["dir"] = int(round(d)) % 360
+    return out
+
+
 def parse_osm_parts(els: list[dict]) -> list[dict]:
     """Overpass ``out geom`` ways and relations tagged ``building:part`` -> parts with (lon, lat) rings.
 
-    Parts without a usable top (no height and no levels) are skipped rather than guessed.
+    Parts without a usable top (no height and no levels) are skipped rather than guessed. Appearance tags that exist
+    are kept for the 3D drawing only (``roof``/``eave_m`` from ``roof:shape``, ``mat`` from ``building:material``,
+    ``col`` from ``building:colour``): none of them changes an obstruction.
     """
     out = []
     for e in els:
@@ -82,19 +130,86 @@ def parse_osm_parts(els: list[dict]) -> list[dict]:
             for o in outers:
                 polys.append((o, [h for h in inners if point_in_ring(h[0][0], h[0][1], o)]))
         levels = "osm-levels" in (top_src, base_src)
+        look = _roof(tags, float(top), float(base))
+        mat = MATERIALS.get(str(tags.get("building:material") or tags.get("material") or "").lower())
+        col = _colour(tags.get("building:colour") or tags.get("colour"))
+        if mat:
+            look["mat"] = mat
+        if col:
+            look["col"] = col
         for ring, holes in polys:
             out.append({"osm": f"{e.get('type', 'way')}/{e['id']}", "ring": ring, "holes": holes,
-                        "base_m": float(base), "top_m": float(top), "levels": levels})
+                        "base_m": float(base), "top_m": float(top), "levels": levels, **look})
     return out
 
 
+def parts_query(lat: float, lon: float, radius_m: float, tall: list[tuple[float, float, float]] | None = None) -> str:
+    """Overpass query: every ``building:part`` within ``radius_m``, plus those around each tall building
+    ``(lat, lon, radius)`` further out, which is where the skyline's landmarks stand (400 m reached only the
+    near blocks, so the Empire State Building was one prism 380 m tall)."""
+    around = [f'way["building:part"](around:{radius_m},{lat},{lon});',
+              f'relation["building:part"]["type"="multipolygon"](around:{radius_m},{lat},{lon});']
+    for tlat, tlon, tr in tall or []:
+        around.append(f'way["building:part"](around:{tr:.0f},{tlat:.6f},{tlon:.6f});')
+        around.append(f'relation["building:part"]["type"="multipolygon"](around:{tr:.0f},{tlat:.6f},{tlon:.6f});')
+    return "[out:json][timeout:120];\n(" + "\n ".join(around) + ");\nout geom;"
+
+
+def tall_query(tall: list[tuple[float, float, float]]) -> str:
+    """Overpass query for the parts around some tall buildings only (one request per chunk of landmarks)."""
+    around = []
+    for tlat, tlon, tr in tall:
+        around.append(f'way["building:part"](around:{tr:.0f},{tlat:.6f},{tlon:.6f});')
+        around.append(f'relation["building:part"]["type"="multipolygon"](around:{tr:.0f},{tlat:.6f},{tlon:.6f});')
+    return "[out:json][timeout:120];\n(" + "\n ".join(around) + ");\nout geom;"
+
+
+TALL_CHUNK = 10
+
+
 def fetch_osm_parts(lat: float, lon: float, radius_m: float = PARTS_RADIUS_M, cache_dir: Path | None = None,
-                    refresh: bool = False) -> list[dict]:
-    q = f"""[out:json][timeout:120];
-(way["building:part"](around:{radius_m},{lat},{lon});
- relation["building:part"]["type"="multipolygon"](around:{radius_m},{lat},{lon}););
-out geom tags;"""
-    return parse_osm_parts(overpass(q, cache_dir, refresh=refresh))
+                    refresh: bool = False, tall: list[tuple[float, float, float]] | None = None,
+                    problems: list[str] | None = None) -> list[dict]:
+    """Parts within ``radius_m`` (one request, as before: a failure raises) and around the tall landmarks (chunks of
+    ``TALL_CHUNK``: a failed chunk is reported in ``problems`` and skipped, so the near blocks keep their parts)."""
+    els = overpass(parts_query(lat, lon, radius_m), cache_dir, refresh=refresh)
+    seen = {(e.get("type"), e.get("id")) for e in els}
+    tall = tall or []
+    for i in range(0, len(tall), TALL_CHUNK):
+        try:
+            more = overpass(tall_query(tall[i:i + TALL_CHUNK]), cache_dir, refresh=refresh)
+        except RuntimeError as e:
+            if problems is not None:
+                problems.append(f"landmarks {i + 1}-{min(i + TALL_CHUNK, len(tall))}: {e}")
+            continue
+        for e in more:
+            k = (e.get("type"), e.get("id"))
+            if k not in seen:
+                seen.add(k)
+                els.append(e)
+    return parse_osm_parts(els)
+
+
+def tall_centres(site: dict, radius_m: float, min_h: float = TALL_PARTS_M, limit: int = TALL_PARTS_MAX
+                 ) -> list[tuple[float, float, float]]:
+    """(lat, lon, search radius) around the tallest footprints beyond ``radius_m`` of the origin (their parts are read)."""
+    F = LocalFrame(site["origin"]["lat"], site["origin"]["lon"])
+    rows = []
+    for top, g, _t, flat in site["b"]:
+        if top - g < min_h:
+            continue
+        ring = _ring_xy(flat)
+        if len(ring) < 3:
+            continue
+        cx, cy = _centroid(ring)
+        if math.hypot(cx, cy) <= radius_m:
+            continue
+        x0, y0, x1, y1 = bbox(ring)
+        r = max(25.0, 0.5 * math.hypot(x1 - x0, y1 - y0) + 12.0)
+        lon, lat = F.to_lonlat(cx, cy)
+        rows.append((top - g, lat, lon, r))
+    rows.sort(reverse=True)
+    return [(lat, lon, r) for _h, lat, lon, r in rows[:limit]]
 
 
 # --------------------------------------------------------------------------- assigning parts to footprints
@@ -154,17 +269,25 @@ def coverage(outer: list, holes: list, parts: list[list]) -> float:
     return covered / inside if inside else 0.0
 
 
-def classify(parts: list[dict]) -> list[str]:
-    """podium / tower / setback / bulkhead for stacked parts of one building.
+def _is_spire(p: dict) -> bool:
+    return p["base_m"] > 1.0 and abs(ring_area(p["ring"])) < 60 and p["top_m"] - p["base_m"] >= 15
 
-    bulkhead: small (< 150 m2), short (<= 12 m) and raised; tower: reaches 85% of the building's top;
-    podium: from the ground to at most half the top; setback: any other stepped mass.
+
+def classify(parts: list[dict]) -> list[str]:
+    """podium / tower / setback / bulkhead / spire for stacked parts of one building.
+
+    spire: a slim mast or finial (< 60 m2, at least 15 m tall, raised); bulkhead: small (< 150 m2), short (<= 12 m)
+    and raised; tower: reaches 85% of the building's top (spires not counted); podium: from the ground to at most
+    half the top; setback: any other stepped mass.
     """
-    top = max(p["top_m"] for p in parts)
+    spire = [_is_spire(p) for p in parts]
+    top = max((p["top_m"] for p, sp in zip(parts, spire) if not sp), default=max(p["top_m"] for p in parts))
     out = []
-    for p in parts:
+    for p, sp in zip(parts, spire):
         area = abs(ring_area(p["ring"]))
-        if p["base_m"] > 1.0 and area < 150 and p["top_m"] - p["base_m"] <= 12:
+        if sp:
+            out.append("spire")
+        elif p["base_m"] > 1.0 and area < 150 and p["top_m"] - p["base_m"] <= 12:
             out.append("bulkhead")
         elif p["top_m"] >= 0.85 * top:
             out.append("tower")
@@ -215,7 +338,7 @@ def derive_components(site: dict, parts: list[dict], min_cover: float = MIN_COVE
         if cov < min_cover:
             info["partial"] += 1
             continue
-        top = max(p["top_m"] for p in ps)
+        top = max((p["top_m"] for p in ps if not _is_spire(p)), default=max(p["top_m"] for p in ps))
         hsrc = (meta[i] if i < len(meta) and meta[i] else {}).get("height_src")
         if hsrc != "default" and abs(top - h) > max(HEIGHT_TOL_M, HEIGHT_TOL_FRAC * h):
             info["height_mismatch"] += 1
@@ -223,13 +346,28 @@ def derive_components(site: dict, parts: list[dict], min_cover: float = MIN_COVE
         kinds = classify(ps)
         out = []
         for p, k in sorted(zip(ps, kinds), key=lambda pk: (pk[0]["base_m"], -pk[0]["top_m"])):
+            if k == "bulkhead" and abs(ring_area(p["ring"])) < MIN_BULKHEAD_M2 and p["top_m"] - p["base_m"] <= 10:
+                info["dropped_small"] = info.get("dropped_small", 0) + 1      # a 2 m2 rooftop box: nothing to see, nothing to shade
+                continue
             typ, oid = p["osm"].split("/", 1)
-            c = {"ring": _r(p["ring"]), "base_m": round(p["base_m"], 1), "top_m": round(p["top_m"], 1), "kind": k,
-                 "source": f"osm {typ} {oid}", "confidence": "low" if p["levels"] else "medium",
-                 "ref": f"https://www.openstreetmap.org/{typ}/{oid}", "cover": round(cov, 2)}
+            c = {"ring": _r(p["ring"]), "top_m": round(p["top_m"], 1), "kind": k, "source": f"osm {typ} {oid}"}   # the link is rebuilt from the source
+            if p["base_m"]:
+                c["base_m"] = round(p["base_m"], 1)                  # absent = 0 (on the ground)
+            if p["levels"]:
+                c["confidence"] = "low"                              # absent = medium (an explicit OpenStreetMap height)
             if p["holes"]:
                 c["holes"] = [_r(hh) for hh in p["holes"]]
+            for key in ("roof", "eave_m", "dir", "mat", "col"):   # appearance tags: drawn, never used in an obstruction
+                if p.get(key) is not None:
+                    c[key] = p[key]
             out.append(c)
+        for key in ("mat", "col"):      # one wall material and colour for the whole building: stored once, on its first part
+            vals = {c[key] for c in out if key in c}
+            if len(vals) == 1:
+                v = vals.pop()
+                for c in out:
+                    c.pop(key, None)
+                out[0][key] = v
         comps[str(i)] = out
         info["buildings"] += 1
     return comps, info

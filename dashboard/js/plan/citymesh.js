@@ -34,7 +34,7 @@ export function cityGroup(ctx, opts = {}) {
   const pal = opts.pal || palette();
   const quality = opts.quality || roomQuality(), q = { visual: quality === 'visual', phone: phoneClass() };
   const frame = planFrameOf(ctx);
-  const C = createCity({ B: ctx.B, T: ctx.T, ti: ctx.ti, green: ctx.green, water: ctx.water, streets: ctx.streets }, { pal, center: [(ctx.T.bb[0] + ctx.T.bb[2]) / 2, (ctx.T.bb[1] + ctx.T.bb[3]) / 2], frame, quality: q, castShadow: false });   // (the same centre as Unit 3D's: the same trees, the same near and far buildings));
+  const C = createCity({ B: ctx.B, T: ctx.T, ti: ctx.ti, meta: ctx.meta, green: ctx.green, water: ctx.water, streets: ctx.streets }, { pal, center: [(ctx.T.bb[0] + ctx.T.bb[2]) / 2, (ctx.T.bb[1] + ctx.T.bb[3]) / 2], frame, quality: q, castShadow: false });   // (the same centre as Unit 3D's: the same trees, the same near and far buildings));
   C.facU.uFloorH.value = Math.max(2.4, +ctx.fh || 3.2);
   C.facU.uToSite = { value: new THREE.Matrix4().copy(C.bakeM).invert() };   // the facade windows are laid out in the site frame, as in Unit 3D
   if (opts.trees !== false) C.buildContext(); else C.syncGroundBase();
@@ -51,7 +51,7 @@ export function cityGroup(ctx, opts = {}) {
     city: C,
     setSun(dir, alt) { C.ctx?.setSun({ dir, alt }); C.facU.uNight.value = nightAmount(alt, pal); },
     setNight(v) { C.facU.uNight.value = v; },
-    setQuality(qq) { C.quality = { visual: qq === 'visual', phone: phoneClass() }; C.ctx?.setQuality(C.quality); },
+    setQuality(qq) { C.quality = { visual: qq === 'visual', phone: phoneClass() }; C.ctx?.setQuality(C.quality); C.facU.uQual.value = qq === 'visual' ? 1 : 0; },   // [massing] Visual: full facades
     /** building id -> its first vertex (world position in the plan frame), for alignment checks */
     anchorsOf(ids) {
       const out = {}; const v = new THREE.Vector3();

@@ -194,14 +194,24 @@ def _make_site(L, crit, cache_dir, floor, bearing, t, radius, streets, future, r
 
     if components or (overrides is not None and Path(overrides).exists()):
         c0 = time.perf_counter()
-        from .components import PARTS_RADIUS_M, build_components, fetch_osm_parts
+        from .components import PARTS_RADIUS_M, build_components, fetch_osm_parts, tall_centres
         parts = None
+        tall: list = []
+        parts_problems: list[str] = []
         if components:
             try:
-                parts = fetch_osm_parts(L["lat"], L["lon"], min(radius, PARTS_RADIUS_M), cache_dir, refresh)
+                # [building massing] the skyline's landmarks lie beyond the near radius: read their parts too
+                tall = tall_centres(site, min(radius, PARTS_RADIUS_M))
+                parts = fetch_osm_parts(L["lat"], L["lon"], min(radius, PARTS_RADIUS_M), cache_dir, refresh, tall=tall,
+                                        problems=parts_problems)
+                for msg in parts_problems:
+                    say(f"  building parts of far landmarks unavailable: {msg}")
             except RuntimeError as e:
                 say(f"  building parts unavailable: {e}")
         comps, info = build_components(site, parts, overrides)
+        info["tall_searched"] = len(tall)
+        if components and parts_problems:
+            info["tall_failed"] = len(parts_problems)
         if comps:
             site["components"] = comps
         site["components_info"] = info
@@ -341,6 +351,9 @@ def _make_site(L, crit, cache_dir, floor, bearing, t, radius, streets, future, r
         if match.get("point_offset_m", 0) > 10:
             notes.append(f"address point is {match['point_offset_m']:.0f} m outside the building; "
                          f"building matched by {match['by'].upper() if match['by'] in ('bin', 'bbl') else match['by']}")
+        elif match["by"] in ("name", "address"):
+            notes.append(f"building matched by {match['by']} (OpenStreetMap or footprint {'name' if match['by'] == 'name' else 'house number and street'}), "
+                         "not by the address point")
     site["provenance"]["notes"] = "; ".join(filter(None, notes)) or None
     return site, face, T
 

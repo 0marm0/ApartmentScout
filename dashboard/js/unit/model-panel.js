@@ -10,13 +10,14 @@
 import { esc, toast, safeUrl } from '../util.js';
 import { download } from '../app.js';
 import { placePlan } from '../plan/city.js';
+import { osmRef } from '../sun.js';
 import { buildAnchor, getPin, savePin, clearPin } from './anchor.js';
 import { anchorListHTML, pill } from './anchor-view.js';
 import { calSummary, describeCal, exportCalibration, parseCalibration, normaliseMeasured } from './calibration.js';
 import { validateParts, podiumTower, getAssumedParts, isAssumed, assumedBuildings } from './parts.js';
 import { buildModelProject, parseModelProject, sha256Hex, bytesToBase64, MAX_PROJECT_BYTES } from './model-project.js';
 
-const KIND = { podium: 'Podium', tower: 'Tower', setback: 'Setback', bulkhead: 'Bulkhead' };
+const KIND = { podium: 'Podium', tower: 'Tower', setback: 'Setback', bulkhead: 'Bulkhead', spire: 'Spire' };
 const when = (iso) => { try { return new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }); } catch { return ''; } };
 const round1 = (v) => Math.round(v * 10) / 10;
 
@@ -108,7 +109,7 @@ export function createModelPanel(host, api) {
   function partsSection(c) {
     const { site } = c, cands = partsCandidates(c), bi = cands.some((x) => x.bi === partsSel) ? partsSel : site.target, b = c.B0[bi], parts = b.parts, roof = b.top - b.g;
     const rec = getAssumedParts(c.id, { nBuildings: site.b.length, base: c.base }), ovHere = rec?.parts?.[String(bi)], pr = rec?.preset?.[bi];
-    const srcLink = (q) => { const s = q.source || 'source not recorded', u = safeUrl(q.ref); return u && /^https?:/i.test(u) ? `<a href="${esc(u)}" target="_blank" rel="noopener" title="${esc(s)}">${esc(/^osm /i.test(s) ? 'OpenStreetMap' : s.slice(0, 30))}</a>` : `<span title="${esc(s)}">${esc(/^osm /i.test(s) ? 'OpenStreetMap' : /^assumed/i.test(s) ? 'Assumed by you' : /^manual/i.test(s) ? 'Your file' : s.slice(0, 30))}</span>`; };
+    const srcLink = (q) => { const s = q.source || 'source not recorded', u = safeUrl(q.ref || osmRef(q.source)); return u && /^https?:/i.test(u) ? `<a href="${esc(u)}" target="_blank" rel="noopener" title="${esc(s)}">${esc(/^osm /i.test(s) ? 'OpenStreetMap' : s.slice(0, 30))}</a>` : `<span title="${esc(s)}">${esc(/^osm /i.test(s) ? 'OpenStreetMap' : /^assumed/i.test(s) ? 'Assumed by you' : /^manual/i.test(s) ? 'Your file' : s.slice(0, 30))}</span>`; };
     const d = { podium_m: pr?.podium_m ?? Math.max(4, Math.min(roof - 4, Math.round(roof * 0.2))), setback_m: pr?.setback_m ?? 10, side_m: pr?.side_m ?? 0 };
     const assumedHere = isAssumed(parts);
     const list = parts ? `<table class="mini mp-parts"><thead><tr><th>Part</th><th class="num">Height</th><th>Source</th><th>Confidence</th></tr></thead><tbody>${[...parts].sort((x, y) => y.top - x.top).slice(0, 8).map((q) => `<tr><td>${esc(KIND[q.kind] || 'Part')}</td><td class="num">${Math.round(q.base_m)}–${Math.round(q.top_m)} m</td><td>${srcLink(q)}</td><td>${pill(q.confidence === 'assumed' ? 'assumed' : q.confidence === 'low' ? 'warn' : 'source', q.confidence || 'n/a')}</td></tr>`).join('')}</tbody></table>`
