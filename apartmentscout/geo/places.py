@@ -140,6 +140,39 @@ def simplify(pts: list[Point], tol_m: float, fr: LocalFrame) -> list[Point]:
     return [p for p, k in zip(pts, keep) if k]
 
 
+def self_intersects(ring: list[Point], fr: LocalFrame) -> bool:
+    """True when two non-adjacent edges of a closed ring cross (a bow-tie). Rings longer than 3,000 points are not checked."""
+    import numpy as np
+    n = len(ring) - 1
+    if n < 4 or n > 3000:
+        return False
+    xy = np.array([fr.to_xy(*p) for p in ring])
+    a, b = xy[:-1], xy[1:]
+
+    def orient(p, q, r):
+        return (q[..., 0] - p[..., 0]) * (r[..., 1] - p[..., 1]) - (q[..., 1] - p[..., 1]) * (r[..., 0] - p[..., 0])
+
+    A, B, C, D = a[:, None, :], b[:, None, :], a[None, :, :], b[None, :, :]
+    cross = (orient(A, B, C) * orient(A, B, D) < 0) & (orient(C, D, A) * orient(C, D, B) < 0)
+    i, j = np.indices(cross.shape)
+    cross &= (j > i + 1) & ~((i == 0) & (j == n - 1))   # edges that share a vertex do not count
+    return bool(cross.any())
+
+
+def simplify_ring(ring: list[Point], tol_m: float, fr: LocalFrame) -> list[Point]:
+    """Douglas-Peucker for a polygon ring that never makes it cross itself: a narrow channel can fold over on itself when
+    its two sides are simplified separately, and a self-crossing polygon draws wrongly in the browser. The tolerance is
+    halved until the result is a simple ring (down to 0.4 m, then the ring as it came)."""
+    pts = _dedupe(ring)
+    t = tol_m
+    while t >= 0.4:
+        out = simplify(pts, t, fr)
+        if len(out) >= 4 and not self_intersects(out, fr):
+            return out
+        t /= 2
+    return pts
+
+
 def length_m(pts: list[Point], fr: LocalFrame) -> float:
     xy = [fr.to_xy(*p) for p in pts]
     return sum(math.hypot(b[0] - a[0], b[1] - a[1]) for a, b in zip(xy, xy[1:]))
@@ -380,7 +413,7 @@ def build_parks(els: list[dict], bbox: tuple[float, float, float, float], cfg: d
         if sum(ring_area_m2(p[0], fr) for p in polys) < (opt["park_notable_m2"] if k in notable else opt["park_min_m2"]):
             continue
         out.append({"id": "park-" + k.replace(" ", "-"), "name": names[k], "kind": "park", "keys": [k],
-                    "polys": [[encode_line(simplify(_dedupe(r), opt["area_tol_m"], fr)) for r in p] for p in polys]})
+                    "polys": [[encode_line(simplify_ring(r, opt["area_tol_m"], fr)) for r in p] for p in polys]})
     return sorted(out, key=lambda a: a["id"])
 
 
@@ -438,7 +471,7 @@ def build_hoods(rows: list[dict], bbox: tuple[float, float, float, float], spec:
             if not (w <= cx <= e and s <= cy <= n):
                 continue
             out.append({"id": pid, "name": pname, "kind": "hood", "keys": [],
-                        "polys": [[encode_line(simplify(_dedupe(r_), opt["area_tol_m"], fr)) for r_ in p] for p in pp]})
+                        "polys": [[encode_line(simplify_ring(r_, opt["area_tol_m"], fr)) for r_ in p] for p in pp]})
     return out
 
 

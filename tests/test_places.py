@@ -61,6 +61,22 @@ def test_simplify_keeps_corners_and_drops_wobble():
     assert out[0] == line[0] and out[-1] == line[-1] and len(out) == 3
 
 
+STRIP = [[0.0, -3.1], [25.0, 6.9], [50.0, 5.7], [75.0, -1.4], [100.0, 1.9], [125.0, 1.3], [150.0, 4.1], [175.0, 6.0], [200.0, -3.7], [225.0, -4.6],
+         [250.0, 6.7], [275.0, 1.1], [300.0, 5.7], [325.0, -5.0], [325.0, -9.0], [300.0, 1.7], [275.0, -2.9], [250.0, 2.7], [225.0, -8.6],
+         [200.0, -7.7], [175.0, 2.0], [150.0, 0.1], [125.0, -2.7], [100.0, -2.1], [75.0, -5.4], [50.0, 1.7], [25.0, 2.9], [0.0, -7.1], [0.0, -3.1]]
+
+
+def test_a_simplified_ring_never_crosses_itself():
+    ring = [FR.to_lonlat(x, y) for x, y in STRIP]   # a 4 m wide wobbly strip, itself a simple ring
+    assert not P.self_intersects(ring, FR)
+    assert P.self_intersects(P.simplify(P._dedupe(ring), 6.0, FR), FR), "plain Douglas-Peucker folds the strip over itself"
+    out = P.simplify_ring(ring, 6.0, FR)
+    assert not P.self_intersects(out, FR) and out[0] == out[-1] and 4 <= len(out) <= len(P._dedupe(ring))
+    bow = [ll(0, 0), ll(100, 100), ll(100, 0), ll(0, 100), ll(0, 0)]
+    assert P.self_intersects(bow, FR)
+    assert not P.self_intersects([ll(0, 0), ll(100, 0), ll(100, 100), ll(0, 100), ll(0, 0)], FR)
+
+
 def test_chain_lines_joins_ways_in_any_direction():
     a, b, c = [ll(0, 0), ll(100, 0)], [ll(200, 0), ll(100, 0)], [ll(200, 0), ll(300, 0)]
     chains = P.chain_lines([a, b, c])
@@ -235,6 +251,10 @@ def test_the_shipped_example_file_matches_the_format():
     pts = P.decode_line(third["lines"][0])
     assert 40.70 < pts[0][1] < 40.90 and -74.05 < pts[0][0] < -73.9
     assert abs(third["axis"] - 29) < 3
+    for a in doc["areas"]:
+        for poly in a["polys"]:
+            for ring in poly:
+                assert not P.self_intersects(P.decode_line(ring), FR), f"{a['name']} has a ring that crosses itself"
     assert (ROOT / "dashboard" / "data" / "places.json").read_text() == (ROOT / "examples" / "nyc-2026" / "places.json").read_text(), "dashboard/data carries the same file"
 
 
