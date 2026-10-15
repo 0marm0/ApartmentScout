@@ -14,6 +14,7 @@ import sys
 from pathlib import Path
 
 from .. import share as sh
+from .. import tours
 from ..listings import load
 from ..quality.workspace import search_from
 
@@ -25,11 +26,19 @@ def cmd_share(args: argparse.Namespace) -> None:
     listings = load(ws.listings_path) if ws.listings_path.exists() else []
     crit = ws.criteria()
     weights = None
+    findings = tours.load_all(ws.root)   # the visits saved in the search folder (tours/<id>/findings.json)
+    trail: list[dict] = []
     if args.picks:
         try:
-            picks, weights = sh.read_picks(json.loads(Path(args.picks).read_text(encoding="utf-8")))
+            raw = json.loads(Path(args.picks).read_text(encoding="utf-8"))
+            picks, weights = sh.read_picks(raw)
         except (OSError, ValueError) as e:
             sys.exit(f"Cannot read {args.picks}: {e}")
+        if isinstance(raw, dict):   # the backup carries the visits and the decision trail too; the newer version of a visit wins
+            for lid, f in (raw.get("findings") if isinstance(raw.get("findings"), dict) else {}).items():
+                if isinstance(lid, str) and tours.TOUR_ID.match(lid):
+                    findings[lid] = tours.newest(findings.get(lid), tours.normalize({**(f if isinstance(f, dict) else {}), "photos": findings.get(lid, {}).get("photos", [])}))
+            trail = tours.clean_trail(raw.get("history"))
     else:
         picks = {L["id"]: {"saved": True} for L in listings if (L.get("status") or "new") in FALLBACK_STATUSES}
         print(f"No --picks file: using the {len(picks)} listings whose status is {', '.join(FALLBACK_STATUSES)}.")
@@ -43,7 +52,8 @@ def cmd_share(args: argparse.Namespace) -> None:
         print("The memo omits your notes unless you add --notes.")
     html = sh.render(listings, crit, picks, weights=weights, include_notes=args.notes, view="memo" if args.memo else "cards",
                      title=args.title, root=ws.root, with_photos=not args.no_photos, photo_budget_kb=args.photo_budget,
-                     transit_features=sh.transit_lines(ws.root), generated=args.as_of)
+                     transit_features=sh.transit_lines(ws.root), generated=args.as_of, findings=findings, trail=trail,
+                     tour_photos=args.tour_photos)
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(html, encoding="utf-8")
@@ -62,5 +72,7 @@ def register(add) -> None:
     s.add_argument("--no-photos", action="store_true", help="leave photos out")
     s.add_argument("--photo-budget", type=float, metavar="KB", help="most embedded thumbnail data, in KB (default 700); "
                    "photos past it are linked instead")
+    s.add_argument("--tour-photos", action="store_true", help="include the photos you took on your visits (from the search folder's "
+                   "tours/; left out by default)")
     s.add_argument("--title", help="page heading (default: the number of homes)")
     s.add_argument("--as-of", metavar="DATE", help="snapshot date to print (default today)")

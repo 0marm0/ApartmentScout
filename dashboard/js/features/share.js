@@ -14,7 +14,8 @@ const FILE_ICON = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" st
 const CHEV = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 6.5l4 4 4-4"/></svg>';
 
 let busy = false, tpl = null;
-const opts = () => ({ notes: !!store.get('share-notes', false), photos: ['embed', 'link', 'none'].includes(store.get('share-photos', 'embed')) ? store.get('share-photos', 'embed') : 'embed' });
+const opts = () => ({ notes: !!store.get('share-notes', false), tourPhotos: !!store.get('share-tourphotos', false),   // [feature K] visit photos: opt-in
+   photos: ['embed', 'link', 'none'].includes(store.get('share-photos', 'embed')) ? store.get('share-photos', 'embed') : 'embed' });
 const savedIds = () => Object.entries(S.picks).filter(([id, p]) => (p.saved || p.tier) && p.tier !== 'Pass' && byId(id)).map(([id]) => id);
 
 // ------------------------------------------------------------------ building
@@ -75,14 +76,17 @@ async function resolvePhotos(homes, schema, mode, progress) {
 }
 
 /** The finished HTML for the saved picks. `view` is the layout it opens on. */
-async function build({ view, notes, photos, progress }) {
+async function build({ view, notes, photos, tourPhotos = false, progress }) {
   const ids = savedIds();
   if (!ids.length) throw new Error('none');
   const [text] = await Promise.all([template()]);
   const schema = parseSchema(text), homes = ids.map(byId);
   const ph = await resolvePhotos(homes, schema, photos, progress);
+  // [feature K] the renter's visit findings and decision trail (visit photos only when ticked)
+  let extras = {};
+  try { extras = await (await import('./tour-findings.js')).shareExtras(ids, { notes, photos: tourPhotos, cfg: schema.tour_photos }); } catch (e) { console.warn('visit findings left out of the page', e); }
   const payload = buildPayload({ listings: S.listings, crit: S.crit, picks: S.picks, weights: S.weights, includeNotes: notes, view, transit: S.transit?.features || [], schema,
-    photos: ph.photos, commuteMode: S.commuteMode, destName: dest()?.name || null });
+    photos: ph.photos, commuteMode: S.commuteMode, destName: dest()?.name || null, extras });
   payload.photo_bytes = ph.bytes;
   const html = inlinePayload(text, payload);
   return { html, n: payload.homes.length, photoStats: ph, kb: Math.round(html.length / 1024) };
@@ -105,7 +109,7 @@ async function run(act) {
   try {
     const progress = (a, b) => setBusy(true, o.photos === 'none' ? 'Preparing…' : `Photos ${a}/${b}`);
     const memo = act === 'memo' || act === 'memo-file';
-    const r = await build({ view: memo ? 'memo' : 'cards', notes: o.notes, photos: o.photos, progress });
+    const r = await build({ view: memo ? 'memo' : 'cards', notes: o.notes, photos: o.photos, tourPhotos: o.tourPhotos, progress });
     const blob = new Blob([r.html], { type: 'text/html' });
     const sizeNote = `${r.n} home${r.n === 1 ? '' : 's'}, ${r.kb >= 1024 ? (r.kb / 1024).toFixed(1) + ' MB' : r.kb + ' KB'}`;
     if (act === 'memo') {
@@ -131,8 +135,9 @@ function popHTML(id) {
     <button type="button" class="sp-i" data-act="memo">${MEMO_ICON}<span><b>Decision memo</b><small>Print-ready: choose Save as PDF</small></span></button>
     <button type="button" class="sp-i" data-act="memo-file">${FILE_ICON}<span><b>Download memo as HTML</b><small>Same pages, as a file</small></span></button>
     <div class="sp-opts"><label class="sp-o"><input type="checkbox" data-opt="notes" ${o.notes ? 'checked' : ''}><span>Include my notes</span></label>
+      <label class="sp-o"><input type="checkbox" data-opt="tourphotos" ${o.tourPhotos ? 'checked' : ''}><span>Include my visit photos</span></label>
       <label class="sp-o"><span>Photos</span><select class="sel" data-opt="photos" aria-label="Photos in the shared page"><option value="embed" ${o.photos === 'embed' ? 'selected' : ''}>Embedded thumbnails</option><option value="link" ${o.photos === 'link' ? 'selected' : ''}>Links only</option><option value="none" ${o.photos === 'none' ? 'selected' : ''}>None</option></select></label>
-      <p class="sp-n">Notes stay out unless ticked. Tour times, filters and everything else stay in this browser.</p></div>`;
+      <p class="sp-n">Notes stay out unless ticked. Your visit findings and decision trail go in; visit photos only when ticked. Tour times, filters and everything else stay in this browser.</p></div>`;
 }
 let uid = 0;
 /** A split button: the left half shares in one click, the right half opens the options. */
@@ -153,7 +158,7 @@ function mountSplit(host, { cls = '' } = {}) {
   pop.addEventListener('click', (e) => { const b = e.target.closest('[data-act]'); if (b) { set(false); run(b.dataset.act); } });
   pop.addEventListener('change', (e) => {
     const t = e.target.closest('[data-opt]'); if (!t) return;
-    store.set(t.dataset.opt === 'notes' ? 'share-notes' : 'share-photos', t.dataset.opt === 'notes' ? t.checked : t.value);
+    store.set({ notes: 'share-notes', tourphotos: 'share-tourphotos' }[t.dataset.opt] || 'share-photos', t.dataset.opt === 'notes' || t.dataset.opt === 'tourphotos' ? t.checked : t.value);
   });
   pop.addEventListener('keydown', (e) => {
     const it = [...pop.querySelectorAll('button:not([disabled]), input, select')], i = it.indexOf(document.activeElement);

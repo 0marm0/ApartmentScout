@@ -179,7 +179,7 @@ export function photoCandidates(L) {
 /** The payload for a set of picks. `picks` is { id: { tier, note, saved } }; `photos` maps a listing id to
  *  [{ src, credit }] (the adapter resolves thumbnails). `destName` is the commute destination to show. */
 export function buildPayload({ listings, crit, picks, weights = null, includeNotes = false, view = 'cards', title = null, transit = [], generated = null, photos = {},
-  schema, commuteMode = 'best', destName = null, source = SOURCE }) {
+  schema, commuteMode = 'best', destName = null, source = SOURCE, extras = {} }) {   // extras: { id: { tour, trail } } from tour-findings.js
   const dims = dimList(crit), w = { ...(crit.weights || {}), ...(weights || {}) };
   const byId = new Map(listings.map((L) => [L.id, L]));
   const ids = Object.entries(picks).filter(([id, p]) => (p.saved || p.tier) && p.tier !== 'Pass' && byId.has(id)).map(([id]) => id);
@@ -190,6 +190,9 @@ export function buildPayload({ listings, crit, picks, weights = null, includeNot
     const h = pruneHome(L, schema, d0?.name || null, picks[L.id], includeNotes);
     h.reasons = reasonsFor(L, w, dims);
     if (photos[L.id]?.length) h.photos = photos[L.id];
+    const x = extras[L.id];   // the renter's visit and decision trail, cut to the schema's fields
+    if (x?.tour) h.tour = pickKeys(x.tour, schema.tour);
+    if (x?.trail?.length) h.trail = x.trail.map((t) => pickKeys(t, schema.trail));
     return h;
   });
   const dest = d0 && d0.lat != null ? { name: d0.name, lat: d0.lat, lon: d0.lon, arrive_by: d0.arrive_by ?? null } : null;
