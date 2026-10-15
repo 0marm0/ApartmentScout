@@ -19,7 +19,7 @@ pytestmark = pytest.mark.skipif(not (os.environ.get("ESBUILD") or shutil.which("
 
 
 @pytest.fixture(scope="module")
-def built(tmp_path_factory: pytest.TempPathFactory) -> dict:
+def built(tmp_path_factory: pytest.TempPathFactory, esbuild_ready) -> dict:
     spec = importlib.util.spec_from_file_location("optimize_site", ROOT / "scripts" / "optimize_site.py")
     mod = importlib.util.module_from_spec(spec)
     sys.modules["optimize_site"] = mod

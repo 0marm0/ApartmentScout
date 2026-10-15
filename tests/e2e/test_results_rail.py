@@ -796,7 +796,7 @@ def test_edited_criteria_reach_the_worker_before_the_next_drag(open_page) -> Non
     assert not s.take()
 
 
-def test_the_standalone_file_runs_the_worker_from_file_url(browser, tmp_path: Path, monkeypatch) -> None:
+def test_the_standalone_file_runs_the_worker_from_file_url(browser, tmp_path: Path, monkeypatch, esbuild_ready) -> None:
     """The standalone build opens from file://, where a module worker cannot load: the blob worker must (or scoring falls back)."""
     import apartmentscout.cli as cli
 
