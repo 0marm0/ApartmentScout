@@ -13,6 +13,7 @@ from typing import Callable
 from ..sun import (DAYLIGHT_DEFAULTS, DAYLIGHT_FORMULA, FIELD_DEG, Skyline, _Tracks, expected_sun, face_by_bearing,
                    future_sun_hours, main_blockers, max_floor, month_tracks, pick_face, sample_states, sun_hours_range,
                    sun_study, sunshine, target_faces, window_point, window_t)
+from .anchor import EYE_M, vertical_calibration, window_anchor
 from .buildings import build_site, fetch_nyc, fetch_osm, fill_heights, nyc_pluto
 from .checks import site_checks
 from .fetch import collect_receipts, summarise_receipts
@@ -139,7 +140,7 @@ def make_site(L: dict, crit: dict, cache_dir: Path | None = None, floor: int | N
               future: bool = True, refresh: bool = False, landmarks: list | None = None, year: int | None = None,
               panes: list[float] | None = None, slab_height: float | None = None,
               floor_height: float | None = None, components: bool = True, overrides: Path | None = None,
-              green: bool = True, face_index: int | None = None,
+              green: bool = True, face_index: int | None = None, eye_height: float | None = None,
               say: Callable[..., None] = lambda *a: None) -> tuple[dict, dict | None, dict]:
     """Build the site JSON. Returns (site, chosen face or None, timings in seconds).
 
@@ -150,7 +151,7 @@ def make_site(L: dict, crit: dict, cache_dir: Path | None = None, floor: int | N
     with collect_receipts() as rc:
         site, face, T = _make_site(L, crit, cache_dir, floor, bearing, t, radius, streets, future, refresh,
                                    landmarks, year, panes, slab_height, floor_height, say, components, overrides, green,
-                                   face_index)
+                                   face_index, eye_height)
     site["receipts"] = summarise_receipts(rc)
     for r in site["receipts"]:
         if r.get("limit_hit"):
@@ -161,7 +162,8 @@ def make_site(L: dict, crit: dict, cache_dir: Path | None = None, floor: int | N
 
 
 def _make_site(L, crit, cache_dir, floor, bearing, t, radius, streets, future, refresh, landmarks, year, panes,
-               slab_height, floor_height, say, components=True, overrides=None, green=True, face_index=None):
+               slab_height, floor_height, say, components=True, overrides=None, green=True, face_index=None,
+               eye_height=None):
     city = crit["search"].get("city")
     tz = crit["search"].get("timezone") or "America/New_York"
     year = year or dt.date.today().year
@@ -242,6 +244,10 @@ def _make_site(L, crit, cache_dir, floor, bearing, t, radius, streets, future, r
 
     floor_arg = floor
     want_floor = floor or int(L.get("floor") or 5)
+    # a measured window-eye height is a measured slab (eye - 1.6 m); the record keeps which one was given
+    measured_kind = "eye" if eye_height is not None and slab_height is None else "slab" if slab_height is not None else None
+    if eye_height is not None and slab_height is None:
+        slab_height = float(eye_height) - EYE_M
     fh, fh_src = calibrate_floor_height(site, want_floor, slab_height, floor_height)
     site["floor_height_m"] = round(fh, 2)
     site["floor_height_src"] = fh_src
@@ -275,6 +281,12 @@ def _make_site(L, crit, cache_dir, floor, bearing, t, radius, streets, future, r
         site["window"] = {"face": face["i"], "bearing": face["bearing"], "floor": floor, "t": tt}
         if panes:
             site["window"]["panes"] = panes
+        # the vertical datum (measured or estimated) and the shared anchor the dashboard's two 3D views agree on
+        cal = vertical_calibration(site, floor, slab_m=slab_height if measured_kind == "slab" and floor > 1 else None,
+                                   eye_m=eye_height if measured_kind == "eye" and floor > 1 else None, spread="scale",
+                                   src="apartmentscout site --" + ("eye-height" if measured_kind == "eye" else "slab-height"))
+        site["calibration"] = cal
+        site["anchor"] = window_anchor(site, face, tt, floor, panes=panes, cal=cal)
         site["study"] = {k: st[k] for k in ("sun_hours", "floors_table", "skyline_ahead_deg", "open_sky_share",
                                             "sky_view", "daylight_factor_est", "daylight_floors")}
         site["study"]["daylight_model"] = {"sky": "CIE standard overcast", "field_deg": FIELD_DEG, **DAYLIGHT_DEFAULTS,

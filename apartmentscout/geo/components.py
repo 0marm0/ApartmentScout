@@ -33,7 +33,7 @@ HEIGHT_TOL_M = 8.0
 HEIGHT_TOL_FRAC = 0.2
 PARTS_RADIUS_M = 400.0
 KINDS = ("podium", "tower", "setback", "bulkhead")
-CONFIDENCE = ("high", "medium", "low")
+CONFIDENCE = ("high", "medium", "low", "assumed")
 OSM_SOURCE = "OpenStreetMap contributors (ODbL), building:part"
 
 
