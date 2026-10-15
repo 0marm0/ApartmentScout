@@ -250,7 +250,7 @@ async function connect() {
   try {
     await E.connect(token, gist);
     draftToken = ''; draftGist = ''; busy = '';
-    toast('Connected. Your data is syncing.', 3200);
+    toast(E.status().phase === 'error' ? 'Connected, but the first sync did not finish. The message above says why.' : 'Connected. Your data is syncing.', 3200);
   } catch (e) {
     busy = ''; render(); setErr(failText(e));
   }
