@@ -188,17 +188,21 @@ def test_both_rooms_are_the_same_bright_room_without_a_bar_across_the_window(ope
     _need_webgl(webgl)
     probe = """async () => {
       const THREE = await import('three'), root = ROOT;
+      // the frame and the paint are the plan's own finishes (read from the photos) when it has them, else the defaults: a charcoal bronze frame, white walls
+      const fin = ((await (await fetch('/data/plans/UNIT_ID.json')).json()).finishes) || {}, hex = (c, d) => (c ? parseInt(c.replace('#', ''), 16) : d);
+      const FRAME = hex(fin.window_frames && fin.window_frames.colour, 0x3b3a38), WALL = hex(fin.walls && fin.walls.colour, 0xf7f4ef);
       const win = [], walls = [], floors = [];
       root.traverse((o) => {
         if (!o.isMesh) return;
         const c = o.material && o.material.color ? o.material.color.getHex() : null;
-        if (c === 0x3b3a38) { o.geometry.computeBoundingBox(); const bb = o.geometry.boundingBox, w = bb.max.x - bb.min.x, h = bb.max.y - bb.min.y; win.push({ w, h, y: o.position.y, rotY: o.rotation.y }); }
+        if (c === FRAME) { o.geometry.computeBoundingBox(); const bb = o.geometry.boundingBox, w = bb.max.x - bb.min.x, h = bb.max.y - bb.min.y; win.push({ w, h, y: o.position.y, rotY: o.rotation.y }); }
         if (o.name === 'wall' && o.material.color && o.visible !== false && o.material.colorWrite !== false) walls.push(o.material.color.getHex());
         if (o.name.startsWith('floor:')) floors.push(o.material.map ? 1 : 0);
       });
       const ceil = []; root.traverse((o) => { if (o.isMesh && o.name.startsWith('ceiling:') && o.material.color) ceil.push(o.material.color.getHex()); });
-      return { frame: win.length, wide: win.filter((m) => m.w > 0.3 && m.h < 0.08 && m.y > 0.6 && m.y < 2.2).length, thin: win.every((m) => Math.min(m.w, m.h, 0.06) <= 0.06), walls: [...new Set(walls)], ceil: [...new Set(ceil)], floors: floors.length };
+      return { WALL, frame: win.length, wide: win.filter((m) => m.w > 0.3 && m.h < 0.08 && m.y > 0.6 && m.y < 2.2).length, thin: win.every((m) => Math.min(m.w, m.h, 0.06) <= 0.06), walls: [...new Set(walls)], ceil: [...new Set(ceil)], floors: floors.length };
     }"""
+    probe = probe.replace("UNIT_ID", UNIT)
     a = open_page("#plan/" + UNIT, theme="dark")
     _studio(a)
     st = a.page.evaluate(probe.replace("ROOT", "(await import('/js/plan/scene3d.js')).parts().shell"))
@@ -208,12 +212,13 @@ def test_both_rooms_are_the_same_bright_room_without_a_bar_across_the_window(ope
     for r in (st, un):
         assert r["frame"] > 8                                                             # a frame exists: sill and head members and posts
         assert r["wide"] == 0, r                                                          # no horizontal bar across the glass between the sill and the head
-        assert r["walls"] == [0xf7f4ef] and r["ceil"] == [0xffffff]                       # bright white walls and ceiling
+        assert r["walls"] == [r["WALL"]] and r["ceil"] == [0xffffff]                      # the plan's paint (white by default) and a white ceiling
     assert st["walls"] == un["walls"] and st["ceil"] == un["ceil"] and st["floors"] == un["floors"]
     # the same room in the light theme is the same paint (the dark-room look is gone from both)
     c = open_page("#unit/" + UNIT, theme="light")
     _unit(c)
-    assert c.page.evaluate(probe.replace("ROOT", "window.__unit3d.stage.interior.group"))["walls"] == [0xf7f4ef]
+    lit = c.page.evaluate(probe.replace("ROOT", "window.__unit3d.stage.interior.group"))
+    assert lit["walls"] == [lit["WALL"]] == un["walls"]
 
 
 def test_the_chips_and_the_seats_behave_the_same_in_both_engines(open_page, webgl: bool) -> None:
@@ -242,10 +247,10 @@ def test_the_chips_and_the_seats_behave_the_same_in_both_engines(open_page, webg
 def test_accuracy_chip_in_both_engines_links_to_the_evidence(open_page, webgl: bool) -> None:
     _need_webgl(webgl)
     rows = "() => [...document.querySelectorAll('.acc-list li')].map((li) => li.querySelector('b').textContent + '|' + li.querySelector('.acc-pill').textContent)"
-    expect = ["Building heights|from a source", "Facade bearing|measured", "Position along the facade|assumed", "Floor height|estimated", "Floor plan|from a source", "Furniture|confirmed"]
+    expect = ["Building heights|from a source", "Facade bearing|measured", "Position along the facade|assumed", "Floor height|estimated", "Floor plan|from a source", "Finishes|from a source", "Furniture|confirmed"]
     a = open_page("#plan/" + UNIT)
     _studio(a)
-    a.page.wait_for_function("() => document.querySelectorAll('.acc-chip:not([hidden]) .acc-dots i').length === 6")
+    a.page.wait_for_function("() => document.querySelectorAll('.acc-chip:not([hidden]) .acc-dots i').length === 7")
     a.page.wait_for_function("() => document.querySelector('.acc-list li[data-row=furniture] .acc-pill')?.textContent === 'confirmed'")
     assert a.page.evaluate(rows) == expect
     assert a.page.locator(".acc-chip").inner_text().startswith("What's measured vs assumed")
@@ -256,7 +261,7 @@ def test_accuracy_chip_in_both_engines_links_to_the_evidence(open_page, webgl: b
     b = open_page("#unit/" + UNIT)
     _unit(b)
     b.page.wait_for_function("() => document.querySelector('.acc-list li[data-row=furniture] .acc-pill')?.textContent === 'confirmed'")
-    assert b.page.evaluate(rows) == expect                                               # the same six rows in the same states
+    assert b.page.evaluate(rows) == expect                                               # the same seven rows in the same states
     b.page.click(".acc-btn")
     b.page.click(".acc-open")
     assert b.page.evaluate("() => { const r = document.getElementById('evPanel').getBoundingClientRect(); return r.top < innerHeight; }")   # it scrolled to the evidence panel

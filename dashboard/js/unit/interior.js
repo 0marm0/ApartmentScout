@@ -10,7 +10,8 @@ import { roomShell } from '../room3d/shell.js';   // [room3d] the shared room: f
 
 export { planFrame };
 import { roomColors } from '../room3d/palette.js';   // [room3d] the room's paint and floor, one definition for both engines
-import { windowGlowLights } from '../room3d/lighting.js';   // [room3d] the sky glow each window lets in
+import { windowGlowLights } from '../room3d/lighting.js';
+import { roomLamps } from '../room3d/roomlamps.js';   // [daycycle] the assumed evening light of a room with no lamp placed   // [room3d] the sky glow each window lets in
 
 const M = 0.0254;
 
@@ -76,6 +77,8 @@ export function buildInterior(model, opts = {}) {
   const glow = new THREE.Group(); glow.name = 'window glow';
   for (const Lt of windowGlowLights(model, (p) => model.rooms.some((r) => pointInPoly(p, r.poly)), [fr.xc, fr.yw])) glow.add(Lt);
   g.add(glow);
+  // [daycycle] a warm ceiling light in each main room for the evening when the renter has placed no lamp (room3d/roomlamps.js; Fast keeps three)
+  const lamps = roomLamps(model, (p) => toLocal(fr, p), { limit: opts.lampLimit ?? 4 }); g.add(lamps.group);
   g.traverse((o) => { o.userData.interior = true; });
-  return { group: g, frame: fr, windows, height: H, generic: !!opts.generic, glow, blockers: shell.blockers };
+  return { group: g, frame: fr, windows, height: H, generic: !!opts.generic, glow, lamps, blockers: shell.blockers };
 }
