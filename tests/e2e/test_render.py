@@ -36,12 +36,14 @@ def _unit(s, query: str = "?mode=inside") -> None:
     s.page.wait_for_function(
         "(id) => window.__unit3d && window.__unit3d.st.id === id && window.__unit3d.stage && window.__unit3d.stage.interior && document.getElementById('uLoad').hidden && !!window.__render",
         arg=UNIT, timeout=SLOW)
+    s.page.evaluate("() => window.__quality.setDevice({ maxTexture: 1024 })")   # shadow maps of 1024 px: software GL (CI) blurs a 4096 px map for every frame of a photo
     settled(s.page, 20000, ticks=5)
 
 
 def _studio(s) -> None:
     s.page.goto(f"{s.origin}/#plan/{UNIT}")
     s.page.wait_for_function("() => window.__plan3d && window.__plan3d.items.length > 0 && !!document.querySelector('.rnq') && !!window.__render && !!window.__render.plan", timeout=SLOW)
+    s.page.evaluate("() => window.__quality.setDevice({ maxTexture: 1024 })")
     settled(s.page, 20000, ticks=4)
 
 
@@ -58,7 +60,7 @@ def test_a_photo_in_unit_3d_is_the_size_asked_for_and_a_real_picture(open_page, 
     pg = s.page
     _unit(s)
     before = pg.evaluate("() => { const st = window.__unit3d.stage, r = st.renderer; return { mode: window.__quality.mode, pr: r.getPixelRatio(), w: r.domElement.width, h: r.domElement.height, busy: !!st.busy, cam: st.inEye.local.toArray(), fov: st.look.fov }; }")
-    res = pg.evaluate("""async () => { const r = await window.__render.unit.photo({ width: 640, height: 320, seconds: 3, minSamples: 4, maxSamples: 12 });
+    res = pg.evaluate("""async () => { const r = await window.__render.unit.photo({ width: 640, height: 320, seconds: 3, minSamples: 4, maxSamples: 6 });
       return { w: r.width, h: r.height, samples: r.samples, aborted: r.aborted, ms: r.ms, stats: (%s)(r.canvas) }; }""" % STATS_JS)
     assert res["samples"] >= 4 and not res["aborted"], res
     _assert_a_picture(res["stats"], 640, 320)
@@ -77,7 +79,7 @@ def test_a_second_photo_differs_when_the_light_does(open_page, webgl: bool) -> N
     _unit(s)
     js = """async (min) => { const r = document.querySelector('.rnq-dock-range'); r.value = String(min); r.dispatchEvent(new Event('input', { bubbles: true }));
       await new Promise((res) => setTimeout(res, 600));
-      const p = await window.__render.unit.photo({ width: 480, height: 240, seconds: 2, minSamples: 4, maxSamples: 8 }); return (%s)(p.canvas); }""" % STATS_JS
+      const p = await window.__render.unit.photo({ width: 480, height: 240, seconds: 2, minSamples: 4, maxSamples: 6 }); return (%s)(p.canvas); }""" % STATS_JS
     day, night = pg.evaluate(js, 780), pg.evaluate(js, 1200)
     assert night["warm"] > day["warm"] + 0.08, (day, night)      # lamplight against daylight
     assert not s.take()
@@ -136,7 +138,7 @@ def test_photo_and_video_in_the_floor_plan_studio(open_page, webgl: bool) -> Non
     _studio(s)
     pg.click('#psCams [data-v="sofa"]')
     pg.wait_for_function("() => window.__plan3d.eye === 'eye'")
-    photo = pg.evaluate("""async () => { const r = await window.__render.plan.photo({ width: 480, height: 300, seconds: 3, minSamples: 4, maxSamples: 10 }); return { w: r.width, h: r.height, stats: (%s)(r.canvas) }; }""" % STATS_JS)
+    photo = pg.evaluate("""async () => { const r = await window.__render.plan.photo({ width: 480, height: 300, seconds: 3, minSamples: 4, maxSamples: 6 }); return { w: r.width, h: r.height, stats: (%s)(r.canvas) }; }""" % STATS_JS)
     _assert_a_picture(photo["stats"], 480, 300)
     min0 = pg.evaluate("() => document.getElementById('pTime').value")
     vid = pg.evaluate("""async () => { const r = await window.__render.plan.video({ shot: 'tour', time: 'golden', seconds: 3, minSeconds: 3, fps: 10, res: 180, look: 'standard' });

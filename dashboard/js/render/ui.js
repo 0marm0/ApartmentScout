@@ -104,7 +104,7 @@ const seg = (name, items, cur, label) => `<div class="rnd-seg" role="group" aria
 
 function closeSheet() {
   if (!sheet) return;
-  sheet.abort?.abort(); sheet.urls.forEach((u) => URL.revokeObjectURL(u)); sheet.el.remove(); document.removeEventListener('keydown', sheet.onKey, true);
+  sheet.abort?.abort(); sheet.urls.forEach((u) => URL.revokeObjectURL(u)); sheet.el.remove(); document.removeEventListener('keydown', sheet.onKey, true); removeEventListener('hashchange', closeSheet);
   const back = sheet.opener; sheet = null; try { back?.focus({ preventScroll: true }); } catch { /* gone */ }
 }
 
@@ -119,8 +119,17 @@ export function openSheet(id, kind, opener = null) {
   el.innerHTML = `<section class="rnd-sheet" role="dialog" aria-modal="true" aria-labelledby="rndT"><header class="rnd-h"><h2 id="rndT">${kind === 'photo' ? 'Render a photo' : 'Make a video'}</h2><button type="button" class="rnd-x" data-act="close" aria-label="Close">&times;</button></header><div class="rnd-body" aria-live="polite"></div></section>`;
   document.body.appendChild(el);
   const body = el.querySelector('.rnd-body');
-  sheet = { el, opener, urls: [], abort: null, kind, id, onKey: (e) => { if (e.key === 'Escape') { e.stopPropagation(); if (sheet?.working) sheet.abort?.abort(); else closeSheet(); } } };
+  sheet = { el, opener, urls: [], abort: null, kind, id, onKey: (e) => {
+    if (e.key === 'Escape') { e.stopPropagation(); if (sheet?.working) sheet.abort?.abort(); else closeSheet(); return; }
+    if (e.key === 'Tab' && sheet) {   // the sheet is modal: Tab goes round inside it
+      const f = [...sheet.el.querySelectorAll('button:not(:disabled), input:not(:disabled), a[href]')].filter((x) => x.offsetParent);
+      if (!f.length) return;
+      const first = f[0], last = f[f.length - 1], at = document.activeElement;
+      if (!sheet.el.contains(at)) { e.preventDefault(); first.focus(); } else if (e.shiftKey && at === first) { e.preventDefault(); last.focus(); } else if (!e.shiftKey && at === last) { e.preventDefault(); first.focus(); }
+    }
+  } };
   document.addEventListener('keydown', sheet.onKey, true);
+  addEventListener('hashchange', closeSheet);   // another home or another view: the scene under a render would change
   const S = sheet;
   const set = (html) => { body.innerHTML = html; const f = body.querySelector('[data-primary]') || body.querySelector('button'); f?.focus({ preventScroll: true }); };
   const url = (blob) => { const u = URL.createObjectURL(blob); S.urls.push(u); return u; };
