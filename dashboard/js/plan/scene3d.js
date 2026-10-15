@@ -19,7 +19,8 @@ import * as F3 from './furniture3d.js';   // [interior] low-poly furniture model
 import * as R3F from '../room3d/furniture.js';   // [room3d] the shared, refined furniture models (tried first)
 import { roomQuality, onRoomQuality, furnitureQuality, quality } from '../room3d/quality.js';
 import { ROOM_HEX } from '../room3d/palette.js';   // [room3d] one paint and floor for both engines
-import { roomLightState, moodFor, applyRoomLight, windowGlowLights } from '../room3d/lighting.js';   // [room3d] one light for both engines
+import { roomLamps } from '../room3d/roomlamps.js';   // [daycycle] a warm ceiling light for the evening when no lamp is placed
+import { roomLightState, applyRoomLight, windowGlowLights } from '../room3d/lighting.js';   // [room3d] one light for both engines
 
 export const M = 0.0254;
 const DEG = Math.PI / 180;
@@ -27,12 +28,12 @@ const W = (x, y, h = 0) => new THREE.Vector3(x * M, h * M, -y * M);
 const CUT = { full: null, cut: 36, outline: 1.5 };
 
 let renderer, scene, cam, controls, canvas, stage, sunL, hemi, amb;
-let shell, proxies, furn, overlay, labels, glow;
+let shell, proxies, furn, overlay, labels, glow, lampsG, assumedLamps = null;
 let model = null, colors = null, wallMode = 'cut', dirty = true;
 const groups = new Map();
 const rig = { mode: 'orbit', view: 'bird', pos: new THREE.Vector3(), yaw: 0, pitch: 0, prevWall: null, fov: 70 };
 // lighting mood: 'auto' follows the sun (day when it is up, night when it is down)
-const mood = { want: 'auto', sunUp: true, now: 'day' };
+const mood = { want: 'auto', sunUp: true, now: 'day', altDeg: 45 };
 let glide = null, tourS = null;
 
 export const markDirty = () => { dirty = true; };
@@ -135,8 +136,8 @@ export function init(canvasEl, stageEl, onChange) {
   sunL = new THREE.DirectionalLight(0xfff1d6, 6); sunL.castShadow = true; sunL.shadow.mapSize.set(2048, 2048);
   sunL.shadow.bias = -0.0004; sunL.shadow.normalBias = 0.025; sunL.shadow.radius = 3;
   scene.add(sunL); scene.add(sunL.target);
-  for (const n of ['shell', 'proxies', 'furn', 'overlay', 'labels', 'glow']) { const g = new THREE.Group(); g.name = n; scene.add(g); }
-  [shell, proxies, furn, overlay, labels, glow] = ['shell', 'proxies', 'furn', 'overlay', 'labels', 'glow'].map((n) => scene.getObjectByName(n));
+  for (const n of ['shell', 'proxies', 'furn', 'overlay', 'labels', 'glow', 'assumed room lights']) { const g = new THREE.Group(); g.name = n; scene.add(g); }
+  [shell, proxies, furn, overlay, labels, glow, lampsG] = ['shell', 'proxies', 'furn', 'overlay', 'labels', 'glow', 'assumed room lights'].map((n) => scene.getObjectByName(n));
   for (const o of SKY.objects()) { o.visible = false; scene.add(o); }   // [interior] sky dome and sun glow, shown in eye-level views
   new ResizeObserver(resize).observe(stage);
 }
@@ -194,13 +195,24 @@ export function setCity(group) {
   dirty = true;
 }
 /** [city3d] the city outside follows the sun (the water's light) and the mood (lit windows after dusk, as Unit 3D's). */
-function syncCity(now) {
+function syncCity(now, st) {
   const api = city?.userData.api; if (!api || !sunL) return;
   const v = sunL.position.clone().sub(sunL.target.position).normalize();
   api.setSun(v, Math.asin(Math.max(-1, Math.min(1, v.y))) / DEG);
-  api.setNight(now === 'night' ? 1 : now === 'evening' ? 0.5 : 0);
+  // [daycycle] on Auto the lit windows come with the dusk continuously (as Unit 3D's); a picked mood is that mood, and Night is deep night (the late hour)
+  api.setNight(mood.want === 'auto' && st ? Math.max(Math.max(0, Math.min(1, (3 - mood.altDeg) / 9)) * 0.75, st.lamps >= 1 ? 1 : st.lamps * 0.667) : now === 'night' ? 1 : now === 'evening' ? 0.5 : 0);
+  api.setLate?.(now === 'night' && mood.want !== 'auto' ? 0.85 : mood.want === 'auto' ? lateWant : now === 'evening' ? 0.2 : 0);
   api.setQuality(quality.city);   // [quality] the mode and the step-down's level, as the shared city takes them
+  if (seasonWant && api.setSeason(seasonWant)) dirty = true;   // [season] leaves, autumn colour or bare branches (a picture)
 }
+let seasonWant = null, lateWant = 0;
+/** [daycycle] how late the evening is (0 early .. 1 deep night): fewer offices lit, fewer homes lit. Set from the clock by the studio. */
+export function setLate(v) { lateWant = Math.max(0, Math.min(1, +v || 0)); const api = city?.userData.api; api?.setLate?.(mood.want === 'auto' ? lateWant : mood.now === 'night' ? 0.85 : mood.now === 'evening' ? 0.2 : 0); }
+/** [season] The tree season ({leaf, autumn}, city3d/season.js) for the city outside; a picture only. Applied now and to any city built later. */
+export function setSeason(s) { seasonWant = s ? { leaf: s.leaf, autumn: s.autumn } : null; const api = city?.userData.api; if (api && seasonWant && api.setSeason(seasonWant)) dirty = true; }
+let lampsHooks = () => false;
+/** [daycycle] the Light tab says whether it has luminaires placed (then the assumed ceiling lights stay off): fn() -> boolean */
+export function setRealLampsProbe(fn) { lampsHooks = typeof fn === 'function' ? fn : () => false; }
 export const hasCity = () => !!city;
 /** [city3d] the city outside's handle (setSun, setNight, setQuality, anchorsOf) or null. */
 export const cityApi = () => city?.userData.api || null;
@@ -379,6 +391,7 @@ function frameLights() {
 function buildGlow() {
   clear(glow);
   for (const L of windowGlowLights(model, (p) => model.rooms.some((r) => pointInPoly(p, r.poly)))) glow.add(L);   // [room3d]
+  clear(lampsG); assumedLamps = roomLamps(model, (p) => [p[0] * M, -p[1] * M], { limit: 4 }); lampsG.add(assumedLamps.group);   // [daycycle]
   applyMood();
 }
 /** dir: unit vector toward the sun in plan terms {x, y, up}; on: direct sun reaches the unit. */
@@ -387,7 +400,7 @@ export function setSun(dir, on, up) {
   const v = new THREE.Vector3(dir.x, dir.up, -dir.y).normalize();
   sunL.position.copy(sunL.target.position).addScaledVector(v, 60);
   sunL.userData.on = on; sunL.userData.up = Math.max(0, dir.up);
-  mood.sunUp = !!up; mood.alt = Math.max(0, dir.up);
+  mood.sunUp = !!up; mood.alt = Math.max(0, dir.up); mood.altDeg = (Math.asin(Math.max(-1, Math.min(1, dir.up))) * 180) / Math.PI;   // (altDeg keeps its sign: the continuous light follows it)
   applyMood();
 }
 /** 'auto' | 'day' | 'evening' | 'night'. Evening and night switch the lamps on. */
@@ -397,22 +410,25 @@ function applyMood() {
   if (!sunL || !colors) return;
   const now = mood.want === 'auto' ? (mood.sunUp ? (mood.alt < 0.12 ? 'evening' : 'day') : 'night') : mood.want;
   mood.now = now;
-  syncCity(now);
-  const day = now === 'day', eve = now === 'evening', night = now === 'night';
-  // [room3d] the room's light is one definition for both engines (room3d/lighting.js)
-  const st = roomLightState({ mood: now, sunOn: !!sunL.userData.on && mood.sunUp, sinAlt: sunL.userData.up || 0, quality: roomQuality(), envLight: quality.has('environment'), tone: quality.settings.tone, scale: { ambient: lighting.ambient, sun: lighting.sun, sky: lighting.sky } });
+  const day = now === 'day', eve = now === 'evening';
+  // [room3d] the room's light is one definition for both engines (room3d/lighting.js); [daycycle] on Auto it follows the sun's altitude continuously
+  const st = roomLightState({ mood: mood.want === 'auto' ? 'auto' : now, alt: mood.altDeg, sunOn: !!sunL.userData.on && mood.sunUp, sinAlt: sunL.userData.up || 0, quality: roomQuality(), envLight: quality.has('environment'), tone: quality.settings.tone, scale: { ambient: lighting.ambient, sun: lighting.sun, sky: lighting.sky } });
+  syncCity(now, st);
   applyRoomLight({ sunL, hemi, amb, glow, renderer }, st, (i) => !!shadeState[i]);
   glow.visible = quality.has('windowGlow');   // [quality] the window glow lights are real lights: the step-down's level 4 takes them out of every shader
-  const lampOn = !day;
+  const lampOn = st.lamps > 0; let realLamps = false;
   for (const [, g] of groups) {
     const l = g.userData.lamp; if (!l) continue;
-    l.light.intensity = lampOn ? l.cd * (night ? 1 : 0.75) : 0; l.light.visible = lampOn;
-    if (l.shade) { l.shade.material.emissiveIntensity = lampOn ? (night ? 1.4 : 1) : 0; }
+    l.light.intensity = lampOn ? l.cd * st.lamps : 0; l.light.visible = lampOn;
+    if (l.shade) { l.shade.material.emissiveIntensity = lampOn ? (st.lamps >= 1 ? 1.4 : 1) : 0; }
+    if (g.visible) realLamps = true;
   }
+  // [daycycle] a placed luminaire (the Light tab) is a real lamp too: it puts the assumed ceiling lights out
+  assumedLamps?.set(st.lamps, { real: realLamps || lampsHooks(), lensRoot: shell });
   // from inside, the windows look out at a sky (and the haze fades the far city into it); from above, the backdrop stays the dashboard's
   if (scene) {
     if (rig.mode === 'eye') {
-      const sd = sunL.position.clone().sub(sunL.target.position), haze = SKY.setMood(now, sd, mood.sunUp);
+      const sd = sunL.position.clone().sub(sunL.target.position), haze = SKY.setMood(mood.want === 'auto' ? 'auto' : now, sd, mood.sunUp);
       SKY.show(true); scene.background = haze.color; scene.fog = new THREE.Fog(haze.color, haze.near, haze.far);
     } else {
       SKY.show(false); scene.fog = null;
