@@ -279,6 +279,9 @@ function exportCSV() {
 }
 
 async function getJSON(p, fallback) {
+  // [model project] files from an imported model project answer first, so its scene restores without a network
+  const ov = window.__AS_OVERLAY__;
+  if (ov && p in ov) return ov[p];
   // standalone builds embed every data file so the page also works when opened as a file
   const emb = window.__AS_DATA__;
   if (emb) return p in emb ? emb[p] : fallback;

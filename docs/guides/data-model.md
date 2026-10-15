@@ -440,10 +440,12 @@ files (without the newer keys) still load.
 |---|---|
 | `b` | Buildings: `[top, ground, is_target, flat outer ring]`. Rings are simplified (vertices within 0.3 m of a straight line are dropped), so a straight wall is one edge. |
 | `holes` | Inner rings (light courts, courtyards) by building index. Their edges are walls; a point inside a hole is open air. |
-| `components` | Optional stacked prisms by building index that replace that building's single prism in every obstruction calculation (skyline, blockers, sun hours, floors table, range, sky view) and in the 3D views. Each: `ring` (local metres), `base_m` and `top_m` (metres above the building's own ground), `kind` (`podium`, `tower`, `setback`, `bulkhead`), `source` (`osm way <id>` / `osm relation <id>` for OpenStreetMap `building:part` outlines, `manual: ...` from `sites/<id>.components.yaml`), `confidence` (`high`, `medium`, `low`: OSM heights from levels are low), optional `ref` (link), `cover` (share of the footprint the OSM parts cover) and `holes`. The skyline counts each component from the ground up (one obstruction angle per direction); `base_m` is for drawing and the record. |
-| `components_info` | What the component step did: OSM `parts` read, `buildings` split, footprints left whole because their parts cover less than 90 % (`partial`) or disagree with the roof height by more than max(8 m, 20 %) (`height_mismatch`), the query `radius_m`, `manual` buildings from the components file and any `problems` reading it. |
+| `components` | Optional stacked prisms by building index that replace that building's single prism in every obstruction calculation (skyline, blockers, sun hours, floors table, range, sky view) and in the 3D views. Each: `ring` (local metres), `base_m` and `top_m` (metres above the building's own ground), `kind` (`podium`, `tower`, `setback`, `bulkhead`), `source` (`osm way <id>` / `osm relation <id>` for OpenStreetMap `building:part` outlines, `manual: ...` from `sites/<id>.components.yaml`), `confidence` (`high`, `medium`, `low`: OSM heights from levels are low; `assumed`: set by the renter in Unit 3D or in a components file, never source data), optional `ref` (link), `cover` (share of the footprint the OSM parts cover) and `holes`. The skyline counts each component from the ground up (one obstruction angle per direction); `base_m` is for drawing and the record. |
+| `components_info` | What the component step did: OSM `parts` read, `buildings` split, footprints left whole because their parts cover less than 90 % (`partial`) or disagree with the roof height by more than max(8 m, 20 %) (`height_mismatch`), the query `radius_m`, `manual` buildings from the components file and any `problems` reading it, `assumed` (buildings the dashboard replaced with assumed parts in an exported project or scenario). |
 | `bmeta` | Per building, aligned with `b`; unknown keys are omitted. `height_src`: `roof` (NYC photogrammetry), `pluto-floors` (PLUTO floors x 3.2 m + 2 m), `osm-height`, `osm-levels` (levels x 3.2 m + 2 m) or `default` (10 m, nothing known). `src`: `nyc-footprints` or `osm`. `name`: the footprint's own name (e.g. "Empire State Building"; preferred over the PLUTO address for landmark labels) or the OSM name. `floors`: PLUTO number of floors (OSM: `building:levels`). NYC only: `geom_src` (`photogrammetric` or `manual`: a hand-drawn outline), `edited` (year the record was last edited; most heights date from 2017) and `fcode` (feature code: `2100` building, `5100` building under construction, `1003` construction placeholder, `1006` cantilevered, `1000`-`1005` minor structures). |
 | `floor_height_m`, `floor_height_src` | Storey height used for eye heights and floor numbers. `pluto`: target roof height / PLUTO floors, clamped to 2.8-4.2 m (`floor_height_raw` holds the unclamped ratio when clamping happened; a `storey` check warns); `osm-levels` likewise from OSM; `manual`: `--floor-height`, or `--slab-height` (the listing floor's slab above street level, kept in `slab_m`) divided by floor - 1; `default`: 3.2 m. Version 1 files have no source and use 3.2 m. |
+| `calibration` | The vertical datum of the window, written by `apartmentscout site`. `state` is `measured` (the renter gave `--slab-height` or `--eye-height`) or `estimated`. `slab_m` is the datum used for `floor`, `eye_m` = `slab_m` + 1.6 m; `estimated_slab_m` is always what the floor count alone says (`ground_m` + (floor - 1) x `estimated_floor_height_m`), so the measurement never overwrites the estimate, and `delta_m` is the difference. `measured` is `{kind: "slab" \| "eye", value_m, floor, spread: "scale" \| "offset", src}` or null; `spread` says how a height measured at one floor reaches the others (`scale`: every storey is taller or shorter, floor 1 stays at the street; `offset`: one constant shift, for example a tall lobby). Older files may carry `lobby_m` (an assumed ground-storey shift) or only `slab_m`; the dashboard reads both. |
+| `anchor` | The shared model anchor for the chosen window (see below): origin, rotation, slab datum, host facade, open-air check and what is assumed. |
 | `faces` | Target facades (edges of 8 m or more) with outward `bearing`. `shared: true` marks a party wall: points 0.5 to 1.5 m outside it fall inside another footprint (`shared_h` is that neighbour's roof). A partly shared face carries `open: [t0, t1]`, its longest unobstructed stretch. Shared faces are never picked for the window. |
 | `window` | Chosen facade (`face` = edge index), floor and position `t` along the edge (default: middle of the open stretch). `panes` (bay and multi-pane windows): bearing offsets of each pane from the facade normal, e.g. `[-45, 0, 45]`; absent = one flat pane. From the listing's `window_panes` or `bay: true`, or `--bay` / `--panes`. When two facades share a bearing (a wall with a step in it) the listing's `window_face` (an edge index from `faces`; `--face N`) and `window_t` pick the stretch and the position. |
 | `green` | Parks, lawns, playgrounds, woods and mapped street trees from OpenStreetMap (Overpass, cached and receipted like the footprints), in the same local metres as `b`: `polys` (`kind` `park` / `play` / `grass` / `wood`, `name`, `osm` id, `ring`, `holes`, `hard: 1` for plazas, courts and playgrounds that carry no trees), flat `trees` `[x, y, ...]` (mapped `natural=tree` nodes and `tree_row` lines at 8 m), `counts`, `source`, `fetched`, `radius_m` and a `note`. Drawn in Unit 3D and the Floor plan's "City outside" as ground patches and low-poly canopies (8-15 m; mapped trees are few, so park and lawn areas also get canopies on a jittered grid, so the picture shows where green lies, not how many trees). Context only: never an obstruction in the sun hours. `--no-green` skips it; `apartmentscout site <id> --green-only` adds or refreshes it on an existing site file without rebuilding anything else. |
@@ -481,6 +483,58 @@ buildings:
       - {kind: tower, ring: [[-10, -60], [10, -60], [10, -40], [-10, -40]], base_m: 24, top_m: 140,
          source: "DOB zoning diagram, job 123"}
 ```
+
+A components file may also be JSON (`sites/<id>.components.json`, the same structure; used when no YAML file exists). `--eye-height` takes the measured height of the window's eye level above the street
+(slab + 1.6 m) instead of `--slab-height`; both end up in `calibration.measured`.
+
+### Model anchor, pin, assumed parts and the model project
+
+One placement ties the floor plan, the window and the city together. `apartmentscout/geo/anchor.py` (Python) and
+`dashboard/js/unit/anchor.js` (dashboard) write the same record, pinned by `tests/fixtures/model_anchor.json`:
+
+```json
+{"schema": 1, "kind": "apartmentscout-model-anchor",
+ "origin": {"lat": 40.7479, "lon": -73.9748},
+ "host": {"index": 743, "name": "Paramount Tower", "model": "components", "parts": 5, "height_m": 160.3, "ground_m": 0},
+ "facade": {"index": 1, "bearing_deg": 118.7, "length_m": 22.9, "shared": false, "clear": [0.1, 0.9], "a": [x, y], "b": [x, y]},
+ "window": {"t": 0.55, "point_m": [22.35, -16.55], "faces_deg": 118.7, "panes": [-45, 0, 45], "floor": 25},
+ "north": {"facade_normal_deg": 118.7, "rotation_deg": 118.7, "plan_up_bearing_deg": 118.7, "mismatch_deg": 0.0},
+ "datum": {"state": "estimated", "ground_m": 0, "slab_m": 70.84, "eye_m": 72.44, "estimated_slab_m": 70.84, "delta_m": 0,
+           "floor_height_m": 3.08, "estimated_floor_height_m": 3.08, "measured": null},
+ "air": {"ok": true, "reason": null, "building": null, "out_m": [0.4, 1.0]},
+ "sources": {"exposure": "photo-landmarks", "position": "assumed", "floor": "inferred", "datum": "estimated", "plan_north": "stated"},
+ "assumed": ["position", "floor", "datum"],
+ "plan": {"id": "...", "source": "file | local scenario", "windows": [{"room": "Bedroom", "plan_in": [x, y], "world_m": [x, y],
+          "faces_deg": 208.7, "sill_m": 71.35, "head_m": 73.23, "length_m": 1.22, "air": {"ok": true}}], "open_air": true, "withheld": []}}
+```
+
+`air` is a height-aware test that the point 0.4 m and 1.0 m outside the glass (at the sill, middle and head) is not inside the
+host or a neighbour, components included; when it fails the window's sun and sky numbers are withheld (`plan` is only in the
+dashboard's record, which owns the plan geometry). The record is shown in Unit 3D (Model panel) and the Floor plan studio (Light tab),
+and exported with a model project.
+
+Browser-local state, all validated on the way in and never written to the search folder:
+
+| Key (localStorage) | Meaning |
+|---|---|
+| `as:plan-scenario:<plan id>` | The plan scenario from the Floor plan studio ([floor plans](floor-plans.md#same-plan-in-unit-3d)). |
+| `as:unit-scenario-use:<id>` | `0` when the renter switched the scenario off in Unit 3D (the source plan file is shown instead). |
+| `as:model-anchor:<id>` | The pin: `{schema: 1, kind: "apartmentscout-anchor-pin", site, base, saved, face, t, az, floor, bay, cal}` (facade edge index, position along it, facing, floor, bay flag and the measured height or null). The studio places the plan exactly there. |
+| `as:parts-assumed:<id>` | Assumed building parts: `{schema: 1, kind: "apartmentscout-assumed-parts", site, base, saved, parts: {"<building index>": [component]}, preset}`. Components follow the site-file schema with `confidence: "assumed"` and `source: "assumed: ..."`; at most 40 parts per building, 5 km coordinates, heights to 900 m. |
+| `as:compare-specs:<id>` | The scenarios last used on the comparison board (2 to 4 specs). |
+
+The scenario comparison board exports a receipt (`apartmentscout-compare-receipt`, schema 1): `shared` (everything identical
+in every panel), `base`, `scenarios` (each with its `changes`, `state` and `metrics`), `deltas` (every metric per scenario and
+the change from scenario 1), `datum`, the `camera` and the `method`. A scenario's `metrics` is `{withheld: true, reason}` when its
+window is not in open air.
+
+The model project (`apartmentscout-model-project`, schema 1) is one JSON file: `site` (`id`, `base`, `generated`, `source`, `sha256`
+and `data`, the whole site model with its receipts and checks), `receipts`, `anchor`, `pin`, `calibration`
+(`apartmentscout-vertical-calibration`), `assumed_parts`, `plan` (`id`, `source`, `label`, `saved` and `project`, a plan
+project from the floor plan studio with furniture and lighting), `scenarios`, `comparison`, `edits` (what-if neighbour heights),
+`view`, an optional `glb` (`name`, `encoding: "base64"`, `bytes`, `sha256`, `data`) and `app` version metadata. Import is
+strict (size, finite numbers, known shapes, no prototype keys) and refuses a bad file with a reason; damaged optional sections
+are dropped with a warning.
 
 `apartmentscout site <id> --samples` writes `research/<id>-sun-samples.csv`: every 6 minutes of the move-in
 day (listing `available`, else `search.move_in.earliest`) and of Mar 20, Jun 21 and Dec 21, with sun azimuth
