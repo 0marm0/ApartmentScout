@@ -13,8 +13,9 @@ pytestmark = pytest.mark.e2e
 
 AXE = Path(__file__).parent / "vendor" / "axe.min.js"
 LB = ".lbx"
-# a listing whose photos, building photos and floor plan are all saved under the example's media/ folder
-PLAN_LISTING = "416-west-52nd-street-507"
+# a listing whose photos, building photos and floor plan are all in the starter set (media-lite): one of the top-ranked homes,
+# which get a full gallery (a lower-ranked home has only its hero and one building photo there; the rest is published elsewhere)
+PLAN_LISTING = "orion-condominium-23a"
 
 
 def _open_card_lightbox(s, n: int = 0) -> None:
