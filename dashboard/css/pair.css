@@ -1,0 +1,48 @@
+/* Two apartments side by side in live 3D (js/unit/pair3d.js). Tokens only; the stage chrome (.canvas-stage, .hud, .u-labels, .u-pick) is Unit 3D's. */
+.pr-head .actions { flex-wrap: wrap; align-items: center; }
+.pr-ctl { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; padding: 10px 14px; margin-bottom: var(--s-3); }
+.pr-time { flex: 1 1 320px; display: flex; align-items: center; gap: 12px; min-width: 0; }
+.pr-time b { flex: none; min-width: 74px; font: 600 var(--fs-lg) var(--font-mono, ui-monospace, monospace); font-variant-numeric: tabular-nums; }
+.pr-time input[type=range] { flex: 1 1 0; min-width: 0; }
+.pr-date { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.pr-which { display: none; }
+.pr-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-3); align-items: start; }
+.pr-side { min-width: 0; display: flex; flex-direction: column; gap: var(--s-3); }
+.pr-stage { position: relative; height: clamp(300px, 52vh, 560px); border-radius: var(--r-lg); overflow: hidden; border: 1px solid var(--line-strong); }
+.pr-stage canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; }
+.pr-stage canvas:active { cursor: grabbing; }
+.pr-load { position: absolute; inset: 0; display: grid; place-items: center; background: color-mix(in srgb, var(--surface-1) 78%, transparent); color: var(--ink-2); font-size: var(--fs-sm); z-index: 5; }
+.pr-load[hidden] { display: none; }
+.pr-hud { left: 10px; bottom: 10px; right: auto; max-width: calc(100% - 20px); }
+.pr-read { padding: 12px 14px; }
+.pr-read h3 { margin: 0 0 8px; font-size: var(--fs-md); }
+.pr-read h3 span { margin-left: 8px; font-size: var(--fs-xs); font-weight: 500; color: var(--ink-3); }
+.pr-sun { display: flex; align-items: baseline; gap: 10px; }
+.pr-hours { font: 650 var(--fs-xl, 22px) var(--font-mono, ui-monospace, monospace); font-variant-numeric: tabular-nums; }
+.pr-sun span { display: flex; flex-direction: column; font-size: var(--fs-xs); color: var(--ink-2); }
+.pr-sun small { color: var(--ink-3); font-size: var(--fs-2xs); }
+.pr-strip { position: relative; height: 16px; margin: 10px 0 6px; border-radius: 5px; background: var(--surface-3); }
+.pr-strip { overflow: visible; }
+.pr-strip > i { position: absolute; top: 0; bottom: 0; }
+.pr-strip .s0 { background: color-mix(in srgb, var(--ink-4) 22%, var(--surface-2)); }
+.pr-strip .s1 { background: repeating-linear-gradient(-45deg, var(--surface-3) 0 3px, color-mix(in srgb, var(--ink-4) 30%, var(--surface-2)) 3px 6px); }
+.pr-strip .s2 { background: color-mix(in srgb, var(--band-30) 38%, var(--surface-3)); }
+.pr-strip .s3, .pr-strip .s4 { background: var(--sun); }
+.pr-strip > i:first-child { border-radius: 5px 0 0 5px; }
+.pr-strip > i:nth-last-child(2) { border-radius: 0 5px 5px 0; }
+.pr-cur { position: absolute; top: -4px; bottom: -4px; width: 2px; margin-left: -1px; background: var(--ink); border-radius: 1px; pointer-events: none; }
+.pr-cur i { position: absolute; top: -3px; left: -4px; width: 10px; height: 10px; border-radius: 50%; background: var(--ink); box-shadow: 0 0 0 3px var(--accent-soft); }
+.pr-now { font-size: var(--fs-xs); font-weight: 600; }
+.pr-now.lit { color: var(--sun-ink, var(--ink)); }
+.pr-now small { color: var(--ink-3); font-weight: 500; }
+.pr-note { margin: var(--s-3) 0 0; }
+@media (max-width: 760px) {
+  .pr-grid { grid-template-columns: minmax(0, 1fr); }
+  .pr-which { display: inline-flex; }
+  .pr-grid[data-shown="a"] #prSide-b, .pr-grid[data-shown="b"] #prSide-a { display: none; }
+  .pr-stage { height: clamp(260px, 46vh, 420px); }
+  .pr-time { flex-basis: 100%; }
+  .pr-ctl { gap: 8px 12px; padding: 8px 10px; }
+  .pr-date .seg { display: none; }
+  .pr-head .actions { gap: 6px; }
+}
