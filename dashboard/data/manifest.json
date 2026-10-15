@@ -70,6 +70,7 @@
   "the-oskar-10f",
   "townsend-14c"
  ],
+ "furniture": true,
  "lqip": true,
  "extra": [
   "coverage.json",

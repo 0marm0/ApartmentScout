@@ -718,6 +718,41 @@ export class UnitStage {
     this.dirty = true;
   }
 
+  /**
+   * [interior] Stand at an Inside viewpoint (unit/inside-views.js): its place, direction and lens. With `animate` the camera
+   * glides there (about 0.75 s, none when the renter prefers reduced motion); between rooms the walls and ceiling step aside
+   * while it moves, so the camera never cuts through a wall.
+   */
+  setInteriorView(v, o = {}) {
+    const I = this.interior; if (!I || !v) return;
+    const to = { local: new THREE.Vector3(v.local[0], v.h, v.local[1]), off: v.off, yaw: 0, fov: v.fov, pitch: 6 + v.pitch };
+    const from = this.inEye ? { local: this.inEye.local.clone(), off: this.inEye.off, yaw: this.look.yaw, fov: this.look.fov, pitch: this.look.pitch } : null;
+    const still = o.animate === false || !from || (typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches);
+    this.endInTween(false);
+    if (still) { this.inEye = { local: to.local, off: to.off }; Object.assign(this.look, { yaw: to.yaw, fov: to.fov, pitch: to.pitch }); this.dirty = true; o.onEnd?.(); return; }
+    this.inTween = { t0: performance.now(), ms: o.ms ?? 750, from, to, onEnd: o.onEnd, open: !!o.open };
+    if (o.open) I.group.traverse((m) => { if (m.name === 'wall' || m.name === 'ceiling') { m.userData.wasVisible = m.visible; m.visible = false; } });
+    this.dirty = true;
+  }
+  /** Finish or cancel a glide (restores the walls). `land`: jump to the end pose. */
+  endInTween(land = true) {
+    const tw = this.inTween; if (!tw) return;
+    this.inTween = null;
+    this.interior?.group.traverse((m) => { if ('wasVisible' in m.userData) { m.visible = m.userData.wasVisible; delete m.userData.wasVisible; } });
+    if (land) { this.inEye = { local: tw.to.local.clone(), off: tw.to.off }; Object.assign(this.look, { yaw: tw.to.yaw, fov: tw.to.fov, pitch: tw.to.pitch }); }
+    this.dirty = true; tw.onEnd?.();
+  }
+  stepInTween() {
+    const tw = this.inTween; if (!tw) return;
+    const k = Math.min(1, (performance.now() - tw.t0) / Math.max(1, tw.ms)), e = k < 0.5 ? 4 * k * k * k : 1 - ((-2 * k + 2) ** 3) / 2;
+    if (!this.inEye) this.inEye = { local: tw.from.local.clone(), off: tw.from.off };
+    this.inEye.local.lerpVectors(tw.from.local, tw.to.local, e);
+    this.inEye.off = tw.from.off + (((((tw.to.off - tw.from.off) % 360) + 540) % 360) - 180) * e;
+    this.look.fov = tw.from.fov + (tw.to.fov - tw.from.fov) * e; this.look.yaw = tw.from.yaw * (1 - e); this.look.pitch = tw.from.pitch + (tw.to.pitch - tw.from.pitch) * e;
+    this.dirty = true;
+    if (k >= 1) this.endInTween(true);
+  }
+
   select(bi) {
     this.selBi = bi;
     if (this.selEdges) { this.scene.remove(this.selEdges); this.selEdges.geometry.dispose(); this.selEdges = null; }
@@ -805,6 +840,7 @@ export class UnitStage {
       tw.cam.position.lerpVectors(tw.p0, tw.p1, e); tw.ctl.target.lerpVectors(tw.t0, tw.t1, e); tw.ctl.update();
       if (k >= 1) this.tween = null; this.dirty = true;
     }
+    if (this.inTween) this.stepInTween();   // [interior] the Inside camera gliding to another room
     if (this.mode === 'orbit' || this.mode === 'top') { if (this.controls.update()) this.dirty = true; }
     if (this.mode === 'plan') { if (this.planControls.update()) this.dirty = true; }
     if (!this.dirty && !force) return false;

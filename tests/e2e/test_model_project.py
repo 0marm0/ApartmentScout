@@ -78,7 +78,7 @@ def test_local_plan_scenario_shows_in_unit_3d_at_the_studios_window_and_never_fo
     _send_plan_to_unit_3d(s)
     _unit(s, query="?mode=inside")
     info = pg.evaluate("() => ({src: window.__unit3d.planInfo.source, furn: window.__unit3d.planInfo.furniture, group: !!window.__unit3d.stage.interior.furniture, mode: window.__unit3d.st.mode})")
-    assert info == {"src": "local scenario", "furn": 9, "group": True, "mode": "in"}
+    assert info == {"src": "local scenario", "furn": 10, "group": True, "mode": "in"}
     # the same windows, in the same place, with the same dimensions in both viewers (the studio's placement maths vs the 3D transform)
     for w in pg.evaluate(GLASS_JS, UNIT):
         assert w["studio"] == pytest.approx(w["unit"], abs=0.011), w
@@ -89,13 +89,14 @@ def test_local_plan_scenario_shows_in_unit_3d_at_the_studios_window_and_never_fo
     assert "Your local scenario" in pg.locator("#modelPanel .mp-radios").inner_text()
     assert "Local scenario" in pg.locator("#modelPanel .mp-row").first.inner_text()
     pg.check("input[name=mpPlan][value=file]")
-    pg.wait_for_function("() => window.__unit3d.planInfo.source === 'file' && !window.__unit3d.stage.interior.furniture")
+    # the source plan shows its own default layout (the renter's furniture), a scenario shows what was sent from the studio
+    pg.wait_for_function("() => window.__unit3d.planInfo.source === 'file' && window.__unit3d.planInfo.layoutName === 'Your furniture' && window.__unit3d.stage.interior.furniture.count === 10")
     pg.check("input[name=mpPlan][value=scenario]")
     pg.wait_for_function("() => window.__unit3d.planInfo.source === 'local scenario' && !!window.__unit3d.stage.interior.furniture")
     # a scenario saved for this unit is never applied to a sibling unit
     _unit(s, SIBLING)
     assert pg.evaluate("() => window.__unit3d.planInfo.source") == "file"
-    assert not pg.evaluate("() => !!window.__unit3d.stage.interior?.furniture")
+    assert pg.evaluate("() => window.__unit3d.planInfo.label") == ""                                 # the scenario saved for 25E is not applied here
     assert not s.take()
 
 
@@ -245,7 +246,7 @@ def test_model_project_exports_and_restores_offline_in_a_fresh_browser(open_page
     assert proj["kind"] == "apartmentscout-model-project" and proj["schema"] == 1
     assert len(proj["site"]["data"]["b"]) > 1000 and proj["site"]["sha256"] and len(proj["receipts"]["datasets"]) >= 1
     assert proj["anchor"]["kind"] == "apartmentscout-model-anchor" and proj["anchor"]["datum"]["state"] == "measured"
-    assert proj["plan"]["source"] == "local scenario" and len(proj["plan"]["project"]["layout"]["items"]) == 9
+    assert proj["plan"]["source"] == "local scenario" and len(proj["plan"]["project"]["layout"]["items"]) == 10
     assert proj["calibration"]["measured"]["value_m"] == 80.5 and proj["view"]["mode"] == "in" and proj["app"]["name"] == "ApartmentScout"
     # a site this app has never heard of, restored from the file alone (no network: every outside request is blocked)
     new = "demo-import-25e"
@@ -259,7 +260,7 @@ def test_model_project_exports_and_restores_offline_in_a_fresh_browser(open_page
     b.page.set_input_files("input[data-act=project-import]", str(f))
     b.page.wait_for_selector("[data-act=project-restore]")
     review = b.page.locator("#mpImport").inner_text()
-    assert "1,0" in review.replace("\n", " ") and "9 pieces" in review and "Measured slab height 80.5 m" in review
+    assert "1,0" in review.replace("\n", " ") and "10 pieces" in review and "Measured slab height 80.5 m" in review
     b.page.click("[data-act=project-restore]")
     _unit_ready(b, new)
     got = b.page.evaluate("() => ({floor: window.__unit3d.st.floor, mode: window.__unit3d.st.mode, cal: window.__unit3d.cal.state, slab: window.__unit3d.cal.slabAt(window.__unit3d.st.floor), plan: window.__unit3d.planInfo.source, furn: !!window.__unit3d.stage.interior.furniture, n: window.__unit3d.B.length})")

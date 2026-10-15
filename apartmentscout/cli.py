@@ -581,6 +581,12 @@ def _export(ws: Workspace, out: Path):
             shutil.rmtree(dst)
         if src.exists():
             shutil.copytree(src, dst)
+    # [furniture] "Your furniture": the renter's own pieces with real sizes, used by the Floor plan studio as its default kit
+    fsrc, fdst = ws.root / "furniture.json", out / "furniture.json"
+    if fsrc.exists():
+        shutil.copyfile(fsrc, fdst)
+    elif fdst.exists():
+        fdst.unlink()
     dsrc = ws.research_dir / "dossiers"
     ddst = out / "dossiers"
     if ddst.exists():
@@ -599,6 +605,7 @@ def _export(ws: Workspace, out: Path):
                 "sites": sorted(p.stem for p in (out / "sites").glob("*.json")) if (out / "sites").exists() else [],
                 "plans": sorted(p.stem for p in (out / "plans").glob("*.json")) if (out / "plans").exists() else [],
                 "dossiers": sorted(p.stem for p in ddst.glob("*.json")) if ddst.exists() else [],
+                "furniture": fdst.exists(),
                 "lqip": bool(previews)}
     from .exports import run_all
     manifest["extra"] = run_all(ws, out, log=log)   # history, coverage and other optional data files
