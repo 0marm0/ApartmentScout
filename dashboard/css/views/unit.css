@@ -544,3 +544,5 @@
 @media (max-width: 760px) { #uFull, #uWide { display: none; } }
 .u-hud span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 @media (max-width: 1360px) { .u-links a[href^="#plan"] { display: none; } }   /* the camera buttons carry the Floor plan link */
+
+#view-unit .u-tools { max-height: calc(100% - 24px); overflow-y: auto; scrollbar-width: none; }
