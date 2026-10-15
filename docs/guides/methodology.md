@@ -285,6 +285,38 @@ a cantilever is not modelled, and `base_m` serves the 3D drawing and the record.
 building has components, a `window-component` check warns if no component reaches the facade behind the
 window at its height (the facade steps back there and the window would hang in the air).
 
+**Assumed building parts.** A building you know to be a podium with a tower can be modelled as one in Unit 3D (Model ▸ Building parts) or
+with a JSON override. The parts are stored in this browser, labelled `assumed` (confidence `assumed`, source `assumed: ...`) and layered
+over the site file's own components, which stay untouched. The 3D drawing, the skyline, blockers, sun hours, the floors table, sky view, the
+Floor plan studio's skylines, exports and the comparison board all read the same merged components, so there is one geometry. A
+podium-and-tower pair and a full-footprint tower of the same height give different sun hours (a slimmer tower casts less shade;
+`tests/test_anchor.py` and `tests/js/model-anchor.test.mjs` check it, in Python and JavaScript, against the same fixture). The stored study in
+the site file describes the source geometry, so it is not shown for a scenario with assumed parts.
+
+**Vertical datum.** The height of a window is the slab of its floor plus 1.6 m for the eye. A floor count only estimates the slab
+(floor - 1) x the storey height. A measured slab (a section drawing, an elevator directory, a stated height) or a measured window-eye height
+is kept beside the estimate, never in place of it: `apartmentscout site --slab-height` or `--eye-height`, or Unit 3D's Height fold, write a `calibration` with
+`state: measured`, the measured value, the floor it was taken at and how it reaches the other floors (every storey scaled, or a constant shift
+for a tall lobby). It sets the window point of the skyline and sun maths, the floor numbers (the highest floor follows the datum), the
+Inside camera and the plan placement, so the city's shadows on the interior use the same height. The calibration exports as a small JSON file.
+
+**Open air.** The window's observation point is 0.4 m outside the glass, but a point is only a window if the air there is open at the window's
+height. The check (`window_open_air` in `apartmentscout/geo/anchor.py`, `windowOpenAir` in the dashboard) tests 0.4 m and 1.0 m outside the
+glass at the sill, the middle and the head against every building's solids at that height: a podium roof below the window is open air above it, a
+light court is open air, a building with components is the union of its parts. A window whose outside lies inside its own host (a facade chosen behind
+a setback, a plan pushed through the wall, an outward direction reversed) or inside a neighbour is flagged, and its sun, sky and view numbers are
+withheld instead of being computed from an impossible point. This is height-aware, unlike the older party-wall rule above, which looks at footprints only.
+
+**Scenario comparison.** The comparison board evaluates two to four scenarios of one window: a base state (date, time, floor, facade, position,
+facing, proposed buildings, parts, measured height) and, per scenario, the few fields that differ. Everything else is identical. Each scenario reports the
+direct sun that day, December 15 and June 15 hours, a year of possible sun, sky view, the estimated daylight factor and the skyline straight ahead, with the change from
+the first scenario; rows that come out the same everywhere are hidden on the board and kept in the receipt. The pictures come from one fixed camera. These are the same
+models as above (clear-sky direct sun, relative sky model), so the comparison inherits all their limits.
+
+**Model project.** One JSON file carries the city geometry (the site model with its source receipts and checks), the anchor and pin, the calibration,
+assumed parts, the plan with furniture, saved scenarios and version metadata, optionally with the `.glb`. Importing it restores the scene without a
+network. A project is the model as it was when exported: it does not re-query any source and says nothing about what changed afterwards.
+
 **Which building.** The listing's own BIN, then its tax lot (BBL), pick the building before the
 geocoded point does: address points often land in the street or on the neighbour. Only without a
 match is the footprint containing the point used (if it is tall enough for the listing's floor),
