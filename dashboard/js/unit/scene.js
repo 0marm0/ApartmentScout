@@ -264,6 +264,7 @@ export class UnitStage {
       this.ctx = buildContext({ green: d.green, water: d.water, streets: d.streets }, { B: d.B, center: this.cxy, radius: 640, y0: 0, ground: this.pal.ground, light: this.pal.light, blue: this.pal.blue, visual: this.quality.visual, phone: this.quality.phone, layers: { green: this.opts.green, water: this.opts.water } });
       this.scene.add(this.ctx.group); this.ctx.watch(this.ctx.group); this.greenGrp = this.ctx.parts.green;
       if (this.lastSun) this.ctx.setSun({ dir: this.sunDir, alt: this.lastSun.alt });
+      this.ctx.setInside(this.mode === 'in');
     }
     this.syncGroundBase();
   }
@@ -779,6 +780,7 @@ export class UnitStage {
     }
     sc.updateProjectionMatrix();
     this.winCam.near = inside ? 0.05 : 0.3; this.winCam.updateProjectionMatrix();
+    this.ctx?.setInside(inside);   // [city context] no tree shadows on the floor: the sun patches there follow the numbers, which ignore trees
     this.applyOpts();
     if (this.lastSun) this.setSun(this.lastSun);
   }

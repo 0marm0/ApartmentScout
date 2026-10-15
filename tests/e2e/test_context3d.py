@@ -99,6 +99,13 @@ def test_visual_quality_turns_on_tree_shadows_and_the_water_glint_fast_does_not(
     s.page.wait_for_timeout(800)
     vis = _ctx(s)
     assert vis["glint"] == 1 and all(v for v in vis["shadows"] if v is not None) and any(v for v in vis["shadows"])
+    # inside the apartment the floor's sun patches follow the numbers, which ignore trees: no crown shadows there
+    s.page.click('#uModes [data-mode="in"]')
+    s.page.wait_for_timeout(1500)
+    assert not any(_ctx(s)["shadows"])
+    s.page.click('#uModes [data-mode="orbit"]')
+    s.page.wait_for_timeout(800)
+    assert any(v for v in _ctx(s)["shadows"] if v is not None)
     s.page.click('[data-rnq="fast"]')
     s.page.wait_for_timeout(500)
     back = _ctx(s)
