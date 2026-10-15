@@ -254,6 +254,7 @@ export function init() {
           <div class="cmp-list" id="cmpList" role="listbox" aria-label="Suggestions" hidden></div>
         </div>
         <a class="btn" id="cmpPair" href="#pair" hidden title="Two apartments side by side in live 3D: the same date, time and camera, each with its own sun hours">Compare in 3D</a>
+        <button type="button" class="btn" id="cmpReport" data-make-report="compare" title="Make a report: choose two to four homes">${ICONS.doc || ''}Make a report</button>
         <button type="button" class="btn ghost" id="cmpClear">Clear all</button>
       </div></div>
     <div id="cmpBody"></div>

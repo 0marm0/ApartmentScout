@@ -280,6 +280,11 @@ function onKey(e) {
   if (e.shiftKey && a <= 0) { e.preventDefault(); f[f.length - 1].focus(); } else if (!e.shiftKey && a === f.length - 1) { e.preventDefault(); f[0].focus(); }
 }
 
+/** The questions still open for one unit, as [{ text, kind }] (answered ones left out): what the decision report lists for a home. */
+export function openQuestionsFor(id) {
+  return (entries[id]?.questions || []).filter((q) => !answers[q.id]).map((q) => ({ text: q.text, kind: q.kind }));
+}
+
 // ------------------------------------------------------------------ open and close
 export const isOpen = () => !!root;
 /** Open the draft for the building of listing `id`. */

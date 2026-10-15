@@ -16,7 +16,8 @@ export const VERSION = 1;
 export const KEY = 'moveplan';
 export const LEAD_DAYS = 14;        // the least notice a move can sensibly have: apply, be approved, sign, book movers and the lift
 export const IDEAL_LEAD_DAYS = 35;  // the notice the timeline is drawn for when there is time
-export const NOTICE_DAYS = 30;      // days of notice the renter's current lease asks for, unless they say otherwise
+export const SQUEEZE_DAYS = 5;      // a step later than its ideal day by more than this is "squeezed in"
+export const NOTICE_DAYS = 30;     // days of notice the renter's current lease asks for, unless they say otherwise
 export const MAX_CUSTOM = 30;
 
 const isObj = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
@@ -175,10 +176,9 @@ export function timeline({ start, today, state = {}, bizDays = true }) {
   const put = (id, ideal, lo, hi, biz) => {
     // `ideal`: the day with plenty of time; `lo`: not before (today, or an earlier step); `hi`: not after (a day before the start or so)
     let n = Math.max(ideal, lo);
-    const squeezed = ideal < lo;
     if (hi != null && n > hi) n = Math.max(lo, hi);
     if (biz && bizDays) { const b = bizOnOrBefore(n); n = b >= lo ? b : bizOnOrAfter(n); }
-    placed[id] = { n, ideal, squeezed: squeezed || (hi != null && Math.max(ideal, lo) > hi) };
+    placed[id] = { n, ideal, squeezed: n - ideal > SQUEEZE_DAYS };   // "squeezed in": pushed more than a few days later than it would be with time to spare
     return n;
   };
   // ---- the order of the steps follows what depends on what
