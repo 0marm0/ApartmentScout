@@ -88,7 +88,7 @@ test('from the sofa you see the living-room TV, from the bed the bedroom TV, fro
   }
   assert.equal(by.desk.target, 'desk');
   // the sofa's TV is the one in the living room, not the bedroom's
-  assert.ok(at('tv').x < 60 && at('tv-bed').x > 250);
+  assert.ok(at('tv').x < 60 && at('tv-bed').x > 170 && at('tv-bed').x < 180);   // the living-room TV on the far left wall, the bedroom's on the partition behind the futon
   // a layout with no TV: the sofa keeps its one window view
   const noTv = seatViews(m, R.filter((x) => x.kind !== 'tv'));
   assert.deepEqual(noTv.filter((v) => v.seat === 'sofa').map((v) => [v.key, v.toward]), [['seat:sofa', 'window']]);

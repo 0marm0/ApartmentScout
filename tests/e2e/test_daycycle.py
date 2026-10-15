@@ -6,6 +6,7 @@ from __future__ import annotations
 import re
 
 import pytest
+from conftest import look_open
 
 pytestmark = pytest.mark.e2e
 
@@ -89,6 +90,7 @@ def test_play_day_advances_the_time_the_sun_and_the_readout_and_stops(open_page,
     s = open_page("#map", width=1600, height=1000)
     pg = s.page
     _unit(s, "date=2026-10-15&min=420&mode=inside")
+    look_open(pg, '#uLook')   # the chips are behind the view picker
     pg.locator('#uLook .lk-chip', has_text=re.compile("^Living room$")).first.click()
     pg.wait_for_timeout(500)
     assert re.search(r"Sun on the floor \d+:\d\d (am|pm) to \d+:\d\d (am|pm)", pg.inner_text(".pb-sun"))     # "Sun on the floor 8:00 am to 1:42 pm"
@@ -212,6 +214,7 @@ def test_the_studio_plays_the_day_and_the_year_with_the_same_trees_and_night(ope
     s = open_page("#map", width=1600, height=1000)
     pg = s.page
     _studio(s)
+    look_open(pg, '#psLook')
     pg.locator('#psLook .lk-chip', has_text=re.compile("^Sofa, window$")).first.click()
     pg.wait_for_timeout(1000)
     assert re.search(r"Sun on the floor", pg.inner_text(".pb-sun"))
