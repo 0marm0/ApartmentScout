@@ -21,6 +21,9 @@ EMERALD = "emerald-green-1211"    # has a site model and a plan in the example
 
 
 def _open_menu(pg) -> None:
+    # the lazy feature module adds Share shortlist and Decision memo to the Data section a moment after the first render:
+    # open once they are in, so the menu does not grow under the test
+    pg.wait_for_selector("#mnShare", state="attached", timeout=20000)
     pg.locator("#menuBtn").click()
     pg.wait_for_selector("#appMenu:not([hidden])")
 
@@ -242,8 +245,7 @@ def test_menu_is_a_bottom_sheet_on_a_phone(open_page, theme: str) -> None:
     assert pg.evaluate("""() => [...document.querySelectorAll('#appMenu button')].filter((b) => b.offsetParent && (b.getBoundingClientRect().right > 391 || b.getBoundingClientRect().left < -1)).length""") == 0
     assert pg.evaluate("() => Math.min(...[...document.querySelectorAll('#appMenu button[role=menuitem]')].filter((b) => b.offsetParent).map((b) => b.getBoundingClientRect().height))") >= 40
     pg.locator("#mnTour").scroll_into_view_if_needed()
-    tour = pg.locator("#mnTour").bounding_box()
-    assert tour["y"] + tour["height"] <= 844 + 1
+    pg.wait_for_function("() => document.getElementById('mnTour').getBoundingClientRect().bottom <= 845", timeout=5000)   # the last row scrolls into the sheet
     assert not [x for x in _axe(pg)], "axe: no serious violations with the sheet open"
     pg.mouse.click(195, 30)     # the scrim above the sheet closes it
     pg.wait_for_function("() => document.getElementById('appMenu').hidden")
