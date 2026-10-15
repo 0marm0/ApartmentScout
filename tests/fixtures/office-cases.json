@@ -1,0 +1,659 @@
+{
+ "doc": {
+  "schema": "apartmentscout-office-questions/1",
+  "generated": "2026-10-15",
+  "signoff": "[Your name]",
+  "top": 10,
+  "defs": {
+   "price:ca25e5": {
+    "text": "The StreetEasy building page shows $5,300 a month with 0.75 months free on a 10-month lease (seen September 29), and I was quoted $5,250 a month with 1 month free on a 10-month lease (September 29). Could you confirm the correct rent, free months and lease length in writing, and that the unit is still available?",
+    "scope": "unit",
+    "priority": 10,
+    "fields": [
+     "price.gross",
+     "price.free_months",
+     "price.lease_months",
+     "price.net_effective"
+    ]
+   },
+   "price:450203": {
+    "text": "I was quoted $5,250 a month with 1 month free on a 10-month lease (October 14). Is it still available at that rent, and can you confirm the rent, free months and lease length in writing?",
+    "scope": "unit",
+    "priority": 10,
+    "fields": [
+     "price.gross",
+     "price.free_months",
+     "price.lease_months",
+     "price.net_effective"
+    ]
+   },
+   "fees:6a2c92": {
+    "text": "I have required monthly fees of $135. Is that the complete list and amount, including any amenity, water, utility, internet, pet or storage charge?",
+    "scope": "unit",
+    "priority": 40,
+    "fields": [
+     "price.fees_monthly"
+    ]
+   },
+   "start:bdbec0": {
+    "text": "Can the lease start on October 15? What start dates can you offer between October 15 and November 1?",
+    "scope": "building",
+    "priority": 60,
+    "fields": [
+     "available"
+    ]
+   },
+   "size:8a375d": {
+    "text": "What is the square footage of unit 13C, and is it measured or estimated?",
+    "scope": "unit",
+    "priority": 80,
+    "fields": [
+     "sqft"
+    ]
+   },
+   "size:086a7f": {
+    "text": "What is the square footage of unit 1A, and is it measured or estimated?",
+    "scope": "unit",
+    "priority": 80,
+    "fields": [
+     "sqft"
+    ]
+   }
+  },
+  "units": {
+   "tower-6b": {
+    "building_key": "10-example-st",
+    "building": "The Tower",
+    "address": "10 Example Street, New York, NY",
+    "unit": "6B",
+    "status": "touring",
+    "rank": 1,
+    "interest": [
+     "touring",
+     "top-ranked"
+    ],
+    "q": [
+     {
+      "topic": "price",
+      "kind": "dispute",
+      "mk": "price:ca25e5",
+      "ev": [
+       "Recorded: $5,250 a month with 1 month free on a 10-month lease (September 29)",
+       "StreetEasy building page: $5,300 a month with 0.75 months free on a 10-month lease (September 29)"
+      ]
+     }
+    ]
+   },
+   "tower-7ba": {
+    "building_key": "10-example-st",
+    "building": "The Tower",
+    "address": "10 Example Street, New York, NY",
+    "unit": "7BA",
+    "status": "shortlist",
+    "rank": 2,
+    "interest": [
+     "shortlist",
+     "top-ranked"
+    ],
+    "q": [
+     {
+      "topic": "price",
+      "kind": "verify",
+      "mk": "price:450203",
+      "ev": [
+       "Recorded: $5,250 a month with 1 month free on a 10-month lease (October 14)",
+       "Source: a quote from the leasing office or agent"
+      ]
+     },
+     {
+      "topic": "fees",
+      "kind": "verify",
+      "mk": "fees:6a2c92",
+      "ev": [
+       "Recorded: $135 a month"
+      ]
+     },
+     {
+      "topic": "start",
+      "kind": "verify",
+      "mk": "start:bdbec0"
+     }
+    ]
+   },
+   "tower-13c": {
+    "building_key": "10-example-st",
+    "building": "The Tower",
+    "address": "10 Example Street, New York, NY",
+    "unit": "13C",
+    "status": "touring",
+    "rank": 5,
+    "interest": [
+     "touring",
+     "top-ranked"
+    ],
+    "q": [
+     {
+      "topic": "price",
+      "kind": "verify",
+      "mk": "price:450203",
+      "ev": [
+       "Recorded: $5,250 a month with 1 month free on a 10-month lease (October 14)",
+       "Source: a quote from the leasing office or agent"
+      ]
+     },
+     {
+      "topic": "fees",
+      "kind": "verify",
+      "mk": "fees:6a2c92",
+      "ev": [
+       "Recorded: $135 a month"
+      ]
+     },
+     {
+      "topic": "start",
+      "kind": "verify",
+      "mk": "start:bdbec0"
+     },
+     {
+      "topic": "size",
+      "kind": "missing",
+      "mk": "size:8a375d"
+     }
+    ]
+   },
+   "tower-2d": {
+    "building_key": "10-example-st",
+    "building": "The Tower",
+    "address": "10 Example Street, New York, NY",
+    "unit": "2D",
+    "status": "new",
+    "rank": null,
+    "interest": [],
+    "q": [
+     {
+      "topic": "price",
+      "kind": "verify",
+      "mk": "price:450203",
+      "ev": [
+       "Recorded: $5,250 a month with 1 month free on a 10-month lease (October 14)",
+       "Source: a quote from the leasing office or agent"
+      ]
+     },
+     {
+      "topic": "fees",
+      "kind": "verify",
+      "mk": "fees:6a2c92",
+      "ev": [
+       "Recorded: $135 a month"
+      ]
+     },
+     {
+      "topic": "start",
+      "kind": "verify",
+      "mk": "start:bdbec0"
+     }
+    ]
+   },
+   "other-1a": {
+    "building_key": "99-other-ave",
+    "building": "Other",
+    "address": "99 Other Avenue, New York, NY",
+    "unit": "1A",
+    "status": "touring",
+    "rank": null,
+    "interest": [
+     "touring"
+    ],
+    "q": [
+     {
+      "topic": "size",
+      "kind": "missing",
+      "mk": "size:086a7f"
+     }
+    ]
+   }
+  },
+  "standard": [
+   {
+    "id": "standard:renewal",
+    "topic": "terms",
+    "text": "What rent increase have residents typically been offered at renewal, and how much notice is given?"
+   },
+   {
+    "id": "standard:early_exit",
+    "topic": "terms",
+    "text": "What are the early-termination and sublet policies, and is there a fee or a reletting rule?"
+   },
+   {
+    "id": "standard:utilities",
+    "topic": "terms",
+    "text": "Which utilities are included in the rent, how are heat and cooling billed, and what do residents typically pay per month?"
+   },
+   {
+    "id": "standard:regulated",
+    "topic": "terms",
+    "text": "Is the unit rent-stabilised or covered by any regulatory agreement or lease rider? If so, please share the legal rent and the renewal terms."
+   }
+  ]
+ },
+ "expanded": {
+  "tower-6b": {
+   "id": "tower-6b",
+   "building_key": "10-example-st",
+   "building": "The Tower",
+   "address": "10 Example Street, New York, NY",
+   "unit": "6B",
+   "status": "touring",
+   "rank": 1,
+   "interest": [
+    "touring",
+    "top-ranked"
+   ],
+   "questions": [
+    {
+     "id": "tower-6b:price",
+     "topic": "price",
+     "kind": "dispute",
+     "scope": "unit",
+     "mk": "price:ca25e5",
+     "priority": 10,
+     "text": "The StreetEasy building page shows $5,300 a month with 0.75 months free on a 10-month lease (seen September 29), and I was quoted $5,250 a month with 1 month free on a 10-month lease (September 29). Could you confirm the correct rent, free months and lease length in writing, and that the unit is still available?",
+     "evidence": [
+      "Recorded: $5,250 a month with 1 month free on a 10-month lease (September 29)",
+      "StreetEasy building page: $5,300 a month with 0.75 months free on a 10-month lease (September 29)"
+     ],
+     "fields": [
+      "price.gross",
+      "price.free_months",
+      "price.lease_months",
+      "price.net_effective"
+     ],
+     "default_on": true
+    }
+   ]
+  },
+  "tower-7ba": {
+   "id": "tower-7ba",
+   "building_key": "10-example-st",
+   "building": "The Tower",
+   "address": "10 Example Street, New York, NY",
+   "unit": "7BA",
+   "status": "shortlist",
+   "rank": 2,
+   "interest": [
+    "shortlist",
+    "top-ranked"
+   ],
+   "questions": [
+    {
+     "id": "tower-7ba:price",
+     "topic": "price",
+     "kind": "verify",
+     "scope": "unit",
+     "mk": "price:450203",
+     "priority": 10,
+     "text": "I was quoted $5,250 a month with 1 month free on a 10-month lease (October 14). Is it still available at that rent, and can you confirm the rent, free months and lease length in writing?",
+     "evidence": [
+      "Recorded: $5,250 a month with 1 month free on a 10-month lease (October 14)",
+      "Source: a quote from the leasing office or agent"
+     ],
+     "fields": [
+      "price.gross",
+      "price.free_months",
+      "price.lease_months",
+      "price.net_effective"
+     ],
+     "default_on": true
+    },
+    {
+     "id": "tower-7ba:fees",
+     "topic": "fees",
+     "kind": "verify",
+     "scope": "unit",
+     "mk": "fees:6a2c92",
+     "priority": 40,
+     "text": "I have required monthly fees of $135. Is that the complete list and amount, including any amenity, water, utility, internet, pet or storage charge?",
+     "evidence": [
+      "Recorded: $135 a month"
+     ],
+     "fields": [
+      "price.fees_monthly"
+     ],
+     "default_on": true
+    },
+    {
+     "id": "tower-7ba:start",
+     "topic": "start",
+     "kind": "verify",
+     "scope": "building",
+     "mk": "start:bdbec0",
+     "priority": 60,
+     "text": "Can the lease start on October 15? What start dates can you offer between October 15 and November 1?",
+     "evidence": [],
+     "fields": [
+      "available"
+     ],
+     "default_on": true
+    }
+   ]
+  },
+  "tower-13c": {
+   "id": "tower-13c",
+   "building_key": "10-example-st",
+   "building": "The Tower",
+   "address": "10 Example Street, New York, NY",
+   "unit": "13C",
+   "status": "touring",
+   "rank": 5,
+   "interest": [
+    "touring",
+    "top-ranked"
+   ],
+   "questions": [
+    {
+     "id": "tower-13c:price",
+     "topic": "price",
+     "kind": "verify",
+     "scope": "unit",
+     "mk": "price:450203",
+     "priority": 10,
+     "text": "I was quoted $5,250 a month with 1 month free on a 10-month lease (October 14). Is it still available at that rent, and can you confirm the rent, free months and lease length in writing?",
+     "evidence": [
+      "Recorded: $5,250 a month with 1 month free on a 10-month lease (October 14)",
+      "Source: a quote from the leasing office or agent"
+     ],
+     "fields": [
+      "price.gross",
+      "price.free_months",
+      "price.lease_months",
+      "price.net_effective"
+     ],
+     "default_on": true
+    },
+    {
+     "id": "tower-13c:fees",
+     "topic": "fees",
+     "kind": "verify",
+     "scope": "unit",
+     "mk": "fees:6a2c92",
+     "priority": 40,
+     "text": "I have required monthly fees of $135. Is that the complete list and amount, including any amenity, water, utility, internet, pet or storage charge?",
+     "evidence": [
+      "Recorded: $135 a month"
+     ],
+     "fields": [
+      "price.fees_monthly"
+     ],
+     "default_on": true
+    },
+    {
+     "id": "tower-13c:start",
+     "topic": "start",
+     "kind": "verify",
+     "scope": "building",
+     "mk": "start:bdbec0",
+     "priority": 60,
+     "text": "Can the lease start on October 15? What start dates can you offer between October 15 and November 1?",
+     "evidence": [],
+     "fields": [
+      "available"
+     ],
+     "default_on": true
+    },
+    {
+     "id": "tower-13c:size",
+     "topic": "size",
+     "kind": "missing",
+     "scope": "unit",
+     "mk": "size:8a375d",
+     "priority": 80,
+     "text": "What is the square footage of unit 13C, and is it measured or estimated?",
+     "evidence": [],
+     "fields": [
+      "sqft"
+     ],
+     "default_on": true
+    }
+   ]
+  },
+  "tower-2d": {
+   "id": "tower-2d",
+   "building_key": "10-example-st",
+   "building": "The Tower",
+   "address": "10 Example Street, New York, NY",
+   "unit": "2D",
+   "status": "new",
+   "rank": null,
+   "interest": [],
+   "questions": [
+    {
+     "id": "tower-2d:price",
+     "topic": "price",
+     "kind": "verify",
+     "scope": "unit",
+     "mk": "price:450203",
+     "priority": 10,
+     "text": "I was quoted $5,250 a month with 1 month free on a 10-month lease (October 14). Is it still available at that rent, and can you confirm the rent, free months and lease length in writing?",
+     "evidence": [
+      "Recorded: $5,250 a month with 1 month free on a 10-month lease (October 14)",
+      "Source: a quote from the leasing office or agent"
+     ],
+     "fields": [
+      "price.gross",
+      "price.free_months",
+      "price.lease_months",
+      "price.net_effective"
+     ],
+     "default_on": true
+    },
+    {
+     "id": "tower-2d:fees",
+     "topic": "fees",
+     "kind": "verify",
+     "scope": "unit",
+     "mk": "fees:6a2c92",
+     "priority": 40,
+     "text": "I have required monthly fees of $135. Is that the complete list and amount, including any amenity, water, utility, internet, pet or storage charge?",
+     "evidence": [
+      "Recorded: $135 a month"
+     ],
+     "fields": [
+      "price.fees_monthly"
+     ],
+     "default_on": true
+    },
+    {
+     "id": "tower-2d:start",
+     "topic": "start",
+     "kind": "verify",
+     "scope": "building",
+     "mk": "start:bdbec0",
+     "priority": 60,
+     "text": "Can the lease start on October 15? What start dates can you offer between October 15 and November 1?",
+     "evidence": [],
+     "fields": [
+      "available"
+     ],
+     "default_on": true
+    }
+   ]
+  },
+  "other-1a": {
+   "id": "other-1a",
+   "building_key": "99-other-ave",
+   "building": "Other",
+   "address": "99 Other Avenue, New York, NY",
+   "unit": "1A",
+   "status": "touring",
+   "rank": null,
+   "interest": [
+    "touring"
+   ],
+   "questions": [
+    {
+     "id": "other-1a:size",
+     "topic": "size",
+     "kind": "missing",
+     "scope": "unit",
+     "mk": "size:086a7f",
+     "priority": 80,
+     "text": "What is the square footage of unit 1A, and is it measured or estimated?",
+     "evidence": [],
+     "fields": [
+      "sqft"
+     ],
+     "default_on": true
+    }
+   ]
+  }
+ },
+ "cases": [
+  {
+   "name": "one unit with a price dispute",
+   "building_key": "10-example-st",
+   "units": [
+    "tower-6b"
+   ],
+   "answered": [],
+   "standard": false,
+   "selected": null,
+   "default_selection": [
+    "tower-6b:price"
+   ],
+   "shared_ids": [],
+   "subject": "Questions about unit 6B at The Tower",
+   "text": "Hello,\n\nI'm interested in unit 6B at The Tower (10 Example Street). Could you help with the questions below? Written answers are easiest for me to keep track of.\n\nUnit 6B\n1. The StreetEasy building page shows $5,300 a month with 0.75 months free on a 10-month lease (seen September 29), and I was quoted $5,250 a month with 1 month free on a 10-month lease (September 29). Could you confirm the correct rent, free months and lease length in writing, and that the unit is still available?\n\nThank you,\n[Your name]\n"
+  },
+  {
+   "name": "two units share a question",
+   "building_key": "10-example-st",
+   "units": [
+    "tower-6b",
+    "tower-7ba"
+   ],
+   "answered": [],
+   "standard": false,
+   "selected": null,
+   "default_selection": [
+    "shared:start:bdbec0",
+    "tower-6b:price",
+    "tower-7ba:price",
+    "tower-7ba:fees"
+   ],
+   "shared_ids": [
+    "shared:start:bdbec0"
+   ],
+   "subject": "Questions about units 6B and 7BA at The Tower",
+   "text": "Hello,\n\nI'm interested in units 6B and 7BA at The Tower (10 Example Street). Could you help with the questions below? Written answers are easiest for me to keep track of.\n\nAcross these units\n1. Can the lease start on October 15? What start dates can you offer between October 15 and November 1?\n\nUnit 6B\n2. The StreetEasy building page shows $5,300 a month with 0.75 months free on a 10-month lease (seen September 29), and I was quoted $5,250 a month with 1 month free on a 10-month lease (September 29). Could you confirm the correct rent, free months and lease length in writing, and that the unit is still available?\n\nUnit 7BA\n3. I was quoted $5,250 a month with 1 month free on a 10-month lease (October 14). Is it still available at that rent, and can you confirm the rent, free months and lease length in writing?\n4. I have required monthly fees of $135. Is that the complete list and amount, including any amenity, water, utility, internet, pet or storage charge?\n\nThank you,\n[Your name]\n"
+  },
+  {
+   "name": "three units, one answered, standard terms on",
+   "building_key": "10-example-st",
+   "units": [
+    "tower-6b",
+    "tower-7ba",
+    "tower-13c"
+   ],
+   "answered": [
+    "tower-6b:price",
+    "tower-7ba:fees"
+   ],
+   "standard": true,
+   "selected": null,
+   "default_selection": [
+    "shared:price:450203",
+    "shared:start:bdbec0",
+    "tower-13c:fees",
+    "tower-13c:size",
+    "standard:renewal",
+    "standard:early_exit",
+    "standard:utilities",
+    "standard:regulated"
+   ],
+   "shared_ids": [
+    "shared:price:450203",
+    "shared:start:bdbec0"
+   ],
+   "subject": "Questions about units 7BA and 13C at The Tower",
+   "text": "Hello,\n\nI'm interested in units 7BA and 13C at The Tower (10 Example Street). Could you help with the questions below? Written answers are easiest for me to keep track of.\n\nAcross these units\n1. For 7BA and 13C: I was quoted $5,250 a month with 1 month free on a 10-month lease (October 14). Is it still available at that rent, and can you confirm the rent, free months and lease length in writing?\n2. Can the lease start on October 15? What start dates can you offer between October 15 and November 1?\n3. What rent increase have residents typically been offered at renewal, and how much notice is given?\n4. What are the early-termination and sublet policies, and is there a fee or a reletting rule?\n5. Which utilities are included in the rent, how are heat and cooling billed, and what do residents typically pay per month?\n6. Is the unit rent-stabilised or covered by any regulatory agreement or lease rider? If so, please share the legal rent and the renewal terms.\n\nUnit 13C\n7. I have required monthly fees of $135. Is that the complete list and amount, including any amenity, water, utility, internet, pet or storage charge?\n8. What is the square footage of unit 13C, and is it measured or estimated?\n\nThank you,\n[Your name]\n"
+  },
+  {
+   "name": "a chosen subset",
+   "building_key": "10-example-st",
+   "units": [
+    "tower-6b",
+    "tower-7ba"
+   ],
+   "answered": [],
+   "standard": false,
+   "selected": [
+    "tower-6b:price",
+    "shared:fees:6a2c92"
+   ],
+   "default_selection": [
+    "shared:start:bdbec0",
+    "tower-6b:price",
+    "tower-7ba:price",
+    "tower-7ba:fees"
+   ],
+   "shared_ids": [
+    "shared:start:bdbec0"
+   ],
+   "subject": "Questions about unit 6B at The Tower",
+   "text": "Hello,\n\nI'm interested in unit 6B at The Tower (10 Example Street). Could you help with the questions below? Written answers are easiest for me to keep track of.\n\nUnit 6B\n1. The StreetEasy building page shows $5,300 a month with 0.75 months free on a 10-month lease (seen September 29), and I was quoted $5,250 a month with 1 month free on a 10-month lease (September 29). Could you confirm the correct rent, free months and lease length in writing, and that the unit is still available?\n\nThank you,\n[Your name]\n"
+  },
+  {
+   "name": "nothing chosen",
+   "building_key": "10-example-st",
+   "units": [
+    "tower-6b",
+    "tower-7ba"
+   ],
+   "answered": [],
+   "standard": false,
+   "selected": [],
+   "default_selection": [
+    "shared:start:bdbec0",
+    "tower-6b:price",
+    "tower-7ba:price",
+    "tower-7ba:fees"
+   ],
+   "shared_ids": [
+    "shared:start:bdbec0"
+   ],
+   "subject": "Questions about units 6B and 7BA at The Tower",
+   "text": ""
+  },
+  {
+   "name": "four units",
+   "building_key": "10-example-st",
+   "units": [
+    "tower-6b",
+    "tower-7ba",
+    "tower-13c",
+    "tower-2d"
+   ],
+   "answered": [],
+   "standard": true,
+   "selected": null,
+   "default_selection": [
+    "shared:price:450203",
+    "shared:fees:6a2c92",
+    "shared:start:bdbec0",
+    "tower-6b:price",
+    "tower-13c:size",
+    "standard:renewal",
+    "standard:early_exit",
+    "standard:utilities",
+    "standard:regulated"
+   ],
+   "shared_ids": [
+    "shared:price:450203",
+    "shared:fees:6a2c92",
+    "shared:start:bdbec0"
+   ],
+   "subject": "Questions about units 6B, 7BA, 13C and 2D at The Tower",
+   "text": "Hello,\n\nI'm interested in units 6B, 7BA, 13C and 2D at The Tower (10 Example Street). Could you help with the questions below? Written answers are easiest for me to keep track of.\n\nAcross these units\n1. For 7BA, 13C and 2D: I was quoted $5,250 a month with 1 month free on a 10-month lease (October 14). Is it still available at that rent, and can you confirm the rent, free months and lease length in writing?\n2. For 7BA, 13C and 2D: I have required monthly fees of $135. Is that the complete list and amount, including any amenity, water, utility, internet, pet or storage charge?\n3. Can the lease start on October 15? What start dates can you offer between October 15 and November 1?\n4. What rent increase have residents typically been offered at renewal, and how much notice is given?\n5. What are the early-termination and sublet policies, and is there a fee or a reletting rule?\n6. Which utilities are included in the rent, how are heat and cooling billed, and what do residents typically pay per month?\n7. Is the unit rent-stabilised or covered by any regulatory agreement or lease rider? If so, please share the legal rent and the renewal terms.\n\nUnit 6B\n8. The StreetEasy building page shows $5,300 a month with 0.75 months free on a 10-month lease (seen September 29), and I was quoted $5,250 a month with 1 month free on a 10-month lease (September 29). Could you confirm the correct rent, free months and lease length in writing, and that the unit is still available?\n\nUnit 13C\n9. What is the square footage of unit 13C, and is it measured or estimated?\n\nThank you,\n[Your name]\n"
+  }
+ ]
+}

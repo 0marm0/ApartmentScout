@@ -114,6 +114,10 @@ questions (expired concession, building laundry, price drop), then missing and s
 order, then tour tests. Groups are `confirm in writing`, `show me` and `tour test`. A known, fresh fact
 never produces a question.
 
+For one message per building (disagreeing prices named with their sources, fees and amenities asked once,
+shared questions merged, grouped by unit) use `apartmentscout questions`; see
+[leasing-office questions](leasing-office-questions.md).
+
 ## History
 
 `<search>/history/claims.jsonl` is append-only: one line per claim someone made about a unit.
