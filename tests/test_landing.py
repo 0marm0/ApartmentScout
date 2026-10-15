@@ -15,7 +15,9 @@ def test_landing_page_makes_no_font_cdn_request() -> None:
 
 def test_pages_workflow_publishes_the_fonts_the_landing_page_names() -> None:
     flow = (ROOT / ".github" / "workflows" / "pages.yml").read_text()
-    assert "cp dashboard/vendor/fonts/* _site/fonts/" in flow
+    assert "scripts/build_site.sh" in flow, "the workflow assembles the site with the shared script"
+    assemble = (ROOT / "scripts" / "build_site.sh").read_text()
+    assert 'cp dashboard/vendor/fonts/* "$OUT/fonts/"' in assemble
     css = (ROOT / "dashboard" / "vendor" / "fonts" / "geist.css").read_text()
     for name in re.findall(r'url\("([^"]+)"\)', css):
         assert (ROOT / "dashboard" / "vendor" / "fonts" / name).is_file(), name

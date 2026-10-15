@@ -38,6 +38,8 @@ jobs:
             files: tests/e2e/test_map_features.py tests/e2e/test_lightbox.py tests/e2e/test_results_rail.py tests/e2e/test_pdf_tracer.py
           - name: wizard
             files: tests/e2e/test_wizard.py
+          - name: pwa
+            files: tests/e2e/test_pwa.py
     name: e2e (${{ matrix.shard.name }})
     steps:
       - uses: actions/checkout@v4
@@ -45,6 +47,10 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install -e ".[dev]"
+      - uses: actions/setup-node@v4   # the pwa shard builds the optimised site with esbuild (npx)
+        if: matrix.shard.name == 'pwa'
+        with:
+          node-version: "22"
       - run: python -m playwright install --with-deps chromium
       - run: pytest -m e2e ${{ matrix.shard.files }} -q -rs --durations=10   # the slowest tests show where a runner struggles
         env:
@@ -55,3 +61,29 @@ jobs:
           for f in tests/e2e/test_*.py; do
             grep -q "$f" .github/workflows/tests.yml || { echo "$f is not in any e2e shard"; exit 1; }
           done
+  perf:
+    # first-load budget of the published site and of the standalone file: bundle, data and CSS sizes (gzip, what Pages sends),
+    # request count, LCP and TBT in Chromium. Limits live in scripts/perf_budget.json; `python scripts/perf_check.py --help`.
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: pip install -e ".[dev]"
+      - run: python -m playwright install --with-deps chromium
+      - name: Build the published site (no photos: the check serves them from the example folder)
+        run: NO_MEDIA=1 scripts/build_site.sh _site
+      - name: Build the standalone file
+        run: apartmentscout build --search examples/nyc-2026 --out /tmp/as-data --standalone /tmp/as-standalone.html
+      - name: First-load budget
+        run: python scripts/perf_check.py --site _site --standalone /tmp/as-standalone.html --check --runs 3 --cpu 1 --net broadband --json perf.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: perf
+          path: perf.json

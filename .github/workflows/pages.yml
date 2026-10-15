@@ -1,11 +1,11 @@
 name: Landing page and dashboard demo on GitHub Pages
-# Published layout (see landing/README.md):
+# Published layout (scripts/build_site.sh does the assembly; landing/README.md has the table):
 #   /            landing/ (index.html, landing.css, landing.js)
 #   /tokens.css  dashboard/css/tokens.css (shared design tokens)
 #   /images/     docs/images/*.png (screenshots)
 #   /assets/     dashboard/assets/ (brand icon, favicon)
 #   /fonts/      dashboard/vendor/fonts/ (self-hosted Geist, no Google Fonts)
-#   /demo/       dashboard/ as committed, with its example data
+#   /demo/       dashboard/ with its example data, bundled and split by scripts/optimize_site.py, installable and offline-capable
 on:
   push:
     branches: [main]
@@ -27,25 +27,16 @@ jobs:
       - uses: actions/checkout@v4
       - id: pages
         uses: actions/configure-pages@v5
-      - name: Assemble the site (static copy, no build tools)
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Assemble the site (copy, then bundle, split and make the dashboard installable)
         env:
           REPO_URL: ${{ github.server_url }}/${{ github.repository }}
           SITE_URL: ${{ steps.pages.outputs.base_url }}
         run: |
           set -euo pipefail
-          rm -rf _site && mkdir -p _site/images _site/assets _site/fonts _site/demo
-          cp landing/index.html landing/landing.css landing/landing.js _site/
-          cp dashboard/css/tokens.css _site/tokens.css
-          cp docs/images/*.png _site/images/
-          cp dashboard/assets/*.svg _site/assets/
-          cp dashboard/vendor/fonts/* _site/fonts/
-          cp -R dashboard/. _site/demo/
-          # listing photos of the example search (owner cleared; see docs/gallery/manifest.json policy)
-          if [ -d examples/nyc-2026/media ]; then cp -R examples/nyc-2026/media _site/demo/media; fi
-          # never publish private or scratch folders, even if they ever get committed
-          rm -rf _site/demo/data-private _site/demo/_mockup
-          sed -i "s#__REPO__#${REPO_URL}#g; s#__SITE__#${SITE_URL}#g" _site/index.html
-          touch _site/.nojekyll
+          scripts/build_site.sh _site
           find _site -maxdepth 2 | sort
       - uses: actions/upload-pages-artifact@v3
         with:

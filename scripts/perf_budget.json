@@ -1,0 +1,19 @@
+{
+  "_about": "Limits enforced by `scripts/perf_check.py --check` (the perf job in .github/workflows/tests.yml). Sizes are bytes on the wire (gzip), times are milliseconds on a cold load with no CPU throttle on a GitHub-hosted runner (set 2026-10 from a measured 0.8 s LCP / 150 ms TBT on a laptop, about three times looser). Tighten them when the numbers fall; raise one only with a reason in the commit.",
+  "site": {
+    "first_js_gz": 110000,
+    "all_js_gz": 500000,
+    "css_gz": 90000,
+    "listings_gz": 950000,
+    "listings_raw": 9000000,
+    "data_first_gz": 1000000,
+    "transfer": 2300000,
+    "requests": 75,
+    "lcp": 4500,
+    "tbt": 1500
+  },
+  "standalone": {
+    "file_bytes": 27000000,
+    "lcp": 4500
+  }
+}

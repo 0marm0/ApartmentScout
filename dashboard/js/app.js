@@ -5,6 +5,7 @@ import { $, esc, money, moneyShort, safeUrl, scoreColor, ring, unitGlyph, bullet
 import { COMMUTE_MODES, commuteEntry, modeMinutes, modeOptions, evaluate, applyProfile, profileOf, diffProfile, serverSteps, parseDay, cashFlow, basisLabel } from './criteria.js';
 import { initPalette, openPalette, shareListing, syncTrigger } from './palette.js';
 import { initEnhance } from './enhance.js';
+import { takeEarly } from './perf/early.js';   // [perf] boot data requested before the code loaded (optimised build only)
 import { initTheme, flipTheme, initShell, parseRoute, syncSubnav } from './shell.js';
 import { initMedia, cardMediaHTML, afterDrawerMedia, mediaTransition } from './features/media.js';   // photos: lightbox, blur-up, counts
 import { loadPreviews } from './features/lqip.js';
@@ -276,6 +277,8 @@ async function getJSON(p, fallback) {
   // standalone builds embed every data file so the page also works when opened as a file
   const emb = window.__AS_DATA__;
   if (emb) return p in emb ? emb[p] : fallback;
+  const early = takeEarly(p);   // [perf]
+  if (early) { try { return await early; } catch { /* fall through to a normal fetch */ } }
   try { const r = await fetch(p, { cache: 'no-cache' }); if (!r.ok) throw new Error(r.status); return await r.json(); } catch { return fallback; }
 }
 export const loadJSON = getJSON;
