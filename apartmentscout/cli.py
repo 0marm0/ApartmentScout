@@ -740,7 +740,11 @@ def cmd_serve(args):
                        export=_export, rescore=_rescore, api=not args.no_api)
     if ws is not None:
         state.activate(ws)
-    httpd = make_server(state, args.port)
+    try:
+        httpd = make_server(state, args.port)
+    except OSError as e:   # [onboarding] the default port is often taken by an earlier `serve`: say what to do, not a traceback
+        sys.exit(f"Port {args.port} is not available ({e.strerror or e}). Another `apartmentscout serve` may still be running: "
+                 "stop it (Ctrl+C in its terminal), or pass --port with a free number, for example --port 8790.")
     with httpd:
         url = f"http://127.0.0.1:{state.port}/"
         log(f"ApartmentScout dashboard at {url}  (Ctrl+C to stop)")
