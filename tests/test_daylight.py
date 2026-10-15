@@ -136,6 +136,16 @@ def test_wall_rising_30_degrees_everywhere_leaves_about_half():
     assert D.vertical_sky_component(_prof("wall30"), 180) / D.vertical_sky_component(OPEN, 180) == pytest.approx(0.51, abs=0.01)
 
 
+def test_a_bay_is_the_mean_of_its_panes_and_never_beats_a_flat_open_window():
+    prof = _prof("tower")
+    bay = D.vertical_sky_component(prof, 180, [-45, 0, 45])
+    each = [D.vertical_sky_component(prof, f) for f in (135.0, 180.0, 225.0)]
+    assert bay == pytest.approx(sum(each) / 3)
+    assert D.vertical_sky_component(OPEN, 180, [-45, 0, 45]) == pytest.approx(0.396, abs=0.001)   # the textbook maximum holds for a bay too
+    assert D.vertical_sky_component(OPEN, 180, [-45, 0, 45], CLEAR_A) == pytest.approx(
+        sum(D.vertical_sky_component(OPEN, f, None, CLEAR_A) for f in (135.0, 180.0, 225.0)) / 3)
+
+
 def test_overcast_vsc_falls_as_the_skyline_rises():
     vals = [D.vertical_sky_component(np.full(720, h), 180) for h in (0, 10, 25, 40, 60, 80)]
     assert vals == sorted(vals, reverse=True) and vals[-1] < 0.01
