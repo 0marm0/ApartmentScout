@@ -133,7 +133,7 @@ table.cmp { width: 100%; border-collapse: collapse; table-layout: fixed; font-si
 .cmp td .v { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cmp td { padding-right: 7px; }
 .cmp td .v.wrap { white-space: normal; line-height: 1.25; }
-.cmp.n4 { font-size: 8pt; } .cmp.n4 td .v { font-size: 8.4pt; } .cmp.n4 td .s { font-size: 6.5pt; } .cmp.n4 col.lab { width: 1.5in; } .cmp.n4 .hd .photo { height: .52in; } .cmp.n4 .hd .nm { font-size: 8.2pt; }
+.cmp.n4 { font-size: 8pt; } .cmp.n4 td .v { font-size: 8.4pt; } .cmp.n4 td .s { font-size: 6.5pt; } .cmp.n4 col.lab { width: 1.5in; } .cmp.n4 .hd .photo { height: .46in; } .cmp.n4 .hd .nm { font-size: 8.2pt; }
 .cmp td.best { background: linear-gradient(0deg, var(--good-soft), var(--good-soft)); box-shadow: -6px 0 0 var(--good-soft); }
 .cmp td.best .v { color: var(--good); }
 .cmp td .v.bad { color: var(--bad); } .cmp td .v.warn { color: var(--warn); }
@@ -310,7 +310,7 @@ function rows(p) {
   const sections = [];
   sections.push({ title: 'Money', rows: [
     row('True monthly cost', (h) => { const v = h.score && h.score.monthly_cost; if (!isNum(v)) return null; const c = cost(h); return { v, t: usd(v), s: c.fees_estimate ? 'fees estimated' : c.rent && c.rent.basis === 'conditional' ? 'concession terms open' : isNum(h.price && h.price.gross) ? 'gross ' + usd(h.price.gross) : '' }; }, { best: 'min', sub: 'rent after free months, plus fees' }),
-    row('Move-in cost', (h) => { const c = cost(h); if (!isNum(c.move_in_min)) return null; const u = c.move_in_unknown || []; return { v: u.length ? null : c.move_in_min, t: usd(c.move_in_min), s: u.length ? '+ ' + u.map((x) => x.replace('one-time fees', 'fees')).join(', ') + ' unknown' : 'first month, deposit, fees' }; }, { best: 'min', sub: 'cash to sign and move in; compared only when complete' }),
+    row('Move-in cost', (h) => { const c = cost(h); if (!isNum(c.move_in_min)) return null; const u = c.move_in_unknown || []; return { v: u.length ? null : c.move_in_min, t: usd(c.move_in_min), s: u.length ? '+ ' + u.map((x) => x.replace('one-time fees', 'fees')).join(', ') + ' unknown' : 'first month, deposit, fees' }; }, { best: 'min', sub: 'cash to sign and move in' }),
     row('Renewal risk', (h) => {
       const v = parts(h).renewal_risk; if (!isNum(v)) return null;
       const pr = h.price || {}, lease = [isNum(pr.lease_months) ? pr.lease_months + '-month lease' : '', isNum(pr.free_months) && pr.free_months > 0 ? pr.free_months + ' free' : ''].filter(Boolean).join(', ');
@@ -323,7 +323,7 @@ function rows(p) {
       const firm = !h.size || SIZE_FIRM.includes(h.size.basis) || !h.size.basis, pp = h.score && h.score.ppsf && h.score.ppsf.value;
       const lay = [isNum(h.beds) ? (h.beds === 0 ? 'studio' : h.beds + ' bd') : '', isNum(h.baths) ? h.baths + ' ba' : '', isNum(h.floor) ? 'floor ' + Math.round(h.floor) + (h.floor_inferred ? '*' : '') : ''].filter(Boolean).join(' · ');
       return { v, t: Math.round(v).toLocaleString('en-US') + ' ft²' + (firm ? '' : ' (est.)'), s: [lay, isNum(pp) ? '$' + pp.toFixed(2) + '/ft²' : ''].filter(Boolean).join(' · ') };
-    }, { best: 'max', none: 'Not published', sub: '* floor inferred from the unit number' }),
+    }, { best: 'max', none: 'Not published', sub: '* floor inferred' }),
   ] });
   sections.push({ title: 'Light and view', rows: [
     row('Direct sun, Dec / Jun', (h) => {
@@ -553,7 +553,7 @@ function table(n, total, rec) {
   const body = sections.map((s) => `<tr class="sec"><td colspan="${H.length + 1}">${esc(s.title)}</td></tr>` + s.rows.map((r) => `<tr><td class="l">${esc(r.label)}${r.sub ? `<small>${esc(r.sub)}</small>` : ''}</td>${r.cells.map((c, i) => `<td class="${r.best.includes(i) ? 'best' : ''}">${c && c.t ? `<span class="v ${c.tone || ''}${c.wrap ? ' wrap' : ''}" title="${esc(c.t)}">${esc(c.t)}</span>${c.s ? `<span class="s" title="${esc(c.s)}">${esc(c.s)}</span>` : ''}` : `<span class="unk">${esc(r.none)}</span>`}</td>`).join('')}</tr>`).join('')).join('');
   return `<section class="sheet" data-kind="table">${run(n, total, 'Side by side')}<div class="fill"><div class="pg-title"><h2>Side by side</h2><p>The best value in each row is shaded. Unknown stays unknown: it is never counted as the worst.</p></div>
     <table class="cmp n${H.length}"><colgroup><col class="lab">${H.map(() => '<col>').join('')}</colgroup><thead><tr><td></td>${head}</tr></thead><tbody>${body}</tbody></table>
-    <div class="keyline"><span><i></i>Best in the row</span><span>Costs are per month unless a row says otherwise.</span></div></div>${foot()}</section>`;
+    <div class="keyline"><span><i></i>Best in the row</span><span>Costs are per month unless a row says otherwise. Move-in cost is compared only when every deposit and fee is known.</span></div></div>${foot()}</section>`;
 }
 
 // ---------------------------------------------------------------- one home

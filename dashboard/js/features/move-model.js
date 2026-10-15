@@ -131,8 +131,8 @@ export function leaseStart({ available = null, move_in = {}, today, pick = null 
   }
   if (basis === 'window' && earliest != null && av != null && av < earliest) notes.push('The home is free before your window opens; the plan follows your window.');
   const after = latest != null && n > latest ? n - latest : 0, before = earliest != null && n < earliest ? earliest - n : 0;
-  if (after) notes.push(`${after} day${after === 1 ? '' : 's'} after your latest move-in${move_in?.hard ? ' (a hard limit in your criteria)' : ''}.`);
-  if (before) notes.push(`${before} day${before === 1 ? '' : 's'} before your window opens.`);
+  if (after) notes.push(`Starts ${after} day${after === 1 ? '' : 's'} after your latest move-in${move_in?.hard ? ' (a hard limit in your criteria)' : ''}.`);
+  if (before) notes.push(`Starts ${before} day${before === 1 ? '' : 's'} before your window opens.`);
   const short = n - t < LEAD_DAYS;
   if (short) notes.push(`Only ${Math.max(0, n - t)} day${n - t === 1 ? '' : 's'} from today: steps are squeezed together and the order matters more than the dates.`);
   return { date: dayISO(n), basis, in_window: !after && !before, after_window_days: after, before_window_days: before, short_notice: short, notes };
