@@ -268,6 +268,31 @@ def _await_async_predicates() -> None:
 _await_async_predicates()
 
 
+# Resolves when the camera has not moved for six frames running: the glide to a chip is over (what a fixed sleep stood in for).
+CAMERA_STILL_JS = """async (getCam) => {
+  const get = await (async () => { if (getCam === 'studio') { const G3 = await import('/js/plan/scene3d.js'); return () => G3.getCamera(); } return () => window.__unit3d.stage.winCam; })();
+  let last = null, still = 0;
+  return await new Promise((resolve) => { const t0 = performance.now(); const tick = () => {
+    const c = get(), p = [...c.position.toArray(), c.fov, ...(c.getWorldDirection ? c.getWorldDirection(new c.position.constructor()).toArray() : [])];
+    still = last && p.every((v, i) => Math.abs(v - last[i]) < 1e-6) ? still + 1 : 0; last = p;
+    if (still >= 6 || performance.now() - t0 > 20000) resolve(still >= 6); else requestAnimationFrame(tick); }; tick(); });
+}"""
+
+
+def camera_still(pg, engine: str) -> None:
+    """Wait until the camera of the floor plan studio ("studio") or of Unit 3D's Inside view ("unit") has come to rest: a glide is over."""
+    assert pg.evaluate(CAMERA_STILL_JS, engine), f"the {engine} camera never came to rest"
+    settled(pg, 20000, ticks=3)
+
+
+
+
+def studio_city_ready(pg) -> None:
+    """The floor plan studio has built the city outside (every building by id) and its camera has come to rest."""
+    pg.wait_for_function("""async () => { const api = (await import('/js/plan/scene3d.js')).cityApi(); return !!api && api.city.near.length + api.city.far.length > 500; }""", timeout=60000)
+    camera_still(pg, "studio")
+
+
 def frames(page, n: int = 3) -> None:
     """Wait for n animation frames: what a handler scheduled with requestAnimationFrame (the windowed card list after a scroll or a resize) has run."""
     page.evaluate("(n) => new Promise((resolve) => { const step = () => (--n > 0 ? requestAnimationFrame(step) : resolve()); requestAnimationFrame(step); })", n)

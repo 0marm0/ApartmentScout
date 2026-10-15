@@ -13,10 +13,15 @@ SRC = "window.__asMap.getSource('listings')._data.features"
 
 
 def _wait_map(s) -> None:
-    # blocked tiles make the map fall back to its offline basemap (the style is rebuilt once): wait for that, then for the pins
-    s.page.wait_for_function("() => document.getElementById('mapOffline') && !document.getElementById('mapOffline').hidden && window.__asMap.isStyleLoaded()", timeout=30000)
-    s.page.wait_for_function("() => window.__asMap && window.__asMap.getLayer('pins-t') && window.__asMap.getLayer('bld') && window.__asMap.getSource('listings')._data.features.length > 20", timeout=30000)
-    s.page.wait_for_selector(".price-tag", timeout=30000)
+    _wait_map_page(s.page)
+
+
+def _wait_map_page(page) -> None:
+    # blocked tiles make the map fall back to its offline basemap (the style is rebuilt once): wait for that, then for the pins.
+    # While the style is swapped a layer can exist without its source (and the other way round), so every lookup is null-safe.
+    page.wait_for_function("() => document.getElementById('mapOffline') && !document.getElementById('mapOffline').hidden && window.__asMap.isStyleLoaded()", timeout=30000)
+    page.wait_for_function("() => { const m = window.__asMap; return !!(m && m.getLayer('pins-t') && m.getLayer('bld') && (m.getSource('listings')?._data?.features.length || 0) > 20 && (m.getSource('toppins')?._data?.features.length || 0) > 0); }", timeout=30000)
+    page.wait_for_selector(".price-tag", timeout=30000)
 
 
 def _need_webgl(webgl: bool) -> None:
@@ -24,10 +29,22 @@ def _need_webgl(webgl: bool) -> None:
         pytest.skip("no WebGL in this browser (SwiftShader unavailable)")
 
 
+# Resolves once the map has drawn a frame AFTER the move and has nothing left to do. queryRenderedFeatures answers from the last frame
+# drawn, so a test that asks as soon as jumpTo returns (or after a fixed pause that a slow frame outlasts) reads the state from before.
+IDLE_JS = """() => new Promise((resolve) => {
+  const m = window.__asMap, done = () => { clearTimeout(t); resolve(true); }, t = setTimeout(() => { m.off('idle', done); resolve(false); }, 20000);
+  m.once('idle', done); m.triggerRepaint();
+})"""
+
+
+def _idle(page) -> None:
+    assert page.evaluate(IDLE_JS), "the map never went idle"
+
+
 def _go(page, lon_lat, zoom: float) -> None:
     page.evaluate("([c, z]) => window.__asMap.jumpTo({ center: c, zoom: z })", [lon_lat, zoom])
     page.wait_for_function("() => window.__asMap.loaded() && !window.__asMap.isMoving()", timeout=10000)
-    page.wait_for_timeout(250)
+    _idle(page)
 
 
 def _screen(page, lon_lat) -> list[float]:
@@ -203,13 +220,12 @@ def test_a_tap_previews_first_and_a_second_tap_opens(browser, base_url: str, web
     page.on("pageerror", lambda e: errors.append(str(e)))
     try:
         page.goto(f"{base_url}/#map")
-        page.wait_for_function("() => window.__asMap && window.__asMap.getLayer('pins-t') && window.__asMap.getSource('toppins')._data.features.length > 0", timeout=30000)
-        page.wait_for_selector(".price-tag", timeout=30000)
+        _wait_map_page(page)
         assert page.evaluate("() => matchMedia('(hover: none)').matches")
         f = page.evaluate("() => { const f = window.__asMap.getSource('toppins')._data.features[0]; return { id: f.id, xy: f.geometry.coordinates }; }")
         page.evaluate("([c]) => window.__asMap.jumpTo({ center: c, zoom: 15, padding: { bottom: 300 } })", [f["xy"]])
         page.wait_for_function("() => window.__asMap.loaded()", timeout=10000)
-        page.wait_for_timeout(300)
+        _idle(page)
         xy = _screen(page, f["xy"])
         page.touchscreen.tap(*xy)
         page.wait_for_selector(f'.hovercard[data-preview="{f["id"]}"] .hc-open', timeout=5000)

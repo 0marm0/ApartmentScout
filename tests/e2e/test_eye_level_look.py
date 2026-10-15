@@ -7,7 +7,7 @@ import json
 from pathlib import Path
 
 import pytest
-from conftest import look_click, look_open
+from conftest import camera_still, look_click, look_open, settled, studio_city_ready
 
 pytestmark = pytest.mark.e2e
 
@@ -74,19 +74,20 @@ def _unit(s, query: str) -> None:
     s.page.wait_for_function(
         "(id) => window.__unit3d && window.__unit3d.st.id === id && window.__unit3d.stage && window.__unit3d.stage.interior && window.__unit3d.views.length > 4 && document.getElementById('uLoad').hidden",
         arg=UNIT, timeout=120000)
-    s.page.wait_for_timeout(800)
+    settled(s.page, 20000, ticks=5)
 
 
 def _look(pg, chip: str) -> None:
     look_click(pg, f"#uLook .lk-chip:has-text('{chip}')")
-    pg.wait_for_timeout(1200)
+    pg.wait_for_function("() => !window.__unit3d.stage.inTween", timeout=30000)
+    camera_still(pg, "unit")
 
 
 def _studio(s) -> None:
     pg = s.page
     pg.goto(f"{s.origin}/?date=2026-10-15&pmin=720#plan/{UNIT}")
     pg.wait_for_function("() => window.__plan3d && window.__plan3d.items.length > 0 && !!document.querySelector('#psLook .lk-chip')", timeout=90000)
-    pg.wait_for_timeout(800)
+    settled(pg, 20000, ticks=5)
 
 
 # ------------------------------------------------------------------------------------------------ the Inside camera shows the outdoors
@@ -147,7 +148,7 @@ def test_eye_level_sky_is_a_bright_daylight_sky_in_both_engines(open_page, webgl
     assert sky["daylight"] and sky["hor"] > 0.55 and sky["zen"] > 0.2 and sky["blueZen"] and sky["glow"] == 1, sky   # a pale hazy horizon, a clear blue overhead, the sun's haze on
     _studio(s)
     look_click(pg, "#psLook .lk-chip:has-text('Living room')")
-    pg.wait_for_timeout(1500)
+    studio_city_ready(pg)
     st = pg.evaluate("() => { const sc = window.__plan3d.parts.scene, d = sc.getObjectByName('sky'), U = d.material.uniforms, lum = (c) => 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b; return { vis: d.visible, hor: lum(U.hor.value), zen: lum(U.zen.value), blueZen: U.zen.value.b > U.zen.value.r * 1.5 }; }")
     assert st["vis"] and st["hor"] > 0.55 and st["zen"] > 0.2 and st["blueZen"], st
     assert not s.take()
@@ -162,7 +163,7 @@ def test_the_studio_and_unit_3d_draw_the_same_buildings_from_one_builder(open_pa
     assert len(unit) > 500
     _studio(s)
     look_click(pg, "#psLook .lk-chip:has-text('Living room')")
-    pg.wait_for_timeout(1500)
+    studio_city_ready(pg)
     studio = pg.evaluate("""() => { const api = window.__plan3d.cityApi; if (!api) return null; const C = api.city;
       return { names: C.meshes.map((m) => m.name), facade: !!C.bMat.userData.facade || C.facU.uQual !== undefined, ids: C.meshes.flatMap((m) => Array.from(m.userData.ids)).sort((a, b) => a - b), uToSite: !!C.facU.uToSite }; }""")
     assert studio is not None
@@ -201,7 +202,7 @@ def test_no_window_has_a_horizontal_bar_across_the_glass_in_either_engine(open_p
     unit = pg.evaluate(f"() => ({BARS_JS})(window.__unit3d.stage.interior.group, {FRAME_HEX})")
     _studio(s)
     look_click(pg, "#psLook .lk-chip:has-text('Living room')")   # (the bird's-eye view cuts the walls, and the window's head member with them: eye-level views draw full-height windows)
-    pg.wait_for_timeout(1500)
+    studio_city_ready(pg)
     studio = pg.evaluate(f"() => ({BARS_JS})(window.__plan3d.parts.scene, {FRAME_HEX})")
     # 25E: windows from sill 20 in to head 94 in. Frame members may only be the sill (at 0.5 m) and the head (at 2.4 m): nothing in between
     for name, bars in (("unit", unit), ("studio", studio)):

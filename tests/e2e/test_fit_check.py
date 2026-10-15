@@ -6,6 +6,7 @@ from __future__ import annotations
 import json
 
 import pytest
+from conftest import settled
 
 pytestmark = pytest.mark.e2e
 
@@ -20,7 +21,7 @@ def _studio(s) -> None:
     pg.evaluate("() => localStorage.clear()")
     pg.reload()
     pg.wait_for_function("() => window.__plan3d && window.__plan3d.items.length > 0 && !!document.getElementById('tfText')", timeout=90000)
-    pg.wait_for_timeout(500)
+    settled(pg, 20000, ticks=5)
 
 
 def _drop_text(pg, text: str) -> None:
