@@ -38,6 +38,7 @@ a { color: var(--accent-ink); text-decoration: none; }
 
 /* ---- the screen toolbar (never printed) */
 .tools { position: sticky; top: 0; z-index: 10; display: flex; align-items: center; gap: 12px; padding: 9px 16px; background: rgba(255,255,255,.92); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); border-bottom: 1px solid var(--line); font-size: 12.5px; }
+.tools [hidden] { display: none !important; }
 .tools .brand { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; letter-spacing: -.01em; }
 .tools .brand svg { width: 18px; height: 18px; }
 .tools .sp { flex: 1; }
@@ -632,6 +633,7 @@ function paper(kind) {
   st.textContent = `@page { size: ${a4 ? 'A4' : 'letter'}; margin: 0; }`;
   document.getElementById('paper').value = a4 ? 'a4' : 'letter';
   fit();
+  if (window.__report) window.__report.overflow = checkOverflow();   // the sheets changed size: look again for clipped content
 }
 function fit() {
   const sheet = document.querySelector('.sheet'); if (!sheet) return;

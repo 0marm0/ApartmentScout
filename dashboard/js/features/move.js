@@ -195,6 +195,16 @@ function setHome(id) {
 const refreshDrawer = () => { if (S.sel && document.getElementById('dMove')) openDrawer(S.sel, { instant: true, noVT: true }); };
 
 export const isOpen = () => !!root;
+function onKey(e) {
+  if (!root) return;
+  if (e.key === 'Escape') { e.stopPropagation(); close(); return; }
+  if (e.key !== 'Tab') return;
+  const f = [...root.querySelectorAll('button:not([disabled]), input:not([disabled]), select, a[href]')].filter((x) => x.offsetParent !== null);
+  if (!f.length) return;
+  const a = f.indexOf(document.activeElement);
+  if (!root.contains(document.activeElement)) { e.preventDefault(); f[0].focus(); }
+  else if (e.shiftKey && a <= 0) { e.preventDefault(); f[f.length - 1].focus(); } else if (!e.shiftKey && a === f.length - 1) { e.preventDefault(); f[0].focus(); }
+}
 /** Open the planner for listing `id` (the home the plan was last made for, else the first likely one, when none is given). */
 export function open(id = null) {
   const L = byId(id) || byId(plan.chosen) || candidates()[0];
@@ -209,14 +219,7 @@ export function open(id = null) {
   inerted = [];
   for (const n of document.body.children) if (n !== root && !n.inert && !['SCRIPT', 'STYLE', 'LINK'].includes(n.tagName) && n.id !== 'toast') { n.inert = true; inerted.push(n); }
   root.addEventListener('click', onClick); root.addEventListener('change', onChange); root.addEventListener('submit', onSubmit);
-  root.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') { e.stopPropagation(); close(); return; }
-    if (e.key !== 'Tab') return;
-    const f = [...root.querySelectorAll('button:not([disabled]), input:not([disabled]), select, a[href]')].filter((x) => x.offsetParent !== null);
-    if (!f.length) return;
-    const a = f.indexOf(document.activeElement);
-    if (e.shiftKey && a <= 0) { e.preventDefault(); f[f.length - 1].focus(); } else if (!e.shiftKey && a === f.length - 1) { e.preventDefault(); f[0].focus(); }
-  });
+  document.addEventListener('keydown', onKey, true);   // on the document: a redrawn list drops the focused control, and the key would never reach the sheet
   render();
   document.documentElement.classList.add('mv-open-html');
   requestAnimationFrame(() => { root?.classList.add('on'); $('mvT')?.focus({ preventScroll: true }); });
@@ -224,6 +227,7 @@ export function open(id = null) {
 export function close(quick = false) {
   if (!root) return;
   const r = root; root = null; st = null;
+  document.removeEventListener('keydown', onKey, true);
   r.classList.remove('on');
   for (const n of inerted) n.inert = false;
   inerted = [];
