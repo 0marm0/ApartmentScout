@@ -143,7 +143,7 @@ function mountSplit(host, { cls = '' } = {}) {
   wrap.innerHTML = `<button type="button" class="btn sm share-main" data-act="share" aria-label="Share shortlist" title="Download a read-only page of your saved picks">${SHARE_ICON}<span class="sl">Share shortlist</span></button><button type="button" class="btn sm share-more" aria-haspopup="true" aria-expanded="false" aria-controls="${id}" aria-label="More ways to share: decision memo and options" title="Decision memo and options">${CHEV}</button>
     <div class="menu-pop share-pop" id="${id}" role="group" aria-label="Share options" hidden></div>`;
   host.append(wrap);
-  const sync = () => wrap.querySelector('.share-main').classList.toggle('empty', !savedIds().length);
+  const sync = () => wrap.querySelector('.share-main').classList.toggle('is-empty', !savedIds().length);
   sync(); on('saved', sync);
   const more = wrap.querySelector('.share-more'), pop = wrap.querySelector('.share-pop');
   const set = (open, focus) => { if (open) pop.innerHTML = popHTML(id); pop.hidden = !open; more.setAttribute('aria-expanded', String(open)); if (open && focus) pop.querySelector('button')?.focus(); };

@@ -203,7 +203,7 @@ select.sel { appearance: none; height: 28px; padding: 0 26px 0 10px; border-radi
 .c-price { display: flex; align-items: baseline; gap: 6px; margin-top: 2px; white-space: nowrap; overflow: hidden; }
 .c-price b { font-size: var(--fs-lg); font-weight: 650; font-variant-numeric: tabular-nums; letter-spacing: var(--tracking-tight); }
 .c-price .per { font-size: var(--fs-xs); color: var(--ink-3); }
-.c-price .gross { font-size: var(--fs-xs); color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.c-price .gross { font-size: var(--fs-xs); color: var(--ink-3); font-variant-numeric: tabular-nums; flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }   /* gives way first so the tier pill stays whole */
 .c-meta { display: flex; align-items: center; gap: 8px; font-size: var(--fs-xs); color: var(--ink-2); white-space: nowrap; overflow: hidden; }
 .c-badges { display: flex; gap: 4px; flex-wrap: nowrap; overflow: hidden; margin-top: 2px; }
 .bdg { display: inline-flex; align-items: center; gap: 4px; height: 20px; padding: 0 7px; border-radius: var(--r-sm); font-size: var(--fs-2xs); font-weight: 500; line-height: 1; color: var(--ink-2); background: var(--surface-3); white-space: nowrap; }
@@ -565,6 +565,7 @@ body { grid-template-columns: minmax(0, 1fr); }
 .topbar { grid-row: 1; } .kpis { grid-row: 2; } .work { grid-row: 3; min-width: 0; }
 /* commute by mode on cards: walk · subway · bus, fastest highlighted */
 .c-modes { display: flex; align-items: center; gap: 4px; font-size: var(--fs-xs); color: var(--ink-2); white-space: nowrap; overflow: hidden; }
+.c-modes .to { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .c-modes .mode { display: inline-flex; align-items: center; gap: 3px; height: 20px; padding: 0 6px 0 5px; border-radius: 6px; background: var(--surface-3); color: var(--ink-2); }
 .c-modes .mode svg { width: 12px; height: 12px; opacity: .8; }
 .c-modes .mode b { font-weight: 650; font-variant-numeric: tabular-nums; color: var(--ink); }
