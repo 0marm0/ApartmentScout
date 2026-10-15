@@ -185,6 +185,7 @@ schema 2 field is optional.
 | Axes | `+x` to the right of the drawing, `+y` to the top. |
 | `up_bearing` | Compass bearing the top of the drawing (+y) faces. Put the main window wall at the top (large `y`): the 3D views, the "City outside" layer and the Inside view place the plan with +y pointing out of the building. A plan drawn with its windows at the bottom (small `y`) must be rotated 180 degrees (`x -> width - x`, `y -> depth - y`, furniture `rot + 180`) or its windows will face into the building. |
 | `ceiling`, `wall` | Ceiling height and wall thickness (defaults 9 ft and 0.4 ft). |
+| `floor_finish` | Optional: the floor of the dry rooms as the listing photos show it, `basket` (basket-weave block parquet in honey oak, the classic New York apartment floor), `parquet` (chevron) or `oak` (planks). Without it each room kind has its own default; kitchens, baths and closets keep theirs. Both 3D engines draw the same wood, with grain, joints and a light bump. |
 
 ### Rooms, walls and openings
 
