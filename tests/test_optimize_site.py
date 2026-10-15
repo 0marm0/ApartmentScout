@@ -57,7 +57,7 @@ def test_heavy_views_are_separate_chunks_that_the_first_screen_does_not_import(b
 def test_stylesheets_are_merged_in_order_and_the_view_ones_do_not_block(built) -> None:
     html, demo = built["html"], built["demo"]
     links = re.findall(r'<link rel="stylesheet" href="(dist/styles-[^"]+)"([^>]*)>', html)
-    assert 4 <= len({h for h, _ in links}) <= 14, "31 stylesheets became a handful"
+    assert 4 <= len({h for h, _ in links}) <= 16, "50 stylesheets became a handful"   # one sheet per run of blocking or deferred files, in order
     deferred = [h for h, rest in links if 'media="print"' in rest and "onload" in rest]
     assert deferred and html.count("<noscript><link rel=\"stylesheet\"") == len(deferred), "each deferred sheet has a no-script copy"
     # the cascade is unchanged: the runs are numbered in document order, and every original file's longest class survives
