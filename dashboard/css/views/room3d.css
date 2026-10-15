@@ -1,0 +1,52 @@
+/* The shared room and city (js/room3d, js/city3d): the "What's measured vs assumed" chip over Unit 3D and the Floor plan studio's 3D views, and the
+   studio's links into Unit 3D's city numbers. Tokens only: colours follow the dashboard theme, dark and light. */
+
+.acc-chip { padding: 0; border-radius: var(--r-lg, 14px); border: 1px solid var(--line); max-width: min(360px, calc(100% - 24px)); }
+.acc-chip[hidden] { display: none; }
+.acc-chip[data-host="unit"] { left: 74px; top: 62px; z-index: 5; }
+.acc-chip[data-host="studio"] { left: 10px; top: 54px; z-index: 5; }
+.acc-btn { display: flex; align-items: center; gap: 8px; border: 0; background: none; height: 28px; padding: 0 12px 0 10px; border-radius: inherit; font: 500 var(--fs-xs) var(--font-sans, inherit); color: var(--ink-2); cursor: pointer; white-space: nowrap; }
+.acc-btn:hover { color: var(--ink); }
+.acc-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.acc-dots { display: inline-flex; gap: 3px; }
+.acc-dots i { width: 7px; height: 7px; border-radius: 50%; background: var(--ink-3); }
+.acc-dots i.acc-measured, .acc-dots i.acc-confirmed { background: var(--good); }
+.acc-dots i.acc-source { background: var(--accent); }
+.acc-dots i.acc-estimated { background: var(--warn); }
+.acc-dots i.acc-assumed { background: transparent; box-shadow: inset 0 0 0 1.5px var(--warn); }
+.acc-pop { width: min(340px, calc(100vw - 48px)); max-height: min(420px, 60vh); overflow: auto; padding: 4px 12px 10px; border-top: 1px solid var(--line); }
+.acc-pop[hidden] { display: none; }
+.acc-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.acc-list li { padding-top: 8px; }
+.acc-list li + li { border-top: 1px solid var(--line); }
+.acc-k { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.acc-k b { font-size: var(--fs-sm); font-weight: 600; }
+.acc-list p { margin: 3px 0 0; font-size: var(--fs-xs); line-height: 1.45; color: var(--ink-2); }
+.acc-pill { font-size: var(--fs-2xs); font-weight: 600; letter-spacing: .04em; text-transform: uppercase; padding: 2px 7px; border-radius: 999px; border: 1px solid var(--line); color: var(--ink-2); white-space: nowrap; }
+.acc-pill.acc-measured, .acc-pill.acc-confirmed { color: var(--good); background: var(--good-soft); border-color: transparent; }
+.acc-pill.acc-source { color: var(--accent-strong); background: var(--accent-soft); border-color: transparent; }
+.acc-pill.acc-estimated, .acc-pill.acc-assumed { color: var(--warn); background: var(--warn-soft); border-color: transparent; }
+.acc-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--line); }
+.acc-sum { font-size: var(--fs-2xs); color: var(--ink-3); }
+@media (max-width: 1100px) { .acc-chip[data-host="unit"] { left: 12px; top: 96px; } }
+@media (max-width: 760px) {
+  .acc-chip[data-host="unit"] { left: 12px; top: auto; bottom: 108px; }
+  .acc-chip[data-host="studio"] { top: auto; bottom: 126px; left: 10px; }
+  .acc-t { max-width: 190px; overflow: hidden; text-overflow: ellipsis; }
+}
+
+/* the studio's "Sun today" group in the look panel: direct sun through the window of this view, and the way into Unit 3D */
+.lk-extra { gap: 8px; flex-wrap: wrap; }
+.rc-n { font-size: var(--fs-xs); color: var(--ink-2); white-space: nowrap; }
+.rc-n b { color: var(--ink); font-weight: 600; }
+.rc-strip { display: inline-block; width: 150px; height: 10px; border-radius: 5px; background: var(--surface-2); position: relative; overflow: hidden; vertical-align: middle; }
+.rc-strip i { position: absolute; top: 0; bottom: 0; background: var(--sun, #f5b547); opacity: .9; }
+.rc-strip u { position: absolute; top: -1px; bottom: -1px; width: 2px; background: var(--ink); text-decoration: none; }
+.lk-act { border: 1px solid var(--line); background: none; height: 26px; padding: 0 11px; border-radius: 999px; font: 500 var(--fs-xs) var(--font-sans, inherit); color: var(--ink-2); cursor: pointer; white-space: nowrap; }
+.lk-act:hover { color: var(--ink); background: var(--surface-2); }
+.lk-act:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.acc-chip[data-host="unit"] .acc-pop { max-height: 230px; }
+.acc-chip[data-host="studio"] .acc-pop { max-height: 300px; }
+.lk-sel { display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-xs); color: var(--ink-3); }
+.lk-sel select { height: 26px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface-2); color: var(--ink-2); font: 500 var(--fs-xs) var(--font-sans, inherit); padding: 0 8px; }
+.u-look .lx-legend { min-width: 150px; margin: 0; }

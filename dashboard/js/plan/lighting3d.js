@@ -4,6 +4,7 @@
 import * as THREE from 'three';
 import * as G3 from './scene3d.js';
 import { kelvinHex, sourcesOf } from './lighting-model.js';
+import { heatMeshes } from '../room3d/heatfloor.js';
 
 const M = 0.0254;
 const GAIN = 0.14;                       // display gain, the same as the furniture lamps in scene3d.js
@@ -106,17 +107,7 @@ export function select(id) {
 export function setHeat(rooms, opacity = 0.82) {
   if (!ready) return;
   disposeTree(tintRoot); heat = rooms || null;
-  for (const r of rooms || []) {
-    if (!r.canvas) continue;
-    const shape = new THREE.Shape(r.poly.map(([x, y]) => new THREE.Vector2(x * M, y * M)));
-    const geo = new THREE.ShapeGeometry(shape);
-    const pos = geo.attributes.position, uv = geo.attributes.uv, x0 = r.x0In * M, y0 = r.y0In * M, w = r.nx * r.stepIn * M, h = r.ny * r.stepIn * M;
-    for (let i = 0; i < pos.count; i++) uv.setXY(i, (pos.getX(i) - x0) / w, (pos.getY(i) - y0) / h);
-    geo.rotateX(-Math.PI / 2);
-    const tex = new THREE.CanvasTexture(r.canvas); tex.colorSpace = THREE.SRGBColorSpace; tex.minFilter = tex.magFilter = THREE.LinearFilter; tex.generateMipmaps = false;
-    const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity, depthWrite: false, toneMapped: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
-    const mesh = new THREE.Mesh(geo, mat); mesh.position.y = 0.003; mesh.renderOrder = 1; mesh.name = `heat: ${r.room}`; tintRoot.add(mesh);
-  }
+  for (const m of [...heatMeshes(rooms, { opacity }).children]) tintRoot.add(m);   // [room3d] the same tint Unit 3D's Inside camera draws
   G3.markDirty();
 }
 export const hasHeat = () => !!heat && heat.length > 0;

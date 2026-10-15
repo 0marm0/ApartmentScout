@@ -27,6 +27,11 @@ import { resolveCal, geoFromSite, measuredFromSite, calSummary } from './unit/ca
 import { effectiveComponents, isAssumed } from './unit/parts.js';   // [model project] source parts plus the assumed override
 import { windowOpenAir, airReason } from './unit/openair.js';   // [model project] a window must be in open air
 import { getPin, clearPin } from './unit/anchor.js';   // [model project] the window pinned for the Floor plan studio
+import { takeHandoff } from './room3d/sunlink.js';
+import { heatMeshes, daylightRooms, savedLighting } from './room3d/heatfloor.js';   // [room3d] the studio's daylight map and saved glass and blinds
+import { SCALES, legendHTML } from './plan/heatmap.js';
+import { glazingScale, blindsOf, BLINDS_LABEL } from './plan/light.js';   // [room3d]
+import { accuracyRows, accuracyChip, loadFurnitureMeta } from './room3d/accuracy.js';   // [room3d] the measured-vs-assumed chip, shared with the studio
 import { buildFurniture, addRoomView } from './unit/furniture.js';   // [model project] the studio's furniture in the Inside view
 import { modelHooks } from './unit/model-hooks.js';   // [model project] Model panel, project import and the comparison board
 import { insideViews, viewForWindow } from './unit/inside-views.js';   // [interior] the Inside camera's rooms, bays, corners and seats
@@ -247,6 +252,7 @@ async function load(id) {
     if (!qs.has('sv')) applyScenarioExtras(readScenarioExtras(qs)); // older unversioned links
     st.first = false;
   }
+  if (!pendingView) { const h = takeHandoff(id); if (h) pendingView = { ...h, id }; }   // [room3d] the Floor plan studio's "Sun path in Unit 3D": its date, time and the Inside camera
   if (pendingView && pendingView.id === id) {   // [model project] the view saved in an imported project
     const v = pendingView; pendingView = null;
     if (v.cal !== undefined && !pin) { st.cal = v.cal; calcCal(); }
@@ -416,6 +422,7 @@ function wireStage() {
   for (const [id, k] of [['uFov', 'fov'], ['uYaw', 'yaw'], ['uPitch', 'pitch']]) $(id).addEventListener('input', (e) => { stage.look[k] = +e.target.value; syncLens(); stage.dirty = true; syncUrlSoon(); if (st.study === 'floors') studyStale(); });
   $('uInWin').addEventListener('change', (e) => goView(e.target.value));   // [interior] the phone fallback for the room chips
   bindLookChips($('uLook'), { pick: (k) => goView(k), order: () => views.map((v) => v.key) });
+  $('uLook').addEventListener('click', onInsideAct); $('uLook').addEventListener('change', onInsideAct);   // [room3d] daylight map and blinds
   // photo matching: the file is read in this browser only (an object URL), never uploaded or stored
   // a video works the same way: pick the frame that shows the skyline best with the frame slider
   $('uPhotoIn').addEventListener('change', (e) => {
@@ -586,9 +593,41 @@ function buildApartment() {
 }
 let views = [], curView = null;
 const curOff = () => (curView ? curView.off : interior?.windows[st.inWin]?.bearingOff || 0);
+// [room3d] the studio's glass, blinds and relative-daylight map in the Inside camera: the same saved Light-tab inputs, the same model, drawn on this room's floor
+let dlOn = false, dlGroup = null;
+const roomLight = () => savedLighting(store, S.base, st.id);
+function applyRoomScale() { const L = roomLight(), g = glazingScale({ transmittance: L.glazing, blinds: L.blinds }); stage?.setRoomScale?.({ sun: g.sun, sky: g.through }); }
+function insideExtra() {
+  if (!plan || !site || st.mode !== 'in') return { html: '', key: '' };
+  const L = roomLight(), opts = Object.keys(BLINDS_LABEL).map((k) => `<option value="${k}"${k === L.blinds ? ' selected' : ''}>${BLINDS_LABEL[k]}</option>`).join('');
+  const html = `<span class="lk-h">Daylight</span><button type="button" class="lk-act" data-act="dl" aria-pressed="${dlOn}" title="Tint the floor with the relative daylight the studio's Light tab models (an overcast sky, your glass and blinds)">${dlOn ? 'Hide' : 'Show'} daylight map</button>`
+    + `<label class="lk-sel"><span>Blinds</span><select data-act="blinds" aria-label="Blinds (shared with the Floor plan studio)">${opts}</select></label>${dlOn ? legendHTML(SCALES.daylight) : ''}`;
+  return { html, key: `${dlOn}|${L.blinds}|${L.glazing}` };
+}
+function setDaylightMap(on) {
+  dlOn = !!on;
+  if (dlGroup) { dlGroup.removeFromParent(); dlGroup.traverse((o) => { o.geometry?.dispose?.(); o.material?.map?.dispose?.(); o.material?.dispose?.(); }); dlGroup = null; }
+  if (dlOn && stage?.interior && plan && site) {
+    const face = FACES[st.face], pin = face && !face.shared ? { face: face.i, t: st.t, az: st.az, cal: CAL.measured } : undefined;
+    const r = daylightRooms(site, plan, st.floor, pin, roomLight());
+    if (r.rooms.length) { dlGroup = heatMeshes(r.rooms, { origin: [stage.interior.frame.xc, stage.interior.frame.yw], opacity: 0.8 }); stage.interior.group.add(dlGroup); }
+    else dlOn = false;
+  }
+  stage && (stage.dirty = true); lookChips();
+}
+function onInsideAct(e) {
+  const b = e.target.closest('[data-act]'); if (!b) return;
+  if (b.dataset.act === 'dl' && e.type === 'click') setDaylightMap(!dlOn);
+  if (b.dataset.act === 'blinds' && e.type === 'change') {
+    let raw = null; try { raw = store.get(`plan-light.${S.base}.${st.id}`, null); } catch { raw = null; }
+    try { store.set(`plan-light.${S.base}.${st.id}`, { ...(raw && typeof raw === 'object' ? raw : {}), blinds: blindsOf(b.value) }); } catch { /* storage unavailable: it lasts for this view */ }
+    applyRoomScale(); if (dlOn) setDaylightMap(true); else lookChips();
+  }
+}
 function lookChips() {
   const el = $('uLook'); if (!el) return;
-  const any = setLookChips(el, views, curView?.key, {});
+  const ex = insideExtra();
+  const any = setLookChips(el, views, curView?.key, { extra: ex.html, extraKey: ex.key });
   el.hidden = !any || st.mode !== 'in';
   const on = el.querySelector('.lk-chip.on'); if (on && el.scrollWidth > el.clientWidth + 2) el.scrollLeft = Math.max(0, on.offsetLeft - 24);   // a phone's row scrolls to the active chip
   const sel = $('uInWin'), sig = views.map((v) => v.key).join('|');
@@ -1135,7 +1174,23 @@ function partsBlock(b) {
 function closeCard() { st.sel = null; stage?.select(null); $('uCard').hidden = true; $('nbPanel')?.querySelectorAll('tr.on').forEach((r) => r.classList.remove('on')); }
 
 // ------------------------------------------------------------------ evidence
+// [room3d] "What's measured vs assumed": the compact chip over the 3D view, built from the same rows as the Floor plan studio's
+let accUI = null, furnMeta = null;
+function accChip() {
+  if (!site || !CAL) return;
+  if (!accUI) { accUI = accuracyChip({ host: 'unit', onOpen: openEvidence, openLabel: 'Open the evidence' }); $('gl').parentElement.append(accUI.el); loadFurnitureMeta(S.base, S.manifest).then((m) => { furnMeta = m; accChip(); }); }
+  const n = planInfo.layout?.items?.length || 0;
+  accUI.update(accuracyRows({ site, plan: plan || null, cal: { state: CAL.state, fh: CAL.fh, slab: CAL.slabAt(st.floor) }, floor: st.floor, facing: st.az, t: st.t,
+    furniture: n ? { name: furnMeta?.name || 'Furniture', confirmed: furnMeta?.confirmed || null, count: n } : null }));
+}
+function openEvidence() {
+  const el = $('evPanel'); el?.closest('details')?.setAttribute('open', '');
+  el?.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+  const h = el?.querySelector('h3'); if (h) { h.setAttribute('tabindex', '-1'); h.focus({ preventScroll: true }); }
+}
+
 function evidencePanel() {
+  accChip();
   const p = provenance(), L = listing(), P = site.provenance || {};
   const area = Math.abs((() => { let a = 0; for (let i = 0; i < T.n; i++) { const j = (i + 1) % T.n; a += T.p[2 * i] * T.p[2 * j + 1] - T.p[2 * j] * T.p[2 * i + 1]; } return a / 2; })());
   const bm = Array.isArray(site.bmeta) ? site.bmeta.filter(Boolean) : [];

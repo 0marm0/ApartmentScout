@@ -447,6 +447,8 @@ export class UnitStage {
    * its soft shadows, the windows' sky glow, ACES (Visual) or a gentle curve (Fast) and warm lamps after dark. It is the Floor plan studio's light
    * look, so the same room and the same city look the same in both engines. The orbit, plan and top cameras keep the sun-study lighting.
    */
+  /** The studio's glass and blinds as light scales {sun, sky} (plan/light.js glazingScale), applied to the room's sun and the windows' glow. */
+  setRoomScale(sc) { this.roomScale = sc && Number.isFinite(sc.sun) && Number.isFinite(sc.sky) ? { sun: sc.sun, sky: sc.sky } : undefined; this.applyRoomLook(); this.dirty = true; }
   roomLook() { return (this.mode === 'in' || this.mode === 'win') && !!this.lastSun; }
   applyRoomLook() {
     const r = this.renderer;
@@ -459,7 +461,7 @@ export class UnitStage {
       return;
     }
     const s = this.lastSun, up = s.alt > 0, sin = Math.max(0, Math.sin(s.alt * DEG));
-    const st = this.roomState = roomLightState({ mood: moodFor(this.moodWant || 'auto', up, sin), sunOn: up, sinAlt: sin, quality: roomQuality() });
+    const st = this.roomState = roomLightState({ mood: moodFor(this.moodWant || 'auto', up, sin), sunOn: up, sinAlt: sin, quality: roomQuality(), scale: this.roomScale });
     applyRoomLight({ sunL: this.sunL, hemi: this.hemi, amb: this.amb, glow: this.interior?.glow, renderer: r }, st);
     // lamps from the layout (floor and table lamps, pendants) come on after dark, like the studio's
     for (const g of this.interior?.furniture?.group.children || []) {

@@ -88,7 +88,7 @@ export function createCity(data, o) {
       if (extra.quality) c.quality = extra.quality;
       if (extra.layers) c.layers = { ...c.layers, ...extra.layers };
       c.ctx = buildCityContext(data, { pal: c.pal, center: o.center, frame: o.frame, quality: c.quality, layers: c.layers, ...extra });
-      if (c.ctx) { group.add(c.ctx.group); c.ctx.watch(c.ctx.group); }
+      if (c.ctx) { group.add(c.ctx.group); c.ctx.watch(group); }   // (the tree LOD follows the camera once the city's own group is in a scene)
       c.syncGroundBase();
       return c.ctx;
     },
