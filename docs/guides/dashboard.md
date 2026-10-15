@@ -56,7 +56,7 @@ folder menu and the settings menu. The search-name pill on the left opens the sa
 | Section | Holds |
 |---|---|
 | **This search** | The search name and counts (and its folder, when served), **Edit criteria…** (the wizard on every criterion), **Search settings** (quick edits previewed in this browser), **Switch search…** (the other searches; only when `apartmentscout serve` is running) and **New search…** |
-| **Data** | **Export filtered CSV**, **Back up picks**, **Restore picks…** (a backup file), **Share shortlist**, **Decision memo** |
+| **Data** | **Export filtered CSV**, **Back up picks**, **Restore picks…** (a backup file), **Sync across devices…** (a private gist or a sync file, see [sync](sync.md)), **Share shortlist**, **Decision memo** |
 | **Appearance** | Theme (system, dark, light), accent (iris, jade, amber, rose), density (roomy, compact), office pin (gold, green) and the golden-hour map tint |
 | **Comfort** | Reduce motion, reduce transparency, high contrast, text size |
 | **Help** | Search or jump to (`⌘K`), Keyboard shortcuts (`?`), Restart tour, and **Install app** where the browser offers it |
@@ -130,6 +130,8 @@ Chords and `x` ignore the keys while you type in a field and while a dialog, the
 Saved picks, tiers, tour notes, compare, filters, weights, density and which rail sections are collapsed are kept in your browser's local storage.
 Use **Back up picks** on the Tours view to keep them as a file, and **Restore** to load them in another
 browser.
+To keep two browsers (the Mac and the iPhone) in step instead, use **Menu > Data > Sync across devices**: a private GitHub gist or a
+sync file, merged item by item so edits made on two devices both survive. See [Sync between your devices](sync.md).
 
 ## Map interactions
 
