@@ -77,9 +77,11 @@ export function blockersTable(rows, dayLabel) {
 }
 
 // ------------------------------------------------------------------ evidence extras
-const TARGET = {
+export const TARGET = {
   bin: ['Matched by BIN', 'good', 'The building was picked by its city building number (BIN), not by the address point.'],
   bbl: ['Matched by tax lot', 'good', 'The building was picked by its tax lot (BBL), not by the address point.'],
+  name: ['Matched by name', 'good', 'The building was picked by its name (OpenStreetMap or the footprint\u2019s own name) near the address point, not by the address point alone.'],
+  address: ['Matched by address', 'good', 'The building was picked by its house number and street (OpenStreetMap addr tags) near the address point, not by the address point alone.'],
   point: ['Address point', '', 'The address point falls inside this footprint.'],
   nearest: ['Nearest footprint', 'warn', 'The address point is not inside any footprint; the nearest one was used. Check it is the right building.'],
 };

@@ -41,6 +41,7 @@ def site_checks(site: dict, face: dict | None = None) -> list[dict]:
     else:
         out.append(_c("origin", "warn", f"address point is {d0:.0f} m from the target footprint"
                       + (f" (building matched by {how.upper()})" if how in ("bin", "bbl") else
+                         f" (building matched by {how})" if how in ("name", "address") else
                          ": check that the right building was picked")))
 
     # 2. ground datum: the target sits at 0 and its roof is above it

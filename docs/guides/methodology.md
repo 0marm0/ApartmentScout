@@ -492,10 +492,16 @@ assumed parts, the plan with furniture, saved scenarios and version metadata, op
 network. A project is the model as it was when exported: it does not re-query any source and says nothing about what changed afterwards.
 
 **Which building.** The listing's own BIN, then its tax lot (BBL), pick the building before the
-geocoded point does: address points often land in the street or on the neighbour. Only without a
-match is the footprint containing the point used (if it is tall enough for the listing's floor),
-else the nearest tall-enough footprint within 45 m. The site file says which rule matched and how far
-the address point lies outside the building.
+geocoded point does: address points often land in the street or on the neighbour. Without them (outside New York there are none), the
+listing's building name and street address are matched against the footprints within 250 m of the point: an OpenStreetMap `name` (or the
+city footprint's own name) that contains, or is contained in, the listing's building name with a shared word that is not generic ("Tower",
+"Apartments" alone never match), then `addr:housenumber` + `addr:street` against the listing's house number and street (with the usual
+abbreviations: `225 N Columbus Dr` is `225 North Columbus Drive`). Where several buildings share a name (the four Presidential Towers) the
+street number picks one, else the one holding the point, else the nearest. Only without any of these is the footprint containing the point
+used (if it is tall enough for the listing's floor), else the nearest tall-enough footprint within 45 m: in Chicago the nearest footprint to
+Aqua's geocoded point was the Fairmont Hotel across the street, and to Presidential Towers' 540 West Madison, which is why names and
+addresses come first. The site file says which rule matched (`bin`, `bbl`, `name`, `address`, `point`, `nearest`: the last two are guesses and
+are flagged) and how far the address point lies outside the building; Unit 3D's evidence panel and building card show it.
 
 **Floor heights.** Eye height is (floor - 1) x storey height + 1.6 m. The storey height is the
 target's measured roof height divided by its PLUTO number of floors, clamped to 2.8-4.2 m; roof

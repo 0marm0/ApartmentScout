@@ -225,3 +225,13 @@ test('a landmark with dozens of parts (the Chrysler Building has 62) is a valid 
   assert.deepEqual(problems, []); assert.equal(map['5'].length, 79);
   assert.equal(P.validateParts({ 5: Array.from({ length: P.MAX_PARTS + 1 }, () => parts[0]) }, 10).problems.length, 1, 'but not without bound');
 });
+
+test('the evidence panel says which way the target building was matched, including by name and by address', async () => {
+  const panels = await import(new URL('dashboard/js/unit/panels.js', root));
+  for (const [how, label] of [['bin', 'Matched by BIN'], ['bbl', 'Matched by tax lot'], ['name', 'Matched by name'], ['address', 'Matched by address'], ['nearest', 'Nearest footprint'], ['point', 'Address point']]) {
+    assert.equal(panels.TARGET[how][0], label, how);
+    const ev = panels.evidenceExtras({ provenance: { target: how, target_offset_m: 33 }, b: [], bmeta: [] }, { sector: null, staleYears: 8, fh: 3.2, floor: 5, slab: null, slabManual: false });
+    assert.ok(ev.notes.join('').includes(label), `the evidence lists "${label}"`);
+  }
+  assert.equal(panels.TARGET.name[1], 'good'); assert.equal(panels.TARGET.nearest[1], 'warn', 'a guess is flagged, a name match is not');
+});
