@@ -6,13 +6,13 @@
 import * as THREE from 'three';
 import { normalisePlan, pointInPoly } from '../plan/model.js';
 import { planFrame } from '../plan/city.js';
-import * as I3 from '../plan/interior3d.js';   // [interior] reveals, casings, framed glass, door frames, baseboards, trims, floor finishes
+import { roomShell } from '../room3d/shell.js';   // [room3d] the shared room: floors, walls, ceilings, doors, fixtures, windows
 
 export { planFrame };
-import { css } from '../util.js';
+import { roomColors } from '../room3d/palette.js';   // [room3d] the room's paint and floor, one definition for both engines
+import { windowGlowLights } from '../room3d/lighting.js';   // [room3d] the sky glow each window lets in
 
 const M = 0.0254;
-const col = (name, fb) => { const v = css(name); return new THREE.Color(/^#[0-9a-f]{3,8}$/i.test(v) ? v.slice(0, 7) : fb); };
 
 /** A generic one-room shell (5.5 m wide, 7 m deep, a 4 m window band) for units without a floor plan. */
 export function genericPlan() {
@@ -33,41 +33,31 @@ export const toLocal = (fr, p) => [(p[0] - fr.xc) * M, -(p[1] - fr.yw) * M];
  */
 export function buildInterior(model, opts = {}) {
   const fr = planFrame(model), g = new THREE.Group(); g.name = 'apartment';
-  const light = document.documentElement.dataset.theme === 'light';
-  const ink = col('--ink', '#eef1f6'), s1 = col('--surface-1', '#0e1015'), s3 = col('--surface-3', '#1a1e27');
-  const wallC = light ? s1.clone().lerp(ink, 0.04) : ink.clone().lerp(s3, 0.28);
-  const wood = new THREE.Color(light ? 0xcfb08a : 0x9c8064), tile = new THREE.Color(light ? 0xdedfdc : 0xa9adb2);
-  const std = (c, o = {}) => new THREE.MeshStandardMaterial({ color: c, roughness: 0.86, metalness: 0, ...o });
+  // [room3d] the room itself is built by the shared shell (room3d/shell.js: the studio's own builder): bright white walls and ceiling, a light oak
+  // floor, doors, fixtures (the AC and radiators), baseboards, casings and framed glass, the same room as in the Floor plan studio
+  const RC = roomColors();
   const L = (p) => toLocal(fr, p);
   const H = model.ceiling * M, b = model.bounds;
-  // slab under the whole unit, so the apartment reads as a floor of the building from outside
   const [bx0, bz1] = L([b.x0 - 6, b.y0 - 6]), [bx1, bz0] = L([b.x1 + 6, b.y1 + 6]);
-  const slab = new THREE.Mesh(new THREE.BoxGeometry(bx1 - bx0, 0.3, bz1 - bz0), std(wallC.clone().lerp(s3, 0.35)));
+  // slab under the whole unit, so the apartment reads as a floor of the building from outside
+  const slab = new THREE.Mesh(new THREE.BoxGeometry(bx1 - bx0, 0.3, bz1 - bz0), new THREE.MeshStandardMaterial({ color: RC.slab, roughness: 0.9 }));
   slab.position.set((bx0 + bx1) / 2, -0.16, (bz0 + bz1) / 2); slab.receiveShadow = true; slab.castShadow = true; slab.name = 'slab'; g.add(slab);
-  for (const r of model.rooms) {
-    const shape = new THREE.Shape(r.poly.map((p) => { const [x, z] = L(p); return new THREE.Vector2(x, -z); }));
-    const geo = new THREE.ShapeGeometry(shape); geo.rotateX(-Math.PI / 2);
-    const fk = I3.floorKind(r), base = I3.floorBase(fk, { wood, tile, dark: !light });   // [interior] parquet, oak or tile by room type
-    const m = new THREE.Mesh(geo, std(0xffffff, { map: I3.floorTexture(fk, base), roughness: I3.floorRoughness(fk) }));
-    m.position.y = 0.004; m.receiveShadow = true; m.name = `floor: ${r.name}`; g.add(m);
-  }
-  // shadowSide FrontSide: the slab and walls cast from their sun-facing faces, so the full thickness separates
-  // occluder from receiver and no sun leaks along the wall-ceiling junction
-  const wallMat = std(wallC, { roughness: 0.92, shadowSide: THREE.FrontSide });
+  const shell = roomShell(model, { origin: [fr.xc, fr.yw], castShadows: false });
+  g.add(shell.group);
+  // invisible shadow casters, as direct children of the apartment: a box per wall piece (shadowSide FrontSide, so the full thickness separates occluder
+  // from receiver) and a thick ceiling that overlaps the wall tops by 3 cm so no sun leaks in at the junction (the city's shadows fall through the windows only)
+  const casterMat = new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false, shadowSide: THREE.FrontSide });
   for (const p of model.pieces) {
     const dx = p.b[0] - p.a[0], dy = p.b[1] - p.a[1], len = Math.hypot(dx, dy); if (len < 0.3) continue;
     const ux = dx / len, uy = dy / len, h = p.t / 2, s0 = p.capA ? -h : 0, s1 = len + (p.capB ? h : 0);
     const mid = L([p.a[0] + ux * (s0 + s1) / 2, p.a[1] + uy * (s0 + s1) / 2]);
-    const m = new THREE.Mesh(new THREE.BoxGeometry((s1 - s0) * M, (p.z1 - p.z0) * M, p.t * M), wallMat);
+    const m = new THREE.Mesh(new THREE.BoxGeometry((s1 - s0) * M, (p.z1 - p.z0) * M, p.t * M), casterMat);
     m.position.set(mid[0], ((p.z0 + p.z1) / 2) * M, mid[1]); m.rotation.y = Math.atan2(dy, dx);
-    m.castShadow = true; m.receiveShadow = true; m.name = 'wall'; g.add(m);
+    m.castShadow = true; m.name = 'wall'; m.userData.blocks = true; g.add(m); shell.blockers.push(m);
   }
-  // ceiling: casts the shadow that makes the sun come in through the windows only
-  const ceil = new THREE.Mesh(new THREE.BoxGeometry(bx1 - bx0, 0.2, bz1 - bz0), std(wallC.clone().lerp(ink, light ? 0 : 0.05), { shadowSide: THREE.FrontSide }));
-  // the slab overlaps the wall tops by 3 cm so no sun leaks in at the junction
-  ceil.position.set((bx0 + bx1) / 2, H + 0.07, (bz0 + bz1) / 2); ceil.castShadow = true; ceil.receiveShadow = true; ceil.name = 'ceiling'; g.add(ceil);
-  // [interior] window reveals, sills, casings, framed glass with a soft reflection, door frames, baseboards, ceiling trims (shared with the studio)
-  g.add(I3.detailGroup(model, { origin: [fr.xc, fr.yw], cut: null, dark: !light, sheen: true }));
+  const caster = new THREE.Mesh(new THREE.BoxGeometry(bx1 - bx0, 0.2, bz1 - bz0), casterMat);
+  caster.position.set((bx0 + bx1) / 2, H + 0.07, (bz0 + bz1) / 2); caster.castShadow = true; caster.userData.blocks = true; caster.name = 'ceiling'; g.add(caster);
+  shell.blockers.push(caster);
   const windows = [];
   for (const w of model.windows) {
     const [mx, mz] = L(w.mid);
@@ -82,6 +72,10 @@ export function buildInterior(model, opts = {}) {
     const off = (Math.atan2(w.normal[0], w.normal[1]) * 180) / Math.PI;
     windows.push({ room: w.room || room?.name || 'Window', note: w.note || '', bearingOff: off, local: [mx, mz], eye: L(eye), facade: w.normal[1] > 0.7 });
   }
+  // [room3d] the sky glow each window lets in (soft area lights, off until the room's light state sets them), like the studio's
+  const glow = new THREE.Group(); glow.name = 'window glow';
+  for (const Lt of windowGlowLights(model, (p) => model.rooms.some((r) => pointInPoly(p, r.poly)), [fr.xc, fr.yw])) glow.add(Lt);
+  g.add(glow);
   g.traverse((o) => { o.userData.interior = true; });
-  return { group: g, frame: fr, windows, height: H, generic: !!opts.generic };
+  return { group: g, frame: fr, windows, height: H, generic: !!opts.generic, glow, blockers: shell.blockers };
 }

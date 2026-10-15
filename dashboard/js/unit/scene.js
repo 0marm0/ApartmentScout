@@ -14,6 +14,11 @@ import { buildContext } from './context3d.js';
 import { contextLabels } from './context-core.js';
 import { palette, skyAt, SKY_VS, SKY_FS, glowTexture } from '../city3d/look.js';   // [city3d] the shared look of the city: palette, sky keyframes and dome, sun glow
 import { decorate } from '../city3d/facade.js';   // [city3d] the shared facade shader
+import { RectAreaLightUniformsLib } from 'three/addons/lights/RectAreaLightUniformsLib.js';
+import { roomLightState, moodFor, applyRoomLight } from '../room3d/lighting.js';   // [room3d] the room's own light, shared with the studio
+import { roomQuality } from '../room3d/quality.js';
+import { createSky, applySky } from '../city3d/sky.js';   // [city3d] the shared sky
+import { createCity } from '../city3d/city.js';   // [city3d] THE city: buildings, outlines, context and ground, shared with the studio
 import { shapeOf, prism, prismsOf, solidGeo, heightColor, mergeBuildings, edgeGeo, outlineGeo } from '../city3d/buildings.js';   // [city3d] THE building mesher
 
 const isLight = () => document.documentElement.dataset.theme === 'light';
@@ -33,6 +38,7 @@ export class UnitStage {
     this.renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
     this.renderer.shadowMap.enabled = true; this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
+    RectAreaLightUniformsLib.init();   // [room3d] the windows' sky glow
     this.maxTex = this.renderer.capabilities.maxTextureSize || 4096;
     this.mode = 'orbit'; this.look = { yaw: 0, pitch: 6, fov: 70 }; this.dirty = true; this.tween = null;
     this.opts = { shadows: true, labels: true, streets: true, future: true, green: true, water: true, streetTrees: true, parkTrees: true, cone: false, ray: true, target: 'solid' };   // [park trees] streetTrees / parkTrees switch the two kinds of tree
@@ -48,7 +54,7 @@ export class UnitStage {
   /** data: {B, T, ti, streets, future, lm, ownLabel, R} */
   build(data) {
     this.data = data;
-    if (this.scene) disposeTree(this.scene);
+    if (this.scene) { this.cityObj?.ctx?.dispose(); disposeTree(this.scene); }
     const scene = this.scene = new THREE.Scene();
     this.interior = null; this.inEye = null; this.fanLine = null;
     const { B, T } = data;
@@ -71,36 +77,21 @@ export class UnitStage {
     this.resetOrbit(false); this.resetPlan();
 
     // sky dome, fog, lights
-    this.skyU = { zen: { value: new THREE.Color() }, hor: { value: new THREE.Color() }, gnd: { value: pal.ground.clone() }, sunDir: { value: new THREE.Vector3(0, 1, 0) }, sunCol: { value: pal.sun.clone() }, glow: { value: 1 } };
-    this.sky = new THREE.Mesh(new THREE.SphereGeometry(6000, 48, 24), new THREE.ShaderMaterial({ uniforms: this.skyU, vertexShader: SKY_VS, fragmentShader: SKY_FS, side: THREE.BackSide, depthWrite: false, fog: false }));
-    this.sky.renderOrder = -10; this.sky.frustumCulled = false; scene.add(this.sky);
+    const SK = this.skyObj = createSky(pal);   // [city3d] the sky the studio's eye-level views share
+    this.skyU = SK.U; this.sky = SK.dome; scene.add(SK.dome);
     scene.fog = new THREE.Fog(0x000000, 900, 3600);
     this.hemi = new THREE.HemisphereLight(0xffffff, 0x444444, 1.2); scene.add(this.hemi);
+    this.amb = new THREE.AmbientLight(0xfff3e6, 0); scene.add(this.amb);   // [room3d] the bounce fill of the room's light (0 outside)
     const sunL = this.sunL = new THREE.DirectionalLight(0xffffff, 2.6);
     sunL.castShadow = true; const ms = Math.min(4096, this.maxTex); sunL.shadow.mapSize.set(ms, ms);
     Object.assign(sunL.shadow.camera, { left: -560, right: 560, top: 560, bottom: -560, near: 10, far: 4200 });
     sunL.shadow.bias = -0.00035; sunL.shadow.normalBias = 0.6; sunL.shadow.radius = 3;
     sunL.target.position.copy(this.center); scene.add(sunL); scene.add(sunL.target);
 
-    // ground
-    this.groundMat = new THREE.MeshStandardMaterial({ color: pal.ground, roughness: 1, metalness: 0 });
-    const ground = this.groundBase = new THREE.Mesh(new THREE.PlaneGeometry(24000, 24000), this.groundMat);
-    ground.rotation.x = -Math.PI / 2; ground.position.copy(this.center).setY(-0.02); ground.receiveShadow = true; scene.add(ground);
-
-    // city: merged prisms, near ones cast shadows
-    this.bMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9, metalness: 0 });
-    this.facU.uLitCol.value.copy(pal.lit);
-    decorate(this.bMat, this.facU, 'unit-city');
-    this.vrange = new Map();
-    const near = [], far = [];
-    B.forEach((b, i) => { if (b === T) return; const d = Math.hypot((b.bb[0] + b.bb[2]) / 2 - cx, (b.bb[1] + b.bb[3]) / 2 - cy); (d < 900 ? near : far).push(i); });
-    this.city = [this.merged(near, true), this.merged(far, false)];
-    this.city.forEach((m) => scene.add(m));
-    this.edgeMat = new THREE.LineBasicMaterial({ color: pal.edge, transparent: true, opacity: pal.edgeOp, depthWrite: false });
-    this.edgeIdx = near.filter((i) => this.distTo(B[i]) < 760);
-    this.edges = new THREE.LineSegments(this.edgeGeo(this.edgeIdx), this.edgeMat); scene.add(this.edges);
-    this.outlineMat = new THREE.LineBasicMaterial({ color: pal.outline, transparent: true, opacity: pal.outlineOp, depthWrite: false });
-    this.outlines = new THREE.LineSegments(this.outlineGeo(near.filter((i) => this.distTo(B[i]) < 820)), this.outlineMat); scene.add(this.outlines);
+    // [city3d] ground, buildings, roof and footprint outlines: the city both engines share (city3d/city.js), in the site frame, near ones casting shadows
+    const C = this.cityObj = createCity({ B, T, ti: data.ti, green: data.green, water: data.water, streets: data.streets }, { pal, center: this.cxy, quality: this.quality, castShadow: true, facU: this.facU });
+    Object.assign(this, { groundMat: C.groundMat, groundBase: C.groundBase, bMat: C.bMat, vrange: C.vrange, city: C.meshes, edgeMat: C.edgeMat, edgeIdx: C.edgeIdx, edges: C.edges, outlineMat: C.outlineMat, outlines: C.outlines });
+    scene.add(C.group);
 
     // target building in the accent, with solid / faint / hidden display
     this.tMat = new THREE.MeshStandardMaterial({ color: pal.tBase, roughness: 0.62, metalness: 0.05, transparent: true, opacity: 1 });
@@ -137,9 +128,7 @@ export class UnitStage {
     this.cone = new THREE.Mesh(new THREE.CircleGeometry(320, 48, 0, Math.PI * 2 / 3), this.coneMat); this.cone.rotation.x = -Math.PI / 2; scene.add(this.cone);
 
     // sun disc and glow (drawn far away, never fogged)
-    this.sunDisc = new THREE.Mesh(new THREE.SphereGeometry(30, 24, 16), new THREE.MeshBasicMaterial({ color: pal.sun, fog: false }));
-    this.sunGlow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTexture(), color: pal.sun, transparent: true, depthWrite: false, fog: false, blending: THREE.AdditiveBlending }));
-    this.sunGlow.scale.set(420, 420, 1); scene.add(this.sunDisc, this.sunGlow);
+    this.sunDisc = this.skyObj.disc; this.sunGlow = this.skyObj.glow; scene.add(this.sunDisc, this.sunGlow);
 
     // height rings (Heights layer): 150 m and 300 m around the window, drawn on the ground
     this.rings = new THREE.Group();
@@ -163,19 +152,18 @@ export class UnitStage {
    * from the site file's streets, `water` and `green`, rebuilt on a theme change. Context only, never in the sun numbers.
    */
   buildGreen() {
-    if (this.ctx) { this.scene.remove(this.ctx.group); this.ctx.dispose(); }
     this.ctx = null; this.greenGrp = null;
-    const d = this.data, any = d.green || d.water || (d.streets || []).length;
-    if (any) {
-      this.ctx = buildContext({ green: d.green, water: d.water, streets: d.streets }, { B: d.B, center: this.cxy, radius: 640, y0: 0, ground: this.pal.ground, light: this.pal.light, blue: this.pal.blue, visual: this.quality.visual, phone: this.quality.phone, layers: { green: this.opts.green, water: this.opts.water, streetTrees: this.opts.streetTrees, parkTrees: this.opts.parkTrees } });
-      this.scene.add(this.ctx.group); this.ctx.watch(this.ctx.group); this.greenGrp = this.ctx.parts.green;
+    const o = this.opts;
+    this.ctx = this.cityObj.buildContext({ pal: this.pal, quality: this.quality, layers: { green: o.green, water: o.water, streetTrees: o.streetTrees, parkTrees: o.parkTrees } });   // [city3d] the same context the studio draws
+    if (this.ctx) {
+      this.greenGrp = this.ctx.parts.green;
       if (this.lastSun) this.ctx.setSun({ dir: this.sunDir, alt: this.lastSun.alt });
       this.ctx.setInside(this.mode === 'in');
     }
     this.syncGroundBase();
   }
   /** The plate stands in for the base ground where it is on; the base drops under the water so the plate's holes show it. */
-  syncGroundBase() { if (this.groundBase) this.groundBase.position.y = this.ctx?.hasGround && this.opts.water ? -0.9 : -0.02; }
+  syncGroundBase() { if (this.cityObj) { this.cityObj.layers = { ...this.cityObj.layers, water: this.opts.water }; this.cityObj.syncGroundBase(); } }
   /** [city context] Render quality from unit/quality3d.js: tree shadows (Visual) and the water's sky reflection and sun glint. */
   setContextQuality(q) { this.quality = { visual: !!q.visual, phone: !!q.phone }; this.ctx?.setQuality(this.quality); this.dirty = true; }
   distTo(b) { return Math.hypot((b.bb[0] + b.bb[2]) / 2 - this.cxy[0], (b.bb[1] + b.bb[3]) / 2 - this.cxy[1]); }
@@ -201,13 +189,6 @@ export class UnitStage {
     const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(P), 3)); return g;
   }
   heightColor(h) { return heightColor(this.pal, h); }
-  merged(idx, cast) {
-    const { geometry, starts, ids, H, ranges } = mergeBuildings(this.data.B, idx, { pal: this.pal });
-    const m = new THREE.Mesh(geometry, this.bMat); m.castShadow = cast; m.receiveShadow = true;
-    m.userData.starts = starts; m.userData.ids = ids; m.userData.h = H;
-    ranges.forEach(([i, a, b]) => this.vrange.set(i, [m, a, b]));
-    return m;
-  }
   /** Roof outlines plus vertical lines at real corners. */
   edgeGeo(idx, all = false) { return edgeGeo(this.data.B, idx, all); }
   outlineGeo(idx, z = 0.25) { return outlineGeo(this.data.B, idx, z); }
@@ -290,7 +271,7 @@ export class UnitStage {
     const W = this.el.clientWidth, H = this.el.clientHeight, placed = [], v = new THREE.Vector3();
     const order = [...this.labels].sort((a, b) => b.prio - a.prio);
     // inside the apartment, a label only shows when the glass (not a wall or the ceiling) is in front of it
-    const solid = this.mode === 'in' && this.interior ? this.interior.group.children.filter((o) => o.isMesh && o.name !== 'glass') : null;
+    const solid = this.mode === 'in' && this.interior ? (this.interior.blockers || []) : null;   // [room3d] the walls, floors and ceilings of the shared shell
     const rc = solid ? new THREE.Raycaster() : null;
     const walled = (pos) => { const d = pos.clone().sub(cam.position), L = d.length(); rc.set(cam.position, d.normalize()); rc.far = L; return rc.intersectObjects(solid, false).length > 0; };
     for (const L of order) {
@@ -341,9 +322,7 @@ export class UnitStage {
   setPalette() {
     const pal = this.pal = palette();
     if (!this.scene) return;
-    this.groundMat.color.copy(pal.ground); this.skyU.gnd.value.copy(pal.ground);
-    this.edgeMat.color.copy(pal.edge); this.edgeMat.opacity = pal.edgeOp;
-    this.outlineMat.color.copy(pal.outline); this.outlineMat.opacity = pal.outlineOp;
+    this.cityObj.setPalette(pal); this.skyU.gnd.value.copy(pal.ground);
     this.tMat.color.copy(pal.tBase); this.tEdgeMat.color.copy(pal.accent); this.tFoot.material.color.copy(pal.accent);
     this.cmpBand.material.color.copy(pal.ink); this.coneMat.color.copy(pal.accent);
     if (this.streetMat) { this.streetMat.color.copy(pal.street); this.streetMat.opacity = pal.streetOp; }
@@ -451,23 +430,44 @@ export class UnitStage {
     this.sunL.position.copy(focus).addScaledVector(d, 2000);
     this.sunL.color.copy(mix(pal.sun, pal.white, 0.35 + 0.6 * k));
     this.sunL.intensity = up ? pal.sunMax * (0.35 + 0.65 * Math.sin((Math.min(Math.max(s.alt, 0), 60) / 60) * Math.PI / 2)) : 0;
-    const zen = skyAt(pal.sky.zen, s.alt), hor = skyAt(pal.sky.hor, s.alt);
-    this.skyU.zen.value.copy(zen); this.skyU.hor.value.copy(hor); this.skyU.sunDir.value.copy(d);
-    this.skyU.glow.value = s.alt > -4 ? Math.min(1, (s.alt + 4) / 8) : 0;
-    this.skyU.sunCol.value.copy(mix(pal.sun, pal.white, 0.2 * k));
+    const { zen, hor } = applySky(this.skyObj, pal, s, d, this.center);   // [city3d]
     this.ctx?.setSun({ dir: d, alt: s.alt });   // [city context] the water's light
     this.scene.fog.color.copy(hor);
     // hemisphere light: the sky's hue at full brightness (its darkness is carried by the intensity)
     const tint = mix(hor, zen, 0.5), mx = Math.max(tint.r, tint.g, tint.b, 1e-3); tint.multiplyScalar(1 / mx);
     this.hemi.color.copy(mix(pal.white, tint, 0.3)); this.hemi.groundColor.copy(mix(pal.white, tint, 0.3)).multiplyScalar(0.45);
     this.hemi.intensity = up ? pal.hemiNight + (pal.hemiDay - pal.hemiNight) * Math.min(1, (s.alt + 2) / 14) : pal.hemiNight * (s.alt > -8 ? 1 : 0.85);
-    const sp = this.center.clone().addScaledVector(d, 5000);
-    this.sunDisc.position.copy(sp); this.sunGlow.position.copy(sp);
-    this.sunDisc.visible = this.sunGlow.visible = s.alt > -1.5;
-    this.sunDisc.material.color.copy(mix(pal.sun, pal.white, 0.25 + 0.5 * k));
     // lit windows fade in through dusk
     this.facU.uNight.value = Math.max(0, Math.min(1, (3 - s.alt) / 9)) * (pal.light ? 0.75 : 1);
+    this.applyRoomLook();   // [room3d]
     this.dirty = true;
+  }
+  /**
+   * [room3d] The Inside and Window cameras are lit by the room's own light (room3d/lighting.js): a hemisphere sky light, a bounce fill, the sun with
+   * its soft shadows, the windows' sky glow, ACES (Visual) or a gentle curve (Fast) and warm lamps after dark. It is the Floor plan studio's light
+   * look, so the same room and the same city look the same in both engines. The orbit, plan and top cameras keep the sun-study lighting.
+   */
+  roomLook() { return (this.mode === 'in' || this.mode === 'win') && !!this.lastSun; }
+  applyRoomLook() {
+    const r = this.renderer;
+    if (!this.baseTone) this.baseTone = { mapping: r.toneMapping, exposure: r.toneMappingExposure };
+    if (!this.roomLook()) {
+      this.amb.intensity = 0; this.roomState = null;
+      if (r.toneMapping !== this.baseTone.mapping) r.toneMapping = this.baseTone.mapping;
+      r.toneMappingExposure = this.baseTone.exposure;
+      for (const L of this.interior?.glow?.children || []) L.intensity = 0;
+      return;
+    }
+    const s = this.lastSun, up = s.alt > 0, sin = Math.max(0, Math.sin(s.alt * DEG));
+    const st = this.roomState = roomLightState({ mood: moodFor(this.moodWant || 'auto', up, sin), sunOn: up, sinAlt: sin, quality: roomQuality() });
+    applyRoomLight({ sunL: this.sunL, hemi: this.hemi, amb: this.amb, glow: this.interior?.glow, renderer: r }, st);
+    // lamps from the layout (floor and table lamps, pendants) come on after dark, like the studio's
+    for (const g of this.interior?.furniture?.group.children || []) {
+      const l = g.userData.lamp; if (!l) continue;
+      l.light.intensity = st.lamps ? l.cd * st.lamps : 0; l.light.visible = st.lamps > 0;
+      if (l.shade) l.shade.material.emissiveIntensity = st.lamps ? (st.lamps === 1 ? 1.4 : 1) : 0;
+    }
+    this.facU.uNight.value = st.lamps === 1 ? 1 : st.lamps ? Math.max(this.facU.uNight.value, 0.5) : this.facU.uNight.value;
   }
   /** w: {x,y,z,fx,fy}, az: window bearing; floorZ / cmpZ: slab heights; fh floor height. */
   setWindow(w, az, floorZ, cmpZ, fh, label, panes = [0]) {
@@ -560,7 +560,7 @@ export class UnitStage {
     this.endInTween(false);
     if (still) { this.inEye = { local: to.local, off: to.off }; Object.assign(this.look, { yaw: to.yaw, fov: to.fov, pitch: to.pitch }); this.dirty = true; o.onEnd?.(); return; }
     this.inTween = { t0: performance.now(), ms: o.ms ?? 750, from, to, onEnd: o.onEnd, open: !!o.open };
-    if (o.open) I.group.traverse((m) => { if (m.name === 'wall' || m.name === 'ceiling') { m.userData.wasVisible = m.visible; m.visible = false; } });
+    if (o.open) I.group.traverse((m) => { if (m.name === 'wall' || m.name.startsWith('ceiling')) { m.userData.wasVisible = m.visible; m.visible = false; } });
     this.dirty = true;
   }
   /** Finish or cancel a glide (restores the walls). `land`: jump to the end pose. */

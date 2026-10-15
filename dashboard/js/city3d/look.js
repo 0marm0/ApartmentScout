@@ -60,6 +60,7 @@ void main() {
   float s = max(dot(d, normalize(sunDir)), 0.0);
   c += sunCol * (pow(s, 900.0) * 1.2 + pow(s, 48.0) * 0.32 + pow(s, 6.0) * 0.1) * glow;
   gl_FragColor = vec4(c, 1.0);
+  #include <tonemapping_fragment>
   #include <colorspace_fragment>
 }`;
 
