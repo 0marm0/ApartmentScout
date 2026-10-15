@@ -521,10 +521,11 @@ The result is a PNG and a JPEG, a HEIC where the browser encodes it (none does t
 Android). It always renders at the Visual quality and full level, then puts the view's own quality back. Honest limits: the shadows are shadow maps, the occlusion is screen
 space and the window light is the view's window glow lights plus bloom, so there is no bounce (a sunlit floor does not light the ceiling) and glass shows no reflections.
 
-*Path tracing was evaluated and not added.* `three-gpu-pathtracer` 0.0.23 is the newest release that accepts the vendored three r160 (the current one needs r185),
-and it needs `three-mesh-bvh` and `xatlas-web` besides (about 1.6 MB unpacked on its own, more with them). It cannot draw this scene faithfully: the facades, the sky dome
-and the night windows are custom shader materials it ignores, and the city's thousands of buildings would have to be rebuilt as a BVH on every date and time change. It was not
-built or timed here; the accumulation path above gives a clearly better picture than the old 16-frame average at no extra weight.
+*Path tracing was evaluated and not added.* The current `three-gpu-pathtracer` (0.0.27) needs three r185 or newer; 0.0.23 still accepts the vendored r160. Either needs
+`three-mesh-bvh` and `xatlas-web` besides (1.6 MB unpacked on its own, about 3.4 MB with the two), so it could only be a lazy-loaded chunk of several megabytes. It also cannot
+draw this scene faithfully: the facades, the sky dome and the night windows are custom shader materials it ignores, and the city's thousands of buildings would have to be
+rebuilt as a BVH on every date and time change. It was assessed from its package metadata and its requirements, not built or timed here; the accumulation path above gives
+a clearly better picture than the old 16-frame average at no extra weight, in 1 to 8 seconds on a laptop GPU.
 
 **Make a video** records a camera tour at 1080p (720p on a phone) and 30 frames a second, 10 to 20 seconds, with `canvas.captureStream` and `MediaRecorder`
 (WebM in Chrome, Edge and Firefox; MP4 on Apple's browsers). Two shots:
