@@ -15,9 +15,11 @@ const overlay = () => (window.__AS_OVERLAY__ = window.__AS_OVERLAY__ || {});
 const fileKey = (id) => `${S.base}/sites/${id}.json`;
 
 /** Make an imported site loadable like any site file: through loadJSON's overlay and the manifest's site list. */
+const wasListed = new Map();   // site id -> was it in the search's own manifest before an import added it
 function register(project) {
   overlay()[fileKey(project.siteId)] = project.site;
   const sites = S.manifest.sites || [];
+  if (!wasListed.has(project.siteId)) wasListed.set(project.siteId, sites.includes(project.siteId));
   if (!sites.includes(project.siteId)) S.manifest.sites = [...sites, project.siteId];
 }
 
@@ -55,7 +57,7 @@ export function modelHooks(b) {
     /** Drop an imported project's browser-only copy. A site that also exists on disk comes back from disk; one that only existed through the import disappears. */
     async forgetImported(id) {
       await forgetProject(S.base, id); delete overlay()[fileKey(id)];
-      const emb = window.__AS_DATA__, onDisk = emb ? fileKey(id) in emb : await fetch(fileKey(id), { method: 'HEAD' }).then((r) => r.ok).catch(() => false);
+      const onDisk = wasListed.get(id) === true;
       if (!onDisk) S.manifest.sites = (S.manifest.sites || []).filter((x) => x !== id);
       b.refreshSelect(); b.forceReload();
       toast(onDisk ? 'Forgot the imported project: the site model on disk is shown again.' : 'Forgot the imported project.', 4200);

@@ -16,6 +16,7 @@ import pytest
 
 from apartmentscout.geo.anchor import (assume_components, open_air_at, podium_tower, slab_at, solid_at,
                                        validate_components, vertical_calibration, window_anchor, window_open_air)
+from apartmentscout.geo import LocalFrame
 from apartmentscout.sun import Skyline, _Tracks, month_tracks, sun_study, target_faces
 
 FIXTURE = Path(__file__).parent / "fixtures" / "model_anchor.json"
@@ -159,6 +160,21 @@ def test_window_anchor_record():
     assert meas["datum"]["state"] == "measured" and "datum" not in meas["assumed"] and "plan_north" in meas["assumed"]
 
 
+def test_site_checks_report_open_air_at_the_windows_height():
+    from apartmentscout.geo.checks import site_checks
+    site = _site()
+    face = _south(site)
+    site["window"] = {"face": face["i"], "bearing": face["bearing"], "floor": 8, "t": 0.5}
+    ok = next(c for c in site_checks(site, face) if c["id"] == "open-air")
+    assert ok["status"] == "pass"
+    east = next(f for f in target_faces(site, party_walls=False) if round(f["bearing"]) == 90)
+    site["window"] = {"face": east["i"], "bearing": east["bearing"], "floor": 3, "t": 0.5}
+    low = next(c for c in site_checks(site, east) if c["id"] == "open-air")
+    assert low["status"] == "fail" and "not in open air" in low["msg"]
+    site["window"]["floor"] = 14                                                    # above the 25 m neighbour the wall is exposed
+    assert next(c for c in site_checks(site, east) if c["id"] == "open-air")["status"] == "pass"
+
+
 def test_anchor_flags_a_window_that_is_not_in_open_air():
     site = _site()
     face = _south(site)
@@ -212,6 +228,50 @@ def test_assume_components_ignores_invalid_entries():
     site = _site()
     out, problems = assume_components(site, {"0": [{"ring": [[0, 0]], "top_m": 5, "source": "x"}]})
     assert problems and "components" not in out
+
+
+# --------------------------------------------------------------------------- the site builder records the datum and the anchor
+
+def _make(monkeypatch, **kw):
+    from apartmentscout.geo import site as site_mod
+    ll = LocalFrame(LAT, LON)
+    rows = [{"bin": "1000001", "height": 100.0, "height_src": "roof", "ground": 0.0, "ring": [ll.to_lonlat(x, y) for x, y in LOT], "holes": [], "src": "nyc-footprints"},
+            {"bin": "1000002", "height": 60.0, "height_src": "roof", "ground": 0.0,
+             "ring": [ll.to_lonlat(x, y) for x, y in [(-10, 10), (10, 10), (10, 30), (-10, 30)]], "holes": [], "src": "nyc-footprints"}]
+    monkeypatch.setattr(site_mod, "fetch_nyc", lambda *a, **k: [dict(r) for r in rows])
+    monkeypatch.setattr(site_mod, "nyc_pluto", lambda *a, **k: {})
+    L = {"id": "x", "lat": LAT, "lon": LON, "floor": 10, "exposure": ["S"], "bin": "1000002"}
+    return site_mod.make_site(L, {"search": {"city": "nyc"}}, streets=False, future=False, components=False, green=False, year=2026, **kw)[0]
+
+
+def test_site_builder_writes_calibration_and_anchor(monkeypatch):
+    est = _make(monkeypatch)
+    assert est["calibration"]["state"] == "estimated" and est["calibration"]["measured"] is None
+    assert est["anchor"]["datum"]["slab_m"] == est["calibration"]["slab_m"] == pytest.approx(9 * est["floor_height_m"], abs=0.02)
+    meas = _make(monkeypatch, eye_height=37.6)
+    cal = meas["calibration"]
+    assert cal["state"] == "measured" and cal["measured"]["kind"] == "eye" and cal["slab_m"] == pytest.approx(36.0)
+    assert cal["estimated_slab_m"] == pytest.approx(9 * est["floor_height_m"], abs=0.02)    # the floor-count estimate is kept
+    assert meas["floor_height_m"] == pytest.approx(36 / 9, abs=0.01) and meas["slab_m"] == pytest.approx(36.0)
+    assert meas["anchor"]["sources"]["datum"] == "measured" and "datum" not in meas["anchor"]["assumed"]
+    assert meas["anchor"]["air"]["ok"] is True
+    slab = _make(monkeypatch, slab_height=36.0)
+    assert slab["calibration"]["measured"]["kind"] == "slab" and slab["study"]["sun_hours"] == meas["study"]["sun_hours"]
+
+
+def test_components_file_may_be_json(tmp_path):
+    site = _site()
+    f = tmp_path / "x.components.json"
+    f.write_text(json.dumps({"buildings": [{"select": {"b": 0}, "components": [
+        {"kind": "podium", "ring": "footprint", "base_m": 0, "top_m": 20, "source": "zoning diagram", "confidence": "assumed"},
+        {"kind": "tower", "ring": [[-10, -60], [10, -60], [10, -40], [-10, -40]], "base_m": 20, "top_m": 100, "source": "zoning diagram"}]}]}))
+    from apartmentscout.geo.components import load_overrides
+    out, problems = load_overrides(f, site)
+    assert not problems and [c["kind"] for c in out["0"]] == ["podium", "tower"] and out["0"][0]["confidence"] == "assumed"
+    from apartmentscout.cli import _components_file
+    assert _components_file(tmp_path, "x") == f
+    (tmp_path / "x.components.yaml").write_text("buildings: []\n")
+    assert _components_file(tmp_path, "x").suffix == ".yaml"
 
 
 # --------------------------------------------------------------------------- the fixture shared with the dashboard tests
