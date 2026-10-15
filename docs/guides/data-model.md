@@ -829,6 +829,22 @@ longest unchecked. `note` explains how to add buildings when the list is empty.
 `status` available, `gone`, `relist`). `skipped` lists pages not fetched and why (a portal, a host that answered with a bot
 check, no cache offline); `unreadable` lists pages that were read but gave nothing usable.
 
+`alerts.json` (dashboard export; the change digest of `apartmentscout alerts`, see [alerts](alerts.md)): the change since the saved
+baseline in `history/alerts/state.json`, else the last saved digest while it is under two weeks old, else an empty one.
+
+```json
+{"schema_version": 1, "kind": "alerts", "generated": "2026-10-15", "at": "2026-10-15T07:00:00", "search": "My search",
+ "since": "2026-10-14", "first_run": false, "pending": true, "top": 10, "id": "d39fdacbee",
+ "headline": "1 new, 2 price drops", "title": "ApartmentScout: 1 new, 2 price drops", "total": 3,
+ "counts": {"new": 1, "drops": 2}, "tracked": 434, "fitting": 302, "quiet_new": 0, "note": null,
+ "groups": {"new": [{"id": "tower-31f", "name": "The Example Tower 31F", "hood": "Chelsea", "rank": 39, "gross": 4650, "cost": 4687, "status": "new"}],
+            "drops": [{"id": "orion-23a", "name": "Orion 23A", "rank": 2, "gross": 4895, "from": 5000, "to": 4895, "delta": -105, "basis": "rent"}]}}
+```
+
+`groups` keys are `new`, `fits` (adds `why`, and `from`/`to` when the price moved), `drops`, `rises` (`basis` is `rent` or `monthly cost`),
+`gone` (`was_rank`, `removed`), `back`, `jumps` (`from`, `to` ranks) and `resolved` (`resolved`: the questions now answered); only
+groups with changes are present. `id` follows the content, not the clock; the dashboard uses it to remember what you have seen.
+
 ## Floor plan
 
 See [floor plans](floor-plans.md).
