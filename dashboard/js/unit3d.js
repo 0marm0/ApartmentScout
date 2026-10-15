@@ -742,6 +742,7 @@ function refreshWindow(heavy) {
 }
 function unresolvedWindow() {
   st.playing = false; stage.win = null; blkRows = []; NBR = [];
+  ++heatTok; clearTimeout(ifPanel.t); clearTimeout(studyT);   // [model project] a floor table, what-if or study still in flight must not paint numbers over the withheld window
   if (st.mode === 'win' || st.mode === 'in') setMode('orbit', true);
   syncModeButtons();
   for (const key of ['marker', 'band', 'cmpBand', 'cmpBand2', 'cone', 'ray', 'hitDot']) if (stage[key]) stage[key].visible = false;
