@@ -14,7 +14,8 @@ Nothing is sent anywhere until you connect a gist or export a file. The app has 
    **Account permissions** set **Gists** to **Read and write**. Leave everything else at *No access*. Copy the token, paste it into
    the panel and press **Connect and sync**. The app creates a *secret* gist in your account and sends your data.
 2. On the iPhone, open the published dashboard in Safari and add it to the Home Screen (Share, then *Add to Home Screen*), then
-   open it from there.
+   open it from there. (Use the Home Screen app, not a Safari tab: Safari clears the saved data of a site you have not opened for
+   seven days, which would remove the token and anything not yet synced; the Home Screen app is exempt.)
 3. Choose **Menu > Data > Sync across devices**. Paste the same token (send it to yourself in a password manager or Notes; do not
    email it) and press **Connect and sync**. The app finds your gist from the token alone, so there is nothing else to copy. Your
    picks, notes, numbers, tour findings and small copies of tour photos appear within a few seconds.
@@ -157,6 +158,7 @@ updated or removed and how many of your newer edits were kept.
 | *GitHub asked for a pause* | A rate limit. It resumes by itself at the time shown. |
 | *Offline: will sync when you are back* | Nothing to do. |
 | Photos missing on the other device | Copies are optional and capped (60 photos, 6 MB). The panel notes how many were left out. |
+| The iPhone asks for the token again | Safari cleared a browser tab's data after a week without a visit. Use the Home Screen app, and connect again; your data comes back from the gist. |
 | Something reset on one device | *Reset this browser's settings* in the start-up recovery card keeps your picks, findings, plans and sync connection; sync fills in anything else from the gist. |
 
 For developers: the model and its tests are `dashboard/js/sync/sync-model.js` and `tests/js/sync.test.mjs`; the browser tests

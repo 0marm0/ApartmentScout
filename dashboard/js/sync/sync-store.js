@@ -149,3 +149,11 @@ export function applyMerged(merged, local, held = new Set()) {
 }
 
 export const ledgerCount = () => Object.values(loadLedger().items).filter((x) => !x.x).length;
+
+// Another tab of this browser changed the settings or the ledger: forget this tab's copies so they are read again.
+try {
+  addEventListener('storage', (e) => {
+    if (e.key === CONFIG) cfg = null;
+    else if (e.key === LEDGER || e.key === null) ledger = null;
+  });
+} catch { /* no window (the unit tests) */ }
