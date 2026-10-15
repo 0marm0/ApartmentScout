@@ -74,6 +74,7 @@
  "extra": [
   "coverage.json",
   "history.json",
+  "places.json",
   "watchlist.json"
  ]
 }
