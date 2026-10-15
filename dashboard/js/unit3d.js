@@ -29,6 +29,10 @@ import { windowOpenAir, airReason } from './unit/openair.js';   // [model projec
 import { getPin, clearPin } from './unit/anchor.js';   // [model project] the window pinned for the Floor plan studio
 import { buildFurniture, addRoomView } from './unit/furniture.js';   // [model project] the studio's furniture in the Inside view
 import { modelHooks } from './unit/model-hooks.js';   // [model project] Model panel, project import and the comparison board
+import { insideViews, viewForWindow } from './unit/inside-views.js';   // [interior] the Inside camera's rooms, bays, corners and seats
+import { setLookChips, bindLookChips } from './plan/look-ui.js';
+import { resolve as resolveItem } from './plan/catalog.js';
+import { stepView } from './plan/viewpoints.js';
 
 let site = null, B0 = [], FUTB = [], edits = new Map(), B = [], T = null, FACES = [], LM = [], FUT = [], BF = null, stage = null, plan = null, interior = null;
 const st = {
@@ -101,6 +105,7 @@ export function init() {
           <img class="u-photo" id="uPhoto" alt="" hidden><video class="u-photo" id="uVid" muted playsinline preload="auto" hidden></video>
           <div class="u-labels" id="uLabels" aria-hidden="true"></div>
           <div class="float u-modes" id="uModes" role="group" aria-label="Camera">${MODES.map(([k, t, tip]) => `<button type="button" data-mode="${k}" title="${tip}" aria-pressed="false">${t}</button>`).join('')}</div>
+          <div class="float u-look" id="uLook" role="toolbar" aria-label="Look out of the windows" hidden></div>
           <div class="float u-tools" id="uTools" role="group" aria-label="Layers">
             ${[['shadows', 'Shadows'], ['labels', 'Labels'], ['heights', 'Heights: colour by height class, label roofs, 150 m and 300 m rings'], ['streets', 'Street names and centrelines'], ['future', 'Proposed buildings'], ['green', 'Parks and trees: the NYC street tree census, OpenStreetMap and park fill. Context only: trees are never counted as shade in the sun hours'], ['water', 'Water and ground: rivers, streets and sidewalks. Context only'], ['ray', 'Sun ray'], ['cone', 'View cone']].map(([k, t]) => `<button type="button" data-tg="${k}" title="${t}" aria-label="${t}" aria-pressed="false">${ICON[k]}</button>`).join('')}
             <hr><button type="button" id="uTarget" title="This building: solid" aria-label="This building display: solid">${ICON.target}<i class="u-tmode">S</i></button>
@@ -110,7 +115,7 @@ export function init() {
           <div class="hud u-hud" id="hud" aria-live="polite"></div>
           <div class="float u-card" id="uCard" hidden></div>
           <div class="float u-lens" id="uLens" hidden>
-            <div class="field u-in-only"><label for="uInWin">Look out of</label><select id="uInWin"></select></div>
+            <div class="field u-in-only u-in-select"><label for="uInWin">Look out of</label><select id="uInWin"></select></div>
             <div class="field"><label for="uFov">Lens <span class="val" id="uFovV"></span></label><input type="range" id="uFov" min="35" max="110" value="70"></div>
             <div class="field"><label for="uYaw">Turn <span class="val" id="uYawV"></span></label><input type="range" id="uYaw" min="-90" max="90" value="0"></div>
             <div class="field"><label for="uPitch">Tilt <span class="val" id="uPitchV"></span></label><input type="range" id="uPitch" min="-15" max="60" value="6"></div>
@@ -153,7 +158,7 @@ export function init() {
   mh = modelHooks(modelBridge());   // [model project]
   mh.mount($('modelPanel'));
   // read-only hook for headless checks (Playwright): never used by the page itself
-  window.__unit3d = { st, get cal() { return CAL; }, get plan() { return plan; }, get planInfo() { return planInfo; }, get B() { return B; }, get faces() { return FACES; }, get sun() { return curSun; }, get hit() { return curHit; }, get blockers() { return blkRows; }, get neighbours() { return NBR.length; }, get interior() { return !!stage?.interior; }, get stage() { return stage; } };
+  window.__unit3d = { st, get views() { return views; }, get curView() { return curView; }, get cam() { return stage?.winCam; }, get cal() { return CAL; }, get plan() { return plan; }, get planInfo() { return planInfo; }, get B() { return B; }, get faces() { return FACES; }, get sun() { return curSun; }, get hit() { return curHit; }, get blockers() { return blkRows; }, get neighbours() { return NBR.length; }, get interior() { return !!stage?.interior; }, get stage() { return stage; } };
 }
 
 export async function show(id) {
@@ -302,7 +307,7 @@ async function loadPlan(id) {
     try { plan = normalisePlan(scenario.plan); planRaw = scenario.plan; planInfo = { source: 'local scenario', label: scenario.label || 'edited plan', saved: scenario.saved, layout: scenario.layout, furniture: scenario.layout?.items?.length || 0 }; } catch { plan = null; }
   }
   if (!plan && hasFilePlan) {
-    try { planRaw = await loadJSON(`${S.base}/plans/${id}.json`, null); plan = normalisePlan(planRaw); planInfo = { source: 'file', label: '', saved: null, furniture: 0, layout: null }; } catch { plan = null; planRaw = null; }
+    try { planRaw = await loadJSON(`${S.base}/plans/${id}.json`, null); plan = normalisePlan(planRaw); const L0 = plan.layouts[0]; planInfo = { source: 'file', label: '', saved: null, furniture: L0?.items?.length || 0, layout: L0 ? { items: L0.items } : null, layoutName: L0?.name || '' }; } catch { plan = null; planRaw = null; }
   }
 }
 const listing = () => byId(st.id) || site?.listing || {};
@@ -404,7 +409,8 @@ function wireStage() {
   $('uHome').addEventListener('click', () => { if (st.mode === 'plan') stage.resetPlan(); else if (st.mode === 'top') stage.topDown(true); else if (st.mode === 'win' || st.mode === 'in') { setLook(70, 0, 6); } else stage.resetOrbit(true); });
   $('uCompass').addEventListener('click', faceNorth);
   for (const [id, k] of [['uFov', 'fov'], ['uYaw', 'yaw'], ['uPitch', 'pitch']]) $(id).addEventListener('input', (e) => { stage.look[k] = +e.target.value; syncLens(); stage.dirty = true; syncUrlSoon(); if (st.study === 'floors') studyStale(); });
-  $('uInWin').addEventListener('change', (e) => { st.inWin = +e.target.value; stage.setInteriorEye(st.inWin); setLook(stage.look.fov, 0, 6); hud(curSun, hudState()); });
+  $('uInWin').addEventListener('change', (e) => goView(e.target.value));   // [interior] the phone fallback for the room chips
+  bindLookChips($('uLook'), { pick: (k) => goView(k), order: () => views.map((v) => v.key) });
   // photo matching: the file is read in this browser only (an object URL), never uploaded or stored
   // a video works the same way: pick the frame that shows the skyline best with the frame slider
   $('uPhotoIn').addEventListener('change', (e) => {
@@ -446,6 +452,7 @@ function wireStage() {
     const tag = e.target.tagName;
     if (e.key === 'Escape' && !$('uCard').hidden) { closeCard(); return; }
     if (['INPUT', 'TEXTAREA', 'SELECT'].includes(tag) || e.metaKey || e.ctrlKey || e.altKey) return;
+    if (st.mode === 'in' && (e.key === '[' || e.key === ']')) { stepLook(e.key === ']' ? 1 : -1); e.preventDefault(); return; }   // [interior] next / previous room
     if (e.key === 'p') { togglePlay(); e.preventDefault(); }
     else if (e.key === ',' || e.key === '.') { setTime(st.min + (e.key === '.' ? 15 : -15)); e.preventDefault(); }
   });
@@ -469,7 +476,7 @@ function sideClick(e) {
 }
 function aimAt(bi) {
   const b = B[bi], w = winPos(st.floor), az = bearingTo(w.x, w.y, (b.bb[0] + b.bb[2]) / 2, (b.bb[1] + b.bb[3]) / 2);
-  const off = st.mode === 'in' ? (interior?.windows[st.inWin]?.bearingOff || 0) : 0;
+  const off = st.mode === 'in' ? curOff() : 0;
   setLook(stage.look.fov, angDiff(az, st.az + off), stage.look.pitch);
 }
 function onStageKey(e) {
@@ -501,7 +508,7 @@ function onStageKey(e) {
 }
 function faceNorth() {
   if (st.mode === 'win') { setLook(stage.look.fov, angDiff(0, st.az), stage.look.pitch); return; }
-  if (st.mode === 'in') { setLook(stage.look.fov, angDiff(0, st.az + (interior?.windows[st.inWin]?.bearingOff || 0)), stage.look.pitch); return; }
+  if (st.mode === 'in') { setLook(stage.look.fov, angDiff(0, st.az + curOff()), stage.look.pitch); return; }
   if (st.mode === 'plan') return;
   const cam = stage.orbitCam, ctl = stage.controls, off = cam.position.clone().sub(ctl.target), r = Math.hypot(off.x, off.z);
   cam.position.set(ctl.target.x, cam.position.y, ctl.target.z + r); ctl.update(); stage.dirty = true;
@@ -522,7 +529,7 @@ function setMode(m, quiet = false) {
   if (m === 'in' && !interior) buildApartment();
   st.mode = m; stage.setMode(m);
   $('uModes').querySelectorAll('[data-mode]').forEach((b) => { b.disabled = !hasWindow() && (b.dataset.mode === 'win' || b.dataset.mode === 'in'); b.classList.toggle('on', b.dataset.mode === m); b.setAttribute('aria-pressed', String(b.dataset.mode === m)); });
-  $('uLens').hidden = m !== 'win' && m !== 'in'; $('stage').dataset.mode = m;
+  $('uLens').hidden = m !== 'win' && m !== 'in'; $('stage').dataset.mode = m; if ($('uLook')) $('uLook').hidden = m !== 'in' || !views.length;
   overlayVisible();
   if (m === 'win' || m === 'in') syncLens();
   if (!quiet) { refreshTime(); syncUrl(); }
@@ -558,19 +565,40 @@ function buildApartment() {
   if (!stage?.scene || !site || !hasWindow()) return;
   interior = buildInterior(plan || genericPlan(), { generic: !plan });
   // [model project] the furniture that came with a local plan scenario, in the studio's own meshes
-  if (plan && planInfo.source === 'local scenario' && planInfo.layout?.items?.length && st.showFurniture !== false) { const F = buildFurniture(planInfo.layout.items, plan, interior.frame); interior.group.add(F.group); interior.furniture = F; }
+  if (plan && planInfo.layout?.items?.length && st.showFurniture !== false)   // [interior] a source plan shows its default layout ("Your furniture" in the example), a scenario its own
+    { const F = buildFurniture(planInfo.layout.items, plan, interior.frame); interior.group.add(F.group); interior.furniture = F; }
   if (plan) addRoomView(interior);   // [model project] a viewpoint that looks back into the room
   stage.setInterior(interior);
-  const ws = interior.windows;
-  if (st.inWin < 0 || st.inWin >= ws.length) {
-    const front = ws.map((w, i) => [w, i]).filter(([w]) => w.facade);
-    st.inWin = (front.find(([w]) => /living/i.test(w.room)) || front[0] || [null, 0])[1];
-  }
-  stage.setInteriorEye(st.inWin);
-  $('uInWin').innerHTML = ws.map((w, i) => `<option value="${i}">${esc(w.room)}${w.note ? ' · ' + esc(w.note) : ''}${w.facade ? '' : ' (side)'}</option>`).join('');
-  $('uInWin').value = st.inWin;
+  // [interior] the rooms, bays, corners and seats to stand at, as chips over the view (and the dropdown on a phone)
+  const model = plan || genericPlan(), R = (planInfo.layout?.items?.length && st.showFurniture !== false ? planInfo.layout.items : []).map((x) => resolveItem(x)).filter(Boolean);
+  views = insideViews(model, R, interior.frame);
+  const keep = views.find((v) => v.key === curView?.key);
+  curView = keep || viewForWindow(views, st.inWin);
+  if (curView?.win != null) st.inWin = curView.win;
+  if (curView) stage.setInteriorView(curView, { animate: false });
+  lookChips();
   syncTools();
 }
+let views = [], curView = null;
+const curOff = () => (curView ? curView.off : interior?.windows[st.inWin]?.bearingOff || 0);
+function lookChips() {
+  const el = $('uLook'); if (!el) return;
+  const any = setLookChips(el, views, curView?.key, {});
+  el.hidden = !any || st.mode !== 'in';
+  const on = el.querySelector('.lk-chip.on'); if (on && el.scrollWidth > el.clientWidth + 2) el.scrollLeft = Math.max(0, on.offsetLeft - 24);   // a phone's row scrolls to the active chip
+  const sel = $('uInWin'), sig = views.map((v) => v.key).join('|');
+  if (sel.dataset.sig !== sig) { sel.innerHTML = views.map((v) => `<option value="${esc(v.key)}">${esc(v.kind === 'seat' ? `From the ${v.label.toLowerCase()}` : v.label)}</option>`).join(''); sel.dataset.sig = sig; }
+  if (curView) sel.value = curView.key;
+}
+/** Stand at a viewpoint (a chip, the dropdown, the arrow keys): the camera glides there, the state follows. */
+function goView(key, o = {}) {
+  const v = views.find((q) => q.key === key); if (!v || !stage) return;
+  const room = curView?.room !== v.room;
+  curView = v; if (v.win != null) st.inWin = v.win;
+  stage.setInteriorView(v, { animate: o.animate !== false && st.mode === 'in', open: room, onEnd: () => { syncLens(); hud(curSun, hudState()); } });
+  syncLens(); lookChips(); hud(curSun, hudState()); syncUrlSoon();
+}
+function stepLook(step) { const n = stepView(views, curView?.key, step); if (n) goView(n.key); }
 
 // ------------------------------------------------------------------ geometry helpers
 function winPos(floor, t = st.t) {
@@ -794,8 +822,8 @@ function hud(s, state) {
   if (!s || !hasWindow()) return;
   const tag = { night: ['Night', 'shade'], behind: ['Sun behind the window', 'shade'], lit: ['Direct sun on the window', 'lit'], side: ['Sun through a side pane', 'lit'], shade: ['Window in shadow', 'shade'] }[state];
   const blk = state === 'shade' && curHit ? bname(curHit.bi, true) : '';
-  const inside = st.mode === 'in' && interior ? `<span class="u-hud-x">Inside · ${esc(interior.generic ? 'generic room, no floor plan' : plan?.title || 'floor plan')}${interior.windows[st.inWin] ? ' · ' + esc(interior.windows[st.inWin].room) : ''}</span>` : '';
-  $('hud').innerHTML = `<span class="${tag[1]}">${tag[0]}${blk ? ` · ${esc(blk)}` : ''}</span><span>Sun ${Math.round(s.az)}° ${compass(s.az)} · ${s.alt > 0 ? Math.round(s.alt) + '° up' : 'below horizon'}</span><span class="u-hud-x">Floor ${st.floor} · faces ${Math.round(st.az)}° ${compass(st.az)}</span>${inside}${st.mode === 'win' || st.mode === 'in' ? '<span class="u-hud-x">Drag to look around</span>' : ''}`;
+  const inside = st.mode === 'in' && interior ? `<span class="u-hud-x">Inside · ${esc(interior.generic ? 'generic room, no floor plan' : plan?.title || 'floor plan')}${curView ? ' · ' + esc(curView.kind === 'seat' ? `from the ${curView.label.toLowerCase()}` : curView.label) : interior.windows[st.inWin] ? ' · ' + esc(interior.windows[st.inWin].room) : ''}</span>` : '';
+  $('hud').innerHTML = `<span class="${tag[1]}">${tag[0]}${blk ? ` · ${esc(blk)}` : ''}</span><span>Sun ${Math.round(s.az)}° ${compass(s.az)} · ${s.alt > 0 ? Math.round(s.alt) + '° up' : 'below horizon'}</span><span class="u-hud-x">Floor ${st.floor} · faces ${Math.round(st.az)}° ${compass(st.az)}</span>${inside}${st.mode === 'win' ? '<span class="u-hud-x">Drag to look around</span>' : st.mode === 'in' ? '<span class="u-hud-x">Drag to look around · ← → on a room, or [ ] to switch</span>' : ''}`;
 }
 /** A short name for building bi: landmark name, footprint name, address, or "a 61 m building". */
 function bname(bi, short = false) {

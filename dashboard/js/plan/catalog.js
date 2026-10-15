@@ -169,6 +169,14 @@ export const CATALOG = {
   'table-lamp': { name: 'Table lamp', cat: 'lighting', kind: 'lamp', lamp: 'table', w: 10, d: 10, h: 20, elev: 24, color: MAT.brass, light: { lm: 800, k: 2700 }, src: 'Table lamp 10 in across, 20 in tall, set on a 24 in nightstand; 800 lm warm-white (60 W equivalent).' },
   pendant: { name: 'Pendant light', cat: 'lighting', kind: 'lamp', lamp: 'pendant', w: 16, d: 16, h: 12, elev: 66, color: MAT.shade, light: { lm: 1600, k: 2700 }, src: 'Pendant shade 16 in across hung about 30 in above a dining table (66 in to its bottom on an 8-9 ft ceiling); 1600 lm.' },
   'ceiling-light': { name: 'Ceiling light', cat: 'lighting', kind: 'lamp', lamp: 'ceiling', w: 14, d: 14, h: 4, elev: 100, color: MAT.white, light: { lm: 1600, k: 3000 }, src: 'Flush ceiling fixture 14 in across; set its height to just under the ceiling; 1600 lm.' },
+  'plant-floor': {
+    name: 'Plant, floor', cat: 'decor', kind: 'plant', w: 18, d: 18, h: 54, color: MAT.green,
+    src: 'A floor plant such as a fiddle-leaf fig in a 14 in pot, about 18 in across and 54 in tall. A look, not a fit rule: it only takes floor.',
+  },
+  'plant-table': {
+    name: 'Plant, tabletop', cat: 'decor', kind: 'plant', w: 8, d: 8, h: 20, elev: 30, color: MAT.green,
+    src: 'A snake plant in a 6 in pot, about 8 in across and 20 in tall, set on a 30 in table or desk (change its height off the floor in the inspector).',
+  },
   'ac-unit': {
     name: 'AC / heater unit', cat: 'climate', kind: 'ac', w: 42, d: 10, h: 24, color: MAT.ac, est: true,
     src: 'Placeholder PTAC or through-wall unit, 42 x 10 x 24 in. Measure the real one; its size is an estimate.',

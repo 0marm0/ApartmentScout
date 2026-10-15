@@ -44,6 +44,10 @@ import { planEmpty, missingNotice } from './features/plan-empty.js';   // [featu
 import { renderOptions } from './plan/options.js';
 import * as Q3 from './plan/quality3d.js';   // [feature J] render quality (Fast / Visual) and progressive export
 import * as LX from './plan/lighting-ui.js';   // [feature J] daylight grid, glass/surface inputs, luminaires, annual summary
+import { validateInventory, fitInventory, pieceItem, placedIds } from './plan/inventory.js';   // [furniture] the renter's own pieces
+import { inventoryHTML } from './plan/inventory-ui.js';
+import { allViews, stepView } from './plan/viewpoints.js';   // [interior] where to stand to look out of the windows
+import { setLookChips, bindLookChips } from './plan/look-ui.js';
 
 const st = {
   id: null, date: '', min: 720, playing: false, site: null, mode: 'both', view: 'bird', wall: 'cut', tab: 'furniture',
@@ -56,6 +60,7 @@ let routesRes = null, routeT = 0, lastFrame = 0;
 // onSite: the plan placed on its site; winSky: one skyline per plan window (per-window city occlusion)
 let onSite = null, winSky = null, winMin = null, winMinKey = '';
 let winSkyView = null;
+let inventory = null;   // [furniture] "Your furniture": the renter's pieces (furniture.json, or the ones a project carried)
 let model = null, rawPlan = null, projectLibrary = Object.create(null), siteProf = null, items = [], R = [], ev = null, sel = null, flash = null, flashT = 0, loop = false, ready = false;
 const undo = [], redo = [];
 const isPhone = () => matchMedia('(max-width: 760px)').matches;
@@ -93,6 +98,7 @@ const PILL = { clear: 'good', tight: 'warn', blocked: 'bad' };
 
 // ------------------------------------------------------------------ view contract
 export function init() {
+  window.__plan3d = { get views() { return viewsNow(); }, get cam() { return G3.getCamera(); }, get eye() { return G3.viewMode(); }, get hasCity() { return G3.hasCity(); }, get view() { return st.view; }, get items() { return items; }, get inventory() { return inventory; } };   // [interior] test and debugging handle, like __unit3d
   $('view-plan').innerHTML = `<div class="view-pad ps">
     <header class="page-h ps-head">
       <div class="t"><h1 id="psTitle">Floor plan</h1><p id="psSub">Lay out your furniture at true size and check it fits.</p></div>
@@ -136,6 +142,7 @@ export function init() {
             <canvas id="pgl" aria-label="3D model of the apartment"></canvas>
             <div class="float ps-cams" id="psCams" role="group" aria-label="Camera">${[['bird', 'Bird’s eye'], ['top', 'Top'], ['bed', 'From bed'], ['sofa', 'From sofa'], ['door', 'From door'], ['walk', 'Walk']].map(([k, t]) => `<button type="button" data-v="${k}">${t}</button>`).join('')}</div>
             <div class="float ps-walls" id="psWalls" role="group" aria-label="Walls">${[['cut', 'Cut'], ['full', 'Full'], ['outline', 'Outline']].map(([k, t]) => `<button type="button" data-w="${k}">${t}</button>`).join('')}</div>
+            <div class="float ps-look" id="psLook" role="toolbar" aria-label="Look out of the windows" hidden></div>
             <div class="hud" id="phud"></div>
             <div class="ps-hint" id="psHint"></div>
           </div>
@@ -228,7 +235,8 @@ async function load(id) {
   st.ambient = typeof light.ambient === 'number' && Number.isFinite(light.ambient) ? Math.max(0, Math.min(2, light.ambient)) : 1;
   st.glazing = clampGlazing(light.glazing); st.blinds = blindsOf(light.blinds);
   LX.load(light);   // [feature J] daylight inputs and luminaires
-  if (!model.layouts.length) { try { model.layouts.push(suggestLayout(model)); } catch { /* a plan the placer cannot handle keeps no preset */ } }
+  inventory = await loadInventory(id);   // [furniture]
+  if (!model.layouts.length) { try { model.layouts.push(inventory ? ownLayout() : suggestLayout(model)); } catch { /* a plan the placer cannot handle keeps no preset */ } }
   items = v?.ok ? v.layout.items : (model.layouts[0]?.items || []).map((x) => ({ ...x }));
   undo.length = 0; redo.length = 0; sel = null; cancelCompare(); $('psCompare').hidden = true; st.routeKey = null; st.finder = null; routesRes = null;
   G3.setMood(st.mood);
@@ -236,6 +244,20 @@ async function load(id) {
   head(); setMode(st.mode); setWall(st.wall, true); G3.setView(st.view === 'top' ? 'top' : 'bird'); markCams();
   recompute({ all: true }); sunPanel(); refreshSun();
 }
+
+// [furniture] "Your furniture" (furniture.json beside the search, or the inventory a project carried)
+let fileInventory;
+async function loadInventory(id) {
+  if (projectLibrary[id]?.inventory) return projectLibrary[id].inventory;
+  if (fileInventory === undefined) {
+    const raw = S.manifest.furniture ? await loadJSON(`${S.base}/furniture.json`, null) : null, v = raw && validateInventory(raw);
+    fileInventory = v?.ok ? v.inventory : null;
+  }
+  return fileInventory;
+}
+/** The renter's pieces fitted into this plan with the checks, as a layout preset. */
+function ownLayout() { const r = fitInventory(model, inventory, { step: 8 }); return { id: 'your-furniture', name: r.name, note: r.note, items: r.items, auto: true }; }
+const OWN = 'your-furniture';
 
 function head() {
   const L = byId(st.id);
@@ -274,7 +296,7 @@ function checkpoint() { undo.push(snapshot()); if (undo.length > 80) undo.shift(
 function persist() {
   store.set(key(st.id), serialiseLayout(st.id, items));
   if(projectLibrary[st.id]) {
-    const project=serialiseProject(rawPlan,items,lightingOf());
+    const project=serialiseProject(rawPlan,items,lightingOf(),inventory);
     try{saveProjectLibrary(Object.assign(Object.create(null),projectLibrary,{[st.id]:project}));}
     catch(e){toast('Browser project could not be saved. Export a complete project backup.',6000);}
   }
@@ -293,7 +315,7 @@ function doUndo(back = true) {
   }
   if(saved.lighting) {st.directSun=saved.lighting.directSun;st.ambient=saved.lighting.ambient;st.glazing=clampGlazing(saved.lighting.glazing);st.blinds=blindsOf(saved.lighting.blinds);LX.load(saved.lighting);}
   if (sel && !items.some((x) => x.id === sel)) sel = null;
-  if(projectLibrary[st.id])projectLibrary[st.id]=serialiseProject(rawPlan,items,lightingOf());
+  if(projectLibrary[st.id])projectLibrary[st.id]=serialiseProject(rawPlan,items,lightingOf(),inventory);
   persist(); markUndo(); recompute({ all: true });
   refreshSun();head();
 }
@@ -312,7 +334,7 @@ function recompute(opts = {}) {
   overlays();
   inspector();
   if (opts.panels !== false) tab();
-  tabCounts();
+  tabCounts(); lookChips();   // [interior]
 }
 function computeRoutes() { try { routesRes = accessRoutes(model, R); } catch { routesRes = null; } }
 const shownRoutes = () => (routesRes ? routesRes.routes.filter((r) => st.routes || r.key === st.routeKey) : []);
@@ -387,6 +409,19 @@ function applyPreset(lid) {
   const L = model.layouts.find((l) => l.id === lid); if (!L) return;
   mutate(() => { items = L.items.map((x) => ({ ...x })); sel = null; st.activePreset = lid; }, `Layout: ${L.name}`);
 }
+/** [furniture] Use the plan's "Your furniture" layout, or fit the renter's pieces into this plan with the checks. */
+function useOwn() {
+  if (!inventory) return;
+  if (!model.layouts.some((l) => l.id === OWN)) { try { model.layouts.unshift(ownLayout()); } catch (e) { toast(`Could not fit your furniture: ${e.message || e}`, 4200); return; } }
+  applyPreset(OWN);
+}
+/** [furniture] Add one of the renter's pieces (its own size) to the layout, placed in the kind of room it lives in. */
+function addOwn(pid) {
+  const p = inventory?.pieces.find((q) => q.id === pid); if (!p || items.some((q) => q.id === pid)) return;
+  const room = (model.rooms.filter((r) => r.kind === (p.room === 'dining' ? 'living' : p.room)).sort((a, b) => b.area - a.area)[0] || [...model.rooms].sort((a, b) => b.area - a.area)[0]);
+  const it = pieceItem(p, { x: Math.round(room.label[0]), y: Math.round(room.label[1]), rot: 0 });
+  mutate(() => { items.push(it); const ok = place(it, room.name, true); sel = it.id; st.activePreset = null; toast(ok ? `Added ${(p.label || p.ref).toLowerCase()} to the ${room.name.toLowerCase()}` : `No clear spot in the ${room.name.toLowerCase()}; it is in the middle`); });
+}
 function flashPoly(poly) { flash = poly; flashT = performance.now() + 2400; overlays(); setTimeout(() => { if (performance.now() >= flashT) { flash = null; overlays(); } }, 2500); }
 
 // ------------------------------------------------------------------ chrome: modes, cameras, walls, tabs, files, keys
@@ -412,6 +447,7 @@ function bindChrome() {
   window.addEventListener('blur', () => held.clear());
   $('psCams').addEventListener('click', (e) => { const b = e.target.closest('[data-v]'); if (b) camera(b.dataset.v); });
   $('psWalls').addEventListener('click', (e) => { const b = e.target.closest('[data-w]'); if (b) setWall(b.dataset.w); });
+  bindLookChips($('psLook'), { pick: lookAt, order: () => viewsNow().map((v) => v.key) });   // [interior]
   $('psTabs').addEventListener('click', (e) => { const b = e.target.closest('[data-t]'); if (b) { st.tab = b.dataset.t; tab(); } });
   $('psUndo').addEventListener('click', () => doUndo(true));
   $('psRedo').addEventListener('click', () => doUndo(false));
@@ -452,9 +488,33 @@ function markCams() {
     if (b.dataset.v === 'sofa') b.disabled = !R.some((x) => (x.kind === 'sofa' || x.kind === 'chair') && !x.hidden);
   });
   const hints = { walk: 'Drag to look · hold W S or ↑ ↓ to walk, A D to turn, Q E to step sideways, Shift to hurry · Esc to stop', tour: 'Walking the route · drag or W A S D to take over · Esc to stop', bed: 'Drag to look around · scroll to move', sofa: 'Drag to look around · scroll to move', door: 'Drag to look around · scroll to move' };
-  $('psHint').textContent = hints[st.view] || (isPhone() ? 'Drag a piece to move it · drag the floor to orbit' : 'Drag a piece to move it · drag the floor to orbit · right-drag to pan');
+  lookChips();   // [interior]
+  $('psHint').textContent = hints[st.view] || (G3.viewMode() === 'eye' ? 'Drag to look around · scroll to step · ← → or [ ] switch the view · Esc to leave' : '') || (isPhone() ? 'Drag a piece to move it · drag the floor to orbit' : 'Drag a piece to move it · drag the floor to orbit · right-drag to pan');
 }
 const entryDoor = () => entryPoint(model);
+// [interior] "Look out of": the windows by room (with bays and corners) and the seats, as chips over the 3D view
+let viewsKey = '', viewsMemo = [];
+function viewsNow() {
+  if (!model) return [];
+  const k = `${model.id}|${R.filter((x) => !x.hidden && ['sofa', 'chair', 'bed', 'desk'].includes(x.kind)).map((x) => `${x.id}:${Math.round(x.x)},${Math.round(x.y)},${Math.round(x.rot)}`).join(';')}|${model.windows.length}`;
+  if (k !== viewsKey) { viewsKey = k; try { viewsMemo = allViews(model, R); } catch { viewsMemo = []; } }
+  return viewsMemo;
+}
+function lookChips() {
+  const el = $('psLook'); if (!el || !model) return;
+  el.hidden = !setLookChips(el, viewsNow(), G3.viewMode() === 'eye' ? st.view : null, {});
+  const on = el.querySelector('.lk-chip.on'); if (on && el.scrollWidth > el.clientWidth + 2) el.scrollLeft = Math.max(0, on.offsetLeft - 24);   // a phone's row scrolls to the active chip
+}
+function lookAt(key) {
+  const v = viewsNow().find((q) => q.key === key); if (!v || !model) return;
+  if (st.mode === '2d') setMode(isPhone() ? '3d' : 'both');
+  st.view = key;
+  G3.setView('look', { at: v.at, dir: v.dir, h: v.h, pitch: v.pitch, fov: v.fov }); setWall('full', true);
+  applyCity(); overlays(); markCams();
+}
+function stepLook(step) {
+  const vs = viewsNow(), nx = stepView(vs, G3.viewMode() === 'eye' ? st.view : null, step); if (nx) lookAt(nx.key);
+}
 function camera(v) {
   if (!model) return;
   if (st.mode === '2d') setMode(isPhone() ? '3d' : 'both');
@@ -470,6 +530,7 @@ function camera(v) {
     } else eye = { ...entryDoor(), h: 63, pitch: -0.05 };
     G3.setView(v, eye); setWall('full', true);
   }
+  applyCity();   // [interior] the city outside comes with every eye-level view
   overlays(); markCams();
 }
 
@@ -478,7 +539,7 @@ async function fileAction(f) {
   if (!model) return;
   if (f === 'save') saveBlob(new Blob([JSON.stringify(serialiseLayout(st.id, items), null, 2)], { type: 'application/json' }), `${st.id}-layout.json`);
   else if(f==='project-save') {
-    try { const project=serialiseProject(rawPlan,items,lightingOf());saveBlob(new Blob([JSON.stringify(project,null,2)],{type:'application/json'}),`${st.id}-project.json`); }
+    try { const project=serialiseProject(rawPlan,items,lightingOf(),inventory);saveBlob(new Blob([JSON.stringify(project,null,2)],{type:'application/json'}),`${st.id}-project.json`); }
     catch(e) { toast(`Project export failed: ${e.message || e}`,5000); }
   }
   else if(f==='project-restore') {
@@ -525,6 +586,7 @@ function keys(e) {
   const tag = e.target.tagName;
   if (['INPUT', 'TEXTAREA', 'SELECT'].includes(tag)) return;
   const k = e.key, eye = G3.viewMode() === 'eye';
+  if ((k === '[' || k === ']') && !e.metaKey && !e.ctrlKey && !e.altKey) { e.preventDefault(); stepLook(k === ']' ? 1 : -1); return; }   // [interior] next / previous window or seat
   if ((e.metaKey || e.ctrlKey) && k.toLowerCase() === 'z') { e.preventDefault(); doUndo(!e.shiftKey); return; }
   if (e.metaKey || e.ctrlKey || e.altKey) return;
   const stop = () => { e.preventDefault(); e.stopPropagation(); };
@@ -686,7 +748,7 @@ function bindArchitecture() {
     try {
       const values={};for(const el of $('psArchFields').querySelectorAll('[data-arch]')){if(el.value.trim()==='')throw Error('Enter a value for each dimension.');values[el.dataset.arch]=+el.value;}
       const [kind,index]=target.value.split(':');const edited=kind==='fx'?editFixture(rawPlan,+index,values):kind==='win'?editWindow(rawPlan,+index,values):editOrientation(rawPlan,values.bearing);
-      const project=serialiseProject(edited,items,lightingOf());
+      const project=serialiseProject(edited,items,lightingOf(),inventory);
       saveProjectLibrary(Object.assign(Object.create(null),projectLibrary,{[st.id]:project}));
       checkpoint();rawPlan=project.plan;model=normalisePlan(rawPlan);
       G3.setModel(model);G3.setWallMode(st.wall);P2.setModel(model);LX.reattach2D();
@@ -703,7 +765,8 @@ function furnitureTab() {
     return `<div class="ps-item${it.id === sel ? ' on' : ''}${it.hidden ? ' off' : ''}" data-id="${esc(it.id)}"><button type="button" class="ps-ib" data-sel="${esc(it.id)}"><span class="ps-sw" style="--c:#${(it.base.color ?? 0x888888).toString(16).padStart(6, '0')}"></span><span class="t"><b>${esc(it.name)}</b><small>${fmtIn(it.w)} × ${fmtIn(it.d)}${it.hidden ? ' · hidden' : r?.room ? ` · ${esc(r.room)}` : ''}</small></span><i class="dot g-${s}" title="${s === 'off' ? 'hidden' : GRADE_TXT[s]}"></i></button><button type="button" class="icon-btn" data-vis="${esc(it.id)}" aria-label="${it.hidden ? 'Show' : 'Hide'}" title="${it.hidden ? 'Show' : 'Hide'}">${it.hidden ? IC.eyeOff : IC.eye}</button></div>`;
   }).join('') : '<p class="faint">Nothing placed yet.</p>';
   const cat = CATEGORIES.map(([k, t]) => { const refs = Object.entries(CATALOG).filter(([, c]) => c.cat === k); return refs.length ? `<div class="ps-cat"><span class="ps-cat-h">${t}</span><div class="chips">${refs.map(([r, c]) => `<button type="button" class="chip" data-add="${esc(r)}" title="${esc(c.src)}">${IC.plus}${esc(c.name)}</button>`).join('')}</div></div>` : ''; }).join('');
-  return `${pres}<h3 class="label">In this layout <span>${R.filter((x) => !x.hidden).length} pieces</span></h3><div class="ps-list">${list}</div>
+  const own = inventory ? inventoryHTML(inventory, { held: placedIds(inventory, items), hasPreset: model.layouts.some((l) => l.id === OWN), active: st.activePreset === OWN }) : '';   // [furniture]
+  return `${own}${pres}<h3 class="label">In this layout <span>${R.filter((x) => !x.hidden).length} pieces</span></h3><div class="ps-list">${list}</div>
     <h3 class="label">Add furniture <span>real sizes, hover for the source</span></h3>${cat}
     <div class="ps-opts">${[['snap', 'Snap to walls'], ['zonesAll', 'Show every clearance zone'], ['sight', 'Show TV sightlines'], ['swings', 'Shade door swings in 3D']].map(([k, t]) => `<label class="tg ${st[k] ? 'on' : ''}"><input type="checkbox" class="sr" data-opt="${k}" ${st[k] ? 'checked' : ''}><span class="switch"></span><span class="lbl">${t}</span></label>`).join('')}</div>`;
 }
@@ -766,6 +829,8 @@ function planTab() {
 function tabClick(e) {
   const b = e.target.closest('button, [data-sel]'); if (!b) return;
   if (b.dataset.p) applyPreset(b.dataset.p);
+  else if ('invUse' in b.dataset) useOwn();
+  else if (b.dataset.invAdd) addOwn(b.dataset.invAdd);
   else if (b.dataset.sel) { select(b.dataset.sel === sel ? null : b.dataset.sel); markList(); }
   else if (b.dataset.vis) { const it = items.find((q) => q.id === b.dataset.vis); if (it) mutate(() => { it.hidden = !it.hidden; if (it.hidden && sel === it.id) sel = null; }); }
   else if (b.dataset.add) addRef(b.dataset.add);
@@ -839,7 +904,7 @@ function refreshSun() {
   $('phud').innerHTML = `<span>${esc(st.date)} ${fmtT(st.min)}${mn !== 'day' ? ` · ${mn === 'night' ? 'night' : 'evening'}, ${lamps ? `${lamps} lamp${lamps > 1 ? 's' : ''} on` : 'no lamps placed'}` : ''}</span><span class="${light.directional ? 'lit' : 'shade'}">${!placementKnown ? 'Window placement unresolved · direct sun withheld' : !light.orientationKnown ? 'Orientation unknown · direct sun unresolved' : !up ? 'Night' : blocked ? (perWin ? 'Every window shaded by neighbours' : 'Site observation point shaded') : nWh && nWh === model.windows.length ? 'Windows not in open air · sun withheld' : nBlk ? `Sun blocked at ${nBlk} of ${perWin.length} windows${nWh ? ` · ${nWh} withheld` : ''}` : !st.directSun ? 'Direct sun hidden in preview' : `Sun ${Math.round(s.alt)}° up, ${compass(s.az)}`}</span>`;
   const el = $('psLight'); if (!el) return;
   if (!el.querySelector('#psLightResults')) {
-    el.innerHTML = `<div class="ps-light-controls"><label class="tg"><input id="psDirectSun" type="checkbox"> Show directional sunlight</label>${onSite ? `<label class="tg ps-city-tg"><input id="psCityTg" type="checkbox"> Show the city outside</label>` : ''}<div class="field"><label for="psAmbient">Background light preview <span id="psAmbientValue"></span></label><input id="psAmbient" type="range" min="0" max="2" step="0.05"></div><p class="ps-note faint">Background intensity is a display preference, not measured brightness or lux.</p>
+    el.innerHTML = `<div class="ps-light-controls"><label class="tg"><input id="psDirectSun" type="checkbox"> Show directional sunlight</label>${onSite ? `<label class="tg ps-city-tg"><input id="psCityTg" type="checkbox"> Show the city in the bird’s-eye view too</label>` : ''}<div class="field"><label for="psAmbient">Background light preview <span id="psAmbientValue"></span></label><input id="psAmbient" type="range" min="0" max="2" step="0.05"></div><p class="ps-note faint">Background intensity is a display preference, not measured brightness or lux.</p>
       <div class="ps-glaze"><div class="label">Glass and blinds <span class="pill">Preview</span></div>
         <div class="field"><label for="psGlazing">Glazing transmittance <span id="psGlazingValue"></span></label><input id="psGlazing" type="range" min="0.05" max="1" step="0.05" aria-describedby="psGlazeNote"></div>
         <div class="seg ps-blinds" id="psBlinds" role="group" aria-label="Blinds">${Object.entries(BLINDS_LABEL).map(([k, t]) => `<button type="button" data-b="${k}" aria-pressed="false">${t}</button>`).join('')}</div>
@@ -900,16 +965,23 @@ const up_ = (s) => s.alt > 0;
 const hmShort = (min) => { if (!min) return 'none'; const h = Math.floor(min / 60), mm = Math.round(min % 60); return h && mm ? `${h} h ${String(mm).padStart(2, '0')}` : h ? `${h} h` : `${mm} m`; };
 function placeOnSite(site, floor) {
   try { const pin = getPin(st.id, { base: S.base }); onSite = placePlan(site, model, pin?.floor ?? floor, { anchor: pinOption(pin) }); winSky = onSite ? windowSkylines(onSite, model) : null; } catch { onSite = winSky = null; }
-  winMin = null; winMinKey = '';
+  winMin = null; winMinKey = ''; cityKey = '';
   if (ready) applyCity();
 }
-function dropPlacement() { onSite = winSky = winMin = null; winMinKey = ''; G3.setWindowShade([]); applyCity(); }
+function dropPlacement() { onSite = winSky = winMin = null; winMinKey = ''; cityKey = ''; G3.setWindowShade([]); applyCity(); }
 function applyCity() {
   if (!ready) return;
-  if (!st.city || !onSite) { if (G3.hasCity()) G3.setCity(null); return; }
+  // [interior] the real city outside is always there from inside (every eye-level view); the toggle is for the bird's-eye view
+  const eye = G3.viewMode() === 'eye', want = !!onSite && (eye || st.city), key = `${eye ? 'eye' : 'orbit'}|${document.documentElement.dataset.theme}`;
+  if (!want) { if (G3.hasCity()) G3.setCity(null); cityKey = ''; return; }
+  if (cityKey === key && G3.hasCity()) return;
+  cityKey = key;
   const dark = document.documentElement.dataset.theme !== 'light', css = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-  G3.setCity(cityGroup(onSite, { light: !dark, colors: { low: dark ? css('--surface-3') : css('--ink-4'), high: css('--ink-3'), roof: dark ? css('--ink-3') : css('--surface-1'), own: css('--accent'), ground: dark ? css('--surface-1') : css('--surface-3') } }));
+  const colors = eye ? { low: '#7f8996', high: '#b9c2cf', roof: '#dde1e7', own: css('--accent'), ground: '#6e7378' }
+    : { low: dark ? css('--surface-3') : css('--ink-4'), high: css('--ink-3'), roof: dark ? css('--ink-3') : css('--surface-1'), own: css('--accent'), ground: dark ? css('--surface-1') : css('--surface-3') };
+  G3.setCity(cityGroup(onSite, { light: eye || !dark, colors }));
 }
+let cityKey = '';
 
 // ------------------------------------------------------------------ frame loop
 function frame() {

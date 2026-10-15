@@ -55,13 +55,13 @@ export function createModelPanel(host, api) {
     if (scenario) {
       h += `<fieldset class="mp-radios"><legend class="sr">Plan for the Inside view</legend>
         <label class="mp-radio"><input type="radio" name="mpPlan" value="scenario" data-act="plan-source"${useScenario ? ' checked' : ''}><span><b>Your local scenario</b> “${esc(scenario.label || 'edited plan')}”, saved ${esc(when(scenario.saved))}. Edited rooms, doors, windows and ${scenario.layout?.items?.length ?? 0} pieces of furniture.</span></label>
-        <label class="mp-radio"><input type="radio" name="mpPlan" value="file" data-act="plan-source"${useScenario ? '' : ' checked'}${c.hasFilePlan ? '' : ' disabled'}><span><b>The source plan file</b>${c.hasFilePlan ? ', as published for this unit (no furniture)' : ' (this unit has none)'}</span></label></fieldset>`;
+        <label class="mp-radio"><input type="radio" name="mpPlan" value="file" data-act="plan-source"${useScenario ? '' : ' checked'}${c.hasFilePlan ? '' : ' disabled'}><span><b>The source plan file</b>${c.hasFilePlan ? ', as published for this unit' + (planInfo.layoutName ? ` (furnished as “${esc(planInfo.layoutName)}”)` : ' (no furniture)') : ' (this unit has none)'}</span></label></fieldset>`;
     } else if (planInfo.source === 'file') {
-      h += `<p class="u-note">The source plan for this unit, no furniture. To test a layout here, open the Floor plan studio and choose <b>Layout ▸ Use this plan in Unit 3D</b>: your edited plan and furniture then appear in the Inside view at this window.</p>`;
+      h += `<p class="u-note">The source plan for this unit${planInfo.layoutName ? `, furnished as “${esc(planInfo.layoutName)}”` : ', no furniture'}. To test another layout or an edited plan here, open the Floor plan studio and choose <b>Layout ▸ Use this plan in Unit 3D</b>: your edited plan and furniture then appear in the Inside view at this window.</p>`;
     } else {
       h += `<p class="u-note">This unit has no floor plan, so the Inside view uses a generic 5.5 × 7 m room. Trace or load a plan in the Floor plan studio to see the real layout here.</p>`;
     }
-    if (planInfo.furniture) h += `<label class="tg mp-tg ${c.st.showFurniture !== false ? 'on' : ''}"><input type="checkbox" class="sr" data-act="furniture"${c.st.showFurniture !== false ? ' checked' : ''}><span class="switch"></span><span class="lbl">Show furniture<small>${planInfo.furniture} piece${planInfo.furniture === 1 ? '' : 's'} from the studio</small></span></label>`;
+    if (planInfo.furniture) h += `<label class="tg mp-tg ${c.st.showFurniture !== false ? 'on' : ''}"><input type="checkbox" class="sr" data-act="furniture"${c.st.showFurniture !== false ? ' checked' : ''}><span class="switch"></span><span class="lbl">Show furniture<small>${planInfo.furniture} piece${planInfo.furniture === 1 ? '' : 's'}${planInfo.source === 'file' ? ` of the plan's “${esc(planInfo.layoutName || 'default')}” layout` : ' from the studio'}</small></span></label>`;
     h += `<p class="u-note">A plan is used only for the unit it was made for: a scenario saved for another unit is never applied here.</p>`;
     // the shared anchor
     if (open.plan) {

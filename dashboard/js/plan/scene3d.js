@@ -12,6 +12,9 @@ import { MAT, LAMP_K } from './catalog.js';
 import { axes, footprint, toWorld, swingPoly } from './checks.js';
 import { pointInPoly, fmtIn } from './model.js';
 import { applySurfaceTint, setSurfaceState } from './surfaces3d.js';   // [feature J] reflectance -> colours
+import * as I3 from './interior3d.js';   // [interior] reveals, sills, casings, framed glass, door frames, baseboards, ceiling trims, floor finishes
+import * as SKY from './sky3d.js';   // [interior] the sky and haze behind the city in eye-level views
+import * as F3 from './furniture3d.js';   // [interior] low-poly furniture models
 
 export const M = 0.0254;
 const DEG = Math.PI / 180;
@@ -22,7 +25,7 @@ let renderer, scene, cam, controls, canvas, stage, sunL, hemi, amb;
 let shell, proxies, furn, overlay, labels, glow;
 let model = null, colors = null, wallMode = 'cut', dirty = true;
 const groups = new Map();
-const rig = { mode: 'orbit', view: 'bird', pos: new THREE.Vector3(), yaw: 0, pitch: 0, prevWall: null };
+const rig = { mode: 'orbit', view: 'bird', pos: new THREE.Vector3(), yaw: 0, pitch: 0, prevWall: null, fov: 70 };
 // lighting mood: 'auto' follows the sun (day when it is up, night when it is down)
 const mood = { want: 'auto', sunUp: true, now: 'day' };
 let glide = null, tourS = null;
@@ -114,6 +117,7 @@ export function init(canvasEl, stageEl, onChange) {
   scene.add(sunL); scene.add(sunL.target);
   for (const n of ['shell', 'proxies', 'furn', 'overlay', 'labels', 'glow']) { const g = new THREE.Group(); g.name = n; scene.add(g); }
   [shell, proxies, furn, overlay, labels, glow] = ['shell', 'proxies', 'furn', 'overlay', 'labels', 'glow'].map((n) => scene.getObjectByName(n));
+  for (const o of SKY.objects()) { o.visible = false; scene.add(o); }   // [interior] sky dome and sun glow, shown in eye-level views
   new ResizeObserver(resize).observe(stage);
 }
 export function resize() {
@@ -127,7 +131,7 @@ export function render(force = false) {
   if (glide) stepGlide(now);
   if (tourS) stepTour(now);
   if (!dirty && !force) return false;
-  dirty = false; renderer.render(scene, cam); return true;
+  dirty = false; SKY.follow(cam.position); renderer.render(scene, cam); return true;
 }
 
 function clear(g) {
@@ -193,8 +197,8 @@ export function buildShellInto(T, m, C, mode = 'cut', opts = {}) {
   for (const r of m.rooms) {
     const shape = new THREE.Shape(r.poly.map(([x, y]) => new THREE.Vector2(x * M, y * M)));
     const g = new THREE.ShapeGeometry(shape); g.rotateX(-Math.PI / 2);
-    const kind = FLOOR_OF[r.kind] || 'wood', base = C[kind];
-    const mat = std(0xffffff, { roughness: kind === 'tile' ? 0.42 : kind === 'wood' ? 0.62 : 0.95, map: texture(kind, base) });
+    const fk = r.kind === 'closet' ? 'carpet' : I3.floorKind(r), base = fk === 'carpet' ? C.carpet : I3.floorBase(fk, C);   // [interior] parquet, oak or tile by room type
+    const mat = std(0xffffff, { roughness: fk === 'carpet' ? 0.95 : I3.floorRoughness(fk), map: fk === 'carpet' ? texture('carpet', base) : I3.floorTexture(fk, base) });
     const mm = new THREE.Mesh(g, mat); mm.position.y = 0.001; mm.receiveShadow = true; mm.name = `floor: ${r.name}`; T.shell.add(mm);
     if (cut == null) { // ceiling: faces down, so it is culled from above and only seen from inside
       const cg = new THREE.ShapeGeometry(new THREE.Shape(r.poly.map(([x, y]) => new THREE.Vector2(x * M, -y * M)))); cg.rotateX(Math.PI / 2);
@@ -205,12 +209,9 @@ export function buildShellInto(T, m, C, mode = 'cut', opts = {}) {
   }
   const wallMat = std(C.wall, { roughness: 0.92 }), capMat = new THREE.MeshBasicMaterial({ color: C.cap });
   const proxyMat = new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false });
-  // skirting: a darker 4 in band at the foot of the walls reads as finished interior at eye level
-  const skirtMat = std(C.wall.clone().multiplyScalar(0.82), { roughness: 0.6 });
   for (const p of m.pieces) {
     const top = cut == null ? p.z1 : Math.min(p.z1, cut);
     if (top - p.z0 > 0.2) T.shell.add(pieceBox(p, p.z0, top, cut == null ? wallMat : [wallMat, wallMat, capMat, wallMat, wallMat, wallMat], false));
-    if (p.z0 < 0.5 && p.kind !== 'sill' && top > 5) { const s = pieceBox({ ...p, t: p.t + 0.8 }, 0, 4, skirtMat, false); s.castShadow = false; T.shell.add(s); }
     if (T.proxies) T.proxies.add(pieceBox(p, p.z0, p.z1, proxyMat, true));
   }
   if (T.proxies) {
@@ -223,22 +224,11 @@ export function buildShellInto(T, m, C, mode = 'cut', opts = {}) {
       s.castShadow = true; s.visible = !!opts.shadeState?.[i]; s.name = 'window shade'; T.proxies.add(s); out.shades.push(s);
     });
   }
-  // glass, with a thin frame and mullion
-  const glassMat = new THREE.MeshStandardMaterial({ color: 0xa9cbe6, transparent: true, opacity: C.dark ? 0.2 : 0.26, roughness: 0.05, metalness: 0.1, side: THREE.DoubleSide, depthWrite: false });
-  const frameMat = std(0x3a3d42, { roughness: 0.5, metalness: 0.3 });
-  for (const w of m.windows) {
-    const top = cut == null ? w.head : Math.min(w.head, cut); if (top <= w.sill + 0.5) continue;
-    const L = w.len, mid = w.mid, ang = Math.atan2(w.b[1] - w.a[1], w.b[0] - w.a[0]);
-    const gl = new THREE.Mesh(new THREE.PlaneGeometry(L * M, (top - w.sill) * M), glassMat);
-    gl.position.copy(W(mid[0], mid[1], (w.sill + top) / 2)); gl.rotation.y = ang; gl.name = 'glass'; T.shell.add(gl);
-    const bar = (len, hgt, x, z) => { const f = new THREE.Mesh(new THREE.BoxGeometry(len * M, hgt * M, 2 * M), frameMat); f.position.copy(W(x[0], x[1], z)); f.rotation.y = ang; T.shell.add(f); };
-    bar(L, 1.2, mid, w.sill + 0.6); if (cut == null) bar(L, 1.2, mid, top - 0.6);
-    const n = Math.max(1, Math.round(L / 40));
-    for (let k = 1; k < n; k++) { const t = k / n, p = [w.a[0] + (w.b[0] - w.a[0]) * t, w.a[1] + (w.b[1] - w.a[1]) * t]; bar(1.2, top - w.sill, p, (w.sill + top) / 2); }
-    if (cut != null) {
-      const pts = [W(w.a[0], w.a[1], top + 0.3), W(w.b[0], w.b[1], top + 0.3)];
-      T.shell.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: C.cap })));
-    }
+  // [interior] window reveals, sills, casings, framed glass with a soft reflection, door frames, baseboards and ceiling trims
+  T.shell.add(I3.detailGroup(m, { cut, dark: C.dark, sheen: opts.sheen !== false, skipCans: opts.skipCans }));
+  if (cut != null) for (const w of m.windows) {   // the section line over each opening in a cut-away view
+    const top = Math.min(w.head, cut); if (top <= w.sill + 0.5) continue;
+    T.shell.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([W(w.a[0], w.a[1], top + 0.3), W(w.b[0], w.b[1], top + 0.3)]), new THREE.LineBasicMaterial({ color: C.cap })));
   }
   const leafMat = std(C.wall.clone().lerp(new THREE.Color(0x8a7560), 0.25), { roughness: 0.6 }), arcMat = new THREE.LineDashedMaterial({ color: C.cap, dashSize: 0.06, gapSize: 0.05, transparent: true, opacity: 0.55 });
   for (const d of m.doorways) {
@@ -393,9 +383,16 @@ function applyMood() {
     l.light.intensity = lampOn ? l.cd * (night ? 1 : 0.75) : 0; l.light.visible = lampOn;
     if (l.shade) { l.shade.material.emissiveIntensity = lampOn ? (night ? 1.4 : 1) : 0; }
   }
-  // from inside, the windows look out at a sky; from above, the backdrop stays the dashboard's
-  const skyBg = rig.mode === 'eye' && !city ? (day ? new THREE.Color(0xc9d6e3) : eve ? new THREE.Color(0x6d6f8f) : new THREE.Color(0x0b1020)) : null;
-  if (scene) scene.background = skyBg || (day ? colors.bg : eve ? colors.bg.clone().lerp(colors.night, 0.5) : colors.night).clone();
+  // from inside, the windows look out at a sky (and the haze fades the far city into it); from above, the backdrop stays the dashboard's
+  if (scene) {
+    if (rig.mode === 'eye') {
+      const sd = sunL.position.clone().sub(sunL.target.position), haze = SKY.setMood(now, sd, mood.sunUp);
+      SKY.show(true); scene.background = haze.color; scene.fog = new THREE.Fog(haze.color, haze.near, haze.far);
+    } else {
+      SKY.show(false); scene.fog = null;
+      scene.background = (day ? colors.bg : eve ? colors.bg.clone().lerp(colors.night, 0.5) : colors.night).clone();
+    }
+  }
   renderer.toneMappingExposure = day ? 1.15 : eve ? 1.25 : 1.35;
   for (const f of moodHooks) f(now);   // [feature J] lamps, quality mode
   dirty = true;
@@ -435,7 +432,8 @@ export function buildItem(it, env = {}) {
   const box = (w, h, d, color, x, y, z, o) => mk(new THREE.BoxGeometry(w, h, d), color, x, y, z, o);
   const cyl = (r, h, color, x, y, z, seg = 24, r2 = r) => mk(new THREE.CylinderGeometry(r, r2, h, seg), color, x, y, z);
   const { w, d, h, kind } = it, col = it.base?.color ?? 0x8899aa, hw = w / 2, hd = d / 2;
-  if (kind === 'bed') {
+  if (F3.build(it, { s, std, fabric: fabricMat })) { /* [interior] drawn by plan/furniture3d.js: rounded cushions, arms, headboards, drawers */ }
+  else if (kind === 'bed') {
     const [mw0, md0] = it.productInfo?.mattress || it.base.mattress || [w - 4, d - 4], mw = Math.min(mw0, w - 2), md = Math.min(md0, d - 3);
     const storage = !!it.base.storage, deck = storage ? 14 : 11;
     box(w, h, 3, fabricMat(MAT.fabric), 0, h / 2, -hd + 1.5);
@@ -553,6 +551,7 @@ function artTexture(id) {
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.userData.shared = true; artCache.set(id, t); return t;
 }
 /** Chair positions [x, z, angle] in the table's local frame (inches, +z = front). */
+F3.setChairSpots((it) => chairSpots(it));
 export function chairSpots(it) {
   const hw = it.w / 2, hd = it.d / 2, out = [], off = 7;
   if (it.base.round) return [[0, hd + off, Math.PI], [0, -hd - off, 0], [hw + off, 0, -Math.PI / 2], [-hw - off, 0, Math.PI / 2]];
@@ -669,7 +668,8 @@ export function setView(v, eye, o = {}) {
     rig.pos.copy(W(eye.at[0], eye.at[1], eye.h || 62)); rig.yaw = Math.atan2(eye.dir[0], eye.dir[1]); rig.pitch = eye.pitch ?? -0.08;
     if (wallMode !== 'full') setWallMode('full');
     const cp = Math.cos(rig.pitch), tgt = new THREE.Vector3(rig.pos.x + Math.sin(rig.yaw) * cp, rig.pos.y + Math.sin(rig.pitch), rig.pos.z - Math.cos(rig.yaw) * cp);
-    if (instant) { cam.fov = 70; cam.updateProjectionMatrix(); applyEye(); } else glideTo(rig.pos.clone(), tgt, 70, 750, applyEye);
+    rig.fov = eye.fov || 70;
+    if (instant) { cam.fov = rig.fov; cam.updateProjectionMatrix(); applyEye(); } else glideTo(rig.pos.clone(), tgt, rig.fov, eye.ms ?? 750, applyEye);
     applyMood(); return;
   }
   if (rig.mode === 'eye' && rig.prevWall && rig.prevWall !== wallMode) setWallMode(rig.prevWall);
@@ -688,7 +688,7 @@ export const currentWallMode = () => wallMode;
 export const eyeWallRestore = () => rig.prevWall;
 function applyEye() {
   const cp = Math.cos(rig.pitch); cam.position.copy(rig.pos);
-  cam.fov = 70; cam.updateProjectionMatrix();
+  cam.fov = rig.fov; cam.updateProjectionMatrix();
   cam.lookAt(rig.pos.x + Math.sin(rig.yaw) * cp, rig.pos.y + Math.sin(rig.pitch), rig.pos.z - Math.cos(rig.yaw) * cp); dirty = true;
 }
 export function look(dx, dy) { if (rig.mode !== 'eye') return; glide = null; tourS = null; rig.yaw += dx * 0.005; rig.pitch = Math.max(-1.2, Math.min(1.2, rig.pitch - dy * 0.005)); applyEye(); }
@@ -725,7 +725,7 @@ export function tour(path, { speed = 30, h = 63, onEnd } = {}) {
   if (rig.mode !== 'eye') rig.prevWall = wallMode;
   rig.mode = 'eye'; rig.view = 'tour'; controls.enabled = false; if (wallMode !== 'full') setWallMode('full');
   glide = null; tourS = { pts, lens, total: lens[lens.length - 1], t0: performance.now() + 200, speed, h, onEnd };
-  cam.fov = 70; cam.updateProjectionMatrix(); applyMood(); stepTour(performance.now()); return true;
+  rig.fov = 70; cam.fov = 70; cam.updateProjectionMatrix(); applyMood(); stepTour(performance.now()); return true;
 }
 export const touring = () => !!tourS;
 export function stopTour() { tourS = null; }
