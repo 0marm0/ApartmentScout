@@ -18,6 +18,7 @@ export const TOUR = {
   fov: 74,              // a little wider than the walk's 70: rooms read better
   pace: 54,             // inches a second between pauses (about 1.4 m/s), before easing
   look: 96,             // inches ahead the camera looks while moving
+  windowBack: 40,       // inches back from the glass at the finish (the walk's 22 puts the frame of a bay in the picture)
   hz: 120,              // the pose table's rate; frames at 30 or 60 fps read it with interpolation
   holds: { door: 0.8, living: 2.4, bedroom: 2.0, window: 2.6 },   // seconds of pause (camera still, view panning) at each stop, before scaling
   pan: { door: 0, living: 26, bedroom: 22, window: 0 },           // degrees the view sweeps across a pause
@@ -91,6 +92,38 @@ export function roundCorners(pts, space, radius = 30) {
   return out;
 }
 
+/** A point a person can stand on with a margin of an inch each way (the floor grid is 2 in: this is every cell a point 1 in off could be in). */
+export const safeAt = (space, x, y) => {
+  for (const dx of [0, -1, 1]) for (const dy of [0, -1, 1]) if (!space.canStand(x + dx, y + dy)) return false;
+  return true;
+};
+/** The nearest point that is safe (within `max` inches), or null. */
+function nearestSafe(space, p, max = 8) {
+  if (safeAt(space, p[0], p[1])) return p;
+  let best = null, bd = Infinity;
+  for (let r = 0.5; r <= max; r += 0.5) for (let a = 0; a < 360; a += 15) {
+    const q = [p[0] + r * Math.cos((a * Math.PI) / 180), p[1] + r * Math.sin((a * Math.PI) / 180)];
+    if (r < bd && safeAt(space, q[0], q[1])) { bd = r; best = q; }
+  }
+  return best;
+}
+/**
+ * Move the few points of a resampled path that are not safe (a jamb, a corner of a piece of furniture) to the nearest point that is, then smooth the path
+ * over five points where the smoothed point is safe too. Deterministic in the point, so the end of one leg and the start of the next, which are the same
+ * point, move to the same place.
+ */
+export function mend(space, pts) {
+  const out = pts.map((p) => nearestSafe(space, p) || p);
+  const sm = out.map((p, i) => {
+    if (i === 0 || i === out.length - 1) return p;
+    let x = 0, y = 0, n = 0;
+    const w = Math.min(2, i, out.length - 1 - i);   // (a window that shrinks toward the ends, so the ends stay put and a straight path stays straight)
+    for (let k = -w; k <= w; k++) { const q = out[i + k]; x += q[0]; y += q[1]; n++; }
+    return safeAt(space, x / n, y / n) ? [x / n, y / n] : p;
+  });
+  return sm;
+}
+
 /** A polyline as points `step` inches apart (the first and last kept), with the running length at each. */
 export function resample(pts, step = 1) {
   const P = [[...pts[0]]], S = [0];
@@ -145,7 +178,7 @@ export function planTour(model, space, o = {}) {
     prev = at;
   }
   // the finish: the largest window of the last room shown, else the window nearest the last stop
-  const stands = windowStands(model, space);
+  const stands = windowStands(model, space, { back: TOUR.windowBack });
   const lastRoom = stops[stops.length - 1].room;
   const gl = (st) => groups[st.group]?.len || 0;
   const pick = stands.filter((q) => q.room === lastRoom).sort((a, b) => gl(b) - gl(a))[0] || stands.map((q) => ({ q, d: dist(q.at, prev) })).sort((a, b) => a.d - b.d)[0]?.q;
@@ -158,7 +191,7 @@ export function planTour(model, space, o = {}) {
   for (let i = 1; i < stops.length; i++) {
     const route = dist(kept[kept.length - 1].at, stops[i].at) < 1 ? [kept[kept.length - 1].at, stops[i].at] : space.route(kept[kept.length - 1].at, stops[i].at, { maxGoal: 8 });
     if (!route) { warnings.push(`no way to the ${stops[i].label.toLowerCase()}`); continue; }
-    legs.push(resample(roundCorners(route, space), 1));
+    legs.push(resample(mend(space, resample(roundCorners(route, space), 1).pts), 1));
     kept.push({ ...stops[i], at: route[route.length - 1] });
   }
   if (kept.length < 2) return null;
@@ -191,7 +224,10 @@ export function planTour(model, space, o = {}) {
       return { at, yaw: s.heading + pause(seg.stop) * (smooth(u) * 2 - 1), pitch: pitchOf(seg.stop) };
     }
     const u = clamp((time - seg.t0) / Math.max(1e-6, seg.t1 - seg.t0), 0, 1), leg = legs[seg.leg], d = leg.length * smooth(u), here = atLength(leg, d);
-    const ahead = atLength(leg, Math.min(leg.length, d + TOUR.look)).at;
+    // look as far ahead as the camera can see along the way: round a corner the look-ahead shortens to the corner, so the view is the doorway and not the wall beside it
+    const at = (la) => atLength(leg, Math.min(leg.length, d + la)).at;
+    let ahead = at(TOUR.look);
+    if (!space.lineClear(here.at, ahead)) { let lo = 24, hi = TOUR.look; for (let k = 0; k < 6; k++) { const mid = (lo + hi) / 2; if (space.lineClear(here.at, at(mid))) lo = mid; else hi = mid; } ahead = at(lo); }
     let want = dist(ahead, here.at) > 4 ? bearing([ahead[0] - here.at[0], ahead[1] - here.at[1]]) : bearing(here.dir);
     const toStop = kept[seg.to], fromStop = kept[seg.from];
     const arrive = toStop.heading - pause(seg.to), leave = fromStop.heading + pause(seg.from);
@@ -199,7 +235,7 @@ export function planTour(model, space, o = {}) {
     want += turn(want, leave) * (1 - smooth(u / 0.2));           // and out of the last one
     return { at: here.at, yaw: want, pitch: pitchOf(seg.from) + (pitchOf(seg.to) - pitchOf(seg.from)) * smooth(u) };
   };
-  const tau = 0.16, k = 1 - Math.exp(-1 / (hz * tau));
+  const tau = 0.2, k = 1 - Math.exp(-1 / (hz * tau));
   let y1 = null, y2 = null;
   for (let i = 0; i < N; i++) {
     const g = target(i / hz);
