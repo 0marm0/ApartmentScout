@@ -107,6 +107,7 @@ export function initShell() {
     api.close();
     if (b.id === 'mnSearch') openSettings();
     else if (b.id === 'mnPicks') exportPicks();
+    else if (b.id === 'mnSync') import('./sync/sync-ui.js').then((m) => m.openSync()).catch(() => {});
     else if (b.id === 'mnPalette') openPalette();
     else if (b.id === 'mnKeys') dispatchEvent(new KeyboardEvent('keydown', { key: '?' }));
   });
