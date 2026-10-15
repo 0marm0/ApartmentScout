@@ -5,12 +5,14 @@
 // File format (schema 1):
 //   {"schema": 1, "kind": "apartmentscout-furniture", "name": "Your furniture", "source": "where the list came from",
 //    "pieces": [{"id": "bed", "ref": "queen-bed", "label": "Queen bed", "room": "bedroom",
-//                "w": 64, "d": 84, "h": 40, "elev"?, "variant"?, "product"?, "note"?, "source"?}]}
+//                "w": 64, "d": 84, "h": 40, "elev"?, "variant"?, "product"?, "look"?, "note"?, "source"?}]}
 // `ref` is a catalogue id (plan/catalog.js); w, d, h and elev are inches and replace the catalogue's size, so the
 // studio draws and checks the piece the renter has, not a generic one. `room` is the kind of room it lived in
-// (bedroom, living, dining, office) and steers the auto-placer.
+// (bedroom, living, dining, office) and steers the auto-placer. `look` (optional, plan/looks.js) is the piece's colour, material and
+// finish and who it comes from (the renter or an assumption); both 3D views draw it, joined to the layout item by id.
 import { CATALOG, resolve } from './catalog.js';
 import { fitKit } from './fit.js';
+import { validateLook } from './looks.js';
 
 export const MAX_PIECES = 60;
 export const MAX_INVENTORY_BYTES = 200_000;
@@ -46,10 +48,19 @@ export function validateInventory(obj, { catalog = CATALOG } = {}) {
     if (p.product != null && !(typeof p.product === 'string' && /^[a-z0-9][a-z0-9-]{0,63}$/.test(p.product))) return fail(`${at}: product must be a product id`);
     const clean = { id: p.id, ref: p.ref };
     for (const k of ['label', 'room', 'variant', 'product', 'note', 'source']) if (p[k]) clean[k] = p[k];
+    if (p.look != null) { const lk = validateLook(p.look, `${at}: look`); if (!lk.ok) return fail(lk.error); clean.look = lk.look; }
     for (const k of ['w', 'd', 'h', 'elev']) if (p[k] != null) clean[k] = Math.round(p[k] * 10) / 10;
     pieces.push(clean);
   }
   return { ok: true, inventory: { schema: 1, kind: 'apartmentscout-furniture', name: obj.name || 'Your furniture', source: obj.source || '', pieces } };
+}
+
+let fileInv = null;
+/** furniture.json beside the search, validated, read once per page; null when the search has none (Unit 3D uses it for the pieces' looks). */
+export function loadInventoryFile(base, manifest, loadJSON) {
+  if (!manifest?.furniture) return Promise.resolve(null);
+  fileInv ||= Promise.resolve(loadJSON(`${base}/furniture.json`, null)).then((raw) => { const v = raw && validateInventory(raw); return v?.ok ? v.inventory : null; }, () => null);
+  return fileInv;
 }
 
 export function parseInventory(text, opts) {
@@ -65,6 +76,7 @@ export function pieceItem(p, pos = { x: 0, y: 0, rot: 0 }) {
   const o = { id: p.id, ref: p.ref, x: pos.x, y: pos.y, rot: pos.rot };
   for (const k of ['w', 'd', 'h', 'elev', 'variant', 'product']) if (p[k] != null) o[k] = p[k];
   if (p.label) o.label = p.label;
+  if (p.look) o.look = p.look;
   return o;
 }
 

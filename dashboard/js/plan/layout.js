@@ -4,10 +4,12 @@
 // Saved layout JSON (schema 1):
 //   {"schema": 1, "kind": "apartmentscout-layout", "plan": "<plan id>", "units": "in",
 //    "items": [{"id": "bed", "ref": "queen-bed", "x": 66, "y": 190, "rot": 270, "w"?, "d"?, "h"?,
-//               "variant"?, "label"?, "hidden"?, "product"?}]}
+//               "variant"?, "label"?, "hidden"?, "product"?, "look"?}]}
+// `look` (optional, plan/looks.js) overrides the look the inventory gives the piece; saved layouts do not store the inventory's looks.
 // `product` (optional) names an entry of plan/products.js: its real dimensions replace the catalogue's.
 // Positions are inches in the plan frame (+x right, +y toward the top of the drawing); w/d/h are inches.
 import { CATALOG } from './catalog.js';
+import { validateLook } from './looks.js';
 
 export const MAX_ITEMS = 150;
 export const MAX_BYTES = 1_000_000;
@@ -48,6 +50,7 @@ export function validateLayout(obj, { planId = null, catalog = CATALOG } = {}) {
     if (it.label) clean.label = it.label;
     if (it.hidden) clean.hidden = true;
     if (it.product) clean.product = it.product;
+    if (it.look != null) { const lk = validateLook(it.look, `${at}: look`); if (!lk.ok) return fail(lk.error); clean.look = lk.look; }
     items.push(clean);
   }
   return { ok: true, layout: { schema: 1, kind: 'apartmentscout-layout', plan: planId || obj.plan || null, units: 'in', items } };

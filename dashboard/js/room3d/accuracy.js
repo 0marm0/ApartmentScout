@@ -3,6 +3,7 @@
 // measured / confirmed / from a source / estimated / assumed. accuracyRows() is pure (no DOM, no three.js), so both engines build the same
 // rows from the same site file, and it is testable in node. The chip links to the existing evidence (Unit 3D's "Assumptions and evidence" panel).
 import { esc } from '../util.js';
+import { lookBasis, lookSummary, describeLook } from '../plan/looks.js';   // the renter's colours and materials, and which of them are guesses
 
 /** Row states, in the order they are counted, with the word the chip uses and a one-line meaning. */
 export const STATES = {
@@ -57,10 +58,17 @@ export function accuracyRows(o) {
   } else rows.push({ key: 'plan', label: 'Floor plan', state: 'assumed', text: 'A generic room: no floor plan for this unit.' });
   // 6. furniture
   const f = o.furniture;
-  if (f && f.confirmed) rows.push({ key: 'furniture', label: 'Furniture', state: 'confirmed', text: `${esc(f.name || 'Your furniture')}${f.count ? `: ${f.count} piece${f.count === 1 ? '' : 's'}` : ''}, your own, confirmed${f.confirmed.date ? ` on ${esc(f.confirmed.date)}` : ''}. Sizes are real; positions are placed with the fit checks.` });
+  if (f && f.confirmed) rows.push({ key: 'furniture', label: 'Furniture', state: 'confirmed', text: `${esc(f.name || 'Your furniture')}${f.count ? `: ${f.count} piece${f.count === 1 ? '' : 's'}` : ''}, your own, confirmed${f.confirmed.date ? ` on ${esc(f.confirmed.date)}` : ''}. Sizes are real, from you; positions are placed with the fit checks. ${lookText(f.looks)}` });
   else if (f) rows.push({ key: 'furniture', label: 'Furniture', state: 'assumed', text: `${esc(f.name || 'A starter layout')}: catalogue pieces at typical sizes, not yet confirmed as yours.` });
   else rows.push({ key: 'furniture', label: 'Furniture', state: 'assumed', text: 'No furniture layout for this unit.' });
   return rows;
+}
+
+/** One or two sentences on the pieces' colours and materials: how many come from the renter, an example, and what is still a stand-in. */
+function lookText(l) {
+  if (!l || !l.total) return 'No colours or materials are recorded for them, so every look is a stand-in.';
+  const ex = l.example ? ` (${esc(l.example)})` : '', rest = l.assumed ? `${l.assumed} ${l.assumed === 1 ? 'piece has' : 'pieces have'} only a stand-in look` : 'every piece has a look from you';
+  return `Colours and materials: ${l.renter} of ${l.total} from you${ex}; ${rest}${l.guesses?.length ? `, and some details (${l.guesses.map(esc).join(', ')}) are still guesses` : ''}.`;
 }
 
 /** The chip's one-line summary: "2 measured · 1 confirmed · 2 from a source · …" for the states in use, in a fixed order. */
@@ -96,6 +104,15 @@ export function accuracyChip({ host = 'unit', onOpen, openLabel = 'Open the evid
   };
 }
 
+/** How many pieces have a look from the renter, one example, and the details still guessed (from each look's `assumed` list). */
+function looksMeta(pieces) {
+  if (!Array.isArray(pieces)) return null;
+  const ok = pieces.filter((p) => p && typeof p === 'object'), sum = lookSummary({ pieces: ok }), guesses = new Set();
+  for (const p of ok) if (lookBasis(p.look) === 'renter' && Array.isArray(p.look.assumed)) for (const g of p.look.assumed.slice(0, 6)) if (typeof g === 'string' && g.length < 24) guesses.add(g);
+  const eg = ok.find((p) => p.id === 'futon' && p.look) || ok.find((p) => lookBasis(p.look) === 'renter');
+  return { ...sum, example: eg ? `the ${String(eg.label || eg.id).split(',')[0].toLowerCase()} is ${describeLook({ color: eg.look.color, material: eg.look.material })}` : '', guesses: [...guesses].filter((g) => !/^(finish|shade)$/.test(g)).slice(0, 4) };
+}
+
 let furnitureMeta;
 /** The renter's furniture file's name, source and confirmation ({name, source, confirmed, count}), or null; read once per page. */
 export async function loadFurnitureMeta(base, manifest) {
@@ -104,7 +121,7 @@ export async function loadFurnitureMeta(base, manifest) {
   if (!manifest?.furniture) return null;
   try {
     const raw = await (await fetch(`${base}/furniture.json`)).json();
-    if (raw && raw.kind === 'apartmentscout-furniture') furnitureMeta = { name: typeof raw.name === 'string' ? raw.name : 'Your furniture', source: typeof raw.source === 'string' ? raw.source : '', confirmed: raw.confirmed && typeof raw.confirmed === 'object' ? { by: String(raw.confirmed.by || ''), date: String(raw.confirmed.date || '') } : null, count: Array.isArray(raw.pieces) ? raw.pieces.length : 0 };
+    if (raw && raw.kind === 'apartmentscout-furniture') furnitureMeta = { name: typeof raw.name === 'string' ? raw.name : 'Your furniture', source: typeof raw.source === 'string' ? raw.source : '', confirmed: raw.confirmed && typeof raw.confirmed === 'object' ? { by: String(raw.confirmed.by || ''), date: String(raw.confirmed.date || '') } : null, count: Array.isArray(raw.pieces) ? raw.pieces.length : 0, looks: looksMeta(raw.pieces) };
   } catch { furnitureMeta = null; }
   return furnitureMeta;
 }

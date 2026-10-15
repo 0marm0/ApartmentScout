@@ -48,6 +48,7 @@ import * as Q3 from './plan/quality3d.js';   // [feature J] render quality (Fast
 import * as LX from './plan/lighting-ui.js';   // [feature J] daylight grid, glass/surface inputs, luminaires, annual summary
 import { validateInventory, fitInventory, pieceItem, placedIds } from './plan/inventory.js';   // [furniture] the renter's own pieces
 import { inventoryHTML } from './plan/inventory-ui.js';
+import { applyLooks } from './plan/looks.js';   // [furniture] colour, material and finish from furniture.json
 import { allViews, stepView, windowGroups } from './plan/viewpoints.js';   // [interior] where to stand to look out of the windows
 import { setLookChips, bindLookChips } from './plan/look-ui.js';
 
@@ -325,7 +326,7 @@ function doUndo(back = true) {
 /** Re-resolve, re-check and redraw. opts.all rebuilds every 3D item; opts.panels redraws the side. */
 function recompute(opts = {}) {
   if (!model) return;
-  R = items.map((x) => resolve(x)).filter(Boolean);
+  R = applyLooks(items, inventory).map((x) => resolve(x)).filter(Boolean);   // [furniture] the inventory's colour, material and finish ride on each piece
   ev = evaluate(model, R);
   G3.setItems(R); LX.itemsChanged(); Q3.itemsChanged();   // [feature J]
   for (const it of R) G3.setRoomOf(it.id, ev.items[it.id]?.room || '');
