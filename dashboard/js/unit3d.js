@@ -23,12 +23,17 @@ import { illustration } from './features/empty.js';   // [feature C] empty-state
 import { missingNotice } from './features/plan-empty.js';   // [feature C]
 import { chooseHome, homeToRemember, SAVED_KEY } from './features/default-home.js';   // the home the 3D views open: address, session, renter's last, search default
 import * as UQ from './unit/quality3d.js';   // [feature J] render quality and progressive render
+import { mountDock } from './room3d/dock.js';   // [phone] the time slider within thumb reach
 import { annualFor, panelHTML as annualPanelHTML } from './unit/daylight-annual.js';   // [feature J] annual daylight summary
 import { resolveCal, geoFromSite, measuredFromSite, calSummary } from './unit/calibration.js';   // [model project] measured vs estimated height
 import { effectiveComponents, isAssumed } from './unit/parts.js';   // [model project] source parts plus the assumed override
 import { windowOpenAir, airReason } from './unit/openair.js';   // [model project] a window must be in open air
 import { getPin, clearPin } from './unit/anchor.js';   // [model project] the window pinned for the Floor plan studio
-import { onRoomQuality } from './room3d/quality.js';
+import { onRoomQuality, roomQuality } from './room3d/quality.js';
+import { phoneClass } from './features/render-quality.js';
+import { Player, dayRange, minuteAt, progressOf, yearFrame, yearProgress, sunSentence, unionSegs, sunNow, MONTH_NAMES } from './city3d/timeplay.js';   // [daycycle] play the day and the year
+import { mountPlayBar } from './city3d/playbar.js';
+import { seasonLabel, SEASON_NOTE } from './city3d/season.js';
 import { takeHandoff } from './room3d/sunlink.js';
 import { heatMeshes, daylightRooms, savedLighting } from './room3d/heatfloor.js';   // [room3d] the studio's daylight map and saved glass and blinds
 import { SCALES, legendHTML } from './plan/heatmap.js';
@@ -45,10 +50,14 @@ import { resolveLayout, applyInventory, savedLayoutFor } from './plan/placement.
 import { createWalk, WALK_KEYS } from './unit/walk.js';   // [walk] click the floor to walk, drag to look, W S A D, go to the window   // [placement] the same rule for where each piece stands as the Floor plan studio
 import { stepView } from './plan/viewpoints.js';
 import { heightProvenance, confOf } from './city3d/facade-rules.js';   // [buildings3d] height source and confidence labels
+import { lateAt } from './city3d/facade-rules.js';   // [daycycle] how late the evening is: fewer lit windows
+import { seasonAt, quantise } from './city3d/season.js';   // [season] leaves, autumn colour and bare branches follow the date (a picture only)
 import { loadTreeLayers, saveTreeLayers, STREET_TREES_TITLE, PARK_TREES_TITLE } from './unit/treelayers.js';   // [park trees] street / park tree toggles, remembered per browser
 import { createMatch } from './unit/view-match.js';   // [photo match] the guided "Match a photo" flow
 import { loadViewCal, stateFromViewCal, photoLabel, fitLabel } from './unit/view-calibration.js';   // [photo match] the saved record and what it applies
 import * as localApi from './local-api.js';
+import { mountUnitMeasure } from './measure/unit-hook.js';   // [measure] the measuring tape in the Inside camera
+import { isMetricSearch } from './measure/core.js';
 
 let viewCal = null, matchUI = null;   // [photo match] the saved photo match for this unit, and the guide
 let site = null, B0 = [], FUTB = [], edits = new Map(), B = [], T = null, FACES = [], LM = [], FUT = [], BF = null, stage = null, plan = null, interior = null;
@@ -59,6 +68,14 @@ const st = {
   study: 'heights', ifBi: null,
   asked: null, picked: false,   // [camera] the camera a page address named; whether the renter picked one in this visit
 };
+let setWideLayout = () => {};   // set in init: the wide model (panels below) or the panels beside it
+let wideBeforeMatch = false;
+// matching a photo docks its guide in the side column, so the panels come back beside the model for the duration (the wide choice is kept)
+function matchLayout(on) {
+  const V = document.getElementById('view-unit');
+  if (on && V?.dataset.wide === '1') { wideBeforeMatch = true; setWideLayout(false, false); }
+  else if (!on && wideBeforeMatch) { wideBeforeMatch = false; setWideLayout(true, false); }
+}
 let seeInsideIntent = false;   // [camera] "See inside" was pressed for the home being opened (read in show())
 /** The camera the renter chose last (orbit, window or inside), or null. */
 const savedCamera = () => { const v = store.get(CAMERA_KEY, ''); return SAVED_CAMERAS.includes(v) ? v : null; };
@@ -122,6 +139,10 @@ const ICON = {
   down: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 2.5v8M4.5 7l3.5 3.5L11.5 7M3 13.5h10"/></svg>',
   play: '<svg viewBox="0 0 16 16" fill="currentColor"><path d="M4.5 3v10l8.5-5z"/></svg>',
   pause: '<svg viewBox="0 0 16 16" fill="currentColor"><rect x="4" y="3" width="3" height="10" rx="1"/><rect x="9" y="3" width="3" height="10" rx="1"/></svg>',
+  chev: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6l4 4 4-4"/></svg>',
+  full: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.5 2.5h4v4M6.5 13.5h-4v-4M13.5 2.5l-4.5 4.5M2.5 13.5L7 9"/></svg>',
+  panels: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="2.5" width="12" height="11" rx="1.5"/><path d="M10 2.5v11"/></svg>',
+  lens: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M2.5 4.5h6M11.5 4.5h2M2.5 11.5h2M7.5 11.5h6"/><circle cx="10" cy="4.5" r="1.5"/><circle cx="6" cy="11.5" r="1.5"/></svg>',
   reset: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 8a5 5 0 109-3M12 2v3H9"/></svg>',
   heights: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M2.5 13.5V8h3v5.5M6.5 13.5V3h3v10.5M10.5 13.5V6h3v7.5M1.5 13.5h13"/></svg>',
 };
@@ -131,7 +152,9 @@ export function init() {
   const root = document.getElementById('view-unit');
   root.innerHTML = `<div class="view-pad u-pad">
     <header class="page-h u-head">
-      <div class="t"><div class="u-eyebrow">Light and view</div><h1 id="uTitle">Unit 3D</h1><div class="u-sub" id="uSub"></div></div>
+      <div class="t"><div class="u-eyebrow">Light and view</div><div class="u-tline"><h1 id="uTitle">Unit 3D</h1>
+        <button type="button" class="u-fold" id="uFactsBtn" aria-expanded="false" aria-controls="uSub" title="Address, floor, which way it faces and where each fact comes from">Facts${ICON.chev}</button>
+        <button type="button" class="u-fold" id="uUnitsBtn" aria-expanded="false" aria-controls="uUnits" title="The other units in this building, with the way each one faces">Units${ICON.chev}</button></div><div class="u-sub" id="uSub"></div></div>
       <div class="actions"><label class="u-pick"><span class="sr">Listing</span><select id="unitSel"></select></label><span id="uLinks" class="u-links"></span>
         <button class="btn" type="button" id="uSnap" title="Download a PNG of the model with a caption">${ICON.cam}Snapshot</button>
         <button class="btn" type="button" id="uGlb" title="Download the 3D model (.glb) with its assumptions inside">${ICON.cube}3D model</button></div>
@@ -153,12 +176,15 @@ export function init() {
           <button type="button" class="u-compass" id="uCompass" title="North. Click to face north" aria-label="Compass, click to face north"><svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="18.5"/><g id="uNeedle"><path d="M20 5l4 15h-8z" class="n"/><path d="M20 35l4-15h-8z" class="s"/><text x="20" y="4.2" text-anchor="middle">N</text></g></svg></button>
           <div class="float u-tools" id="uTools" role="group" aria-label="Layers">
             ${[['shadows', 'Shadows'], ['labels', 'Labels'], ['heights', 'Heights: colour by height class, label roofs, 150 m and 300 m rings'], ['streets', 'Street names and centrelines'], ['future', 'Proposed buildings'], ['green', 'Parks, lawns and trees: grass from NYC Parks Properties, Greenstreets and OpenStreetMap. Context only: trees are never counted as shade in the sun hours'], ['streetTrees', STREET_TREES_TITLE], ['parkTrees', PARK_TREES_TITLE], ['water', 'Water and ground: rivers, streets and sidewalks. Context only'], ['ray', 'Sun ray'], ['cone', 'View cone']].map(([k, t]) => `<button type="button" data-tg="${k}" title="${t}" aria-label="${t}" aria-pressed="false">${ICON[k]}</button>`).join('')}
-            <hr><button type="button" id="uTarget" title="This building: solid" aria-label="This building display: solid">${ICON.target}<i class="u-tmode">S</i></button>
+            <hr><button type="button" id="uFull" title="Full screen" aria-label="Full screen" aria-pressed="false">${ICON.full}</button>
+            <button type="button" id="uWide" title="Show the panels beside the model" aria-label="Show the panels beside the model" aria-pressed="false">${ICON.panels}</button>
+            <button type="button" id="uTarget" title="This building: solid" aria-label="This building display: solid">${ICON.target}<i class="u-tmode">S</i></button>
             <button type="button" id="uHome" title="Reset the camera" aria-label="Reset the camera">${ICON.reset}</button>
           </div>
           <div class="hud u-hud" id="hud" aria-live="polite"></div>
           <div class="float u-card" id="uCard" hidden></div>
           <div class="float u-lens" id="uLens" hidden>
+            <button type="button" class="ul-tog" id="uLensTog" aria-expanded="false" title="Lens, turn and tilt: field of view and where the camera points" aria-label="Lens, turn and tilt">${ICON.lens}<span>Lens, turn and tilt</span></button>
             <div class="field u-in-only u-in-select"><label for="uInWin">Look out of</label><select id="uInWin"></select></div>
             <div class="field"><label for="uFov">Lens <span class="val" id="uFovV"></span></label><input type="range" id="uFov" min="35" max="110" value="70"></div>
             <div class="field"><label for="uYaw">Turn <span class="val" id="uYawV"></span></label><input type="range" id="uYaw" min="-90" max="90" value="0"></div>
@@ -196,6 +222,7 @@ export function init() {
   sel.addEventListener('change', () => { location.hash = '#unit/' + encodeURIComponent(sel.value); });
   $('uSnap').addEventListener('click', () => snapshot());
   UQ.mount({ host: root.querySelector('.u-head .actions'), stageEl: $('stage'), store, toast, render: (scale) => snapshot({ hires: scale }) });   // [feature J]
+  mountDock($('stage'), { min: STRIP_FROM, max: STRIP_TO - STRIP_STEP, step: STRIP_STEP, get: () => st.min, set: (v) => setTime(v), text: () => fmtT(st.min), playing: () => !!st.playing, toggle: () => togglePlay() });   // [phone]
   $('annualPanel').addEventListener('toggle', (e) => { if (e.target.id === 'uAnnualDetails' && e.target.open !== !!st.annualOpen) { st.annualOpen = e.target.open; annualPanel(); } }, true);   // [feature J]
   new ResizeObserver(fitGrid).observe(root);
   $('uGlb').addEventListener('click', exportGLB);
@@ -225,6 +252,7 @@ export async function show(id) {
   else if (seeInsideIntent && plan && stage && hasWindow()) { seeInsideIntent = false; st.picked = false; goView(mainViewpoint(views)?.key); setMode('in'); revealStage(); }   // already open on this home: stand inside it
   seeInsideIntent = false;
   stage?.resize(); drawPathChart();
+  if (stage?.scene) UQ.opened();   // [quality] the view is in front: time its first frames
   if (!loopOn) { loopOn = true; requestAnimationFrame(frame); }
 }
 
@@ -234,9 +262,12 @@ export async function show(id) {
  */
 function fitGrid() {
   const root = document.getElementById('view-unit'), g = $('uGrid'); if (!root || !g) return;
+  const main = g.querySelector(':scope > .u-main');
+  if (main) main.style.height = '';
   if (!matchMedia('(min-width: 1181px)').matches || g.querySelector(':scope > .empty')) { g.style.height = ''; return; }
-  const top = g.getBoundingClientRect().top - root.getBoundingClientRect().top + root.scrollTop;
-  g.style.height = Math.max(560, root.clientHeight - top - 20) + 'px';
+  const top = g.getBoundingClientRect().top - root.getBoundingClientRect().top + root.scrollTop, h = Math.max(560, root.clientHeight - top - 20 + (root.dataset.wide === "1" ? 110 : 0));
+  if (root.dataset.wide === '1' && main) { g.style.height = ''; main.style.height = h + 'px'; return; }   // wide: the model and its time strip fill the screen, the panels follow below
+  g.style.height = h + 'px';
 }
 
 // ------------------------------------------------------------------ load
@@ -336,6 +367,7 @@ async function load(id) {
     stage = new UnitStage($('gl'), $('stage'), $('uLabels')); UQ.adopt(stage);   // [feature J]
     stage.onCompass = (az) => { const n = $('uNeedle'); if (n) n.setAttribute('transform', `rotate(${-az} 20 20)`); };
     wireStage();
+    mountMeasure();   // [measure]
     new ResizeObserver(() => { stage.resize(); }).observe($('stage'));
     new ResizeObserver(() => drawPathChart()).observe($('pathCv').parentElement);
   }
@@ -350,7 +382,7 @@ async function load(id) {
   $('uSnap').disabled = $('uGlb').disabled = !hasWindow();
   unitsRow(); fitGrid();
   if (!FACES[st.face] || FACES[st.face].shared) {
-    st.mode = 'orbit'; st.playing = false; ++heatTok;
+    st.mode = 'orbit'; player.stop(); st.playing = false; ++heatTok;
     profA = profB = profF = statesA = statesB = null; interior = null;
     $('timePanel').innerHTML = ''; $('studyPanel').innerHTML = ''; $('studyPanel').hidden = $('ifPanel').hidden = true; $('winPanel').innerHTML = '<h3>Window unresolved</h3><p>No exposed facade passed the placement checks. The city remains available to inspect; a verified window position is needed for sunlight and outlook estimates.</p>';
     evidencePanel(); syncTools(); setMode('orbit', true); unresolvedWindow();
@@ -494,6 +526,17 @@ function wireStage() {
   $('uHome').addEventListener('click', () => { if (st.mode === 'plan') stage.resetPlan(); else if (st.mode === 'top') stage.topDown(true); else if (st.mode === 'win' || st.mode === 'in') { setLook(70, 0, 6); } else stage.resetOrbit(true); });
   $('uCompass').addEventListener('click', faceNorth);
   for (const [id, k] of [['uFov', 'fov'], ['uYaw', 'yaw'], ['uPitch', 'pitch']]) $(id).addEventListener('input', (e) => { stage.look[k] = +e.target.value; syncLens(); stage.dirty = true; syncUrlSoon(); if (st.study === 'floors') studyStale(); });
+  // the header is one line: the facts and the other units open on request, so the model gets the page
+  const V = document.getElementById('view-unit');
+  const fold = (btn, key) => btn.addEventListener('click', () => { const on = V.dataset[key] !== '1'; if (on) V.dataset[key] = '1'; else delete V.dataset[key]; btn.setAttribute('aria-expanded', String(on)); fitGrid(); });
+  fold($('uFactsBtn'), 'facts'); fold($('uUnitsBtn'), 'units');
+  // the model is wide by default (panels below it); the second button puts them beside it again, and the first goes full screen
+  setWideLayout = (on, keep = true) => { if (on) V.dataset.wide = '1'; else delete V.dataset.wide; $('uWide').setAttribute('aria-pressed', String(!on)); $('uWide').title = $('uWide').ariaLabel = on ? 'Show the panels beside the model' : 'Make the model wide'; if (keep) store.set('unit-wide', on); fitGrid(); };
+  setWideLayout(store.get('unit-wide', true) !== false);
+  $('uWide').addEventListener('click', () => setWideLayout(V.dataset.wide !== '1'));
+  $('uFull').addEventListener('click', () => { const el = $('stage'); if (document.fullscreenElement) document.exitFullscreen?.(); else el.requestFullscreen?.().catch(() => {}); });
+  document.addEventListener('fullscreenchange', () => { const on = document.fullscreenElement === $('stage'); $('uFull')?.setAttribute('aria-pressed', String(on)); stage?.resize?.(); });
+  $('uLensTog').addEventListener('click', () => { const on = !$('uLens').classList.contains('open'); $('uLens').classList.toggle('open', on); $('uLensTog').setAttribute('aria-expanded', String(on)); });   // the sliders stay closed until asked for: the picture comes first
   $('uInWin').addEventListener('change', (e) => goView(e.target.value));   // [interior] the phone fallback for the room chips
   bindLookChips($('uLook'), { pick: (k) => goView(k), order: () => views.map((v) => v.key) });
   $('uLook').addEventListener('click', onInsideAct); $('uLook').addEventListener('change', onInsideAct);   // [room3d] daylight map and blinds
@@ -562,7 +605,8 @@ function wireStage() {
       e.preventDefault(); return;
     }
     if (st.mode === 'in' && walk && e.key === 'Escape' && walk.walking()) { walk.stop(); return; }
-    if (e.key === 'p') { togglePlay(); e.preventDefault(); }
+    if (e.key === 'p') { togglePlay('day'); e.preventDefault(); }
+    else if (e.key === 'y') { togglePlay('year'); e.preventDefault(); }
     else if (e.key === ',' || e.key === '.') { setTime(st.min + (e.key === '.' ? 15 : -15)); e.preventDefault(); }
   });
   // side panels: delegated clicks (blockers, neighbours, landmarks, roof bars)
@@ -652,6 +696,7 @@ function setMode(m, quiet = false) {
   if (m === 'in' && !interior) buildApartment();
   if (m !== 'in' && walk) { walk.stop(); walk.release(); walk.showMarker(null); }   // [walk]
   st.mode = m; stage.setMode(m); matchUI?.onMode(m);
+  if (!quiet) UQ.opened();   // [quality] another camera is another cost: time its first frames
   $('uModes').querySelectorAll('[data-mode]').forEach((b) => { b.disabled = !hasWindow() && (b.dataset.mode === 'win' || b.dataset.mode === 'in'); b.classList.toggle('on', b.dataset.mode === m); b.setAttribute('aria-pressed', String(b.dataset.mode === m)); });
   $('uLens').hidden = m !== 'win' && m !== 'in'; $('stage').dataset.mode = m; if ($('uLook')) $('uLook').hidden = m !== 'in' || !views.length;
   overlayVisible();
@@ -705,6 +750,16 @@ function buildApartment() {
   syncTools();
 }
 let views = [], curView = null, walk = null;
+/** [measure] The tape: a bridge of getters (the Inside camera's plan, pieces and stage), nothing copied. */
+let MS = null;
+function mountMeasure() {
+  if (MS || !stage) return;
+  MS = mountUnitMeasure({
+    stage: () => stage, canvas: $('gl'), stageEl: $('stage'), toolbar: $('uTools'), mode: () => st.mode, plan: () => plan, id: () => st.id,
+    items: () => (planInfo.layout?.items?.length && st.showFurniture !== false ? planInfo.layout.items : []).map((x) => resolveItem(x)).filter(Boolean),
+    metric: () => isMetricSearch(S.crit, plan), store, base: S.base,
+  });
+}
 const curOff = () => (curView?.kind === 'walk' && stage?.inEye ? stage.inEye.off : curView ? curView.off : interior?.windows[st.inWin]?.bearingOff || 0);
 /** [walk] The camera is wherever the renter walked to: no seat or window chip is current, and the HUD names the room they are in. */
 function markWalking() {
@@ -794,8 +849,8 @@ function buildTimePanel() {
       <div class="u-clock"><b id="uClock"></b><span id="uDateTxt"></span></div>
       <div class="u-date-ctl"><input type="date" id="uDate" aria-label="Date" value="${esc(st.date)}">
         <div class="seg" id="uQuick" role="group" aria-label="Date presets">${presets.map(([d, t]) => `<button type="button" data-d="${esc(d)}">${t}</button>`).join('')}</div></div>
-      <button class="btn" type="button" id="uPlay" aria-pressed="false" title="Play the day (p)">${ICON.play}<span>Play day</span></button>
     </div>
+    <div id="uPlayBar"></div>
     <div class="u-strip">
       <div class="u-strip-keys"><span id="uKeyA"></span><span id="uKeyB"></span></div>
       <div class="u-strip-track" id="uStrip" role="slider" tabindex="0" aria-label="Time of day" aria-valuemin="${STRIP_FROM}" aria-valuemax="${STRIP_TO}">
@@ -805,9 +860,10 @@ function buildTimePanel() {
       </div>
     </div>
     <div class="legend-row u-strip-legend"><span><i class="sw s3"></i>Direct sun on the window</span><span id="uKeySide" hidden><i class="sw s4"></i>Through a side pane</span><span><i class="sw s2"></i>Shaded by buildings (hover to see which)</span><span><i class="sw s1"></i>Sun behind the facade</span><span><i class="sw s0"></i>Night</span><span class="faint">Click or drag the strip to set the time. Arrow keys step 5 minutes.</span></div>`;
-  $('uDate').addEventListener('change', (e) => { if (/^\d{4}-\d{2}-\d{2}$/.test(e.target.value)) { st.date = e.target.value; dateChanged(); } });
-  $('uQuick').querySelectorAll('[data-d]').forEach((b) => b.addEventListener('click', () => { st.date = b.dataset.d; $('uDate').value = st.date; dateChanged(); }));
-  $('uPlay').addEventListener('click', togglePlay);
+  $('uDate').addEventListener('change', (e) => { if (/^\d{4}-\d{2}-\d{2}$/.test(e.target.value)) { pausePlay(false); st.date = e.target.value; dateChanged(); } });
+  $('uQuick').querySelectorAll('[data-d]').forEach((b) => b.addEventListener('click', () => { pausePlay(false); st.date = b.dataset.d; $('uDate').value = st.date; dateChanged(); }));
+  bar = mountPlayBar($('uPlayBar'), { keys: { day: 'p', year: 'y' }, onToggle: togglePlay, onMonth: (m) => { pausePlay(false); st.date = `${+st.date.slice(0, 4)}-${String(m + 1).padStart(2, '0')}-15`; $('uDate').value = st.date; dateChanged(); }, onScrub: scrubYear });
+  playBarSync();
   const tr = $('uStrip');
   const fromX = (e) => { const r = tr.getBoundingClientRect(); return STRIP_FROM + Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)) * (STRIP_TO - STRIP_FROM); };
   tr.addEventListener('pointerdown', (e) => { tr.setPointerCapture(e.pointerId); tr.focus({ preventScroll: true }); setTime(Math.round(fromX(e) / 5) * 5); });
@@ -818,13 +874,67 @@ function buildTimePanel() {
     e.preventDefault();
   });
 }
-function setTime(m) { st.min = clampMin(m); refreshTime(); syncUrlSoon(); if (st.study !== 'heights') studyStale(); }
+function setTime(m) { pausePlay(false); st.min = clampMin(m); refreshTime(); syncUrlSoon(); if (st.study !== 'heights') studyStale(); }
 function dateChanged() { statesA = statesB = null; refreshStrip(); refreshTime(); if (heat && heat.year !== +st.date.slice(0, 4)) computeHeat(); else drawHeat(); ifPanel(); studyStale(); syncUrl(); }
-function togglePlay() {
+// ------------------------------------------------------------------ [daycycle] play the day and the year
+// A loop asks the existing sun model about a new date or time every frame: the sun, the sky, the shadows, the sun patches on the floor and furniture and the trees'
+// season follow. Fast steps coarser (a couple of minutes, fewer dates); the heavy panels (the day strip, the sun numbers) catch up when it pauses.
+const player = new Player();
+let bar = null, dayRng = null, playMin = 780, floorSegsKey = '', floorSegs = [], yearHoursKey = '', yearHours = null, liteAt = 0, dcT = 0;
+const quant = () => (roomQuality() === 'visual' ? 0.5 : phoneClass() ? 5 : 2);                // minutes
+const yearSteps = () => (roomQuality() === 'visual' ? 104 : 52);
+const calKey = () => `${st.floor}|${st.az}|${st.face}|${st.t}|${st.bay}|${st.cal ? JSON.stringify(st.cal) : ''}|${edits.size}|${stage.opts.future ? 1 : 0}`;
+/** The stretches of the date today when the sun reaches this window (and so the floor behind it), minutes. */
+function sunSegsToday() {
+  const key = `${st.date}|${calKey()}`;
+  if (key !== floorSegsKey && profA) { floorSegsKey = key; floorSegs = unionSegs([litInfo(tableFor(6), profA, st.az, 6, panes()).segs]); }
+  return floorSegs;
+}
+/** Direct-sun hours a day on the 15th of each month at this window (the same model as the heat map), cached until the window moves. */
+function monthHours() {
+  if (!profA) return null;
+  const y = +st.date.slice(0, 4), key = `${y}|${calKey()}`;
+  if (key !== yearHoursKey) { yearHoursKey = key; const o = site.origin, P = panes(); yearHours = Array.from({ length: 12 }, (_, m) => litInfo(table(y, m, 15, o.lat, o.lon, tz(), 6), profA, st.az, 6, P).min / 60); }
+  return yearHours;
+}
+/** The sentence, the "now" chip, the month and the tree stage and the chart: everything the bar says, for the date and time in `st`. */
+function playBarSync() {
+  if (!bar || !site || !hasWindow() || !stage?.scene) return;
+  const segs = sunSegsToday(), s = curSun || sunAt(st.min), m = +st.date.slice(5, 7) - 1, d = +st.date.slice(8, 10);
+  bar.setSentence(sunSentence(segs, 'the floor'), sunNow(segs, st.min, s.alt));
+  bar.setMonth(`${MONTH_NAMES[m]} ${d}`, site.green ? { label: seasonLabel(seasonAt(m + 1, d, site.origin.lat)), note: SEASON_NOTE } : null);
+  bar.setChart(monthHours(), { month: m, t: yearProgress(st.date), label: `${MONTH_NAMES[m]} ${d}` });
+}
+function startPlay(kind) {
+  if (!hasWindow() || !stage) return;
+  if (kind === 'day') { dayRng = dayRange((m) => sunAt(m).alt, { from: STRIP_FROM, to: STRIP_TO, step: STRIP_STEP }); player.start('day', progressOf(dayRng, st.min)); }
+  else { playMin = st.min; player.start('year', yearProgress(st.date)); }
+  st.playing = true; liteAt = 0; bar?.setPlaying(kind);
+  $('uStrip')?.classList.toggle('pb-stale', kind === 'year');   // the strip shows one date: it dims while the date moves
+}
+/** Stop the loop. `full`: bring the strip, the heat map and the sun numbers up to date (a caller about to change the date or time itself passes false). */
+function pausePlay(full = true) {
+  if (!player.running) return;
+  const kind = player.kind; player.stop(); st.playing = false; st.min = Math.round(st.min); bar?.setPlaying(null);
+  $('uStrip')?.classList.remove('pb-stale');
+  if (!full) return;
+  if (kind === 'year') { $('uDate').value = st.date; dateChanged(); } else { refreshTime(); syncUrlSoon(); }
+}
+function togglePlay(kind = 'day') {
   if (!hasWindow()) return;
-  st.playing = !st.playing; lastT = 0;
-  const b = $('uPlay'); b.classList.toggle('primary', st.playing); b.setAttribute('aria-pressed', String(st.playing));
-  b.innerHTML = st.playing ? `${ICON.pause}<span>Pause</span>` : `${ICON.play}<span>Play day</span>`;
+  if (player.running && player.kind === kind) pausePlay(); else { if (player.running) pausePlay(false); startPlay(kind); }
+}
+/** Drag across the chart: pause and put the date where the cursor is (the same time of day). */
+function scrubYear(t) {
+  pausePlay(false); const f = yearFrame(+st.date.slice(0, 4), t, 365); st.date = f.iso; $('uDate').value = st.date; refreshTime(true);
+  clearTimeout(dcT); dcT = setTimeout(() => { if (!player.running) dateChanged(); }, 160);
+}
+/** One frame of a loop. */
+function playFrame(tp, now) {
+  const y = +st.date.slice(0, 4);
+  if (player.kind === 'day') { const m = minuteAt(dayRng, tp, quant()); if (m === st.min) return; st.min = m; }
+  else { const f = yearFrame(y, tp, yearSteps()); if (f.iso === st.date) return; st.date = f.iso; st.min = playMin; }
+  refreshTime(true, now);
 }
 /** Short description of a blocker for tooltips: "326 W 37th St, 70 m tall, 57 m away". */
 function blkName(bi) {
@@ -970,10 +1080,11 @@ function unresolvedWindow() {
   $('pathNote').textContent = ''; $('pathLegend').innerHTML = '';
   subline(); stage.dirty = true;
 }
-function refreshTime() {
+function refreshTime(lite = false, now = performance.now()) {
   if (!site) return;
   if (!hasWindow()) { unresolvedWindow(); return; }
   const s = curSun = sunAt(st.min), up = s.alt > 0, P = panes(), front = inFront(s.az, st.az, P);
+  { const [, mo, dd] = ymd(); stage.setSeason(quantise(seasonAt(mo, dd, site.origin.lat))); stage.setLate(lateAt(st.min)); }   // [season] the trees follow the date; never an obstruction
   const w = winPos(st.floor);
   curHit = up && front ? rayBlock(blockerSet(), w.x, w.y, w.z, s.az, s.alt) : null;
   const lit = up && front && !curHit, side = lit && P && Math.abs(angDiff(s.az, st.az)) >= 90;
@@ -986,10 +1097,17 @@ function refreshTime() {
   const tr = $('uStrip'), frac = (st.min - STRIP_FROM) / (STRIP_TO - STRIP_FROM);
   $('uCur').style.left = frac * 100 + '%';
   const msg = { night: 'night', behind: 'sun behind the facade', lit: 'direct sun on the window', side: 'direct sun through a side pane', shade: 'window shaded by ' + (curHit ? bname(curHit.bi, true) : 'buildings') }[state];
-  tr.setAttribute('aria-valuenow', String(st.min)); tr.setAttribute('aria-valuetext', `${fmtT(st.min)}, ${msg}`);
+  tr.setAttribute('aria-valuenow', String(Math.round(st.min))); tr.setAttribute('aria-valuetext', `${fmtT(st.min)}, ${msg}`);
+  if (lite) {
+    // playing: the scene, the clock and the bar every frame; the HUD, the path chart and the date box about eight times a second; the sun numbers when it pauses
+    playBarSync();
+    if (now - liteAt > 120) { liteAt = now; hud(s, state); drawPathChart(); if ($('uDate').value !== st.date) $('uDate').value = st.date; }
+    return;
+  }
   hud(s, state);
   sunPanel(s, state);
   drawPathChart();
+  playBarSync();
 }
 function hud(s, state) {
   if (!s || !hasWindow()) return;
@@ -1555,7 +1673,7 @@ function renderStudy() {
   } else if (k === 'seasons') {
     const y = +st.date.slice(0, 4), o = site.origin, w = winPos(st.floor), P = panes();
     const dates = [[2, 20, 'Mar 20'], [5, 21, 'Jun 21'], [8, 22, 'Sep 22'], [11, 21, 'Dec 21']], times = [540, 720, 900, 1080];
-    const rows = dates.map(([m, d, lbl]) => ({ label: lbl, cells: times.map((min) => {
+    const rows = dates.map(([m, d, lbl]) => ({ label: lbl, season: quantise(seasonAt(m + 1, d, o.lat)), cells: times.map((min) => {   // [season] each row's trees as they are on that date
       const s = sunPos(zonedMs(y, m, d, min, tz()), o.lat, o.lon), up = s.alt > 0, fr = inFront(s.az, st.az, P);
       const hit = up && fr ? rayBlock(blockerSet(), w.x, w.y, w.z, s.az, s.alt) : null;
       const state = !up ? 'night' : !fr ? 'behind' : hit ? 'shade' : P && Math.abs(angDiff(s.az, st.az)) >= 90 ? 'side' : 'lit';
@@ -1733,7 +1851,7 @@ function matchBridge() {
       stage.dirty = true;
     },
     nameOf: (bi) => bname(bi, true), facadeNear, apply: applyViewCal, toast, download, api: localApi, saved: () => viewCal,
-    onSaved(rec) { viewCal = rec; }, onCleared() { viewCal = null; if (/^photo/.test(st.cal?.src || '')) { st.src = null; setCal(undefined); } else { accChip(); evidencePanel(); } }, opened() {},
+    onSaved(rec) { viewCal = rec; }, onCleared() { viewCal = null; if (/^photo/.test(st.cal?.src || '')) { st.src = null; setCal(undefined); } else { accChip(); evidencePanel(); } }, opened(on) { matchLayout(!!on); },
   };
 }
 
@@ -1804,10 +1922,7 @@ function modelBridge() {
 function frame(t) {
   requestAnimationFrame(frame);
   if ($('view-unit').hidden || !stage?.scene) return;
-  if (st.playing) {
-    const dt = lastT ? Math.min(100, t - lastT) : 16; lastT = t;
-    st.min += dt * 0.09; if (st.min >= STRIP_TO - STRIP_STEP) st.min = STRIP_FROM;
-    refreshTime(); syncUrlSoon();
-  }
-  stage.frame();
+  if (player.running) { const tp = player.tick(t); if (tp != null) playFrame(tp, t); }
+  const t0 = performance.now(), drew = stage.frame();
+  UQ.pulse(t0, drew, performance.now() - t0);   // [quality] the step-down times the frames that are really drawn
 }

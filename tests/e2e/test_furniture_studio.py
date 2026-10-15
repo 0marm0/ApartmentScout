@@ -8,6 +8,7 @@ import json
 from pathlib import Path
 
 import pytest
+from conftest import look_click, look_open
 
 pytestmark = pytest.mark.e2e
 
@@ -149,12 +150,12 @@ def test_from_the_sofa_you_see_the_tv_and_from_the_desk_your_monitor(open_page, 
       const f = new THREE.Frustum().setFromProjectionMatrix(new THREE.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse));
       const g = U.stage.interior.furniture.group.children.find((c) => c.userData.itemId === id); return f.intersectsBox(new THREE.Box3().setFromObject(g)); }"""
     for chip, view, target in (("Sofa", "seat:sofa", "tv"), ("Bed", "seat:bed", "tv-bed"), ("Desk", "seat:desk", "desk")):
-        pg.click(f"#uLook .lk-chip:text-is('{chip}')")
+        look_click(pg, f"#uLook .lk-chip:text-is('{chip}')")
         pg.wait_for_function("(k) => window.__unit3d.curView && window.__unit3d.curView.key === k", arg=view)
         pg.wait_for_timeout(2500)
         assert pg.evaluate(in_view, target), f"{chip}: the {target} is in front of you"
     # the window view stays one click away
-    pg.click("#uLook .lk-chip:text-is('Sofa, window')")
+    look_click(pg, "#uLook .lk-chip:text-is('Sofa, window')")
     pg.wait_for_function("() => window.__unit3d.curView.key === 'seat:sofa-window'")
     assert not s.take()
 

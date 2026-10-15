@@ -12,6 +12,7 @@ import json
 from pathlib import Path
 
 import pytest
+from conftest import look_click
 
 pytestmark = pytest.mark.e2e
 
@@ -226,7 +227,7 @@ def test_unit_3d_click_the_floor_to_walk_a_ring_shows_where_drag_to_look_and_the
     s = open_page("#map", width=1500, height=1100)
     pg = s.page
     _unit(s)
-    pg.click("#uLook .lk-chip:text-is('Sofa')")
+    look_click(pg, "#uLook .lk-chip:text-is('Sofa')")
     pg.wait_for_function("() => window.__unit3d.curView && window.__unit3d.curView.key === 'seat:sofa'")
     pg.wait_for_timeout(1500)
     start = pg.evaluate(STAGE_STATE)
@@ -286,7 +287,7 @@ def test_unit_3d_go_to_the_window_and_a_double_click_on_a_window_stand_you_there
     s = open_page("#map", width=1500, height=1100)
     pg = s.page
     _unit(s)
-    pg.click("#uLook .lk-chip:text-is('Sofa')")
+    look_click(pg, "#uLook .lk-chip:text-is('Sofa')")
     pg.wait_for_function("() => window.__unit3d.curView && window.__unit3d.curView.key === 'seat:sofa'")
     pg.wait_for_timeout(1500)
     assert pg.locator("#uLook [data-act=to-window]").count() == 1
@@ -303,7 +304,7 @@ def test_unit_3d_go_to_the_window_and_a_double_click_on_a_window_stand_you_there
     # looking out: the heading is about the way the bay faces (up the drawing), within the bay's own spread
     assert min(at["head"], 360 - at["head"]) < 30, f"facing out of the window ({at['head']:.0f} degrees)"
     # a double-click on the bedroom's window: stand at it looking out
-    pg.click("#uLook .lk-chip:text-is('Bedroom')")
+    look_click(pg, "#uLook .lk-chip:text-is('Bedroom')")
     pg.wait_for_function("() => window.__unit3d.curView && window.__unit3d.curView.room === 'Bedroom'")
     pg.wait_for_timeout(1500)
     sp = pg.evaluate(PROJECT_UNIT, {"x": 311, "y": 297, "h": 50})
@@ -316,7 +317,7 @@ def test_unit_3d_go_to_the_window_and_a_double_click_on_a_window_stand_you_there
     room = pg.evaluate("() => window.__unit3d.walk.roomAt(window.__unit3d.walk.pos())")
     assert room == "Bedroom" and 5 < (end["head"] if end["head"] < 180 else 360 - end["head"]) < 90, f"in the bedroom, facing the corner window ({end['head']:.0f})"
     # the seat views stay as quick jumps
-    pg.click("#uLook .lk-chip:text-is('Desk')")
+    look_click(pg, "#uLook .lk-chip:text-is('Desk')")
     pg.wait_for_function("() => window.__unit3d.curView && window.__unit3d.curView.key === 'seat:desk'")
     pg.wait_for_timeout(1200)
     assert not pg.evaluate("() => window.__unit3d.walk.walking()")

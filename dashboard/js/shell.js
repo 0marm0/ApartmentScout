@@ -51,7 +51,7 @@ export function parseRoute(hash = location.hash) {
   if (canon !== raw) { try { history.replaceState(null, '', '#' + canon); } catch { location.replace('#' + canon); } }
   const [v, ...r2] = canon.split('/'), arg = r2.join('/');
   if (v === 'list' && arg === 'tours') return { view: 'tours', arg: '', group: 'list' };
-  return { view: v, arg, group: HOME_VIEWS.includes(v) ? 'home' : v };   // Unit 3D and Floor plan are two sides of the Home tab
+  return { view: v, arg, group: HOME_VIEWS.includes(v) ? 'home' : v === 'pair' ? 'compare' : v };   // Unit 3D and Floor plan are two sides of the Home tab
 }
 /** The views the Home tab holds. Their own routes (#unit/<id>, #plan/<id>) are unchanged. */
 export const HOME_VIEWS = ['unit', 'plan'];
