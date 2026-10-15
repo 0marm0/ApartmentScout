@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-14T20:30:27",
+ "generated": "2026-10-14T21:50:09",
  "version": "0.1.0",
  "search": "Manhattan 1BR, fall 2026",
  "layers": [
@@ -73,6 +73,7 @@
  "lqip": true,
  "extra": [
   "coverage.json",
+  "digest.json",
   "history.json",
   "watchlist.json"
  ]

@@ -150,6 +150,37 @@ def is_studio(L: dict) -> bool | None:
 
 DEFAULT_TERM = 12                 # months, only ever used to spread one-time fees, and flagged
 ILLUSTRATION_TERMS = (12, 14)     # lease terms shown when free months come without a term
+DEFAULT_PRICE_BAND = 0.05         # how far an unverified price may sit above what was seen (``scoring.unverified_price_band``)
+
+# Where a price was read (``price.basis``): label and whether the number is weak. A weak price (a search-result
+# snippet, a building page, a copy with no dated check, a listing known to be old) is ranked on the paid-month rent,
+# never on a net it quotes, gets a cost range and the ``unverified:price`` gate; the listing stays visible.
+PRICE_BASES: dict[str, tuple[str, bool]] = {
+    "unit_page": ("the exact unit page", False),
+    "owner_page": ("the owner's or building's own site", False),
+    "leasing_office": ("a quote from the leasing office or agent", False),
+    "renter_quote": ("a quote the renter received", False),
+    "broker_card": ("the listing broker's own card", False),
+    "building_page": ("a building inventory page, unit page not read", True),
+    "search_snippet": ("a search-result snippet, listing not opened", True),
+    "received": ("a copy received from another source, no dated check of the unit", True),
+    "stale": ("a page known to be old, delisted or history only", True),
+    "estimate": ("an estimate, not a quote", True),
+}
+PRICE_TEXT_FIELDS = ("basis", "source", "checked", "note")   # price.* keys that are text, not numbers (CSV import)
+_PRICE_BASIS_ALIASES = {
+    "unit": "unit_page", "exact_unit": "unit_page", "listing_page": "unit_page", "exact_listing": "unit_page",
+    "owner": "owner_page", "building_site": "owner_page", "official": "owner_page", "official_site": "owner_page",
+    "leasing": "leasing_office", "agent": "leasing_office", "quote": "leasing_office", "phone": "leasing_office",
+    "renter": "renter_quote", "user": "renter_quote",
+    "broker": "broker_card", "card": "broker_card", "broker_search_card": "broker_card",
+    "building": "building_page", "building_list": "building_page", "inventory": "building_page",
+    "snippet": "search_snippet", "search": "search_snippet", "search_result": "search_snippet",
+    "search_title": "search_snippet", "portal_search": "search_snippet",
+    "copy": "received", "unchecked": "received", "unverified": "received", "workbook": "received",
+    "old": "stale", "delisted": "stale", "history": "stale", "cached": "stale",
+    "estimated": "estimate", "assumed": "estimate",
+}
 _NOW_WORDS = ("now", "immediate", "immediately", "asap", "available now", "vacant")
 
 
@@ -197,6 +228,23 @@ def parse_date(v: Any, today: dt.date | None = None) -> dt.date | None:
 
 def _round(x: float | None) -> float | None:
     return None if x is None else round(x, 2)
+
+
+def price_basis(listing: dict) -> str | None:
+    """Canonical ``price.basis`` (or the listing-level ``price_basis``), None when it is absent or not recognised."""
+    p = listing.get("price") or {}
+    raw = p.get("basis", listing.get("price_basis"))
+    if raw in (None, ""):
+        return None
+    key = re.sub(r"[^a-z]+", "_", str(raw).strip().lower()).strip("_")
+    key = _PRICE_BASIS_ALIASES.get(key, key)
+    return key if key in PRICE_BASES else None
+
+
+def price_unverified(listing: dict) -> bool:
+    """True when the rent was read from a weak source (see :data:`PRICE_BASES`)."""
+    b = price_basis(listing)
+    return bool(b and PRICE_BASES[b][1])
 
 
 def net_effective(price: dict) -> float | None:
@@ -325,6 +373,11 @@ def _scenario(listing: dict, crit: dict | None, today: dt.date) -> dict[str, Any
     p = listing.get("price") or {}
     gross = _num(p.get("gross"))
     stated = _num(p.get("net_effective"))
+    shown = _range(p.get("range"))          # an advertised range such as RentHop's "$4,318-$4,652": no term, no net
+    if gross is None and shown is not None:
+        gross = shown[1]
+    basis_name = price_basis(listing)
+    weak = price_unverified(listing)
     conc = concession_terms(listing, crit, today)
     free, lease = conc["free_months"], conc["lease_months"]
     has_free = free not in (None, 0, [0, 0])
@@ -349,8 +402,16 @@ def _scenario(listing: dict, crit: dict | None, today: dt.date) -> dict[str, Any
             net, basis = round(gross * (lease - free) / lease, 2), "computed"
     else:
         net, basis = (gross, "gross") if gross is not None else (stated, "stated")
+    net_unverified = None
+    if weak and gross is not None and net is not None and basis in ("stated", "computed") and net < gross - 0.5:
+        # a weak source's net (a snippet, an estimate, a copy nobody dated) is not a price to rank on
+        net_unverified, net, basis = net, gross, "gross"
     rent = net if net is not None else gross
     best_rent = min(x["net"] for x in illus) if illus else rent
+    if net_unverified is not None and best_rent is not None:
+        best_rent = min(best_rent, net_unverified)
+    if shown is not None and best_rent is not None and shown[0] < best_rent:
+        best_rent = shown[0]
     monthly_fees, one, refundable, fee_labels = _fee_items(p)
     fees_known = monthly_fees is not None
     if not fees_known:
@@ -379,10 +440,11 @@ def _scenario(listing: dict, crit: dict | None, today: dt.date) -> dict[str, Any
         "monthly": _round(monthly),
         "monthly_range": [_round(lo), _round(hi)],
         "fees_known": fees_known,
-        "all_in": _round(monthly) if fees_known and hi == monthly and basis != "conditional" else None,
+        "all_in": _round(monthly) if fees_known and hi == monthly and basis != "conditional" and not weak else None,
         "unknown": unknown,
         "rent": {"gross": gross, "net": _round(net), "basis": basis, "lease_months": lease,
-                 "free_months": free, "illustrations": illus},
+                 "free_months": free, "illustrations": illus, "net_unverified": _round(net_unverified),
+                 "range": list(shown) if shown and shown[0] != shown[1] else None},
         "paid_month": _round(paid),
         "fees_monthly": None if not monthly_fees else (monthly_fees[0] if monthly_fees[0] == monthly_fees[1]
                                                        else [monthly_fees[0], monthly_fees[1]]),
@@ -396,6 +458,12 @@ def _scenario(listing: dict, crit: dict | None, today: dt.date) -> dict[str, Any
                                              "term_from_condition")} if (has_free or conc["conditions"]) else None),
         "assumptions": assumptions,
     }
+    if basis_name:
+        out["price_basis"] = basis_name
+    if weak:
+        out["price_unverified"] = True
+        band = float(((crit or {}).get("scoring") or {}).get("unverified_price_band", DEFAULT_PRICE_BAND) or 0)
+        out["price_range"] = [_round(lo), _round(max(monthly, rent * (1 + band) + lo_fee + spread))]
     return out
 
 
@@ -490,6 +558,12 @@ def cost_model(listing: dict, crit: dict | None = None, today: dt.date | None = 
     base = _scenario(listing, crit, today)
     alts = [(label, _scenario({**listing, "price": price}, crit, today)) for label, price in _claim_prices(listing)]
     out = dict(base)
+    if out.get("price_basis"):
+        p = listing.get("price") or {}
+        seen = str(p.get("checked") or listing.get("checked") or "")[:10]
+        out["price_checked"] = seen if re.match(r"^\d{4}-\d{2}-\d{2}$", seen) else None
+        if p.get("source"):
+            out["price_source"] = str(p["source"])
     if alts and base["monthly"] is not None:
         scen = [{"label": "listing price", "monthly": base["monthly"]}] + \
                [{"label": lab, "monthly": s["monthly"]} for lab, s in alts if s["monthly"] is not None]
@@ -624,6 +698,8 @@ def normalize(raw: dict) -> dict:
                       ("broker_fee", "broker_fee")):
         if k_flat in raw and k not in price and raw[k_flat] not in (None, ""):
             price[k] = _num(raw[k_flat])
+    if raw.get("price_basis") not in (None, "") and "basis" not in price:
+        price["basis"] = raw["price_basis"]
     L["price"] = price
     am = dict(raw.get("amenities") or {})
     for k in AMENITY_KEYS:
@@ -690,7 +766,8 @@ def _unflatten(row: dict) -> dict:
         cur[parts[-1]] = v
     for k in ("price",):
         if k in out:
-            out[k] = {kk: (list(_range(vv) or ()) if kk == "fees_monthly" and re.search(r"\d\s*-\s*\$?\d", str(vv))
+            out[k] = {kk: (vv if kk in PRICE_TEXT_FIELDS else
+                           list(_range(vv) or ()) if kk in ("fees_monthly", "range") and re.search(r"\d\s*-\s*\$?\d", str(vv))
                            else _num(vv)) for kk, vv in out[k].items()}
     if "amenities" in out:
         out["amenities"] = {kk: (normalise_service(vv) if kk == "doorman" else

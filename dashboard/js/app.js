@@ -168,7 +168,7 @@ export function reasons(L) {
 export const GATE_LABEL = (g) => {
   const [k, v] = String(g).split(':');
   const m = { over_budget: 'Over budget', unknown_cost: 'Cost unknown', price_dispute: 'Price claims disagree', 'concession': 'Concession may not apply', 'move_date': 'Available after your window', stale: 'Not rechecked recently' };
-  if (k === 'unverified') return { fees: 'Fees unknown', lease_term: 'Lease term unknown' }[v] || `Unconfirmed: ${String(v || '').replaceAll('_', ' ')}`;
+  if (k === 'unverified') return { fees: 'Fees unknown', lease_term: 'Lease term unknown', price: 'Price unverified' }[v] || `Unconfirmed: ${String(v || '').replaceAll('_', ' ')}`;
   if (k === 'fails') return `Fails: ${String(v || '').replaceAll('_', ' ')}`;
   if (k === 'stale') return `Last checked ${String(v || '').replace('checked_', '').replaceAll('_', ' ')}`;
   return m[k] || String(g).replaceAll('_', ' ').replace(':', ': ');
@@ -557,6 +557,7 @@ function moneySection(L) {
     <div class="money"><div><div class="k">Monthly cost</div><div class="v big">${money(c.monthly_expected ?? c.monthly ?? cost(L))}${c.fees_estimate ? `<small class="plus">incl. ~${money(c.fees_estimate.monthly)} est. fees</small>` : open ? '<small class="plus">+ fees?</small>' : ''}</div></div>
       <div><div class="k">Gross rent</div><div class="v">${money(c.rent?.gross ?? p.gross)}</div></div>
       <div><div class="k">${c.rent?.basis === 'conditional' ? 'Net (if eligible)' : 'Paid month'}</div><div class="v">${money(c.rent?.basis === 'conditional' ? c.rent?.illustrations?.[0]?.net : c.paid_month ?? p.gross)}</div></div></div>
+    ${/* price-basis hook */ c.price_unverified ? `<p class="money-note">Price unverified: ${esc(L.price?.source || 'read from a weak source')}${c.price_checked ? `, checked ${esc(c.price_checked)}` : ', no dated check'}. ${c.rent?.net_unverified != null ? `A net of ${money(c.rent.net_unverified)} is quoted but not counted. ` : ''}Ranking uses ${money(c.monthly)}; the price could sit anywhere from ${money(c.price_range?.[0])} to ${money(c.price_range?.[1])} before fees.</p>` : ''}
     ${c.fees_estimate ? `<p class="money-note">No fee sheet yet, so ranking adds an estimate from similar buildings: ${esc(c.fees_estimate.parts.join('; '))}. Documented so far: ${money(c.monthly)}.</p>` : ''}
     ${c.rent?.basis === 'conditional' ? `<p class="money-note">Free months are advertised without a lease term, so the net depends on it: ${(c.rent.illustrations || []).map((i) => `${esc(i.lease_months)} months → ${money(i.net)}`).join(' · ')}.</p>` : ''}
     ${conc.notes?.length || conc.excluded ? `<p class="money-note">${esc([...(conc.notes || []), ...(conc.excluded ? [conc.excluded] : [])].join(' · '))}</p>` : ''}
