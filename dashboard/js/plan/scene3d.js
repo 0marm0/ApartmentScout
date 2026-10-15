@@ -17,6 +17,8 @@ import * as SKY from './sky3d.js';   // [interior] the sky and haze behind the c
 import * as F3 from './furniture3d.js';   // [interior] low-poly furniture models
 import * as R3F from '../room3d/furniture.js';   // [room3d] the shared, refined furniture models (tried first)
 import { roomQuality } from '../room3d/quality.js';
+import { ROOM_HEX } from '../room3d/palette.js';   // [room3d] one paint and floor for both engines
+import { roomLightState, moodFor, applyRoomLight, windowGlowLights } from '../room3d/lighting.js';   // [room3d] one light for both engines
 
 export const M = 0.0254;
 const DEG = Math.PI / 180;
@@ -52,11 +54,11 @@ export function themeColors() {
   return {
     dark, bg, night: bg.clone().lerp(new THREE.Color(0x000000), dark ? 0.45 : 0.55),
     ground: bg.clone().lerp(ink, dark ? 0.03 : -0.02),
-    // interior paint: a warm off-white in both themes so the room reads as a room, not as UI chrome
-    wall: dark ? new THREE.Color(0xd9d4cb) : new THREE.Color(0xf1ede6),
+    // [room3d] interior paint: bright white walls and ceiling, white trim, a light oak floor in both themes (room3d/palette.js), so the room reads as a room, not as UI chrome
+    wall: new THREE.Color(ROOM_HEX.wall), ceiling: new THREE.Color(ROOM_HEX.ceiling),
     cap: dark ? tok('--ground', '#08090c') : tok('--ink-2', '#4b5261'),
-    fixture: dark ? new THREE.Color(0xc9c6c0) : new THREE.Color(0xe4e1dc),
-    wood: new THREE.Color(dark ? 0xc2a27c : 0xd8bc96), tile: new THREE.Color(dark ? 0xc4c6c6 : 0xe2e3e0), carpet: new THREE.Color(dark ? 0xa29c92 : 0xd9d5cc),
+    fixture: new THREE.Color(ROOM_HEX.fixture),
+    wood: new THREE.Color(ROOM_HEX.wood), tile: new THREE.Color(ROOM_HEX.tile), carpet: new THREE.Color(ROOM_HEX.carpet),
     label: dark ? 'rgba(18,20,26,.78)' : 'rgba(18,21,28,.62)', label2: dark ? 'rgba(18,20,26,.55)' : 'rgba(18,21,28,.42)',
     accent: tok('--accent', '#8b96ff'), good: tok('--good', '#4fd19a'), warn: tok('--warn', '#f0b04c'), bad: tok('--bad', '#f2735f'), sun: tok('--sun', '#f5b547'),
     hemiDay: dark ? 1.25 : 1.6, hemiNight: dark ? 0.55 : 0.8,
@@ -163,7 +165,7 @@ export function setCity(group) {
   if (city) { scene.remove(city); city.traverse((o) => { o.geometry?.dispose(); o.material?.dispose?.(); }); }
   city = group || null;
   if (city) scene.add(city);
-  cam.far = city ? 1200 : 400; cam.updateProjectionMatrix();
+  cam.far = city ? 12000 : 400; cam.updateProjectionMatrix();   // [city3d] the shared city reaches the horizon (its sky dome is 6 km out)
   const gr = shell?.getObjectByName('ground'); if (gr) gr.visible = !city; // the floor-level ground would hide the street
   controls.maxDistance = city ? 240 : 60;
   // step back so the neighbours come into view (and in again when the layer goes)
@@ -176,6 +178,8 @@ export function setCity(group) {
   dirty = true;
 }
 export const hasCity = () => !!city;
+/** [city3d] the city outside's handle (setSun, setNight, setQuality, anchorsOf) or null. */
+export const cityApi = () => city?.userData.api || null;
 export function setLighting(options = {}) {
   if (Number.isFinite(options.ambient)) lighting.ambient = Math.max(0, Math.min(2, options.ambient));
   // glazing x blinds preview: scales the direct-sun patches only (plan/light.js glazingScale)
@@ -267,7 +271,7 @@ function pieceBox(p, z0, z1, mat, cast) {
   const s0 = p.capA ? -h : 0, s1 = L + (p.capB ? h : 0), mid = [p.a[0] + ux * (s0 + s1) / 2, p.a[1] + uy * (s0 + s1) / 2];
   const m = new THREE.Mesh(new THREE.BoxGeometry((s1 - s0) * M, (z1 - z0) * M, p.t * M), mat);
   m.position.copy(W(mid[0], mid[1], (z0 + z1) / 2)); m.rotation.y = Math.atan2(dy, dx);
-  m.castShadow = cast; m.receiveShadow = !cast; return m;
+  m.castShadow = cast; m.receiveShadow = !cast; m.name = 'wall'; return m;   // [room3d] named so Unit 3D's Inside camera can step walls aside and ray-test them
 }
 function fixtureFace(f) {
   const n = f.front; if (!n) return null;
@@ -342,16 +346,7 @@ function frameLights() {
 /** One soft area light per window, facing into its room: the overcast-sky glow that daylight brings in. */
 function buildGlow() {
   clear(glow);
-  for (const [i, w] of model.windows.entries()) {
-    const u = [(w.b[0] - w.a[0]) / w.len, (w.b[1] - w.a[1]) / w.len], n0 = [-u[1], u[0]];
-    const inside = model.rooms.some((r) => pointInPoly([w.mid[0] + n0[0] * 18, w.mid[1] + n0[1] * 18], r.poly));
-    const n = inside ? n0 : [-n0[0], -n0[1]];
-    const hgt = Math.max(6, w.head - w.sill);
-    const L = new THREE.RectAreaLight(0xdfe9f5, 0, w.len * M, hgt * M);
-    L.position.copy(W(w.mid[0] + n[0] * 3, w.mid[1] + n[1] * 3, w.sill + hgt / 2));
-    L.lookAt(W(w.mid[0] + n[0] * 60, w.mid[1] + n[1] * 60, w.sill + hgt / 2 - 10));
-    L.userData.win = i; glow.add(L);
-  }
+  for (const L of windowGlowLights(model, (p) => model.rooms.some((r) => pointInPoly(p, r.poly)))) glow.add(L);   // [room3d]
   applyMood();
 }
 /** dir: unit vector toward the sun in plan terms {x, y, up}; on: direct sun reaches the unit. */
@@ -360,6 +355,7 @@ export function setSun(dir, on, up) {
   const v = new THREE.Vector3(dir.x, dir.up, -dir.y).normalize();
   sunL.position.copy(sunL.target.position).addScaledVector(v, 60);
   sunL.userData.on = on; sunL.userData.up = Math.max(0, dir.up);
+  city?.userData.api?.setSun(v, Math.asin(Math.max(-1, Math.min(1, v.y))) / DEG);   // [city3d] the water's light and the lit windows follow the sun
   mood.sunUp = !!up; mood.alt = Math.max(0, dir.up);
   applyMood();
 }
@@ -370,15 +366,11 @@ function applyMood() {
   if (!sunL || !colors) return;
   const now = mood.want === 'auto' ? (mood.sunUp ? (mood.alt < 0.12 ? 'evening' : 'day') : 'night') : mood.want;
   mood.now = now;
+  city?.userData.api?.setNight(now === 'night' ? 1 : now === 'evening' ? 0.5 : 0);   // [city3d] lit windows in the city outside
   const day = now === 'day', eve = now === 'evening', night = now === 'night';
-  const sunOn = sunL.userData.on && !night && mood.sunUp;
-  sunL.intensity = sunOn ? (3.6 + 4 * (sunL.userData.up || 0)) * lighting.sun * (eve ? 0.6 : 1) : 0;
-  sunL.color.set(eve ? 0xffc890 : 0xfff1d6);
-  hemi.intensity = (day ? colors.hemiDay : eve ? colors.hemiDay * 0.4 : colors.hemiNight * 0.45) * lighting.ambient;
-  hemi.color.set(night ? 0x8090b0 : 0xf2f4f8); hemi.groundColor.set(night ? 0x2a2e36 : eve ? 0x6e6458 : 0xb3a796);
-  amb.intensity = (day ? 0.4 : eve ? 0.18 : 0.1) * lighting.ambient;
-  const sky = day ? 2.4 : eve ? 0.7 : 0;
-  for (const L of glow?.children || []) { L.intensity = sky * lighting.sky * (shadeState[L.userData.win] ? 0.55 : 1); L.color.set(eve ? 0xb9c4e0 : 0xdfe9f5); }
+  // [room3d] the room's light is one definition for both engines (room3d/lighting.js)
+  const st = roomLightState({ mood: now, sunOn: !!sunL.userData.on && mood.sunUp, sinAlt: sunL.userData.up || 0, quality: roomQuality(), scale: { ambient: lighting.ambient, sun: lighting.sun, sky: lighting.sky } });
+  applyRoomLight({ sunL, hemi, amb, glow, renderer }, st, (i) => !!shadeState[i]);
   const lampOn = !day;
   for (const [, g] of groups) {
     const l = g.userData.lamp; if (!l) continue;
@@ -395,7 +387,6 @@ function applyMood() {
       scene.background = (day ? colors.bg : eve ? colors.bg.clone().lerp(colors.night, 0.5) : colors.night).clone();
     }
   }
-  renderer.toneMappingExposure = day ? 1.15 : eve ? 1.25 : 1.35;
   for (const f of moodHooks) f(now);   // [feature J] lamps, quality mode
   dirty = true;
 }
