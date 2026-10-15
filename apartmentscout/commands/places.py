@@ -39,6 +39,9 @@ def cmd_places(args: argparse.Namespace) -> None:
     print(f"Wrote {out}  ({n / 1024:.0f} KB: {len(doc['streets'])} streets, "
           f"{sum(a['kind'] == 'park' for a in doc['areas'])} parks, {sum(a['kind'] == 'hood' for a in doc['areas'])} "
           f"neighbourhoods, {len(doc['groups'])} groups)")
+    if not any(a["kind"] == "hood" for a in doc["areas"]):   # [onboarding] say what a city without a profile does not get
+        print("  No neighbourhood polygons for this city, so \"in <neighbourhood>\" will not match; streets and parks work. "
+              "To add them, name an open neighbourhood dataset in a city profile (docs/guides/new-city.md, section 4).", flush=True)
 
 
 def register(add) -> None:

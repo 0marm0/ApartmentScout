@@ -17,6 +17,7 @@ from collections.abc import Iterable
 from pathlib import Path
 
 import numpy as np
+import requests
 
 from ..geo import haversine_m
 from ..listings import slugify
@@ -63,7 +64,12 @@ def feed_specs(ws, crit: dict, log=print) -> list[tuple[str, Path, str | None, l
         path = Path(f["path"]) if f.get("path") else ws.cache_dir / "gtfs" / f"{name}.zip"
         if f.get("url"):
             fresh = path.exists()
-            download_feed(f["url"], path)
+            try:
+                download_feed(f["url"], path)
+            except requests.RequestException as e:   # [onboarding] a bad or moved URL is a message, not a traceback
+                log(f"  feed {f.get('name')}: could not download {f['url']} ({type(e).__name__}). Check the URL, or download "
+                    f"the zip yourself and give its location as `path:` in criteria.yaml. Skipped.")
+                continue
             if not fresh:
                 log(f"  feed {f.get('name')}: downloaded {f['url']}")
         if path.exists():
@@ -308,6 +314,10 @@ def run_commute(ws, listings: list[dict], crit: dict, cell_m: float | None = Non
         log(f"  walking: street-grid metric in {', '.join(g.name for g in walker.grids)}, "
             f"straight line x {detour} elsewhere")
     feeds = feed_specs(ws, crit, log)
+    if not feeds:   # [onboarding] say so: otherwise a search with no transit feeds quietly gets walking times only
+        log("  No transit feeds are set up, so these are WALKING times only. Add your agency's GTFS zip with "
+            "`apartmentscout city --feed URL` (or under commute.transit.feeds in criteria.yaml); "
+            "docs/guides/getting-started.md, step 6, shows how to find one.")
     bbox = _bbox(listings, dests, pad_m)
     net_bbox = _pad(bbox, max(max_access, 1000) + 1000)  # stops a little beyond the grid still matter
     spec = GridSpec.cover(bbox, cell)

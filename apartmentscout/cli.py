@@ -73,13 +73,26 @@ def _find(listings, key):
 
 
 # --------------------------------------------------------------------------- commands
-def cmd_init(args, input_fn=None):
+def cmd_init(args, input_fn=None, online=None):
     """Create a search folder: the commented template, a criteria file you wrote or downloaded (--criteria), or the
-    answers to the intake questionnaire (--interactive; falls back to the template when stdin is not a terminal)."""
-    from .intake import Quit, init_search, interview, render_criteria
+    answers to the intake questionnaire (--interactive; falls back to the template when stdin is not a terminal).
+
+    A city without a profile is looked up on OpenStreetMap (name, time zone, map centre) unless --no-lookup; `online`
+    replaces the lookups (tests). [onboarding]"""
+    from . import cities as C
+    from .intake import Quit, init_search, interview, live_online, render_criteria
     root = Path(args.path).resolve()
     if (root / "criteria.yaml").exists() and not args.force:
         sys.exit(f"{root} already has a criteria.yaml (use --force to overwrite).")
+    if online is None and not getattr(args, "no_lookup", False) and (args.interactive or args.city):
+        online = live_online()
+    info = None
+    if args.city and args.city != "generic":
+        info = C.from_profile(args.city) if C.load_profile(args.city) else (online.resolve_city(args.city) if online else None)
+        if info is None:
+            log(f"Could not look up {args.city!r} (offline, or no match): the template keeps its New York time zone and map "
+                f"centre, marked for you to change. `apartmentscout city \"{args.city}\" --search {root}` sets them once you "
+                "are online.")
     text = None
     if args.criteria:
         try:
@@ -92,20 +105,55 @@ def cmd_init(args, input_fn=None):
                 "Edit criteria.yaml, or answer config/intake.yaml's questions with your agent.")
         else:
             try:
-                answers = interview(input_fn or input, log)
+                answers = interview(input_fn or input, log, online=online, city=info or args.city)
             except (Quit, KeyboardInterrupt):
                 sys.exit("\nStopped before the end of the questions; nothing was written.")
-            if args.city:
-                answers.setdefault("search", {})["city"] = args.city
             text = render_criteria(answers, "Written by apartmentscout init --interactive.")
     try:
-        city = init_search(root, args.city, text, force=args.force)
+        used = init_search(root, (info.id if info is not None else args.city), text, force=args.force, info=info)
     except ValueError as e:
         sys.exit(f"criteria.yaml has problems, nothing was written:\n{e}")
-    log(f"Created {root} (city: {city})\n  1. {'Review' if text else 'Edit'} criteria.yaml (budget, must-haves, commute addresses);"
-        f" `apartmentscout criteria --check {root / 'criteria.yaml'}` validates it.\n"
-        f"  2. Add listings: `apartmentscout import listings.csv` or ask your agent to research them.\n"
-        f"  3. `apartmentscout all --search {root}` then `apartmentscout serve --search {root}`.")
+    _init_summary(root, used, info, bool(text))
+
+
+def _shown(p: Path) -> str:
+    """A path as the renter would type it: relative to the current folder when it is inside it."""
+    try:
+        return os.path.relpath(p, Path.cwd()) if p.is_relative_to(Path.cwd()) else str(p)
+    except OSError:
+        return str(p)
+
+
+def _init_summary(root: Path, city: str, info, wrote_answers: bool) -> None:
+    """What was created, what the city has and lacks, and the steps that follow (config/intake.yaml, `after`)."""
+    from . import cities as C
+    from .criteria_check import check_file
+    from .intake import next_steps
+    try:
+        crit = Workspace(root).criteria()
+    except Exception:  # noqa: BLE001 - the summary is a courtesy; the search folder is already written
+        crit = {}
+    transit = (crit.get("commute") or {}).get("transit") or {}
+    feeds = transit.get("feeds") or []
+    shown = (crit.get("search") or {}).get("city_name") or city
+    here = _shown(root)
+    log(f"Created {here} (city: {shown})")
+    if info is None and city not in (None, "generic") and C.load_profile(city):
+        info = C.from_profile(city)
+    if info is not None:
+        for line in C.coverage_notes(info, feeds).missing:
+            log(f"  Note: {line}")
+    elif not feeds:
+        log("  Note: no city is set and no transit feeds are configured, so commute times will be walking only. "
+            "`apartmentscout city \"<your city>\"` sets the city, time zone and map centre.")
+    for w in check_file(root / "criteria.yaml").warnings:
+        if not w.startswith(("search.city:", "commute.transit.feeds")):
+            log(f"  Check: {w}")
+    log(f"\nNext, in order ({'review' if wrote_answers else 'edit'} {here}/criteria.yaml first; "
+        f"`apartmentscout criteria --check {here}/criteria.yaml` validates it):")
+    for i, st in enumerate(next_steps(here), 1):
+        log(f"  {i}. {st['title']}: {st['command']}")
+    log("Each step is explained in docs/guides/getting-started.md; your agent can run them from AGENTS.md.")
 
 
 def cmd_import(args):
@@ -143,16 +191,42 @@ def cmd_geocode(args):
     n = geocode_listings(Ls, ws.cache_dir / "geocode.json", city, args.provider, args.force, log)
     save(Ls, ws.listings_path)
     g = Geocoder(ws.cache_dir / "geocode.json", city)
-    changed = False
+    found: dict[str, tuple[float, float]] = {}
     for d in crit["commute"]["destinations"]:
         if d.get("lat") is None and d.get("address"):
             r = g.geocode(d["address"])
             if r:
-                d["lat"], d["lon"] = round(r["lat"], 6), round(r["lon"], 6)
-                changed = True
-                log(f"  destination {d['name']}: {d['lat']}, {d['lon']}  (copy these into criteria.yaml)")
+                found[d["name"]] = (round(r["lat"], 6), round(r["lon"], 6))
+                log(f"  destination {d['name']}: {found[d['name']][0]}, {found[d['name']][1]}  ({r.get('label') or d['address']})")
+            else:
+                log(f"  destination {d['name']}: no match for {d['address']!r}. Fix the address in criteria.yaml "
+                    "(add the city and state) or place a pin in the dashboard's New search wizard.")
     g.save()
+    if found:
+        _save_destination_coords(ws, found)
     log(f"Geocoded {n} listings.")
+    lost = [L for L in Ls if L.get("lat") is None and L.get("status") not in ("gone", "rejected")]
+    if lost:   # [onboarding] an address no geocoder knows is the commonest reason a home is missing from the map and the commute
+        log(f"{len(lost)} open listing{'s have' if len(lost) != 1 else ' has'} no coordinates yet ({', '.join(L['id'] for L in lost[:5])}"
+            f"{'...' if len(lost) > 5 else ''}). They stay off the map and get no commute until the address is findable: write it as "
+            "\"number street, city, state\", or set lat and lon in listings.json (right-click the spot in any map app), then run geocode again.")
+
+
+def _save_destination_coords(ws: Workspace, found: dict[str, tuple[float, float]]) -> None:
+    """Write the destination coordinates `geocode` found into criteria.yaml (a backup goes to backups/), so `commute` can
+    run. Falls back to printing them when the file's layout cannot be edited in place. [onboarding]"""
+    from .criteria_check import check_text
+    from .criteria_edit import set_destination_coords, write_with_backup
+    text = ws.criteria_path.read_text(encoding="utf-8")
+    new = set_destination_coords(text, found)
+    if new is None or not check_text(new).ok:
+        log("  Could not edit criteria.yaml in place. Add these under the destinations yourself:")
+        for name, (la, lo) in found.items():
+            log(f"    {name}: lat: {la}   lon: {lo}")
+        return
+    if new != text:
+        backup = write_with_backup(ws.criteria_path, new)
+        log(f"  Saved the coordinates in {ws.criteria_path.name}" + (f" (the old file is in backups/{backup.name})" if backup else ""))
 
 
 def cmd_commute(args):
@@ -160,9 +234,12 @@ def cmd_commute(args):
     ws = ws_from(args)
     Ls = _listings(ws)
     only = [_find(Ls, k)["id"] for k in args.ids] if getattr(args, "ids", None) else None
-    run_commute(ws, Ls, ws.criteria(), cell_m=args.cell, log=log,
-                mode_grids=False if getattr(args, "no_mode_grids", False) else None, only=only,
-                only_dests=getattr(args, "dest", None))
+    try:
+        run_commute(ws, Ls, ws.criteria(), cell_m=args.cell, log=log,
+                    mode_grids=False if getattr(args, "no_mode_grids", False) else None, only=only,
+                    only_dests=getattr(args, "dest", None))
+    except ValueError as e:   # [onboarding] a missing coordinate or a feed with no service that day: say what to do, no traceback
+        sys.exit(f"commute: {e}")
     save(Ls, ws.listings_path)
 
 
@@ -435,11 +512,25 @@ def cmd_report(args):
     log(f"Wrote {p}")
 
 
+def _is_example(ws: Workspace) -> bool:
+    """True for the bundled searches under examples/ (their data is the committed demo in dashboard/data)."""
+    return (REPO / "examples").resolve() in ws.root.resolve().parents
+
+
+def default_data_dir(ws: Workspace) -> Path:
+    """Where `build` writes when --out is not given. The bundled example feeds the committed demo (dashboard/data); every
+    other search gets its own ignored cache, the same folder `serve` uses, so a private search never overwrites the
+    committed demo data or lands in a commit. [onboarding]"""
+    return DASH / "data" if _is_example(ws) else ws.cache_dir / "dashboard-data"
+
+
 def cmd_build(args):
     ws = ws_from(args)
-    out = Path(args.out).resolve() if args.out else DASH / "data"
+    out = Path(args.out).resolve() if args.out else default_data_dir(ws)
     _export(ws, out)
     log(f"Dashboard data -> {out}")
+    if not args.out and not _is_example(ws):
+        log("  (your search's own cache: `apartmentscout serve` shows it. Use --out DIR to build a copy for hosting.)")
     if args.standalone:
         p = standalone(out, Path(args.standalone))
         log(f"Standalone dashboard -> {p}  (open it directly; no server needed)")
@@ -649,7 +740,11 @@ def cmd_serve(args):
                        export=_export, rescore=_rescore, api=not args.no_api)
     if ws is not None:
         state.activate(ws)
-    httpd = make_server(state, args.port)
+    try:
+        httpd = make_server(state, args.port)
+    except OSError as e:   # [onboarding] the default port is often taken by an earlier `serve`: say what to do, not a traceback
+        sys.exit(f"Port {args.port} is not available ({e.strerror or e}). Another `apartmentscout serve` may still be running: "
+                 "stop it (Ctrl+C in its terminal), or pass --port with a free number, for example --port 8790.")
     with httpd:
         url = f"http://127.0.0.1:{state.port}/"
         log(f"ApartmentScout dashboard at {url}  (Ctrl+C to stop)")
@@ -676,7 +771,8 @@ def cmd_all(args):
     cmd_build(args)
 
 
-def main(argv=None):
+def build_parser() -> argparse.ArgumentParser:
+    """The command-line parser (every subcommand). Separate from main() so tests can check that a documented command line parses."""
     p = argparse.ArgumentParser(prog="apartmentscout", description="Agent-ready apartment research toolkit.")
     p.add_argument("--version", action="version", version=__version__)
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -689,12 +785,14 @@ def main(argv=None):
 
     s = sub.add_parser("init", help="create a new search folder")
     s.add_argument("path")
-    s.add_argument("--city", default=None, help="nyc enables NYC Open Data modules")
+    s.add_argument("--city", default=None, help="the city, for example \"Chicago, IL\" (looked up for its time zone and map "
+                   "centre) or nyc, which also switches on the NYC Open Data modules")
     s.add_argument("--force", action="store_true")
     s.add_argument("--criteria", metavar="FILE", help="start from this criteria.yaml (for example one downloaded from "
                    "the dashboard's New search wizard); it is validated and the city's transit feeds are added if missing")
     s.add_argument("--interactive", action="store_true", help="answer the intake questionnaire (config/intake.yaml) "
                    "on the terminal; without a terminal this writes the template")
+    s.add_argument("--no-lookup", action="store_true", help="do not look the city, addresses or transit feeds up on the network")
     s.set_defaults(fn=cmd_init)
     s = add("import", cmd_import, "import listings from CSV or JSON")
     s.add_argument("file")
@@ -786,7 +884,11 @@ def main(argv=None):
     s.add_argument("--standalone", metavar="FILE")
     from .commands import register_all
     register_all(add)   # commands that live in apartmentscout/commands/*.py
-    args = p.parse_args(argv)
+    return p
+
+
+def main(argv=None):
+    args = build_parser().parse_args(argv)
     args.fn(args)
 
 

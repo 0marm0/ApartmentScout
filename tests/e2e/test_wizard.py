@@ -42,7 +42,7 @@ def _next(page, n: int = 1) -> None:
 def _fill_basics(page, name: str = "Boston 2BR, fall 2026", city: str = "generic") -> None:
     page.fill("#f-name", name)
     page.click(f"[data-city={city}]")
-    if city == "generic":
+    if city == "generic" and page.query_selector("[data-place='Boston']"):   # a served page looks the city up instead of offering quick starts
         page.click("[data-place='Boston']")
 
 
