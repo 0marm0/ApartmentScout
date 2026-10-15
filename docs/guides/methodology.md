@@ -379,7 +379,7 @@ the site file describes the source geometry, so it is not shown for a scenario w
 citywide archives, CityGML (917 MB), ESRI multipatch (257 MB) and MicroStation DGN (762 MB), and by DCP as one Rhino .3dm per
 community district; there is no query service, nothing in it is newer than 2014 (no tower built since), and a search would have to
 cache hundreds of megabytes to use a few buildings. It is **not used**. (2) The *Building Footprints* (`5zhs-2jue`) carry one roof height
-(`height_roof`, from the 2017 survey) and a ground elevation per footprint: **used for every building**, as before. (3) OpenStreetMap
+(`height_roof`, from the 2017 survey; the dataset itself is maintained and was last updated on 11 October 2026) and a ground elevation per footprint: **used for every building**, as before. A site file reads it in three tiers: every footprint within 600 m, every one over 500 ft within 3.5 km (the skyline) and, since the unit's view was checked against the renter's own video, every one over 100 ft within 2.2 km (the mid-rise city between: Kips Bay, Midtown South, the far bank of the East River). Without the third tier a high window showed open water and sky where the real view is rooftops; the mid-rise tier moves no sun hour (it is too far to shade) and is drawn as plain far-level prisms. (3) OpenStreetMap
 `building:part` with `height` and `min_height` carries podiums, setbacks, crowns and masts for most of the landmarks and many ordinary
 towers at a few kilobytes a building: **used where it covers the footprint** (above). Where none of them gives a shape, the building stays its
 footprint pushed up to its roof height, and a part list from a zoning diagram (`<id>.components.yaml`) still replaces it. A model of a
@@ -398,11 +398,11 @@ the shader, with no mesh per window: a window grid per storey height (the roof h
 line up across the parts of a building), and a style chosen from the PLUTO building class and the year built: masonry (brick or limestone,
 before 1945), punched windows (post-war and low-rise residential), ribbon windows (1945-74 offices), a glass curtain wall (offices and
 hotels from the late 1970s on) or floor-to-ceiling residential glass (1995 and later towers); an OpenStreetMap `building:material` and
-`building:colour` override the era. Each building picks one of four wall palettes by a hash of its id. Visual quality adds mullions,
+`building:colour` override the era. Each building picks one of four wall palettes by a hash of its id (muted colours read from the east side's real mix: post-war residential towers are mostly cream and buff brick, about one in eight red-brown; 1980s-2010s towers dark bronze, grey-green and blue-grey glass). Near walls also get brick coursing, rain streaks under the sills and the odd window with its blind drawn. Visual quality adds mullions,
 spandrels, window frames and sills, grain, and glass that reflects the environment; Fast keeps the grid, the tint and the lights. After dusk
 windows light by a hash of their cell (whole floors in offices, single windows in homes): they say nothing about who is home. Windows fade to
 their average colour as they shrink under a few pixels, walls are shaded darker at the street, flat roofs get a parapet, pitched roofs
-and spires are drawn as such, and near flat roofs carry a generic bulkhead and, on older mid-rise buildings, a rooftop water tank: those
+and spires are drawn as such, and near flat roofs carry a generic bulkhead, air handlers (more of them on a wide roof) and, on mid-rise buildings from before 1975, a rooftop water tank: those
 are not surveyed, rise at most 6 m, and are in no part. Buildings within 600 m of the view's centre are drawn in detail and cast shadows, the
 rest are plain prisms with a flat tint. None of this enters a sun hour, a skyline, a sky view or a score.
 
