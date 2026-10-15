@@ -54,6 +54,7 @@ import { planEmpty, missingNotice } from './features/plan-empty.js';   // [featu
 import { renderOptions } from './plan/options.js';
 import { mountDock } from './room3d/dock.js';   // [phone] the time slider within thumb reach
 import * as Q3 from './plan/quality3d.js';   // [feature J] render quality (Fast / Visual) and progressive export
+import * as RUI from './render/ui.js';   // [render] "Render a photo" and "Make a video" (the renderers load when a button is pressed)
 import * as LX from './plan/lighting-ui.js';   // [feature J] daylight grid, glass/surface inputs, luminaires, annual summary
 G3.setRealLampsProbe(() => LX.count() > 0);   // [daycycle] a luminaire placed in the Light tab replaces the assumed ceiling lights
 import { validateInventory, fitInventory, pieceItem, placedIds } from './plan/inventory.js';   // [furniture] the renter's own pieces
@@ -251,7 +252,7 @@ async function load(id) {
       }
     }
   }
-  if (!ready) { G3.init($('pgl'), $('pstage'), () => {}); P2.mount($('p2d'), { item: (i) => R.find((x) => x.id === i), select, move: dragTo, commit: () => commit(), locked: () => !!MEAS?.two.active }); bind3D(); mountBars(); ready = true; mountMeasure(); LX.attach3D(); Q3.mount({ stage: $('pstage'), model: () => model, toast, store }); mountDock($('pstage'), { min: 300, max: 1230, step: 5, get: () => st.min, set: (v) => { pausePlay(false); st.min = v; const t = $('pTime'); if (t) t.value = String(v); refreshSun(); }, text: () => fmtT(st.min), playing: () => !!st.playing, toggle: () => togglePlay('day') }); }   // [phone]
+  if (!ready) { G3.init($('pgl'), $('pstage'), () => {}); P2.mount($('p2d'), { item: (i) => R.find((x) => x.id === i), select, move: dragTo, commit: () => commit(), locked: () => !!MEAS?.two.active }); bind3D(); mountBars(); ready = true; mountMeasure(); LX.attach3D(); Q3.mount({ stage: $('pstage'), model: () => model, toast, store }); mountDock($('pstage'), { min: 300, max: 1230, step: 5, get: () => st.min, set: (v) => { pausePlay(false); st.min = v; const t = $('pTime'); if (t) t.value = String(v); refreshSun(); }, text: () => fmtT(st.min), playing: () => !!st.playing, toggle: () => togglePlay('day') }); mountRenderStudio(); }   // [phone] [render]
   G3.setModel(model); G3.setWallMode(st.wall);
   P2.setModel(model); LX.reattach2D(); Q3.modelChanged(); if (st.mode !== '2d') Q3.opened();   // [feature J] [quality]
   st.city = !!store.get(`plan-city.${S.base}`, false); applyCity();
@@ -275,6 +276,30 @@ async function load(id) {
 }
 
 /** [measure] The tape in both panes: a bridge of getters, nothing is copied. */
+// ------------------------------------------------------------------ [render] photo and video
+const VIEW_NAME = { bird: 'Bird\u2019s eye', top: 'Top', bed: 'From the bed', sofa: 'From the sofa', door: 'From the door', walk: 'Walking', tour: 'Walking', window: 'To the window' };
+function mountRenderStudio() {
+  const sunAltAt = (min) => {
+    const c = sunCtx || (() => { const [y, m, d] = st.date.split('-').map(Number); return { y, m, d, lat: st.site?.origin?.lat ?? S.crit.search?.map_center?.[0] ?? 40.75, lon: st.site?.origin?.lon ?? S.crit.search?.map_center?.[1] ?? -73.98, tz: st.site?.timezone || S.crit.search?.timezone || 'America/New_York' }; })();
+    return sunPos(zonedMs(c.y, c.m - 1, c.d, min, c.tz), c.lat, c.lon).alt;
+  };
+  RUI.mountRender({
+    id: 'plan', container: $('pstage').querySelector('.rnq'), store,
+    host: async () => (model && G3.parts().renderer && $('pgl').clientWidth ? (await import('./render/hosts.js')).planHost(G3) : null),
+    info: () => ({ stem: `${st.id}-${st.view || 'view'}-${st.date}-${String(Math.floor(st.min / 60)).padStart(2, '0')}${String(Math.round(st.min % 60)).padStart(2, '0')}`, title: `${model?.title || st.id} \u00b7 ${VIEW_NAME[st.view] || 'Floor plan'}`, when: `${st.date}, ${fmtT(st.min)}`, date: st.date }),
+    video: {
+      plan: () => model, space: () => G3.walkFloor(), altAt: sunAltAt, range: [300, 1230], minute: () => st.min,
+      prepare() {
+        pausePlay(false);
+        const cam0 = G3.saveCamera(), min0 = st.min;
+        G3.setMood('auto');   // the light follows the sun's height, whichever mood is chosen: golden hour is golden
+        return () => { st.min = min0; const t = $('pTime'); if (t) t.value = String(min0); G3.restoreCamera(cam0); G3.setMood(st.mood); refreshSun(); markCams(); };
+      },
+      applyPose: (p) => G3.poseEye(p),
+      setMinute: (m) => { st.min = m; const t = $('pTime'); if (t) t.value = String(m); refreshSun(true); },
+    },
+  });
+}
 function mountMeasure() {
   MEAS = mountStudioMeasure({
     G3, canvas: $('pgl'), stage3d: $('pstage'), stage2d: $('p2dWrap'), svg: $('p2d'), toolbar3d: $('psCams'), toolbar2d: $('psDims'),
