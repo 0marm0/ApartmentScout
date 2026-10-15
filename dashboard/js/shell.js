@@ -1,6 +1,6 @@
 // App shell pieces that sit around the views: the three-way theme (system, dark, light), the one top-right menu (js/app-menu.js
 // opens and navigates it; the choices are handled here), the "more figures" popover of the stats strip, the sub-tabs under the
-// top bar (Shortlist / Tours, and Unit 3D / Floor plan under the Home tab), and the route table that keeps the old deep links
+// top bar (Shortlist / Tours, and Unit 3D / Floor plan under the 3D tab), and the route table that keeps the old deep links
 // (#tours, #records/<id>) working as redirects to their new homes.
 import { S, on, emit, store, openSettings, exportPicks } from './app.js';
 import { $ } from './util.js';
@@ -83,7 +83,7 @@ export function syncSubnav(view = S.view) {
   document.body.toggleAttribute('data-sub', home || short);
   if (home) {
     const arg = hashArg();
-    el.setAttribute('aria-label', 'Home views');
+    el.setAttribute('aria-label', '3D views');
     const a = (v, label) => `<a href="${homeHref(v, arg)}" data-sub="${v}" ${view === v ? 'class="on" aria-current="page"' : ''}>${label}</a>`;
     el.innerHTML = a('unit', 'Unit 3D') + a('plan', 'Floor plan');
     return;

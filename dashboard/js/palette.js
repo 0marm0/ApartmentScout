@@ -8,7 +8,7 @@ import { nlItem } from './features/nlsearch.js';   // [feature C] plain-language
 import { extraActions } from './features/palette-actions.js';   // [feature C] undo, redo, tour, cheat sheet
 
 const VIEWS = [['map', 'Map', 'Pins, commute surface and price tags'], ['list', 'Shortlist', 'Every home in a sortable table'], ['compare', 'Compare', 'Up to four homes side by side'],
-  ['unit', 'Unit 3D', 'The unit in its block, with the sun (Home tab)'], ['plan', 'Floor plan', 'Plan studio and tracer (Home tab)'],
+  ['unit', 'Unit 3D', 'The unit in its block, with the sun (3D tab)'], ['plan', 'Floor plan', 'Plan studio and tracer (3D tab)'],
   ['research', 'Research', 'What to find out next'], ['list/tours', 'Tours', 'Plan visits and decide (under Shortlist)'], ['research/records', 'Records', 'Building records and reviews (under Research)']];
 const hereView = (k) => (k === 'list/tours' ? S.view === 'tours' : k === 'research/records' ? S.view === 'research' && location.hash.startsWith('#research/records') : S.view === k && !(k === 'research' && location.hash.startsWith('#research/records')));
 const IC = {

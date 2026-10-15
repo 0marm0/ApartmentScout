@@ -26,8 +26,8 @@ the secondary figures fold into an "all figures" popover); and, on the Map and S
 | 7 | **Shortlist > Tours** | Saved picks on a tier board (S, A, B, C, Pass) by drag or buttons, tour times and notes, a nearest-next visiting order with walking minutes, a Google Maps route, printable call sheets, and picks backup and restore. Deep link: `#list/tours` (the old `#tours` redirects here). |
 | 8 | **Research** | The finalist standard and coverage gaps, then tabs: a priority queue (missing and stale facts, lint flags, score swing, copyable questions), new and changed listings, gone fast, the building watchlist and a media gallery of every image with its credit. Deep links: `#research/queue`, `new`, `gone`, `watch`, `media`, `records`. See [research quality](research-quality.md). |
 
-The tabs are Map, Shortlist, Compare, Home and Research. **Home** holds Unit 3D and Floor plan: a second row under the bar switches
-between them (the same way Tours sits under Shortlist and Records under Research), and the Home tab opens whichever you used last.
+The tabs are Map, Shortlist, Compare, 3D and Research. **3D** holds Unit 3D and Floor plan: a second row under the bar switches
+between them (the same way Tours sits under Shortlist and Records under Research), and the 3D tab opens whichever you used last.
 The numbered rows above are the sections, not the shortcuts (`1` to `5` are the tabs). Views load on first visit; `#<view>/<listing-id>` opens a view on
 a listing (for example `#unit/emerald-green-1211` or `#plan/emerald-green-1211`: both routes are unchanged, and the switch under the
 bar keeps the same home when the other view has data for it).
@@ -71,7 +71,7 @@ dropped.
 | `[` / `]` | Fly to the previous or next starred home on the Map and open its mini card (with the drawer open, move the drawer) |
 | `s` | Save the open listing to your picks |
 | `c` | Add the open listing to Compare |
-| `1`–`5` | Switch tab (Map, Shortlist, Compare, Home, Research); `4` opens Unit 3D or Floor plan, whichever was open last, and pressing it again on Home flips to the other |
+| `1`–`5` | Switch tab (Map, Shortlist, Compare, 3D, Research); `4` opens Unit 3D or Floor plan, whichever was open last, and pressing it again on 3D flips to the other |
 | `t` | Flip light and dark (the menu's Appearance row also has System) |
 | `Esc` | Close the lightbox, the drawer or the help |
 
