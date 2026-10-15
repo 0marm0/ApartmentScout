@@ -108,8 +108,9 @@ def test_nyc_rows_keep_holes_and_record_height_sources():
     m = site["bmeta"]
     assert len(m) == len(site["b"])
     assert m[0] == {"bin": "1", "bbl": "1000010001", "address": "1 Test St", "year": 1931,
-                    "height_src": "roof", "hconf": "high", "src": "nyc-footprints"}
-    assert [x["hconf"] for x in m] == ["high", "low", "low"]          # measured / built from floors / the default
+                    "height_src": "roof", "src": "nyc-footprints"}
+    from apartmentscout.geo.buildings import height_confidence
+    assert [x.get("hconf") or height_confidence(x) for x in m] == ["high", "low", "low"]     # measured / from floors / default (stored only when the floor count overrides the rule)
     assert m[1]["height_src"] == "pluto-floors" and m[2]["height_src"] == "default"
     # the court is open air for both point tests and the skyline
     hx = site["holes"]["0"][0]

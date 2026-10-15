@@ -39,7 +39,7 @@ import { insideViews, viewForWindow } from './unit/inside-views.js';   // [inter
 import { setLookChips, bindLookChips } from './plan/look-ui.js';
 import { resolve as resolveItem } from './plan/catalog.js';
 import { stepView } from './plan/viewpoints.js';
-import { heightProvenance } from './city3d/facade-rules.js';   // [buildings3d] height source and confidence labels
+import { heightProvenance, confOf } from './city3d/facade-rules.js';   // [buildings3d] height source and confidence labels
 import { loadTreeLayers, saveTreeLayers, STREET_TREES_TITLE, PARK_TREES_TITLE } from './unit/treelayers.js';   // [park trees] street / park tree toggles, remembered per browser
 
 let site = null, B0 = [], FUTB = [], edits = new Map(), B = [], T = null, FACES = [], LM = [], FUT = [], BF = null, stage = null, plan = null, interior = null;
@@ -1037,7 +1037,7 @@ function computeNeighbours() {
     out.push({
       bi, name: fut ? f.name || 'Proposed building' : lm?.name || m.name || (m.address ? m.address.replace(/,.*$/, '') : `${Math.round(h)} m building`),
       sub: fut ? `proposed · ${f.status || ''}` : lm || m.name ? m.address || '' : '', lmName: lm?.name || m.name || '', address: m.address || '', bin: m.bin, bbl: m.bbl,
-      h, g: b.g, dist: d, brg, off, view, floors: m.floors || m.numfloors || null, hsrc: fut ? f.h_src || 'filing' : m.height_src || (b.eg ? 'default' : ''), hconf: fut ? '' : m.hconf || '', cls: m.cls || '', bid: fut ? '' : m.id || m.bin || '', nparts: b.parts ? b.parts.length : 0,
+      h, g: b.g, dist: d, brg, off, view, floors: m.floors || m.numfloors || null, hsrc: fut ? f.h_src || 'filing' : m.height_src || (b.eg ? 'default' : ''), hconf: fut ? '' : confOf(m), cls: m.cls || '', bid: fut ? '' : m.id || m.bin || '', nparts: b.parts ? b.parts.length : 0,
       geom: fut ? 'proposed' : gs.includes('manual') ? 'manual' : gs.includes('photo') ? 'photogrammetric' : m.src === 'osm' ? 'osm' : gs || '', src: fut ? f.source : m.src,
       year: m.year, edited, stale: !!edited && now - +edited >= STALE_YEARS, future: fut, sel: st.sel === bi,
     });
@@ -1139,7 +1139,7 @@ function openCard(bi) {
   const blkMin = blkRows.find((r) => r.bi === bi);
   const rows = [
     ['Roof', `${Math.round(h)} m · ${Math.round(h * 3.281)} ft${Math.abs(b.g) > 1 ? ` <span class="faint">(ground ${b.g > 0 ? '+' : ''}${b.g.toFixed(0)} m)</span>` : ''}`],
-    ['Height from', `${esc(m?.height_src ? HSRC[m.height_src] || m.height_src : b.eg ? 'Estimated' : 'Roof height in the footprint data')}${m?.hconf ? ` <span class="pill ${m.hconf === 'high' ? 'good' : m.hconf === 'low' ? 'warn' : ''}" title="${esc(heightProvenance(m).tip)}">${esc(m.hconf)} confidence</span>` : ''}`],   // [buildings3d]
+    ['Height from', `${esc(m?.height_src ? HSRC[m.height_src] || m.height_src : b.eg ? 'Estimated' : 'Roof height in the footprint data')}${m?.height_src ? ` <span class="pill ${confOf(m) === 'high' ? 'good' : confOf(m) === 'low' ? 'warn' : ''}" title="${esc(heightProvenance(m).tip)}">${esc(confOf(m))} confidence</span>` : ''}`],   // [buildings3d]
     m?.id || m?.bin ? ['Building id', `<span class="mono">${esc(m.id || m.bin)}</span> <span class="faint">same in every view</span>`] : null,
     m?.cls ? ['Class', `${esc(m.cls)} <span class="faint">PLUTO building class, picks the facade style</span>`] : null,
     ['Data', esc(m?.src ? DSRC[m.src] || m.src : site.source || 'Footprints')],
@@ -1242,8 +1242,8 @@ function evidencePanel() {
 }
 /** [buildings3d] "Confidence in the roof height: 700 high, 200 medium, 129 low ..." from bmeta.hconf, or ''. */
 function heightConfNote(bm) {
-  if (!bm.some((m) => m.hconf)) return '';
-  const n = (k) => bm.filter((m) => m.hconf === k).length, out = ['high', 'medium', 'low'].filter((k) => n(k)).map((k) => `${n(k).toLocaleString()} ${k}`);
+  if (!bm.some((m) => m.height_src)) return '';
+  const n = (k) => bm.filter((m) => m.height_src && confOf(m) === k).length, out = ['high', 'medium', 'low'].filter((k) => n(k)).map((k) => `${n(k).toLocaleString()} ${k}`);
   return ` Confidence in the roof height: ${out.join(', ')} (measured on a photogrammetric outline is high; a hand-drawn outline or an OpenStreetMap tag medium; a floor count or a default low).`;
 }
 /** The Parks and trees row of the evidence panel: what was drawn, from where, and what the window sees of it. */

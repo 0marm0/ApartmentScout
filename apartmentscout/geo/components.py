@@ -33,6 +33,7 @@ MIN_COVER = 0.9
 HEIGHT_TOL_M = 8.0
 HEIGHT_TOL_FRAC = 0.2
 PARTS_RADIUS_M = 600.0
+MIN_BULKHEAD_M2 = 8.0              # rooftop boxes smaller than this (and 10 m or lower) are left out of the parts
 TALL_PARTS_M = 120.0              # footprints at least this tall beyond the radius get their parts read too (the skyline)
 TALL_PARTS_MAX = 40               # ... for at most this many landmarks, tallest first
 KINDS = ("podium", "tower", "setback", "bulkhead", "spire")
@@ -345,15 +346,28 @@ def derive_components(site: dict, parts: list[dict], min_cover: float = MIN_COVE
         kinds = classify(ps)
         out = []
         for p, k in sorted(zip(ps, kinds), key=lambda pk: (pk[0]["base_m"], -pk[0]["top_m"])):
+            if k == "bulkhead" and abs(ring_area(p["ring"])) < MIN_BULKHEAD_M2 and p["top_m"] - p["base_m"] <= 10:
+                info["dropped_small"] = info.get("dropped_small", 0) + 1      # a 2 m2 rooftop box: nothing to see, nothing to shade
+                continue
             typ, oid = p["osm"].split("/", 1)
-            c = {"ring": _r(p["ring"]), "base_m": round(p["base_m"], 1), "top_m": round(p["top_m"], 1), "kind": k,
-                 "source": f"osm {typ} {oid}", "confidence": "low" if p["levels"] else "medium"}   # the link is rebuilt from the source
+            c = {"ring": _r(p["ring"]), "top_m": round(p["top_m"], 1), "kind": k, "source": f"osm {typ} {oid}"}   # the link is rebuilt from the source
+            if p["base_m"]:
+                c["base_m"] = round(p["base_m"], 1)                  # absent = 0 (on the ground)
+            if p["levels"]:
+                c["confidence"] = "low"                              # absent = medium (an explicit OpenStreetMap height)
             if p["holes"]:
                 c["holes"] = [_r(hh) for hh in p["holes"]]
             for key in ("roof", "eave_m", "dir", "mat", "col"):   # appearance tags: drawn, never used in an obstruction
                 if p.get(key) is not None:
                     c[key] = p[key]
             out.append(c)
+        for key in ("mat", "col"):      # one wall material and colour for the whole building: stored once, on its first part
+            vals = {c[key] for c in out if key in c}
+            if len(vals) == 1:
+                v = vals.pop()
+                for c in out:
+                    c.pop(key, None)
+                out[0][key] = v
         comps[str(i)] = out
         info["buildings"] += 1
     return comps, info
