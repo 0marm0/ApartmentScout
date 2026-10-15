@@ -183,7 +183,7 @@ def test_lit_windows_and_lamps_come_on_at_night_only_and_the_room_has_a_warm_lig
     assert night["night"] > 0.9 and night["lamps"]["visible"] is True, night                  # the lit windows and the street lamps
     assert night["dim"] < 0.6, "the ground, grass and trees go dark"
     assert night["room"]["lamps"] > 0.9 and night["room"]["sunI"] == 0
-    assert any(v and i > 0 for v, i in night["assumed"]), "no lamp is placed in 25E: a warm ceiling light stands in"
+    assert any(v and i > 0 for v, i in night["assumed"]), "no lamp is placed in this unit: a warm ceiling light stands in"
     assert 0 < night["late"] < 1, "an evening, not the dead of night"
     assert not s.take()
 
