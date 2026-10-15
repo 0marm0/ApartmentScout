@@ -23,12 +23,19 @@ import re
 from dataclasses import dataclass, field
 from typing import Any
 
+from . import renterfacts
 from . import tours as tours_mod
 from .config import DIMENSION_LABELS
 from .listings import (PRICE_BASES, cost_model, headroom, is_studio, normalise_laundry, normalise_service,
                        parse_date, price_per_sqft, size_info)
 
 SCORE_VERSION = "2.1"
+#: What each scoring version changed, in the words the dashboard uses to explain a move (see rankhistory.py).
+SCORE_CHANGES = {
+    "2.0": "the first set of dimensions",
+    "2.1": "estimates a missing size and missing fees from comparable homes instead of leaving them neutral, grades the "
+           "unit's photos into interior, and counts a guessed window facing at half strength",
+}
 
 GOOD_EXPOSURE = {"S": 20, "SSW": 20, "SSE": 18, "SW": 16, "SE": 16, "W": 10, "E": 10,
                  "WSW": 13, "ESE": 13, "WNW": 4, "ENE": 4, "NW": 0, "NE": 0, "N": -10,
@@ -54,6 +61,7 @@ class Part:
     items: list[str] = field(default_factory=list)
     range: tuple[float, float] | None = None
     flags: list[str] = field(default_factory=list)
+    meta: dict[str, Any] | None = None   # inputs the dashboard needs to re-score this dimension from a value the renter types
 
 
 def _lin(x: float, x0: float, y0: float, x1: float, y1: float) -> float:
@@ -301,6 +309,7 @@ def estimated_fees(L: dict, cm: dict, comps: Comps | None) -> dict[str, Any] | N
     pr = L.get("price") or {}
     out: dict[str, Any] = {"monthly": 0.0, "parts": []}
     hi = 0.0
+    condo: list[float] | None = None   # the condo move-in estimate alone: what stays when the renter types the monthly fees
     if not cm.get("fees_known"):
         d = (L.get("amenities") or {}).get("doorman")
         svc = str(normalise_service(d)) if isinstance(d, str) else "None"
@@ -317,12 +326,15 @@ def estimated_fees(L: dict, cm: dict, comps: Comps | None) -> dict[str, Any] | N
         ot = _median(comps.condo_one_time) / months
         out["monthly"] += ot
         hi += max(comps.condo_one_time) / months
+        condo = [round(ot), round(max(comps.condo_one_time) / months)]
         out["parts"].append(f"condo move-in and application fees ~${ot * months:,.0f} once "
                             f"(median of {len(comps.condo_one_time)} known), ${ot:,.0f}/mo over {months:g} months")
     if not out["parts"]:
         return None
     out["monthly"] = round(out["monthly"])
     out["high"] = round(hi)
+    if condo:
+        out["condo_part"] = condo
     return out
 
 
@@ -524,7 +536,7 @@ def _discount_assumed(L: dict, p: Part) -> Part:
             f"counted at {w:.0%} strength, {p.value:.0f} -> {50 + w * (p.value - 50):.0f}")
     rng = tuple(50 + w * (x - 50) for x in p.range) if p.range else None
     return Part(50 + w * (p.value - 50), p.summary + "; exposure assumed", p.items + [item], rng,
-                sorted(set([*p.flags, "exposure_assumed"])))
+                sorted(set([*p.flags, "exposure_assumed"])), meta=p.meta)
 
 
 def _light_model(L: dict) -> Part:
@@ -554,7 +566,7 @@ def _light_model_raw(L: dict) -> Part:
     if "visual_not_exact" in flags:
         items.append("view and light wording that comes from building or representative media is not scored")
     if not exp and floor is None and not text:
-        return Part(None, "light and view unknown, counted as neutral", items, flags=sorted(set(flags)))
+        return Part(None, "light and view unknown, counted as neutral", items, flags=sorted(set(flags)), meta={"rest": 45.0})
     s = 45.0
     bits = []
     if exp:
@@ -580,7 +592,8 @@ def _light_model_raw(L: dict) -> Part:
             s += pts
             items.append(f"listing says '{word}' ({pts:+d})")
     summ = ", ".join(bits) if bits else "from listing wording only"
-    return Part(_clamp(s), summ, items, flags=sorted(set(flags)))
+    rest = s - (min(20.0, floor * 0.8) if floor is not None else 0.0)   # everything but the floor: the dashboard adds a typed floor to it
+    return Part(_clamp(s), summ, items, flags=sorted(set(flags)), meta={"rest": round(rest, 3)})
 
 
 def _photo_review(L: dict) -> dict:
@@ -597,19 +610,22 @@ def part_light(L: dict) -> Part:
     """The sun and floor model, blended half and half with what the unit's own photos show (light
     through the windows and the view out of them) when they were graded."""
     p = _light_model(L)
+    if p.meta:
+        p.meta = {**p.meta, "assumed": exposure_assumed(L)}
     pr = _photo_review(L)
     view, light = _grade(pr.get("view")), _grade(pr.get("natural_light"))
     if view is None and light is None:
         return p
     pv = view if light is None else light if view is None else 0.6 * view + 0.4 * light
+    meta = {**p.meta, "pv": round(pv, 3)} if p.meta else None
     bits = [f"view {pr['view']}/5" + (f" ({pr['view_note']})" if pr.get("view_note") else "") if view is not None else None,
             f"light {pr['natural_light']}/5" if light is not None else None]
     item = "unit photos: " + ", ".join(b for b in bits if b)
     if p.value is None:
-        return Part(pv, item, [item], flags=p.flags)
+        return Part(pv, item, [item], flags=p.flags, meta=meta)
     v = 0.5 * p.value + 0.5 * pv
     rng = (min(v, *(0.5 * x + 0.5 * pv for x in p.range)), max(v, *(0.5 * x + 0.5 * pv for x in p.range))) if p.range else None
-    return Part(v, f"{p.summary}; {item}", p.items + [item], rng, p.flags)
+    return Part(v, f"{p.summary}; {item}", p.items + [item], rng, p.flags, meta=meta)
 
 
 # ---------------------------------------------------------------------- building and quiet
@@ -1026,6 +1042,8 @@ def score_listing(L: dict, crit: dict, today: dt.date | None = None, comps: Comp
         "flags": sorted(flags),
         "tags": tags,
         "ppsf": ppsf,
+        **({"light_hint": parts_full["light_view"].meta}
+           if parts_full["light_view"].meta and (L.get("floor_inferred") or L.get("floor") is None) else {}),
         "cost": _compact_cost(cm),
         "preset": (crit.get("scoring") or {}).get("preset"),
     }
@@ -1061,21 +1079,28 @@ def _building_key(L: dict) -> str:
     return str(L.get("bin") or "").split(".")[0] or str(L.get("building") or L.get("address") or L.get("id")).lower()
 
 
-def score_all(listings: list[dict], crit: dict, today: dt.date | None = None, tours: dict[str, dict] | None = None) -> list[dict]:
+def score_all(listings: list[dict], crit: dict, today: dt.date | None = None, tours: dict[str, dict] | None = None,
+              facts: dict[str, dict] | None = None) -> list[dict]:
     """Score every listing and write ``rank`` (= ``ranks.action``) and ``ranks`` (fit / action / budget /
     building). Ties break on confidence, then lower cost, then id.
 
     ``tours`` maps a listing id to the renter's tour findings (``tours.load_all``). A finding the renter promoted is read
     as a fact (the listing itself is not changed); one that contradicts the listing and was not promoted only adds a
-    ``contradicted:<field>`` gate, a "differs on tour" tag and a line in the reasons."""
+    ``contradicted:<field>`` gate, a "differs on tour" tag and a line in the reasons.
+
+    ``facts`` maps a listing id to the values the renter typed for its unknowns (``renterfacts.load``): size, monthly fees, the
+    rent they will pay, an in-unit washer/dryer, the floor. They are read as facts (the listing itself is not changed) and
+    named in ``score['renter']``."""
     today = _today(crit, today)
     comps = build_comps(listings)
     for L in listings:
         f = (tours or {}).get(L.get("id"))
+        mine = (facts or {}).get(L.get("id"))
+        seen = renterfacts.overlay(tours_mod.overlay(L, f), mine) if f or mine else L
+        sc = score_listing(seen, crit, today, comps)
         if f:
-            L["score"] = tours_mod.annotate_score(score_listing(tours_mod.overlay(L, f), crit, today, comps), tours_mod.flags_for(L, f))
-        else:
-            L["score"] = score_listing(L, crit, today, comps)
+            sc = tours_mod.annotate_score(sc, tours_mod.flags_for(L, f))
+        L["score"] = renterfacts.annotate(sc, mine)
     scored = [L for L in listings if L["score"]["overall"] is not None]
     for L in listings:
         L["score"]["ranks"] = {"fit": None, "action": None, "budget": None, "building": None}
