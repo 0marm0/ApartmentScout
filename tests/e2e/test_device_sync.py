@@ -624,3 +624,42 @@ def test_the_palette_can_open_sync_and_run_it(device, github) -> None:
     s.page.wait_for_selector("#syncSheet.on", timeout=10000)
     s.page.keyboard.press("Escape")
     s.page.wait_for_function("() => document.querySelector('#syncSheet')?.hidden === true", timeout=5000)
+
+
+# ------------------------------------------------------------------ keys that features keep a copy of in memory
+def test_the_move_plan_and_whats_new_sync_and_the_pages_copy_is_read_again(device, github) -> None:
+    mac, phone = device(), device()
+    connect(mac)
+    connect(phone)
+    plan = {"v": 1, "chosen": HOME, "homes": {HOME: {"start": "2026-12-01", "movers": 1100, "done": {"apply": "2026-10-15"}, "dates": {}, "custom": [], "updated": "2026-10-15"}}}
+    mac.page.evaluate("""async ([plan, name]) => { const { store } = await import('/js/app.js'); store.set('moveplan:' + name, plan); store.set('whatsnew:seen:' + name, 'digest-7'); store.set('whatsnew:notify:' + name, true); }""", [plan, SEARCH])
+    wait_status(mac, "st.phase === 'synced' && !st.pending")
+    sync_now(phone)
+    # the planner's own copy in the page was refreshed: its next save would not write a stale plan over the merge
+    got = phone.page.evaluate("async (id) => { const m = await import('/js/features/move.js'); return m.savedPlan().homes[id]; }", HOME)
+    assert got["start"] == "2026-12-01" and got["done"] == {"apply": "2026-10-15"} and got["movers"] == 1100
+    assert phone.page.evaluate("async () => (await import('/js/features/whatsnew.js')).state().seenId") == "digest-7"
+    assert phone.page.evaluate("async (n) => (await import('/js/app.js')).store.get('whatsnew:notify:' + n, null)", SEARCH) is None, "a device's own notification choice is not synced"
+    # two devices tick different steps of the same home: both ticks survive on both
+    both = {"v": 1, "chosen": HOME, "homes": {HOME: {**plan["homes"][HOME]}}}
+    mac.page.evaluate("async ([p, n]) => (await import('/js/app.js')).store.set('moveplan:' + n, p)", [{**both, "homes": {HOME: {**both["homes"][HOME], "done": {"apply": "2026-10-15", "sign": "2026-10-20"}}}}, SEARCH])
+    phone.page.evaluate("async ([p, n]) => (await import('/js/app.js')).store.set('moveplan:' + n, p)", [{**both, "homes": {HOME: {**both["homes"][HOME], "done": {"apply": "2026-10-15", "book": "2026-10-22"}}}}, SEARCH])
+    wait_status(mac, "st.phase === 'synced' && !st.pending")
+    wait_status(phone, "st.phase === 'synced' && !st.pending")
+    sync_now(mac)
+    sync_now(phone)
+    sync_now(mac)
+    for s in (mac, phone):
+        done = s.page.evaluate("async (id) => (await import('/js/features/move.js')).savedPlan().homes[id].done", HOME)
+        assert done == {"apply": "2026-10-15", "sign": "2026-10-20", "book": "2026-10-22"}
+
+
+def test_a_sync_file_carries_the_move_plan_and_old_readers_find_it(device, tmp_path) -> None:
+    a, b = device(), device()
+    plan = {"v": 1, "chosen": HOME, "homes": {HOME: {"start": "2026-12-01", "done": {}, "dates": {}, "custom": [], "updated": "2026-10-15"}}}
+    a.page.evaluate("async ([plan, n]) => (await import('/js/app.js')).store.set('moveplan:' + n, plan)", [plan, SEARCH])
+    path = export_file(a, tmp_path)
+    doc = json.loads(path.read_text())
+    assert doc["moveplan"]["homes"][HOME]["start"] == "2026-12-01", "the version-1 field a backup has always had"
+    import_file(b, path)
+    assert b.page.evaluate("async (id) => (await import('/js/features/move.js')).savedPlan().homes[id]?.start", HOME) == "2026-12-01"

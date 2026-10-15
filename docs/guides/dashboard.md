@@ -56,7 +56,7 @@ folder menu and the settings menu. The search-name pill on the left opens the sa
 | Section | Holds |
 |---|---|
 | **This search** | The search name and counts (and its folder, when served), **Edit criteria…** (the wizard on every criterion), **Search settings** (quick edits previewed in this browser), **Switch search…** (the other searches; only when `apartmentscout serve` is running) and **New search…** |
-| **Data** | **Export filtered CSV**, **Back up picks**, **Restore picks…** (a backup file), **Sync across devices…** (a private gist or a sync file, see [sync](sync.md)), **Share shortlist**, **Decision memo** |
+| **Data** | **Export filtered CSV**, **Back up picks**, **Restore picks…** (a backup file), **Sync across devices…** (a private gist or a sync file, see [sync](sync.md)), **Share shortlist**, **Decision memo**, **Make a decision report**, **Plan my move** |
 | **Appearance** | Theme (system, dark, light), accent (iris, jade, amber, rose), density (roomy, compact), office pin (gold, green) and the golden-hour map tint |
 | **Comfort** | Reduce motion, reduce transparency, high contrast, text size |
 | **Help** | Search or jump to (`⌘K`), Keyboard shortcuts (`?`), Restart tour, and **Install app** where the browser offers it |
@@ -295,6 +295,52 @@ apartmentscout share --picks picks.json --out memo.html --memo --notes  # opens 
 listing ids; without `--picks` it uses the shortlist, touring and applied listings. Saved local photos become small embedded
 thumbnails (`--photo-budget KB`, `--no-photos`). Only the fields named in the template's `as-schema` block are copied; the
 browser and CLI builders share that block, and a test builds the same payload with each and compares.
+
+### Decision report
+
+**Make a report** (a button on Compare and on the Shortlist, in the menu's Data section and in the command palette) turns two to four homes
+into one typeset document to print or send: a **cover** with the recommendation and why (the home that fits your weights best and meets
+your hard requirements, the three things that put it ahead of the runner-up, and what could change the call: a close margin, what is still
+unknown, a visit that differed from the listing, your own tier S), a **side-by-side table** (true monthly cost, move-in cost, renewal risk, size,
+direct sun in December and June, the view, commute to each destination, building quality, public records, reviews, amenities, street noise
+and your visit's noise, interior, fit; the best value in each row is shaded and an unknown stays unknown), **one page per home** (the hero photo, a floor
+plan thumbnail drawn from the plan file with a north arrow, a 3D still looking out of the window, the key figures, how it scores on each
+dimension, what is still unknown, the leasing-office questions still open, and your visit's measurements, checks and photos when you took
+them) and a final **checklist** (confirm with the office, before you sign, move-in day, and what to ask if you choose another home).
+The sheet that opens asks which homes (the Compare set, else your best saved picks) and what goes in: a **3D view from each window** (the
+dashboard's own Unit 3D, opened out of sight at midday on the move-in day and read once; a few seconds a home, nothing uploaded), the
+listing photo, **my notes** and **my visit photos** (both off unless ticked) and the paper size. **Open report** shows it in a new tab,
+where *Print or save as PDF* gives the pages (US Letter or A4, one sheet per page, Geist, light theme); a switch hides your notes again
+when they were included. *Download HTML* saves the same file, which needs no network.
+
+```bash
+apartmentscout report --homes paramount-tower-25e greywood-4b 41a --out report.pdf     # a PDF through a headless browser
+apartmentscout report --homes paramount-tower-25e paramount-tower-41a --out report.html --notes --paper a4   # the HTML only
+```
+
+`--homes` takes two to four listing ids (or text that matches exactly one). A `.pdf` name needs a headless browser: Playwright's
+Chromium when it is installed, else a system Chrome, Chromium or Edge; with none the HTML is written next to it and any browser prints it.
+The 3D views are taken with Playwright, which runs the dashboard from this machine (`--no-stills` skips them). `--picks FILE` brings
+your tiers, weights, visits and decision trail from a picks backup, `--notes` and `--tour-photos` include your words and photos
+(off by default), `--no-photos`, `--paper letter|a4`, `--title`, `--as-of DATE`. Without `--homes`, `apartmentscout report` still writes
+`shortlist.md`. The page is `dashboard/report/report.html`; the browser and command-line builders share its `as-schema` block (only
+the fields it names are copied) and a test builds the same payload with each and compares. Every rule the page applies lives in its
+`as-core` script, tested without a browser in `tests/js/report.test.mjs`.
+
+### Move planner
+
+For a home you have shortlisted, saved or applied to: the drawer's **Move plan** section (also *Plan my move* in the menu and the command
+palette, or `?move=<listing id>`) opens a sheet with the **lease start** worked out from your move-in window and the listing's availability
+(or the date you choose), the **steps** from today to that day, dated and in order: the application, approval, lease signing, deposit and first month,
+renter's insurance, movers, the building's move-in reservation and the movers' certificate of insurance, internet, electric and gas, the
+USPS change of address, key pickup and the move, then the condition report. Tick a step off, move its date, or add your own; a step that
+had to be pushed later than usual says so, and a short notice or a start outside your window is named. Add when your current lease ends
+and the planner adds the notice you owe and the **overlap rent**. The **cash** block reads the scorer's cost model (first month, deposit, application,
+broker and other one-time fees: the scorer's `move_in_min`), asks you for the movers, insurance and anything else, and names
+what is not known instead of counting it as zero. **Add to calendar** saves an `.ics` file (an all-day event per step left, with a 9:00
+alert); **Copy for Reminders** puts one line per step on the clipboard. Your checklist is kept in this browser and travels in the picks
+backup under one key, `moveplan` ([data model](data-model.md#move-plan)). Nothing is booked, sent or paid from the page, and every date is
+a plan to confirm with the office, the movers and the providers.
 
 ### Tour-day planner
 

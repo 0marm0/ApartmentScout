@@ -41,6 +41,8 @@ Sync works on **items**: one value at one place in the app's own browser storage
 | Your numbers for unknowns | one number (size, price, fees, W/D, floor) with its day and source | `facts:<search>` |
 | Decision history | one revision | `trail:<search>` |
 | Leasing-office answers | one answer per home | `office:<search>` |
+| Move plan | one field of one home's move plan: the lease start, costs, one ticked or moved step, the steps you added | `moveplan:<search>` |
+| What's new | which alerts you have read (so the phone does not nag about what the Mac showed); whether notifications are on stays per device | `whatsnew:seen:<search>` |
 | Tour-day planner and checklist | the plan; one tick or note per home | `tourplan:<search>`, `tourday:<search>` |
 | Search settings you edited in the browser | the applied profile; the commute mode and destination | `criteria:<search>`, `commute:<search>` |
 | Floor plan studio | a layout, a light setup, the city options, extra furniture, the project library (one item per project), scenarios you sent to Unit 3D | `plan.*`, `plan-light.*`, `plan-city.*`, `furniture-extra.*`, `plan-projects.*`, `plan-scenario:*`, `compare-specs:*`, `unit-scenario-use:*` |
@@ -125,7 +127,7 @@ Picks, weights and the other browser-only data live in the Mac's browser as befo
 ## The sync file
 
 *Export* writes `apartmentscout-sync-<date>.json`. It is a **picks backup with a `sync` block added**: `version: 2`, the
-version-1 fields (`picks`, `weights`, `findings`, `facts`, `history`) that *Back up picks* has always written, and
+version-1 fields (`picks`, `weights`, `findings`, `facts`, `history`, `moveplan`) that *Back up picks* has always written, and
 `sync.items`, the items with their times. Older copies of the app that open it find their fields; the current app uses the
 items.
 

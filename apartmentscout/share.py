@@ -119,8 +119,9 @@ def prune_home(L: dict, schema: dict, dest_name: str | None, pick: dict | None, 
     h["notes"] = _cut(h.get("notes"), tm["notes"]) if h.get("notes") else None
     if h.get("reviews"):
         r = h["reviews"]
-        r["summary"] = _cut(r.get("summary"), tm["summary"])
-        r["questions"] = _cut(r.get("questions"), tm["questions"])
+        for key in ("summary", "questions"):   # only what the listing has (the browser builder drops an absent one the same way)
+            if r.get(key) is not None:
+                r[key] = _cut(r[key], tm[key])
     if h.get("photo_review") and h["photo_review"].get("evidence"):
         h["photo_review"]["evidence"] = _cut(h["photo_review"]["evidence"], tm["evidence"])
     if h.get("records") and h["records"].get("flags"):

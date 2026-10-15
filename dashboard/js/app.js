@@ -46,6 +46,9 @@ export const S = {
 };
 // [feature K] seams for tour findings and the decision trail (features/tour-findings.js, features/decision-trail.js): HTML for a
 // drawer section, a pass over the scores after criteria are (re)applied, and extra fields in the picks backup
+// [sync] a feature that keeps a copy of one of the renter's storage keys in memory registers how to read it again (reloaders.office = fn ...), so a merge
+// that wrote the key does not leave a stale copy that the next edit would write back over it (js/sync/refresh.js calls them)
+export const reloaders = {};
 export const hooks = { drawer: null, score: null, exportExtra: null, importExtra: null, card: null, drawerTop: null, score2: null };   // card/drawerTop/score2: features/moves.js and unknowns.js (rank moves, unknowns that move a score)
 export const on = (ev, fn) => ((S.listeners[ev] ||= []).push(fn));
 export const emit = (ev, x) => (S.listeners[ev] || []).forEach((f) => f(x));

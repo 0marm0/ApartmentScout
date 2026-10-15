@@ -14,7 +14,7 @@
 //   copy is never treated as deleted. Tombstones are forgotten after TOMBSTONE_DAYS.
 //
 // The document (an extension of the picks backup, `version: 1`, that "Back up picks" writes)
-//   { version: 2, search, picks, weights, findings, facts, history,     <- what a version-1 reader understands (file export only)
+//   { version: 2, search, picks, weights, findings, facts, history, moveplan,  <- what a version-1 reader understands (file export only)
 //     sync: { format: 'apartmentscout-sync', schema: 1, device, devices: {id: {name, at}}, saved,
 //             items: { <item key>: { t, d, v } | { t, d, x: 1 } } } }
 //   A version-1 backup has no `sync` block: its items are derived from the old fields, with the times the data itself carries.
@@ -75,6 +75,8 @@ export const RULES = [
   { id: 'facts', label: 'Your numbers for unknowns (rent, fees, size)', re: /^facts:/, depth: 2, strict: true },
   { id: 'trail', label: 'Decision history', re: /^trail:/, depth: 1, rootList: { id: 'e', sortBy: 'at' } },
   { id: 'office', label: 'Answers from the leasing office', re: /^office:/, depth: 2 },
+  { id: 'moveplan', label: 'Move plan: steps, dates and costs', re: /^moveplan:/, depth: 4 },
+  { id: 'seen', label: "What's new: what you have read", re: /^whatsnew:seen:/, depth: 0 },
   { id: 'tourplan', label: 'Tour-day planner', re: /^tourplan:/, depth: 1 },
   { id: 'tourday', label: 'Tour day checklist', re: /^tourday:/, depth: 2 },
   { id: 'criteria', label: 'Search settings you edited here', re: /^criteria:/, depth: 0 },
@@ -335,6 +337,7 @@ export function legacyView(items, search) {
     if (findings) out.findings = findings;
     if (facts) out.facts = facts;
     if (trail?.length) out.history = trail;
+    const moveplan = tree(`moveplan:${search}`); if (moveplan) out.moveplan = moveplan;
   }
   return out;
 }
@@ -347,7 +350,12 @@ export function itemsFromLegacy(js, search) {
     if (value === undefined || value === null) return;
     for (const { key, value: v, hint } of flatten(storageKey, value)) {
       const t = legacyTime(key, v);
-      out[key] = { t: t === EPOCH && hint ? hint : t, d: 'backup', v };
+      let own = hint;
+      if (!own && storageKey.startsWith('moveplan:')) {   // a plan's day is on the home (`homes/<id>/updated`), not on the field
+        const day = js.moveplan?.homes?.[parseKey(key).path[1]]?.updated;
+        if (typeof day === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(day)) own = day + 'T00:00:00.000Z';
+      }
+      out[key] = { t: t === EPOCH && own ? own : t, d: 'backup', v };
     }
   };
   if (isObj(js.picks)) add('picks', js.picks);
@@ -357,6 +365,7 @@ export function itemsFromLegacy(js, search) {
     if (isObj(js.findings)) add(`findings:${sk}`, js.findings);
     if (isObj(js.facts)) add(`facts:${sk}`, js.facts);
     if (Array.isArray(js.history)) add(`trail:${sk}`, js.history);
+    if (isObj(js.moveplan)) add(`moveplan:${sk}`, js.moveplan);
   }
   return out;
 }

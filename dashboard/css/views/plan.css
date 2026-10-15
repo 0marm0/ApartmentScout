@@ -371,3 +371,20 @@ table.mini.ps-shop small a { font-weight: 500; color: var(--ink-3); }
 .ps-2d .selbar svg, .selbar svg { width: 16px; height: 16px; flex: none; }
 .iv-look.assumed { color: var(--ink-3); font-style: italic; }
 @media (max-width: 760px) { .sb-b span { display: none; } .sb-b { min-width: 44px; } .sb-dial input { width: 120px; } }
+
+/* [ar] View in your room (AR): the whole furnished room in the Furniture tab, one compact link on each piece's row and in its inspector */
+.ar { margin: 0 0 var(--s-4, 16px); }
+.ar-room, .ps-ar { display: flex; align-items: center; gap: 4px 10px; flex-wrap: wrap; min-height: 30px; }
+.ar-room { margin: 6px 0 2px; }
+.ps-ar { margin: 10px 0 0; }
+.ps-ar:empty { display: none; }
+.ar-go { text-decoration: none; display: inline-flex; align-items: center; gap: 7px; }
+.ar-go .ar-ico { width: 16px; height: 16px; flex: none; }
+.ar-go.sm .ar-ico { width: 13px; height: 13px; }
+:root[data-theme="light"] .ar-go:not(.primary) .ar-ico { filter: invert(1); }
+.ar-size { font-size: var(--fs-xs); color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.ar-wait, .ar-err { font-size: var(--fs-xs); color: var(--ink-3); }
+.ar-err { color: var(--warn); }
+.ar-row { display: inline-flex; gap: 2px; padding-right: 4px; flex: none; }
+.ar-row .btn { height: 24px; padding: 0 8px; font-size: var(--fs-2xs); }
+.ar-row .ar-wait { padding: 0 6px; }
