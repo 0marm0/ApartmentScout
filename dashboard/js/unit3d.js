@@ -1431,7 +1431,7 @@ function accChip() {
   if (!accUI) { accUI = accuracyChip({ host: 'unit', onOpen: openEvidence, openLabel: 'Open the evidence' }); $('uViews').append(accUI.el);   /* [camera] under the camera controls, in the same column */ loadFurnitureMeta(S.base, S.manifest).then((m) => { furnMeta = m; accChip(); }); }
   const n = planInfo.layout?.items?.length || 0;
   accUI.update(accuracyRows({ site, plan: plan || null, cal: { state: CAL.state, fh: CAL.fh, slab: CAL.slabAt(st.floor), src: CAL.measured?.src }, floor: st.floor, facing: st.az, t: st.t, viewCal: st.src === 'photo-landmarks' ? viewCal : null,
-    furniture: n ? { name: furnMeta?.name || 'Furniture', confirmed: furnMeta?.confirmed || null, count: n } : null }));
+    furniture: n ? { name: furnMeta?.name || 'Furniture', confirmed: furnMeta?.confirmed || null, count: n, looks: furnMeta?.looks || null } : null }));
 }
 function openEvidence() {
   const el = $('evPanel'); el?.closest('details')?.setAttribute('open', '');
