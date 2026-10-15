@@ -9,7 +9,7 @@ import { startCoach } from './coach.js';
 const SYSTEM_SAYS = { transparency: 'Your system asks for reduced transparency', contrast: 'Your system asks for more contrast', motion: 'Your system asks for reduced motion' };
 
 export function initSettingsMenu() {
-  const menu = document.getElementById('setMenu'); if (!menu) return;
+  const menu = document.getElementById('appMenu'); if (!menu) return;
   let lastAccent = getPrefs().accent;
   menu.querySelectorAll('[data-comfort] small').forEach((s) => { s.dataset.copy = s.textContent; });
 

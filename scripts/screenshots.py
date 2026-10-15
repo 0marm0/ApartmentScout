@@ -121,9 +121,9 @@ SHOTS = [
      [("press", "Control+k", 900), ("type", "#plQ", "1 bd under 5k within 20 min by subway with w/d near grand central", 1500)], 9000, None),
     ("cheatsheet", "#map", (1600, 1000), [("press", "?", 1200)], 9000, None),
     ("coach-mark", "?coach=1#map", (1600, 1000), [("wait_for", ".coach", 1200)], 9000, None),
-    ("settings-menu", "#map", (1600, 1000), [("click", "#setBtn", 1200)], 9000, None),
-    ("accent-amber", "#map", (1600, 1000), [("click", "#setBtn", 600), ("click", "[data-accent=amber]", 600), ("press", "Escape", 500), ("eval", "document.activeElement.blur()")], 9000, None),
-    ("high-contrast", "#map", (1600, 1000), [("click", "#setBtn", 600), ("click", "#mnContrast", 600), ("press", "Escape", 500), ("eval", "document.activeElement.blur()")], 9000, None),
+    ("settings-menu", "#map", (1600, 1000), [("click", "#menuBtn", 1200)], 9000, None),
+    ("accent-amber", "#map", (1600, 1000), [("click", "#menuBtn", 600), ("click", "[data-accent=amber]", 600), ("press", "Escape", 500), ("eval", "document.activeElement.blur()")], 9000, None),
+    ("high-contrast", "#map", (1600, 1000), [("click", "#menuBtn", 600), ("click", "#mnContrast", 600), ("press", "Escape", 500), ("eval", "document.activeElement.blur()")], 9000, None),
     # photos
     ("lightbox", "#map", (1600, 1000), [("click", "#cards .card >> nth=1 >> .nph", 500), ("wait_for", ".lbx-img", 3500)], 9000, None),
     ("lightbox-floor-plan", "#map", (1600, 1000),

@@ -168,9 +168,9 @@ function mountSplit(host, { cls = '' } = {}) {
   document.addEventListener('click', (e) => { if (!pop.hidden && !wrap.contains(e.target)) set(false); });
   on('saved', () => { if (!pop.hidden) pop.innerHTML = popHTML(id); });
 }
-/** Two items in the settings menu, after "Back up picks". */
+/** Two items in the Data section of the menu, after "Restore picks". */
 function mountMenu() {
-  const menu = $('setMenu'), after = $('mnPicks');
+  const menu = $('appMenu'), after = $('mnRestore');
   if (!menu || !after || menu.querySelector('#mnShare')) return;
   const mk = (id, icon, text, act) => { const b = document.createElement('button'); b.type = 'button'; b.role = 'menuitem'; b.id = id; b.innerHTML = `${icon}<span>${text}</span>`; b.addEventListener('click', () => run(act)); return b; };
   const memo = mk('mnMemo', MEMO_ICON, 'Decision memo (print or PDF)', 'memo'), share = mk('mnShare', SHARE_ICON, 'Share shortlist', 'share');
@@ -180,7 +180,7 @@ function mountMenu() {
 export function init() {
   // the Shortlist / Tours sub-tab row (on both pages) is rebuilt on every picks change: the split button is put back each time
   const sub = $('subnav');
-  if (sub) watch(sub, () => { if (sub.querySelector('a') && !sub.querySelector('.share-split')) mountSplit(sub, { cls: 'in-subnav' }); });
+  if (sub) watch(sub, () => { if (sub.dataset.kind !== 'home' && sub.querySelector('a') && !sub.querySelector('.share-split')) mountSplit(sub, { cls: 'in-subnav' }); });
   mountMenu();
 }
 export const state = () => ({ busy, picks: savedIds(), ...opts() });

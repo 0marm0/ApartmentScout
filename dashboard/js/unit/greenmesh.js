@@ -28,7 +28,7 @@ export function greenColors(ground, light) {
  */
 export function greenGroup(green, opts = {}) {
   const { place = (x, y) => [x, y], center = [0, 0], radius = 600, y0 = 0, colors, trees = true, limit = 6000 } = opts;
-  const plan = greenPlan(green, { center, radius, limit });
+  const plan = greenPlan(green, { center, radius, limit: trees ? limit : 0 });   // [city context] trees: false = patches only (the trees are unit/treemesh.js): skip the jittered-grid scatter
   const g = new THREE.Group(); g.name = 'green';
   if (!plan) return g;
   g.userData = { polys: plan.polys.length, trees: plan.trees.length / 2, mapped: plan.mapped, scattered: plan.scattered };

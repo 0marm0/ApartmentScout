@@ -15,6 +15,9 @@ Site JSON ``"green"``: ``{"source", "fetched", "radius_m", "polys": [{"kind", "n
 [[x, y], ...], "holes"?: [...]}], "trees": [x0, y0, x1, y1, ...], "counts", "note"}`` in the site's local
 metre frame (x east, y north), the same frame as the footprints. ``kind`` is park | play | grass | wood;
 ``hard: 1`` marks plazas, courts and playgrounds (OSM ``surface`` paved or rubber), which get a ground patch but no scattered canopies.
+New York sites also carry ``"census"``: the street trees of the NYC Street Tree Census with their trunk diameters
+(see ``geo/trees.py``), because OpenStreetMap maps only a few percent of them; open water is the separate ``"water"`` block
+(``geo/water.py``).
 """
 from __future__ import annotations
 
@@ -173,6 +176,12 @@ def _thin(pts: list[tuple[float, float]], min_gap: float) -> list[tuple[float, f
         seen.setdefault((cx, cy), []).append((x, y))
         out.append((x, y))
     return out
+
+
+def empty_green(radius_m: float = 600, fetched: str | None = None) -> dict:
+    """A green block with no OpenStreetMap content, for a site whose street trees came from the census alone."""
+    return {"source": SOURCE, "fetched": fetched or dt.date.today().isoformat(), "radius_m": radius_m, "polys": [],
+            "trees": [], "counts": {"polys": 0, "trees": 0, "tree_nodes": 0, "tree_row_points": 0}, "note": NOTE}
 
 
 def fetch_green(lat: float, lon: float, radius_m: float = 600, cache_dir: Path | None = None,
