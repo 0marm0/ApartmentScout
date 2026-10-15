@@ -41,7 +41,11 @@ import { resolve as resolveItem } from './plan/catalog.js';
 import { stepView } from './plan/viewpoints.js';
 import { heightProvenance, confOf } from './city3d/facade-rules.js';   // [buildings3d] height source and confidence labels
 import { loadTreeLayers, saveTreeLayers, STREET_TREES_TITLE, PARK_TREES_TITLE } from './unit/treelayers.js';   // [park trees] street / park tree toggles, remembered per browser
+import { createMatch } from './unit/view-match.js';   // [photo match] the guided "Match a photo" flow
+import { loadViewCal, stateFromViewCal, photoLabel, fitLabel } from './unit/view-calibration.js';   // [photo match] the saved record and what it applies
+import * as localApi from './local-api.js';
 
+let viewCal = null, matchUI = null;   // [photo match] the saved photo match for this unit, and the guide
 let site = null, B0 = [], FUTB = [], edits = new Map(), B = [], T = null, FACES = [], LM = [], FUT = [], BF = null, stage = null, plan = null, interior = null;
 const st = {
   id: null, face: 0, t: 0.5, floor: 10, cmp: 20, az: 180, date: '', min: 780, mode: 'orbit', playing: false,
@@ -130,7 +134,8 @@ export function init() {
             <div class="field"><label for="uYaw">Turn <span class="val" id="uYawV"></span></label><input type="range" id="uYaw" min="-90" max="90" value="0"></div>
             <div class="field"><label for="uPitch">Tilt <span class="val" id="uPitchV"></span></label><input type="range" id="uPitch" min="-15" max="60" value="6"></div>
             <div class="u-photo-ctl u-win-only">
-              <label class="btn ghost u-photo-btn" title="Overlay a photo or a video taken from the window (it stays in this browser and is never uploaded)">${ICON.photo}<span id="uPhotoLbl">Match a photo</span><input type="file" id="uPhotoIn" accept="image/*,video/*" class="sr"></label>
+              <button type="button" class="btn primary u-match-btn" id="uMatch" title="Line a listing photo of the view up with the 3D model to measure which way it looks and how high it was taken">${ICON.photo}Match a photo</button>
+              <label class="btn ghost u-photo-btn" title="Overlay a photo or a video taken from the window by hand (it stays in this browser and is never uploaded)">${ICON.photo}<span id="uPhotoLbl">Overlay a file</span><input type="file" id="uPhotoIn" accept="image/*,video/*" class="sr"></label>
               <div class="field" id="uVidT" hidden><label for="uFrame">Video frame <span class="val" id="uFrameV"></span></label><input type="range" id="uFrame" min="0" max="1000" value="0"></div>
               <div class="field" id="uPhotoOp" hidden><label for="uOpac">Overlay <span class="val" id="uOpacV"></span></label><input type="range" id="uOpac" min="0" max="100" value="55"></div>
               <button type="button" class="btn ghost" id="uPhotoX" hidden>Remove overlay</button>
@@ -167,8 +172,10 @@ export function init() {
   on('theme', () => { stage?.setPalette(); if (site && hasWindow()) { buildApartment(); drawPathChart(); landmarks(); stage.dirty = true; studyStale(true); } });
   mh = modelHooks(modelBridge());   // [model project]
   mh.mount($('modelPanel'));
+  matchUI = createMatch(matchBridge());   // [photo match]
+  $('uMatch').addEventListener('click', () => matchUI.open());
   // read-only hook for headless checks (Playwright): never used by the page itself
-  window.__unit3d = { st, get views() { return views; }, get curView() { return curView; }, get cam() { return stage?.winCam; }, get cal() { return CAL; }, get plan() { return plan; }, get planInfo() { return planInfo; }, get B() { return B; }, get faces() { return FACES; }, get sun() { return curSun; }, get hit() { return curHit; }, get blockers() { return blkRows; }, get neighbours() { return NBR.length; }, get interior() { return !!stage?.interior; }, get stage() { return stage; } };
+  window.__unit3d = { st, get views() { return views; }, get curView() { return curView; }, get cam() { return stage?.winCam; }, get cal() { return CAL; }, get plan() { return plan; }, get planInfo() { return planInfo; }, get B() { return B; }, get faces() { return FACES; }, get sun() { return curSun; }, get hit() { return curHit; }, get blockers() { return blkRows; }, get neighbours() { return NBR.length; }, get interior() { return !!stage?.interior; }, get stage() { return stage; }, get match() { return matchUI; }, get viewCal() { return viewCal; }, winPos: (f) => winPos(f) };
 }
 
 export async function show(id) {
@@ -244,6 +251,12 @@ async function load(id) {
     Object.assign(st, { face: pf, t: snapPosition(FACES[pf], pin.t, snapOpen) ?? pin.t, az: pin.az, bay: pin.bay, cal: pin.cal }); calcCal();
     st.floor = Math.max(1, Math.min(maxFloor(), pin.floor)); st.cmp = Math.min(maxFloor(), Math.max(1, st.floor + 9 > maxFloor() ? Math.max(1, st.floor - 9) : st.floor + 9));
     st.manual = { face: true, pos: true, az: true, floor: true };
+  }
+  // [photo match] a saved match (the search folder's copy or this browser's): its measured facing and camera height, unless a pin or the page address says otherwise
+  viewCal = await loadViewCal(id, { base: S.base, manifest: S.manifest, fetchJSON: (u) => loadJSON(u, null) }).catch(() => null);
+  if (viewCal && !pin && !qs.has('sv')) {
+    applyViewCalState(viewCal);
+    const mf2 = maxFloor(); st.floor = Math.max(1, Math.min(mf2, st.floor)); st.cmp = Math.max(1, Math.min(mf2, st.cmp));
   }
   if (st.first) {
     const mi = moveIn();
@@ -437,7 +450,7 @@ function wireStage() {
     if (vid) { img.removeAttribute('src'); v.src = st.photo; v.addEventListener('loadedmetadata', () => { $('uFrame').max = Math.max(1, Math.floor(v.duration * 10)); $('uFrame').value = 0; syncFrame(); }, { once: true }); }
     else { v.removeAttribute('src'); v.load?.(); img.src = st.photo; }
     overlayVisible(); overlayOpacity();
-    $('uPhotoOp').hidden = $('uPhotoX').hidden = false; $('uVidT').hidden = !vid; $('uPhotoLbl').textContent = vid ? 'Another photo or video' : 'Another photo';
+    $('uPhotoOp').hidden = $('uPhotoX').hidden = false; $('uVidT').hidden = !vid; $('uPhotoLbl').textContent = vid ? 'Another file' : 'Another file';
     stage.showHidden = true; st.allLm = true; landmarks(); stage.dirty = true; fill($('uOpac')); $('uOpacV').textContent = $('uOpac').value + '%';
     toast(`${vid ? 'Video' : 'Photo'} overlaid. ${vid ? 'Pick a frame, then t' : 'T'}urn, tilt and zoom until the skyline lines up, then tick the landmarks you can see`, 4200);
   });
@@ -457,7 +470,10 @@ function wireStage() {
     setLook(stage.look.fov, down.yaw - (e.clientX - down.x) * k, down.pitch + (e.clientY - down.y) * k);
   });
   cv.addEventListener('pointerup', (e) => {
-    if (down && Math.hypot(e.clientX - down.x, e.clientY - down.y) < 5) { const bi = stage.pick(e.clientX, e.clientY); bi == null ? closeCard() : openCard(bi); }
+    if (down && Math.hypot(e.clientX - down.x, e.clientY - down.y) < 5) {
+      if (matchUI?.isPicking() && matchUI.pickIn(e.clientX, e.clientY)) { down = null; return; }   // [photo match] a click names the landmark a pin stands for
+      const bi = stage.pick(e.clientX, e.clientY); bi == null ? closeCard() : openCard(bi);
+    }
     down = null;
   });
   cv.addEventListener('keydown', onStageKey);
@@ -541,7 +557,7 @@ function syncLens() {
 function setMode(m, quiet = false) {
   if (!hasWindow() && (m === 'win' || m === 'in')) m = 'orbit';
   if (m === 'in' && !interior) buildApartment();
-  st.mode = m; stage.setMode(m);
+  st.mode = m; stage.setMode(m); matchUI?.onMode(m);
   $('uModes').querySelectorAll('[data-mode]').forEach((b) => { b.disabled = !hasWindow() && (b.dataset.mode === 'win' || b.dataset.mode === 'in'); b.classList.toggle('on', b.dataset.mode === m); b.setAttribute('aria-pressed', String(b.dataset.mode === m)); });
   $('uLens').hidden = m !== 'win' && m !== 'in'; $('stage').dataset.mode = m; if ($('uLook')) $('uLook').hidden = m !== 'in' || !views.length;
   overlayVisible();
@@ -570,7 +586,7 @@ function clearPhoto() {
   if (st.photo) URL.revokeObjectURL(st.photo);
   st.photo = null; st.video = false; const img = $('uPhoto'); img.hidden = true; img.removeAttribute('src');
   const v = $('uVid'); v.hidden = true; v.removeAttribute('src'); v.load?.();
-  $('uPhotoOp').hidden = $('uPhotoX').hidden = $('uVidT').hidden = true; $('uPhotoLbl').textContent = 'Match a photo';
+  $('uPhotoOp').hidden = $('uPhotoX').hidden = $('uVidT').hidden = true; $('uPhotoLbl').textContent = 'Overlay a file';
   stage.showHidden = false; stage.dirty = true;
 }
 
@@ -1186,7 +1202,7 @@ function accChip() {
   if (!site || !CAL) return;
   if (!accUI) { accUI = accuracyChip({ host: 'unit', onOpen: openEvidence, openLabel: 'Open the evidence' }); $('gl').parentElement.append(accUI.el); loadFurnitureMeta(S.base, S.manifest).then((m) => { furnMeta = m; accChip(); }); }
   const n = planInfo.layout?.items?.length || 0;
-  accUI.update(accuracyRows({ site, plan: plan || null, cal: { state: CAL.state, fh: CAL.fh, slab: CAL.slabAt(st.floor) }, floor: st.floor, facing: st.az, t: st.t,
+  accUI.update(accuracyRows({ site, plan: plan || null, cal: { state: CAL.state, fh: CAL.fh, slab: CAL.slabAt(st.floor), src: CAL.measured?.src }, floor: st.floor, facing: st.az, t: st.t, viewCal: st.src === 'photo-landmarks' ? viewCal : null,
     furniture: n ? { name: furnMeta?.name || 'Furniture', confirmed: furnMeta?.confirmed || null, count: n } : null }));
 }
 function openEvidence() {
@@ -1212,6 +1228,7 @@ function evidencePanel() {
   const ex = evidenceExtras(site, { sector: bm.length && hasWindow() ? sector : null, staleYears: STALE_YEARS, fh: FH(), floor: st.floor, slab: hasWindow() ? slabZ(st.floor) : null, slabManual: st.cal !== undefined });
   const ev = [
     ['Exposure', p.exposure, st.src === 'photo-landmarks' ? `Matched against a photo from the window${st.lmSel.size ? `: ${esc([...st.lmSel].join(', '))}` : ''}.` : P.basis && p.exposure !== 'manual' ? `${esc(P.basis[0].toUpperCase() + P.basis.slice(1))}.${P.evidence ? ' ' + esc(P.evidence) : ''}` : L.exposure?.length ? `Listing gives ${esc(L.exposure.join(', '))}.` : 'No exposure on the listing: the model starts on the longest open facade.'],
+    ...(viewCal && st.src === 'photo-landmarks' ? [['Photo match', 'measured', `${esc(photoLabel(viewCal))}: the photo looks toward ${Math.round(viewCal.result.bearing_deg)}° ${compass(viewCal.result.bearing_deg)}, tilted ${viewCal.result.tilt_deg.toFixed(1)}°, ${viewCal.result.vfov_deg.toFixed(0)}° lens${viewCal.result.eye_determined ? `, taken ${viewCal.result.eye_height_m.toFixed(1)} m up on floor ${viewCal.photo.floor}` : ' (the landmarks could not fix its height)'}; ${esc(fitLabel(viewCal))}. Saved ${esc(viewCal.saved.slice(0, 10))}.`]] : []),
     ['Window position', p.position, 'Where the unit sits along its facade is rarely published. The model puts the window at the point you choose.'],
     ['Floor', p.floor, p.floor === 'inferred' ? 'Guessed from the unit number.' : L.floor != null ? `Listing gives floor ${esc(Math.round(L.floor))}.` : 'No floor on the listing.'],
   ];
@@ -1570,6 +1587,44 @@ async function glbBuffer() {
     frame: 'metres; glTF Y up; x east, -z north; origin at the site origin', geometry: B.some((b) => b.parts) ? 'footprints extruded to roof height; buildings with components (OpenStreetMap building parts or a manual file) drawn as stacked prisms' : 'footprints extruded to roof height (no setbacks or crowns)',
   };
   return stage.exportGLB(meta);
+}
+
+// ------------------------------------------------------------------ [photo match] the guided "Match a photo" flow
+/** The open facade whose bearing is nearest `bearing`, or null. */
+function facadeNear(bearing) {
+  const open = FACES.filter((f) => !f.shared);
+  return open.length ? open.reduce((b, c) => (Math.abs(angDiff(c.bearing, bearing)) < Math.abs(angDiff(b.bearing, bearing)) - 1e-9 ? c : b)) : null;
+}
+/** Take a saved photo match into the page state: the facade it looks toward (within 30 degrees), its bearing, and the camera height as a measured eye height. */
+function applyViewCalState(rec) {
+  const V = stateFromViewCal(rec), f = facadeNear(V.bearing);
+  if (f && Math.abs(angDiff(f.bearing, V.bearing)) <= 30) {
+    const i = FACES.indexOf(f);
+    if (i !== st.face) { st.face = i; st.t = snapPosition(f, st.t, snapOpen) ?? st.t; }
+    st.az = V.az ?? f.bearing; st.manual.face = true; st.src = 'photo-landmarks';
+  }
+  if (V.measured) { st.cal = V.measured; calcCal(); }
+}
+function applyViewCal(rec) {
+  viewCal = rec; applyViewCalState(rec);
+  const mf = maxFloor(); st.floor = Math.max(1, Math.min(mf, st.floor)); st.cmp = Math.max(1, Math.min(mf, st.cmp));
+  for (const [id, v] of [['uFloor', st.floor], ['uCmp', st.cmp]]) { const el = $(id); if (el) { el.max = mf; el.value = v; fill(el); } }
+  $('uFace').value = st.face; $('uAz').value = Math.round(st.az); $('uPos').value = Math.round(st.t * 100);
+  stage.setFloorH(FH()); refreshWindow(true); syncUrl(); mh?.refresh(true);
+}
+function matchBridge() {
+  return {
+    stageEl: $('stage'), gridEl: $('uGrid'), sideEl: document.querySelector('#view-unit .u-side'), canvasEl: $('gl'), getStage: () => stage, hasWindow, siteId: () => st.id, listing,
+    landmarks: () => LM, windowAt: (f) => winPos(f), eyeAt: (f) => winPos(f).z, az: () => st.az, floor: () => st.floor, maxFloor,
+    mode: () => st.mode, setMode: (m) => setMode(m), setLook, getLook: () => ({ ...stage.look }),
+    previewEye(z) {   // the camera at the photo's height while matching; null puts it back
+      const w = stage?.win; if (!w) return;
+      if (z == null) { if (w.z0 != null) { w.z = w.z0; delete w.z0; } } else { if (w.z0 == null) w.z0 = w.z; w.z = z; }
+      stage.dirty = true;
+    },
+    nameOf: (bi) => bname(bi, true), facadeNear, apply: applyViewCal, toast, download, api: localApi, saved: () => viewCal,
+    onSaved(rec) { viewCal = rec; }, onCleared() { viewCal = null; if (/^photo/.test(st.cal?.src || '')) { st.src = null; setCal(undefined); } else { accChip(); evidencePanel(); } }, opened() {},
+  };
 }
 
 // ------------------------------------------------------------------ [model project] bridge to the Model panel

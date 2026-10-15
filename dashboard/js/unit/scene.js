@@ -708,6 +708,22 @@ export class UnitStage {
     while (lo < hi) { const mid = (lo + hi + 1) >> 1; if (starts[mid] <= v) lo = mid; else hi = mid - 1; }
     return ids[lo];
   }
+  /** [photo match] The model point under a client point, in site metres: {bi, x, y, z} (x east, y north, z up), or null for sky and ground. */
+  pickPoint(clientX, clientY) {
+    const r = this.cv.getBoundingClientRect(), cam = this.activeCam();
+    const ndc = new THREE.Vector2(((clientX - r.left) / r.width) * 2 - 1, -((clientY - r.top) / r.height) * 2 + 1);
+    const rc = new THREE.Raycaster(); rc.setFromCamera(ndc, cam);
+    const objs = [...this.city, ...(this.tMesh.visible ? [this.tMesh] : [])];
+    const hit = rc.intersectObjects(objs, false)[0]; if (!hit) return null;
+    let bi = this.data.ti;
+    if (hit.object !== this.tMesh) {
+      const { starts, ids } = hit.object.userData, v = hit.face.a;
+      let lo = 0, hi = starts.length - 1;
+      while (lo < hi) { const mid = (lo + hi + 1) >> 1; if (starts[mid] <= v) lo = mid; else hi = mid - 1; }
+      bi = ids[lo];
+    }
+    return { bi, x: hit.point.x, y: -hit.point.z, z: hit.point.y };
+  }
   // ---------------------------------------------------------------- export
   /** Binary glTF of the city, this building, streets, park and lawn patches, proposed buildings and the apartment shell, with the
    *  model's provenance in the root's userData (extras). Y up, metres, origin at the site origin. */
