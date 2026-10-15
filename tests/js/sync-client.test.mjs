@@ -127,7 +127,8 @@ test('the status line covers every state', () => {
   assert.deepEqual(line({ phase: 'offline', pending: true }), { text: 'Offline: will sync when you are back', tone: 'warn' });
   assert.equal(line({ phase: 'syncing' }).tone, 'busy');
   assert.match(line({ phase: 'limited', retryAt: now + 60_000 }).text, /asked for a pause/);
-  assert.deepEqual(line({ phase: 'error', error: { message: 'GitHub does not accept this token.' } }), { text: 'GitHub does not accept this token.', tone: 'bad' });
+  assert.deepEqual(line({ phase: 'error', error: { kind: 'auth', message: 'GitHub does not accept this token.' } }), { text: 'Sync needs your attention', tone: 'bad' });
+  assert.equal(line({ phase: 'error', error: { kind: 'server', message: 'x' } }).text, 'GitHub is having trouble: trying again');
   assert.deepEqual(T.statusLine({ target: 'off' }, now), { text: 'Sync is off', tone: 'off' });
   assert.match(T.statusLine({ target: 'file', lastFileOut: last }, now).text, /exported 2 min ago/);
   assert.match(T.statusLine({ target: 'file' }, now).text, /not exported yet/);

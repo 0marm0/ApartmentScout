@@ -34,7 +34,7 @@ export function statusLine(s, nowMs = Date.now()) {
     case 'syncing': return { text: 'Syncing…', tone: 'busy' };
     case 'offline': return { text: 'Offline: will sync when you are back', tone: 'warn' };
     case 'limited': return { text: s.retryAt ? `GitHub asked for a pause: trying again at ${clock(s.retryAt)}` : 'GitHub asked for a pause: trying again soon', tone: 'warn' };
-    case 'error': return { text: s.error?.message || 'Sync stopped', tone: 'bad' };
+    case 'error': return { text: s.error?.kind === 'server' ? 'GitHub is having trouble: trying again' : 'Sync needs your attention', tone: 'bad' };   // the details are in the message under it
     case 'synced': return { text: `Synced ${ago(s.lastSync, nowMs)}${wait}`, tone: 'ok' };
     default: return { text: s.lastSync ? `Synced ${ago(s.lastSync, nowMs)}${wait}` : s.pending ? 'Changes waiting to sync' : 'Ready to sync', tone: s.lastSync && !s.pending ? 'ok' : 'busy' };
   }
