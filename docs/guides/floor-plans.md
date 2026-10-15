@@ -1,6 +1,9 @@
 # Floor plans
 
-Put one JSON file per unit in `searches/<name>/plans/<listing-id>.json` and run `apartmentscout build`.
+Put one JSON file per unit in `searches/<name>/plans/<listing-id>.json` and run `apartmentscout build`. The quickest ways to
+make one are the dashboard's tracer ([Trace a plan](#trace-a-plan)), your agent (the `floor-plan-model` skill, from an image,
+a PDF or just the room sizes) and `apartmentscout plans add FILE --id <listing-id>`; `apartmentscout plans` shows which
+homes still have none. The whole path is in [getting started](getting-started.md#7-adding-your-floor-plans).
 The **Floor plan** tab opens a studio for that unit:
 
 - a 2D plan and a 3D model side by side (or either alone; phones open on 2D), kept in sync;
@@ -286,11 +289,14 @@ reader from `dashboard/vendor/pdfjs/` the first time a PDF is chosen; no network
    windows also sill and head). Drag it along its wall to move it.
 6. **Fixtures.** Pick a kind (closet, column, AC, ...) and drag its rectangle. Closets keep 24 in
    and AC units 18 in clear in front; AC units are marked estimated.
-7. **Details and save.** Title, plan id (use the listing's id so the studio and Unit 3D attach the
-   plan to that unit), ceiling, wall thickness, floor and how the plan matches the unit. The review
-   lists anything to fix. **Save and open in the studio** stores it in this browser's plan library
-   and opens it straight away; **Download plan JSON** writes plan JSON v2 (`<id>.json`) that an agent
-   can save as `searches/<name>/plans/<id>.json`.
+7. **Details and save.** Title, plan id (pick the listing under **For listing**, or use its id, so the studio and
+   Unit 3D attach the plan to that unit), ceiling, wall thickness, floor and how the plan matches the unit. The review
+   lists anything to fix. When the page is served by `apartmentscout serve`, **Save to the search folder** writes
+   `plans/<id>.json` in your search (a second click replaces an existing plan, keeping a `.bak`) and reloads on it, so it
+   shows in the studio, in Unit 3D (the Floor plan link and the Inside view) and to your agent. **Save and open in the
+   studio** stores it in this browser's plan library only and opens it straight away; **Download plan JSON** writes plan
+   JSON v2 (`<id>.json`) that `apartmentscout plans add <id>.json --id <listing-id>` (or an agent) puts in
+   `searches/<name>/plans/`. `apartmentscout plans` lists which of your homes have a plan.
 
 Undo and redo cover every step (Ctrl/Cmd+Z, Shift+Ctrl/Cmd+Z). An unfinished trace is kept in the
 browser and offered again next time (without the image; load the same image to see it underneath).

@@ -4,7 +4,12 @@
 #     (`apartmentscout init searches/<name> --city <city> --criteria <file>`; see the apartment-search skill);
 #   - `apartmentscout init --interactive` prompts for them on a terminal, with these defaults;
 #   - the dashboard's "New search" wizard (dashboard/js/wizard.js) shows the same steps and fields in the same
-#     order. tests/test_intake.py checks that the wizard and this file stay in step.
+#     order. tests/test_wizard_parity.py checks that the wizard and this file stay in step.
+#
+# The city question takes any city name: a profile in config/cities/ (nyc) is used as is, any other city is looked up on
+# OpenStreetMap for its id, time zone and map centre (apartmentscout/cities.py). Destination addresses are geocoded and
+# confirmed, and the transit question offers a starter feed (config/transit-feeds.yaml) or takes a GTFS zip address.
+# `after:` at the bottom lists what happens once the questions are answered, for the interview, the wizard and agents.
 #
 # Each question has: id, maps_to (the criteria.yaml key), type, ask (the wording to use), why (what the answer
 # changes), default (used when the renter has no preference) and, where it helps, choices / min / max / unit / tip.
@@ -27,13 +32,16 @@ steps:
         why: Shown in the dashboard's top bar and used for the folder name.
       - id: city
         maps_to: search.city
-        type: choice
-        choices: [generic, nyc]          # plus any file in config/cities/*.yaml
+        type: city
+        choices: [generic, nyc]          # the profiles in config/cities/*.yaml; any other city name is looked up
+        also_sets: [search.city_name, search.timezone, search.map_center]
         default: generic
-        ask: Which city are you looking in?
+        ask: Which city are you looking in? Type its name (Boston, Chicago IL, Lisbon ...).
         why: >-
-          `nyc` switches on NYC Open Data (building records, footprints, 311 noise layer, subway entrances) and fills
-          in the MTA transit feeds. Any other city runs on the generic modules: you add its GTFS feeds yourself.
+          Sets the time zone and where the map opens. `nyc` has a profile that switches on NYC Open Data (building
+          records, footprints, 311 noise layer, subway entrances) and the MTA transit feeds. Any other city runs on
+          OpenStreetMap (buildings, heights, streets, parks) and the generic modules: it is looked up by name, and you add
+          its transit feeds in the Places step. Leave it as `generic` to decide later.
       - id: timezone
         maps_to: search.timezone
         type: text
@@ -62,8 +70,10 @@ steps:
         maps_to: search.map_center
         type: latlon
         default: null
-        ask: Where should the map open (latitude, longitude)? Skip if you will add destinations.
-        why: The map centres on the first destination with coordinates when this is left out.
+        ask: Where should the map open (latitude, longitude)? Enter keeps the city's centre.
+        why: >-
+          Filled in from the city you named. With no city, the map centres on the first destination that has coordinates
+          when this is left out.
 
   - id: places
     title: Places
@@ -127,6 +137,32 @@ steps:
             default: best
             ask: Which way do you usually go?
             why: Sets the mode the dashboard shows first; the score always uses the fastest trip.
+
+      - id: transit_feeds
+        maps_to: commute.transit.feeds
+        type: feeds
+        default: []
+        ask: Which transit agency's timetable (a GTFS zip) should the commute times use? Paste its web address, or skip.
+        why: >-
+          Transit commutes (walk, subway, bus, best of transit) are computed from the agency's published timetable. A city
+          profile brings its own feeds; for any other city there may be a starter feed, or you find one in the Mobility
+          Database or on the agency's developer page. With none, commute times are walking only, and the tools say so.
+        item:
+          - id: name
+            maps_to: name
+            type: text
+            ask: What should the feed be called?
+          - id: url
+            maps_to: url
+            type: text
+            ask: Web address of the GTFS zip (or the location of a zip on this computer)?
+          - id: mode
+            maps_to: mode
+            type: choice
+            choices: [subway, bus, rail, ferry]
+            default: null
+            ask: Only if every route in it is one mode, which one?
+            tip: Leave it empty and each route's GTFS route_type decides.
 
   - id: money
     title: Money
@@ -295,6 +331,44 @@ steps:
         max: 40
         ask: Anything to change? Give dimension=weight pairs (for example commute=30).
         why: Relative importance of each dimension; the dashboard shows each as a share of 100%.
+
+# What happens after the questions. The terminal interview prints these as its next steps, the dashboard wizard's last
+# step shows them, and an agent walks the renter through them in this order. `{search}` is the search folder.
+# tests/test_intake.py checks that the wizard lists the same ids. Keep each `why` to what the step gives the renter.
+after:
+  - id: listings
+    title: Add listings
+    command: apartmentscout import listings.csv --search {search}
+    why: >-
+      Fill {search}/listings.template.csv (one row per unit) and import it, paste listings to your agent, or edit
+      listings.json. Add the home's full street address: everything below keys off it.
+  - id: place
+    title: Place the homes and time the commutes
+    command: apartmentscout geocode --search {search} && apartmentscout commute --search {search}
+    why: >-
+      Finds coordinates for every listing and destination (and saves the destinations' into criteria.yaml), then routes
+      the trips. With transit feeds you get walk, subway, bus and best-of-transit minutes and a heat map; without them,
+      walking only, and the command says so.
+  - id: surroundings
+    title: Fetch the buildings around each home
+    command: apartmentscout surroundings --search {search}
+    why: >-
+      Downloads the footprints and heights of the buildings within about 600 m of every shortlisted home (OpenStreetMap,
+      plus the city's open data where its profile has it), the parks, trees, water and streets, and builds the 3D site model
+      that Unit 3D, the sun hours and the view use. Add --all for every listing; `--status` shows which homes are covered and
+      how many buildings had to use a default height. About a minute per home.
+  - id: floor_plans
+    title: Add floor plans
+    command: apartmentscout plans --search {search}
+    why: >-
+      Open the Floor plan tab, choose "New plan from image", and trace a PNG, JPEG or PDF plan from the listing (two printed
+      dimensions give the scale), or give room sizes to your agent (the floor-plan-model skill). "Save to the search folder"
+      puts it at {search}/plans/<listing-id>.json. The 3D apartment, the sun patches through the windows and the furniture
+      fit checks all use it. `apartmentscout plans` lists which of your homes have one.
+  - id: view
+    title: Score, build and look
+    command: apartmentscout all --search {search} && apartmentscout serve --search {search}
+    why: Ranks every listing on your criteria and opens the dashboard on your own data.
 
 # The amenity keys the scorer understands (listings.AMENITY_KEYS). Your own keys are fine; they only need to appear
 # in listings too. Labels are what the wizard and the interactive prompt show.

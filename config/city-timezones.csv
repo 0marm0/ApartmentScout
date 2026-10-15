@@ -1,0 +1,118 @@
+city,lat,lon,timezone
+New York,40.71,-74.01,America/New_York
+Boston,42.36,-71.06,America/New_York
+Philadelphia,39.95,-75.17,America/New_York
+Washington DC,38.91,-77.04,America/New_York
+Baltimore,39.29,-76.61,America/New_York
+Pittsburgh,40.44,-80.0,America/New_York
+Buffalo,42.89,-78.88,America/New_York
+Hartford,41.76,-72.67,America/New_York
+Providence,41.82,-71.41,America/New_York
+Burlington VT,44.48,-73.21,America/New_York
+Portland ME,43.66,-70.26,America/New_York
+Richmond,37.54,-77.44,America/New_York
+Norfolk,36.85,-76.29,America/New_York
+Charlotte,35.23,-80.84,America/New_York
+Raleigh,35.78,-78.64,America/New_York
+Charleston SC,32.78,-79.93,America/New_York
+Atlanta,33.75,-84.39,America/New_York
+Jacksonville,30.33,-81.66,America/New_York
+Orlando,28.54,-81.38,America/New_York
+Tampa,27.95,-82.46,America/New_York
+Miami,25.76,-80.19,America/New_York
+Detroit,42.33,-83.05,America/Detroit
+Cleveland,41.5,-81.69,America/New_York
+Columbus OH,39.96,-83.0,America/New_York
+Cincinnati,39.1,-84.51,America/New_York
+Indianapolis,39.77,-86.16,America/Indiana/Indianapolis
+Louisville,38.25,-85.76,America/Kentucky/Louisville
+Toronto,43.65,-79.38,America/Toronto
+Montreal,45.5,-73.57,America/Toronto
+Ottawa,45.42,-75.7,America/Toronto
+Halifax,44.65,-63.57,America/Halifax
+Chicago,41.88,-87.63,America/Chicago
+Milwaukee,43.04,-87.91,America/Chicago
+Minneapolis,44.98,-93.27,America/Chicago
+Madison,43.07,-89.4,America/Chicago
+St Louis,38.63,-90.2,America/Chicago
+Kansas City,39.1,-94.58,America/Chicago
+Omaha,41.26,-95.93,America/Chicago
+Des Moines,41.59,-93.62,America/Chicago
+Nashville,36.16,-86.78,America/Chicago
+Memphis,35.15,-90.05,America/Chicago
+New Orleans,29.95,-90.07,America/Chicago
+Birmingham AL,33.52,-86.8,America/Chicago
+Houston,29.76,-95.37,America/Chicago
+Dallas,32.78,-96.8,America/Chicago
+Austin,30.27,-97.74,America/Chicago
+San Antonio,29.42,-98.49,America/Chicago
+Oklahoma City,35.47,-97.52,America/Chicago
+Winnipeg,49.9,-97.14,America/Winnipeg
+Denver,39.74,-104.99,America/Denver
+Salt Lake City,40.76,-111.89,America/Denver
+Albuquerque,35.08,-106.65,America/Denver
+El Paso,31.76,-106.49,America/Denver
+Boise,43.62,-116.2,America/Boise
+Calgary,51.05,-114.07,America/Edmonton
+Edmonton,53.55,-113.49,America/Edmonton
+Phoenix,33.45,-112.07,America/Phoenix
+Tucson,32.22,-110.97,America/Phoenix
+Las Vegas,36.17,-115.14,America/Los_Angeles
+Los Angeles,34.05,-118.24,America/Los_Angeles
+San Diego,32.72,-117.16,America/Los_Angeles
+San Francisco,37.77,-122.42,America/Los_Angeles
+San Jose,37.34,-121.89,America/Los_Angeles
+Sacramento,38.58,-121.49,America/Los_Angeles
+Portland OR,45.52,-122.68,America/Los_Angeles
+Seattle,47.61,-122.33,America/Los_Angeles
+Vancouver,49.28,-123.12,America/Vancouver
+Anchorage,61.22,-149.9,America/Anchorage
+Honolulu,21.31,-157.86,Pacific/Honolulu
+Mexico City,19.43,-99.13,America/Mexico_City
+London,51.51,-0.13,Europe/London
+Dublin,53.35,-6.26,Europe/Dublin
+Edinburgh,55.95,-3.19,Europe/London
+Manchester,53.48,-2.24,Europe/London
+Paris,48.86,2.35,Europe/Paris
+Brussels,50.85,4.35,Europe/Brussels
+Amsterdam,52.37,4.9,Europe/Amsterdam
+Berlin,52.52,13.4,Europe/Berlin
+Munich,48.14,11.58,Europe/Berlin
+Vienna,48.21,16.37,Europe/Vienna
+Zurich,47.38,8.54,Europe/Zurich
+Madrid,40.42,-3.7,Europe/Madrid
+Barcelona,41.39,2.17,Europe/Madrid
+Lisbon,38.72,-9.14,Europe/Lisbon
+Rome,41.9,12.5,Europe/Rome
+Milan,45.46,9.19,Europe/Rome
+Copenhagen,55.68,12.57,Europe/Copenhagen
+Stockholm,59.33,18.07,Europe/Stockholm
+Oslo,59.91,10.75,Europe/Oslo
+Helsinki,60.17,24.94,Europe/Helsinki
+Warsaw,52.23,21.01,Europe/Warsaw
+Prague,50.08,14.44,Europe/Prague
+Athens,37.98,23.73,Europe/Athens
+Istanbul,41.01,28.98,Europe/Istanbul
+Tel Aviv,32.09,34.78,Asia/Jerusalem
+Dubai,25.2,55.27,Asia/Dubai
+Mumbai,19.08,72.88,Asia/Kolkata
+Delhi,28.61,77.21,Asia/Kolkata
+Bangalore,12.97,77.59,Asia/Kolkata
+Singapore,1.35,103.82,Asia/Singapore
+Hong Kong,22.32,114.17,Asia/Hong_Kong
+Shanghai,31.23,121.47,Asia/Shanghai
+Beijing,39.9,116.41,Asia/Shanghai
+Seoul,37.57,126.98,Asia/Seoul
+Tokyo,35.68,139.69,Asia/Tokyo
+Sydney,-33.87,151.21,Australia/Sydney
+Melbourne,-37.81,144.96,Australia/Melbourne
+Brisbane,-27.47,153.03,Australia/Brisbane
+Perth,-31.95,115.86,Australia/Perth
+Auckland,-36.85,174.76,Pacific/Auckland
+Sao Paulo,-23.55,-46.63,America/Sao_Paulo
+Buenos Aires,-34.6,-58.38,America/Argentina/Buenos_Aires
+Johannesburg,-26.2,28.05,Africa/Johannesburg
+Cape Town,-33.92,18.42,Africa/Johannesburg
+Nairobi,-1.29,36.82,Africa/Nairobi
+Lagos,6.52,3.38,Africa/Lagos
+Cairo,30.04,31.24,Africa/Cairo

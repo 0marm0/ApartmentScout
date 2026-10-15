@@ -7,11 +7,14 @@ description: Set up commute destinations and transit feeds, compute door-to-door
 
 1. **Destinations**: every regular trip (office, school, partner, gym) under
    `commute.destinations` with `address`, `arrive_by`, `max_minutes` and `weight`.
-   `apartmentscout geocode` prints coordinates; copy them in. Two or more is normal (your office and a
+   `apartmentscout geocode` finds each address and saves its coordinates into `criteria.yaml`. Two or more is normal (your office and a
    partner's, a gym): give each its own `max_minutes` and a `weight` for how much it counts (a gym you
    visit twice a week might be 0.5). The dashboard then shows minutes to every destination, a limit per
    destination, a combined commute score and heat maps of the farthest and the weighted destination.
-2. **Transit feeds**: find the agency GTFS zips ("<agency> GTFS static"), add each under
+2. **Transit feeds**: first `apartmentscout city` (it shows the feeds the search has, and starter feeds for cities we have
+   checked: `config/transit-feeds.yaml`); `apartmentscout city --starter` adds those. Otherwise find the agency GTFS zips
+   ("<agency> GTFS static", the Mobility Database at mobilitydatabase.org, Transitland at transit.land, the agency's developer
+   page) and add each with `apartmentscout city --feed URL --name NAME` (it checks that the address is a zip), or by hand under
    `commute.transit.feeds` with a `name` and `url` (or a local `path`), and a `mode`
    (`subway`, `bus`, `rail` or `ferry`; without one each route's GTFS `route_type` decides).
    NYC: the subway, NYC Bus Manhattan and MTA Bus Company feeds from the MTA developer data page
@@ -19,7 +22,8 @@ description: Set up commute destinations and transit feeds, compute door-to-door
    `exclude_routes: ["^(BxM|BM|QM|SIM|X)[0-9]"]` drops premium express buses; remove it if the
    renter will pay the express fare. Set `service_date` to a normal weekday inside the feeds'
    calendars (the CLI tells you the range if it is wrong).
-3. **Run**: `apartmentscout commute` (about 5 s for 700 listings with subway and Manhattan buses).
+3. **Run**: `apartmentscout commute` (about 5 s for 700 listings with subway and Manhattan buses; the first run also downloads
+   each feed, tens of MB for a big city). If it prints "WALKING times only" no feed is configured: the minutes are walks.
    It writes `layers/commute-<destination>.json` (best of any transit, a 50 m grid), one grid per
    mode (`-subway.json`, `-bus.json`; `--no-mode-grids` skips them) and, on every listing,
    `commute.<destination>`: `minutes`/`route` (best of transit) plus `modes.walk|subway|bus|transit`
