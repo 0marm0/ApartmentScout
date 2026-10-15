@@ -80,6 +80,24 @@ def test_greenstreets_skip_the_inactive_ones():
     assert [p["ref"] for p in out] == ["M1Z"] and out[0]["src"] == "greenstreet" and out[0]["kind"] == "park"
 
 
+def test_planimetric_courts_and_fields_inside_parks_are_paved_or_turf():
+    def crow2(code, sub, name, geom):
+        return {"park_name": name, "feat_code": code, "sub_code": sub, "parknum": "M076", "the_geom": geom}
+
+    rows = [crow2("4910", "491050", "St. Vartan Park", mp(0, 0, 60, 50)),             # multipurpose court
+            crow2("4960", "496000", "St. Vartan Park", mp(100, 0, 160, 40)),           # running track
+            crow2("4930", "493000", "St. Vartan Park", mp(200, 0, 260, 60)),           # soccer field: turf, no trees
+            crow2("4980", "498000", "St. Vartan Park", mp(-50, -50, 400, 100)),        # the park boundary: it comes from Parks Properties
+            crow2("4985", "498500", "Greenstreet", mp(300, 0, 330, 30)),                # Greenstreets: from their own dataset
+            crow2("4910", "491030", "Far", mp(3000, 3000, 3040, 3040))]                  # outside the radius
+    out = parks.parse_courts(rows, F, 600)
+    by = {p["cat"]: p for p in out}
+    assert set(by) == {"Court", "Running track", "Soccer field"} and all(p["src"] == "courts" and p["hard"] == 1 for p in out)
+    assert by["Court"]["kind"] == "play" and not by["Court"].get("turf")
+    assert by["Soccer field"]["kind"] == "grass" and by["Soccer field"]["turf"] == 1
+    assert "intersects(the_geom" in parks.courts_query(LAT, LON, 700)["$where"]
+
+
 def osm(kind, x0, y0, x1, y1, **extra) -> dict:
     return {"kind": kind, "osm": f"way/{abs(hash((kind, x0))) % 999}", "ring": [[x0, y0], [x1, y0], [x1, y1], [x0, y1]], **extra}
 
@@ -269,6 +287,20 @@ def test_keep_osm_rebuilds_the_city_layers_without_doubling_them(monkeypatch):
     assert len(again["polys"]) == len(first["polys"]) == 2 and again["counts"]["parks_polys"] == 1
     assert again["forestry"]["n"] == first["forestry"]["n"] and again["census"]["n"] == first["census"]["n"]
     assert again["counts"]["trees"] == first["counts"]["trees"]
+
+
+def test_a_refresh_that_finds_overpass_down_keeps_the_parks_and_trees_it_had(monkeypatch):
+    monkeypatch.setattr(green_mod, "fetch_green", osm_green)
+    stub_sources(monkeypatch)
+    first = context.build_green(LAT, LON, 600, "nyc")
+    monkeypatch.setattr(green_mod, "fetch_green", lambda *a, **k: (_ for _ in ()).throw(RuntimeError("HTTP 500")))
+    msgs: list[str] = []
+    again = context.build_green(LAT, LON, 600, "nyc", say=msgs.append, fallback=first)
+    assert again["counts"]["trees"] == first["counts"]["trees"] == 1 and again["trees"] == [1.0, 2.0]
+    assert len(again["polys"]) == len(first["polys"]) and again["forestry"]["n"] == first["forestry"]["n"]
+    assert any("keeping the OpenStreetMap" in m for m in msgs)
+    bare = context.build_green(LAT, LON, 600, "nyc")                                                    # no fallback: the city layers alone, as before
+    assert bare["trees"] == [] and bare["polys"][0]["src"] == "parks"
 
 
 # --------------------------------------------------------------------------- the window's view

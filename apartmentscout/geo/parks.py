@@ -6,12 +6,15 @@ cached, receipted Socrata helper as the footprints:
 
 * **NYC Parks Properties** (NYC Open Data ``enfh-gkve``): every property NYC Parks manages, with a ``typecategory``
   (Neighborhood Park, Playground, Triangle/Plaza, Mall, Strip, Garden, Nature Area, Recreational Field/Courts, ...);
-* **NYC Greenstreets** (``mk9u-qu7i``): the planted triangles, medians and bump-outs that were street space.
+* **NYC Greenstreets** (``mk9u-qu7i``): the planted triangles, medians and bump-outs that were street space;
+* **NYC Planimetric Database, Open Space (Parks)** (``y6ja-fw4f``, traced from the 2022 aerial survey): the courts,
+  fields, tracks, rinks and pools inside parks, which is what says where a park is paved (``feat_code`` 4900-4970).
 
 Each polygon becomes an entry of the site's ``green["polys"]`` list, in the same compact form as the OpenStreetMap ones
-(``geo/green.py``) with ``"src": "parks"`` or ``"greenstreet"`` and the city's ``"ref"`` (property number) in place of
-``"osm"``. Playgrounds, courts and fields are marked ``hard`` (paved: no lawn, no scattered canopies); the planted
-categories are lawns. ``merge_polys`` then lays the two sources over each other:
+(``geo/green.py``) with ``"src": "parks"``, ``"greenstreet"`` or ``"courts"`` and the city's ``"ref"`` (property number) in place of
+``"osm"``. Playgrounds, courts and fields are marked ``hard`` (paved: no lawn, no scattered canopies), grass and
+turf fields ``hard`` with ``turf`` (drawn green, no canopies); the planted categories are lawns. ``merge_polys`` then
+lays the sources over each other:
 
 * an OpenStreetMap park that lies (mostly) inside a city *playground or court* property is marked ``hard`` too, unless
   OpenStreetMap says its surface is grass (``why`` records the reason);
@@ -33,8 +36,10 @@ from .shapes import bbox, clean_ring, point_in_poly, point_in_ring, ring_area, s
 
 PARKS = "enfh-gkve"
 GREENSTREETS = "mk9u-qu7i"
+COURTS = "y6ja-fw4f"
 PARKS_SOURCE = "NYC Parks Properties (NYC Open Data, enfh-gkve)"
 GREENSTREETS_SOURCE = "NYC Greenstreets (NYC Open Data, mk9u-qu7i)"
+COURTS_SOURCE = "NYC Planimetric Database: Open Space (Parks) (NYC Open Data, y6ja-fw4f)"
 MIN_AREA_M2 = 40.0
 MAX_TOTAL = 1000            # polygons kept in all (largest first)
 MAX_RING_PTS = 400          # a ring is simplified harder until it fits (a flagship park has thousands of vertices)
@@ -51,6 +56,10 @@ TYPE_KIND: dict[str, tuple[str, bool]] = {
     "Waterfront Facility": ("park", True),
 }
 SKIP_TYPES = {"Buildings/Institutions", "Managed Sites", "Operations", "Lot"}
+# planimetric open-space feature codes inside parks: paved (courts, tracks, rinks, pools), sand (baseball diamonds), turf or grass fields
+COURT_NAMES = {"4900": "Baseball/softball diamond", "4910": "Court", "4920": "Football field", "4930": "Soccer field",
+               "4950": "Pool", "4960": "Running track", "4970": "Skating rink"}
+FIELD_CODES = {"4920", "4930"}
 
 
 def _bbox_polygon(lat: float, lon: float, radius_m: float) -> str:
@@ -71,6 +80,11 @@ def greenstreets_query(lat: float, lon: float, radius_m: float) -> dict:
     where = f"intersects(multipolygon,'{_bbox_polygon(lat, lon, radius_m)}')"
     sel = "sitename,description,gstype,featurestatus,gispropnum,location,multipolygon"
     return {"$where": where, "$select": sel, "$limit": 2000}
+
+
+def courts_query(lat: float, lon: float, radius_m: float) -> dict:
+    where = f"intersects(the_geom,'{_bbox_polygon(lat, lon, radius_m)}')"
+    return {"$where": where, "$select": "park_name,feat_code,sub_code,parknum,the_geom", "$limit": 3000}
 
 
 def _rings(geom: dict | None, frame: LocalFrame) -> list[tuple[list, list[list]]]:
@@ -152,6 +166,26 @@ def parse_greenstreets(rows: list[dict], frame: LocalFrame, radius_m: float, tol
     return out
 
 
+def parse_courts(rows: list[dict], frame: LocalFrame, radius_m: float, tol: float = 0.4) -> list[dict]:
+    """Planimetric open-space rows -> court / field polygons (the park boundary 4980 and Greenstreets 4985 come from the other datasets)."""
+    out: list[dict] = []
+    for r in rows:
+        code = str(r.get("feat_code") or "")[:4]
+        if code not in COURT_NAMES:
+            continue
+        field = code in FIELD_CODES
+        for outer, holes in _rings(r.get("the_geom"), frame):
+            if not _near(outer, radius_m):
+                continue
+            e = _entry("grass" if field else "play", True, "courts", r.get("parknum"), (r.get("park_name") or "").strip() or None,
+                       COURT_NAMES[code], outer, holes, tol)
+            if e:
+                if field:
+                    e["turf"] = 1
+                out.append(e)
+    return out
+
+
 def _near(ring, radius_m: float) -> bool:
     x0, y0, x1, y1 = bbox(ring)
     dx, dy = max(x0, 0.0, -x1), max(y0, 0.0, -y1)
@@ -195,8 +229,8 @@ def cover(poly: dict, others: list[dict]) -> float:
 
 def merge_polys(osm_polys: list[dict], nyc_polys: list[dict]) -> list[dict]:
     """Lay the city polygons over the OpenStreetMap ones (see the module docstring); returns one list, largest first."""
-    paved = [p for p in nyc_polys if p.get("hard") and p.get("cat") != "Waterfront Facility"]
-    parks_like = [p for p in nyc_polys if p["src"] in ("parks", "greenstreet")]
+    paved = [p for p in nyc_polys if p.get("hard") and p["src"] == "parks" and p.get("cat") != "Waterfront Facility"]
+    parks_like = [p for p in nyc_polys if p["src"] in ("parks", "greenstreet", "courts")]
     out: list[dict] = []
     for p in osm_polys:
         q = {k: v for k, v in p.items() if k != "inv"}
@@ -210,7 +244,7 @@ def merge_polys(osm_polys: list[dict], nyc_polys: list[dict]) -> list[dict]:
     out.extend(nyc_polys)
     # which polygons stand on NYC Parks property: the Parks inventory is complete there
     for q in out:
-        if q.get("src") in ("parks", "greenstreet") or cover(q, parks_like) >= COVER_MIN:
+        if q.get("src") in ("parks", "greenstreet", "courts") or cover(q, parks_like) >= COVER_MIN:
             q["on_parks"] = 1
     out.sort(key=lambda q: -abs(ring_area(q["ring"])))
     return out[:MAX_TOTAL]
@@ -220,7 +254,7 @@ def strip_nyc(polys: list[dict]) -> list[dict]:
     """The OpenStreetMap polygons of an existing ``green`` block, without the city ones and the flags this module adds."""
     out = []
     for p in polys:
-        if p.get("src") in ("parks", "greenstreet"):
+        if p.get("src") in ("parks", "greenstreet", "courts"):
             continue
         q = {k: v for k, v in p.items() if k not in ("inv", "on_parks")}
         if str(q.get("why", "")).startswith("NYC Parks"):
@@ -242,4 +276,9 @@ def fetch_parks(lat: float, lon: float, radius_m: float = 600, cache_dir: Path |
     except RuntimeError:
         gs = []
     polys += parse_greenstreets(gs, frame, radius_m)
+    try:
+        courts = socrata(COURTS, courts_query(lat, lon, margin), cache_dir, refresh=refresh)
+    except RuntimeError:
+        courts = []
+    polys += parse_courts(courts, frame, radius_m)
     return polys
