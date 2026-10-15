@@ -91,6 +91,7 @@ export class UnitStage {
     // [city3d] ground, buildings, roof and footprint outlines: the city both engines share (city3d/city.js), in the site frame, near ones casting shadows
     const C = this.cityObj = createCity({ B, T, ti: data.ti, meta: data.meta, green: data.green, water: data.water, streets: data.streets }, { pal, center: this.cxy, quality: this.quality, castShadow: true, facU: this.facU });
     Object.assign(this, { groundMat: C.groundMat, groundBase: C.groundBase, bMat: C.bMat, vrange: C.vrange, city: C.meshes, edgeMat: C.edgeMat, edgeIdx: C.edgeIdx, edges: C.edges, outlineMat: C.outlineMat, outlines: C.outlines });
+    if (this.season) C.season = { ...this.season };   // [season] the trees keep their leaves (or none) across a rebuild
     scene.add(C.group);
 
     // target building in the accent, with solid / faint / hidden display
@@ -164,6 +165,8 @@ export class UnitStage {
   }
   /** The plate stands in for the base ground where it is on; the base drops under the water so the plate's holes show it. */
   syncGroundBase() { if (this.cityObj) { this.cityObj.layers = { ...this.cityObj.layers, water: this.opts.water }; this.cityObj.syncGroundBase(); } }
+  /** [season] The tree season ({leaf, autumn}, city3d/season.js): leaves on, autumn colour or bare branches. A picture only: the numbers never count a tree. */
+  setSeason(s) { if (!s) return; this.season = { leaf: s.leaf, autumn: s.autumn }; if (this.cityObj?.setSeason(this.season)) this.dirty = true; }
   /** [city context] Render quality from unit/quality3d.js: tree shadows (Visual) and the water's sky reflection and sun glint. */
   setContextQuality(q) { this.quality = { visual: !!q.visual, phone: !!q.phone }; this.ctx?.setQuality(this.quality); if (this.facU.uQual) this.facU.uQual.value = q.visual ? 1 : 0; this.dirty = true; }   // [massing] Visual: full facades
   distTo(b) { return Math.hypot((b.bb[0] + b.bb[2]) / 2 - this.cxy[0], (b.bb[1] + b.bb[3]) / 2 - this.cxy[1]); }

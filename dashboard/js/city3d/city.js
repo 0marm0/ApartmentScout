@@ -30,7 +30,7 @@ export function buildCityContext(data, o) {
   const f = o.frame || {}, q = o.quality || {}, pal = o.pal;
   return buildContext({ green: data.green, water: data.water, streets: data.streets }, {
     B: data.B, place: f.place, matrix: f.matrix, center: o.center, radius: o.radius ?? CITY_RADIUS_M, y0: f.y0 ?? 0,
-    ground: pal.ground, light: pal.light, blue: pal.blue, visual: !!q.visual, phone: !!q.phone,
+    ground: pal.ground, light: pal.light, blue: pal.blue, visual: !!q.visual, phone: !!q.phone, season: o.season,
     layers: { green: true, water: true, ...loadTreeLayers(), ...(o.layers || {}) },
   });
 }
@@ -91,14 +91,16 @@ export function createCity(data, o) {
       if (extra.pal) c.pal = extra.pal;
       if (extra.quality) c.quality = extra.quality;
       if (extra.layers) c.layers = { ...c.layers, ...extra.layers };
-      c.ctx = buildCityContext(data, { pal: c.pal, center: o.center, frame: o.frame, quality: c.quality, layers: c.layers, ...extra });
+      c.ctx = buildCityContext(data, { pal: c.pal, center: o.center, frame: o.frame, quality: c.quality, layers: c.layers, season: c.season, ...extra });
       if (c.ctx) { group.add(c.ctx.group); c.ctx.watch(group); }   // (the tree LOD follows the camera once the city's own group is in a scene)
       c.syncGroundBase();
       return c.ctx;
     },
     /** The plate stands in for the base ground where it is on; the base drops under the water so the plate's holes show it. */
     syncGroundBase() { groundBase.position.y = y0 + (c.ctx?.hasGround && c.layers.water !== false ? -0.9 : -0.02); },
-    pal, quality: o.quality || { visual: false, phone: false }, layers: o.layers || {},
+    pal, quality: o.quality || { visual: false, phone: false }, layers: o.layers || {}, season: { leaf: 1, autumn: 0 },
+    /** The tree season ({leaf, autumn}, city3d/season.js): remembered across a rebuild of the context. A picture only. True when the trees changed. */
+    setSeason(s) { c.season = { leaf: +s?.leaf, autumn: +s?.autumn }; return !!c.ctx?.setSeason(c.season); },
     setPalette(p) {
       c.pal = p; groundMat.color.copy(p.ground); edgeMat.color.copy(p.edge); edgeMat.opacity = p.edgeOp; outlineMat.color.copy(p.outline); outlineMat.opacity = p.outlineOp; facU.uLitCol.value.copy(p.lit);
     },
