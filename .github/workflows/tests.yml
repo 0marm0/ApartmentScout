@@ -38,6 +38,8 @@ jobs:
             files: tests/e2e/test_map_features.py tests/e2e/test_lightbox.py tests/e2e/test_results_rail.py tests/e2e/test_pdf_tracer.py
           - name: wizard
             files: tests/e2e/test_wizard.py
+          - name: places-destinations
+            files: tests/e2e/test_places_multidest.py
     name: e2e (${{ matrix.shard.name }})
     steps:
       - uses: actions/checkout@v4

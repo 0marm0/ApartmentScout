@@ -35,3 +35,14 @@ export function matchesPlus(L, nl, { geo = null, dests = [], kmh = 4.8 } = {}) {
   }
   return matchesDestLimits(L, nl, dests, kmh);
 }
+
+/** An undo label for a change that touched a single place clause or destination limit (null: describe it the usual way). */
+export function describeNlPlus(a, b) {
+  const A = a || {}, B = b || {};
+  const keys = [...new Set([...Object.keys(A), ...Object.keys(B)])].filter((k) => JSON.stringify(A[k]) !== JSON.stringify(B[k]));
+  if (keys.length !== 1) return null;
+  const k = keys[0];
+  if (k.startsWith('c:')) return B[k] ? { label: `Commute limit: ${limitLabel(B[k])}`, key: `filters:nl:${k}` } : { label: `Removed the commute limit to ${A[k].dest}`, key: null };
+  if (k.startsWith('w:')) return B[k] ? { label: `Place filter: ${B[k].label}`, key: null } : { label: `Removed the place filter: ${A[k].label}`, key: null };
+  return null;
+}

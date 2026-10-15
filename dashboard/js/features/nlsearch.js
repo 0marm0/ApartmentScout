@@ -63,10 +63,11 @@ export function nlItem(query) {
   if (query.length > 400) return null;   // a pasted paragraph is not a search
   const parsed = parseQuery(query, context());
   if ((parsed.unsupported.length || parsed.unknown.length) && !parsed.found) {   // [places] unknown places are reported, never guessed
-    const what = [...parsed.unknown, ...parsed.unsupported].join(', '), unk = parsed.unknown.length > 0;
-    return { group: 'Ask', id: 'nl', icon: WARN, title: unk ? `No place “${esc(parsed.unknown.join(', '))}” in this search’s map data` : `Can’t filter by “${esc(what)}” yet`,
-      sub: getGeo() ? 'Try a street, park or neighbourhood the map knows, or a building name' : 'Run apartmentscout places, then build, to filter by street, park or neighbourhood', meta: '',
-      run: () => toast(unk ? `No place “${parsed.unknown.join(', ')}” in the map data: try another name` : `Filtering by “${what}” is not supported yet: type a neighbourhood or street name`) };
+    const unk = parsed.unknown.length > 0;
+    const [what, why] = unk ? [parsed.unknown.join(', '), ''] : (parsed.unsupported.join(', ').match(/^(.*?)(?: \((.*)\))?$/) || []).slice(1);   // "north of 3rd Avenue (it runs north-south...)"
+    return { group: 'Ask', id: 'nl', icon: WARN, title: unk ? `No place “${esc(what)}” in this search’s map data` : `Can’t filter by “${esc(what)}” yet`,
+      sub: esc(why ? why.charAt(0).toUpperCase() + why.slice(1) : getGeo() ? 'Try a street, park or neighbourhood the map knows, or a building name' : 'Run apartmentscout places, then build, to filter by street, park or neighbourhood'), meta: '',
+      run: () => toast(unk ? `No place “${what}” in the map data: try another name` : `Filtering by “${what}” is not supported yet: ${why || 'type a neighbourhood or street name'}`) };
   }
   const real = parsed.chips.filter((c) => c.key !== 'text');
   if (!parsed.found || (!real.length && parsed.chips.length < 2)) return null;
