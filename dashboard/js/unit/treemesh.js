@@ -28,7 +28,7 @@ const AUTUMN = {
   other: [0xe0902e, 0xc4502c, 0xe8bb3f], plane: [0xd6a53f, 0xc08a30], oak: [0xb5662f, 0xa4562c, 0xc27a30], maple: [0xd2432a, 0xe86f22, 0xe29a2c],
   locust: [0xe3cd48], linden: [0xe6cb52], ornamental: [0xd4483f, 0xe8902f], elm: [0xdeb03c], ginkgo: [0xf0cc3c],
 };
-const TWIG = 0x8a7b6c;   // the colour a bare crown's remaining twigs read as from far away
+const TWIG = 0x62564b;   // the colour a bare crown's remaining twigs read as from far away
 export function treeColors(light) {
   return GROUPS.map((g) => { const c = new THREE.Color(LIGHT[g]); return light ? c : c.lerp(new THREE.Color(DARK_MIX), 0.5); });
 }
@@ -178,7 +178,7 @@ export function treeLayer(plan, opts = {}) {
   };
   const applyDim = () => { for (const m of [canopyNear, canopyFar, canopyMat]) m.color.setScalar(dim); };
 
-  const canopyNear = leafMaterial(leafU, 0), canopyFar = leafMaterial(leafU, 0.16), canopyMat = new THREE.MeshStandardMaterial({ color: 0xffffff, vertexColors: true, roughness: 0.95, metalness: 0 });   // (canopyMat: the conifers, which keep their needles)
+  const canopyNear = leafMaterial(leafU, 0), canopyFar = leafMaterial(leafU, 0.11), canopyMat = new THREE.MeshStandardMaterial({ color: 0xffffff, vertexColors: true, roughness: 0.95, metalness: 0 });   // (canopyMat: the conifers, which keep their needles)
   const trunkMat = new THREE.MeshStandardMaterial({ color: trunkColor(light), roughness: 1, metalness: 0 });
   const geos = { near: crownGeometry(NEAR_LOBES, 1, 0.13), far: crownGeometry([[0, 0, 0, 1, 1]], 1, 0.09), trunk: new THREE.CylinderGeometry(0.16, 0.26, 1, 5).translate(0, 0.5, 0), branches: branchGeometry(), cone: withWhite(new THREE.ConeGeometry(1, 2, 6, 1)) };
   const mk = (geo, mat, cap, name, colored = true) => {
