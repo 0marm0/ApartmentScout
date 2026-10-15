@@ -56,8 +56,8 @@ test('a saved copy falls back to its original link; links with no copy have none
   assert.deepEqual(urls(L), ['media/x-1/p-1.webp', 'https://a/2.jpg']);
   assert.equal(ownFallback(L, 0), 'https://a/1.jpg');
   assert.equal(ownFallback(L, 1), null);
-  assert.equal(imgFallback(L, 0), ` onerror="this.onerror=null;this.src='https://a/1.jpg'"`);
-  assert.equal(imgFallback(L, 1), '');
+  // a missing saved copy no longer needs an onerror attribute: one page-wide listener walks the photo's chain (media-chain.js)
+  assert.equal(imgFallback(L, 0), '');
   assert.equal(imgFallback(L, 7), '');
 });
 

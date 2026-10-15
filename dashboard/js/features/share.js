@@ -6,6 +6,7 @@
 import { S, on, store, byId, dest, download } from '../app.js';
 import { $, toast } from '../util.js';
 import { watch } from './dom.js';
+import { chainOf, isDead, remoteUrl, rememberOriginal } from './media-chain.js';
 import { parseSchema, inlinePayload, buildPayload, photoCandidates, fileSlug } from './share-model.js';
 
 const SHARE_ICON = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M8 10.5V2.2M4.9 5.2L8 2.1l3.1 3.1M3 8.5v4.3a1 1 0 001 1h8a1 1 0 001-1V8.5"/></svg>';
@@ -59,12 +60,19 @@ async function resolvePhotos(homes, schema, mode, progress) {
           c.done = true;
           let src = null;
           if (mode === 'embed' && tally.bytes < budget) {
-            // a page opened as a file cannot read its sibling files (the browser refuses with a console error): use the link
-            const loc = c.local && location.protocol !== 'file:' ? abs(c.local) : null, u = loc || (c.ref && /^https?:/.test(c.ref) ? c.ref : null);
-            const uri = u ? await thumb(u, cfg.thumb_px, cfg.quality) : null;
+            // the photo's fallback chain (media/, media-lite/, the published copy, the original link): the first that can be read.
+            // A page opened as a file cannot read its sibling files (the browser refuses with a console error): links only.
+            const urls = [];
+            if (c.local) {
+              if (c.ref) rememberOriginal(c.local, c.ref);
+              for (const x of chainOf(c.local)) { const u = abs(x.url); if (u && !isDead(x.tier) && (location.protocol !== 'file:' || /^https?:/.test(u))) urls.push(u); }
+            } else if (c.ref && /^https?:/.test(c.ref)) urls.push(c.ref);
+            let uri = null;
+            for (const u of urls) { uri = await thumb(u, cfg.thumb_px, cfg.quality); if (uri) break; }
             if (uri && tally.bytes + uri.length <= budget) { src = uri; tally.bytes += uri.length; tally.embedded++; }
           }
-          if (!src && c.ref) { src = c.ref; tally.linked++; }
+          const link = c.ref || (c.local && remoteUrl(c.local));   // the original link, else the published copy
+          if (!src && link) { src = link; tally.linked++; }
           if (src) { (out[L.id] ||= []).push({ src, ...(c.credit ? { credit: c.credit } : {}) }); break; }
         }
         progress?.(Math.min(total, ++done), total);
