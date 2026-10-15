@@ -709,6 +709,11 @@ def _export(ws: Workspace, out: Path):
     base = media_base_url(crit)   # where photos missing from media/ and media-lite/ can be fetched (apartmentscout/mediabase.py)
     if base:
         manifest["media_base_url"] = base
+    dl = crit["search"].get("default_listing")   # the home the 3D views open when nothing else is chosen (a renter's own pick still wins)
+    if isinstance(dl, str) and dl in {L.get("id") for L in Ls}:
+        manifest["default_listing"] = dl
+    elif dl:
+        log(f"  search.default_listing {dl!r} is not in listings.json: left out of the manifest")
     from .exports import run_all
     manifest["extra"] = run_all(ws, out, log=log)   # history, coverage and other optional data files
     (out / "manifest.json").write_text(json.dumps(manifest, indent=1))

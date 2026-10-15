@@ -6,6 +6,7 @@ saves is always one the scorer can load. ``errors`` block a save; ``warnings`` a
 from __future__ import annotations
 
 import datetime as dt
+import json
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -19,6 +20,7 @@ from .mediabase import normalize_base
 BASES = ("monthly_cost", "net", "gross")
 MODES = ("best", "subway", "bus", "walk")
 _TIME = re.compile(r"^([01]?\d|2[0-3]):[0-5]\d$")
+_LISTING_ID = re.compile(r"[a-z0-9][a-z0-9_.-]*")
 _CITIES = Path(__file__).resolve().parent.parent / "config" / "cities"
 
 
@@ -112,6 +114,10 @@ def _check_search(raw: dict[str, Any], r: Report) -> None:
     if mb not in (None, "") and normalize_base(mb) is None:
         r.errors.append("search.media_base_url: use the https:// address of the folder that holds the published photos "
                         "(for example https://you.github.io/app/demo/media/), or delete the line.")
+    dl = s.get("default_listing")
+    if dl not in (None, "") and not (isinstance(dl, str) and _LISTING_ID.fullmatch(dl)):
+        r.errors.append("search.default_listing: use the id of a listing (lowercase letters, digits and hyphens, for example "
+                        "building-1211), or delete the line.")
 
 
 def _check_budget(raw: dict[str, Any], r: Report) -> None:
@@ -345,7 +351,26 @@ def check_file(path: str | Path) -> Report:
         r = Report()
         r.errors.append(f"Cannot read {path}: {e}")
         return r
-    return check_text(text)
+    r = check_text(text)
+    _check_default_listing(Path(path), r)
+    return r
+
+
+def _check_default_listing(path: Path, r: Report) -> None:
+    """Warn when `search.default_listing` names a listing the search folder does not have (listings.json next to the file)."""
+    dl = ((r.criteria or {}).get("search") or {}).get("default_listing")
+    lp = path.parent / "listings.json"
+    if not isinstance(dl, str) or not dl or not r.ok or not lp.is_file():
+        return
+    try:
+        rows = json.loads(lp.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return
+    status = {x.get("id"): x.get("status") for x in rows if isinstance(x, dict)} if isinstance(rows, list) else {}
+    if dl not in status:
+        r.warnings.append(f"search.default_listing: {dl!r} is not in listings.json, so the dashboard falls back to its own default.")
+    elif status[dl] in ("gone", "rejected"):
+        r.warnings.append(f"search.default_listing: {dl!r} is marked {status[dl]}; pick a listing you still want the dashboard to open.")
 
 
 def summary_lines(c: dict[str, Any]) -> list[str]:

@@ -249,6 +249,32 @@ def test_unit_3d_draws(open_page, webgl: bool) -> None:
     assert not s.take()
 
 
+def test_the_3d_views_open_the_search_default_and_the_renters_own_choice_wins(open_page, webgl: bool) -> None:
+    """criteria.yaml names `search.default_listing` (the manifest carries it): Unit 3D and the Floor plan studio open that home
+    when nothing else is chosen, although it is not first in their lists; a home the renter opened last (local storage) beats it."""
+    if not webgl:
+        pytest.skip("no WebGL in this browser (SwiftShader unavailable)")
+    s = open_page("#unit")
+    pg = s.page
+    default = pg.evaluate("async () => (await (await fetch('data/manifest.json')).json()).default_listing")
+    assert default == "paramount-tower-25e"
+    _show(s, "unit")
+    pg.wait_for_function("(id) => document.getElementById('unitSel')?.value === id", arg=default, timeout=20000)
+    assert pg.evaluate("() => document.getElementById('unitSel').options[0].value") != default
+    assert pg.evaluate("() => localStorage.getItem('as:home-id')") is None          # opening the default is not a choice of the renter's
+    _show(s, "plan")
+    pg.wait_for_function("(id) => document.getElementById('planSel')?.value === id", arg=default, timeout=20000)
+    other = pg.evaluate("async () => { const m = await (await fetch('data/manifest.json')).json(); return m.sites.find((v) => v !== m.default_listing && m.plans.includes(v)); }")
+    assert other
+    _show(s, f"unit/{other}")
+    pg.wait_for_function("(id) => document.getElementById('unitSel')?.value === id", arg=other, timeout=20000)
+    assert pg.evaluate("() => JSON.parse(localStorage.getItem('as:home-id'))") == other
+    pg.goto(f"{s.origin}/#unit")
+    pg.reload()
+    pg.wait_for_function("(id) => document.getElementById('unitSel')?.value === id", arg=other, timeout=30000)
+    assert not s.take()
+
+
 def _axe(page) -> list[dict]:
     if not page.evaluate("() => typeof window.axe === 'object'"):
         page.add_script_tag(path=str(AXE))

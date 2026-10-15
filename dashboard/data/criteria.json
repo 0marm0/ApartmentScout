@@ -11,7 +11,8 @@
    -73.979
   ],
   "map_zoom": 13,
-  "media_base_url": "https://0marm0.github.io/ApartmentScout/demo/media/"
+  "media_base_url": "https://0marm0.github.io/ApartmentScout/demo/media/",
+  "default_listing": "paramount-tower-25e"
  },
  "budget": {
   "basis": "monthly_cost",

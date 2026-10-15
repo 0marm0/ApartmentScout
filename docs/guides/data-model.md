@@ -251,6 +251,15 @@ Every dashboard surface (cards, drawer, lightbox, Research gallery, Shortlist th
 flagged in `photo_flags` goes last and otherwise the data order holds. A card's photo is the first unit, line or building image,
 never a plan. The card's count reads "8 unit · 22 building".
 
+### The home the 3D views open: `search.default_listing`
+
+`search.default_listing` in `criteria.yaml` is the id of one listing. `criteria --check` rejects a value that is not an id and warns
+when `listings.json` has no such listing (or marks it `gone` or `rejected`); `apartmentscout build` copies a listing that exists into
+`manifest.json` as `default_listing`, so no listing id lives in the dashboard's code. Unit 3D, the Floor plan studio (so the 3D tab) and
+Records open that home when the address names none (`#unit`, `#plan`), in this order: the home in the address; the home the view showed
+earlier in the session; the home the renter opened last in this browser (local storage `as:home-id`, written when the address names a
+home, never for the default); `default_listing`; the first home in the list. The bundled example sets it to Paramount Tower 25E.
+
 ### Where a saved photo comes from: `media/`, `media-lite/`, `media_base_url`
 
 A listing's saved photos are paths such as `media/<listing-id>/p-1a2b3c4d.webp` or `media/shared/<hash>.webp`. Which copy of a
