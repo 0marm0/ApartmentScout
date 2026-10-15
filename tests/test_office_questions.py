@@ -299,3 +299,68 @@ def test_cli_writes_a_file(search: Path, tmp_path: Path, capsys):
     out = tmp_path / "drafts" / "q.md"
     main(["questions", "--search", str(search), "--format", "md", "--out", str(out)])
     assert out.read_text().startswith("## Questions about")
+
+
+def test_the_updates_entry_the_dashboard_writes_is_one_the_importer_accepts(search: Path, tmp_path: Path, capsys):
+    """"Mark answered" copies this entry; `handoff import` adjudicates it like any other dated, sourced claim."""
+    fx = json.loads((Path(__file__).parent / "fixtures" / "office-updates.json").read_text())
+    Ls = json.loads((search / "listings.json").read_text())
+    Ls[0]["id"] = fx["input"]["unit_id"]
+    Ls[0]["price"].update({"gross": 5300, "free_months": 0.75, "checked": "2026-09-29"})
+    Ls[0]["checked"] = "2026-09-29"
+    (search / "listings.json").write_text(json.dumps(Ls))
+    up = tmp_path / "updates.json"
+    up.write_text(json.dumps(fx["doc"]))
+    main(["handoff", "import", str(up), "--search", str(search), "--dry-run"])
+    out = capsys.readouterr().out
+    assert "price.gross" in out and "rejected" not in out.lower().replace("0 rejected", "")
+    main(["handoff", "import", str(up), "--search", str(search)])
+    capsys.readouterr()
+    L = next(x for x in json.loads((search / "listings.json").read_text()) if x["id"] == fx["input"]["unit_id"])
+    assert L["price"]["gross"] == 5250 and L["price"]["free_months"] == 1
+    claim = L["claims"][-1]
+    assert "leasing office reply" in claim["source"] and claim["checked"] == "2026-10-15" and claim["changes"]["price.gross"] == 5250
+
+
+# ---------------------------------------------------------------- parity with dashboard/js/features/office-model.js
+CASES =Path(__file__).parent / "fixtures" / "office-cases.json"
+
+
+def office_cases() -> dict:
+    """The fixture tests/js/office-model.test.mjs replays: a questions.json document, its expansion and drafts for several
+    choices of units, answers and checked questions. Rewrite it with ``UPDATE_OFFICE_CASES=1 pytest tests/test_office_questions.py``."""
+    Ls = [knox_dispute(), unit("tower-7ba", "7BA", checked="2026-09-01", status="shortlist", score={"rank": 2}),
+          unit("tower-13c", "13C", checked="2026-09-01", sqft=None, status="touring", score={"rank": 5}),
+          unit("tower-2d", "2D", checked="2026-09-01", status="new"),
+          unit("other-1a", "1A", building="Other", address="99 Other Avenue, New York, NY", sqft=None, status="touring")]
+    Ls[0]["score"] = {"rank": 1}
+    doc = export_document(Ls, crit(), today=TODAY)
+    entries = expand_document(doc)
+    key = entries["tower-6b"]["building_key"]
+
+    def case(name, ids, answered=(), standard=False, selected=None):
+        units = [{k: v for k, v in entries[i].items() if k != "building_key"} for i in ids]
+        d = assemble_units(key, entries[ids[0]]["building"], entries[ids[0]]["address"], units, answered=answered, standard=standard)
+        sel = d["selected"] if selected is None else selected
+        return {"name": name, "building_key": key, "units": list(ids), "answered": list(answered), "standard": standard,
+                "selected": selected, "default_selection": d["selected"], "shared_ids": [s["id"] for s in d["shared"]],
+                "subject": subject(d, sel), "text": render_text(d, sel)}
+
+    fee_mk = next(q["mk"] for q in entries["tower-7ba"]["questions"] if q["topic"] == "fees")
+    cases = [case("one unit with a price dispute", ["tower-6b"]),
+             case("two units share a question", ["tower-6b", "tower-7ba"]),
+             case("three units, one answered, standard terms on", ["tower-6b", "tower-7ba", "tower-13c"],
+                  answered=["tower-6b:price", "tower-7ba:fees"], standard=True),
+             case("a chosen subset", ["tower-6b", "tower-7ba"], selected=["tower-6b:price", "shared:" + fee_mk]),
+             case("nothing chosen", ["tower-6b", "tower-7ba"], selected=[]),
+             case("four units", ["tower-6b", "tower-7ba", "tower-13c", "tower-2d"], standard=True)]
+    return {"doc": doc, "expanded": entries, "cases": cases}
+
+
+def test_the_parity_fixture_is_current():
+    import os
+    fresh = office_cases()
+    if os.environ.get("UPDATE_OFFICE_CASES"):
+        CASES.write_text(json.dumps(fresh, indent=1, ensure_ascii=False) + "\n")
+    assert json.loads(CASES.read_text()) == json.loads(json.dumps(fresh)), "run UPDATE_OFFICE_CASES=1 pytest tests/test_office_questions.py"
+    assert any(c["text"] == "" for c in fresh["cases"]) and any("For 7BA and 13C" in c["text"] for c in fresh["cases"])
