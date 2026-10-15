@@ -2,6 +2,7 @@
 // Geometry keeps its source units (ft/m/in); furniture layouts always use inches.
 import { normalisePlan, UNIT_IN, ROOM_KINDS, FIXTURE_KINDS } from './model.js';
 import { validateLayout, serialiseLayout, MAX_BYTES } from './layout.js';
+import { validateExtras } from './lighting-model.js';   // [feature J] daylight inputs and luminaires
 
 export const MAX_PROJECT_BYTES = MAX_BYTES;
 const ID = /^[A-Za-z0-9_-]{1,80}$/;
@@ -22,7 +23,7 @@ const FIELDS = {
   trace_bearing: 'method faces wall',
   layout: 'schema kind plan units items saved',
   item: 'id ref x y rot w d h elev variant label hidden product',
-  lighting: 'directSun ambient glazing blinds',
+  lighting: 'directSun ambient glazing blinds daylight luminaires',   // [feature J] daylight, luminaires
 };
 const fin = (v) => typeof v === 'number' && Number.isFinite(v);
 const own = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
@@ -178,7 +179,8 @@ export function parseProject(input, { planId = null } = {}) {
       if (own(l, 'directSun') && typeof l.directSun !== 'boolean') fail('lighting.directSun must be boolean');
       if (own(l, 'ambient') && (!fin(l.ambient) || l.ambient < 0 || l.ambient > 2)) fail('lighting.ambient must be from 0 to 2 (display only)');
       if (own(l, 'glazing') && (!fin(l.glazing) || l.glazing < 0.05 || l.glazing > 1)) fail('lighting.glazing must be a transmittance from 0.05 to 1 (preview only)');
-      if (own(l, 'blinds') && !['open', 'half', 'closed'].includes(l.blinds)) fail('lighting.blinds must be open, half or closed');
+      if (own(l, 'blinds') && !['open', 'sheer', 'half', 'closed'].includes(l.blinds)) fail('lighting.blinds must be open, sheer, half or closed');
+      try { validateExtras(l); } catch (e) { fail(e.message); }   // [feature J]
     }
     return { ok: true, project, model, layout };
   } catch (e) { return { ok: false, error: e.message || 'Invalid project' }; }
