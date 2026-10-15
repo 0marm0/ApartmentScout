@@ -52,6 +52,12 @@ the page, `method: "monitor"`, dated the day it was read), so it reaches `price_
 availability ladder in `history.json` with no extra step. `apartmentscout build` copies `digest.json` to the dashboard
 data folder; the schema is in the [data model](data-model.md#watchlist).
 
+## Alerts
+
+`apartmentscout alerts` turns what changed (after a monitor run, or any edit to `listings.json` plus `apartmentscout score`) into a short
+digest against your criteria, and an opt-in GitHub workflow opens one issue a day from it so the GitHub app notifies your phone. See
+[alerts](alerts.md).
+
 ## Scheduling
 
 The monitor is a plain command, so any scheduler works. These are examples to adapt; **nothing here is installed for
