@@ -70,6 +70,16 @@ dropped.
 
 Unit 3D's Inside and Window cameras and the Floor plan studio's eye-level views share one renderer for the room (bright white walls, a light oak floor, the same windows without a bar across them, ACES in Visual and a gentle curve in Fast, warm lamps at night) and one city (every building by id, the same sky, haze, trees, grass and water). A **What's measured vs assumed** chip over both says what the picture rests on. The studio's look panel shows the direct sun through the window you are looking out of and opens the same view in Unit 3D; Unit 3D's Inside look panel shows the studio's daylight map and blinds. Detail in [floor plans](floor-plans.md#one-room-one-city).
 
+### Questions for the leasing office
+
+The listing drawer has a **Questions for the leasing office** section, every building row of Shortlist > Buildings a small mail chip with
+the number of open questions, and the Records report a button beside Print. Each opens one side sheet with the open questions of the
+homes you are weighing in that building (the ones the data marks, plus everything you saved, tiered or put in Compare): a checkbox per
+question, "Why this is asked" for the evidence, the subject and message below, **Copy email**, and **Open in my email app**, a `mailto:` link
+with no recipient. **Mark answered** keeps a pasted reply as a dated note on the home, offers the values it seems to state, and copies them as
+an `updates.json` entry for `apartmentscout handoff import`. Nothing is sent from the page. Detail and the data file:
+[leasing-office questions](leasing-office-questions.md). Tests: `tests/e2e/test_office_questions.py`.
+
 ## Keyboard
 
 | Key | Does |

@@ -1,4 +1,5 @@
-<!-- For a specific unit, generate the questions instead of using the generic list below:
+<!-- For a building, `apartmentscout questions --building NAME` drafts one message for every unit you are weighing
+     (docs/guides/leasing-office-questions.md). For a specific unit, generate the questions instead of using the generic list below:
      `apartmentscout coverage --id <listing-id>` prints them, and apartmentscout/questions.py
      (`questions(listing, criteria)`, `inquiry(listing, criteria)`) builds them from what is actually
      missing, stale or flagged by `apartmentscout lint`, most decisive first. Known facts are never asked.

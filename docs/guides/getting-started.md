@@ -225,7 +225,7 @@ apartmentscout build --standalone my-search.html       # the whole dashboard in 
 
 The standalone file embeds your data, so share it only with people who should see your listings and notes. To host the
 dashboard publicly see [dashboard](dashboard.md), and run `python scripts/release_check.py` first. More:
-[research quality](research-quality.md), [photos](photos.md), [floor plans](floor-plans.md),
+[research quality](research-quality.md), [leasing-office questions](leasing-office-questions.md), [photos](photos.md), [floor plans](floor-plans.md),
 [agent handoff](agents-handoff.md), [adding a city profile](new-city.md).
 
 ## When something goes wrong
