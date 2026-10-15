@@ -31,6 +31,17 @@ export function describeLength(inches, { metric = false } = {}) {
   return { primary: imp, secondary: metric ? met : '', title: `${imp} = ${met}` };
 }
 
+/**
+ * Does this search read in metres? The criteria can say so (`search.units: metric`); without a word, a plan that was drawn in
+ * metres belongs to a metric country. Feet and inches are always shown.
+ */
+export function isMetricSearch(crit, model) {
+  const u = String(crit?.search?.units ?? crit?.units ?? '').toLowerCase();
+  if (u === 'metric' || u === 'si' || u === 'm') return true;
+  if (u === 'imperial' || u === 'us' || u === 'ft') return false;
+  return model?.units === 'm';
+}
+
 // ------------------------------------------------------------------ geometry
 export const dist3 = (a, b) => Math.hypot(b[0] - a[0], b[1] - a[1], (b[2] || 0) - (a[2] || 0));
 export const mid3 = (a, b) => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, ((a[2] || 0) + (b[2] || 0)) / 2];

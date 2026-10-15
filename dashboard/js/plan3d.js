@@ -50,6 +50,8 @@ import { validateInventory, fitInventory, pieceItem, placedIds } from './plan/in
 import { inventoryHTML } from './plan/inventory-ui.js';
 import { allViews, stepView, windowGroups } from './plan/viewpoints.js';   // [interior] where to stand to look out of the windows
 import { setLookChips, bindLookChips } from './plan/look-ui.js';
+import { mountStudioMeasure } from './measure/studio-hook.js';   // [measure] the measuring tape, 2D and 3D
+import { isMetricSearch } from './measure/core.js';
 
 const st = {
   id: null, date: '', min: 720, playing: false, site: null, mode: 'both', view: 'bird', wall: 'cut', tab: 'furniture',
@@ -63,6 +65,7 @@ let routesRes = null, routeT = 0, lastFrame = 0;
 let onSite = null, winSky = null, winMin = null, winMinKey = '';
 let winSkyView = null;
 let inventory = null;   // [furniture] "Your furniture": the renter's pieces (furniture.json, or the ones a project carried)
+let MEAS = null;   // [measure]
 let model = null, rawPlan = null, projectLibrary = Object.create(null), siteProf = null, items = [], R = [], ev = null, sel = null, flash = null, flashT = 0, loop = false, ready = false;
 const undo = [], redo = [];
 const isPhone = () => matchMedia('(max-width: 760px)').matches;
@@ -226,7 +229,7 @@ async function load(id) {
       }
     }
   }
-  if (!ready) { G3.init($('pgl'), $('pstage'), () => {}); P2.mount($('p2d'), { item: (i) => R.find((x) => x.id === i), select, move: dragTo, commit: () => commit() }); bind3D(); ready = true; LX.attach3D(); Q3.mount({ stage: $('pstage'), model: () => model, toast, store }); }
+  if (!ready) { G3.init($('pgl'), $('pstage'), () => {}); P2.mount($('p2d'), { item: (i) => R.find((x) => x.id === i), select, move: dragTo, commit: () => commit(), locked: () => !!MEAS?.two.active }); bind3D(); ready = true; mountMeasure(); LX.attach3D(); Q3.mount({ stage: $('pstage'), model: () => model, toast, store }); }
   G3.setModel(model); G3.setWallMode(st.wall);
   P2.setModel(model); LX.reattach2D(); Q3.modelChanged();   // [feature J]
   st.city = !!store.get(`plan-city.${S.base}`, false); applyCity();
@@ -247,6 +250,14 @@ async function load(id) {
   recompute({ all: true }); sunPanel(); refreshSun();
 }
 
+/** [measure] The tape in both panes: a bridge of getters, nothing is copied. */
+function mountMeasure() {
+  MEAS = mountStudioMeasure({
+    G3, canvas: $('pgl'), stage3d: $('pstage'), stage2d: $('p2dWrap'), svg: $('p2d'), toolbar3d: $('psCams'), toolbar2d: $('psDims'),
+    toPlan: (x, y) => P2.toPlan(x, y), id: () => st.id, model: () => model, items: () => R,
+    show3d: () => st.mode !== '2d', show2d: () => st.mode !== '3d', metric: () => isMetricSearch(S.crit, model), store, base: S.base,
+  });
+}
 // [furniture] "Your furniture" (furniture.json beside the search, or the inventory a project carried)
 let fileInventory;
 async function loadInventory(id) {
@@ -337,6 +348,7 @@ function recompute(opts = {}) {
   inspector();
   if (opts.panels !== false) tab();
   tabCounts(); lookChips();   // [interior]
+  MEAS?.changed();   // [measure]
 }
 function computeRoutes() { try { routesRes = accessRoutes(model, R); } catch { routesRes = null; } }
 const shownRoutes = () => (routesRes ? routesRes.routes.filter((r) => st.routes || r.key === st.routeKey) : []);
@@ -477,6 +489,7 @@ function markDims() { $('psDims').querySelectorAll('[data-dm]').forEach((b) => b
 function setMode(m) {
   st.mode = m; $('psPanes').dataset.mode = m;
   $('psMode').querySelectorAll('[data-m]').forEach((b) => b.classList.toggle('on', b.dataset.m === m));
+  MEAS?.changed();   // [measure]
   const reframe = () => { G3.resize(); if (model && G3.viewMode() === 'orbit') G3.setView(st.view === 'top' ? 'top' : 'bird'); G3.markDirty(); };
   if (ready) { reframe(); requestAnimationFrame(reframe); }
 }
@@ -646,7 +659,7 @@ function bind3D() {
     down = { x: e.clientX, y: e.clientY, id: e.pointerId };
     if (G3.viewMode() === 'eye') { lookP = { x: e.clientX, y: e.clientY, id: e.pointerId }; cv.setPointerCapture(e.pointerId); e.stopPropagation(); return; }
     if (e.button !== 0 || e.shiftKey) return;
-    const id = G3.pick(e);
+    const id = MEAS?.three.active ? null : G3.pick(e);   // [measure] with the tape out a click on a piece measures it
     if (!id) return;
     const it = items.find((q) => q.id === id), p = G3.floorPoint(e);
     if (!it || !p) return;
