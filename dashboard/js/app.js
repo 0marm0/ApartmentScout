@@ -877,6 +877,7 @@ async function boot() {
   import('./onboarding.js').then((m) => m.initOnboarding()).catch(() => {});   // empty state, ?new=1
   if (qs.get('open')) openDrawer(qs.get('open'), { fly: true, instant: true });
   import('./features/extras.js').then((m) => m.initExtras()).catch((e) => console.warn('feature extras unavailable', e));   // [feature C] undo, chords, cheat sheet, plain-language search, coach marks, settings
+  import('./pwa.js').then((m) => m.initPwa()).catch(() => {});   // [pwa] installable app: service worker, update prompt, Install item
 }
 boot();
 // [feature C] seams for ./features/*: the rail redraw and the feature list the filters offer
