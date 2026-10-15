@@ -7,6 +7,8 @@ import { commuteLayerKey, walkRingMetres } from './criteria.js';
 import { $, esc, money, moneyShort, safeUrl, css, scoreColor, unitGlyph, gridImage, gridValueAt, idwGrid, RAMPS, bullet, aerialHTML, imagesOf, imgFallback } from './util.js';
 import { contours } from '../vendor/d3-contour.js';
 import * as MF from './features/map-features.js';   // [features] route preview, starred-only lens, sun lens
+import * as MD from './features/multidest.js';   // [multi-destination] worst-of / weighted commute surfaces
+import * as PM from './features/places-map.js';   // [places] the streets and outlines the place filters refer to
 import { hoverTrendHTML } from './features/price-ui.js';   // price-history sparkline in the hover card
 
 const CLUSTER_Z = 12;                                 // below this zoom nearby pins merge into count bubbles
@@ -19,7 +21,7 @@ const reduce = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 const layers = {};          // name -> grid json
 let map, popup, markers = [], destMarkers = [], inited = null, active = null, heat = 'commute', vector = true, offline = false, tileOk = false, show3d = false, showLines = true, picking = false;
 /** The surface for the selected destination and mode (null for walk, or when that grid was never computed). */
-const commuteLayer = () => { const k = commuteLayerKey(layers, dest(), S.commuteMode); return k ? layers[k] : null; };
+const commuteLayer = () => MD.comboLayer() || (() => { const k = commuteLayerKey(layers, dest(), S.commuteMode); return k ? layers[k] : null; })();   // [multi-destination] a combined surface when one is chosen
 const hasCommute = () => Object.values(layers).some((g) => /^commute/.test(g?.kind || '')) || (S.crit.commute?.destinations || []).some((d) => d.lat != null);
 const walkKmh = () => S.crit.commute?.transit?.walk_speed_kmh || 4.8;
 
@@ -161,7 +163,7 @@ const isoCache = new WeakMap();
  *  cells (water, far from any stop) are pushed out of every band after one ring of edge extension, so fills reach the
  *  shoreline and the basemap's water layer, drawn above, trims them exactly. */
 function isochrones(g) {
-  const lim = dest()?.max_minutes || 30, key = `${lim}`;
+  const lim = g.limit ?? (dest()?.max_minutes || 30), key = `${lim}`;   // [multi-destination] a combined surface carries its own limit
   const hit = isoCache.get(g); if (hit?.key === key) return hit;
   const { rows, cols, values: V } = g, W = cols + 2, H = rows + 2, BIG = 1e4;
   const valid = new Uint8Array(W * H), f = new Float64Array(W * H).fill(BIG);
@@ -270,7 +272,7 @@ function setHeat(k) {
     const before = map.getLayer('water') && vector ? 'water' : map.getLayer('esri-ref') ? 'esri-ref' : undefined;
     if (im.iso) {
       // commute: vector bands under the water and the streets, thin contour lines, minute labels on the major ones
-      const light = theme() === 'light', ink = light ? '#1d2230' : '#ffffff', lim = dest()?.max_minutes || 30, st = bandStyle();
+      const light = theme() === 'light', ink = light ? '#1d2230' : '#ffffff', lim = im.g.limit ?? (dest()?.max_minutes || 30), st = bandStyle();
       const byBand = (key) => ['match', ['get', 'i'], ...st.flatMap((x, i) => [i, x[key]]), key === 'a' ? 0 : '#000'];
       map.addSource('heat-fill', { type: 'geojson', data: im.iso.fills, tolerance: 0.2 });
       map.addLayer({ id: 'heat-fill', type: 'fill', source: 'heat-fill', paint: { 'fill-color': byBand('col'), 'fill-opacity': byBand('a'), 'fill-antialias': false } }, before);
@@ -296,6 +298,7 @@ function setHeat(k) {
   if (map.getLayer('pins')) map.setPaintProperty('pins', 'circle-color', k === 'commute' ? ['case', ['get', 'fav'], css('--accent'), theme() === 'light' ? '#2b303b' : '#eef1f6'] : ['get', 'col']);
   if (map.getLayer('pins-s')) map.setPaintProperty('pins-s', 'circle-color', k === 'commute' ? css('--accent') : ['get', 'col']);
   MF.afterHeat();
+  PM.refresh();   // [places]
   renderLegend(); renderSwitch();
 }
 
@@ -526,7 +529,7 @@ function addDest() {
   const sel = dest();
   for (const d of S.crit.commute?.destinations || []) {
     if (d.lat == null) continue;
-    const on2 = d === sel, el = document.createElement('div');
+    const on2 = d === sel || MD.comboOn(), el = document.createElement('div');   // [multi-destination] every destination is "on" under a combined surface
     el.className = `dest-mk ${on2 ? 'on' : 'off'}`;
     el.innerHTML = `<div class="dest-pin" title="${esc(d.name)}">${DEST_PIN_SVG}</div><div class="dest-label">${esc(d.name)}${on2 ? `<span>${esc((d.address || '').split(',')[0])}${d.arrive_by ? ' · arrive ' + esc(d.arrive_by) : ''}</span>` : ''}</div>`;
     if (!on2) { el.title = `Show the commute to ${d.name}`; el.addEventListener('click', (e) => { e.stopPropagation(); if (!picking) setCommute({ dest: d.name }); }); }
@@ -561,18 +564,20 @@ function renderSwitch() {
 const legendMin = () => store.get('legend-min', null) ?? innerWidth < 1180;
 function renderLegend() {
   const lineChips = (S.transit?.features || []).filter((f) => f.properties.kind === 'line').flatMap((f) => f.properties.routes.filter((r) => r.length < 3)).map(bullet).join('');
-  const g = active, d = dest(), lim = d?.max_minutes || 30, mode = S.commuteMode, ml = MODE_LABEL[mode].toLowerCase();
+  const g = active, d = dest(), lim = g?.limit ?? (d?.max_minutes || 30), mode = S.commuteMode, ml = MODE_LABEL[mode].toLowerCase();
   let body = '';
   if (heat === 'commute') {
-    const st = bandStyle(), ds = S.crit.commute?.destinations || [];
-    const what = { best: 'Fastest door-to-door minutes by subway, bus or walking', subway: 'Subway with walking only (no buses)', bus: 'Bus with walking only (no subway)' }[mode];
-    body = `<h4>${ds.length > 1 ? `<select class="sel lg-dest" id="lgDest" aria-label="Commute destination">${ds.map((x) => `<option value="${esc(x.name)}" ${x === d ? 'selected' : ''}>To ${esc(x.name)}</option>`).join('')}</select>` : `Door to door to ${esc(d?.name || '')}`} <span>arrive ${esc(d?.arrive_by || '')}</span></h4>
+    const st = bandStyle(), ds = S.crit.commute?.destinations || [], cb = MD.legendHead();   // [multi-destination] cb: a combined surface is selected
+    const what = cb ? cb.what : { best: 'Fastest door-to-door minutes by subway, bus or walking', subway: 'Subway with walking only (no buses)', bus: 'Bus with walking only (no subway)' }[mode];
+    body = `<h4>${ds.length > 1 ? `<select class="sel lg-dest" id="lgDest" aria-label="Commute destination">${MD.destOptions(ds, d)}</select>` : `Door to door to ${esc(d?.name || '')}`} <span>${cb ? esc(cb.sub) : 'arrive ' + esc(d?.arrive_by || '')}</span></h4>
       ${modeSegHTML(d, 'lgMode')}
       ${g ? `<div class="isogrid" role="list" aria-label="Door-to-door minutes by colour band" style="display:grid;grid-template-columns:repeat(3,1fr);gap:5px 10px;margin:2px 0 2px">${BANDS.map((t, i) => {
         const isLim = (i ? BANDS[i - 1] : 0) < lim && lim <= t;
         return `<span role="listitem" style="display:flex;align-items:center;gap:6px;font:500 var(--fs-2xs) var(--font-mono);font-variant-numeric:tabular-nums;color:${isLim ? 'var(--ink)' : 'var(--ink-2)'};white-space:nowrap"><i style="flex:none;width:18px;height:11px;border-radius:3px;background:${st[i].col};${isLim ? 'box-shadow:0 0 0 1.5px var(--ink)' : 'box-shadow:inset 0 0 0 1px rgba(0,0,0,.18)'}"></i>${isLim ? `<b style="font-weight:650" title="Your ${lim}-minute limit">${bandLabel(i)}</b>` : bandLabel(i)}</span>`;
       }).join('')}</div>
-      <details class="src-d" ${store.get('legend-src', false) ? 'open' : ''}><summary>How this is computed</summary><div class="src">${what} on the ${esc(g.feeds?.length ? g.feeds.join(', ') + ' timetable' : 'walking network')}, the router's answer every ${esc(Math.round(g.cell_m || 150))} m, averaged over ${g.arrival_offsets_min?.length || 'several'} arrivals${g.arrival_offsets_min?.length ? ` in the ${Math.max(...g.arrival_offsets_min)} minutes before ${esc(d?.arrive_by || 'arrival')}` : ''}. Each colour is a 5-minute band (10-minute bands past 30); the outlined swatch and the dashed line mark your ${lim}-minute limit. ${g.water_masked ? 'Water and areas' : 'Areas'} beyond walking range of a stop are left clear${g.walk_network ? `, as is anywhere more than ${esc(g.walk_network.snap_m || 60)} m from a street or path you can walk on` : ''}.</div></details>`
+      ${cb?.note ? `<div class="src">${esc(cb.note)}</div>` : ''}
+      <details class="src-d" ${store.get('legend-src', false) ? 'open' : ''}><summary>How this is computed</summary><div class="src">${what} on the ${esc(g.feeds?.length ? g.feeds.join(', ') + ' timetable' : 'walking network')}, the router's answer every ${esc(Math.round(g.cell_m || 150))} m, averaged over ${g.arrival_offsets_min?.length || 'several'} arrivals${g.arrival_offsets_min?.length ? ` in the ${Math.max(...g.arrival_offsets_min)} minutes before ${esc((cb ? cb.arrive : d?.arrive_by) || 'arrival')}` : ''}. Each colour is a 5-minute band (10-minute bands past 30); the outlined swatch and the dashed line mark your ${lim}-minute limit. ${g.water_masked ? 'Water and areas' : 'Areas'} beyond walking range of a stop are left clear${g.walk_network ? `, as is anywhere more than ${esc(g.walk_network.snap_m || 60)} m from a street or path you can walk on` : ''}.</div></details>`
+      : cb ? `<div class="src">${esc(cb.note || '')}</div>`
       : mode === 'walk' ? `<div class="src">Walking has no timetable surface. The dashed rings are ${ringMinutes().join(', ')} minutes on foot at ${walkKmh()} km/h, straight line with a 1.25 street detour. Cards, filters and columns use the router's walking minutes where it has them, else the same estimate.</div>`
       : `<div class="src">No ${ml} surface for ${esc(d?.name || 'this destination')}${d?._stale ? ' (new or moved in your edited criteria)' : ''}. Run <code>apartmentscout commute</code>${mode === 'bus' ? ' with a bus GTFS feed' : ''} to draw it. Pins, cards and filters use per-listing ${ml} minutes where the router computed them.</div>`}`;
   } else if (heat === 'noise' && g) {
@@ -592,7 +597,7 @@ function renderLegend() {
   $('lgTog').addEventListener('click', () => { store.set('legend-min', !min); renderLegend(); $('lgTog')?.focus(); });
   $('legend').querySelector('.src-d')?.addEventListener('toggle', (e) => store.set('legend-src', e.target.open));
   MF.wireLegend($('legend'));
-  $('lgDest')?.addEventListener('change', (e) => setCommute({ dest: e.target.value }));
+  $('lgDest')?.addEventListener('change', (e) => MD.pickDest(e.target.value, setCommute));   // [multi-destination] a destination, or a combined surface
   $('legend').querySelectorAll('#lgMode [data-mode]').forEach((b) => b.addEventListener('click', () => setCommute({ mode: b.dataset.mode })));
 }
 function renderCtl() {
@@ -626,7 +631,7 @@ function readout(e) {
   const r = heat === 'commute' ? { v: heatValueAt(g, e.lngLat.lat, e.lngLat.lng) } : gridValueAt(g, e.lngLat.lat, e.lngLat.lng);
   if (!r || r.v == null || r.v < 0) { el.hidden = true; return; }
   let t;
-  if (heat === 'commute') t = `<i aria-hidden="true" style="display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px;background:${bandStyle()[Math.max(0, BANDS.findIndex((x) => r.v <= x + 1e-3))].col}"></i><b>${Math.round(r.v)} min</b> <span class="faint">${S.commuteMode === 'best' ? 'door to door' : 'by ' + MODE_LABEL[S.commuteMode].toLowerCase()} to ${esc(dest()?.name || g.name)}</span>`;
+  if (heat === 'commute') t = `<i aria-hidden="true" style="display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px;background:${bandStyle()[Math.max(0, BANDS.findIndex((x) => r.v <= x + 1e-3))].col}"></i><b>${Math.round(r.v)} min</b> <span class="faint">${S.commuteMode === 'best' ? 'door to door' : 'by ' + MODE_LABEL[S.commuteMode].toLowerCase()} to ${esc(g.combo || dest()?.name || g.name)}</span>`;
   else if (heat === 'noise') t = `<b>${Math.round((r.v * 12) / (g.months || 12))}</b> <span class="faint">noise complaints a year in this ${esc(g.cell_m)} m cell${g.night ? ` (${g.night[r.i] ?? 0} at night)` : ''}</span>`;
   else if (heat === 'rent') t = `<b>$${r.v.toFixed(2)}</b> <span class="faint">per ft² a month nearby</span>`;
   else t = `<b>${Math.round(r.v)}</b> <span class="faint">average score nearby</span>`;
@@ -765,5 +770,6 @@ async function boot() {
     map.once('load', () => { if (pendingFly && pendingFly === S.sel) flyTo(pendingFly); pendingFly = null; });
     wire(); renderCtl(); renderSwitch(); addDest();
     MF.bind({ map: () => map, heat: () => heat, setPins, drawTags, renderSwitch, renderLegend, peek, lastOpened: () => lastSel });
+    PM.bind(() => map);   // [places]
   }
 }

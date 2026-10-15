@@ -7,6 +7,7 @@ import { attachSplit, sync as splitSync, shown as splitShown } from './features/
 import { illustration } from './features/empty.js';   // [feature C] empty-state art
 import { getDensity, setDensity, onDensity } from './features/density.js';
 import { deltaHTML } from './features/rank-ui.js';
+import { destLineHTML, combinedOf, multi as multiDest } from './features/multidest.js';   // [multi-destination] a column with every destination
 import { ppsf, groupKey, thumb, tierPill, myTierPill, tri, doorman, isMust, floorText, commuteHTML, scoreBar, statusPill, name, gateFails, costUnknown, label } from './views/table-kit.js';
 
 const saved = store.get('list:ui', null) || {};
@@ -33,6 +34,7 @@ const COLS = [
   { k: 'sqft', h: 'ft²', label: 'Size', n: true, sort: (L) => L.sqft, dir: -1, cell: (L) => (L.sqft ? Math.round(L.sqft).toLocaleString() : '<span class="faint" title="Size not published">—</span>') },
   { k: 'ppsf', h: '$/ft²', label: '$ per ft²', n: true, sort: ppsf, dir: 1, cell: (L) => (ppsf(L) ? '$' + ppsf(L).toFixed(2) : '<span class="faint">—</span>') },
   { k: 'commute', h: () => `To ${esc(dests()[0] || 'work')}`, label: 'Commute', sort: (L) => commuteOf(L), dir: 1, cell: (L) => commuteHTML(L) },
+  { k: 'alld', h: 'All destinations', label: 'Every destination', when: multiDest, sort: (L) => combinedOf(L).score, dir: -1, cell: (L) => destLineHTML(L) },   // [multi-destination]
   { k: 'floor', h: 'Floor', label: 'Floor and exposure', sort: (L) => L.floor, dir: -1, cell: floorText },
   { k: 'wd', h: 'W/D', label: 'In-unit W/D', c: true, sort: (L) => tri3(L.amenities?.in_unit_wd), dir: -1, cell: (L) => tri(L.amenities?.in_unit_wd, { must: isMust('in_unit_wd'), what: 'In-unit washer/dryer' }) },
   { k: 'door', h: '<span title="Doorman">Door</span>', label: 'Doorman', c: true, sort: (L) => DOOR[L.amenities?.doorman] ?? 1, dir: -1, cell: (L) => doorman(L.amenities?.doorman) },
@@ -41,7 +43,7 @@ const COLS = [
   { k: 'known', h: 'Known', label: 'Known (confidence)', n: true, sort: (L) => L.score?.confidence, dir: -1, cell: knownCell },
   { k: 'status', h: 'Status', label: 'Status', sort: (L) => ST_ORDER[L.status || 'new'], dir: 1, cell: statusPill },
 ];
-const visible = () => COLS.filter((c) => c.fixed || !st.hidden.has(c.k));
+const visible = () => COLS.filter((c) => (c.fixed || !st.hidden.has(c.k)) && (!c.when || c.when()));
 const colByKey = (k) => COLS.find((c) => c.k === k && c.sort) || COLS.find((c) => c.k === 'score');
 
 /** Comparator for the active column; listings without a value always sink to the bottom. */
@@ -162,7 +164,7 @@ const scheduleLite = () => {
 function controls() {
   $('lsGroup').querySelectorAll('button').forEach((b) => { b.classList.toggle('on', b.dataset.g === st.group); b.setAttribute('aria-pressed', b.dataset.g === st.group); });
   $('lsDensity').querySelectorAll('button').forEach((b) => { b.classList.toggle('on', b.dataset.d === st.density); b.setAttribute('aria-pressed', b.dataset.d === st.density); });
-  $('lsColMenu').innerHTML = COLS.filter((c) => !c.fixed).map((c) => `<label class="tg-row"><input type="checkbox" data-col="${c.k}" ${st.hidden.has(c.k) ? '' : 'checked'}><span>${esc(c.label)}</span></label>`).join('')
+  $('lsColMenu').innerHTML = COLS.filter((c) => !c.fixed && (!c.when || c.when())).map((c) => `<label class="tg-row"><input type="checkbox" data-col="${c.k}" ${st.hidden.has(c.k) ? '' : 'checked'}><span>${esc(c.label)}</span></label>`).join('')
     + '<button type="button" class="btn ghost" id="lsColReset">Reset columns</button>';
 }
 

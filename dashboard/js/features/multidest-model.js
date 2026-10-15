@@ -38,16 +38,16 @@ export function parseDestLimits(text, destinations) {
   const order = dests.map((n) => ({ n, f: forms(n) })).sort((a, b) => Math.max(...b.f.map((x) => x.length)) - Math.max(...a.f.map((x) => x.length)));
   const UP = String.raw`(?:\b(?:within|under|up to|less than|at most|max(?:imum)?|no more than|about|around)\s+)?`;
   const MIN = String.raw`\b(\d{1,3})\s*[- ]?(?:minutes?|mins?)\b(?:\s+(?:or less|or under|max(?:imum)?|tops))?`;
-  const BY = String.raw`(?:\s+(?:by|via|on)\s+(?:the\s+)?(subway|bus|train|metro|walking|foot|transit))?(?:\s+(?:commute|ride|trip|walk(?:ing)?|away|door[- ]to[- ]door))*`;
+  const BY = String.raw`(?:\s+(?:by|via|on)\s+(?:the\s+)?(subway|bus|train|metro|walking|foot|transit))?(?:\s+(walk(?:ing)?))?(?:\s+(?:commute|ride|trip|away|door[- ]to[- ]door))*`;
   for (const { n, f } of order) {
     for (const w of f) {
       const name = w.map(esc).join('\\s+');
       const r1 = new RegExp(`${UP}${MIN}${BY}\\s+(?:to|from|of|near|at|for)\\s+(?:the\\s+)?${name}\\b`);
       const r2 = new RegExp(`\\b${name}\\b\\s*(?:within|under|up to|less than|at most|max(?:imum)?|no more than|:)?\\s*(\\d{1,3})\\s*[- ]?(?:minutes?|mins?)\\b(?:\\s+(?:or less|or under|max(?:imum)?|tops))?`);
-      for (const [re, modeIdx] of [[r1, 2], [r2, 0]]) {
+      for (const [re, hasMode] of [[r1, true], [r2, false]]) {
         const m = t.match(re);
         if (!m) continue;
-        found.push({ dest: n, max: Math.max(5, +m[1]), mode: modeIdx ? MODE_WORD[m[modeIdx]] || null : null });
+        found.push({ dest: n, max: Math.max(5, +m[1]), mode: hasMode ? MODE_WORD[m[2]] || (m[3] ? 'walk' : null) : null });
         t = t.replace(m[0], ' ');
         break;
       }
