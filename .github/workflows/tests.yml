@@ -52,7 +52,7 @@ jobs:
           - name: 5-of-6
             files: tests/e2e/test_boot_recovery.py tests/e2e/test_buildings3d.py tests/e2e/test_lighting.py tests/e2e/test_model_project.py tests/e2e/test_moves_unknowns.py tests/e2e/test_tour_findings.py tests/e2e/test_view_match.py
           - name: 6-of-6
-            files: tests/e2e/test_context3d.py tests/e2e/test_eye_level_look.py tests/e2e/test_finishes_render.py tests/e2e/test_fit_check.py tests/e2e/test_map_features.py tests/e2e/test_measure.py tests/e2e/test_move_planner.py
+            files: tests/e2e/test_ar_view.py tests/e2e/test_context3d.py tests/e2e/test_eye_level_look.py tests/e2e/test_finishes_render.py tests/e2e/test_fit_check.py tests/e2e/test_map_features.py tests/e2e/test_measure.py tests/e2e/test_move_planner.py
     name: e2e (${{ matrix.shard.name }})
     steps:
       - uses: actions/checkout@v4
