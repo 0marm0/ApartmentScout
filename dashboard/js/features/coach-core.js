@@ -8,7 +8,7 @@ export const STEPS = [
   { id: 'weights', target: 'weights', title: 'Weights re-rank live', body: 'Drag a slider and the homes re-order as you go. Raise what matters to you; unknown facts stay neutral.' },
   { id: 'star', target: 'star', title: 'Star the ones you like', body: 'Press the star, or {s}, to keep a home in your picks. Anything you do here can be undone with {undo}.' },
   { id: 'compare', target: 'compare', title: 'Line them up in Compare', body: 'Add up to four homes with this button, or press {x}. Compare marks the best value in every row.' },
-  { id: 'unit', target: 'unit', title: 'See the light in the unit', body: 'Unit 3D builds the block around a home and shows when the sun reaches its window. Press {g} then {u} to jump there.' },
+  { id: 'unit', target: 'unit', title: 'See the light in the unit', body: 'Home holds Unit 3D, which builds the block around a home and shows when the sun reaches its window, and the Floor plan studio. Press {g} then {u} to jump to Unit 3D.' },
 ];
 
 /**

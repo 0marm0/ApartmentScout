@@ -1,0 +1,48 @@
+/* ApartmentScout: the view tabs. A segmented control with an icon and a label per view, a sliding indicator (js/enhance.js places
+   .nav-ink; reduced motion makes it jump) and count badges (Shortlist, Compare, Research). Five tabs: Map, Shortlist, Compare,
+   Home (Unit 3D and Floor plan, switched in the row under the bar) and Research. On a phone the same control becomes a bottom
+   tab bar: thumb reach, all five tabs in view at once (a scrolling strip hid Research), icons with short labels, safe-area aware.
+   Loaded after tray.css so it can lift the compare tray, the toast and the chord hint above the bar. */
+
+.nav { gap: 1px; padding: 3px; box-shadow: inset 0 1px 2px rgba(0, 0, 0, .12); }
+.nav a { display: inline-flex; align-items: center; gap: 7px; height: 30px; padding: 0 12px 0 10px; }
+.nav .ni { width: 15px; height: 15px; flex: none; color: var(--ink-3); transition: color var(--t-fast); }
+.nav a:hover .ni { color: var(--ink-2); }
+.nav a.on .ni { color: var(--accent); }
+.nav .count { margin-left: 1px; min-width: 18px; text-align: center; line-height: 16px; font-variant-numeric: tabular-nums; font-weight: 600; }
+.nav-ink { top: 3px; bottom: 3px; }
+:root[data-theme="light"] .nav { box-shadow: inset 0 1px 2px rgba(20, 24, 34, .06); }
+
+/* the top bar stays one line: the search name pill goes first (css/app.css), then the tabs tighten */
+@media (max-width: 1440px) { .nav a { padding: 0 10px 0 9px; gap: 6px; } }
+@media (max-width: 900px) { .topbar { gap: var(--s-2); } }
+
+/* the Home sub-switch (Unit 3D / Floor plan) shares the Shortlist / Tours row */
+.subnav[data-kind="home"] a { min-width: 84px; justify-content: center; }
+
+/* ------------------------------------------------------------------ phone: bottom tab bar */
+@media (max-width: 760px) {
+  :root { --tabbar-h: calc(54px * var(--ts, 1)); --tabbar-total: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px)); }
+  body { padding-bottom: var(--tabbar-total); }
+  .topbar { flex-wrap: nowrap; row-gap: 0; padding: 6px var(--s-3); min-height: var(--topbar-h); }
+  .topbar .top-actions { margin-left: auto; }
+  .topbar .nav { position: fixed; z-index: 5; left: 0; right: 0; bottom: 0; order: 0; flex: none; width: auto; margin: 0; padding: 4px 6px env(safe-area-inset-bottom, 0px);
+    height: var(--tabbar-total); display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 2px; align-items: stretch; overflow: visible; overscroll-behavior: auto;
+    -webkit-mask-image: none; mask-image: none; border: 0; border-top: 1px solid var(--line); border-radius: 0; box-shadow: 0 -10px 24px -18px rgba(0, 0, 0, .5);
+    background: color-mix(in srgb, var(--surface-1) 90%, transparent); -webkit-backdrop-filter: blur(18px) saturate(1.2); backdrop-filter: blur(18px) saturate(1.2); }
+  :root[data-transparency="reduced"] .topbar .nav { background: var(--surface-1); -webkit-backdrop-filter: none; backdrop-filter: none; }
+  .nav a, .nav a:not(.on) { flex-direction: column; justify-content: center; gap: 2px; height: auto; min-width: 0; padding: 4px 2px; font-size: 10.5px; font-weight: 600; letter-spacing: .01em; border-radius: var(--r-md); }
+  .nav a:not(.on) .nl { position: static; width: auto; height: auto; overflow: visible; clip: auto; }
+  .nav .ni { width: 21px; height: 21px; }
+  .nav .nl { line-height: 1.1; white-space: nowrap; }
+  .nav .count { position: absolute; top: 3px; left: calc(50% + 4px); margin: 0; min-width: 16px; padding: 0 4px; font-size: 10px; line-height: 15px; }
+  .nav-ink { top: 4px; bottom: calc(4px + env(safe-area-inset-bottom, 0px)); border-radius: var(--r-md); }
+  .nav a.on { color: var(--accent); }
+  /* what floats at the bottom of the screen moves up out of the bar's way */
+  body .tray { bottom: calc(var(--tabbar-total) + 10px); }
+  body .toast, body.has-tray .toast { bottom: calc(var(--tabbar-total) + 14px); }
+  body .chord-hint { bottom: calc(var(--tabbar-total) + 12px); }
+  body .trail-ask { bottom: calc(var(--tabbar-total) + 14px); }
+  .subnav[data-kind="home"] a { flex: 1; }
+}
+@media (max-width: 380px) { .nav a, .nav a:not(.on) { font-size: 10px; } }

@@ -1,6 +1,6 @@
 // Global density setting: Comfortable or Compact for the result cards, the filter rail and the tables.
 // It is one attribute on <html> (data-density) that css/results-rail.css reads, remembered in this browser. The
-// choice lives in the settings menu (#setMenu); the Shortlist's own density buttons follow it and set it.
+// choice lives in the settings menu (#appMenu); the Shortlist's own density buttons follow it and set it.
 //
 // This module is imported before app.js has finished evaluating, so nothing here touches app.js at load time.
 import { store, emit, on } from '../app.js';

@@ -1,10 +1,12 @@
-// App shell pieces that sit around the views: the three-way theme (system, dark, light), the settings menu in the top
-// bar, the "more figures" popover of the stats strip, the Shortlist / Tours sub-tabs, and the route table that keeps
-// the old deep links (#tours, #records/<id>) working as redirects to their new homes.
+// App shell pieces that sit around the views: the three-way theme (system, dark, light), the one top-right menu (js/app-menu.js
+// opens and navigates it; the choices are handled here), the "more figures" popover of the stats strip, the sub-tabs under the
+// top bar (Shortlist / Tours, and Unit 3D / Floor plan under the Home tab), and the route table that keeps the old deep links
+// (#tours, #records/<id>) working as redirects to their new homes.
 import { S, on, emit, store, openSettings, exportPicks } from './app.js';
 import { $ } from './util.js';
 import { openPalette } from './palette.js';
 import { setDensity } from './features/density.js';
+import { initAppMenu } from './app-menu.js';
 
 // ------------------------------------------------------------------ theme
 const MODES = ['system', 'dark', 'light'];
@@ -49,53 +51,60 @@ export function parseRoute(hash = location.hash) {
   if (canon !== raw) { try { history.replaceState(null, '', '#' + canon); } catch { location.replace('#' + canon); } }
   const [v, ...r2] = canon.split('/'), arg = r2.join('/');
   if (v === 'list' && arg === 'tours') return { view: 'tours', arg: '', group: 'list' };
-  return { view: v, arg, group: v };
+  return { view: v, arg, group: HOME_VIEWS.includes(v) ? 'home' : v };   // Unit 3D and Floor plan are two sides of the Home tab
 }
+/** The views the Home tab holds. Their own routes (#unit/<id>, #plan/<id>) are unchanged. */
+export const HOME_VIEWS = ['unit', 'plan'];
 
-// ------------------------------------------------------------------ Shortlist / Tours sub-tabs
+// ------------------------------------------------------------------ sub-tabs: Shortlist / Tours, and Unit 3D / Floor plan under Home
 const savedN = () => Object.values(S.picks).filter((p) => p.saved).length;
-/** The thin tab row under the top bar for the Shortlist group; hidden for every other view. */
+const lastHome = () => (store.get('home-last', 'unit') === 'plan' ? 'plan' : 'unit');
+/** The home a sub-tab or the Home tab should open: the one being looked at, if it has the other view's data. */
+function homeHref(view, arg) {
+  const m = S.manifest || {}, has = (k) => (m[k] || []).includes(arg);
+  const id = arg && (view === 'unit' ? has('plans') : has('sites')) ? '/' + arg : '';
+  return `#${view}${id}`;
+}
+const hashArg = () => decodeURIComponent(location.hash.replace(/^#/, '').split('/').slice(1).join('/').split('?')[0]);
+/** Where the `4` key goes: the Home view open last; from a Home view, the other one (on the same home when it has that data). */
+export function homeTarget() {
+  const here = HOME_VIEWS.includes(S.view);
+  return homeHref(here ? (S.view === 'unit' ? 'plan' : 'unit') : lastHome(), here ? hashArg() : '').slice(1);
+}
+/** The thin tab row under the top bar: Shortlist / Tours for the Shortlist group, Unit 3D / Floor plan for the Home tab;
+ *  hidden for every other view. The Home tab itself opens whichever of the two was open last. */
 export function syncSubnav(view = S.view) {
   const el = $('subnav'); if (!el) return;
-  const on2 = view === 'list' || view === 'tours';
-  el.hidden = !on2;
-  document.body.toggleAttribute('data-sub', on2);
-  if (!on2) return;
+  const home = HOME_VIEWS.includes(view), short = view === 'list' || view === 'tours';
+  if (home) { store.set('home-last', view); const t = $('tabHome'); if (t) t.setAttribute('href', `#${view}`); }
+  else { const t = $('tabHome'); if (t) t.setAttribute('href', `#${lastHome()}`); }
+  el.hidden = !(home || short);
+  el.dataset.kind = home ? 'home' : short ? 'shortlist' : '';
+  document.body.toggleAttribute('data-sub', home || short);
+  if (home) {
+    const arg = hashArg();
+    el.setAttribute('aria-label', 'Home views');
+    const a = (v, label) => `<a href="${homeHref(v, arg)}" data-sub="${v}" ${view === v ? 'class="on" aria-current="page"' : ''}>${label}</a>`;
+    el.innerHTML = a('unit', 'Unit 3D') + a('plan', 'Floor plan');
+    return;
+  }
+  el.setAttribute('aria-label', 'Shortlist sections');
+  if (!short) return;
   const n = savedN();
   el.innerHTML = `<a href="#list" ${view === 'list' ? 'class="on" aria-current="page"' : ''}>Shortlist</a><a href="#list/tours" ${view === 'tours' ? 'class="on" aria-current="page"' : ''}>Tours${n ? `<i>${n}</i>` : ''}</a>`;
 }
 
-// ------------------------------------------------------------------ settings menu and the stats popover
-function popover(btn, pop) {
-  const items = () => [...pop.querySelectorAll('button:not([disabled]), a[href]')];
-  const set = (open, focus = false) => {
-    pop.hidden = !open; btn.setAttribute('aria-expanded', String(open));
-    if (open && focus) (pop.querySelector('[aria-checked="true"]') || items()[0])?.focus();
-  };
-  btn.addEventListener('click', (e) => { e.stopPropagation(); set(pop.hidden, pop.hidden && e.detail === 0); });
-  document.addEventListener('click', (e) => { if (!pop.hidden && !pop.contains(e.target) && !btn.contains(e.target)) set(false); });
-  pop.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') { e.stopPropagation(); set(false); btn.focus(); return; }
-    const it = items(), i = it.indexOf(document.activeElement);
-    const step = { ArrowDown: 1, ArrowRight: 1, ArrowUp: -1, ArrowLeft: -1 }[e.key];
-    if (step && it.length) { e.preventDefault(); it[(i + step + it.length) % it.length].focus(); }
-    else if (e.key === 'Home') { e.preventDefault(); it[0]?.focus(); }
-    else if (e.key === 'End') { e.preventDefault(); it[it.length - 1]?.focus(); }
-    else if (e.key === 'Tab') set(false);
-  });
-  return set;
-}
-
+// ------------------------------------------------------------------ the menu's choices and the stats popover
 export function initShell() {
-  // settings menu
-  const btn = $('setBtn'), menu = $('setMenu');
-  const setMenu = popover(btn, menu);
+  // Close the menu after a choice unless the control keeps it open (data-keep: accent, comfort, text size, office pin; the "Switch
+  // search" row). Theme and density keep it open too, so you see the change and then press Esc.
+  const menu = $('appMenu'), api = initAppMenu();
   menu.addEventListener('click', (e) => {
     const b = e.target.closest('button'); if (!b) return;
-    if (b.dataset.themeMode) { setThemeMode(b.dataset.themeMode); return; }   // the menu stays open: see the change, then Esc
-    if (b.dataset.density) { setDensity(b.dataset.density); return; }   // density (results/rail features): the menu stays open too
-    if (b.hasAttribute('data-keep')) return;   // [feature C] accent, comfort switches and text size also keep the menu open
-    setMenu(false);
+    if (b.dataset.themeMode) { setThemeMode(b.dataset.themeMode); return; }
+    if (b.dataset.density) { setDensity(b.dataset.density); return; }
+    if (b.hasAttribute('data-keep') || b.id === 'mnSwitch') return;
+    api.close();
     if (b.id === 'mnSearch') openSettings();
     else if (b.id === 'mnPicks') exportPicks();
     else if (b.id === 'mnPalette') openPalette();
