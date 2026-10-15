@@ -9,6 +9,7 @@ import { syncTrigger } from '../palette.js';
 import { $, esc, toast } from '../util.js';
 import { group, announceLast } from './undo.js';
 import { parseQuery, toFilters, matchesNL, chipsForNL, withoutKeys } from './nlquery.js';
+import { getGeo, ensureGeo } from './places.js';   // [places] street, park and neighbourhood phrases
 
 const SPARK = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M8 1.8l1.3 3.6 3.6 1.3-3.6 1.3L8 11.6 6.7 8 3.1 6.7l3.6-1.3z"/><path d="M12.5 10.5l.6 1.6 1.6.6-1.6.6-.6 1.6-.6-1.6-1.6-.6 1.6-.6z"/></svg>';
 const WARN = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M8 2.2l6.2 11H1.8z"/><path d="M8 6.8v3M8 11.8v.2"/></svg>';
@@ -16,14 +17,14 @@ const WARN = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-
 // ------------------------------------------------------------------ context for the parser
 let ctxCache = null;
 function context() {
-  if (ctxCache?.n === S.listings.length) return ctxCache.ctx;
+  if (ctxCache?.n === S.listings.length && ctxCache.geo === getGeo()) return ctxCache.ctx;
   const places = new Set();
   for (const L of S.listings) {
     if (L.neighborhood) places.add(L.neighborhood);
     if (L.building) places.add(L.building);
     if (L.address) places.add(String(L.address).split(',')[0]);
   }
-  ctxCache = { n: S.listings.length, ctx: { destinations: S.crit.commute?.destinations || [], places: [...places] } };
+  ctxCache = { n: S.listings.length, geo: getGeo(), ctx: { destinations: S.crit.commute?.destinations || [], places: [...places], geo: getGeo() } };
   return ctxCache.ctx;
 }
 const base = () => ({ tiers: (S.crit.budget?.tiers || []).map((_, i) => i), status: [...ACTIVE], tierCap: S.crit.budget?.tiers?.length ? Math.max(...S.crit.budget.tiers.map((t) => t.max ?? 0)) : null });
@@ -61,10 +62,12 @@ function previewCount(parsed) {
 export function nlItem(query) {
   if (query.length > 400) return null;   // a pasted paragraph is not a search
   const parsed = parseQuery(query, context());
-  if (parsed.unsupported.length && !parsed.found) {
-    const what = parsed.unsupported.join(', ');
-    return { group: 'Ask', id: 'nl', icon: WARN, title: `Can’t filter by “${esc(what)}” yet`, sub: 'Try a neighbourhood, a street or a building name instead', meta: '',
-      run: () => toast(`Filtering by “${what}” is not supported yet: type a neighbourhood or street name`) };
+  if ((parsed.unsupported.length || parsed.unknown.length) && !parsed.found) {   // [places] unknown places are reported, never guessed
+    const unk = parsed.unknown.length > 0;
+    const [what, why] = unk ? [parsed.unknown.join(', '), ''] : (parsed.unsupported.join(', ').match(/^(.*?)(?: \((.*)\))?$/) || []).slice(1);   // "north of 3rd Avenue (it runs north-south...)"
+    return { group: 'Ask', id: 'nl', icon: WARN, title: unk ? `No place “${esc(what)}” in this search’s map data` : `Can’t filter by “${esc(what)}” yet`,
+      sub: esc(why ? why.charAt(0).toUpperCase() + why.slice(1) : getGeo() ? 'Try a street, park or neighbourhood the map knows, or a building name' : 'Run apartmentscout places, then build, to filter by street, park or neighbourhood'), meta: '',
+      run: () => toast(unk ? `No place “${what}” in the map data: try another name` : `Filtering by “${what}” is not supported yet: ${why || 'type a neighbourhood or street name'}`) };
   }
   const real = parsed.chips.filter((c) => c.key !== 'text');
   if (!parsed.found || (!real.length && parsed.chips.length < 2)) return null;
@@ -74,6 +77,7 @@ export function nlItem(query) {
   const notes = [];
   notes.push(n == null ? 'Counting…' : n === 0 ? 'No home matches' : `${n} of ${total} active homes`);
   if (parsed.unsupported.length) notes.push(`can’t filter by “${parsed.unsupported.join(', ')}” yet`);
+  if (parsed.unknown.length) notes.push(`no place “${parsed.unknown.join(', ')}” in the map data`);   // [places]
   if (parsed.rest) notes.push(`not understood: “${parsed.rest}”`);
   if (parsed.f.priceDrops && dropsState === 'ready' && !drops.size) notes.push('no price history recorded yet');
   return {
@@ -116,7 +120,8 @@ function renderChips() {
 }
 
 export function initNL() {
-  EXTRA_FILTERS.push((L, f) => matchesNL(L, f.nl, { price: budgetAmt, drops }));
+  EXTRA_FILTERS.push((L, f) => matchesNL(L, f.nl, { price: budgetAmt, drops, geo: getGeo(), dests: S.crit.commute?.destinations || [], kmh: S.crit.commute?.transit?.walk_speed_kmh || 4.8 }));   // [places] [multi-destination]
+  ensureGeo();   // [places] loads data/places.json in the background
   const results = document.getElementById('results'), head = results?.querySelector('.results-h');
   if (head && !$('nlChips')) {
     const host = document.createElement('div');

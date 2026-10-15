@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-14T22:01:08",
+ "generated": "2026-10-14T22:34:21",
  "version": "0.1.0",
  "search": "Manhattan 1BR, fall 2026",
  "layers": [
@@ -75,6 +75,7 @@
   "coverage.json",
   "digest.json",
   "history.json",
+  "places.json",
   "watchlist.json"
  ]
 }

@@ -262,7 +262,7 @@ def city_profile(crit: dict) -> dict:
 
 def run_commute(ws, listings: list[dict], crit: dict, cell_m: float | None = None, pad_m: float = 1500,
                 log=print, layers_dir: Path | None = None, mode_grids: bool | None = None,
-                only: Iterable[str] | None = None) -> list[dict]:
+                only: Iterable[str] | None = None, only_dests: Iterable[str] | None = None) -> list[dict]:
     """Route every destination; write commute-<dest>.json (best of transit) and, per mode,
     commute-<dest>-<mode>.json; set L["commute"][dest] on every geocoded listing.
 
@@ -270,10 +270,21 @@ def run_commute(ws, listings: list[dict], crit: dict, cell_m: float | None = Non
     the walking network and the routing scans are the same, but the heat-map layers on disk are
     left untouched and the other listings keep the commute they already have.
 
+    ``only_dests`` (destination names) routes just those destinations, for example a newly added second one: the
+    others keep the grids and per-listing minutes already on disk, and the walking network, entrances and land model
+    are still planned around every destination so nothing is fetched twice.
+
     The grids hold the router's own answer at every cell centre (grid.surface), so a map that
     interpolates between centres stays within a fraction of a minute of the router anywhere."""
     cm = crit.get("commute") or {}
     dests = cm.get("destinations") or []
+    run_dests = dests
+    if only_dests is not None:
+        names = list(only_dests)
+        missing = [n for n in names if n not in {d["name"] for d in dests}]
+        if missing:
+            raise ValueError(f"no such destination: {', '.join(missing)} (the search has: {', '.join(d['name'] for d in dests)})")
+        run_dests = [d for d in dests if d["name"] in names]
     tr = cm.get("transit") or {}
     speed = (tr.get("walk_speed_kmh") or 4.8) / 3.6
     detour = tr.get("walk_detour", 1.25)
@@ -308,7 +319,7 @@ def run_commute(ws, listings: list[dict], crit: dict, cell_m: float | None = Non
     layers = []
     net_cache: dict[tuple[int, int], Network] = {}
     graph = None  # (WalkGraph, NetPlan, receipts, CellStamp) once built; False after a failed build
-    for d in dests:
+    for d in run_dests:
         if d.get("lat") is None:
             raise ValueError(f"Destination {d['name']} has no lat/lon. Run `apartmentscout geocode`.")
         arrive = _hhmm(str(d.get("arrive_by", "09:00")))

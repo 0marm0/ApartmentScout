@@ -6,6 +6,8 @@
 // previous one. This module owns: the snapshot shape, the diff (with a human label for the toast), and the history
 // (one stack, merge of rapid edits such as a slider drag, redo that clears on a new change).
 
+import { describeNlPlus } from './nlplus.js';   // [places] [multi-destination]
+
 /** The slices a snapshot covers, in the order they are reported. */
 export const SCOPES = ['picks', 'compare', 'filters', 'weights', 'commute'];
 
@@ -77,6 +79,7 @@ function filtersChange(a, b, nm) {
   if (k === 'q') return { label: B.q ? `Text filter ${q(B.q)}` : 'Cleared the text filter', key: 'filters:q' };
   if (k === 'tiers' || k === 'over') return { label: 'Changed the budget filter', key: null };
   if (k === 'status') return { label: 'Changed the status filter', key: null };
+  if (k === 'nl') { const pl = describeNlPlus(A.nl, B.nl); if (pl) return pl; }   // [places] [multi-destination] one place clause or destination limit
   if (k === 'nl') return { label: B.nl ? 'Applied a plain-language search' : 'Cleared the plain-language search', key: null };
   return { label: 'Changed a filter', key: `filters:${k}` };
 }

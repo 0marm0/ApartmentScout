@@ -76,6 +76,42 @@ walk_grids:
       - [-74.0000, 40.7050]
       - [-74.0090, 40.7010]
       - [-74.0150, 40.6990]
+# Named places for plain-language search ("east of 3rd Ave", "near Bryant Park", "in Murray Hill"):
+# `apartmentscout places` builds <search>/places.json from OpenStreetMap streets and parks plus the neighbourhood
+# polygons below. The street grid's north (29 degrees east of true north) comes from walk_grids above; "east of an
+# avenue" is the side away from the Hudson along the avenue's own axis, not the compass.
+places:
+  neighbourhoods:                  # 2020 Neighborhood Tabulation Areas (NYC Open Data, Socrata 9nt8-h7nd)
+    socrata: 9nt8-h7nd
+    id: nta2020
+    name: ntaname
+    geom: the_geom
+    where: "ntatype = '0'"         # residential areas; parks come from OpenStreetMap
+    split:                         # Roosevelt Island is its own area, not part of the Upper East Side
+      - from: Upper East Side-Lenox Hill-Roosevelt Island
+        name: Roosevelt Island
+        rest_name: Upper East Side-Lenox Hill
+        contains: [-73.9500, 40.7615]   # a point on the island: the polygon part holding it is split off
+  aliases:                         # nickname -> area or group name
+    ues: Upper East Side
+    uws: Upper West Side
+    les: Lower East Side
+    fidi: Financial District
+    midtown east: East Midtown-Turtle Bay
+    nomad: Midtown South-Flatiron-Union Square
+    stuy town: Stuyvesant Town-Peter Cooper Village
+    clinton: Hell's Kitchen
+  groups:                          # a name that spans several areas
+    Midtown: [Midtown-Times Square, East Midtown-Turtle Bay, Midtown South-Flatiron-Union Square]
+  street_keep: [Avenue A, Avenue B, Avenue C, Avenue D]   # short, but people say "east of Avenue A"
+  street_merge:                    # one avenue under several names: the first name is shown
+    - [6th Avenue, Avenue of the Americas, Malcolm X Boulevard]
+    - [7th Avenue, Adam Clayton Powell Jr. Boulevard]
+    - [8th Avenue, Central Park West, Frederick Douglass Boulevard]
+    - [9th Avenue, Columbus Avenue]
+    - [10th Avenue, Amsterdam Avenue]
+    - [Park Avenue, Park Avenue South]
+    - [FDR Drive, East River Drive]
 listing_sites: [StreetEasy, Zillow, Apartments.com, RentHop, Corcoran, Compass, building websites]
 review_sites: [Openigloo, Google Maps, Yelp, Reddit r/AskNYC, r/NYCapartments, ApartmentRatings, Birdeye]
 # Names for the tallest towers so the 3D view labels them. Matched within 120 m.

@@ -665,6 +665,11 @@ def test_price_history_chip_and_sparkline_only_where_prices_were_recorded(open_m
 
 def test_no_history_means_no_sparklines_and_no_chips(open_page) -> None:
     s = open_page("#map")
+    # the example carries real dated history now: serve an empty one to check nothing is drawn without it
+    s.page.route("**/data/history.json", lambda r: r.fulfill(status=200, content_type="application/json",
+                                                              body='{"snapshots": [], "events": [], "price_history": {}}'))
+    s.page.reload()
+    s.page.wait_for_selector("#cards .card", timeout=30000)
     assert s.page.locator("#cards .ph, #cards .ph-d").count() == 0
     s.page.evaluate("() => { const h = document.getElementById('cards'); h.scrollTop = 6000; }")
     s.page.wait_for_timeout(300)

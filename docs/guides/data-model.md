@@ -374,6 +374,24 @@ cannot be fetched. A network layer also carries `walk_network`:
 
 Each listing's `commute.<dest>.modes.walk.m` is the metres along that network (or the grid metric).
 
+**Combined commute surfaces.** With two or more destinations, `apartmentscout build` adds
+`layers/commute-combined-best.json` (and `-subway`, `-bus`) to the dashboard data, from the per-destination grids:
+`{"kind": "commute-combo", "mode": "best", "destinations": [{name, weight, max_minutes, lat, lon}], "limit_worst", "limit_weighted",
+"bbox", "rows", "cols", "cell_m", "scale": 0.5, "nodata": 255, "worst_z", "weighted_z", ...}`. `worst_z` is the longest trip
+to any destination at each cell and `weighted_z` the weight-averaged minutes, each as the usual half-minute bytes, deflated
+(zlib) and base64-encoded (inflate with `DecompressionStream("deflate")`). They are listed in `manifest.extra`, not
+`manifest.layers`: the dashboard loads them when someone picks them in the map legend.
+
+## Places
+
+`places.json` (`apartmentscout places`; copied to the dashboard data by `build`) is the geometry behind "east of 3rd Ave",
+"near Bryant Park" and "in Murray Hill": `streets` (`name`, `keys`: every spelling the search box accepts, `axis`: the
+street's direction in degrees, `lines`), `areas` (parks and neighbourhoods: `id`, `name`, `kind`, `keys`, `polys`: a list
+of polygons, each an outer ring then holes), `groups` (a name that spans several areas: `members`), `grid`
+(`north_bearing`: the street grid's north), `bbox`, `sources` (one receipt per dataset: OpenStreetMap, the neighbourhood
+dataset) and `attribution`. Lines and rings are integer 1e-5 degree steps, delta-encoded (`enc: "e5-delta"`):
+`[lon0, lat0, dlon1, dlat1, ...]`. About 100 KB for Manhattan; see the methodology's *Place filters*.
+
 ## Site model
 
 `apartmentscout site <id>` writes `sites/<id>.json` (version 2) in local metres around the listing:

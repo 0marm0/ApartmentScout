@@ -173,7 +173,9 @@ function patchStatus() {
 }
 
 // ------------------------------------------------------------------ events
-const debounced = (k, fn, ms = 260) => { clearTimeout(timers.get(k)); timers.set(k, setTimeout(() => { timers.delete(k); fn(); }, ms)); };
+const pending = new Map();   // key -> the debounced write still waiting, so leaving a field or closing never loses it
+const debounced = (k, fn, ms = 260) => { clearTimeout(timers.get(k)); pending.set(k, fn); timers.set(k, setTimeout(() => { timers.delete(k); pending.delete(k); fn(); }, ms)); };
+function runPending() { for (const [k, fn] of [...pending]) { clearTimeout(timers.get(k)); timers.delete(k); pending.delete(k); fn(); } }
 const parseNum = (s) => { const t = String(s).trim().replace(',', '.'); return t === '' ? null : Number.isFinite(+t) ? +t : undefined; };
 function onClick(e) {
   const t = e.target.closest('button, label.vs-cam'); if (!t || !root.contains(t)) return;
@@ -260,7 +262,7 @@ export function open(listingId, controller) {
   inerted = [];
   for (const n of document.body.children) if (n !== root && !n.inert && !['SCRIPT', 'STYLE', 'LINK'].includes(n.tagName) && n.id !== 'toast' && !n.classList.contains('trail-ask')) { n.inert = true; inerted.push(n); }
   root.addEventListener('click', onClick); root.addEventListener('input', onInput); root.addEventListener('change', onFiles); root.addEventListener('keydown', onKey);
-  root.addEventListener('focusout', (e) => { if (e.target.matches?.('input[data-f], input[data-room-f], textarea')) FS.flush(); });
+  root.addEventListener('focusout', (e) => { if (e.target.matches?.('input[data-f], input[data-room-f], textarea')) { runPending(); FS.flush(); } });
   offStore.push(FS.onChange((changed) => { if (changed === null || changed === id) patchStatus(); }));
   requestAnimationFrame(() => { root?.classList.add('on'); root?.querySelector('#vsT')?.focus({ preventScroll: true }); });
   loadThumbs();
@@ -268,6 +270,7 @@ export function open(listingId, controller) {
 }
 export function close(quick = false) {
   if (!root) return;
+  runPending();
   FS.flush();
   const r = root; root = null; ctl?.closed?.(id); ctl = null;
   offStore.splice(0).forEach((off) => off());

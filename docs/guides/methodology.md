@@ -286,6 +286,44 @@ route choices between near-equal options and the street-to-platform allowance. P
 are excluded in the NYC config (`exclude_routes`); including them shortens some bus-only trips from
 the Upper West Side by up to 9 minutes.
 
+**Several destinations.** Every destination is routed with the same network, so a second one adds its scans and its
+grid, not another timetable load (the example with two extra destinations routes in about 12 s). Each listing gets
+`commute[<destination>]` for all of them; the score takes the weight-averaged part per destination (above), and
+`apartmentscout commute --dest NAME` routes just the named ones. `apartmentscout build` then makes the **combined
+surfaces**: per mode, `layers/commute-combined-<mode>.json` holds the *worst of* (the longest trip to any destination at
+each cell) and the *weighted* mean of minutes (each destination counted by its `weight`) as the usual half-minute bytes,
+deflated (zlib) and base64-encoded, about 24 KB for three destinations on the 227 x 416 example grid. A cell blank for any
+destination (water, out of reach) is blank in both. Grids computed at different times may differ in extent; the later ones
+are sampled onto the first grid's cells by nearest centre. The dashboard's per-home figure is the scorer's commute part:
+100 at half the limit, 50 at the limit, 0 at twice the limit, per destination, weight-averaged over the destinations that
+have minutes for the home.
+
+## Place filters
+
+"East of 3rd Ave", "between 30th and 45th", "near Bryant Park" and "in Murray Hill" are answered in the browser from
+`places.json` (`apartmentscout places`, `apartmentscout/geo/places.py`). Streets: OpenStreetMap named `highway` ways
+(Overpass, cached, a receipt per query), chained per canonical name, Douglas-Peucker simplified to 3 m, kept when they are
+numbered streets or at least 1.5 km long (the profile's `street_keep` and `street_merge` add short ones and join one
+avenue's names: 8th Avenue = Central Park West = Frederick Douglass Boulevard). Ways outside the profile's study polygon
+(NYC: the Manhattan street grid) are dropped, so 3rd Avenue is Manhattan's. Parks: OpenStreetMap `leisure=park` ways and
+multipolygon relations of at least 25,000 m2 (6,000 m2 when tagged on Wikipedia or Wikidata), minus playgrounds, piers and
+pools. Neighbourhoods: the profile's open dataset (NYC: NTA 2020, Socrata `9nt8-h7nd`, residential areas), with the parts
+of compound names ("Murray Hill-Kips Bay") as aliases and a part shared by several areas ("Upper East Side") as their
+union. Coordinates are integer 1e-5 degree steps (about a metre), delta-encoded: about 100 KB for the Manhattan example.
+
+Side of a street. Each street carries its own `axis` (its direction in degrees, forward = towards the grid's north), and
+the grid's north is the profile's walking-grid bearing (Manhattan 29). For "east of S": take the segment of S nearest the
+home, its normal turned towards the grid's east, and ask whether the home lies ahead of that segment's line along the
+normal. A diagonal street is judged by its direction at the nearest stretch; a street whose direction is within about 17
+degrees of the one asked for has no such side. Beyond a street's ends the last segment's line is extended, so homes below
+Astor Place or above 128th Street still have a side of 3rd Avenue. "Between A and B" is the two half-planes; "near" is the
+distance to the polygon's edge or the street's line, at your walking speed over the 1.25 street detour used for the
+walking rings.
+
+Not covered: a street the OpenStreetMap extract does not name the way the renter does (the profile's `street_merge` and
+aliases fix the common ones), sides of a park or neighbourhood, and neighbourhood boundaries other than the dataset's (a
+listing's own `neighborhood` label may differ from the outline). Unknown names are reported, never matched approximately.
+
 ## Sun and view
 
 **Buildings.** NYC uses the city's building footprints (photogrammetric roof height and ground
