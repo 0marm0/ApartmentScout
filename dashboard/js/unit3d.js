@@ -61,6 +61,14 @@ const st = {
   study: 'heights', ifBi: null,
   asked: null, picked: false,   // [camera] the camera a page address named; whether the renter picked one in this visit
 };
+let setWideLayout = () => {};   // set in init: the wide model (panels below) or the panels beside it
+let wideBeforeMatch = false;
+// matching a photo docks its guide in the side column, so the panels come back beside the model for the duration (the wide choice is kept)
+function matchLayout(on) {
+  const V = document.getElementById('view-unit');
+  if (on && V?.dataset.wide === '1') { wideBeforeMatch = true; setWideLayout(false, false); }
+  else if (!on && wideBeforeMatch) { wideBeforeMatch = false; setWideLayout(true, false); }
+}
 let seeInsideIntent = false;   // [camera] "See inside" was pressed for the home being opened (read in show())
 /** The camera the renter chose last (orbit, window or inside), or null. */
 const savedCamera = () => { const v = store.get(CAMERA_KEY, ''); return SAVED_CAMERAS.includes(v) ? v : null; };
@@ -506,9 +514,9 @@ function wireStage() {
   const fold = (btn, key) => btn.addEventListener('click', () => { const on = V.dataset[key] !== '1'; if (on) V.dataset[key] = '1'; else delete V.dataset[key]; btn.setAttribute('aria-expanded', String(on)); fitGrid(); });
   fold($('uFactsBtn'), 'facts'); fold($('uUnitsBtn'), 'units');
   // the model is wide by default (panels below it); the second button puts them beside it again, and the first goes full screen
-  const setWide = (on) => { if (on) V.dataset.wide = '1'; else delete V.dataset.wide; $('uWide').setAttribute('aria-pressed', String(!on)); $('uWide').title = $('uWide').ariaLabel = on ? 'Show the panels beside the model' : 'Make the model wide'; store.set('unit-wide', on); fitGrid(); };
-  setWide(store.get('unit-wide', true) !== false);
-  $('uWide').addEventListener('click', () => setWide(V.dataset.wide !== '1'));
+  setWideLayout = (on, keep = true) => { if (on) V.dataset.wide = '1'; else delete V.dataset.wide; $('uWide').setAttribute('aria-pressed', String(!on)); $('uWide').title = $('uWide').ariaLabel = on ? 'Show the panels beside the model' : 'Make the model wide'; if (keep) store.set('unit-wide', on); fitGrid(); };
+  setWideLayout(store.get('unit-wide', true) !== false);
+  $('uWide').addEventListener('click', () => setWideLayout(V.dataset.wide !== '1'));
   $('uFull').addEventListener('click', () => { const el = $('stage'); if (document.fullscreenElement) document.exitFullscreen?.(); else el.requestFullscreen?.().catch(() => {}); });
   document.addEventListener('fullscreenchange', () => { const on = document.fullscreenElement === $('stage'); $('uFull')?.setAttribute('aria-pressed', String(on)); stage?.resize?.(); });
   $('uLensTog').addEventListener('click', () => { const on = !$('uLens').classList.contains('open'); $('uLens').classList.toggle('open', on); $('uLensTog').setAttribute('aria-expanded', String(on)); });   // the sliders stay closed until asked for: the picture comes first
@@ -1724,7 +1732,7 @@ function matchBridge() {
       stage.dirty = true;
     },
     nameOf: (bi) => bname(bi, true), facadeNear, apply: applyViewCal, toast, download, api: localApi, saved: () => viewCal,
-    onSaved(rec) { viewCal = rec; }, onCleared() { viewCal = null; if (/^photo/.test(st.cal?.src || '')) { st.src = null; setCal(undefined); } else { accChip(); evidencePanel(); } }, opened() {},
+    onSaved(rec) { viewCal = rec; }, onCleared() { viewCal = null; if (/^photo/.test(st.cal?.src || '')) { st.src = null; setCal(undefined); } else { accChip(); evidencePanel(); } }, opened(on) { matchLayout(!!on); },
   };
 }
 

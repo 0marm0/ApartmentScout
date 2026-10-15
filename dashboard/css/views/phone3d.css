@@ -52,3 +52,18 @@
   #view-plan .rnq-note { top: 140px; bottom: auto; right: 8px; }
   #view-plan .rnq-prog { bottom: 112px; }
 }
+
+/* on a phone the camera buttons, the room chips and the measured-vs-assumed dots are placed against the stage itself (the wrapper
+   that flows them on a desktop steps aside), so the camera row really sits in the thumb zone and the chips along the top */
+@media (max-width: 760px) {
+  #view-unit .u-views { display: contents; }
+  #view-unit #uViews > * { position: absolute; }
+  #view-unit #uViews > .u-look { top: 8px; left: 8px; right: 56px; bottom: auto; }
+  #view-unit #uViews > .u-modes { top: auto; bottom: 64px; left: 8px; right: 8px; }
+  #view-unit #uViews > .acc-chip { top: 60px; left: 8px; bottom: auto; }
+}
+@media (max-width: 760px) {
+  #view-unit .u-modes { flex-wrap: nowrap; }
+  #view-unit .u-modes .um-sep { flex: none; width: 1px; height: 22px; margin: 0 4px; background: var(--line-strong); }
+  #view-unit .u-modes .um-s, #view-unit .u-modes .um-fp { flex: none; }
+}
