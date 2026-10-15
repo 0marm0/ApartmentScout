@@ -19,6 +19,8 @@ import re
 from pathlib import Path
 from typing import Any, Iterable
 
+from .mediabase import media_base_url, remote_url
+
 DASH = Path(__file__).resolve().parent.parent / "dashboard"
 TEMPLATE = DASH / "share" / "snapshot.html"
 SCHEMA_RE = re.compile(r'<script type="application/json" id="as-schema">\s*(.*?)\s*</script>', re.S)
@@ -303,10 +305,22 @@ def photo_candidates(L: dict) -> list[dict]:
     return uniq
 
 
+def _saved_copy(root: Path | None, local: str) -> Path | None:
+    """The saved photo on disk: ``media/<path>`` in the search folder, else the starter set's ``media-lite/<path>``."""
+    if root is None or not local.startswith("media/"):
+        return None
+    for folder in ("", "media-lite/"):
+        f = root / (folder + local.removeprefix("media/")) if folder else root / local
+        if f.is_file():
+            return f
+    return None
+
+
 def attach_photos(homes: list[dict], listings: list[dict], root: Path | None, schema: dict, enabled: bool = True,
-                  budget_kb: float | None = None) -> int:
-    """Give each home up to ``max_per_home`` photos: an embedded thumbnail from the saved local copy while the byte
-    budget lasts (the first photo of every home before anyone's second), else a link. Returns the bytes embedded."""
+                  budget_kb: float | None = None, media_base: str | None = None) -> int:
+    """Give each home up to ``max_per_home`` photos: an embedded thumbnail from the saved local copy (media/, then
+    media-lite/) while the byte budget lasts (the first photo of every home before anyone's second), else a link: the
+    original, else the published copy (``media_base``, the search's media_base_url). Returns the bytes embedded."""
     cfg = schema["photos"]
     if not enabled:
         return 0
@@ -323,12 +337,15 @@ def attach_photos(homes: list[dict], listings: list[dict], root: Path | None, sc
                     continue
                 c["done"] = True
                 src = None
-                if c["local"] and root is not None and (root / c["local"]).is_file() and used < budget:
-                    uri = _thumb_data_uri(root / c["local"], cfg["thumb_px"], cfg["quality"])
+                saved = _saved_copy(root, c["local"]) if c["local"] else None
+                if saved is not None and used < budget:
+                    uri = _thumb_data_uri(saved, cfg["thumb_px"], cfg["quality"])
                     if uri and used + len(uri) <= budget:
                         src, used = uri, used + len(uri)
                 if src is None and c["ref"]:
                     src = c["ref"]
+                if src is None and c["local"]:   # no original link: the published copy, if the search has one
+                    src = remote_url(media_base, c["local"].removeprefix("media/"))
                 if src:
                     chosen[hi].append({"src": src, **({"credit": c["credit"]} if c["credit"] else {})})
                     break
@@ -394,7 +411,7 @@ def build_payload(listings: list[dict], crit: dict, picks: dict[str, dict], *, w
     mp: dict = {}
     if pts and transit_features:
         mp["lines"] = simplify_lines(transit_features, home_bbox(pts, schema["map"]["pad"]), schema["map"])
-    embedded = attach_photos(homes, chosen, root, schema, enabled=with_photos, budget_kb=photo_budget_kb)
+    embedded = attach_photos(homes, chosen, root, schema, enabled=with_photos, budget_kb=photo_budget_kb, media_base=media_base_url(crit))
     s = crit.get("search") or {}
     payload = {
         "v": schema["version"], "view": view, "generated": generated or dt.date.today().isoformat(), "source": SOURCE, "notes": bool(include_notes),

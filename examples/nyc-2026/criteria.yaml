@@ -9,6 +9,9 @@ search:
     latest: 2026-11-01
   map_center: [40.7530, -73.9790]
   map_zoom: 13
+  # Where the full set of listing photos is published (the demo site serves the GitHub release's photos here). A photo that is in
+  # neither media/ nor media-lite/ next to this file is fetched from <this folder>/<its path under media/>. A fork changes this to its own site.
+  media_base_url: https://0marm0.github.io/ApartmentScout/demo/media/
 
 budget:
   basis: monthly_cost       # net-effective rent + recurring fees + one-time fees spread over the lease
