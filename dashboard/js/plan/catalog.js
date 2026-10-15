@@ -89,6 +89,11 @@ export const CATALOG = {
     src: 'Narrow 4-drawer dresser, 70 x 50 x 98 cm (27.6 x 19.7 x 38.6 in), IKEA-size.',
     zones: [Z('front', 'drawers', { mode: 'full', name: 'Drawers' })],
   },
+  'dresser-malm-6': {
+    name: 'MALM 6-drawer chest', cat: 'storage', kind: 'dresser', style: 'malm', w: 63, d: 18.9, h: 30.7, color: 0x2b221d,
+    src: 'IKEA MALM 6-drawer chest, 160 x 48 x 78 cm (63 x 18.9 x 30.7 in): two columns of three flat drawers, a recessed edge along the top of each front as the pull, no knobs.',
+    zones: [Z('front', 'drawers', { mode: 'full', name: 'Drawers' })],
+  },
   'dresser-wide': {
     name: 'Dresser, 6 drawers', cat: 'storage', kind: 'dresser', w: 55, d: 19, h: 31, color: MAT.oak,
     src: 'Typical wide 6-drawer dresser, about 55 x 19 x 31 in.',

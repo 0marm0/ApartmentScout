@@ -408079,7 +408079,7 @@
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
   },
-  "exposure_evidence": "Facades tested at floor 25 (eye 76 m, 90-degree view, straight sight lines over the site's walls; see the sightline block): NNE 28 (the 39th Street end): no mapped green in view and 39% of the frame blocked above 30 degrees, 633 3rd Avenue 129 m away. SSW 209: 62% of the frame blocked above 30 degrees by 240 East 38th Street (115 m, 48 m away), only a playground sliver at the left edge; this is also why the old SSW guess contradicts \"excellent open view\". WNW 299: no green (a lawn at the foot of the tower), 605 3rd Avenue (159 m) 74 m away on the right. ESE 119 (the long east side): the open side (mean obstruction 10 degrees, nothing above 30) and the only one with green in the frame: a lawn 213-322 m out, 31-39 degrees right of centre and 13-19 degrees below the horizon, Slifka Park and St. Vartan Park's playground at the right edge, St. Vartan Park itself at 62-65 degrees right. About 5,000 of the 6,100 m2 of green that the 25th floor can see anywhere around the tower lies at 135-195 degrees (south-east); the rest is a few small lawns within 140 m at 30-105 degrees, and nothing at all to the west or north-west. So a facade that shows the renter's canopy must be on the east or south side. The E-line plan's bedroom corner window wraps to the right of the living-room bay (panes at 119, 164 and 209 degrees), which puts the unit at the south end of the east side: the bedroom's angled pane looks over the lawns and parks, the bay's left edge meets Churchill Apartments (tan brick, 1967, 114 m) and, just past its right edge, 240 East 38th Street (2012, 115 m) stands 48 m away at 209 degrees. Confidence: likely. The facade and the park match the photos; facade material, terrain and unmapped trees are not in the data and the position along the facade is an assumption. Check with a compass at the window.",
+  "exposure_evidence": "Facades tested at floor 25 (eye 76 m, 90-degree view, straight sight lines over the site's walls; see the sightline block): NNE 28 (the 39th Street end): no mapped green in view and 39% of the frame blocked above 30 degrees, 633 3rd Avenue 129 m away. SSW 209: 62% of the frame blocked above 30 degrees by 240 East 38th Street (115 m, 48 m away), only a playground sliver at the left edge; this is also why the old SSW guess contradicts \"excellent open view\". WNW 299: no green (a lawn at the foot of the tower), 605 3rd Avenue (159 m) 74 m away on the right. ESE 119 (the long east side): the open side (mean obstruction 10 degrees, nothing above 30) and the only one with green in the frame: a lawn 213-322 m out, 31-39 degrees right of centre and 13-19 degrees below the horizon, Slifka Park and St. Vartan Park's playground at the right edge, St. Vartan Park itself at 62-65 degrees right. About 5,000 of the 6,100 m2 of green that the 25th floor can see anywhere around the tower lies at 135-195 degrees (south-east); the rest is a few small lawns within 140 m at 30-105 degrees, and nothing at all to the west or north-west. So a facade that shows the renter's canopy must be on the east or south side. The E-line plan's bedroom corner window wraps to the right of the living-room bay (panes at 119, 164 and 209 degrees), which puts the unit at the south end of the east side: the bedroom's angled pane looks over the lawns and parks, the bay's left edge meets Churchill Apartments (tan brick, 1967, 114 m) and, just past its right edge, 240 East 38th Street (2012, 115 m) stands 48 m away at 209 degrees. Confidence: likely. The facade and the park match the photos; facade material, terrain and unmapped trees are not in the data and the position along the facade is an assumption. Check with a compass at the window. Frame fit: two frames from the renter's own video at the bedroom bay were matched to the skyline of the site model (sky and building silhouette, view-calibrations/paramount-tower-25e.json for the landmark fit): the long pane the first frame looks straight through faces 119-127 degrees (fit 125, about 4 degrees either way), the second frame turns to about 152 degrees (the angled pane), with an ultra-wide phone lens (about 100 degrees tall) tilted 11-20 degrees down. The Corinthian (330 East 38th Street), the glass towers on First Avenue, Churchill Apartments and 240 East 38th Street all fall where the model puts them; the river is a sliver at most (about 0.4% of a view that spans 60 to 220 degrees and 40 degrees below the horizon, between the towers), as in the frames.",
   "window_t": 0.55,
   "site": {
    "file": "sites/paramount-tower-25e.json",
@@ -408101,7 +408101,7 @@
    ],
    "sun_hours_range": {
     "lo": [
-     3.3,
+     3.2,
      4.2,
      5.9,
      6.9,
@@ -408130,9 +408130,9 @@
     ]
    },
    "skyline_ahead_deg": 8.6,
-   "open_sky_share": 0.869,
-   "sky_view": 0.672,
-   "daylight_factor_est": 1.64,
+   "open_sky_share": 0.864,
+   "sky_view": 0.67,
+   "daylight_factor_est": 1.63,
    "sun_year": {
     "possible": 2339,
     "expected": 1344
@@ -408156,7 +408156,7 @@
   "window_type": "bay",
   "window_face": 1,
   "exposure_source": "photo-landmarks",
-  "exposure_basis": "renter photos + park sightline",
+  "exposure_basis": "renter photos + park sightline + video-frame silhouette fit",
   "window_position_source": "assumed"
  },
  {

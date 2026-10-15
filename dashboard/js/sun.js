@@ -117,9 +117,45 @@ export function insideBuilding(b, x, y) {
 
 export const NB = 720;
 export function horizonProfile(B, px, py, pz, skip = -1) {
-  const out = new Float32Array(NB);
-  for (let k = 0; k < NB; k++) out[k] = Math.atan(rayMax(B, px, py, pz, k * 0.5 * DEG, skip)) / DEG;
+  const out = new Float32Array(NB), bins = binSolids(B, px, py, pz, skip);
+  for (let k = 0; k < NB; k++) out[k] = Math.atan(rayMaxIn(bins[k], px, py, pz, k * 0.5 * DEG)) / DEG;
   return out;
+}
+/**
+ * The solids (taller than the eye) that can stand in each 0.5 degree ray of a horizon profile: a solid goes into the rays between the
+ * directions of its bounding box's corners (the whole circle when the eye is inside the box). Exact, not an approximation: a ray outside
+ * that arc never touches the box, so it never touches the solid. A 3,000-building site (the mid-rise tier of the far city) then costs
+ * a few thousand tests a profile instead of millions.
+ */
+function binSolids(B, px, py, pz, skip) {
+  const bins = Array.from({ length: NB }, () => []);
+  const step = 0.5 * DEG, pad = 1.5 * step;
+  for (let bi = 0; bi < B.length; bi++) {
+    if (bi === skip) continue;
+    for (const b of solidsOf(B[bi])) {
+      if (b.top - pz <= 0) continue;
+      const x0 = b.bb[0] - px, x1 = b.bb[2] - px, y0 = b.bb[1] - py, y1 = b.bb[3] - py;
+      if (x0 <= 0 && x1 >= 0 && y0 <= 0 && y1 >= 0) { for (let k = 0; k < NB; k++) bins[k].push(b); continue; }
+      const a = [Math.atan2(x0, y0), Math.atan2(x1, y0), Math.atan2(x1, y1), Math.atan2(x0, y1)].sort((m, n) => m - n);
+      let gap = a[0] + 2 * Math.PI - a[3], at = 3;           // the biggest empty arc between neighbouring corner directions; the solid spans the rest
+      for (let i = 0; i < 3; i++) if (a[i + 1] - a[i] > gap) { gap = a[i + 1] - a[i]; at = i; }
+      const from = a[(at + 1) % 4] - pad, span = 2 * Math.PI - gap + 2 * pad;
+      const k0 = Math.floor((((from % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI)) / step), n = Math.min(NB, Math.ceil(span / step) + 1);
+      for (let i = 0; i < n; i++) bins[(k0 + i) % NB].push(b);
+    }
+  }
+  return bins;
+}
+function rayMaxIn(list, px, py, pz, az) {
+  const ux = Math.sin(az), uy = Math.cos(az);
+  let best = 0;
+  for (const b of list) {
+    const sl = b.top - pz, r = bbRange(b, px, py, ux, uy); if (!r) continue;
+    if (sl / Math.max(r[0], 0.01) <= best) continue;
+    const tmin = entryDist(b, px, py, ux, uy);
+    if (tmin < 1e9) { const q = sl / tmin; if (q > best) best = q; }
+  }
+  return best;
 }
 // Distance along a horizontal ray to the first wall of building b (outer ring or court), or 1e9.
 function entryDist(b, px, py, ux, uy) {

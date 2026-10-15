@@ -6,7 +6,7 @@ from __future__ import annotations
 import re
 
 import pytest
-from conftest import camera_still, settled, studio_city_ready
+from conftest import camera_still, look_open, settled, studio_city_ready
 
 pytestmark = pytest.mark.e2e
 
@@ -90,6 +90,7 @@ def test_play_day_advances_the_time_the_sun_and_the_readout_and_stops(open_page,
     s = open_page("#map", width=1600, height=1000)
     pg = s.page
     _unit(s, "date=2026-10-15&min=420&mode=inside")
+    look_open(pg, '#uLook')   # the chips are behind the view picker
     pg.locator('#uLook .lk-chip', has_text=re.compile("^Living room$")).first.click()
     pg.wait_for_function("() => !window.__unit3d.stage.inTween", timeout=30000)
     camera_still(pg, "unit")
@@ -214,6 +215,7 @@ def test_the_studio_plays_the_day_and_the_year_with_the_same_trees_and_night(ope
     s = open_page("#map", width=1600, height=1000)
     pg = s.page
     _studio(s)
+    look_open(pg, '#psLook')
     pg.locator('#psLook .lk-chip', has_text=re.compile("^Sofa, window$")).first.click()
     studio_city_ready(pg)
     assert re.search(r"Sun on the floor", pg.inner_text(".pb-sun"))

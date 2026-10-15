@@ -91,7 +91,7 @@ function drawPart(pk, e, q, eps, o, tri2, stats) {   // pk: the Pack this part d
   const roofCol = own ? mixc(hex(q.col), [1, 1, 1], 0.12) : rampRoof;
   if (pk) pk.own = own;
   const jit = ((((e.seed * 977) % 1) + 1) % 1);
-  let pal = paletteOf(e.seed);
+  let pal = paletteOf(e.seed, st.style);
   if (st.brick === 1) pal = st.style === 0 ? 0 : 1; else if (st.brick === 2) pal = st.style === 0 ? 1 : 2;     // an OpenStreetMap material picks the palette
   const sd = e.seed * 0.999 + (e.near ? 0 : 2);   // seed in [0, 1); +2 marks the far level of detail for the shader
   // fb.x = style + 0.1 * use code (1 office, 2 residential, 3 other): the shader lights an office floor and a home differently after dark

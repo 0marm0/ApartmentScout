@@ -5,17 +5,19 @@ import { esc } from '../util.js';
 
 const WINDOW_KINDS = ['room', 'bay', 'corner'];
 const EYE = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1.5 8S4 3.5 8 3.5 14.5 8 14.5 8 12 12.5 8 12.5 1.5 8 1.5 8z"/><circle cx="8" cy="8" r="2"/></svg>';
+const WALK = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="2" width="11" height="12" rx="1"/><path d="M8 2v12M2.5 8H13.5"/></svg>';
 const CHEV = '<svg class="lk-chev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6l4 4 4-4"/></svg>';
 
 /** The chips as HTML. `views` = viewpoints (plan/viewpoints.js), `current` = the active key or null. */
-export function lookChipsHTML(views, current, { label = 'Look out of the window', extra = '' } = {}) {
+export function lookChipsHTML(views, current, { label = 'Look out of the window', extra = '', walk = false } = {}) {
   const win = views.filter((v) => WINDOW_KINDS.includes(v.kind)), seat = views.filter((v) => v.kind === 'seat'), back = views.filter((v) => v.kind === 'inward');
   if (!win.length && !seat.length) return '';
   const first = views[0];
   const chip = (v) => `<button type="button" role="radio" class="lk-chip${v.key === current ? ' on' : ''}${v.kind === 'bay' || v.kind === 'corner' ? ' wide' : ''}" data-vp="${esc(v.key)}" aria-checked="${v.key === current}" tabindex="${v.key === current || (!current && v === first) ? 0 : -1}" title="${esc(v.kind === 'seat' ? `Look out of the window from the ${v.label.toLowerCase()}` : v.kind === 'inward' ? 'Stand at the window and look back into the apartment' : `Stand at the ${v.room ? v.room.toLowerCase() + ' ' : ''}window${v.kind === 'room' ? '' : ` (${v.kind})`}`)}">${esc(v.label)}</button>`;
   const cur = views.find((v) => v.key === current);
   const pick = `<button type="button" class="lk-pick" aria-haspopup="true" aria-expanded="false" title="Choose where to look from: a window or a seat">${EYE}<span class="lk-cur">${esc(cur ? cur.label : 'Look out of the window')}</span>${CHEV}</button>`;
-  return `${pick}${win.length ? `<div class="lk-grp" role="radiogroup" aria-label="${esc(label)}"><span class="lk-h">Look out of</span>${win.map(chip).join('')}</div>` : ''}${seat.length ? `<div class="lk-grp" role="radiogroup" aria-label="Look out from a seat"><span class="lk-h">From the</span>${seat.map(chip).join('')}</div>` : ''}${back.length ? `<div class="lk-grp" role="radiogroup" aria-label="Look back into the room">${back.map(chip).join('')}</div>` : ''}<span class="lk-keys" aria-hidden="true">← → to switch</span>${extra ? `<div class="lk-grp lk-extra">${extra}</div>` : ''}`;   // [room3d] extra: the studio's sun-today group
+  const go = walk ? `<button type="button" class="lk-go" data-act="to-window" title="Walk to the nearest window and look out of it (double-click a window does the same; or click the floor to walk anywhere)">${WALK}<span>Go to the window</span></button>` : '';
+  return `${pick}${go}${win.length ? `<div class="lk-grp" role="radiogroup" aria-label="${esc(label)}"><span class="lk-h">Look out of</span>${win.map(chip).join('')}</div>` : ''}${seat.length ? `<div class="lk-grp" role="radiogroup" aria-label="Look out from a seat"><span class="lk-h">From the</span>${seat.map(chip).join('')}</div>` : ''}${back.length ? `<div class="lk-grp" role="radiogroup" aria-label="Look back into the room">${back.map(chip).join('')}</div>` : ''}<span class="lk-keys" aria-hidden="true">← → to switch</span>${extra ? `<div class="lk-grp lk-extra">${extra}</div>` : ''}`;   // [room3d] extra: the studio's sun-today group
 }
 
 /**
@@ -23,7 +25,7 @@ export function lookChipsHTML(views, current, { label = 'Look out of the window'
  * keyboard focus stays where it is while the arrow keys step through the views.
  */
 export function setLookChips(host, views, current, opts) {
-  const sig = views.map((v) => `${v.key}:${v.label}`).join('|') + '#' + (opts?.extraKey || '');
+  const sig = views.map((v) => `${v.key}:${v.label}`).join('|') + '#' + (opts?.extraKey || '') + (opts?.walk ? '#walk' : '');
   if (host.dataset.sig !== sig) {
     const had = host.contains(document.activeElement), keep = document.activeElement?.dataset?.vp;
     host.innerHTML = lookChipsHTML(views, current, opts); host.dataset.sig = sig;

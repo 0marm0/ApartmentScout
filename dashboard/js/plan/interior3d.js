@@ -9,6 +9,8 @@ import * as THREE from 'three';
 import { pointInPoly } from './model.js';
 import { windowGroup } from '../room3d/windows.js';   // [room3d]
 import { ROOM_HEX } from '../room3d/palette.js';
+import { quality } from '../room3d/quality.js';   // [floor] the detail of the wood follows the render quality
+import { drawBasket, TILE_M as BASKET_TILE_M } from './floor-wood.js';   // [floor] block parquet, drawn at close-range sharpness
 
 const M = 0.0254;
 
@@ -40,6 +42,15 @@ export function floorTone(room, model) {
   return hex ? new THREE.Color(hex) : null;
 }
 
+/** Pixels per side of the basket-weave tile: 2048 (about 2,200 px per metre: the slats stay crisp from a metre away) unless the device or the quality level asks for less. */
+const basketRes = () => { let s = null; try { s = quality.settings; } catch { /* no quality module state: full detail */ } return s && (s.phone || s.texScale < 1 || s.finishDetail === false) ? 1024 : 2048; };
+/** The block-parquet tile: colour, a bump map for the slat faces and joints, and a roughness map (varnish) the floor material reads. */
+function basketTexture(key, base, N) {
+  const cv = drawBasket(N, base), setup = (c, srgb) => { const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(1 / BASKET_TILE_M, 1 / BASKET_TILE_M); t.anisotropy = 16; if (srgb) t.colorSpace = THREE.SRGBColorSpace; t.userData.shared = true; return t; };
+  const t = setup(cv.color, true);
+  t.userData.bump = setup(cv.bump, false); t.userData.rough = setup(cv.rough, false);
+  texCache.set(key, t); return t;
+}
 const texCache = new Map();
 const seeded = (seed) => { let s = seed >>> 0; return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296); };
 const shade = (base, k, a = 1) => { const x = base.clone().multiplyScalar(k).convertLinearToSRGB();   // (a Color holds linear values; the canvas wants sRGB: without this every finish came out darker and more saturated than its colour)
@@ -52,7 +63,8 @@ const shade = (base, k, a = 1) => { const x = base.clone().multiplyScalar(k).con
  * is never one flat tone however far away it is.
  */
 export function floorTexture(kind, base) {
-  const key = `${kind}|${base.getHexString()}`; if (texCache.has(key)) return texCache.get(key);
+  const res = kind === 'basket' ? basketRes() : 0, key = `${kind}|${base.getHexString()}|${res}`; if (texCache.has(key)) return texCache.get(key);
+  if (kind === 'basket') return basketTexture(key, base, res);   // [floor] its own, sharper drawing (plan/floor-wood.js)
   const wood = kind === 'oak' || kind === 'parquet' || kind === 'basket', N = wood ? 1024 : 512, mk = () => { const c = document.createElement('canvas'); c.width = c.height = N; return c; };
   const c = mk(); const g = c.getContext('2d');
   let size = 1.2, bump = null;
@@ -155,7 +167,26 @@ export function floorTexture(kind, base) {
   if (bump) { const bt = new THREE.CanvasTexture(bump); bt.wrapS = bt.wrapT = THREE.RepeatWrapping; bt.repeat.copy(t.repeat); bt.anisotropy = 8; bt.userData.shared = true; t.userData.bump = bt; }
   texCache.set(key, t); return t;
 }
-export const clearFloorTextures = () => { for (const t of texCache.values()) { t.userData.bump?.dispose(); t.dispose(); } texCache.clear(); };
+export const clearFloorTextures = () => { for (const t of texCache.values()) { t.userData.bump?.dispose(); t.userData.rough?.dispose(); t.dispose(); } texCache.clear(); };
+/** The live floor materials, so a change of render quality can switch the varnish's clear coat on or off without rebuilding the room. */
+const floorMats = new Set();
+const applyVarnish = (m) => { let visual = false; try { visual = quality.has('environment'); } catch { /* no quality state */ } m.clearcoat = visual ? 0.42 : 0; m.clearcoatRoughness = 0.16; m.envMapIntensity = visual ? 1.15 : 1; m.needsUpdate = true; };
+try { quality.onChange(() => { for (const m of floorMats) applyVarnish(m); }); } catch { /* no quality module (node) */ }
+/**
+ * The floor material for a finish and its texture (`ftex` from floorTexture). Wood is a physical material: a roughness map (varnish: glossy on the slat
+ * face, dull in the joints), the height map as bump, and in Visual a clear coat, so the window's soft area lights and the sky's environment light
+ * show up on the wood as a soft, broken reflection (a polished floor, not a mirror). Other finishes keep the plain standard material.
+ */
+export function floorMaterial(kind, ftex) {
+  const wood = kind === 'basket' || kind === 'parquet' || kind === 'oak';
+  const o = { color: 0xffffff, map: ftex, roughness: floorRoughness(kind), metalness: 0 };
+  if (ftex.userData.bump) { o.bumpMap = ftex.userData.bump; o.bumpScale = kind === 'basket' ? 2.2 : 1.4; }
+  if (ftex.userData.rough) { o.roughnessMap = ftex.userData.rough; o.roughness = 1; }
+  if (!wood) return new THREE.MeshStandardMaterial(o);
+  const m = new THREE.MeshPhysicalMaterial({ ...o, specularIntensity: 0.6 });
+  applyVarnish(m); floorMats.add(m); m.addEventListener('dispose', () => floorMats.delete(m));
+  return m;
+}
 /** Roughness for a finish (varnished wood, polished tile, matt carpet). */
 export const floorRoughness = (kind) => (kind === 'basket' ? 0.44 : kind === 'parquet' ? 0.5 : kind === 'oak' ? 0.58 : kind === 'carpet' ? 0.95 : kind === 'concrete' ? 0.62 : 0.34);
 /**
