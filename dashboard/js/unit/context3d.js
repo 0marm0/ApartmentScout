@@ -156,7 +156,7 @@ export function buildContext(site, opts = {}) {
     if (patchGroup) { wrapOut.remove(patchGroup); disposeObj(patchGroup); patchGroup = null; }
     if (!site?.green) return;
     const gp = greenPlan(site.green, { center, radius, limit: 0 });   // [grass] the polygons near the centre; the trees are unit/treemesh.js
-    patchGroup = grassGroup(gp ? gp.polys : [], { place, y0, colors: grassColors(ground, light) });
+    patchGroup = grassGroup(gp ? gp.polys : [], { place, y0, colors: grassColors(ground, light, visual) });
     patchGroup.visible = vis.green; parts.green = patchGroup; wrapOut.add(patchGroup);
   }
   const wrapOut = new THREE.Group(); wrapOut.name = 'context-green'; group.add(wrapOut);
@@ -192,9 +192,10 @@ export function buildContext(site, opts = {}) {
       trees?.setClasses({ street: vis.streetTrees !== false, park: vis.parkTrees !== false });   // [park trees]
     },
     setQuality(q = {}) {
-      const was = phone; if ('visual' in q) visual = !!q.visual; if ('phone' in q) phone = !!q.phone;
+      const was = phone, wasVisual = visual; if ('visual' in q) visual = !!q.visual; if ('phone' in q) phone = !!q.phone;
       applyWaterColors(); trees?.setShadows(visual && !inside);
       if (phone !== was) buildTrees();
+      if (visual !== wasVisual) buildGreen();   // [grass] the grass is deepened under Visual's environment light
     },
     setTheme(t = {}) {
       if ('ground' in t) ground = t.ground.clone(); if ('light' in t) light = !!t.light; if ('blue' in t) blue = t.blue.clone();

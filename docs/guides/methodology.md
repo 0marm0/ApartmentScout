@@ -374,18 +374,50 @@ file and none of it entering a sun hour, a skyline, a daylight number or a score
 
 - *Street trees.* OpenStreetMap maps only a few percent of the street trees (a Midtown site has 100 to 300 mapped trees where the city
   counts 800 to 2,000), so for New York the site takes the city's own NYC Street Tree Census 2015 (`uvpi-gqnh`, through the same cached,
-  receipted Socrata helper as the footprints): every live street tree within the site radius with its trunk diameter and species. A
-  crown is sized from the trunk with a simple urban-forestry rule: crown diameter = 2.0 m + 0.24 m per cm of trunk, height = 1.3 m +
-  0.8 x trunk(cm)^0.8, both capped (a 20 cm trunk carries a crown about 7 m wide on a tree about 10 m tall), after adding 2 in of growth
-  since the 2015 survey. The census does not record crowns, so sizes are estimates, a species group only tints the crown, and a street
-  tree is drawn at the census point, not at a surveyed crown. Trees mapped in OpenStreetMap stay (a typical street tree, skipped where a
-  census tree stands within 2.5 m); park, wood and lawn polygons get fill canopies by Poisson-disc sampling (no two crowns closer than
-  8.5 m in a park, 5.5 m in a wood, 15 m on a lawn, in groves and clearings, denser along the edge, kept out of footprints): about 60,
-  200 and 15 trees a hectare. Only the census and the mapped trees are records of real trees; the fill shows where green lies. The
-  views draw up to 9,000 trees (4,500 on a phone) as instanced meshes in two levels of detail, picked by distance to the camera.
-  **Trees are never counted as obstructions**: canopies are seasonal and porous and their crowns are estimates, so the sun hours, the
-  sky view and the blockers use buildings alone, and the legend and the evidence row say so. In Visual render quality the crowns cast
-  soft shadows in the picture; Fast draws none. That is a look, not a measurement.
+  receipted Socrata helper as the footprints): every live street tree within the site radius with its trunk diameter and species. They
+  are real trees: curbside points that sit within 0 to 15 m of a street centreline, none on the Queens Midtown Tunnel entrance and exit ramps. The census
+  is ten years old, so the site drops the trees the current NYC Parks inventory lists as removed (a stump, retired or dead point within
+  3 m and no live one: 169 of 1,527 around Paramount Tower) and adds the street trees the inventory lists that the census does not (380 there, mostly young trees: more than half have a trunk of 4 in or less).
+  The legend says street trees come from the 2015 census.
+- *Park trees.* The census holds curbside trees only. NYC Parks' Forestry Tree Points (`hn5i-inap`, the live ForMS 2.0 inventory,
+  updated continuously) lists every tree the city manages, in parks and on park property too, each with a trunk diameter (DBH) and
+  species. The site keeps the living ones (structure `Full`, not dead), drops any that stands within 3 m of a census tree (the same
+  tree), and calls a point inside a park polygon (NYC Parks Properties `enfh-gkve`, NYC Greenstreets `mk9u-qu7i` or OpenStreetMap) a
+  *park tree* and one outside every park a street tree the census does not list (mostly planted since). These are drawn wherever the inventory has them:
+  around Paramount Tower 252 park trees stand in the parks and playgrounds (St. Vartan Park alone holds 83 in 8,700 m2, about 95
+  a hectare; the Tudor Grove and Mary O'Connor playgrounds 13 and 17, Robert Moses Playground 31, the esplanade 28). The inventory is trusted over invention: a polygon on Parks property gets no invented
+  canopy, except where it is clearly thin for its size (under 30 trees a hectare on 1,500 m2 or more, such as Bryant Park, whose plane
+  trees a conservancy maintains): that gets the fill at 55 % of the dense rate, around the real trees. A polygon outside Parks property
+  (the private Tudor City Greens, a plaza, any city but New York) has no inventory behind it and gets the dense Poisson-disc fill:
+  no two crowns closer than 6.8 m in a park, 5.4 m in a wood, in groves and clearings (about a sixth of a park is open), denser along
+  the edge, kept out of footprints and out of lawns and courts mapped inside the park: about 130 trees a hectare in a park, 220 in a
+  wood, against the 95 to 245 the Parks inventory shows in Midtown parks. A lawn that stands alone (a planted median beside a ramp)
+  is planted along its edge. The legend says park trees come from the NYC Parks inventory. The layer controls switch *Street trees*
+  and *Park trees* separately; the choice is remembered in the browser.
+- *Crown size.* Neither dataset records crowns, so a crown is sized from the trunk with a rule fitted to rounded typical values for
+  open-grown urban trees in urban-forestry crown tables (the i-Tree urban tree database, McPherson et al.): crown diameter = 1.2 m +
+  0.19 m per cm of trunk, capped at 16 m, and height = 1.3 m + 0.62 x trunk(cm)^0.82, capped at 24 m. That gives a Callery pear of
+  8 in about 4.5 m across and 8.6 m tall, a honeylocust of 12 in 7 m and 11.5 m, a London plane of 24 in 12.8 m and 19 m. Two earlier
+  choices were wrong and are replaced: the crown rule (2.0 m + 0.24 m per cm) drew street crowns 35 to 45 % too wide (about twice the
+  crown area), and the "+2 in of growth since 2015" was twice what the data shows. Matching 1,195 census trees of the Paramount Tower
+  site to the same trees in the live inventory, the trunk grew by a median 1.0 in (mean 0.85 in, 10th to 90th percentile 0 to 3 in) in
+  about a decade, so a census tree is sized from its surveyed diameter plus 1 in; inventory trees are current and get no growth. The
+  mean street crown around that site went from 8.1 m to 5.6 m across and the summed crown area to 43 % of what it was. A near crown
+  (three lobes) is scaled so it spans the same width as the far crown. A species group only tints the crown, and a tree is drawn at its
+  point, not at a surveyed crown. Trees mapped in OpenStreetMap stay (a typical street tree, skipped where a census or inventory tree
+  stands within 2.5 m). The views draw up to 9,000 trees (4,500 on a phone) as instanced meshes in two levels of detail, picked by
+  distance to the camera. Only the census, the inventory and the mapped trees are records of real trees; the fill shows where green
+  lies. **Trees are never counted as obstructions**: canopies are seasonal and porous and their crowns are estimates, so the sun hours,
+  the sky view and the blockers use buildings alone, and the legend and the evidence row say so. In Visual render quality the crowns
+  cast soft shadows in the picture; Fast draws none. That is a look, not a measurement.
+- *Grass and paved ground.* Every green area is drawn as ground you can tell is grass, in layers that never fight for the same pixels:
+  parks, gardens, woods, Greenstreets and planted plazas as lush grass (large tone patches, metre-scale and blade-scale variation that
+  fades with distance, so a park is not noisy from afar); lawns mapped inside a park brighter and mown in soft stripes; artificial-turf
+  and field-sport pitches as flat green with no trees. Paved ground is drawn as paved ground, not grass, where the data says so: a
+  NYC Parks property of category Playground, Jointly Operated Playground or Recreational Field/Courts, the courts, tracks, rinks and
+  baseball diamonds of the NYC Planimetric Database: Open Space (Parks) (`y6ja-fw4f`, traced from the 2022 aerial survey), and
+  OpenStreetMap areas with a paved `surface`, `leisure=playground` or a court pitch (a field sport with no surface tag is turf; a
+  `surface=grass` pitch or park stays a lawn). The window's park view skips paved ground and counts overlapping polygons once.
 - *Water.* Rivers and ponds come from the NYC Planimetric Database: Hydrography (`pjs3-c3z5`, surveyed polygons with the real
   shoreline, piers and islands such as Roosevelt Island as holes), or from OpenStreetMap `natural=water` / `water=*` /
   `waterway=riverbank` outside New York (open sea is not a polygon there, so a coastal site elsewhere may show none). Deriving water
@@ -654,6 +686,6 @@ building you know (your current home) is only fair with the same window, filter 
 ## Data sources
 
 NYC Open Data (PLUTO, HPD, DOB, ECB, DOB NOW, 311, NYPD, bedbug filings, building footprints, street
-centerline, tax lots, the 2015 Street Tree Census, planimetric hydrography), NYC Planning Labs GeoSearch, US Census geocoder, OpenStreetMap (Nominatim,
+centerline, tax lots, the 2015 Street Tree Census, the NYC Parks Forestry Tree Points, Parks Properties, Greenstreets, planimetric hydrography and open space), NYC Planning Labs GeoSearch, US Census geocoder, OpenStreetMap (Nominatim,
 Overpass, map tiles), and the transit agencies' GTFS feeds. Respect each source's terms; heavy use of the OpenStreetMap tile server
 is not allowed, so set `search.tiles` to your own tile provider if you publish a busy dashboard.

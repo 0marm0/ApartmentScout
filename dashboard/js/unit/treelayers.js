@@ -21,5 +21,5 @@ export function saveTreeLayers(v, store = defaultStore()) {
 }
 
 /** The wording of the two layer buttons: where each kind of tree comes from, and that trees never count as shade. */
-export const STREET_TREES_TITLE = 'Street trees: the living street trees of the NYC Street Tree Census (2015), minus those the city now lists as removed, plus street trees planted since (NYC Parks inventory), each sized from its trunk diameter. Context only: never counted as shade in the sun hours';
+export const STREET_TREES_TITLE = 'Street trees: the living street trees of the NYC Street Tree Census (2015), minus those the city now lists as removed, plus the street trees the NYC Parks inventory has added since (mostly young trees), each sized from its trunk diameter. Context only: never counted as shade in the sun hours';
 export const PARK_TREES_TITLE = 'Park trees: the trees in parks and on park property from the NYC Parks forestry inventory, with a blue-noise fill only where no inventory describes a park (private plazas and gardens). Context only: never counted as shade in the sun hours';

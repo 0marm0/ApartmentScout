@@ -16,8 +16,14 @@ const mixC = (a, b, t) => a.clone().lerp(b, t);
  * Base colours per layer for a theme. The lit result is what the renter sees: the dark theme keeps lawns deep and the
  * paving close to the ground, the light theme brighter and fresher.
  */
-export function grassColors(ground, light) {
+export function grassColors(ground, light, visual = false) {
   const hex = (h) => new THREE.Color(h);
+  const c = grassBase(ground, light, hex);
+  // Visual quality adds an environment light that washes every lit surface paler: deepen the grass to match
+  if (visual) for (const k of ['park', 'wood', 'lawn', 'turf']) c[k].multiplyScalar(light ? 0.8 : 0.85);
+  return c;
+}
+function grassBase(ground, light, hex) {
   return light
     ? { park: hex(0x5ea64c), wood: hex(0x3f8746), lawn: hex(0x80c05a), paved: mixC(ground, hex(0xa8a496), 0.62), court: mixC(ground, hex(0x9aa3a6), 0.6), turf: hex(0x4f9e4a) }
     : { park: hex(0x276a37), wood: hex(0x1a4f2f), lawn: hex(0x317c3e), paved: mixC(ground, hex(0x56595e), 0.55), court: mixC(ground, hex(0x4a5760), 0.55), turf: hex(0x287a3b) };

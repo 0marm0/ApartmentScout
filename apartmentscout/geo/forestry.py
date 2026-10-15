@@ -9,7 +9,7 @@ structure and condition. It has no park/street flag, so this module sorts the po
   points are trees the city has since removed;
 * a live point within ``MATCH_M`` (3 m) of a census tree is *that* tree: dropped here (the census already draws it);
 * of the rest, a point standing inside a park polygon (Parks Properties, Greenstreets or OpenStreetMap) is a **park tree**
-  (``loc`` 0); one outside every park polygon is a **street tree planted since the census** (``loc`` 1);
+  (``loc`` 0); one outside every park polygon is a **street tree the census does not list** (``loc`` 1, mostly young trees planted since 2015);
 * a census tree with a removed point within ``MATCH_M`` and no live point is gone: ``prune_census`` drops it, so the
   street trees are those the city still lists.
 
