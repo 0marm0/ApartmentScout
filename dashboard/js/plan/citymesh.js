@@ -1,7 +1,7 @@
 // "City outside" for the Floor plan studio: the nearby buildings around the apartment in the plan's own
 // frame (metres, x = plan x, z = -plan y, y up from the apartment floor). Placement comes from plan/city.js.
 import * as THREE from 'three';
-import { greenGroup, greenColors } from '../unit/greenmesh.js';
+import { buildContext } from '../unit/context3d.js';   // [city context] ground plate, water, parks and trees
 
 const M = 0.0254;
 
@@ -59,12 +59,32 @@ export function cityGroup(ctx, opts = {}) {
     const m = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: col.own ?? 0x8b96ff, transparent: true, opacity: 0.35, roughness: 0.7, depthWrite: false }));
     m.name = 'this-building'; g.add(m);
   }
-  const gr = new THREE.Mesh(new THREE.PlaneGeometry(2 * R + 200, 2 * R + 200), new THREE.MeshStandardMaterial({ color: col.ground ?? 0x15181f, roughness: 1 }));
-  gr.rotation.x = -Math.PI / 2; gr.position.set(ctx.frame.xc * M, ground - 0.05, -ctx.frame.yw * M); gr.name = 'street level'; g.add(gr);
-  if (ctx.green && opts.trees !== false) {
-    const gg = greenGroup(ctx.green, { place: (x, y) => ctx.toPlanM([x, y]), center: ctx.anchor, radius: R + 20, y0: ground, colors: greenColors(new THREE.Color(col.ground ?? 0x15181f), !!opts.light) });
-    g.add(gg); g.userData.green = gg.userData;
+  const groundCol = new THREE.Color(col.ground ?? 0x15181f);
+  // [city context] the street plate, water, parks and trees of the site file (unit/context3d.js), placed in the plan's frame by an
+  // affine map of the site metres; without streets or water the plain ground plane stands as before
+  const hasCtx = ctx.green || ctx.water || (ctx.streets || []).length;
+  const cx = hasCtx && opts.trees !== false ? buildContext({ green: ctx.green, water: ctx.water, streets: ctx.streets }, {
+    B: ctx.B, place: (x, y) => ctx.toPlanM([x, y]), matrix: siteToPlan(ctx), center: ctx.anchor, radius: R + 20, y0: ground,
+    ground: groundCol, light: !!opts.light, blue: opts.blue ? new THREE.Color(opts.blue) : undefined, visual: !!opts.visual, phone: !!opts.phone }) : null;
+  if (!cx?.hasGround) {
+    const gr = new THREE.Mesh(new THREE.PlaneGeometry(2 * R + 200, 2 * R + 200), new THREE.MeshStandardMaterial({ color: groundCol, roughness: 1 }));
+    gr.rotation.x = -Math.PI / 2; gr.position.set(ctx.frame.xc * M, ground - 0.05, -ctx.frame.yw * M); gr.name = 'street level'; g.add(gr);
+  }
+  if (cx) {
+    cx.group.position.y = 0; g.add(cx.group); cx.watch(g); g.userData.green = cx.info.trees; g.userData.context = cx.info;
+    if (cx.hasGround) { const base = new THREE.Mesh(new THREE.PlaneGeometry(24000, 24000), new THREE.MeshStandardMaterial({ color: groundCol, roughness: 1 })); base.rotation.x = -Math.PI / 2; base.position.set(ctx.frame.xc * M, ground - 0.9, -ctx.frame.yw * M); base.name = 'street level'; g.add(base); }
+    g.addEventListener('removed', () => cx.dispose());   // the studio disposes meshes and materials only: free the textures and tree buffers
   }
   g.userData.count = n;
   return g;
+}
+
+/**
+ * The matrix taking the context layer's site-frame three.js coordinates (x, up, -y in site metres) to the plan's
+ * (x, up, -y in plan metres), from the plan's own site -> plan map (an affine map: a rotation about the anchor and a shift).
+ */
+function siteToPlan(ctx) {
+  const t = ctx.toPlanM([0, 0]), ex = ctx.toPlanM([1, 0]), ey = ctx.toPlanM([0, 1]);
+  const a = ex[0] - t[0], c = ex[1] - t[1], b = ey[0] - t[0], d = ey[1] - t[1];
+  return new THREE.Matrix4().set(a, 0, -b, t[0], 0, 1, 0, 0, -c, 0, d, -t[1], 0, 0, 0, 1);
 }
