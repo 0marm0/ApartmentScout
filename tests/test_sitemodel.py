@@ -119,6 +119,25 @@ def test_nyc_rows_keep_holes_and_record_height_sources():
     assert at(prof, 90) == pytest.approx(math.degrees(math.atan(28.48 / 8)), abs=0.6)
 
 
+def test_fetch_nyc_reads_three_tiers_nearest_first(monkeypatch):
+    """Near buildings, the 500 ft skyline, then the 100 ft mid-rise city: three queries, rows of a nearer tier first (so indices stay stable)."""
+    from apartmentscout.geo import buildings as bmod
+
+    seen: list[str] = []
+
+    def fake(dataset, params, cache_dir=None, **kw):
+        seen.append(params["$where"])
+        n = len(seen)
+        return [{"bin": f"100000{n}", "height_roof": 120.0 * n, "the_geom": {"type": "MultiPolygon", "coordinates": [[[ll(0, 10 * n), ll(5, 10 * n), ll(5, 10 * n + 5), ll(0, 10 * n + 5), ll(0, 10 * n)]]]}}]
+
+    monkeypatch.setattr(bmod, "socrata", fake)
+    out = bmod.fetch_nyc(LAT, LON)
+    assert len(seen) == 3 and "within_circle" in seen[0] and "height_roof > 500" in seen[1] and "height_roof > 100" in seen[2] and ",2200)" in seen[2]
+    assert [b["bin"] for b in out] == ["1000001", "1000002", "1000003"]
+    seen.clear()
+    assert len(bmod.fetch_nyc(LAT, LON, mid_radius_m=0)) == 2 and len(seen) == 2
+
+
 def test_osm_relation_courtyard_and_height_sources():
     def way(pts):
         return [{"lon": p[0], "lat": p[1]} for p in pts]

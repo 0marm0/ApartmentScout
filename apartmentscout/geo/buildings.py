@@ -141,12 +141,25 @@ def parse_nyc_rows(rows: list[dict]) -> list[dict]:
 
 
 def fetch_nyc(lat: float, lon: float, radius_m: float = 600, tall_radius_m: float = 3500,
-              tall_min_ft: float = 500, cache_dir: Path | None = None, refresh: bool = False) -> list[dict]:
+              tall_min_ft: float = 500, cache_dir: Path | None = None, refresh: bool = False,
+              mid_radius_m: float = 2200, mid_min_ft: float = 100) -> list[dict]:
+    """Footprints around a point, in three tiers (the rows of a nearer tier come first, so building indices stay stable).
+
+    * every building within ``radius_m`` (600 m): the neighbours that shade and fill the window;
+    * every building taller than ``tall_min_ft`` (500 ft) within ``tall_radius_m`` (3.5 km): the skyline;
+    * every building taller than ``mid_min_ft`` (100 ft, about 30 m) within ``mid_radius_m`` (2.2 km): the mid-rise city between the
+      neighbours and the skyline. Without it the 3D views show open water and sky where a high window really looks over
+      Kips Bay, the East River's far bank or Midtown South (a 100 m building 1 km away rises above the eye of a 30 m window and
+      hides the river behind it); a mid-rise this far away shades nothing of note, it is there for the view.
+    """
     sel = ("bin,base_bbl,mappluto_bbl,height_roof,ground_elevation,construction_year,name,geom_source,"
            "last_edited_date,feature_code,the_geom")
     rows: list[dict] = []
-    for where in (f"within_circle(the_geom,{lat},{lon},{radius_m})",
-                  f"within_circle(the_geom,{lat},{lon},{tall_radius_m}) AND height_roof > {tall_min_ft}"):
+    tiers = [f"within_circle(the_geom,{lat},{lon},{radius_m})",
+             f"within_circle(the_geom,{lat},{lon},{tall_radius_m}) AND height_roof > {tall_min_ft}"]
+    if mid_radius_m and mid_radius_m > radius_m:
+        tiers.append(f"within_circle(the_geom,{lat},{lon},{mid_radius_m}) AND height_roof > {mid_min_ft}")
+    for where in tiers:
         rows += socrata("5zhs-2jue", {"$where": where, "$select": sel, "$limit": 50000}, cache_dir,
                         refresh=refresh)
     return parse_nyc_rows(rows)
