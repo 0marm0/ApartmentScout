@@ -265,7 +265,7 @@ def check_text(text: str) -> Report:
     for fn in (_check_search, _check_budget, _check_unit, _check_amenities, _check_commute, _check_scoring):
         fn(raw, r)
     known = {"search", "budget", "unit", "must_have", "strongly_prefer", "nice_to_have", "commute", "scoring", "weights",
-             "favorites_first", "landmarks", "watchlist", "building_ratings"}
+             "favorites_first", "landmarks", "watchlist", "building_ratings", "monitor"}
     for k in raw:
         if k not in known:
             r.warnings.append(f"{k}: not a criteria section the tools read; check the spelling.")

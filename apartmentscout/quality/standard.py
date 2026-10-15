@@ -5,6 +5,7 @@ import datetime as dt
 from pathlib import Path
 from typing import Any
 
+from ..listings import price_unverified
 from .common import num, parse_date, stale_days
 
 # key, label, why it matters. Order is the order questions are asked in.
@@ -105,8 +106,8 @@ def assess(L: dict, crit: dict, today: dt.date, plans: set[str] | None = None,
         k = s["key"]
         if not facts[k]:
             missing.append(k)
-        elif k in TIME_SENSITIVE and old:
-            stale.append(k)
+        elif k in TIME_SENSITIVE and (old or (k == "rent" and price_unverified(L))):
+            stale.append(k)       # a rent read from a weak source (snippet, building page, undated copy) is never "fresh"
         else:
             have.append(k)
     return {"have": have, "missing": missing, "stale": stale}

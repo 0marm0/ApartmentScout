@@ -311,7 +311,7 @@ export function diffProfile(a, b) {
 export const basisLabel = (k) => (BASES.find((b) => b[0] === k) || BASES[0])[1].toLowerCase();
 
 // ------------------------------------------------------------------ re-evaluation
-const KEEP_GATE = /^(unknown_cost$|unverified:(fees|lease_term)$|concession|price_dispute$)/;
+const KEEP_GATE = /^(unknown_cost$|unverified:(fees|lease_term|price)$|concession|price_dispute$)/;   // price-basis hook: unverified:price is a price gate, kept
 /**
  * Re-evaluate one listing's server score under edited criteria, in the browser. Recomputes what depends only on
  * the criteria: cost part (budget amount by basis), budget tier, headroom, over-budget gate, must-have gates and
@@ -364,7 +364,7 @@ export function evaluate(L, base, crit, today) {
   const wtot = DIMS.reduce((a, k) => a + (W[k] || 0), 0) || 1;
   const knownW = DIMS.reduce((a, k) => a + (parts[k] != null ? W[k] || 0 : 0), 0);
   s.overall = knownW ? r1(DIMS.reduce((a, k) => a + (W[k] || 0) * (parts[k] ?? 50), 0) / wtot) : null;
-  s.confidence = Math.round((100 * knownW) / wtot);
+  s.confidence = Math.round((100 * (knownW - (c.price_unverified && parts.cost != null ? (W.cost || 0) / 2 : 0))) / wtot);   // price-basis hook: a weak price counts half
   const bound = (k, end) => (parts[k] == null ? 100 * end : pr[k] ? pr[k][end] : parts[k]);
   s.range = [r1(DIMS.reduce((a, k) => a + (W[k] || 0) * bound(k, 0), 0) / wtot), r1(DIMS.reduce((a, k) => a + (W[k] || 0) * bound(k, 1), 0) / wtot)];
   s.parts = parts; s.part_ranges = pr;
@@ -398,7 +398,7 @@ export function previewImpact(listings, crit, today) {
     if (s.budget_tier !== base?.budget_tier) out.tierChanged++;
     if (s.gates.includes('over_budget')) out.overBudget++;
     if (s.gates.some((g) => g.startsWith('fails:') && g !== 'fails:move_date')) out.failsMust++;
-    if (s.gates.some((g) => g.startsWith('unverified:') && !/^unverified:(fees|lease_term)$/.test(g))) out.unverifiedMust++;
+    if (s.gates.some((g) => g.startsWith('unverified:') && !/^unverified:(fees|lease_term|price)$/.test(g))) out.unverifiedMust++;
     if (s.gates.some((g) => g.includes('move_date'))) out.lateMove++;
     for (const k of kept) out.kept[k] = (out.kept[k] || 0) + 1;
   }

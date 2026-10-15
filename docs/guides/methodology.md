@@ -28,6 +28,16 @@ The rules, in order of importance:
 - **Upfront cash and move-in minimum**: first month (gross + known monthly fees) + deposit + known
   mandatory one-time fees. Parts that are not documented are listed in `move_in_unknown`, never assumed.
 - **Renewal** is priced from the gross: a deep concession lowers the first lease, not the second.
+- **Where the price was read** (`price.basis`, with `price.source` and `price.checked`). A rent from an exact unit
+  page, the owner's site, the leasing office, the renter's own quote or the listing broker's card is taken as
+  quoted. A rent that came only from a search-result snippet (`search_snippet`), a building inventory page
+  (`building_page`), a copy nobody dated (`received`), a page known to be old or delisted (`stale`) or an
+  estimate (`estimate`) is **weak**: the listing is ranked on the paid-month (gross) rent, never on a net it
+  quotes (the quoted net is kept as `rent.net_unverified`), it gets a cost range (`score.cost.price_range`:
+  the cheaper reading, and the seen rent plus `scoring.unverified_price_band`, default 5%), the
+  `unverified:price` gate and a price-unverified tag, and counts half toward `confidence`. The score range
+  widens to match. It is never hidden or removed from the ranking. An advertised range such as RentHop's
+  "$4,318-$4,652" is stored as `price.range` with `gross` at the top: a range has no lease term, so no net.
 - **Concession conditions** (`price.concession.conditions`): an offer that only applies to leases
   starting before your earliest move-in (or the unit's availability), an offer past its end date, and a
   building-wide banner not tied to the unit are not applied (`concession: not applied` gate). Conditions
@@ -43,6 +53,34 @@ The rules, in order of importance:
   months that would bring it to the target, per 12 and 18 month lease, with and without known monthly
   fees, exact and rounded up to the half month to ask for. For example $6,300 gross to a $5,100 target
   needs 2.29 months free on 12 (2.54 with $135/mo of fees).
+
+### Auditing a price
+
+When a number looks wrong, look for these, in this order (the bundled example was audited this way):
+
+1. **Net read as gross, or gross back-computed from a net.** A source's net with no free months or term is a
+   range or an estimate, not a price (`price.range`, basis `search_snippet` or `estimate`).
+2. **A concession with no stated term** (term lost between the source and the record: restore it only when the
+   quoted net matches `gross x (term - free) / term`), or one that ended before the move-in
+   (`concession_conditions`: `expires`, `start_before`).
+3. **A newer dated price** in the research record (a monitor re-check, an owner page): change the price, cite the
+   source and date, and keep the older one in the history.
+4. **Fees in the wrong place**: a price cut recorded as a fee, a fee named in the notes but absent from
+   `fees_monthly`, a per-year fee not divided by 12 (`$350/yr` is `29.17`), a one-time charge in the monthly field.
+5. **A different lease**: an assignment for five months is not the 12-month price.
+6. **Duplicates** of one unit under two ids or URLs with different prices: keep both captures as `claims[]`.
+7. **Where it came from**: snippet, building page, undated copy or a page known to be old: `price.basis`.
+
+## History
+
+Prices and statuses are only ever recorded on a date with a source: `history/claims.jsonl` (append-only claims
+with `claimed_at`, `received_at` and a citation), dated snapshots from `apartmentscout build`, and `listed_at` on
+the listing. Nothing is smoothed, extended or inferred: a sparkline needs two distinct recorded prices, a
+"price drop" chip is the latest recorded change, and "since your last visit" counts only events dated after the
+last visit. A change between two of *our* captures is a claim (what we saw on which day), not proof the market
+moved on that day. Backfilling from an earlier research record writes each point with the file it came from, cited
+relative to the research folder. A gone listing that came back is a new `listed` date, not a revived claim.
+`apartmentscout monitor` adds readings from the listings' own pages (see [monitoring](monitoring.md)).
 
 ## Size
 

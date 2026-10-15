@@ -80,6 +80,7 @@ apartmentscout score                              # score and rank
 apartmentscout report                             # shortlist.md
 apartmentscout share --picks picks.json --out shortlist.html   # read-only shortlist page; --memo for the decision memo
 apartmentscout build && apartmentscout serve      # dashboard at http://127.0.0.1:8765
+apartmentscout monitor --dry-run                  # plan a re-check of the watchlist; drop --dry-run to fetch allowed pages and write a digest
 apartmentscout all                                # geocode, commute, layers, score, build
 ```
 
@@ -90,6 +91,9 @@ The schema is in `docs/guides/data-model.md`. Key rules:
 
 - `id` is a stable slug: `building-unit` (for example `emerald-green-1211`). Never reuse an id.
 - `status` is one of `new`, `researching`, `shortlist`, `touring`, `applied`, `rejected`, `gone`.
+- Record where each price was read in `price.basis` (`unit_page`, `owner_page`, `leasing_office`, `renter_quote`, `broker_card`, or the weak
+  `search_snippet`, `building_page`, `received`, `stale`, `estimate`) with `price.source` and `price.checked`. A weak price is ranked on
+  gross, gets a cost range and the `unverified:price` gate; never copy a search-result net into `net_effective`.
 - `price.gross` is the advertised monthly rent; `price.free_months` and `price.lease_months`
   describe concessions; `price.fees_monthly` and `price.fees_one_time` capture fees; set
   `price.net_effective` only if the landlord quoted it.
