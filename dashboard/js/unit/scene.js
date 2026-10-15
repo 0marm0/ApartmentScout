@@ -677,6 +677,7 @@ export class UnitStage {
       if (k >= 1) this.tween = null; this.dirty = true;
     }
     if (this.inTween) this.stepInTween();   // [interior] the Inside camera gliding to another room
+    if (this.walker && this.mode === 'in' && this.walker.update()) this.dirty = true;   // [walk] a glide to a clicked spot, or held keys
     if (this.mode === 'orbit' || this.mode === 'top') { if (this.controls.update()) this.dirty = true; }
     if (this.mode === 'plan') { if (this.planControls.update()) this.dirty = true; }
     if (!this.dirty && !force) return false;
