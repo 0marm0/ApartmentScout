@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-15T12:06:17",
+ "generated": "2026-10-15T13:10:17",
  "version": "0.1.0",
  "search": "Manhattan 1BR, fall 2026",
  "layers": [
@@ -38,6 +38,7 @@
   "paramount-tower-glenwood-40k",
   "the-greywood-4b"
  ],
+ "view_calibrations": [],
  "dossiers": [
   "416-west-52nd-street-507",
   "540-west-49th-203s",

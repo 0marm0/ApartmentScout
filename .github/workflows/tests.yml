@@ -44,7 +44,7 @@ jobs:
           - name: model-project
             files: tests/e2e/test_model_project.py tests/e2e/test_furniture_studio.py tests/e2e/test_view_match.py
           - name: interior-views
-            files: tests/e2e/test_interior_view.py tests/e2e/test_eye_level_look.py tests/e2e/test_finishes_render.py
+            files: tests/e2e/test_interior_view.py tests/e2e/test_eye_level_look.py tests/e2e/test_finishes_render.py tests/e2e/test_placement_walk.py
           - name: measure-fit-pair
             files: tests/e2e/test_measure.py tests/e2e/test_fit_check.py tests/e2e/test_pair3d.py
           - name: city-context
