@@ -207,6 +207,7 @@ export function renderSeasons(o) {
   const { ctx } = fitCanvas(o.cv, o.width, total);
   const narrow = cw < 140;
   const tag = { lit: [narrow ? 'Sun' : 'Sun on window', o.theme.sun, '#1b1200'], side: [narrow ? 'Side' : 'Side pane', o.theme.sun, '#1b1200'], shade: ['Shaded', o.theme.blue, '#fff'], behind: [narrow ? 'Behind' : 'Behind facade', o.theme.bg, o.theme.fg], night: ['Night', o.theme.bg, o.theme.ink3] };
+  const season0 = o.stage.season;   // [season] a row's trees follow its date; the stage goes back to the live date after
   o.stage.beginStills(true);
   ctx.font = `600 11px ${o.theme.font}`; ctx.fillStyle = o.theme.ink3; ctx.textBaseline = 'middle'; ctx.textAlign = 'center';
   o.rows[0]?.cells.forEach((c, j) => ctx.fillText(c.label, lw + j * (cw + gap) + cw / 2, headH / 2));
@@ -214,6 +215,7 @@ export function renderSeasons(o) {
   for (const r of o.rows) {
     if (!lw) { ctx.fillStyle = o.theme.fg; ctx.textAlign = 'left'; ctx.font = `600 11.5px ${o.theme.font}`; ctx.fillText(r.label, 2, y + 9); y += 18; }
     else { ctx.fillStyle = o.theme.fg; ctx.textAlign = 'left'; ctx.font = `600 12px ${o.theme.font}`; ctx.fillText(r.label, 0, y + ch / 2); }
+    if (r.season) o.stage.setSeason(r.season);
     r.cells.forEach((c, j) => {
       const x = lw + j * (cw + gap);
       o.stage.setSun(c.sun);
@@ -225,5 +227,6 @@ export function renderSeasons(o) {
     });
     y += ch + gap;
   }
+  if (season0) o.stage.setSeason(season0);
   o.stage.endStills();
 }

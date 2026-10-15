@@ -37,6 +37,13 @@ import { getPin, pinOption } from './unit/anchor.js';   // [model project] the w
 import { facingSummary } from './plan/facing.js';   // [model project] host facade bearing, bays as a range
 import { anchorNoteHTML } from './plan/anchor-note.js';   // [model project] where the plan sits, source vs assumed
 import { cityGroup } from './plan/citymesh.js';
+import { Player, dayRange, minuteAt, progressOf, yearFrame, yearProgress, sunSentence, unionSegs, segMinutes, sunNow, MONTH_NAMES } from './city3d/timeplay.js';   // [daycycle] play the day and the year
+import { mountPlayBar } from './city3d/playbar.js';
+import { seasonLabel, SEASON_NOTE } from './city3d/season.js';
+import { roomQuality as roomQ } from './room3d/quality.js';
+import { phoneClass as phoneQ } from './features/render-quality.js';
+import { lateAt } from './city3d/facade-rules.js';   // [daycycle] how late the evening is: fewer lit windows
+import { seasonAt, quantise } from './city3d/season.js';   // [season] leaves, autumn colour and bare branches follow the date (a picture only)
 import { sunGroupHTML, stripAt, setHandoff } from './room3d/sunlink.js';   // [room3d] sun today in the studio's eye-level views, and the way into Unit 3D
 import { accuracyRows, accuracyChip, loadFurnitureMeta } from './room3d/accuracy.js';   // [room3d] the measured-vs-assumed chip, shared with Unit 3D
 import { accessRoutes, entryPoint } from './plan/route.js';
@@ -48,6 +55,7 @@ import { renderOptions } from './plan/options.js';
 import { mountDock } from './room3d/dock.js';   // [phone] the time slider within thumb reach
 import * as Q3 from './plan/quality3d.js';   // [feature J] render quality (Fast / Visual) and progressive export
 import * as LX from './plan/lighting-ui.js';   // [feature J] daylight grid, glass/surface inputs, luminaires, annual summary
+G3.setRealLampsProbe(() => LX.count() > 0);   // [daycycle] a luminaire placed in the Light tab replaces the assumed ceiling lights
 import { validateInventory, fitInventory, pieceItem, placedIds } from './plan/inventory.js';   // [furniture] the renter's own pieces
 import { inventoryHTML } from './plan/inventory-ui.js';
 import { mountSelbar } from './plan/selbar.js';   // [furniture] the floating toolbar beside the selected piece
@@ -239,7 +247,7 @@ async function load(id) {
       }
     }
   }
-  if (!ready) { G3.init($('pgl'), $('pstage'), () => {}); P2.mount($('p2d'), { item: (i) => R.find((x) => x.id === i), select, move: dragTo, commit: () => commit(), locked: () => !!MEAS?.two.active }); bind3D(); mountBars(); ready = true; mountMeasure(); LX.attach3D(); Q3.mount({ stage: $('pstage'), model: () => model, toast, store }); mountDock($('pstage'), { min: 300, max: 1230, step: 5, get: () => st.min, set: (v) => { st.min = v; const t = $('pTime'); if (t) t.value = String(v); refreshSun(); }, text: () => fmtT(st.min), playing: () => !!st.playing, toggle: () => $('pPlay')?.click() }); }   // [phone]
+  if (!ready) { G3.init($('pgl'), $('pstage'), () => {}); P2.mount($('p2d'), { item: (i) => R.find((x) => x.id === i), select, move: dragTo, commit: () => commit(), locked: () => !!MEAS?.two.active }); bind3D(); mountBars(); ready = true; mountMeasure(); LX.attach3D(); Q3.mount({ stage: $('pstage'), model: () => model, toast, store }); mountDock($('pstage'), { min: 300, max: 1230, step: 5, get: () => st.min, set: (v) => { pausePlay(false); st.min = v; const t = $('pTime'); if (t) t.value = String(v); refreshSun(); }, text: () => fmtT(st.min), playing: () => !!st.playing, toggle: () => togglePlay('day') }); }   // [phone]
   G3.setModel(model); G3.setWallMode(st.wall);
   P2.setModel(model); LX.reattach2D(); Q3.modelChanged(); if (st.mode !== '2d') Q3.opened();   // [feature J] [quality]
   st.city = !!store.get(`plan-city.${S.base}`, false); applyCity();
@@ -1027,28 +1035,92 @@ const MOODS = [['auto', 'Auto'], ['day', 'Day'], ['evening', 'Evening'], ['night
 function sunPanel() {
   const y = +st.date.slice(0, 4), mi = S.crit.search?.move_in?.earliest ? String(S.crit.search.move_in.earliest).slice(0, 10) : null;
   $('ptimePanel').innerHTML = `<div class="ps-sunrow">
-      <button class="icon-btn ps-play" type="button" id="pPlay" aria-label="Play the day">${IC.play}</button>
       <div class="field ps-date"><label for="pDate">Date</label><input type="date" id="pDate" value="${st.date}"></div>
       <div class="field ps-time"><label for="pTime">Sun at <span class="val" id="pTimeV"></span></label><input type="range" id="pTime" min="300" max="1230" step="5" value="${st.min}"></div>
       <div class="seg ps-mood" id="pMood" role="group" aria-label="Lights">${MOODS.map(([k, t]) => `<button type="button" data-mood="${k}" class="${st.mood === k ? 'on' : ''}" aria-pressed="${st.mood === k}" title="${k === 'auto' ? 'Day while the sun is up, lamps after dark' : k === 'night' ? 'Lamps on, no daylight' : k === 'evening' ? 'Low daylight and lamps' : 'Daylight, lamps off'}">${t}</button>`).join('')}</div>
       <div class="seg ps-quick" id="pQuick">${[[mi, 'Move-in'], [`${y}-12-21`, 'Dec 21'], [`${y}-03-20`, 'Mar 20'], [`${y}-06-21`, 'Jun 21']].filter((q) => q[0]).map(([d, t]) => `<button type="button" data-d="${d}">${t}</button>`).join('')}</div>
-    </div>`;
-  $('pDate').addEventListener('change', (e) => { if (e.target.value) { st.date = e.target.value; refreshSun(); } });
-  $('pTime').addEventListener('input', (e) => { st.min = +e.target.value; refreshSun(); });
-  $('pQuick').addEventListener('click', (e) => { const b = e.target.closest('[data-d]'); if (!b) return; st.date = b.dataset.d; $('pDate').value = st.date; refreshSun(); });
+    </div><div id="pPlayBar"></div>`;
+  bar = mountPlayBar($('pPlayBar'), { onToggle: togglePlay, onMonth: (m) => { pausePlay(false); st.date = `${+st.date.slice(0, 4)}-${String(m + 1).padStart(2, '0')}-15`; $('pDate').value = st.date; refreshSun(); }, onScrub: scrubYear });
+  $('pDate').addEventListener('change', (e) => { if (e.target.value) { pausePlay(false); st.date = e.target.value; refreshSun(); } });
+  $('pTime').addEventListener('input', (e) => { pausePlay(false); st.min = +e.target.value; refreshSun(); });
+  $('pQuick').addEventListener('click', (e) => { const b = e.target.closest('[data-d]'); if (!b) return; pausePlay(false); st.date = b.dataset.d; $('pDate').value = st.date; refreshSun(); });
   $('pMood').addEventListener('click', (e) => { const b = e.target.closest('[data-mood]'); if (b) setMood(b.dataset.mood); });
-  $('pPlay').addEventListener('click', () => { st.playing = !st.playing; $('pPlay').innerHTML = st.playing ? IC.pause : IC.play; $('pPlay').classList.toggle('on', st.playing); });
 }
-function refreshSun() {
+// ------------------------------------------------------------------ [daycycle] play the day and the year
+// The same sun model asked about a new date or time every frame: the sun, the sky, the shadows, the sun patches, the trees' season. Fast steps coarser; the heavy panels
+// (the Light tab, the chips, the per-window minutes) catch up when it pauses.
+const player = new Player();
+let bar = null, dayRng = null, playMin = 720, liteAt = 0, segsKey = '', segsMemo = null, hoursSrc = null, hoursYear = 0, hoursMemo = null, dcT = 0;
+const quant = () => (roomQ() === 'visual' ? 0.5 : phoneQ() ? 5 : 2);   // minutes
+const yearSteps = () => (roomQ() === 'visual' ? 104 : 52);
+function sunEnv() {
+  return { lat: st.site?.origin?.lat ?? S.crit.search?.map_center?.[0] ?? 40.75, lon: st.site?.origin?.lon ?? S.crit.search?.map_center?.[1] ?? -73.98, tz: st.site?.timezone || S.crit.search?.timezone || 'America/New_York' };
+}
+const winsLit = (env, y, m, d) => { const tab = dayTable(y, m - 1, d, env.lat, env.lon, env.tz, 6); return model.windows.map((w, i) => (winSky[i] && !windowWithheld(winSky, i) ? litInfo(tab, winSky[i].prof, w.bearing, 6).segs : [])); };
+/** When the sun reaches the floor of the plan today: the union of the lit stretches of every window (its own skyline), or null when the plan is not placed on a site. */
+function floorSegs(env, y, m, d) {
+  if (!model || !winSky || winSky.length !== model.windows.length) return null;
+  const key = `${y}-${m}-${d}|${winSky.length}|${model.windows.length}`;
+  if (key !== segsKey) { segsKey = key; segsMemo = unionSegs(winsLit(env, y, m, d)); }
+  return segsMemo;
+}
+/** Direct-sun hours a day on the 15th of each month on the floor (the union of the windows), cached until the placement changes. */
+function monthHoursStudio(env, y) {
+  if (!model || !winSky || winSky.length !== model.windows.length) return null;
+  if (hoursSrc !== winSky || hoursYear !== y) { hoursSrc = winSky; hoursYear = y; hoursMemo = Array.from({ length: 12 }, (_, mo) => segMinutes(unionSegs(winsLit(env, y, mo + 1, 15))) / 60); }
+  return hoursMemo;
+}
+function playBarSync(s, env) {
+  if (!bar) return;
+  const [y, m, d] = st.date.split('-').map(Number), segs = floorSegs(env, y, m, d);
+  if (segs) {
+    bar.setSentence(sunSentence(segs, 'the floor'), sunNow(segs, st.min, s.alt));
+    bar.setChart(monthHoursStudio(env, y), { month: m - 1, t: yearProgress(st.date), label: `${MONTH_NAMES[m - 1]} ${d}` });
+  } else { bar.setSentence('Place the plan on its site to see when the sun reaches the floor'); bar.setChart(null); }
+  bar.setMonth(`${MONTH_NAMES[m - 1]} ${d}`, st.site?.green ? { label: seasonLabel(seasonAt(m, d, env.lat)), note: SEASON_NOTE } : null);
+}
+function startPlay(kind) {
+  if (!model) return;
+  const env = sunEnv(), [y, m, d] = st.date.split('-').map(Number);
+  if (kind === 'day') { dayRng = dayRange((mi) => sunPos(zonedMs(y, m - 1, d, mi, env.tz), env.lat, env.lon).alt, { from: 300, to: 1235, step: 5 }); player.start('day', progressOf(dayRng, st.min)); }
+  else { playMin = st.min; player.start('year', yearProgress(st.date)); }
+  st.playing = true; liteAt = 0; bar?.setPlaying(kind);
+}
+/** Stop the loop; `full` brings the Light tab, the chips and the per-window minutes up to date (a caller about to change the date or time itself passes false). */
+function pausePlay(full = true) {
+  if (!player.running) return;
+  player.stop(); st.playing = false; st.min = Math.round(st.min); bar?.setPlaying(null);
+  const t = $('pTime'); if (t) t.value = st.min;
+  const dt = $('pDate'); if (dt) dt.value = st.date;
+  if (full) { refreshSun(); lookChips(); }
+}
+function togglePlay(kind = 'day') {
+  if (!model) return;
+  if (player.running && player.kind === kind) pausePlay(); else { if (player.running) pausePlay(false); startPlay(kind); }
+}
+function scrubYear(t) {
+  pausePlay(false); st.date = yearFrame(+st.date.slice(0, 4), t, 365).iso; const dt = $('pDate'); if (dt) dt.value = st.date; refreshSun(false, true);
+  clearTimeout(dcT); dcT = setTimeout(() => { if (!player.running) { refreshSun(); lookChips(); } }, 160);
+}
+function playFrame(tp) {
+  if (player.kind === 'day') { const m = minuteAt(dayRng, tp, quant()); if (m === st.min) return; st.min = m; }
+  else { const f = yearFrame(+st.date.slice(0, 4), tp, yearSteps()); if (f.iso === st.date) return; st.date = f.iso; st.min = playMin; }
+  const t = $('pTime'); if (t) t.value = st.min;
+  const now = performance.now(); if (player.kind === 'year' && now - liteAt > 120) { liteAt = now; const dt = $('pDate'); if (dt) dt.value = st.date; }
+  refreshSun(true);
+}
+function refreshSun(lite = false, scrub = false) {
   if (!model) return;
   const lat = st.site?.origin?.lat ?? S.crit.search?.map_center?.[0] ?? 40.75, lon = st.site?.origin?.lon ?? S.crit.search?.map_center?.[1] ?? -73.98;
   const tz = st.site?.timezone || S.crit.search?.timezone || 'America/New_York';
   const [y, m, d] = st.date.split('-').map(Number);
   const s = sunPos(zonedMs(y, m - 1, d, st.min, tz), lat, lon);
   sunCtx = { lat, lon, tz, y, m, d };   // [room3d]
-  { const u = document.querySelector('#psLook .rc-strip u'); if (u) u.style.left = `${stripAt(st.min)}%`; if (sunMemo.key && !sunMemo.key.startsWith(st.date)) lookChips(); }
+  G3.setSeason(quantise(seasonAt(m, d, lat)));   // [season]
+  G3.setLate(lateAt(st.min));   // [daycycle]
+  { const u = document.querySelector('#psLook .rc-strip u'); if (u) u.style.left = `${stripAt(st.min)}%`; if (!lite && sunMemo.key && !sunMemo.key.startsWith(st.date)) lookChips(); }
   const sunny = st.site?.study?.sunshine?.fraction;   // [feature J] lighting tab: the sun now and the place's sunshine table
-  LX.refresh({ az: s.az, alt: s.alt, lat, lon, tz, y, m, d, fraction: Array.isArray(sunny) && sunny.length === 12 ? sunny.map(Number) : SUNSHINE[S.crit.search?.city]?.fraction || null, place: st.site?.study?.sunshine?.place || (SUNSHINE[S.crit.search?.city] ? SUNSHINE[S.crit.search.city].place : '') });
+  if (!lite) LX.refresh({ az: s.az, alt: s.alt, lat, lon, tz, y, m, d, fraction: Array.isArray(sunny) && sunny.length === 12 ? sunny.map(Number) : SUNSHINE[S.crit.search?.city]?.fraction || null, place: st.site?.study?.sunshine?.place || (SUNSHINE[S.crit.search?.city] ? SUNSHINE[S.crit.search.city].place : '') });
   // per-window city occlusion when the plan is placed on its site: only the windows a neighbour blocks lose their sun
   const perWin = up_(s) && winSky && winSky.length === model.windows.length ? model.windows.map((w, i) => windowBlocked(winSky, i, s)) : null;
   const up = s.alt > 0, blocked = perWin ? perWin.every(Boolean) : up && siteProf && s.alt <= hAt(siteProf, s.az);
@@ -1056,7 +1128,7 @@ function refreshSun() {
   const withheld = winSky && winSky.length === model.windows.length ? model.windows.map((w, i) => windowWithheld(winSky, i)) : [];   // [model project]
   const nWh = withheld.filter(Boolean).length, nBlk = perWin ? perWin.filter((b, i) => b && !withheld[i]).length : 0;
   const mk = `${st.date}|${winSky ? winSky.length : 0}`;
-  if (winSky && mk !== winMinKey) { winMinKey = mk; winMin = windowMinutes(winSky, model, y, m - 1, d, lat, lon, tz); }
+  if (!lite && winSky && mk !== winMinKey) { winMinKey = mk; winMin = windowMinutes(winSky, model, y, m - 1, d, lat, lon, tz); }
   const placementKnown=!st.site||!!siteProf;
   const light = lightState({ bearing:placementKnown?model.up_bearing:null, altitude:s.alt, blocked:!!blocked, directSun:st.directSun, ambient:st.ambient });
   const rel = (s.az - (model.up_bearing ?? 0)) * DEG, ca = Math.cos(s.alt * DEG);
@@ -1065,8 +1137,10 @@ function refreshSun() {
   G3.setSun({ x: Math.sin(rel) * ca, y: Math.cos(rel) * ca, up: Math.sin(s.alt * DEG) }, light.directional, up);
   const tv = $('pTimeV'); if (tv) tv.textContent = fmtT(st.min);
   const t = $('pTime'); if (t) t.style.setProperty('--p', `${((st.min - 300) / 930) * 100}%`);
+  playBarSync(s, sunEnv());
   const lamps = R.filter((x) => !x.hidden && x.kind === 'lamp').length + LX.count(), mn = G3.moodNow();
-  $('phud').innerHTML = `<span>${esc(st.date)} ${fmtT(st.min)}${mn !== 'day' ? ` · ${mn === 'night' ? 'night' : 'evening'}, ${lamps ? `${lamps} lamp${lamps > 1 ? 's' : ''} on` : 'no lamps placed'}` : ''}</span><span class="${light.directional ? 'lit' : 'shade'}">${!placementKnown ? 'Window placement unresolved · direct sun withheld' : !light.orientationKnown ? 'Orientation unknown · direct sun unresolved' : !up ? 'Night' : blocked ? (perWin ? 'Every window shaded by neighbours' : 'Site observation point shaded') : nWh && nWh === model.windows.length ? 'Windows not in open air · sun withheld' : nBlk ? `Sun blocked at ${nBlk} of ${perWin.length} windows${nWh ? ` · ${nWh} withheld` : ''}` : !st.directSun ? 'Direct sun hidden in preview' : `Sun ${Math.round(s.alt)}° up, ${compass(s.az)}`}</span>`;
+  $('phud').innerHTML = `<span>${esc(st.date)} ${fmtT(st.min)}${mn !== 'day' ? ` · ${mn === 'night' ? 'night' : 'evening'}, ${lamps ? `${lamps} lamp${lamps > 1 ? 's' : ''} on` : 'no lamps placed, a warm ceiling light assumed'}` : ''}</span><span class="${light.directional ? 'lit' : 'shade'}">${!placementKnown ? 'Window placement unresolved · direct sun withheld' : !light.orientationKnown ? 'Orientation unknown · direct sun unresolved' : !up ? 'Night' : blocked ? (perWin ? 'Every window shaded by neighbours' : 'Site observation point shaded') : nWh && nWh === model.windows.length ? 'Windows not in open air · sun withheld' : nBlk ? `Sun blocked at ${nBlk} of ${perWin.length} windows${nWh ? ` · ${nWh} withheld` : ''}` : !st.directSun ? 'Direct sun hidden in preview' : `Sun ${Math.round(s.alt)}° up, ${compass(s.az)}`}</span>`;
+  if (lite) return;   // playing: the Light tab waits for the pause
   const el = $('psLight'); if (!el) return;
   if (!el.querySelector('#psLightResults')) {
     el.innerHTML = `<div class="ps-light-controls"><label class="tg"><input id="psDirectSun" type="checkbox"> Show directional sunlight</label>${onSite ? `<label class="tg ps-city-tg"><input id="psCityTg" type="checkbox"> Show the city in the bird’s-eye view too</label>` : ''}<div class="field"><label for="psAmbient">Background light preview <span id="psAmbientValue"></span></label><input id="psAmbient" type="range" min="0" max="2" step="0.05"></div><p class="ps-note faint">Background intensity is a display preference, not measured brightness or lux.</p>
@@ -1144,15 +1218,15 @@ function applyCity() {
   const dark = document.documentElement.dataset.theme !== 'light', css = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
   const colors = eye ? { low: '#7f8996', high: '#b9c2cf', roof: '#dde1e7', own: css('--accent'), ground: '#6e7378' }
     : { low: dark ? css('--surface-3') : css('--ink-4'), high: css('--ink-3'), roof: dark ? css('--ink-3') : css('--surface-1'), own: css('--accent'), ground: dark ? css('--surface-1') : css('--surface-3') };
-  G3.setCity(cityGroup(onSite, { daylight: eye, light: eye || !dark, colors }));
+  G3.setCity(cityGroup(onSite, { daylight: eye, light: eye || !dark, colors, season: sunCtx ? quantise(seasonAt(sunCtx.m, sunCtx.d, sunCtx.lat)) : undefined }));
 }
 let cityKey = '';
 
 // ------------------------------------------------------------------ frame loop
-function frame() {
+function frame(ts) {
   requestAnimationFrame(frame);
   if ($('view-plan').hidden || !model) return;
-  if (st.playing) { st.min += 3; if (st.min > 1230) st.min = 300; const t = $('pTime'); if (t) t.value = st.min; refreshSun(); }
+  if (player.running) { const tp = player.tick(ts ?? performance.now()); if (tp != null) playFrame(tp); }
   if (flash && performance.now() > flashT) { flash = null; overlays(); }
   const now = performance.now(), dt = Math.min(0.05, (now - (lastFrame || now)) / 1000); lastFrame = now;
   if (held.size && G3.viewMode() === 'eye') {
