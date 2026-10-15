@@ -13,7 +13,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
 
-from ..listings import AMENITY_KEYS, STATUSES
+from ..listings import AMENITY_KEYS, PRICE_BASES, STATUSES, price_basis
 from . import SCHEMA_VERSION
 from .common import (crit_today, building_key, host, in_area, is_active, norm_address, norm_unit, num, parse_date,
                      search_area, urls_of)
@@ -259,6 +259,17 @@ def validate(listings: list[dict], crit: dict, root: Path | None = None, today: 
             if abs(calc - ne) > 2:
                 add("warn", "net_mismatch", L, "price.net_effective",
                     f"stated net ${ne:,.2f} but ${g:,.0f} x ({lm:g}-{fm:g})/{lm:g} = ${calc:,.2f}")
+        raw_basis = p.get("basis", L.get("price_basis"))
+        if raw_basis not in (None, "") and price_basis(L) is None:
+            add("warn", "unknown_price_basis", L, "price.basis",
+                f"price.basis {raw_basis!r} is not one of {', '.join(PRICE_BASES)}; it is ignored")
+        rng = p.get("range")
+        if rng not in (None, ""):
+            lo_hi = [num(x) for x in rng] if isinstance(rng, (list, tuple)) and len(rng) == 2 else None
+            if not lo_hi or None in lo_hi or lo_hi[0] > lo_hi[1]:
+                add("warn", "bad_price_range", L, "price.range", "price.range must be [low, high] in dollars a month")
+            elif g and abs(lo_hi[1] - g) > 1:
+                add("warn", "price_range_vs_gross", L, "price.range", f"the top of the range ${lo_hi[1]:,.0f} is not the gross ${g:,.0f}")
         for k in ("fees_monthly", "fees_one_time", "broker_fee"):
             v = num(p.get(k))
             if v is not None and v < 0:

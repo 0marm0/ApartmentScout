@@ -24,8 +24,8 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from .config import DIMENSION_LABELS
-from .listings import (cost_model, headroom, is_studio, normalise_laundry, normalise_service, parse_date,
-                       price_per_sqft, size_info)
+from .listings import (PRICE_BASES, cost_model, headroom, is_studio, normalise_laundry, normalise_service,
+                       parse_date, price_per_sqft, size_info)
 
 SCORE_VERSION = "2.1"
 
@@ -137,6 +137,12 @@ def part_cost(cm: dict, crit: dict) -> Part:
         items.append(f"ranked on the {_money(rent['gross'])} paid-month rent: the free months come without a "
                      f"lease term (net would be {ill})")
         flags.append("net_conditional")
+    elif basis == "gross" and rent.get("net_unverified") is not None:
+        items.append(f"ranked on the {_money(rent['gross'])} paid-month rent: a net of {_money(rent['net_unverified'])} "
+                     "is quoted but not verified")
+    elif basis == "gross" and rent.get("range"):
+        items.append(f"ranked on the {_money(rent['gross'])} top of an advertised range "
+                     f"{_money(rent['range'][0])}-{_money(rent['range'][1])} (no lease term, so no net)")
     elif basis == "gross":
         items.append(f"gross rent {_money(rent['gross'])}, no concession")
     if cm.get("fees_known"):
@@ -168,12 +174,22 @@ def part_cost(cm: dict, crit: dict) -> Part:
         items.append("sources disagree; ranked on the higher price: " +
                      "; ".join(f"{s['label']} {_money(s['monthly'])}" for s in cm["scenarios"]))
         flags.append("price_dispute")
+    if cm.get("price_unverified"):
+        label = PRICE_BASES.get(cm.get("price_basis"), ("a weak source", True))[0]
+        items.append(f"price unverified: read from {label}"
+                     + (f", checked {cm['price_checked']}" if cm.get("price_checked") else ", with no dated check"))
+        flags.append("price_unverified")
     lo, hi = (cm.get("monthly_range") or [None, None])[:2]
     rng = None
     if lo is not None and (lo != amount or (hi is not None and hi != amount)):
         best = score_cost(lo, crit)
         worst = score_cost(hi, crit) if hi is not None else v
         rng = (round(min(worst, v), 1), round(max(best, v), 1))
+    pr = cm.get("price_range")
+    if pr and None not in pr[:2]:
+        # an unverified price may be stale: the score range covers the cheaper reading and the dearer one
+        ends = [score_cost(pr[0], crit), score_cost(pr[1], crit), v] + (list(rng) if rng else [])
+        rng = (round(min(ends), 1), round(max(ends), 1))
     summ = f"{_money(amount)}/mo first-lease equivalent"
     tp = _tier_phrase(cm, crit)
     if tp:
@@ -184,6 +200,8 @@ def part_cost(cm: dict, crit: dict) -> Part:
         summ += ", free months need a lease term"
     if cm.get("dispute"):
         summ += ", sources disagree"
+    if cm.get("price_unverified"):
+        summ += ", price unverified"
     return Part(v, summ, items, rng, flags)
 
 
@@ -958,6 +976,8 @@ def score_listing(L: dict, crit: dict, today: dt.date | None = None, comps: Comp
             gates.append("concession:not_applied")
         if cm.get("dispute"):
             gates.append("price_dispute")
+        if cm.get("price_unverified"):
+            gates.append("unverified:price")
     if active and move_gate == "move_date:after_window":
         gates.append(move_gate)
     checked = parse_date(L.get("checked"))
@@ -979,10 +999,14 @@ def score_listing(L: dict, crit: dict, today: dt.date | None = None, comps: Comp
         reasons.append(r)
     if L.get("floor_inferred"):
         flags.add("floor_inferred")
+    if cm.get("price_unverified") and parts["cost"] is not None:
+        known_w -= w.get("cost", 0) / 2       # a cost read from a weak source counts half as known
     confidence = round(100 * known_w / wtot)
     tags = []
     if confidence < 60:
         tags.append("thin data")
+    if cm.get("price_unverified"):
+        tags.append("price unverified")
     if cm.get("dispute") or L.get("conflicts"):
         tags.append("source conflict")
     ppsf = price_per_sqft(L, cm.get("monthly"))
