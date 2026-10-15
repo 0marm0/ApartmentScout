@@ -1,0 +1,27 @@
+{
+  "name": "ApartmentScout",
+  "short_name": "ApartmentScout",
+  "description": "Rank apartments on your own criteria, map door-to-door commutes, read building records and model the light from the exact unit.",
+  "lang": "en",
+  "dir": "ltr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#08090c",
+  "theme_color": "#08090c",
+  "categories": ["productivity", "lifestyle"],
+  "icons": [
+    { "src": "assets/pwa/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "assets/pwa/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "assets/pwa/maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "assets/pwa/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "assets/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ],
+  "shortcuts": [
+    { "name": "Map", "short_name": "Map", "description": "Listings on the map with commute heat", "url": "./#map" },
+    { "name": "Shortlist", "short_name": "Shortlist", "description": "Your saved homes and tours", "url": "./#list" },
+    { "name": "Compare", "short_name": "Compare", "description": "Finalists side by side", "url": "./#compare" },
+    { "name": "Unit 3D", "short_name": "Unit 3D", "description": "Sun, view and skyline from the exact unit", "url": "./#unit" }
+  ]
+}

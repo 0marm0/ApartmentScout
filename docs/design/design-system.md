@@ -106,6 +106,16 @@ the system without touching a component:
 
 Each is on when the OS asks **or** the renter chose it: a page never switches off a system-wide accessibility setting.
 
+## Installable app
+
+The hosted dashboard installs as an app (`dashboard/manifest.webmanifest`, `sw.js`, `js/pwa.js`). Its icons are the brand pin, the same two paths the
+top bar inlines, rendered by `scripts/make_icons.py` into `dashboard/assets/pwa/`: a dark tile (`#0b0d12`, pin `#12865f`, tower `#ffffff`, the dark
+theme's `--brand` and `--brand-tower`) and a light tile (`#f4f4f1`, pin `#05583f`, tower `#263533`, the light theme's) at 192 and 512 px, a maskable
+square (dark, the mark inside the 80 % safe zone) and a 180 px Apple touch icon. A manifest cannot switch icons by colour scheme, so it lists the
+dark set (the app is dark native) and the light tile serves the light-scheme favicon. `theme_color` and `background_color` are the dark `--ground`;
+`shell.js` keeps `<meta name="theme-color">` in step with the theme the renter picks. The one new piece of UI is the update prompt (`css/pwa.css`): a
+glass pill above the tray with a primary **Reload** and a ghost **Later**, solid under reduced transparency like every floating panel.
+
 ## Motion
 
 | Token | Value | Use |
