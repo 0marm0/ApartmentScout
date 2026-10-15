@@ -5,11 +5,13 @@
 // File format (schema 1):
 //   {"schema": 1, "kind": "apartmentscout-furniture", "name": "Your furniture", "source": "where the list came from",
 //    "pieces": [{"id": "bed", "ref": "queen-bed", "label": "Queen bed", "room": "bedroom",
-//                "w": 64, "d": 84, "h": 40, "elev"?, "variant"?, "product"?, "look"?, "note"?, "source"?}]}
+//                "w": 64, "d": 84, "h": 40, "elev"?, "variant"?, "product"?, "look"?, "set"?, "assumed"?, "note"?, "source"?}]}
 // `ref` is a catalogue id (plan/catalog.js); w, d, h and elev are inches and replace the catalogue's size, so the
 // studio draws and checks the piece the renter has, not a generic one. `room` is the kind of room it lived in
 // (bedroom, living, dining, office) and steers the auto-placer. `look` (optional, plan/looks.js) is the piece's colour, material and
 // finish and who it comes from (the renter or an assumption); both 3D views draw it, joined to the layout item by id.
+// `set` (optional, a desk): what stands with it, `{"monitor": 32, "chair": "task"}` (a 32-inch monitor on it, a rolling task chair at it).
+// `assumed` (optional): the sizes (`w`, `d`, `h`) the renter did not give, so the studio says "depth assumed".
 import { CATALOG, resolve } from './catalog.js';
 import { fitKit } from './fit.js';
 import { validateLook } from './looks.js';
@@ -20,6 +22,19 @@ const ID = /^[A-Za-z0-9_-]{1,40}$/;
 const ROOM_KINDS = ['living', 'bedroom', 'dining', 'office', 'kitchen', 'other'];
 const fin = (v) => typeof v === 'number' && Number.isFinite(v);
 const plain = (v, max) => typeof v === 'string' && v.length <= max && !/[<>\u0000-\u001f]/.test(v);
+
+/** What stands with a desk: a monitor (its diagonal in inches, 13 to 60) and a chair ('task' for a rolling task chair, or false for none). Returns the clean set or an error string. */
+function validateSet(set, c) {
+  if (!set || typeof set !== 'object' || Array.isArray(set)) return 'set must be an object';
+  if (c.kind !== 'desk') return 'set belongs to a desk';
+  const out = {};
+  for (const [k, v] of Object.entries(set)) {
+    if (k === 'monitor') { if (v === false) out.monitor = false; else if (fin(v) && v >= 13 && v <= 60) out.monitor = Math.round(v * 10) / 10; else return 'set.monitor must be a diagonal from 13 to 60 in, or false'; }
+    else if (k === 'chair') { if (v === false || v === 'task') out.chair = v; else return 'set.chair must be "task" or false'; }
+    else return `set: unknown field "${String(k).slice(0, 20)}"`;
+  }
+  return out;
+}
 
 /**
  * Validate a parsed inventory. Strict: unknown refs, duplicate ids, markup in text or absurd sizes fail.
@@ -46,8 +61,12 @@ export function validateInventory(obj, { catalog = CATALOG } = {}) {
     if (p.room != null && !ROOM_KINDS.includes(p.room)) return fail(`${at}: room must be one of ${ROOM_KINDS.join(', ')}`);
     for (const k of ['label', 'note', 'source']) if (p[k] != null && !plain(p[k], k === 'label' ? 80 : 400)) return fail(`${at}: ${k} must be plain text`);
     if (p.product != null && !(typeof p.product === 'string' && /^[a-z0-9][a-z0-9-]{0,63}$/.test(p.product))) return fail(`${at}: product must be a product id`);
+    if (p.set != null) { const st = validateSet(p.set, c); if (typeof st === 'string') return fail(`${at}: ${st}`); }
+    if (p.assumed != null && !(Array.isArray(p.assumed) && p.assumed.length <= 6 && p.assumed.every((x) => ['w', 'd', 'h', 'elev'].includes(x)))) return fail(`${at}: assumed must list sizes among w, d, h, elev`);
     const clean = { id: p.id, ref: p.ref };
     for (const k of ['label', 'room', 'variant', 'product', 'note', 'source']) if (p[k]) clean[k] = p[k];
+    if (p.set != null) clean.set = validateSet(p.set, c);
+    if (p.assumed?.length) clean.assumed = [...new Set(p.assumed)];
     if (p.look != null) { const lk = validateLook(p.look, `${at}: look`); if (!lk.ok) return fail(lk.error); clean.look = lk.look; }
     for (const k of ['w', 'd', 'h', 'elev']) if (p[k] != null) clean[k] = Math.round(p[k] * 10) / 10;
     pieces.push(clean);
@@ -76,6 +95,8 @@ export function pieceItem(p, pos = { x: 0, y: 0, rot: 0 }) {
   const o = { id: p.id, ref: p.ref, x: pos.x, y: pos.y, rot: pos.rot };
   for (const k of ['w', 'd', 'h', 'elev', 'variant', 'product']) if (p[k] != null) o[k] = p[k];
   if (p.label) o.label = p.label;
+  if (p.set) o.set = p.set;
+  if (p.assumed) o.assumed = p.assumed;
   if (p.look) o.look = p.look;
   return o;
 }

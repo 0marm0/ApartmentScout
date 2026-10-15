@@ -50,7 +50,7 @@ import * as LX from './plan/lighting-ui.js';   // [feature J] daylight grid, gla
 import { validateInventory, fitInventory, pieceItem, placedIds } from './plan/inventory.js';   // [furniture] the renter's own pieces
 import { inventoryHTML } from './plan/inventory-ui.js';
 import { mountSelbar } from './plan/selbar.js';   // [furniture] the floating toolbar beside the selected piece
-import { applyLooks } from './plan/looks.js';   // [furniture] colour, material and finish from furniture.json
+import { resolveLayout, applyInventory, savedLayoutFor, samePlaces } from './plan/placement.js';   // [placement] one rule for where the pieces stand, shared with Unit 3D
 import { allViews, stepView, windowGroups } from './plan/viewpoints.js';   // [interior] where to stand to look out of the windows
 import { setLookChips, bindLookChips } from './plan/look-ui.js';
 
@@ -65,11 +65,14 @@ let routesRes = null, routeT = 0, lastFrame = 0;
 // onSite: the plan placed on its site; winSky: one skyline per plan window (per-window city occlusion)
 let onSite = null, winSky = null, winMin = null, winMinKey = '';
 let winSkyView = null;
+let removed = new Set();   // [placement] pieces of the default layout the renter took out (they are not put back)
 let inventory = null;   // [furniture] "Your furniture": the renter's pieces (furniture.json, or the ones a project carried)
 let model = null, rawPlan = null, projectLibrary = Object.create(null), siteProf = null, items = [], R = [], ev = null, sel = null, flash = null, flashT = 0, loop = false, ready = false;
 const undo = [], redo = [];
 const isPhone = () => matchMedia('(max-width: 760px)').matches;
 const key = (id) => `plan.${S.base}.${id}`;
+/** One raw layout item as the studio checks it: the inventory's size and look joined on, then the catalogue's. */
+const resolveOne = (it) => resolve(applyInventory([it], inventory)[0]);
 const libraryKey = () => `plan-projects.${S.base}`;
 function saveProjectLibrary(next) {
   const text=JSON.stringify(next);
@@ -236,7 +239,7 @@ async function load(id) {
   P2.setModel(model); LX.reattach2D(); Q3.modelChanged();   // [feature J]
   st.city = !!store.get(`plan-city.${S.base}`, false); applyCity();
   // furniture: the saved layout for this plan, else the first preset
-  const saved = projectLibrary[id]?.layout || store.get(key(id), null), v = saved && validateLayout(saved, { planId: id });
+  const libLayout = projectLibrary[id]?.layout, savedV = libLayout ? validateLayout(libLayout, { planId: id, lenient: true }) : savedLayoutFor(store, S.base, id);   // [placement] the renter's saved layout, piece by piece
   const light = projectLibrary[id]?.lighting || store.get(`plan-light.${S.base}.${id}`, {});
   st.directSun = light.directSun !== false;
   st.ambient = typeof light.ambient === 'number' && Number.isFinite(light.ambient) ? Math.max(0, Math.min(2, light.ambient)) : 1;
@@ -244,10 +247,12 @@ async function load(id) {
   LX.load(light);   // [feature J] daylight inputs and luminaires
   inventory = await loadInventory(id);   // [furniture]
   if (!model.layouts.length) { try { model.layouts.push(inventory ? ownLayout() : suggestLayout(model)); } catch { /* a plan the placer cannot handle keeps no preset */ } }
-  items = v?.ok ? v.layout.items : (model.layouts[0]?.items || []).map((x) => ({ ...x }));
+  const lay = resolveLayout({ model, inventory, saved: savedV?.ok ? savedV : null });   // [placement] the saved layout, the plan's default for what is not placed, a fit for what has no place yet
+  items = lay.items; removed = new Set(lay.removed);
   undo.length = 0; redo.length = 0; sel = null; cancelCompare(); $('psCompare').hidden = true; st.routeKey = null; st.finder = null; routesRes = null;
   G3.setMood(st.mood);
-  st.activePreset = v?.ok ? null : model.layouts[0]?.id || null;
+  st.activePreset = lay.source === 'default' ? model.layouts[0]?.id || null : null;
+  if (lay.changed) persist();   // [placement] a layout that was filled in or brought up to date is saved, so it stays as shown
   head(); setMode(st.mode); setWall(st.wall, true); G3.setView(st.view === 'top' ? 'top' : 'bird'); markCams();
   recompute({ all: true }); sunPanel(); refreshSun();
 }
@@ -298,12 +303,12 @@ const lightingApi = {
   svg: () => $('p2d'), toPlan: (x, y) => P2.toPlan(x, y), checkpoint: () => checkpoint(), persist: persistLight, toast,
   setMood: (m) => setMood(m), setSurfaces: (rho) => G3.setSurfaces(rho), skyView: (i) => windowSky()?.[i] ?? null,
 };
-const snapshot = () => JSON.stringify({items,plan:rawPlan,siteProfile:siteProf?Array.from(siteProf):null,lighting:lightingOf()});
+const snapshot = () => JSON.stringify({items,removed:[...removed],plan:rawPlan,siteProfile:siteProf?Array.from(siteProf):null,lighting:lightingOf()});
 function checkpoint() { undo.push(snapshot()); if (undo.length > 80) undo.shift(); redo.length = 0; markUndo(); }
 function persist() {
-  store.set(key(st.id), serialiseLayout(st.id, items));
+  store.set(key(st.id), serialiseLayout(st.id, items, { removed: [...removed] }));
   if(projectLibrary[st.id]) {
-    const project=serialiseProject(rawPlan,items,lightingOf(),inventory);
+    const project=serialiseProject(rawPlan,items,lightingOf(),inventory,{removed:[...removed]});
     try{saveProjectLibrary(Object.assign(Object.create(null),projectLibrary,{[st.id]:project}));}
     catch(e){toast('Browser project could not be saved. Export a complete project backup.',6000);}
   }
@@ -313,7 +318,7 @@ function markUndo() { $('psUndo').disabled = !undo.length; $('psRedo').disabled 
 function doUndo(back = true) {
   const from = back ? undo : redo, to = back ? redo : undo; if (!from.length) return;
   to.push(snapshot());
-  const saved=JSON.parse(from.pop());items=saved.items;
+  const saved=JSON.parse(from.pop());items=saved.items;removed=new Set(saved.removed||[]);
   if(saved.plan) {
     rawPlan=saved.plan;model=normalisePlan(rawPlan);G3.setModel(model);G3.setWallMode(st.wall);P2.setModel(model);LX.reattach2D();
     siteProf=Array.isArray(saved.siteProfile)?Float64Array.from(saved.siteProfile):null;
@@ -322,7 +327,7 @@ function doUndo(back = true) {
   }
   if(saved.lighting) {st.directSun=saved.lighting.directSun;st.ambient=saved.lighting.ambient;st.glazing=clampGlazing(saved.lighting.glazing);st.blinds=blindsOf(saved.lighting.blinds);LX.load(saved.lighting);}
   if (sel && !items.some((x) => x.id === sel)) sel = null;
-  if(projectLibrary[st.id])projectLibrary[st.id]=serialiseProject(rawPlan,items,lightingOf(),inventory);
+  if(projectLibrary[st.id])projectLibrary[st.id]=serialiseProject(rawPlan,items,lightingOf(),inventory,{removed:[...removed]});
   persist(); markUndo(); recompute({ all: true });
   refreshSun();head();
 }
@@ -330,7 +335,7 @@ function doUndo(back = true) {
 /** Re-resolve, re-check and redraw. opts.all rebuilds every 3D item; opts.panels redraws the side. */
 function recompute(opts = {}) {
   if (!model) return;
-  R = applyLooks(items, inventory).map((x) => resolve(x)).filter(Boolean);   // [furniture] the inventory's colour, material and finish ride on each piece
+  R = applyInventory(items, inventory).map((x) => resolve(x)).filter(Boolean);   // [furniture] the inventory's size, colour, material and desk set ride on each piece
   ev = evaluate(model, R);
   G3.setItems(R); LX.itemsChanged(); Q3.itemsChanged();   // [feature J]
   for (const it of R) G3.setRoomOf(it.id, ev.items[it.id]?.room || '');
@@ -397,12 +402,12 @@ function markList() { document.querySelectorAll('#psTab .ps-item').forEach((el) 
 function dragTo(id, x, y) {
   const it = items.find((q) => q.id === id); if (!it) return;
   if (!st.dragging) { checkpoint(); st.dragging = true; }
-  it.x = Math.round(x); it.y = Math.round(y);
+  it.x = Math.round(x); it.y = Math.round(y); it.placed = true;   // [placement] the renter put it here
   if (st.snap) snapToWalls(it);
   recompute({ panels: false });
 }
 function snapToWalls(it) {
-  const r = resolve(it); if (!r) return;
+  const r = resolveOne(it); if (!r) return;
   const gaps = gapRays(model, [...R.filter((q) => q.id !== it.id), r], it.id, 6);
   for (const g of gaps) if (g.d > 0.05 && g.d < 4) { it.x += g.u[0] * (g.d - 0.05); it.y += g.u[1] * (g.d - 0.05); }
   it.x = Math.round(it.x * 10) / 10; it.y = Math.round(it.y * 10) / 10;
@@ -413,17 +418,17 @@ function mutate(fn, msg) { checkpoint(); fn(); persist(); recompute({ all: true 
 /** Rotate the selected piece to any angle: live while a dial is dragged (one undo step), settled when it is let go. */
 function rotateTo(deg, live) {
   const it = items.find((q) => q.id === sel); if (!it) return;
-  const set = () => { it.rot = ((Math.round(deg) % 360) + 360) % 360; };
+  const set = () => { it.rot = ((Math.round(deg) % 360) + 360) % 360; it.placed = true; };
   if (live) { if (!st.rotating) { checkpoint(); st.rotating = true; } set(); persist(); recompute({ panels: false }); }
   else if (st.rotating) { st.rotating = false; commit(); }
   else mutate(set);
 }
-function rotateSel(d) { const it = items.find((q) => q.id === sel); if (it) mutate(() => { it.rot = ((Math.round(it.rot || 0) + d) % 360 + 360) % 360; }); }
-function nudge(dx, dy) { const it = items.find((q) => q.id === sel); if (!it) return; if (!st.nudging) { checkpoint(); st.nudging = true; } it.x += dx; it.y += dy; persist(); recompute({ panels: false }); clearTimeout(st.nudgeT); st.nudgeT = setTimeout(() => { st.nudging = false; tab(); }, 500); }
-function removeSel() { const it = items.find((q) => q.id === sel); if (!it) return; const n = resolve(it)?.name || it.ref; mutate(() => { items = items.filter((q) => q.id !== sel); sel = null; }, `Removed ${n.toLowerCase()}`); }
+function rotateSel(d) { const it = items.find((q) => q.id === sel); if (it) mutate(() => { it.rot = ((Math.round(it.rot || 0) + d) % 360 + 360) % 360; it.placed = true; }); }
+function nudge(dx, dy) { const it = items.find((q) => q.id === sel); if (!it) return; if (!st.nudging) { checkpoint(); st.nudging = true; } it.x += dx; it.y += dy; it.placed = true; persist(); recompute({ panels: false }); clearTimeout(st.nudgeT); st.nudgeT = setTimeout(() => { st.nudging = false; tab(); }, 500); }
+function removeSel() { const it = items.find((q) => q.id === sel); if (!it) return; const n = resolveOne(it)?.name || it.ref; mutate(() => { removed.add(it.id); items = items.filter((q) => q.id !== sel); sel = null; }, `Removed ${n.toLowerCase()}`); }
 function duplicateSel() {
   const it = items.find((q) => q.id === sel); if (!it) return;
-  const copy = { ...it, id: newId(it.ref, items), x: it.x + 12, y: it.y - 12 };
+  const copy = { ...it, id: newId(it.ref, items), x: it.x + 12, y: it.y - 12, placed: true };
   mutate(() => { items.push(copy); place(copy, roomOf(model, [it.x, it.y]), true); sel = copy.id; });
 }
 function addRef(ref) {
@@ -431,20 +436,21 @@ function addRef(ref) {
   const want = sel ? ev.items[sel]?.room : null;
   const room = want || (model.rooms.find((r) => r.kind === ({ sleep: 'bedroom', work: 'bedroom', storage: 'bedroom' }[c.cat] || 'living')) || [...model.rooms].sort((a, b) => b.area - a.area)[0]).name;
   const rm = model.rooms.find((r) => r.name === room);
-  const it = { id: newId(ref, items), ref, x: Math.round(rm.label[0]), y: Math.round(rm.label[1]), rot: 0 };
+  const it = { id: newId(ref, items), ref, x: Math.round(rm.label[0]), y: Math.round(rm.label[1]), rot: 0, placed: true };
   mutate(() => { items.push(it); const ok = place(it, room, true); sel = it.id; toast(ok ? `Added ${c.name.toLowerCase()} to the ${room.toLowerCase()}` : `No clear spot for the ${c.name.toLowerCase()} in the ${room.toLowerCase()}; it is in the middle`); });
 }
 /** Auto-place an item in a room; returns the grade or null. Mutates the item. */
 function place(it, room, quiet = false) {
-  const all = items.map((x) => resolve(x)).filter(Boolean);
+  const all = applyInventory(items, inventory).map((x) => resolve(x)).filter(Boolean);
   const s = findSpot(model, all, it.id, room);
-  if (s) { it.x = Math.round(s.x * 10) / 10; it.y = Math.round(s.y * 10) / 10; it.rot = s.rot; }
+  if (s) { it.x = Math.round(s.x * 10) / 10; it.y = Math.round(s.y * 10) / 10; it.rot = s.rot; it.placed = true; }
   if (!quiet) toast(s ? (s.grade === 'clear' ? `Placed in the ${room.toLowerCase()}` : `Placed in the ${room.toLowerCase()}, with a ${s.grade} clearance`) : `No spot in the ${room.toLowerCase()} fits it with the rest where it is`);
   return s ? s.grade : null;
 }
 function applyPreset(lid) {
   const L = model.layouts.find((l) => l.id === lid); if (!L) return;
-  mutate(() => { items = L.items.map((x) => ({ ...x })); sel = null; st.activePreset = lid; }, `Layout: ${L.name}`);
+  // [placement] choosing a layout is the renter placing every piece in it
+  mutate(() => { items = L.items.map((x) => ({ ...x, placed: true })); removed = new Set(); sel = null; st.activePreset = lid; }, `Layout: ${L.name}`);
 }
 /** [furniture] Use the plan's "Your furniture" layout, or fit the renter's pieces into this plan with the checks. */
 function useOwn() {
@@ -456,8 +462,8 @@ function useOwn() {
 function addOwn(pid) {
   const p = inventory?.pieces.find((q) => q.id === pid); if (!p || items.some((q) => q.id === pid)) return;
   const room = (model.rooms.filter((r) => r.kind === (p.room === 'dining' ? 'living' : p.room)).sort((a, b) => b.area - a.area)[0] || [...model.rooms].sort((a, b) => b.area - a.area)[0]);
-  const it = pieceItem(p, { x: Math.round(room.label[0]), y: Math.round(room.label[1]), rot: 0 });
-  mutate(() => { items.push(it); const ok = place(it, room.name, true); sel = it.id; st.activePreset = null; toast(ok ? `Added ${(p.label || p.ref).toLowerCase()} to the ${room.name.toLowerCase()}` : `No clear spot in the ${room.name.toLowerCase()}; it is in the middle`); });
+  const it = { id: p.id, ref: p.ref, x: Math.round(room.label[0]), y: Math.round(room.label[1]), rot: 0, placed: true };   // [placement] size, label and look come from the inventory
+  mutate(() => { removed.delete(it.id); items.push(it); const ok = place(it, room.name, true); sel = it.id; st.activePreset = null; toast(ok ? `Added ${(p.label || p.ref).toLowerCase()} to the ${room.name.toLowerCase()}` : `No clear spot in the ${room.name.toLowerCase()}; it is in the middle`); });
 }
 function flashPoly(poly) { flash = poly; flashT = performance.now() + 2400; overlays(); setTimeout(() => { if (performance.now() >= flashT) { flash = null; overlays(); } }, 2500); }
 
@@ -499,7 +505,7 @@ function bindChrome() {
     if (f.size > MAX_BYTES) { toast('That file is larger than 1 MB'); return; }
     const r = parseLayout(await f.text(), { planId: st.id });
     if (!r.ok) { toast(`Could not load: ${r.error}`, 4200); return; }
-    mutate(() => { items = r.layout.items; sel = null; st.activePreset = null; }, `Loaded ${r.layout.items.length} pieces`);
+    mutate(() => { items = r.layout.items.map((x) => ({ ...x, placed: x.placed ?? true })); removed = new Set(r.layout.removed || []); sel = null; st.activePreset = null; }, `Loaded ${r.layout.items.length} pieces`);
   });
   document.addEventListener('keydown', keys);
   $('psInsp').addEventListener('click', inspClick);
@@ -604,9 +610,9 @@ function camera(v) {
 async function fileAction(f) {
   if(f==='project-load') { $('psProjectFile').click(); return; }
   if (!model) return;
-  if (f === 'save') saveBlob(new Blob([JSON.stringify(serialiseLayout(st.id, items), null, 2)], { type: 'application/json' }), `${st.id}-layout.json`);
+  if (f === 'save') saveBlob(new Blob([JSON.stringify(serialiseLayout(st.id, items, { removed: [...removed] }), null, 2)], { type: 'application/json' }), `${st.id}-layout.json`);
   else if(f==='project-save') {
-    try { const project=serialiseProject(rawPlan,items,lightingOf(),inventory);saveBlob(new Blob([JSON.stringify(project,null,2)],{type:'application/json'}),`${st.id}-project.json`); }
+    try { const project=serialiseProject(rawPlan,items,lightingOf(),inventory,{removed:[...removed]});saveBlob(new Blob([JSON.stringify(project,null,2)],{type:'application/json'}),`${st.id}-project.json`); }
     catch(e) { toast(`Project export failed: ${e.message || e}`,5000); }
   }
   else if(f==='project-restore') {
@@ -634,7 +640,7 @@ async function fileAction(f) {
     Q3.renderImage(f === 'render2' ? 2 : 4, { name: `${st.id}-${st.view}`, caption: `${model.title || st.id} · ${st.date} ${fmtT(st.min)}` });   // [feature J]
   } else if (f === 'csv') {
     saveBlob(new Blob([shoppingCSV(shoppingList(R), model.title || st.id)], { type: 'text/csv' }), `${st.id}-shopping-list.csv`);
-  } else if (f === 'options') openOptions(); else if (f === 'clear') mutate(() => { items = []; sel = null; }, 'Cleared. Undo brings it back');
+  } else if (f === 'options') openOptions(); else if (f === 'clear') mutate(() => { for (const q of items) removed.add(q.id); items = []; sel = null; }, 'Cleared. Undo brings it back');
 }
 function openOptions() {
   const el = $('psCompare'); cancelCompare(); el.hidden = false;
@@ -756,7 +762,7 @@ function useProduct(it, pid) {
   mutate(() => {
     if (!p) { delete it.product; delete it.w; delete it.d; delete it.h; return; }
     const next = withProduct(it, p); for (const k of Object.keys(it)) if (!(k in next)) delete it[k]; Object.assign(it, next);
-  }, p ? `${p.brand} ${shortName(p.name)}: ${fmtIn(resolve(it)?.w || 0)} × ${fmtIn(resolve(it)?.d || 0)}` : 'Back to the generic size');
+  }, p ? `${p.brand} ${shortName(p.name)}: ${fmtIn(resolveOne(it)?.w || 0)} × ${fmtIn(resolveOne(it)?.d || 0)}` : 'Back to the generic size');
 }
 function inspClick(e) {
   const b = e.target.closest('button'); if (!b) return;
@@ -815,7 +821,7 @@ function bindArchitecture() {
     try {
       const values={};for(const el of $('psArchFields').querySelectorAll('[data-arch]')){if(el.value.trim()==='')throw Error('Enter a value for each dimension.');values[el.dataset.arch]=+el.value;}
       const [kind,index]=target.value.split(':');const edited=kind==='fx'?editFixture(rawPlan,+index,values):kind==='win'?editWindow(rawPlan,+index,values):editOrientation(rawPlan,values.bearing);
-      const project=serialiseProject(edited,items,lightingOf(),inventory);
+      const project=serialiseProject(edited,items,lightingOf(),inventory,{removed:[...removed]});
       saveProjectLibrary(Object.assign(Object.create(null),projectLibrary,{[st.id]:project}));
       checkpoint();rawPlan=project.plan;model=normalisePlan(rawPlan);
       G3.setModel(model);G3.setWallMode(st.wall);P2.setModel(model);LX.reattach2D();
