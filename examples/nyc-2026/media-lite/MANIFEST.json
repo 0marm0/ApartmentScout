@@ -1,0 +1,54 @@
+{
+ "about": "Starter photos for the example search: a small part of the full set (see scripts/make_media_lite.py). Same relative paths as media/.",
+ "settings": {
+  "top": 12,
+  "also": [
+   "paramount-tower-25e"
+  ],
+  "gallery_cap": 30,
+  "gallery": [
+   1000,
+   68
+  ],
+  "lite": [
+   700,
+   60
+  ],
+  "plan": [
+   1100,
+   68
+  ]
+ },
+ "files": 1100,
+ "megabytes": 34.1,
+ "by_role": {
+  "gallery": {
+   "files": 277,
+   "megabytes": 14.0
+  },
+  "plan": {
+   "files": 254,
+   "megabytes": 4.1
+  },
+  "lite": {
+   "files": 569,
+   "megabytes": 16.1
+  }
+ },
+ "galleries": {
+  "7-platt-14g": 30,
+  "emerald-green-24d": 20,
+  "one-manhattan-square-57g": 30,
+  "orion-condominium-14d": 30,
+  "orion-condominium-23a": 30,
+  "orion-condominium-43e": 30,
+  "paramount-tower-25e": 25,
+  "paramount-tower-9j": 25,
+  "the-atelier-51w": 26,
+  "the-corinthian-9i": 30,
+  "the-highpoint-condo-20d": 30,
+  "the-max-621": 30
+ },
+ "lite_listings": 700,
+ "missing_from_full_set": 0
+}
