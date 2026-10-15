@@ -6,7 +6,9 @@
 //   share.js     Share shortlist (read-only HTML) and the decision memo
 //   tour-plan.js the tour-day planner under Shortlist > Tours
 //   tour-findings.js visit notes, promoted facts and the decision trail (tour-sheet.js, findings-store.js, decision-trail.js)
-const FEATURES = [() => import('./visit.js'), () => import('./tray.js'), () => import('./tradeoff.js'), () => import('./share.js'), () => import('./tour-plan.js'), () => import('./tour-findings.js')];
+//   moves.js     why a home moved: the card note, the drawer section and the rail filter (moves-model.js, ranks.json)
+//   unknowns.js  the unknowns that move a score and the renter's own numbers for them (facts-model.js, facts-store.js); after tour-findings.js, whose backup hooks it extends
+const FEATURES = [() => import('./visit.js'), () => import('./tray.js'), () => import('./tradeoff.js'), () => import('./share.js'), () => import('./tour-plan.js'), () => import('./tour-findings.js'), () => import('./moves.js'), () => import('./unknowns.js')];
 
 export async function initFeatures() {
   for (const load of FEATURES) {

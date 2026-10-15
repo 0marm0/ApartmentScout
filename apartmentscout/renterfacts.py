@@ -181,6 +181,7 @@ def annotate(score: dict, f: Any) -> dict:
     if not n:
         return score
     score["renter"] = {k: {"value": v["value"], "at": v["at"], "source": v["source"]} for k, v in n.items()}
+    score["flags"] = sorted({*score.get("flags", []), *(f"renter:{k}" for k in n)})   # the rank history names them in "why it moved"
     dim = {"size": "space", "fees": "cost", "price": "cost", "wd": "amenities", "floor": "light_view"}
     say = {"size": lambda v: f"you entered {v:,} ft²", "fees": lambda v: f"you entered ${v:,.0f} a month in fees",
            "price": lambda v: f"you entered ${v:,.0f} a month for the rent", "wd": lambda v: "you confirmed an in-unit washer/dryer" if v else "you confirmed no in-unit washer/dryer",
