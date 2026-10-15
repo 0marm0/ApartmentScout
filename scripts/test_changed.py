@@ -478,7 +478,11 @@ def run_jobs(jobs: list[Job]) -> bool:
             print("\n".join(lines[-60:]))
         else:
             tail = j.log.read_text(errors="replace").strip().splitlines()
-            print(f"{j.name}: {tail[-1] if tail else ''}")
+            if j.name == "js":   # node's TAP summary: "# tests N", "# pass N", "# fail N" ...
+                counts = [ln[2:] for ln in tail if ln.startswith(("# tests", "# pass", "# fail", "# skipped"))]
+                print(f"js: {', '.join(counts)}")
+            else:
+                print(f"{j.name}: {tail[-1] if tail else ''}")
     return ok
 
 

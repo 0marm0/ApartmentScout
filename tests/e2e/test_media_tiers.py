@@ -147,7 +147,10 @@ def _drawer_sources(page, tiers: Tiers, id_: str) -> list[dict]:
     page.wait_for_selector("#drawer.open #dTrack img", timeout=15000)
     # slides after the second are lazy: ask for all of them now, then wait for every one to load or give up
     page.evaluate("() => document.querySelectorAll('#dTrack > img').forEach((i) => { i.loading = 'eager'; })")
-    page.wait_for_function("""() => [...document.querySelectorAll('#dTrack > img')].every((i) => i.complete)""", timeout=20000)
+    # a photo that failed on one tier is `complete` for a moment before the chain gives it its next source: wait for it to have
+    # loaded (or been given up on), not merely to be complete. Links to other sites are blocked here and stay out of it.
+    page.wait_for_function("""(local) => [...document.querySelectorAll('#dTrack > img')].filter((i) => local.some((p) => (i.src || '').startsWith(p)))
+      .every((i) => i.complete && (i.naturalWidth > 0 || i.dataset.mediaGone === '1'))""", arg=[tiers.page_url, tiers.published_url], timeout=30000)
     # slides that are links to other sites (licensed Commons building photos) are not saved photos: the test blocks them, leave them out
     return page.evaluate("""(local) => [...document.querySelectorAll('#dTrack > img')].map((i) => ({ src: i.currentSrc || i.src, ok: i.naturalWidth > 0, gone: i.dataset.mediaGone === '1' }))
       .filter((s) => local.some((p) => s.src.startsWith(p)))""", [tiers.page_url, tiers.published_url])
