@@ -11,6 +11,8 @@ import json
 from pathlib import Path
 
 import pytest
+from conftest import settled
+from playwright.sync_api import TimeoutError as PlaywrightTimeout
 
 pytestmark = pytest.mark.e2e
 
@@ -20,7 +22,6 @@ VIEWS = ["map", "list", "compare", "unit", "plan", "research"]
 SUBVIEWS = ["list/tours", "research/records/emerald-green-1211"]
 # the section that shows for a route: Tours has its own section, Records is hosted inside Research
 SECTION = {"list/tours": "tours"}
-SLOW = {"unit": 2500, "plan": 2500, "map": 1500}        # WebGL views need a moment to draw
 
 # Elements wider than the viewport at 390 px that a scrolling or clipping ancestor does not contain.
 OVERFLOW_JS = """() => {
@@ -40,33 +41,38 @@ OVERFLOW_JS = """() => {
 }"""
 
 
-# Resolves once timers fire on time eight times running (about half a second of an idle main thread). Opening a view
-# that builds a WebGL scene (the map, Unit 3D, the floor plan studio) blocks the page's one thread for seconds, many
-# times longer with software GL on a two-core CI runner; an action started in the meantime waits behind it, so a test
-# that clicks on without waiting piles those blocks up until one of its own timeouts fires. The cap only stops a
-# page that never idles (an endless busy loop) from hanging the run.
-SETTLED_JS = """(capMs) => new Promise((resolve) => {
-  const t0 = performance.now(); let quiet = 0, last = t0;
-  const iv = setInterval(() => {
-    const now = performance.now(); quiet = now - last < 130 ? quiet + 1 : 0; last = now;
-    if (quiet >= 8 || now - t0 > capMs) { clearInterval(iv); resolve(quiet >= 8); }
-  }, 50);
-})"""
-
-
 def _settled(s, cap_ms: int = 120_000) -> bool:
-    """Wait until the page's main thread is idle again (see SETTLED_JS); False when it never was within the cap."""
-    return s.page.evaluate(SETTLED_JS, cap_ms)
+    """Wait until the page's main thread is idle again (conftest.SETTLED_JS); False when it never was within the cap."""
+    return settled(s.page, cap_ms)
+
+
+# True once a view has drawn what it will draw: the map has loaded its style and sources, Unit 3D has built its model, the floor
+# plan studio has its canvas. A view with no scene is ready as soon as it has content. Waiting for this instead of a fixed sleep
+# per view costs what the view needs, not what the slowest runner might.
+READY_JS = """(v) => {
+  const el = document.getElementById('view-' + v);
+  if (!el || el.hidden || !el.children.length) return false;
+  if (v === 'map') return !!window.__asMap && window.__asMap.loaded();
+  if (v === 'unit') return !!(window.__unit3d && window.__unit3d.stage && window.__unit3d.stage.scene) && document.getElementById('uLoad')?.hidden !== false;
+  if (v === 'plan') return !!window.__plan3d && !!el.querySelector('canvas');
+  return true;
+}"""
+# how long a WebGL view may take before the sweep goes on anyway (without WebGL the scene never comes; the view's own error is reported)
+READY_CAP = {"map": 20000, "unit": 30000, "plan": 30000}
 
 
 def _show(s, view: str) -> None:
-    """Route to a view the way a click on its tab does, then wait for it to render."""
+    """Route to a view the way a click on its tab does, wait until it has drawn, then until the page is quiet."""
     pg = s.page
     pg.evaluate("(v) => { location.hash = v; }", view)
     name = SECTION.get(view, view.split("/")[0])
     pg.wait_for_function("(v) => { const el = document.getElementById('view-' + v); return el && !el.hidden && el.children.length > 0; }",
                          arg=name, timeout=20000)
-    pg.wait_for_timeout(SLOW.get(name, 700))
+    try:
+        pg.wait_for_function(READY_JS, arg=name, timeout=READY_CAP.get(name, 5000))
+    except PlaywrightTimeout:
+        pass
+    settled(pg, 20000, ticks=6)   # about 0.3 s of idle main thread: late errors from the view's own start-up have surfaced
     # a view whose module threw is caught by the shell and shown as "This view could not load"
     if err := pg.evaluate("(v) => document.querySelector('#view-' + v + ' .view-err code')?.textContent ?? null", name):
         s.errors.append(f"view #{name} could not load: {err}")
@@ -92,22 +98,22 @@ def test_every_view_loads_clean(open_page, theme: str, width: int) -> None:
     _show(s, "map")
     s.page.locator("#cards .card").first.click()
     s.page.wait_for_selector("#drawer.open", timeout=10000)
-    s.page.wait_for_timeout(800)
+    settled(s.page, 20000, ticks=4)                               # the drawer has finished sliding in
     if width < 600 and (o := _overflow(s)):
         problems.append(f"drawer overflows: {o}")
     s.page.keyboard.press("Escape")
     s.page.wait_for_function("() => !document.querySelector('#drawer.open')")
     s.page.evaluate("async () => (await import('/js/app.js')).openSettings()")
     s.page.wait_for_selector(".sheet-scrim.on", timeout=10000)
-    s.page.wait_for_timeout(500)
+    settled(s.page, 20000, ticks=4)
     if width < 600 and (o := _overflow(s)):
         problems.append(f"settings overflows: {o}")
     s.page.keyboard.press("Escape")
-    s.page.wait_for_timeout(400)
+    s.page.wait_for_selector(".sheet-scrim.on", state="detached", timeout=5000)
     s.page.locator("#plBtn" if width < 1180 else "#q").click()
     s.page.wait_for_selector(".pl-scrim:not([hidden])", timeout=10000)
     s.page.keyboard.type("emerald")
-    s.page.wait_for_timeout(400)
+    settled(s.page, 20000, ticks=3)
     s.page.keyboard.press("Escape")
     if errs := s.take():
         problems.append(f"drawer/settings/palette: {errs[:4]}")
@@ -196,7 +202,8 @@ def test_weight_slider_reranks(open_page) -> None:
     # move all the weight onto one dimension: the ranking must change
     s.page.evaluate("""() => { const rs = [...document.querySelectorAll('#rail [data-w]')];
       rs.forEach((r, i) => { r.value = i === rs.length - 1 ? 40 : 0; r.dispatchEvent(new Event('input', { bubbles: true })); }); }""")
-    s.page.wait_for_timeout(1200)
+    s.page.wait_for_function("(b) => JSON.stringify([...document.querySelectorAll('#cards .card')].slice(0, 12).map((c) => c.dataset.id)) !== JSON.stringify(b)",
+                             arg=before, timeout=10000)
     assert order() != before
     assert not s.take()
 
@@ -362,7 +369,7 @@ def test_stats_strip_is_a_thin_subline(open_page) -> None:
     assert s.page.locator("#kpis .kpi.p1").count() == 3
     # on a phone the secondary figures fold into the popover, and every figure is still in it
     s.page.set_viewport_size({"width": 390, "height": 844})
-    s.page.wait_for_timeout(200)
+    s.page.locator("#kpis .kpi-more").wait_for(state="visible", timeout=5000)
     assert s.page.locator("#kpis .kpi-more").is_visible()
     s.page.locator("#kpis .kpi-more").click()
     s.page.wait_for_selector("#kpiPop:not([hidden])")
@@ -389,7 +396,9 @@ def test_starred_tags_always_show_and_update_live(open_page, webgl: bool) -> Non
     sel = f'.price-tag[data-id="{lid}"]'
     pg.wait_for_selector(sel + ".fav", timeout=5000)
     pg.evaluate("() => window.__asMap.setZoom(10)")
-    pg.wait_for_timeout(1200)
+    # the tags are decluttered on the next frame after the zoom: wait for that, not for a fixed second
+    pg.wait_for_function("""(s) => { const t = document.querySelector(s);
+      return !!t && !t.parentElement.classList.contains('hid') && !document.querySelectorAll('.tag-anchor:not(.hid) .price-tag:not(.fav):not(.sel)').length; }""", arg=sel, timeout=10000)
     assert pg.evaluate("(s) => { const t = document.querySelector(s); return !!t && !t.parentElement.classList.contains('hid'); }", sel)
     assert pg.evaluate("() => document.querySelectorAll('.tag-anchor:not(.hid) .price-tag:not(.fav):not(.sel)').length") == 0
     assert pg.evaluate("(id) => window.__asMap.getSource('starred')._data.features.some((f) => f.id === id)", lid)
