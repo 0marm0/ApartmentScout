@@ -29,6 +29,7 @@ import { windowOpenAir, airReason } from './unit/openair.js';   // [model projec
 import { getPin, clearPin } from './unit/anchor.js';   // [model project] the window pinned for the Floor plan studio
 import { buildFurniture, addRoomView } from './unit/furniture.js';   // [model project] the studio's furniture in the Inside view
 import { modelHooks } from './unit/model-hooks.js';   // [model project] Model panel, project import and the comparison board
+import { loadTreeLayers, saveTreeLayers, STREET_TREES_TITLE, PARK_TREES_TITLE } from './unit/treelayers.js';   // [park trees] street / park tree toggles, remembered per browser
 
 let site = null, B0 = [], FUTB = [], edits = new Map(), B = [], T = null, FACES = [], LM = [], FUT = [], BF = null, stage = null, plan = null, interior = null;
 const st = {
@@ -68,6 +69,8 @@ const ICON = {
   labels: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3.5" width="12" height="6.5" rx="2"/><path d="M8 10v3"/></svg>',
   streets: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 2L3 14M11 2l2 12M8 3v2M8 7.5v2M8 12v1.5"/></svg>',
   green: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M8 14V9.5M8 9.5C4.5 9.5 3 7 3 5.2 3 3 5 1.8 8 1.8s5 1.2 5 3.4c0 1.8-1.5 4.3-5 4.3z"/></svg>',
+  streetTrees: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="5.5" r="2.4"/><circle cx="11" cy="5.5" r="2.4"/><path d="M5 8v4M11 8v4M1.5 13.5h13"/></svg>',   // [park trees]
+  parkTrees: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2l4 5h-2.2L13 11.5H3L6.2 7H4z"/><path d="M8 11.5V14"/></svg>',
   water: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2 6c1.5-1.4 3-1.4 4.5 0s3 1.4 4.5 0 2-1 3-.4M2 10c1.5-1.4 3-1.4 4.5 0s3 1.4 4.5 0 2-1 3-.4"/></svg>',   // [city context]
   future: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="2 2"><rect x="4" y="2.5" width="8" height="11" rx="1"/></svg>',
   ray: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="4" r="2"/><path d="M3 13l7-7"/></svg>',
@@ -102,7 +105,7 @@ export function init() {
           <div class="u-labels" id="uLabels" aria-hidden="true"></div>
           <div class="float u-modes" id="uModes" role="group" aria-label="Camera">${MODES.map(([k, t, tip]) => `<button type="button" data-mode="${k}" title="${tip}" aria-pressed="false">${t}</button>`).join('')}</div>
           <div class="float u-tools" id="uTools" role="group" aria-label="Layers">
-            ${[['shadows', 'Shadows'], ['labels', 'Labels'], ['heights', 'Heights: colour by height class, label roofs, 150 m and 300 m rings'], ['streets', 'Street names and centrelines'], ['future', 'Proposed buildings'], ['green', 'Parks and trees: the NYC street tree census, OpenStreetMap and park fill. Context only: trees are never counted as shade in the sun hours'], ['water', 'Water and ground: rivers, streets and sidewalks. Context only'], ['ray', 'Sun ray'], ['cone', 'View cone']].map(([k, t]) => `<button type="button" data-tg="${k}" title="${t}" aria-label="${t}" aria-pressed="false">${ICON[k]}</button>`).join('')}
+            ${[['shadows', 'Shadows'], ['labels', 'Labels'], ['heights', 'Heights: colour by height class, label roofs, 150 m and 300 m rings'], ['streets', 'Street names and centrelines'], ['future', 'Proposed buildings'], ['green', 'Parks, lawns and trees: grass from NYC Parks Properties, Greenstreets and OpenStreetMap. Context only: trees are never counted as shade in the sun hours'], ['streetTrees', STREET_TREES_TITLE], ['parkTrees', PARK_TREES_TITLE], ['water', 'Water and ground: rivers, streets and sidewalks. Context only'], ['ray', 'Sun ray'], ['cone', 'View cone']].map(([k, t]) => `<button type="button" data-tg="${k}" title="${t}" aria-label="${t}" aria-pressed="false">${ICON[k]}</button>`).join('')}
             <hr><button type="button" id="uTarget" title="This building: solid" aria-label="This building display: solid">${ICON.target}<i class="u-tmode">S</i></button>
             <button type="button" id="uHome" title="Reset the camera" aria-label="Reset the camera">${ICON.reset}</button>
           </div>
@@ -266,6 +269,7 @@ async function load(id) {
     new ResizeObserver(() => drawPathChart()).observe($('pathCv').parentElement);
   }
   stage.opts.streets = true; stage.opts.future = restored?.future ?? true;
+  Object.assign(stage.opts, loadTreeLayers());   // [park trees] the renter's last street / park tree choice
   if (restored) Object.assign(stage.look, restored.look);
   await new Promise((r) => requestAnimationFrame(r)); // let the loading state paint before the heavy build
   stage.build({ B: B0, T, ti: B0.indexOf(T), streets: Array.isArray(site.streets) ? site.streets : [], future: FUT, green: site.green || null, water: site.water || null, lm: LM, ownLabel: site.listing?.building || L.building || 'This building' }); UQ.adopt(stage);   // [feature J] the scene was rebuilt
@@ -394,6 +398,7 @@ function wireStage() {
   $('uModes').querySelectorAll('[data-mode]').forEach((b) => b.addEventListener('click', () => setMode(b.dataset.mode)));
   $('uTools').querySelectorAll('[data-tg]').forEach((b) => b.addEventListener('click', () => {
     const k = b.dataset.tg; stage.opts[k] = !stage.opts[k]; stage.applyOpts(); syncTools();
+    if (k === 'streetTrees' || k === 'parkTrees') { saveTreeLayers(stage.opts); return; }   // [park trees] no sun number depends on a tree
     if (k === 'heights') { stage.recolor(); if (st.study === 'heights') renderStudy(); return; }
     if (k === 'future' && FUT.length) { refreshWindow(false); ifPanel(); } else refreshTime();
   }));
@@ -530,9 +535,9 @@ function setMode(m, quiet = false) {
 function syncTools() {
   $('uTools').querySelectorAll('[data-tg]').forEach((b) => {
     const k = b.dataset.tg, on = !!stage.opts[k];
-    const na = (k === 'streets' && !(site.streets || []).length) || (k === 'future' && !FUT.length) || (k === 'green' && !site.green) || (k === 'water' && !site.water && !(site.streets || []).length);
+    const na = (k === 'streets' && !(site.streets || []).length) || (k === 'future' && !FUT.length) || ((k === 'green' || k === 'streetTrees' || k === 'parkTrees') && !site.green) || (k === 'water' && !site.water && !(site.streets || []).length);
     b.classList.toggle('on', on && !na); b.setAttribute('aria-pressed', String(on && !na)); b.disabled = na;
-    if (na) b.title = k === 'streets' ? 'No street centrelines in this site file' : k === 'green' ? 'No parks or trees in this site file: rebuild it with apartmentscout site' : k === 'water' ? 'No water or streets in this site file: rebuild it with apartmentscout site --context-only' : 'No proposed buildings in this site file';
+    if (na) b.title = k === 'streets' ? 'No street centrelines in this site file' : k === 'green' || k === 'streetTrees' || k === 'parkTrees' ? 'No parks or trees in this site file: rebuild it with apartmentscout site' : k === 'water' ? 'No water or streets in this site file: rebuild it with apartmentscout site --context-only' : 'No proposed buildings in this site file';
   });
   const t = stage.opts.target, nm = { solid: 'solid', faint: 'faint', hidden: 'hidden' }[t];
   $('uTarget').title = `This building: ${nm} (click to change)${interior ? '. Faint or hidden shows the apartment inside' : ''}`; $('uTarget').setAttribute('aria-label', `This building display: ${nm}`);
@@ -1151,9 +1156,15 @@ function greenRow() {
   if (!g || typeof g !== 'object') return '';
   const c = g.counts || {}, gv = site.study?.green_view, seen = Array.isArray(gv?.green) ? gv.green.slice(0, 3).map((r) => `${esc(r.name || `unnamed ${r.kind}`)} (${Math.round(r.visible_m2)} m², ${Math.round(r.dist_m?.[0] ?? 0)}-${Math.round(r.dist_m?.[1] ?? 0)} m)`).join(', ') : '';
   // [city context] what is drawn, from where, and the rule that none of it is shade
-  const cen = g.census, nc = cen && cen.n ? Number(cen.n) : 0, ctxLine = nc ? `${nc.toLocaleString()} street trees from the ${esc(cen.source || 'NYC Street Tree Census')}${cen.date ? ` (surveyed ${esc(cen.date)})` : ''}, each sized from its trunk diameter, plus ${(c.trees ?? (g.trees || []).length / 2).toLocaleString()} trees mapped in OpenStreetMap` : `${(c.trees ?? (g.trees || []).length / 2).toLocaleString()} mapped trees from ${esc(g.source || 'OpenStreetMap')}`;
+  const cen = g.census, inv = g.forestry, nc = cen && cen.n ? Number(cen.n) : 0, n = (v) => Number(v).toLocaleString();
+  const mappedN = c.trees ?? (g.trees || []).length / 2, gone = Number(cen?.removed ?? c.census_removed ?? 0);
+  // [park trees] street trees come from the 2015 census (and the Parks inventory for newer ones), park trees from the Parks inventory
+  const street = nc ? `<b>Street trees:</b> ${n(nc)} from the ${esc(cen.source || 'NYC Street Tree Census')}${cen.date ? ` (surveyed ${esc(cen.date)})` : ''}, each sized from its trunk diameter${gone ? `, without the ${n(gone)} the current NYC Parks inventory lists as removed` : ''}${inv?.n_street ? `, plus ${n(inv.n_street)} planted since (NYC Parks inventory)` : ''}.` : '';
+  const park = inv?.n_park ? `<b>Park trees:</b> ${n(inv.n_park)} from the ${esc(inv.source || 'NYC Parks forestry inventory')}${inv.date ? ` (updated ${esc(inv.date)})` : ''}, each sized from its trunk diameter.` : '';
+  const other = `${n(mappedN)} trees are mapped in ${esc(g.source || 'OpenStreetMap')}; a park that no inventory describes (a private plaza or garden, or a city outside New York) gets canopies at blue-noise spacing, about 130 trees a hectare, which show where green lies, not a count.`;
   const wt = site.water ? ` Water: ${esc((site.water.polys || []).map((p) => p.name).filter(Boolean).join(', ') || 'open water')} from ${esc(site.water.source || 'the site file')}.` : '';
-  return `<dt>Parks and trees</dt><dd>${(c.polys ?? (g.polys || []).length).toLocaleString()} parks, lawns and playgrounds, ${ctxLine}${g.fetched ? `, fetched ${esc(g.fetched)}` : ''}. Park, wood and lawn areas also get canopies at blue-noise spacing (about 60 trees a hectare in a park): that fill shows where green lies, not a count. <b>Trees and water are context only: never counted as shade or as obstructions in the sun hours.</b>${wt}${seen ? ` From this window, in a ${gv.fov_deg ?? 90}° view: ${seen}.` : ''}</dd>`;
+  const cn = c.parks_polys || c.greenstreet_polys ? ` (OpenStreetMap, ${n(c.parks_polys || 0)} NYC Parks properties and ${n(c.greenstreet_polys || 0)} Greenstreets)` : '';
+  return `<dt>Parks and trees</dt><dd>${n(c.polys ?? (g.polys || []).length)} parks, lawns and playgrounds${cn}; paved playgrounds and courts are drawn as paved ground, not grass. ${street} ${park} ${other}${g.fetched ? ` Fetched ${esc(g.fetched)}.` : ''} <b>Trees and water are context only: never counted as shade or as obstructions in the sun hours.</b>${wt}${seen ? ` From this window, in a ${gv.fov_deg ?? 90}° view: ${seen}.` : ''}</dd>`;
 }
 function safeLink(u) { const v = safeUrl(u); return v && /^https?:/i.test(v) ? `, <a href="${esc(v)}" target="_blank" rel="noopener">source</a>` : ''; }
 
