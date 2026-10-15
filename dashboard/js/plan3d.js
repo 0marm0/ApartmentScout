@@ -628,10 +628,11 @@ let accUI = null, accKey = '', furnMeta = null;
 function accChip() {
   if (!model) return;
   if (!accUI) { accUI = accuracyChip({ host: 'studio', onOpen: () => { location.hash = `#unit/${st.id}`; }, openLabel: 'Open in Unit 3D' }); $('pstage').appendChild(accUI.el); loadFurnitureMeta(S.base, S.manifest).then((m) => { furnMeta = m; accKey = ''; accChip(); }); }
-  const key = [st.id, !!st.site, onSite?.floor, onSite?.t, onSite?.az, onSite?.cal?.state, !!inventory, items.length, !!furnMeta].join('|');
+  const cand = new Set((inventory?.pieces || []).filter((p) => p.candidate).map((p) => p.id)), own = items.filter((x) => !cand.has(x.id)).length;   // [bed option] a candidate purchase is not one of the renter's pieces
+  const key = [st.id, !!st.site, onSite?.floor, onSite?.t, onSite?.az, onSite?.cal?.state, !!inventory, own, !!furnMeta].join('|');
   if (key === accKey) return; accKey = key;
   accUI.update(accuracyRows({ site: st.site || {}, plan: model, cal: onSite ? { state: onSite.cal.state, fh: onSite.cal.fh, slab: onSite.slab } : null, floor: onSite?.floor, facing: onSite?.az ?? null, t: onSite?.t ?? null,
-    furniture: items.length && inventory ? { name: furnMeta?.name || inventory.name, confirmed: furnMeta?.confirmed || null, count: items.length, looks: furnMeta?.looks || null } : items.length ? { name: 'A starter layout', confirmed: null, count: items.length } : null }));
+    furniture: own && inventory ? { name: furnMeta?.name || inventory.name, confirmed: furnMeta?.confirmed || null, count: own, looks: furnMeta?.looks || null, candidates: furnMeta?.candidates || [] } : items.length ? { name: 'A starter layout', confirmed: null, count: items.length } : null }));
 }
 // [room3d] "Sun today" in the look panel: the direct sun the window of this view gets today (its own skyline against the shared city), with a way into Unit 3D
 let sunCtx = null, sunMemo = { key: '', html: '' };

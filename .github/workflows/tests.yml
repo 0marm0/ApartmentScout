@@ -48,7 +48,7 @@ jobs:
           - name: 3-of-6
             files: tests/e2e/test_daycycle.py tests/e2e/test_decision.py tests/e2e/test_furniture_studio.py tests/e2e/test_pdf_tracer.py tests/e2e/test_places_multidest.py tests/e2e/test_wizard.py
           - name: 4-of-6
-            files: tests/e2e/test_interior_view.py tests/e2e/test_office_questions.py tests/e2e/test_one_city.py tests/e2e/test_plan_upload.py tests/e2e/test_quality3d.py tests/e2e/test_shell_extras.py tests/e2e/test_whatsnew.py
+            files: tests/e2e/test_bed_option.py tests/e2e/test_interior_view.py tests/e2e/test_office_questions.py tests/e2e/test_one_city.py tests/e2e/test_plan_upload.py tests/e2e/test_quality3d.py tests/e2e/test_shell_extras.py tests/e2e/test_whatsnew.py
           - name: 5-of-6
             files: tests/e2e/test_boot_recovery.py tests/e2e/test_buildings3d.py tests/e2e/test_lighting.py tests/e2e/test_model_project.py tests/e2e/test_moves_unknowns.py tests/e2e/test_tour_findings.py tests/e2e/test_view_match.py
           - name: 6-of-6

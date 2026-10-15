@@ -171,23 +171,35 @@ export function bedFit(model, items, id = 'bed-latitude') {
 }
 
 /**
- * The best other place for the bed in its room, with the same questions answered there, for when the wall it stands on is too short. Null when
- * no spot in the room works. Only a suggestion: the renter's own orientation (headboard on the side wall, windows on the right) stays the default.
+ * Where else could the bed go when it does not fit as placed? Two answers, both only suggestions (the renter's own orientation, headboard on the side
+ * wall with the windows on their right, stays the default and nothing is moved):
+ *   slide   the smallest slide along the same wall that fits, with the side it slides toward (null when no slide fits);
+ *   wall    the best spot on a different wall of the room (the three other turns), with the same questions answered there (null when none fits).
  */
 export function bestAlternative(model, items, id = 'bed-latitude') {
   const bed = items.find((x) => x.id === id);
   if (!bed) return null;
-  const room = roomOf(model, [bed.x, bed.y]), others = items.filter((x) => x.id !== id && !x.hidden);
-  const spot = findSpot(model, [...others, { ...bed, hidden: false }], id, room, 6);
-  if (!spot) return null;
-  const moved = { ...bed, hidden: false, x: spot.x, y: spot.y, rot: spot.rot }, report = bedFit(model, [...others, moved], id);
-  return report && { spot, item: moved, report };
+  const room = roomOf(model, [bed.x, bed.y]), others = items.filter((x) => x.id !== id && !x.hidden), visible = { ...bed, hidden: false };
+  const { r } = axes(bed.rot);
+  let slide = null;
+  for (let k = 1; k <= 60 && !slide; k++) for (const sgn of [-1, 1]) {
+    const moved = { ...visible, x: bed.x + r[0] * sgn * k, y: bed.y + r[1] * sgn * k }, rep = bedFit(model, [...others, moved], id);
+    if (rep?.fits && ['wall', 'windows'].every((key) => rep.rows.find((q) => q.key === key)?.grade === 'clear')) { slide = { by: k, toward: sideOf(bed, [r[0] * sgn, r[1] * sgn]), item: moved, report: rep }; break; }
+  }
+  let wall = null;
+  for (const rot of [0, 90, 180, 270].filter((q) => Math.abs((((q - bed.rot) % 360) + 540) % 360 - 180) <= 180 && ((q - bed.rot + 360) % 360) !== 0)) {
+    const spot = findSpot(model, [...others, visible], id, room, 6, [rot]);
+    if (!spot) continue;
+    const moved = { ...visible, x: spot.x, y: spot.y, rot: spot.rot }, report = bedFit(model, [...others, moved], id);
+    if (report?.fits && (!wall || (report.grade === 'clear' && wall.report.grade !== 'clear'))) wall = { spot, item: moved, report };
+  }
+  return { slide, wall };
 }
 
 /**
  * The report for the bed as the layout holds it, whatever the renter is looking at: the storage bed is shown (the pieces it replaces hidden), every
- * other piece stays where it is, and the questions are answered for where the layout puts it. When it does not fit, the best other place in the room
- * comes with its own answers; the default orientation is never changed.
+ * other piece stays where it is, and the questions are answered for where the layout puts it. When it does not fit, the alternatives come with their own
+ * answers; the default orientation is never changed and nothing is moved.
  * @param {object} model normalised plan
  * @param {object[]} items the layout's items (not yet joined to the inventory)
  * @param {object} inv the inventory
@@ -196,7 +208,9 @@ export function reportFor(model, items, inv, { group = 'bed', choice = 'storage'
   const shown = applyInventory(applyChoice(items, inv, group, choice), inv).map((x) => resolve(x)).filter(Boolean), rep = bedFit(model, shown, id);
   if (!rep) return null;
   if (rep.fits) return { ...rep, alternative: null };
-  const alt = bestAlternative(model, shown, id);
-  const text = alt ? `The best other place in this room is ${alt.report.wall.name}: ${alt.report.summary}` : 'No other wall in this room takes it either, so it would not fit this room as drawn.';
-  return { ...rep, alternative: { text, spot: alt?.spot || null, report: alt?.report || null } };
+  const alt = bestAlternative(model, shown, id), parts = [];
+  if (alt?.slide) parts.push(`Sliding it ${Math.round(alt.slide.by)} in toward your ${alt.slide.toward} along the same wall fits: ${alt.slide.report.summary}`);
+  if (alt?.wall) parts.push(`The best other wall in this room is ${alt.wall.report.wall.name}: ${alt.wall.report.summary}`);
+  if (!parts.length) parts.push('No other place in this room takes it either, so it would not fit this room as drawn.');
+  return { ...rep, alternative: { text: parts.join(' '), slide: alt?.slide || null, wall: alt?.wall || null } };
 }

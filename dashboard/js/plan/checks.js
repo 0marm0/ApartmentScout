@@ -369,12 +369,12 @@ export function gapRays(model, items, id, max = 240) {
  * Search a room for a spot where the item fits: back to a wall, clearances respected, facing the TV
  * or seating, without spoiling the rest of the layout. Returns {x, y, rot, grade} or null.
  */
-export function findSpot(model, items, id, roomName, step = 6) {
+export function findSpot(model, items, id, roomName, step = 6, only = null) {
   const it = items.find((x) => x.id === id); if (!it) return null;
   const room = model.rooms.find((r) => r.name === roomName) || model.rooms.find((r) => pointInPoly([it.x, it.y], r.poly)) || model.rooms[0];
   const b = bbox(room.poly), others = items.filter((x) => x.id !== id && !x.hidden), obs = obstacles(model, others), solid = obs.filter((o) => o.type !== 'item');
   const lp = room.label, seen = new Set(), cands = [];
-  const rots = it.kind === 'table' && it.w === it.d ? [0] : [0, 90, 180, 270];
+  const rots = only || (it.kind === 'table' && it.w === it.d ? [0] : [0, 90, 180, 270]);   // `only`: just these turns (the bed report asks for another wall)
   const partner = it.kind === 'tv' ? others.filter((o) => o.seats?.length && pointInPoly([o.x, o.y], room.poly)) : it.seats?.length ? others.filter((o) => o.kind === 'tv' && pointInPoly([o.x, o.y], room.poly)) : [];
   for (const rot of rots) for (let x = b.x0 + 2; x <= b.x1 - 2; x += step) for (let y = b.y0 + 2; y <= b.y1 - 2; y += step) {
     const c = { ...it, x, y, rot };
