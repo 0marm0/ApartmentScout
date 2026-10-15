@@ -140,7 +140,9 @@ export function normalisePlan(raw) {
 
   // openings
   const seg = (o) => (P([o.x1, o.y1]) && P([o.x2, o.y2]) ? { a: pt([o.x1, o.y1]), b: pt([o.x2, o.y2]) } : P(o.a) && P(o.b) ? { a: pt(o.a), b: pt(o.b) } : null);
-  const windows = (raw.windows || []).map((w) => { const s = seg(w); return s && { ...s, type: 'window', room: cleanStr(w.room, 60), note: cleanStr(w.note, 80), sill: L(w.sill, 24), head: L(w.head, 84) }; }).filter(Boolean);
+  const windows = (raw.windows || []).map((w) => { const s = seg(w); return s && { ...s, type: 'window', room: cleanStr(w.room, 60), note: cleanStr(w.note, 80), sill: L(w.sill, 24), head: L(w.head, 84),
+    // [room3d] only what the plan says: vertical mullions (fractions along the window) and a horizontal rail (its height); none by default, so no bar crosses a view
+    mullions: Array.isArray(w.mullions) ? w.mullions.filter((f) => typeof f === 'number' && f > 0.04 && f < 0.96).slice(0, 6) : [], transom: typeof w.transom === 'number' && Number.isFinite(w.transom) && w.transom > 0 ? L(w.transom, 0) : null }; }).filter(Boolean);
   const doors = (raw.doors || []).map((d) => {
     const s = seg(d); if (!s) return null;
     const len = Math.hypot(s.b[0] - s.a[0], s.b[1] - s.a[1]);
