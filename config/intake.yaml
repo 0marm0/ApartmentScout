@@ -4,7 +4,12 @@
 #     (`apartmentscout init searches/<name> --city <city> --criteria <file>`; see the apartment-search skill);
 #   - `apartmentscout init --interactive` prompts for them on a terminal, with these defaults;
 #   - the dashboard's "New search" wizard (dashboard/js/wizard.js) shows the same steps and fields in the same
-#     order. tests/test_intake.py checks that the wizard and this file stay in step.
+#     order. tests/test_wizard_parity.py checks that the wizard and this file stay in step.
+#
+# The city question takes any city name: a profile in config/cities/ (nyc) is used as is, any other city is looked up on
+# OpenStreetMap for its id, time zone and map centre (apartmentscout/cities.py). Destination addresses are geocoded and
+# confirmed, and the transit question offers a starter feed (config/transit-feeds.yaml) or takes a GTFS zip address.
+# `after:` at the bottom lists what happens once the questions are answered, for the interview, the wizard and agents.
 #
 # Each question has: id, maps_to (the criteria.yaml key), type, ask (the wording to use), why (what the answer
 # changes), default (used when the renter has no preference) and, where it helps, choices / min / max / unit / tip.

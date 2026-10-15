@@ -205,6 +205,11 @@ def cmd_geocode(args):
     if found:
         _save_destination_coords(ws, found)
     log(f"Geocoded {n} listings.")
+    lost = [L for L in Ls if L.get("lat") is None and L.get("status") not in ("gone", "rejected")]
+    if lost:   # [onboarding] an address no geocoder knows is the commonest reason a home is missing from the map and the commute
+        log(f"{len(lost)} open listing{'s have' if len(lost) != 1 else ' has'} no coordinates yet ({', '.join(L['id'] for L in lost[:5])}"
+            f"{'...' if len(lost) > 5 else ''}). They stay off the map and get no commute until the address is findable: write it as "
+            "\"number street, city, state\", or set lat and lon in listings.json (right-click the spot in any map app), then run geocode again.")
 
 
 def _save_destination_coords(ws: Workspace, found: dict[str, tuple[float, float]]) -> None:
@@ -762,7 +767,8 @@ def cmd_all(args):
     cmd_build(args)
 
 
-def main(argv=None):
+def build_parser() -> argparse.ArgumentParser:
+    """The command-line parser (every subcommand). Separate from main() so tests can check that a documented command line parses."""
     p = argparse.ArgumentParser(prog="apartmentscout", description="Agent-ready apartment research toolkit.")
     p.add_argument("--version", action="version", version=__version__)
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -874,7 +880,11 @@ def main(argv=None):
     s.add_argument("--standalone", metavar="FILE")
     from .commands import register_all
     register_all(add)   # commands that live in apartmentscout/commands/*.py
-    args = p.parse_args(argv)
+    return p
+
+
+def main(argv=None):
+    args = build_parser().parse_args(argv)
     args.fn(args)
 
 

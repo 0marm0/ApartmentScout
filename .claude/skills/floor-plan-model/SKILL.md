@@ -16,9 +16,10 @@ The full format is in `docs/guides/floor-plans.md`. Write schema 2; every field 
    - *The renter traces it* in the dashboard: Floor plan ▸ **New plan from image** (scale from a
      printed dimension plus a check dimension, north arrow, rooms, doors, windows, fixtures). Best
      when the image is clear and the renter wants to check it against the source as they go. Ask
-     them to pick the listing in Details (so the id matches) and to use **Download plan JSON**;
-     save that file as `searches/<name>/plans/<listing-id>.json`, then review it like your own work
-     (step 8) and add layouts. Its `provenance.trace` records the image name, the scale anchors and
+     them to pick the listing in Details (so the id matches) and to use **Save to the search folder**
+     (it writes `searches/<name>/plans/<listing-id>.json` when the page is served by `apartmentscout serve`),
+     or **Download plan JSON** and `apartmentscout plans add the-file.json --id <listing-id>`; then review
+     it like your own work (step 8) and add layouts. Its `provenance.trace` records the image name, the scale anchors and
      the check dimension's error; keep it.
    - *You write the JSON* from the image (steps 2 to 7). Best for clean plans with printed sizes, or
      when only stated room sizes exist. Do not invent a `provenance.trace` block for your own work;
@@ -69,8 +70,10 @@ The full format is in `docs/guides/floor-plans.md`. Write schema 2; every field 
    for(const r of Object.values(e.items))for(const i of r.issues)console.log('  ',r.id,i.grade,i.text);}})()" searches/<name>/plans/<id>.json
    ```
 
-9. Save as `searches/<name>/plans/<listing-id>.json`, run `apartmentscout build`, open the Floor plan
-   tab, and check that the room labels and printed sizes match the source.
+9. Save as `searches/<name>/plans/<listing-id>.json` (or `apartmentscout plans add FILE --id <listing-id>`, which checks
+   it), run `apartmentscout build`, open the Floor plan tab, and check that the room labels and printed sizes match
+   the source. `apartmentscout plans` lists which homes still have none. For sun that the neighbouring buildings block,
+   the home also needs a site model (`apartmentscout surroundings`).
 
 ```json
 {"schema": 2, "id": "my-unit-12b", "title": "Unit 12B", "units": "ft", "ceiling": 9, "up_bearing": 180, "floor": 12,

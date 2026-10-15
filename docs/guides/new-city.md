@@ -1,22 +1,41 @@
-# Using ApartmentScout in another city
+# Adding a city profile and data modules
 
-Everything except the NYC records module works anywhere.
+You do not need any of this to search in a new city: [getting started](getting-started.md) takes you from nothing to a ranked
+map in Boston, Chicago, Lisbon or anywhere OpenStreetMap and a transit agency have data. `apartmentscout init --city "<city>"`
+looks the city up, sets its time zone and map centre, and offers its transit feed. This page is for going further: sharing your
+setup as a **city profile**, and adding the pieces only a profile can switch on (building records, a noise layer, neighbourhood
+filters). Pull requests for new cities are welcome.
 
-| Feature | Outside NYC |
+## What works in any city, with no profile
+
+| Feature | How |
 |---|---|
 | Geocoding | US Census geocoder (US), then OpenStreetMap Nominatim (worldwide). |
-| Commute heatmap | Any city with a GTFS feed. Add feeds under `commute.transit.feeds`. |
-| 3D site model, sun and view | OpenStreetMap buildings via Overpass. Heights come from `height` or `building:levels`; check the nearest blockers and fix them in `sites/<id>.json` if OSM is missing them. |
-| Floor plans | Same everywhere. |
-| Building records | Agent-researched (see the `building-dossier` skill), or write a records module. |
-| Noise layer | Write a layer for the city's 311 or noise-complaint dataset. |
-| Place filters (east of 3rd Ave, near a park) | Streets and parks from OpenStreetMap work anywhere; neighbourhoods need an open polygon dataset named in the profile (section 4). |
+| City, time zone, map centre | `apartmentscout city "<city>"` (OpenStreetMap lookup; time zone from the nearest of ~100 reference cities in `config/city-timezones.csv`, which you can override with `--timezone`). |
+| Commute heat maps and per-home times | Any city with a GTFS feed. `apartmentscout city --starter` adds the one we have checked (`config/transit-feeds.yaml`), `--feed URL` any other; the feed is tested before it is written. |
+| 3D site model, sun and view | `apartmentscout surroundings`: OpenStreetMap buildings, heights from `height` or `building:levels` (a 10 m default otherwise), streets, parks, trees and water. The command reports how many heights are defaults and which building each home was matched to. |
+| Floor plans | Same everywhere ([getting started, step 7](getting-started.md#7-adding-your-floor-plans)). |
+| Place filters (east of Main St, near a park) | Streets and parks from OpenStreetMap; neighbourhoods need a dataset named in a profile (section 4). |
+| Building records, violations, noise | Agent-researched (the `building-dossier` and `noise-deep-dive` skills), or a records module / layer (sections 2 and 3). |
 
 ## 1. A city profile
 
-Create `config/cities/<city>.yaml` (copy `nyc.yaml`) with the timezone, GTFS feeds, listing and
-review sites, and tall-building names for the 3D view. `apartmentscout init --city <city>` copies the
-feeds and timezone into new searches.
+A profile is `config/cities/<id>.yaml`. The quickest way to start one is from a search that already works:
+
+```bash
+apartmentscout city "Chicago, IL" --starter --write-profile      # writes config/cities/chicago.yaml: time zone, map centre, OSM area, feeds
+```
+
+That is a *minimal* profile: `name`, `center`, `zoom`, `timezone`, `osm_area` (the OpenStreetMap relation, for reference) and
+`transit_feeds`. `search.city: chicago` then picks it up, and `init --city chicago` copies the feeds and time zone into new
+searches. To grow it, copy sections from `nyc.yaml`:
+
+- `aliases` (what a renter may type for the city), `walk_model: network` and `station_entrances: osm`, a `walk_grids` street-grid fit
+  for walking where the network model cannot be used;
+- `listing_sites`, `review_sites` and `landmarks` (names for the tallest towers so the 3D view labels them, matched within 120 m);
+- `places:` for neighbourhood polygons (section 4); `records:`, `buildings:` and `layers:` once the modules below exist.
+
+Until a profile names a records or footprint module, the search runs on the generic modules, and `criteria --check` says so.
 
 ## 2. A records module (optional)
 
@@ -28,15 +47,14 @@ def build_dossier(listing: dict, ws, log=print) -> dict:
     hpd_complaints (or service_requests), construction, noise_311, crime, summary."""
 ```
 
-Most US cities publish on Socrata (`data.<city>.gov`) or ArcGIS Hub. Useful datasets: code
-enforcement cases, building permits, 311 service requests, police incidents, assessor parcels and
-rental registries. Then route `cmd_dossier` in `cli.py` to your module when `search.city` matches.
-Pull requests for new cities are welcome.
+Most US cities publish on Socrata (`data.<city>.gov`) or ArcGIS Hub. Useful datasets: code enforcement cases, building permits,
+311 service requests, police incidents, assessor parcels and rental registries. Then route `cmd_dossier` in `cli.py` to your module
+when `search.city` matches.
 
 ## 3. A noise or nuisance layer (optional)
 
-Mirror `layers.nyc_noise_layer`: page through the dataset inside the search bounding box, bin
-points into the same grid format, and save `layers/<name>.json` with `kind: "noise"`.
+Mirror `layers.nyc_noise_layer`: page through the dataset inside the search bounding box, bin points into the same grid format,
+and save `layers/<name>.json` with `kind: "noise"`.
 
 ## 4. Place filters (optional)
 
@@ -60,6 +78,11 @@ places:
   street_keep: [Avenue A]                   # short streets people still name
 ```
 
-Streets outside the `walk_grids` polygons are dropped so a same-named street in another borough or town is not
-matched; without one, every street in the search's bounding box is kept. See the methodology's *Place filters* for what is
-kept and how "east of" is decided.
+Streets outside the `walk_grids` polygons are dropped so a same-named street in another borough or town is not matched; without
+one, every street in the search's bounding box is kept. See the methodology's *Place filters* for what is kept and how "east of"
+is decided.
+
+## 5. Sharing it
+
+Run `python scripts/release_check.py` before you open a pull request. Keep a profile to public data and public URLs: no keys, no
+private search folders, no personal paths.

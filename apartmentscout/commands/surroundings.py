@@ -28,6 +28,7 @@ from ..quality.workspace import load_listings, search_from
 CLOSED = ("gone", "rejected")
 NEAR_M = 150.0          # buildings this close decide the sun and the view; their height quality is reported on its own
 DEFAULT_TOP = 5         # when nothing is shortlisted yet
+RETRY_WAIT_S = 20.0     # pause before the one retry of a home whose download failed
 
 
 def pick_targets(listings: list[dict], ids: list[str] | None, everything: bool) -> tuple[list[dict], str]:
@@ -195,19 +196,29 @@ def run(ws: Any, targets: list[dict], args: argparse.Namespace) -> None:
             continue
         t0 = time.time()
         argv = ["site", L["id"], "--search", str(ws.root), "--radius", str(args.radius)] + (["--refresh"] if args.refresh else [])
-        buf = io.StringIO()
-        try:
-            with contextlib.redirect_stdout(buf):
-                main(argv)
-        except SystemExit as e:
-            if e.code not in (None, 0):
-                print(f"{tag}: failed - {e.code}", flush=True)
-                failed += 1
-                continue
-        except Exception as e:  # noqa: BLE001 - one home failing (network, a bad coordinate) must not stop the others
+        err: Exception | None = None
+        for attempt in (1, 2):   # the shared Overpass servers fail now and then: one more try after a pause before giving up
+            buf = io.StringIO()
+            err = None
+            try:
+                with contextlib.redirect_stdout(buf):
+                    main(argv)
+            except SystemExit as e:
+                err = e if e.code not in (None, 0) else None
+            except Exception as e:  # noqa: BLE001 - one home failing (network, a bad coordinate) must not stop the others
+                err = e
+            if err is None or attempt == 2 or "overpass" not in str(err).lower():
+                break
+            print(f"{tag}: Overpass is busy, trying again in {RETRY_WAIT_S:.0f} s", flush=True)
+            time.sleep(RETRY_WAIT_S)
+        if isinstance(err, SystemExit):
+            print(f"{tag}: failed - {err.code}", flush=True)
+            failed += 1
+            continue
+        if err is not None:
             busy = " OpenStreetMap's Overpass servers are busy or down; wait a few minutes and run this again (finished homes are kept)." \
-                if "overpass" in str(e).lower() else f" Run `apartmentscout site {L['id']}` to see the detail."
-            print(f"{tag}: failed - {type(e).__name__}: {str(e)[:160]}.{busy}", flush=True)
+                if "overpass" in str(err).lower() else f" Run `apartmentscout site {L['id']}` to see the detail."
+            print(f"{tag}: failed - {type(err).__name__}: {str(err)[:160]}.{busy}", flush=True)
             failed += 1
             continue
         if args.verbose:
