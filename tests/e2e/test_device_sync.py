@@ -446,3 +446,102 @@ def test_nothing_is_sent_until_sync_is_connected(device, github) -> None:
     mac.page.wait_for_timeout(1000)
     assert github.log == []
     assert status(mac)["target"] == "off"
+
+
+# ------------------------------------------------------------------ served by `apartmentscout serve`: the search folder stays the source on the Mac
+@pytest.fixture(scope="module")
+def served_search(tmp_path_factory):
+    """A real `apartmentscout serve` (the local API on) over a scratch search folder holding a few of the example's homes."""
+    import shutil
+    import threading
+    from apartmentscout import cli
+    from apartmentscout.config import Workspace
+    from apartmentscout.localapi import ServeState, make_server
+    root = tmp_path_factory.mktemp("serve") / "searches" / "mine"
+    root.mkdir(parents=True)
+    shutil.copy(ROOT / "examples" / "nyc-2026" / "criteria.yaml", root / "criteria.yaml")
+    keep = [{k: v for k, v in x.items() if k not in ("photos_local",)} for x in LISTINGS if x["id"] in (HOME, OTHER, THIRD)]
+    (root / "listings.json").write_text(json.dumps(keep))
+    state = ServeState(dash=ROOT / "dashboard", searches_dir=root.parent, ws=None, data_dir=ROOT / "dashboard" / "data", media_dir=None, export=cli._export, rescore=cli._rescore)
+    state.activate(Workspace(root))
+    httpd = make_server(state, 0)
+    threading.Thread(target=lambda: httpd.serve_forever(0.02), daemon=True).start()
+    yield root, f"http://127.0.0.1:{state.port}"
+    httpd.shutdown()
+    httpd.server_close()
+
+
+def served_device(browser, base: str, github: FakeGitHub):
+    from conftest import block_foreign
+    ctx = browser.new_context(viewport={"width": 1440, "height": 900}, reduced_motion="reduce", service_workers="block")
+    block_foreign(ctx, base)
+    ctx.add_init_script(TUNING)
+    github.install(ctx)
+    page = ctx.new_page()
+    page.goto(f"{base}/#map")
+    page.wait_for_function("() => document.documentElement.dataset.boot === 'ready' && !!window.__asSync", timeout=SLOW)
+    return ctx, page
+
+
+def test_with_the_local_api_the_search_folder_stays_the_source_and_the_gist_merges_both_ways(browser, served_search, device, github) -> None:
+    root, base = served_search
+    folder = root / "tours" / HOME / "findings.json"
+    ctx, mac = served_device(browser, base, github)
+    try:
+        # a visit saved on the Mac reaches the folder (the local API) and, once connected, the gist
+        mac.evaluate("async (id) => (await import('/js/features/findings-store.js')).update(id, (cur) => ({ ...cur, note: 'saved on the mac', water: 4 }))", HOME)
+        poll(lambda: json.loads(folder.read_text()).get("note") == "saved on the mac", mac, timeout=20)
+        mac.click("#menuBtn")
+        mac.click("#mnSync")
+        mac.fill("#syToken", TOKEN)
+        mac.click("[data-sy-go]")
+        mac.wait_for_function("() => window.__asSync.status().connected && window.__asSync.status().phase === 'synced'", timeout=20000)
+        assert github.live(f"findings:{SEARCH}/{HOME}/note") == "saved on the mac"
+        # the phone (a static page, no folder) adds to the same visit and to another one
+        phone = device()
+        connect(phone)
+        phone.page.evaluate("""async ([a, b]) => { const FS = await import('/js/features/findings-store.js');
+          FS.update(a, (cur) => ({ ...cur, ceiling: 9.5 })); FS.update(b, (cur) => ({ ...cur, note: 'phone only visit' })); }""", [HOME, OTHER])
+        wait_status(phone, "st.phase === 'synced' && !st.pending")
+        mac.evaluate("() => window.__asSync.syncNow('manual')")
+        mac.wait_for_function("() => window.__asSync.status().phase === 'synced' && !window.__asSync.status().pending", timeout=20000)
+        # what came from the phone is written into the search folder through the local API, and what was there is kept
+        poll(lambda: json.loads(folder.read_text()).get("ceiling") == 9.5, mac, timeout=20)
+        f = json.loads(folder.read_text())
+        assert f["note"] == "saved on the mac" and f["water"] == 4 and f["ceiling"] == 9.5
+        other = root / "tours" / OTHER / "findings.json"
+        poll(lambda: other.exists() and json.loads(other.read_text()).get("note") == "phone only visit", mac, timeout=20)
+        assert json.loads(other.read_text())["note"] == "phone only visit"
+        # a visit written into the folder by hand (the command line, another tool) is picked up when the page opens, and goes to the gist
+        third = root / "tours" / THIRD
+        third.mkdir(parents=True, exist_ok=True)
+        (third / "findings.json").write_text(json.dumps({"v": 1, "note": "typed in the folder", "updated": "2026-10-15T09:00:00Z"}))
+        mac.reload()
+        mac.wait_for_function("() => document.documentElement.dataset.boot === 'ready' && !!window.__asSync", timeout=SLOW)
+        mac.wait_for_function("() => window.__asSync.status().phase === 'synced'", timeout=20000)
+        mac.evaluate("() => window.__asSync.syncNow('manual')")
+        poll(lambda: github.live(f"findings:{SEARCH}/{THIRD}/note") == "typed in the folder", mac, timeout=20)
+        assert github.live(f"findings:{SEARCH}/{THIRD}/note") == "typed in the folder"
+    finally:
+        ctx.close()
+
+
+def test_a_photo_taken_on_the_phone_ends_up_in_the_macs_search_folder(browser, served_search, device, github) -> None:
+    root, base = served_search
+    ctx, mac = served_device(browser, base, github)
+    try:
+        mac.click("#menuBtn")
+        mac.click("#mnSync")
+        mac.fill("#syToken", TOKEN)
+        mac.click("[data-sy-go]")
+        mac.wait_for_function("() => window.__asSync.status().connected && window.__asSync.status().phase === 'synced'", timeout=20000)
+        phone = device()
+        connect(phone)
+        add_photo(phone, THIRD)
+        wait_status(phone, "st.phase === 'synced' && !st.pending", 20000)
+        mac.evaluate("() => window.__asSync.syncNow('manual')")
+        folder = root / "tours" / THIRD / "photos"
+        poll(lambda: folder.is_dir() and any(folder.glob("*.webp")), mac, timeout=30)
+        assert list(folder.glob("*.webp")), "the photo copy was stored in the folder by the local API, like a photo taken on the Mac"
+    finally:
+        ctx.close()

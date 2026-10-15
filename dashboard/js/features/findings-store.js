@@ -234,6 +234,9 @@ async function syncPhotos() {
   }
 }
 
+/** Photos that arrived in this browser (from another device, through sync) go to the search folder when there is one. */
+export const movePhotosToFolder = () => syncPhotos();
+
 // ------------------------------------------------------------------ start
 /** Reach the local API (if there is one): merge its visits with this browser's and send whatever it lacks. */
 async function connect(force = false) {

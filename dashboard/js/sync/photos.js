@@ -68,6 +68,7 @@ export async function reconcilePhotos(merged, { embed, device, clock }) {
     const blob = dataUrlToBlob(w.v);
     if (blob && await FS.syncPhotoPut(findingsKey, home, pid, blob)) out.stored++;
   }
+  if (out.stored) FS.movePhotosToFolder().catch(() => { /* the search folder is not reachable: they stay in this browser */ });
   // 3. a photo without a copy gets one, newest first, while the budget lasts
   let bytes = 0;
   for (const w of blobs.values()) bytes += String(w.v).length;
