@@ -2,6 +2,7 @@
 // glow where the sun really is, and the haze (fog) that fades the far city into the horizon. Colours come from city3d/look.js by sun altitude,
 // so the same hour is the same sky in both engines. A VISUAL PREVIEW.
 import * as THREE from 'three';
+import { quality } from '../room3d/quality.js';   // [quality] the stars are `skyDetail`
 import { SKY_VS, SKY_FS, skyAt, glowTexture } from './look.js';
 
 const mix = (a, b, t) => a.clone().lerp(b, t);
@@ -26,7 +27,7 @@ export function createSky(pal) {
 export function applySky(sky, pal, s, dir, centre) {
   const k = Math.max(0, Math.min(1, s.alt / 30));
   const zen = skyAt(pal.sky.zen, s.alt, pal.sky.alt), hor = skyAt(pal.sky.hor, s.alt, pal.sky.alt);
-  sky.U.stars.value = pal.daylight ? Math.max(0, Math.min(1, (-s.alt - 5) / 5)) : 0;   // stars only on the eye-level (natural) sky, once it is dark
+  sky.U.stars.value = pal.daylight && quality.has('skyDetail') ? Math.max(0, Math.min(1, (-s.alt - 5) / 5)) : 0;   // stars only on the eye-level (natural) sky, once it is dark
   sky.U.zen.value.copy(zen); sky.U.hor.value.copy(hor); sky.U.sunDir.value.copy(dir);
   sky.U.glow.value = s.alt > -4 ? Math.min(1, (s.alt + 4) / 8) : 0;
   sky.U.sunCol.value.copy(mix(pal.sun, pal.white, 0.2 * k));

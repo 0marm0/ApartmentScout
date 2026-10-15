@@ -21,11 +21,11 @@ void main() {
   vA = uNight * fade * min(1.0, px / 5.0);
   vCol = aCol;
 }`;
-const FS = `varying vec3 vCol; varying float vA;
+const FS = `varying vec3 vCol; varying float vA; uniform float uGlow;
 void main() {
   vec2 p = gl_PointCoord * 2.0 - 1.0; float r2 = dot(p, p);
   if (r2 > 1.0) discard;
-  float core = exp(-r2 * 26.0), halo = exp(-r2 * 4.6) * 0.34;
+  float core = exp(-r2 * 26.0), halo = exp(-r2 * 4.6) * 0.34 * uGlow;
   float a = (core + halo) * vA;
   gl_FragColor = vec4(vCol * 1.7, a);
 }`;
@@ -45,7 +45,7 @@ export function nightLights(data, o = {}) {
   }
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); geo.setAttribute('aCol', new THREE.BufferAttribute(col, 3)); geo.setAttribute('aSize', new THREE.BufferAttribute(size, 1));
-  const U = { uNight: o.uNight || { value: 0 }, uK: { value: 600 }, uOrtho: { value: 0 } };
+  const U = { uNight: o.uNight || { value: 0 }, uK: { value: 600 }, uOrtho: { value: 0 }, uGlow: { value: 1 } };
   const mat = new THREE.ShaderMaterial({ uniforms: U, vertexShader: VS, fragmentShader: FS, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false });
   const pts = new THREE.Points(geo, mat); pts.name = 'lamps'; pts.frustumCulled = false; pts.renderOrder = 5;
   pts.onBeforeRender = (renderer, scene, camera) => {   // world metres to pixels for this view
@@ -56,6 +56,8 @@ export function nightLights(data, o = {}) {
   group.add(pts);
   return {
     group, count: plan.n, counts: plan.counts, points: pts,
+    /** The halo round each lamp (the quality level's `nightGlow`): off leaves the bright core only. */
+    setGlow(on) { U.uGlow.value = on ? 1 : 0; },
     dispose() { geo.dispose(); mat.dispose(); },
   };
 }

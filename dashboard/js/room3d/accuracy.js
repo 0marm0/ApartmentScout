@@ -5,6 +5,7 @@
 import { esc } from '../util.js';
 import { normaliseFinishes, finishLeaves } from '../plan/finishes.js';   // [finishes] pure: what the room's floor, paint and kitchen rest on
 import { lookBasis, lookSummary, describeLook } from '../plan/looks.js';   // the renter's colours and materials, and which of them are guesses
+import { photoLabel, fitLabel } from '../unit/view-calibration.js';
 
 /** Row states, in the order they are counted, with the word the chip uses and a one-line meaning. */
 export const STATES = {
@@ -20,9 +21,11 @@ const pct = (n, d) => (d ? Math.round((100 * n) / d) : 0);
 
 /**
  * @param {{site: object, plan?: object|null, cal?: {state?: string, fh?: number, slab?: number}|null, floor?: number, pinned?: boolean,
- *   furniture?: {name?: string, source?: string, confirmed?: {by?: string, date?: string}|null, count?: number}|null, facing?: number|null, t?: number|null}} o
+ *   furniture?: {name?: string, source?: string, confirmed?: {by?: string, date?: string}|null, count?: number}|null, facing?: number|null, t?: number|null,
+ *   viewCal?: object|null}} o
  *   `site` = the site file; `plan` = the plan JSON (raw or normalised: only `source` and `provenance` are read); `cal` = unit/calibration.js resolveCal();
- *   `facing`/`t` = the window's bearing and position along its facade as the view uses them
+ *   `facing`/`t` = the window's bearing and position along its facade as the view uses them; `viewCal` = a saved photo match (unit/view-calibration.js),
+ *   which turns the bearing row (and the floor-height row when the photo could fix the height) to "measured from photo N"
  * @returns {{key: string, label: string, state: keyof STATES, text: string}[]}
  */
 export function accuracyRows(o) {
@@ -40,7 +43,9 @@ export function accuracyRows(o) {
   const exp = o.facing != null ? Math.round(o.facing) : site.window?.bearing != null ? Math.round(site.window.bearing) : null;
   const fsrc = P.exposure || (o.plan ? 'plan' : 'assumed');
   const fstate = { 'photo-landmarks': 'measured', manual: 'measured', listing: 'source', plan: 'source', agent: 'estimated', inferred: 'estimated' }[fsrc] || 'assumed';
-  rows.push({ key: 'bearing', label: 'Facade bearing', state: fstate, text: `${exp != null ? `${exp}°` : 'Unknown'}${fsrc === 'photo-landmarks' ? ', matched against landmarks in your photos' : fsrc === 'manual' ? ', set by you' : fsrc === 'listing' ? ', from the listing' : ', not confirmed'}${P.basis ? ` (${esc(P.basis)})` : ''}.` });
+  const vc = o.viewCal && o.viewCal.result ? o.viewCal : null;
+  if (vc) rows.push({ key: 'bearing', label: 'Facade bearing', state: 'measured', text: `${exp != null ? `${exp}°` : `${Math.round(vc.result.bearing_deg)}°`}, measured from ${esc(photoLabel(vc))}: the photo looks toward ${Math.round(vc.result.bearing_deg)}° (${esc(fitLabel(vc))}${vc.result.sigma?.bearing != null ? `, ±${vc.result.sigma.bearing.toFixed(1)}°` : ''}).` });
+  else rows.push({ key: 'bearing', label: 'Facade bearing', state: fstate, text: `${exp != null ? `${exp}°` : 'Unknown'}${fsrc === 'photo-landmarks' ? ', matched against landmarks in your photos' : fsrc === 'manual' ? ', set by you' : fsrc === 'listing' ? ', from the listing' : ', not confirmed'}${P.basis ? ` (${esc(P.basis)})` : ''}.` });
   // 3. position along the facade
   const wp = P.window_position || 'assumed', t = o.t ?? site.window?.t;
   rows.push({ key: 'position', label: 'Position along the facade', state: wp === 'manual' ? 'measured' : wp === 'assumed' ? 'assumed' : 'source',
@@ -48,8 +53,11 @@ export function accuracyRows(o) {
   // 4. floor height
   const cal = o.cal || {}, measured = cal.state === 'measured';
   const fh = Number.isFinite(cal.fh) ? cal.fh : site.floor_height_m;
+  const fromPhoto = vc && vc.result.eye_determined && measured && /^photo/.test(String(cal.src || ''));
   rows.push({ key: 'floor-height', label: 'Floor height', state: measured ? 'measured' : 'estimated',
-    text: measured ? `A measured slab or eye height${Number.isFinite(cal.slab) ? ` (slab at ${cal.slab.toFixed(1)} m)` : ''}.` : `${Number.isFinite(fh) ? `${(+fh).toFixed(2)} m a floor` : 'A floor height'}, estimated from the roof height and the floor count${o.floor ? `; floor ${Math.round(o.floor)}'s slab follows from it` : ''}. A measured slab replaces it (Model ▸ Height).` });
+    text: fromPhoto ? `Measured from ${esc(photoLabel(vc))}: the camera stood ${vc.result.eye_height_m.toFixed(1)} m up${vc.result.sigma?.eye != null ? ` (±${vc.result.sigma.eye.toFixed(1)} m)` : ''}${Number.isFinite(cal.slab) ? `, so floor ${Math.round(o.floor || vc.photo.floor)}'s slab is at ${cal.slab.toFixed(1)} m` : ''}.${vc.photo.floor !== Math.round(o.floor || vc.photo.floor) ? ` The photo was taken on floor ${vc.photo.floor}: every storey is scaled to it.` : ''}`
+    : vc && !vc.result.eye_determined && !measured ? `${Number.isFinite(fh) ? `${(+fh).toFixed(2)} m a floor` : 'A floor height'}, estimated from the roof height and the floor count. Your photo match could not fix the camera height (its landmarks sit at similar distances), so it stays an estimate.`
+    : measured ? `A measured slab or eye height${Number.isFinite(cal.slab) ? ` (slab at ${cal.slab.toFixed(1)} m)` : ''}.` : `${Number.isFinite(fh) ? `${(+fh).toFixed(2)} m a floor` : 'A floor height'}, estimated from the roof height and the floor count${o.floor ? `; floor ${Math.round(o.floor)}'s slab follows from it` : ''}. A measured slab replaces it (Model ▸ Height).` });
   // 5. plan
   const plan = o.plan || null;
   if (plan) {

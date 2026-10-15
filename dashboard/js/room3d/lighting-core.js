@@ -39,8 +39,10 @@ export const lampsAt = (alt) => 0.75 * (1 - smooth(-2, 6, alt)) + 0.25 * (1 - sm
  * The light state of the room.
  * `o.mood` 'auto' with `o.alt` (the sun's altitude in degrees, negative below the horizon) gives the CONTINUOUS state: the day, evening and night states
  * blended by autoWeights, the sun fading in over the first 3 degrees and tinted by sunTint, the lamps by lampsAt. A fixed mood gives that mood exactly.
- * @param {{mood: 'day'|'evening'|'night', sunOn?: boolean, sinAlt?: number, quality?: 'fast'|'visual', scale?: {ambient?: number, sun?: number, sky?: number}, shaded?: boolean}} o
- *   sunOn: direct sun reaches the room (default true); scale: the Light tab's glazing, blinds and ambient controls (default 1)
+ * @param {{mood: 'day'|'evening'|'night', sunOn?: boolean, sinAlt?: number, quality?: 'fast'|'visual', envLight?: boolean, tone?: 'aces'|'reinhard', scale?: {ambient?: number, sun?: number, sky?: number}, shaded?: boolean}} o
+ *   sunOn: direct sun reaches the room (default true); scale: the Light tab's glazing, blinds and ambient controls (default 1);
+ *   envLight: an environment light is on (default: Visual); tone: the tone-mapping curve (default: by quality, TONE). The automatic step-down turns the
+ *   environment light off under Visual but keeps the tone, so a lighter level never changes the brightness of the room.
  * @returns {{sunI:number, sunColor:number, hemiI:number, hemiSky:number, hemiGround:number, ambI:number, ambColor:number, glowI:number, glowColor:number, exposure:number, tone:'aces'|'reinhard', lamps:number}}
  *   `lamps` = 0 (off), 0.75 (evening) or 1 (night): the factor the lamps' own candela is multiplied by
  */
@@ -63,10 +65,12 @@ function blendedState(o) {
 function stateFor(o) {
   const mood = MOOD_LIST.includes(o.mood) ? o.mood : 'day', day = mood === 'day', eve = mood === 'evening', night = mood === 'night';
   const sc = { ambient: 1, sun: 1, sky: 1, ...(o.scale || {}) }, visual = o.quality === 'visual', sin = Math.max(0, o.sinAlt ?? 0.8);
+  const tone = o.tone === 'aces' || o.tone === 'reinhard' ? o.tone : visual ? TONE.visual : TONE.fast, env = o.envLight ?? visual;
   const sunOn = o.sunOn !== false && !night;
-  // Visual adds an environment light, so the hemisphere steps back a little (as the studio always did)
-  const k = visual ? 0.62 : 1;
-  const exposureByMood = day ? 1.2 : eve ? 1.34 : 1.42, fastLift = visual ? 1 : 1.5;   // Reinhard has a lower mid-grey than ACES: lift it so a room is as bright
+  // an environment light (Visual) is also light, so the hemisphere steps back a little (as the studio always did); a lighter level that drops the
+  // environment keeps the hemisphere where it was, so the room does not go dark when the level drops
+  const k = visual ? (env ? 0.62 : 0.8) : 1;
+  const exposureByMood = day ? 1.2 : eve ? 1.34 : 1.42, fastLift = tone === 'aces' ? 1 : 1.5;   // Reinhard has a lower mid-grey than ACES: lift it so a room is as bright (the evening and night numbers go with the darker night fill above)
   return {
     sunI: sunOn ? (4.2 + 5 * sin) * sc.sun * (eve ? 0.7 : 1) : 0,
     sunColor: eve ? 0xffc080 : 0xffe6bd,   // warm: the patches on the floor are golden, not white
@@ -79,7 +83,7 @@ function stateFor(o) {
     glowI: (day ? 3.2 : eve ? 1.2 : 0.35) * Math.max(0, Math.min(1, sc.sky)) * (o.shaded ? 0.55 : 1),
     glowColor: eve ? 0xb9c4e0 : 0xdfe9f5,
     exposure: exposureByMood * fastLift,
-    tone: visual ? TONE.visual : TONE.fast,
+    tone,
     lamps: day ? 0 : night ? 1 : 0.75,
   };
 }
