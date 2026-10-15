@@ -406,6 +406,8 @@ and spires are drawn as such, and near flat roofs carry a generic bulkhead and, 
 are not surveyed, rise at most 6 m, and are in no part. Buildings within 600 m of the view's centre are drawn in detail and cast shadows, the
 rest are plain prisms with a flat tint. None of this enters a sun hour, a skyline, a sky view or a score.
 
+**Playing the day and the year, the seasons and the night (a look, not a measurement).** Both 3D views have *Play day* (the sun from first light to last, about 14 seconds, looping) and *Play year* (the chosen time of day through twelve months, about 20 seconds). A loop only asks the same sun model about a new date and time every frame, so the sun, the sky, the shadows and the sun patches on the floor and furniture follow, and the sentence "Sun on the floor 9:40 am to 1:15 pm" is the union of the lit stretches of the unit's windows (their own skylines) for that date; the strip chart is the direct-sun hours a day on the 15th of each month. Pausing, scrubbing the time strip or the chart, or changing the date stops a loop. Fast quality steps in a couple of minutes (and fewer dates), Visual runs continuously. The room's light follows the sun's altitude continuously (no jump at a threshold), the sun is amber near the horizon, and a home with no lamp placed gets a warm ceiling light in each main room at dusk (marked as assumed). Trees follow the season in the picture only (`city3d/season.js`: leaves on from late May to early October, autumn colours in October and November, bare branches from December to March); trees are never obstructions, so the sun numbers are the same in every month. At night the facades light single windows for homes and whole floors for offices, fewer and cooler as the evening goes on (a hash of the window, so nothing flickers and a window that is off stays off), the street, bridge and river lamps stand where the street data puts them at a typical spacing, and the sky is a deep blue with a lighter horizon glow. None of it says who is home or which lamps work.
+
 **City context (trees, water, ground).** Around the buildings, the 3D views draw what is not a building, all of it read from the site
 file and none of it entering a sun hour, a skyline, a daylight number or a score.
 
@@ -698,6 +700,18 @@ is not SSAO). The choice is remembered per browser. A progressive export renders
 as the average of 16 frames with sub-pixel camera jitter and a tiny jitter of the sun, for smooth edges and soft shadow edges; the
 PNG carries a caption saying it is a visual render. Visual realism changes no number, no sun patch and no skyline: the evidence
 confidence of a result is the provenance and the Modelled / Estimate / Visual preview label beside it.
+
+**Lighter mode for this device.** The Fast / Visual choice is one setting shared by Unit 3D and the Floor plan studio (change it in
+either and both follow). On top of it the views time their own frames: the first frames after a view opens, then a short burst every
+45 seconds while it stays open, and any frames drawn while you move around. When the median frame takes more than about 40 ms the
+picture steps down one level (two when it is above 90 ms): a lower pixel ratio, a smaller and plainer shadow map, half the trees and
+no tree shadows, plain grass and simple furniture, plain facades and no window glow lights, and finally smaller ground textures.
+It steps back up only when frames are comfortably short (20 ms or under, with a predicted cost well under the limit) and only after
+a pause that doubles every time a step up had to be undone, so the picture never flickers between levels. A small note says
+"Lighter mode for this device"; its **Force Visual** button draws at full quality and stops the automatic step-down (choose Fast to
+turn it back on). Levels change how the picture is drawn, never a number: no sun hour, skyline or score depends on them.
+`scripts/perf_check.py --render` prints the draw calls, triangles and texture memory of each level on a desktop and on a throttled
+phone, and checks them against `scripts/perf_budget.json`.
 
 **Towards real photometry.** Illuminance in lux, glare and annual climate-based metrics need a
 physically based lighting engine with materials, a calibrated room and weather files. The Radiance
