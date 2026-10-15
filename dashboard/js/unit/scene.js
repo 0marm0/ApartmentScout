@@ -9,7 +9,9 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { DEG } from '../sun.js';
 import { css, esc } from '../util.js';
 import { heightClass, pickLabels } from './heights.js';
-import { greenGroup, greenColors } from './greenmesh.js';
+// [city context] ground plate, water, parks and trees (unit/context3d.js) and the river and park labels
+import { buildContext } from './context3d.js';
+import { contextLabels } from './context-core.js';
 
 const isLight = () => document.documentElement.dataset.theme === 'light';
 const col = (name, fb) => { const v = css(name); return new THREE.Color(/^#[0-9a-f]{3,8}$/i.test(v) ? v.slice(0, 7) : fb); };
@@ -30,7 +32,7 @@ export function palette() {
     : [mix(s3, ink4, 0.55), mix(s3, blue, 0.3), mix(s3, blue, 0.55), mix(s3, blue, 0.8), mix(blue, ink, 0.22), mix(blue, ink, 0.48), mix(violet, ink, 0.5)];
   const lit = mix(sun, white, 0.45);
   return L ? {
-    hcls, lit,
+    hcls, lit, blue,
     tBase: accent.clone(),
     light: true, ground: mix(s3, ink4, 0.22), bLow: mix(s3, ink4, 0.42), bHigh: mix(s1, s3, 0.25), street: mix(s1, s3, 0.2), streetOp: 0.95,
     outline: ink3, outlineOp: 0.32, edge: ink3, edgeOp: 0.22, accent, sun, warn, bad, ink, white,
@@ -40,7 +42,7 @@ export function palette() {
     },
     hemiDay: 1.9, hemiNight: 0.9, sunMax: 3.4,
   } : {
-    hcls, lit,
+    hcls, lit, blue,
     tBase: mix(accent, ground, 0.42),
     light: false, ground: mix(s3, ink4, 0.3), bLow: mix(s3, ink4, 0.5), bHigh: mix(ink4, ink3, 0.4), street: mix(s3, ink4, 0.55), streetOp: 0.9,
     outline: ink3, outlineOp: 0.3, edge: ground, edgeOp: 0.45, accent, sun, warn, bad, ink, white,
@@ -127,7 +129,8 @@ export class UnitStage {
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.maxTex = this.renderer.capabilities.maxTextureSize || 4096;
     this.mode = 'orbit'; this.look = { yaw: 0, pitch: 6, fov: 70 }; this.dirty = true; this.tween = null;
-    this.opts = { shadows: true, labels: true, streets: true, future: true, green: true, cone: false, ray: true, target: 'solid' };
+    this.opts = { shadows: true, labels: true, streets: true, future: true, green: true, water: true, cone: false, ray: true, target: 'solid' };
+    this.quality = { visual: false, phone: false };   // [city context] set by unit/quality3d.js: tree shadows and the water glint
     this.labels = []; this.pal = palette(); this.onCompass = null;
     this.opts.heights = false;
     // shared facade uniforms (see decorate)
@@ -175,7 +178,7 @@ export class UnitStage {
 
     // ground
     this.groundMat = new THREE.MeshStandardMaterial({ color: pal.ground, roughness: 1, metalness: 0 });
-    const ground = new THREE.Mesh(new THREE.PlaneGeometry(24000, 24000), this.groundMat);
+    const ground = this.groundBase = new THREE.Mesh(new THREE.PlaneGeometry(24000, 24000), this.groundMat);
     ground.rotation.x = -Math.PI / 2; ground.position.copy(this.center).setY(-0.02); ground.receiveShadow = true; scene.add(ground);
 
     // city: merged prisms, near ones cast shadows
@@ -249,14 +252,26 @@ export class UnitStage {
     this.applyOpts(); this.dirty = true;
   }
 
-  /** Parks, lawns and tree canopies from the site file (unit/greenmesh.js); rebuilt on a theme change. */
+  /**
+   * [city context] The street / sidewalk plate, the water, parks and lawns and the trees (unit/context3d.js): built
+   * from the site file's streets, `water` and `green`, rebuilt on a theme change. Context only, never in the sun numbers.
+   */
   buildGreen() {
-    if (this.greenGrp) { this.scene.remove(this.greenGrp); disposeTree(this.greenGrp); }
-    this.greenGrp = null;
-    if (!this.data.green) return;
-    this.greenGrp = greenGroup(this.data.green, { center: this.cxy, radius: 640, y0: 0, colors: greenColors(this.pal.ground, this.pal.light) });
-    this.greenGrp.visible = this.opts.green; this.scene.add(this.greenGrp);
+    if (this.ctx) { this.scene.remove(this.ctx.group); this.ctx.dispose(); }
+    this.ctx = null; this.greenGrp = null;
+    const d = this.data, any = d.green || d.water || (d.streets || []).length;
+    if (any) {
+      this.ctx = buildContext({ green: d.green, water: d.water, streets: d.streets }, { B: d.B, center: this.cxy, radius: 640, y0: 0, ground: this.pal.ground, light: this.pal.light, blue: this.pal.blue, visual: this.quality.visual, phone: this.quality.phone, layers: { green: this.opts.green, water: this.opts.water } });
+      this.scene.add(this.ctx.group); this.ctx.watch(this.ctx.group); this.greenGrp = this.ctx.parts.green;
+      if (this.lastSun) this.ctx.setSun({ dir: this.sunDir, alt: this.lastSun.alt });
+      this.ctx.setInside(this.mode === 'in');
+    }
+    this.syncGroundBase();
   }
+  /** The plate stands in for the base ground where it is on; the base drops under the water so the plate's holes show it. */
+  syncGroundBase() { if (this.groundBase) this.groundBase.position.y = this.ctx?.hasGround && this.opts.water ? -0.9 : -0.02; }
+  /** [city context] Render quality from unit/quality3d.js: tree shadows (Visual) and the water's sky reflection and sun glint. */
+  setContextQuality(q) { this.quality = { visual: !!q.visual, phone: !!q.phone }; this.ctx?.setQuality(this.quality); this.dirty = true; }
   distTo(b) { return Math.hypot((b.bb[0] + b.bb[2]) / 2 - this.cxy[0], (b.bb[1] + b.bb[3]) / 2 - this.cxy[1]); }
   shapeOf(b) {
     const sh = new THREE.Shape();
@@ -426,6 +441,8 @@ export class UnitStage {
       }
     }
     [...seen.entries()].sort((a, b) => a[1].d - b[1].d).slice(0, 10).forEach(([name, v]) => add(esc(name), W3(v.q[0], v.q[1], 2), 'street', 1));
+    // [city context] the rivers and the large parks, by name
+    for (const l of contextLabels({ water: this.data.water, green: this.data.green })) add(esc(l.name), W3(l.x, l.y, l.kind === 'water' ? 1 : 3), l.kind, 1.2);
     for (const f of future) {
       const ring = (f.ring || []).filter(Array.isArray); if (ring.length < 3) continue;
       const x = ring.reduce((a, q) => a + q[0], 0) / ring.length, y = ring.reduce((a, q) => a + q[1], 0) / ring.length;
@@ -450,6 +467,8 @@ export class UnitStage {
     for (const L of order) {
       let show = this.opts.labels || L.cls === 'win';
       if (L.cls === 'street') show = show && this.opts.streets;
+      if (L.cls === 'park') show = show && this.opts.green && this.mode !== 'win' && this.mode !== 'in';
+      if (L.cls === 'water') show = show && this.opts.water && this.mode !== 'win' && this.mode !== 'in';   // [city context] (a label cannot be hidden by a building in front of it, so not from the windows)
       if (L.cls === 'future') show = show && this.opts.future;
       if (L.cls === 'ht' || L.cls === 'ring') show = show && this.opts.heights && this.mode !== 'in';
       if (L.cls === 'win') show = this.mode !== 'win' && this.mode !== 'in';
@@ -457,14 +476,14 @@ export class UnitStage {
       if (L.cls === 'own' && this.opts.target === 'hidden') show = false;
       if (L.lm && (this.mode === 'win' || this.mode === 'in')) { L.el.classList.toggle('dim', !!L.lm.hidden && !this.showHidden); }
       if (L.lm && L.lm.hidden && !this.showHidden && this.mode === 'in') show = false;
-      if (show && solid && (L.cls === 'street' || walled(L.pos))) show = false;
+      if (show && solid && (L.cls === 'street' || L.cls === 'water' || L.cls === 'park' || walled(L.pos))) show = false;
       if (show) {
         v.copy(L.pos).project(cam);
         if (v.z > 1 || v.z < -1 || Math.abs(v.x) > 1.05 || Math.abs(v.y) > 1.05) show = false;
       }
       if (show) {
         const x = (v.x + 1) / 2 * W, y = (1 - v.y) / 2 * H, w = L.w || 80, h = L.h || 30;
-        const r = L.cls === 'street' || L.cls === 'ring' ? [x - w / 2, y - h / 2, x + w / 2, y + h / 2] : [x - w / 2, y - h - 6, x + w / 2, y - 6];
+        const r = L.cls === 'street' || L.cls === 'ring' || L.cls === 'water' || L.cls === 'park' ? [x - w / 2, y - h / 2, x + w / 2, y + h / 2] : [x - w / 2, y - h - 6, x + w / 2, y - 6];
         if (r[0] < 4 || r[2] > W - 4 || r[1] < 4 || r[3] > H - 4) show = L.cls === 'win' || L.cls === 'own' ? show : false;
         if (show && L.cls !== 'win' && placed.some((p) => r[0] < p[2] + 4 && r[2] > p[0] - 4 && r[1] < p[3] + 3 && r[3] > p[1] - 3)) show = false;
         if (show) { placed.push(r); L.el.style.transform = `translate(${Math.round(r[0])}px, ${Math.round(r[1])}px)`; L.sx = r[0]; L.sy = r[1]; }
@@ -480,7 +499,7 @@ export class UnitStage {
     [this.bMat, this.groundMat, this.tMat].forEach((m) => (m.needsUpdate = true));
     if (this.streets) this.streets.visible = o.streets;
     if (this.future) this.future.visible = o.future;
-    if (this.greenGrp) this.greenGrp.visible = o.green;
+    this.ctx?.setLayers({ green: o.green, water: o.water }); this.syncGroundBase();   // [city context]
     this.rings.visible = !!o.heights && this.mode !== 'win' && this.mode !== 'in';
     this.cone.visible = o.cone && this.mode !== 'win';
     const t = this.mode === 'in' ? 'hidden' : o.target;
@@ -607,6 +626,7 @@ export class UnitStage {
     this.skyU.zen.value.copy(zen); this.skyU.hor.value.copy(hor); this.skyU.sunDir.value.copy(d);
     this.skyU.glow.value = s.alt > -4 ? Math.min(1, (s.alt + 4) / 8) : 0;
     this.skyU.sunCol.value.copy(mix(pal.sun, pal.white, 0.2 * k));
+    this.ctx?.setSun({ dir: d, alt: s.alt });   // [city context] the water's light
     this.scene.fog.color.copy(hor);
     // hemisphere light: the sky's hue at full brightness (its darkness is carried by the intensity)
     const tint = mix(hor, zen, 0.5), mx = Math.max(tint.r, tint.g, tint.b, 1e-3); tint.multiplyScalar(1 / mx);
@@ -760,6 +780,7 @@ export class UnitStage {
     }
     sc.updateProjectionMatrix();
     this.winCam.near = inside ? 0.05 : 0.3; this.winCam.updateProjectionMatrix();
+    this.ctx?.setInside(inside);   // [city context] no tree shadows on the floor: the sun patches there follow the numbers, which ignore trees
     this.applyOpts();
     if (this.lastSun) this.setSun(this.lastSun);
   }
