@@ -3,7 +3,6 @@
 import { download } from '../app.js';
 import { esc, toast } from '../util.js';
 import * as E from './engine.js';
-import * as St from './sync-store.js';
 import { statusLine, ago, size, mergeLine } from './sync-text.js';
 import { TOKEN_PAGE, CLASSIC_TOKEN_PAGE, looksLikeToken } from './gist-client.js';
 import { LIMITS } from './sync-model.js';
@@ -94,13 +93,11 @@ function paintStatus() {
   const last = root.querySelector('[data-sy-last]'); if (last) last.innerHTML = lastHTML(s);
 }
 function devicesHTML(s) {
-  const rows = Object.entries({ [s.deviceId]: { name: s.device, at: s.lastSync }, ...s.devices, ...(s.devices[s.deviceId] ? {} : {}) });
-  const seen = new Set(), items = [];
-  for (const [id, d] of rows) {
-    if (seen.has(id)) continue; seen.add(id);
+  const all = { ...s.devices, [s.deviceId]: { name: s.device, at: s.lastSync || s.devices[s.deviceId]?.at } };
+  const items = Object.entries(all).sort(([a], [b]) => (b === s.deviceId) - (a === s.deviceId)).map(([id, d]) => {
     const me = id === s.deviceId, name = d.name || 'A device', ic = /iPhone|Android|iPad/.test(name) ? I.phone : I.mac;
-    items.push(`<li class="${me ? 'me' : ''}">${ic}<span><b>${esc(name)}</b>${me ? ' <i>this device</i>' : ''}</span><small>${d.at ? esc(ago(d.at)) : ''}</small></li>`);
-  }
+    return `<li class="${me ? 'me' : ''}">${ic}<span><b>${esc(name)}</b>${me ? ' <i>this device</i>' : ''}</span><small>${d.at ? esc(ago(d.at)) : ''}</small></li>`;
+  });
   return items.length > 1 ? `<h4>Devices that sync here</h4><ul class="sy-devs">${items.join('')}</ul>` : '';
 }
 function lastHTML(s) {
@@ -322,4 +319,3 @@ document.addEventListener('keydown', (e) => {
   const pick = e.target?.closest?.('#syncSheet [data-sy-pick]');
   if (pick && (e.key === ' ' || e.key === 'Enter')) { e.preventDefault(); pick.querySelector('input')?.click(); }
 });
-void St;

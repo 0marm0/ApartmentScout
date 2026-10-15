@@ -18,6 +18,7 @@
 @keyframes syPulse { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
 
 /* ------------------------------------------------------------------ the panel */
+.sheet.sync-sheet { margin: 0; padding: 0; }   /* tours.css gives every .sheet a margin and padding of its own; this one lays itself out */
 .sync-sheet .sh-body { padding-top: 12px; }
 .sync-sheet .sh-sec h3 { align-items: baseline; }
 .sy-hero { display: flex; align-items: center; gap: 12px; padding: 14px 14px 14px 16px; border-radius: var(--r-lg); border: 1px solid var(--line); background: var(--surface-2); }
@@ -108,6 +109,7 @@ label.btn[data-sy-pick] { cursor: pointer; }
   .sy-hero { flex-wrap: wrap; padding: 14px; }
   .sy-hero-t { flex: 1 1 calc(100% - 30px); }
   .sy-now { width: 100%; justify-content: center; height: 40px; }
+  .sy-tg { min-height: 44px; align-items: center; padding-block: 6px; }
   .sy-targets { gap: 6px; }
   .sy-target { min-height: 56px; padding: 8px 10px; }
   .sy-target b { font-size: var(--fs-sm); }
