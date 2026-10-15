@@ -96,7 +96,7 @@
 .vs-chip:hover { background: var(--surface-hover); }
 .vs-chip:active { transform: scale(.97); }
 .vs-chip[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent-strong); box-shadow: 0 0 0 1px var(--accent) inset; }
-.vs-chip.pill { min-height: 40px; border-radius: var(--r-pill); font-weight: 500; font-size: var(--fs-xs); }
+.vs-chip.pill { min-height: 44px; border-radius: var(--r-pill); font-weight: 500; font-size: var(--fs-xs); }
 .vs-chip small { font-size: var(--fs-2xs); font-weight: 500; color: var(--ink-3); line-height: 1; }
 .vs-chip[aria-pressed="true"] small { color: var(--accent-strong); }
 .vs-chip:focus-visible, .vs-jump button:focus-visible, .vs-x:focus-visible, .vs-step button:focus-visible, .vs-rm:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
