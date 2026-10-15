@@ -20,8 +20,9 @@ session fixtures: one Playwright, one Chromium, one static server on a free port
 (`tmp_path_factory` is per worker) and its own browser contexts (service workers, storage and caches are per context). Nothing in
 the suite uses a fixed port, a shared temp folder or an environment variable another test sets. The one thing a process may
 start is ONE sync Playwright (a second one in the same process fails inside the first one's event loop), so a test file never
-starts its own: it uses the session `browser` below. Test files whose module-scoped fixtures are costly to build (a built site,
-a temp search) are kept on one worker with an `xdist_group` mark added in `pytest_collection_modifyitems`.
+starts its own: it uses the session `browser` below. The tests of a file that use one of its module-scoped fixtures (a built site, a
+temp search) are kept on one worker with an `xdist_group` mark added in `pytest_collection_modifyitems`. `--dist loadgroup` is what
+reads it; the default `--dist load` is also correct, only slower for those files.
 """
 from __future__ import annotations
 
@@ -321,3 +322,21 @@ def pytest_collection_modifyitems(items) -> None:
             continue
         if _uses_module_fixture(item):
             item.add_marker(pytest.mark.xdist_group(name=item.module.__name__.rsplit(".", 1)[-1]))
+    # Under --dist loadgroup the work units (a group, or a single test) are handed out in collection order. The long ones go first, so
+    # the run does not end with one worker alone on a 30 s group while the others are idle: groups, largest first, then the axe sweeps
+    # (the longest single tests), then everything else in the order it was collected. Only the browser tests move, among their own places.
+    spots = [i for i, it in enumerate(items) if "e2e" in Path(str(it.fspath)).parts]
+    mine = [items[i] for i in spots]
+    size: dict[str, int] = {}
+    for it in mine:
+        m = it.get_closest_marker("xdist_group")
+        if m:
+            size[m.kwargs.get("name") or m.args[0]] = size.get(m.kwargs.get("name") or m.args[0], 0) + 1
+
+    def weight(it) -> tuple[int, int]:
+        m = it.get_closest_marker("xdist_group")
+        if m:
+            return (0, -size[m.kwargs.get("name") or m.args[0]])
+        return (1, 0) if "accessibility" in it.name else (2, 0)
+    for i, it in zip(spots, sorted(mine, key=weight)):
+        items[i] = it
