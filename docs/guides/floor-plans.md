@@ -225,7 +225,44 @@ schema 2 field is optional.
 | Axes | `+x` to the right of the drawing, `+y` to the top. |
 | `up_bearing` | Compass bearing the top of the drawing (+y) faces. Put the main window wall at the top (large `y`): the 3D views, the "City outside" layer and the Inside view place the plan with +y pointing out of the building. A plan drawn with its windows at the bottom (small `y`) must be rotated 180 degrees (`x -> width - x`, `y -> depth - y`, furniture `rot + 180`) or its windows will face into the building. |
 | `ceiling`, `wall` | Ceiling height and wall thickness (defaults 9 ft and 0.4 ft). |
-| `floor_finish` | Optional: the floor of the dry rooms as the listing photos show it, `basket` (basket-weave block parquet in honey oak, the classic New York apartment floor), `parquet` (chevron) or `oak` (planks). Without it each room kind has its own default; kitchens, baths and closets keep theirs. Both 3D engines draw the same wood, with grain, joints and a light bump. |
+| `floor_finish` | Optional, the old one-field form of `finishes.floor.pattern` (`basket` = basket, `parquet` = herringbone, `oak` = plank); `finishes` wins where it names a pattern. The floor of the dry rooms as the listing photos show it: the floor of the dry rooms as the listing photos show it, `basket` (basket-weave block parquet in honey oak, the classic New York apartment floor), `parquet` (chevron) or `oak` (planks). Without it each room kind has its own default; kitchens, baths and closets keep theirs. Both 3D engines draw the same wood, with grain, joints and a light bump. |
+| `finishes` | Optional: what the unit is made of and where each value came from, see [Finishes](#finishes-what-the-room-is-made-of) below. |
+
+### Finishes: what the room is made of
+
+`finishes` makes the 3D rooms (Unit 3D Inside and the Floor plan studio, one builder for both) look like the unit's own photos. Every value says
+where it came from, and the accuracy chip's **Finishes** row reports that.
+
+```json
+"finishes": {
+  "floor":         {"pattern": "basket", "tone": "#916b42", "basis": "photos", "evidence": "tone sampled from the floor of photos 1-8, 10"},
+  "walls":         {"colour": "#f6f5f1", "basis": "photos", "evidence": "upper walls of photos 1-10"},
+  "ceiling":       {"colour": "white", "basis": "assumed"},
+  "window_frames": {"colour": "#e0e2e0", "basis": "photos", "evidence": "pale edge around the glass in photos 1-2, 5, 9, 12"},
+  "doors":         {"colour": "white", "basis": "listing_text", "evidence": "\"white doors\""},
+  "kitchen": {"cabinets": {...}, "counters": {...}, "backsplash": {...}, "floor": {"pattern": "tile", "tone": "#2b2a22", "basis": "photos"}},
+  "bath":    {"tile": {...}, "vanity": {...}, "floor": {...}}
+}
+```
+
+| Field | Values |
+|---|---|
+| `floor.pattern` | `herringbone` (chevron parquet), `basket` (basket-weave block parquet), `plank`, `tile`, `carpet`, `concrete`. Applies to the dry rooms; kitchens, baths, closets and terraces keep their own unless `kitchen.floor` / `bath.floor` name one. |
+| `floor.tone`, `*.colour` | `#rgb`, `#rrggbb` or a named tone (`white`, `honey`, `oak`, `walnut`, `charcoal`, `black granite`, `marble`, ...; the list is `NAMED_TONES` in `dashboard/js/plan/finishes.js`). This is the colour the room **draws**; the tool maps what a photo shows through the renderer's lighting so the drawn room matches the photo. |
+| `basis` | `renter` (you set or confirmed it; the tool never overwrites it), `photos` (read from the unit's own photos), `listing_text` (the listing or its photo review says so), `assumed` (a default or a guess; also what a bare colour string means). |
+| `evidence`, `confidence` | A short note ("photos 1-9") and `low` / `medium` / `high`. |
+| `walls`, `ceiling`, `doors` | Paint. Doors colour the leaf. |
+| `window_frames` | Black-framed and white or silver frames are both common; default is a charcoal bronze. |
+| `kitchen.cabinets`, `.counters`, `.backsplash` | Counters and islands are a cabinet body with a 1.5 in stone top; the backsplash is 18 in of tile on the wall behind a counter run. |
+| `bath.tile`, `.vanity` | The bath's tile (its floor too) and vanity. |
+
+`apartmentscout finishes [--listing ID] [--dry-run] [--words-only]` fills the block from the saved photos (`photos_local`, found in the search's
+`media/` or `media-lite/`; a photo on neither is skipped and reported) and the listing's photo review, titles and features: the floor tone from the wood-coloured
+floor in the bottom band of the interior shots, the wall paint from the lit upper wall, the window frames from the edge around the glass, the cabinets,
+counters and backsplash from the photos titled as kitchens, and the pattern from words such as "herringbone", "basket-weave" or "parquet" (a bare
+"parquet" is read as basket-weave block parquet). Homes that share photos share their words. Pillow is optional: without it only the words are read. Then
+`apartmentscout build` copies the plans into the dashboard. These are readings of lit, often virtually staged marketing photos: a shade off is normal,
+and anything you know better you set with `basis: renter`.
 
 ### Rooms, walls and openings
 
