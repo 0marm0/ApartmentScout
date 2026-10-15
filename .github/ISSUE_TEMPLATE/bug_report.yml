@@ -1,0 +1,54 @@
+name: Bug report
+description: Something in the CLI, the dashboard or the docs does not work as described.
+title: "[bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. **Do not paste secrets or personal data**: no tokens or keys, no `criteria.yaml` or `searches/` contents,
+        no home addresses, income or photos. A small made-up example that shows the problem is best. For a security problem use the
+        private link on the issue chooser (see SECURITY.md).
+  - type: dropdown
+    id: where
+    attributes:
+      label: Where did it happen?
+      options:
+        - The dashboard (live demo)
+        - The dashboard (my own search, apartmentscout serve)
+        - A command (apartmentscout ...)
+        - The landing page
+        - The docs
+        - An agent skill or AGENTS.md
+        - Not sure
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what did you expect?
+      placeholder: "I clicked ... and saw ... I expected ..."
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: The exact command, or the URL and clicks. Using the example (`--search examples/nyc-2026`) makes it easy to reproduce.
+      placeholder: |
+        1. apartmentscout serve --search examples/nyc-2026
+        2. Open the 3D tab ...
+    validations:
+      required: true
+  - type: textarea
+    id: env
+    attributes:
+      label: Your setup
+      description: Operating system, browser and version (or phone), Python version (`python --version`), and the commit (`git rev-parse --short HEAD`).
+      placeholder: "macOS 15, Safari 18, Python 3.12, a1b2c3d"
+  - type: textarea
+    id: output
+    attributes:
+      label: Error output or a screenshot
+      description: The terminal output or the browser console message. Remove anything private first.
+      render: shell

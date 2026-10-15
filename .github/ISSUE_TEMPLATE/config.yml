@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a security problem (private)
+    url: https://github.com/0marm0/ApartmentScout/security/advisories/new
+    about: Use this, not a public issue, for a vulnerability or anything that leaks private data. See SECURITY.md.
+  - name: Getting started guide
+    url: https://github.com/0marm0/ApartmentScout/blob/main/docs/guides/getting-started.md
+    about: From zero to a ranked map in about 15 minutes, in any city.
+  - name: Try the live demo
+    url: https://0marm0.github.io/ApartmentScout/demo/
+    about: The dashboard on the worked example, in your browser.

@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+message: "If you use ApartmentScout in your work or research, please cite it as below."
+title: "ApartmentScout"
+abstract: "Agent-ready apartment research: rank listings on your own criteria and true monthly cost, map door-to-door commutes, audit prices, read building records, and see each unit's light, view and your furniture in 3D."
+type: software
+authors:
+  - name: "ApartmentScout contributors"
+repository-code: "https://github.com/0marm0/ApartmentScout"
+url: "https://0marm0.github.io/ApartmentScout/"
+license: MIT
+version: "0.1.0"
+keywords:
+  - apartment search
+  - rental
+  - commute
+  - GTFS
+  - open data
+  - sunlight
+  - three.js
+  - AI agents
