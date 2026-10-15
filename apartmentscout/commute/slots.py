@@ -163,6 +163,20 @@ def scored_minutes(entry: dict, crit: dict) -> float | None:
     return base
 
 
+def export_block(crit: dict) -> dict | None:
+    """commute.times as the dashboard reads it (criteria.json): the slots in force, what the score reads, and the weights.
+    None when the feature is off or the slots are invalid."""
+    if not enabled(crit):
+        return None
+    try:
+        slots = resolve_slots(crit)
+    except ValueError:
+        return None
+    return {"slots": [{"id": s["id"], "label": s["label"], "kind": s["kind"], "time": s.get("time"), "day": s["day"]}
+                      for s in slots],
+            "score": score_setting(crit), "weights": slot_weights(crit, slots)}
+
+
 def check(crit: dict) -> list[str]:
     """Problems with commute.times as sentences (for criteria --check); empty when fine."""
     raw = (crit.get("commute") or {}).get("times")

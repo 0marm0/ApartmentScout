@@ -16,6 +16,8 @@ import './features/comfort.js';
 import { initDestPin } from './features/dest-pin-style.js';   // [office pin] gold or classic destination marker   // [feature C] comfort + accent attributes on <html> apply at import, before first paint
 import { cardsEmpty } from './features/empty.js';   // [feature C]
 import { sharesFor, pickFeatures, topReason, warnings } from './features/card-model.js';   // what a card says: two telling features, one reason, one warning mark
+import * as NH from './features/noise-hours.js';   // [noise by hour] the clock chart in the drawer
+import * as TOD from './features/timeofday.js';   // [time of day] the commute at 9:00, midday, the evening way home, late evening, the weekend
 import { destLineHTML, drawerHTML as destsDrawerHTML } from './features/multidest.js';   // [multi-destination] minutes to every destination on cards and in the drawer
 // results list and filter rail features (chips, collapsible sections, windowed cards, rank motion, density, price history, worker scoring)
 import { initResults, setCardItems, clearCardList, cardIds, cardPos, cardEl, revealCard, decorateRail, railFocus, restoreRailFocus, rescoreWeights, deltaHTML, trendHTML } from './features/results.js';
@@ -76,7 +78,8 @@ export function modesOf(L, d = dest()) {
 }
 const searchKey = (k) => `${k}:${S.crit0.search?.name || S.base}`;
 /** Switch the commute lens; every surface that shows minutes follows. */
-export function setCommute({ mode, dest: dn } = {}) {
+export function setCommute({ mode, dest: dn, slot } = {}) {
+  if (slot !== undefined) TOD.setSlot(slot);   // a time of day (null = the arrive-by trip)
   if (mode && MODE_LABEL[mode]) S.commuteMode = mode;
   if (dn && allDests().some((d) => d.name === dn)) S.destName = dn;
   fitMode(!!dn && !mode);
@@ -384,7 +387,7 @@ function renderRail() {
       <div class="range"><div class="range-h"><span>${esc(BASIS_RAIL[S.crit.budget?.basis] || BASIS_RAIL.monthly_cost)}</span><b>${cap ? '≤ ' + money(cap) : 'Any'}</b></div>${hist(costs, lo, hi, 36, cap)}</div></div>` : ''}
     ${d ? `<div class="sec"><div class="sec-h"><h3>Commute</h3>${ds.length > 1 ? `<select class="sel cm-dest" id="rDest" aria-label="Commute destination">${ds.map((x) => `<option value="${esc(x.name)}" ${x === d ? 'selected' : ''}>to ${esc(x.name)}</option>`).join('')}</select>` : `<span class="faint" style="font-size:var(--fs-xs)">to ${esc(d.name)}</span>`}</div>
       ${modeSegHTML(d, 'rMode')}
-      <div class="range-h"><span>${esc(MODE_LABEL[S.commuteMode])} door to door${d.arrive_by ? ', arrive ' + esc(d.arrive_by) : ''}</span><b id="comVal">${f.maxCommute >= 75 ? 'Any' : '≤ ' + f.maxCommute + ' min'}</b></div>
+      <div class="range-h"><span>${esc(MODE_LABEL[S.commuteMode])} door to door${TOD.railSub(d)}</span><b id="comVal">${f.maxCommute >= 75 ? 'Any' : '≤ ' + f.maxCommute + ' min'}</b></div>
       ${hist(act.map((L) => commuteOf(L)), 0, 60, 30, f.maxCommute < 75 ? f.maxCommute : null)}
       <input type="range" id="rCom" min="5" max="75" value="${f.maxCommute}" style="${pct(f.maxCommute, 5, 75)}" aria-label="Maximum commute in minutes"></div>` : ''}
     <div class="sec"><div class="sec-h"><h3>Must-haves and features</h3>${f.toggles.length ? '<button class="reset" type="button" data-reset="toggles">Clear</button>' : ''}</div>
@@ -579,6 +582,7 @@ function commuteSection(L, d) {
   const best = Math.min(...avail.map(([k]) => val(k)).filter((v) => v != null));
   return `<div class="d-sec" id="dCommute" data-tab="Commute"><h3>Commute to ${esc(d.name)} <span>arrive ${esc(d.arrive_by || '')}${sel?.range ? ` · ${Math.round(sel.range[0])}–${Math.round(sel.range[1])} min across departures` : ''}</span></h3>
     <div class="mode-tiles" role="tablist">${avail.map(([k, n, ic]) => `<button type="button" role="tab" aria-selected="${k === drawerMode}" class="mt ${k === drawerMode ? 'on' : ''} ${val(k) === best ? 'best' : ''}" data-mode="${k}">${ic}<b>${Math.round(val(k))}<small>min</small></b><span>${n}</span></button>`).join('')}</div>
+    ${TOD.drawerHTML(L, d, drawerMode)}
     <div class="route">${drawerMode === 'walk' ? `<div class="leg"><span class="ic walk"></span><span>Walk the whole way <span class="faint">${miles((M.walk?.m) ?? null)}</span></span><span class="m">${Math.round(mo.walk)} min</span></div>` : sel?.legs ? legRows(sel.legs) : legsHTML(sel?.route || '')}${obs}</div>
     ${sel?.transfers != null && drawerMode !== 'walk' ? `<div class="faint" style="font-size:var(--fs-xs);margin-top:8px">${sel.transfers ? sel.transfers + ' transfer' + (sel.transfers > 1 ? 's' : '') : 'One-seat ride'} · ${Math.round(sel.walk_min ?? 0)} min walking · ${Math.round(sel.ride_min ?? 0)} min riding${sel.wait_min ? ` · ${Math.round(sel.wait_min)} min waiting` : ''}</div>` : ''}
     ${stale}${live ? `<a class="d-link" href="${esc(live)}" target="_blank" rel="noopener">Check the live route ${ICONS.ext}</a>` : ''}</div>`;
@@ -749,6 +753,7 @@ ${whySection(L)}
     ${commuteSection(L, d)}
     ${destsDrawerHTML(L)}
     ${sun ? `<div class="d-sec" id="dLight" data-tab="Light"><h3>Direct sun on the window <span>floor ${esc(L.site.floor)}, facing ${Math.round(L.site.bearing)}°</span></h3><div class="sunbars">${sun.map((h, i) => `<div title="${h.toFixed(1)} h possible${L.site.sun_hours_expected?.[i] != null ? ` · ${(+L.site.sun_hours_expected[i]).toFixed(1)} h expected on a typical month` : ''}"><i style="height:${Math.max(3, (h / 9) * 100)}%"></i><span>${'JFMAMJJASOND'[i]}</span></div>`).join('')}</div><div class="faint" style="font-size:var(--fs-xs);margin-top:8px">Hours of possible (clear-sky) direct sun on the 15th${L.site.sun_year?.expected != null ? ` · a year: ${Number(L.site.sun_year.possible).toLocaleString()} h possible, about ${Number(L.site.sun_year.expected).toLocaleString()} h expected with typical cloud` : ''}</div><div class="faint" style="font-size:var(--fs-xs);margin-top:4px">Skyline straight ahead ${esc(L.site.skyline_ahead_deg)}° · ${L.site.open_sky_share != null ? Math.round(L.site.open_sky_share * 100) + '% open sky in view' : ''}${L.site.sky_view != null ? ` · sky view ${Math.round(L.site.sky_view * 100)}% (overcast sky)` : ''}${L.site.daylight_factor_est != null ? ` · estimated daylight factor ≈${esc(L.site.daylight_factor_est)}%, not measured` : ''}</div></div>` : ''}
+    ${NH.drawerHTML(L)}
     ${rec.flags?.length ? `<div class="d-sec" id="dRecords" data-tab="Records"><h3>Public records <span>reports, not findings</span></h3>${rec.flags.slice(0, 4).map((x) => `<div class="flag">${esc(x)}</div>`).join('')}</div>` : ''}
     ${rv.summary ? `<div class="d-sec" ${rec.flags?.length ? '' : 'id="dRecords" data-tab="Records"'}><h3>Residents say</h3>${ratings ? `<div class="reviews">${ratings}</div>` : ''}<p class="muted" style="margin:0;font-size:var(--fs-sm)">${esc(rv.summary)}</p></div>` : ''}
     ${L.notes ? `<div class="d-sec" id="dNotes" data-tab="Notes"><h3>Open questions</h3><p class="muted" style="margin:0;font-size:var(--fs-sm)">${esc(L.notes)}</p></div>` : ''}
@@ -759,6 +764,8 @@ ${whySection(L)}
     <p class="faint" style="font-size:var(--fs-xs);padding:0 20px 18px;margin:0">Last checked ${esc(L.checked || '?')} · <span class="mono">${esc(L.id)}</span>${links.length ? ' · ' + links.map(([k, u]) => `<a href="${esc(u)}" target="_blank" rel="noopener">${esc(k)}</a>`).join(' · ') : ''}</p>
     </div>
     <div class="d-actions">${hasSite && hasPlan ? seeInsideLink(L.id, { cls: 'btn primary', icon: ICONS.inside }) : ''}${hasSite ? `<a class="btn${hasPlan ? '' : ' primary'}" href="#unit/${esc(L.id)}">${ICONS.cube}Unit 3D</a>` : ''}${hasPlan ? `<a class="btn" href="#plan/${esc(L.id)}">${ICONS.plan}Plan</a>` : ''}${hasDos ? `<a class="btn" href="#research/records/${esc(L.id)}">${ICONS.doc}Records</a>` : ''}<button class="btn ${S.compare.includes(L.id) ? 'primary' : ''}" type="button" id="dCmp">${S.compare.includes(L.id) ? ICONS.check + 'Comparing' : ICONS.plus + 'Compare'}</button>${safeUrl(L.links?.listing) ? `<a class="btn" href="${esc(safeUrl(L.links.listing))}" target="_blank" rel="noopener">Listing ${ICONS.ext}</a>` : ''}</div>`;
+  TOD.wireDrawer($('drawer'));
+  NH.mount(L, $('drawer'));
   $('dCommute')?.querySelectorAll('[data-mode]').forEach((b) => b.addEventListener('click', () => { drawerMode = b.dataset.mode; const y = $('drawer').querySelector('.d-scroll').scrollTop; openDrawer(L.id); $('drawer').querySelector('.d-scroll').scrollTop = y; }));
   $('dClose').addEventListener('click', closeDrawer);
   dw.querySelector('.mt-x').addEventListener('click', closeDrawer);
@@ -884,6 +891,8 @@ async function boot() {
   if (prof) { try { applyCriteria(prof, { quiet: true }); } catch { store.set(searchKey('criteria'), null); S.crit = S.crit0; for (const L of listings) L.score = L._score0; } }
   if (!allDests().some((d) => d.name === S.destName)) S.destName = allDests()[0]?.name || null;
   fitMode(false);
+  TOD.init();   // ?time=pm opens on a time of day
+  NH.init();   // ?layer=noise&hour=23 opens the noise map on an hour
   renderSearchSwitch();
   rescore(); initResults(); renderRail(); renderKPIs(); renderCards();
   $('kpiChip')?.addEventListener('click', () => setStatsOpen(!statsOpen()));

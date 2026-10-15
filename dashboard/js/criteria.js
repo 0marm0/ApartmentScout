@@ -4,6 +4,8 @@
 // Pure functions only (no DOM, no app state) so node:test can exercise them. The Python scorer
 // (apartmentscout/score.py, listings.py) stays the source of truth; every port below names its original.
 
+import { minutesAt, scoredMinutes } from './features/timeofday-model.js';   // commute by time of day
+
 export const SERVICE_LEVEL = { 'full-time': 1, 'part-time': 0.6, virtual: 0.35, none: 0 };
 export const AMENITY_NAMES = {
   in_unit_wd: 'In-unit W/D', elevator: 'Elevator', doorman: 'Doorman', gym: 'Gym', pool: 'Pool', roof_deck: 'Roof deck',
@@ -171,10 +173,15 @@ export function walkEstimate(L, d, kmh = 4.8) {
   const a = Math.sin(dl / 2) ** 2 + Math.cos(L.lat * r) * Math.cos(d.lat * r) * Math.sin(dn / 2) ** 2;
   return (2 * R * Math.asin(Math.sqrt(a)) * DETOUR) / ((kmh * 1000) / 60);
 }
+/** The time of day every commute minute follows ({ slots, id } from features/timeofday.js), or null for the arrive-by trip.
+ *  Walking never changes with the hour; a home without per-slot times keeps its arrive-by minutes. The scores do not read it. */
+let LENS = null;
+export const setTimeLens = (lens) => { LENS = lens || null; };
 /** Door-to-door minutes in one mode. best = the router's fastest (the commute-<dest>.json surface); subway and bus
  *  only from the router's per-mode results (never relabelled); walk from the router, else straight line x 1.25. */
 export function modeMinutes(L, d, mode = 'best', kmh = 4.8) {
   const e = commuteEntry(L, d), m = e?.modes || {};
+  if (LENS && mode !== 'walk' && e?.times) return minutesAt(e, mode, LENS.slots, LENS.id);   // the time of day the renter is looking at; null = no answer then
   if (mode === 'walk') return m.walk?.minutes ?? (e?.mode === 'walk' ? e.minutes : null) ?? walkEstimate(L, d, kmh);
   if (mode === 'bus') return m.bus?.minutes ?? null;
   if (mode === 'subway') return m.subway?.minutes ?? (e && !e.modes && e.mode !== 'walk' ? e.minutes ?? null : null);
@@ -184,7 +191,7 @@ export function commutePart(L, crit) {
   let tot = 0, wsum = 0;
   const items = [];
   for (const d of crit.commute?.destinations || []) {
-    const m = commuteEntry(L, d)?.minutes;
+    const e = commuteEntry(L, d), m = e ? scoredMinutes(e, crit) : null;   // the arrive-by trip unless commute.times.score opts in (score.part_commute)
     if (m == null) continue;
     const mx = d.max_minutes ?? 30, w = d.weight ?? 1;
     const s = m <= mx ? lin(m, mx * 0.5, 100, mx, 50) : lin(m, mx, 50, mx * 2, 0);
