@@ -83,3 +83,11 @@ def test_docs_and_templates_select_nothing(tc) -> None:
 def test_a_package_module_nobody_tests_runs_the_whole_unit_suite(tc, tmp_path, monkeypatch) -> None:
     plan = tc.plan_for(["apartmentscout/config.py"])
     assert set(plan.unit) == {str(p.relative_to(ROOT)) for p in tc.unit_test_files()}
+
+
+def test_every_browser_file_is_in_exactly_one_ci_shard() -> None:
+    """The same check the workflow runs: a browser test file that no shard names would never run in CI."""
+    text = (ROOT / ".github" / "workflows" / "tests.yml").read_text()
+    for f in sorted((ROOT / "tests" / "e2e").glob("test_*.py")):
+        rel = f"tests/e2e/{f.name}"
+        assert text.count(rel) == 1, f"{rel} is in {text.count(rel)} places of tests.yml (it must be in exactly one e2e shard)"
