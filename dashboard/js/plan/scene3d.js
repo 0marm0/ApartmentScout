@@ -35,7 +35,7 @@ export const onMood = (fn) => { moodHooks.push(fn); };
 /** The three.js parts the lighting and quality modules add to. */
 export const parts = () => ({ renderer, scene, cam, controls, sunL, hemi, amb, shell, furn, overlay, rig, mood });
 /** Reflectances {floor, walls, ceiling} for the room colours (a visual preview), or null for the built-in look. */
-export function setSurfaces(rho) { setSurfaceState(rho); if (model) { colors = applySurfaceTint(themeColors()); texCache.clear(); buildShell(); dirty = true; } }
+export function setSurfaces(rho) { if (setSurfaceState(rho) && model) { colors = applySurfaceTint(themeColors()); texCache.clear(); buildShell(); dirty = true; } }
 export const getCamera = () => cam;
 export const viewMode = () => rig.mode;
 

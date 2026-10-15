@@ -5,9 +5,11 @@
 const REF = { floor: 0.25, walls: 0.55, ceiling: 0.75 };   // the reflectances the built-in colours stand for
 let state = null;
 
-/** `rho` = {floor, walls, ceiling} reflectances, or null to restore the built-in colours. */
+/** `rho` = {floor, walls, ceiling} reflectances, or null to restore the built-in colours. Returns true when the look changed. */
 export function setSurfaceState(rho) {
+  const before = JSON.stringify(state);
   state = rho && ['floor', 'walls', 'ceiling'].every((k) => Number.isFinite(rho[k]) && rho[k] > 0 && rho[k] < 1) && ['floor', 'walls', 'ceiling'].some((k) => Math.abs(rho[k] - REF[k]) > 1e-6) ? { ...rho } : null;
+  return JSON.stringify(state) !== before;
 }
 export const surfaceState = () => state;
 

@@ -8,7 +8,7 @@ import { annualDaylight, monthlyDirectSun, MODEL_LABEL } from '../features/dayli
 const MONTHS = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-const cache = new Map();
+const cache = new WeakMap();   // skyline (identity) -> last result
 
 /**
  * The annual summary for a window; cached by the skyline (identity), facing, panes, year, place and sunshine table.
