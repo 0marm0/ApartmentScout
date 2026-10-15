@@ -13,6 +13,9 @@ import * as THREE from 'three';
 import { GROUPS, CONIFER } from './trees.js';
 import { hash01 } from './green.js';
 
+/** A fixed pseudo-random number in [0, 1) for tree i (Knuth's multiplicative hash): the same tree always gets the same number. */
+export const thin = (i) => (Math.imul(i + 1, 2654435761) >>> 0) / 4294967296;
+
 export const LOD = { nearR: 240, nearMax: 1500, phoneNearR: 130, phoneNearMax: 500, moveM: 12 };
 
 // crown colours by group, as lit sRGB hex; the dark theme keeps them deep and muted so they read without glowing
@@ -59,19 +62,21 @@ function withWhite(geo) {
 /**
  * The tree layer. `plan` comes from treePlan(). Options: place(x, y) -> [px, py] (default identity), y0 ground height,
  * light (theme), phone (lighter LOD budget), shadows (crowns cast shadows), limit (use only the first `limit` trees of
- * the plan, which is sorted nearest first). Returns
- * {group, update(camera, force), setTheme(light), setShadows(bool), setPhone(bool), stats(), dispose()}.
+ * the plan, which is sorted nearest first), fraction (0..1: draw only that share of the trees, an even, stable thinning: the automatic step-down
+ * of room3d/quality.js). Returns
+ * {group, update(camera, force), setTheme(light), setShadows(bool), setFraction(f), setPhone(bool), stats(), dispose()}.
  */
 export function treeLayer(plan, opts = {}) {
   const { place = (x, y) => [x, y], y0 = 0 } = opts;
-  let light = !!opts.light, phone = !!opts.phone, shadows = !!opts.shadows;
+  let light = !!opts.light, phone = !!opts.phone, shadows = !!opts.shadows, fraction = Math.max(0, Math.min(1, opts.fraction ?? 1));
   const N = Math.min(plan.n, opts.limit ?? plan.n), group = new THREE.Group(); group.name = 'trees';
   const wx = new Float32Array(N), wz = new Float32Array(N);
   // [park trees] street trees and park trees are separate layers (plan.cls: 0 street, 1 park): the lists hold the trees of the layers that are on
   const cls = plan.cls || new Uint8Array(N), on = [opts.streetTrees !== false, opts.parkTrees !== false];
   let broad = [], cones = [], capBroad = 0, capCones = 0;
   for (let i = 0; i < N; i++) { const [px, py] = place(plan.x[i], plan.y[i]); wx[i] = px; wz[i] = -py; if (plan.grp[i] === CONIFER) capCones++; else capBroad++; }
-  const sortLists = () => { broad = []; cones = []; for (let i = 0; i < N; i++) if (on[cls[i]]) (plan.grp[i] === CONIFER ? cones : broad).push(i); };
+  const kept = (i) => fraction >= 1 || thin(i) < fraction;   // an even thinning that does not depend on the tree's colour or size
+  const sortLists = () => { broad = []; cones = []; for (let i = 0; i < N; i++) if (on[cls[i]] && kept(i)) (plan.grp[i] === CONIFER ? cones : broad).push(i); };
   sortLists();
 
   // precomputed instance matrices: near crown, far blob, trunk (16 floats a tree) and base colour
@@ -147,6 +152,8 @@ export function treeLayer(plan, opts = {}) {
     stats: () => ({ ...st }),
     setTheme(l) { light = !!l; paint(); fillCones(); last.set(Infinity, Infinity, Infinity); },   // the next update() re-colours the buffers
     setShadows(on) { shadows = !!on; setCast(); },
+    /** Draw only this share of the trees (0..1); the same trees stay when it changes, so a step back up brings the others back where they were. */
+    setFraction(f) { const next = Math.max(0, Math.min(1, f ?? 1)); if (next === fraction) return; fraction = next; sortLists(); fillCones(); last.set(Infinity, Infinity, Infinity); },
     /** [park trees] switch the street-tree and park-tree layers: {street, park} booleans (a missing key stays as it is). */
     setClasses(c = {}) {
       if ('street' in c) on[0] = !!c.street; if ('park' in c) on[1] = !!c.park;

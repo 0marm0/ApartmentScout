@@ -23,6 +23,7 @@
 //     y0,                   // ground height (default 0)
 //     ground, light, blue,  // THREE.Color of the plain ground, the theme flag and the theme's blue
 //     visual, phone,        // render quality: tree shadows and the water glint; the phone-class LOD budget
+//     quality,              // the whole room3d/quality.js cityQuality() object: {visual, phone, treeShadows, waterGlint, environment, treeFraction, grassDetail, texScale} (wins over visual / phone)
 //     layers,               // {ground, water, green, trees, streetTrees, parkTrees} booleans, default all true: `green` is the parks and the trees,
 //                           // `streetTrees` the census and street-inventory trees, `parkTrees` the park inventory and the fill in parks
 //   });
@@ -30,7 +31,7 @@
 //   ctx.watch(obj)          make the tree LOD follow the camera while `obj` (or an ancestor) is in a scene
 //   ctx.update(camera)      re-sort the tree LOD for this camera (called for you once watched)
 //   ctx.setLayers({...})    show / hide layers; ctx.hasGround says whether the plate replaces the base ground
-//   ctx.setQuality({visual, phone}), ctx.setTheme({ground, light, blue}), ctx.setSun({dir, alt})
+//   ctx.setQuality({visual, phone, treeShadows, waterGlint, environment, treeFraction, grassDetail, texScale}), ctx.setTheme({ground, light, blue}), ctx.setSun({dir, alt})
 //   ctx.setInside(bool)     true while the camera is inside the apartment: crowns stop casting shadows, so the sun patches on the floor match the
 //                           numbers (trees are never obstructions)
 //   ctx.labels              [{kind: 'water' | 'park', name, x, y}] in site metres (large parks and the rivers)
@@ -103,11 +104,18 @@ function canvasTexture(N, paint) {
 
 export function buildContext(site, opts = {}) {
   const { B = null, place = (x, y) => [x, y], matrix = null, center = [0, 0], radius = 640, y0 = 0 } = opts;
-  let inside = false, light = !!opts.light, visual = !!opts.visual, phone = !!opts.phone, ground = (opts.ground || new THREE.Color(0x272c37)).clone(), blue = (opts.blue || new THREE.Color(0x3a93e0)).clone();
+  const Q0 = opts.quality || {};
+  let inside = false, light = !!opts.light, visual = 'visual' in Q0 ? !!Q0.visual : !!opts.visual, phone = 'phone' in Q0 ? !!Q0.phone : !!opts.phone, ground = (opts.ground || new THREE.Color(0x272c37)).clone(), blue = (opts.blue || new THREE.Color(0x3a93e0)).clone();
   const vis = { ground: true, water: true, green: true, trees: true, streetTrees: true, parkTrees: true, ...(opts.layers || {}) };   // [park trees] street and park trees switch separately
   const group = new THREE.Group(); group.name = 'context';
-  const water = decodeWater(site?.water), half = PLATE_HALF_M, waterHalf = windowHalf(site, 1600), N = opts.phone ? 1536 : TEX_SIZE,   // a phone's textures are a little coarser (14 MB of GPU memory instead of 32)
+  const water = decodeWater(site?.water), half = PLATE_HALF_M, waterHalf = windowHalf(site, 1600),
      hasStreets = streetStrokes(site?.streets).length > 0;
+  // the automatic step-down (room3d/quality.js): effective flags that default to what Visual means, a tree fraction, grass detail and the texture scale
+  const qs = { treeShadows: Q0.treeShadows, waterGlint: Q0.waterGlint, environment: Q0.environment, treeFraction: Q0.treeFraction ?? 1, grassDetail: Q0.grassDetail !== false, texScale: Q0.texScale ?? 1 };
+  const treeShadowsOn = () => (qs.treeShadows ?? visual) && !inside, glintOn = () => !!(qs.waterGlint ?? visual), envOn = () => !!(qs.environment ?? visual);
+  // a phone's textures are a little coarser (14 MB of GPU memory instead of 32), and the step-down's smallest level coarser still
+  const texN = () => Math.max(512, Math.round(((phone ? 1536 : TEX_SIZE) * qs.texScale) / 256) * 256);
+  let N = texN();
   const surveyed = Math.min(half, +site?.green?.radius_m || 600);
   const wrap = new THREE.Group(); wrap.name = 'context-ground'; if (matrix) { wrap.matrix.copy(matrix); wrap.matrixAutoUpdate = false; }
   group.add(wrap);
@@ -147,7 +155,16 @@ export function buildContext(site, opts = {}) {
   function applyWaterColors() {
     if (!waterMat) return;
     waterMat.uniforms.uShallow.value.copy(colors.water); waterMat.uniforms.uSky.value.copy(colors.sky);
-    waterMat.uniforms.uGlint.value = visual ? 1 : 0;
+    waterMat.uniforms.uGlint.value = glintOn() ? 1 : 0;
+  }
+  /** The street plate and the water mask at another size (the step-down's smallest level, or a phone): new canvases, the old textures freed. */
+  function retexture() {
+    if (!hasGround || texN() === N) return;
+    const old = [plateTex, maskTex].filter(Boolean);
+    N = texN(); plateTex = null; maskTex = null; info.texture = N;
+    paintAll();
+    if (waterMat) waterMat.uniforms.uMask.value = maskTex;
+    own.tex = own.tex.filter((t) => !old.includes(t)); old.forEach((t) => t.dispose());
   }
 
   // ---- green patches and trees
@@ -156,7 +173,8 @@ export function buildContext(site, opts = {}) {
     if (patchGroup) { wrapOut.remove(patchGroup); disposeObj(patchGroup); patchGroup = null; }
     if (!site?.green) return;
     const gp = greenPlan(site.green, { center, radius, limit: 0 });   // [grass] the polygons near the centre; the trees are unit/treemesh.js
-    patchGroup = grassGroup(gp ? gp.polys : [], { place, y0, colors: grassColors(ground, light, visual) });
+    patchGroup = grassGroup(gp ? gp.polys : [], { place, y0, colors: grassColors(ground, light, envOn()) });
+    patchGroup.userData.setDetail?.(qs.grassDetail);
     patchGroup.visible = vis.green; parts.green = patchGroup; wrapOut.add(patchGroup);
   }
   const wrapOut = new THREE.Group(); wrapOut.name = 'context-green'; group.add(wrapOut);
@@ -165,7 +183,7 @@ export function buildContext(site, opts = {}) {
     if (!site?.green) return;
     if (!plan) plan = treePlan(site.green, { center, radius, cap: TREE_CAP.desktop, B });
     if (!plan.n) return;
-    trees = treeLayer(plan, { place, y0, light, phone, shadows: visual && !inside, limit: phone ? TREE_CAP.phone : TREE_CAP.desktop, streetTrees: vis.streetTrees !== false, parkTrees: vis.parkTrees !== false });
+    trees = treeLayer(plan, { place, y0, light, phone, shadows: treeShadowsOn(), fraction: qs.treeFraction, limit: phone ? TREE_CAP.phone : TREE_CAP.desktop, streetTrees: vis.streetTrees !== false, parkTrees: vis.parkTrees !== false });
     trees.group.visible = vis.green && vis.trees; parts.trees = trees.group; wrapOut.add(trees.group);
   }
   buildGreen(); buildTrees();
@@ -192,10 +210,16 @@ export function buildContext(site, opts = {}) {
       trees?.setClasses({ street: vis.streetTrees !== false, park: vis.parkTrees !== false });   // [park trees]
     },
     setQuality(q = {}) {
-      const was = phone, wasVisual = visual; if ('visual' in q) visual = !!q.visual; if ('phone' in q) phone = !!q.phone;
-      applyWaterColors(); trees?.setShadows(visual && !inside);
-      if (phone !== was) buildTrees();
-      if (visual !== wasVisual) buildGreen();   // [grass] the grass is deepened under Visual's environment light
+      const was = phone, wasEnv = envOn(), wasDetail = qs.grassDetail; if ('visual' in q) visual = !!q.visual; if ('phone' in q) phone = !!q.phone;
+      for (const k of ['treeShadows', 'waterGlint', 'environment']) if (k in q) qs[k] = q[k];
+      if ('grassDetail' in q) qs.grassDetail = q.grassDetail !== false;
+      if ('texScale' in q) qs.texScale = q.texScale ?? 1;
+      const frac = 'treeFraction' in q ? q.treeFraction ?? 1 : qs.treeFraction, fracChanged = frac !== qs.treeFraction; qs.treeFraction = frac;
+      applyWaterColors(); trees?.setShadows(treeShadowsOn());
+      if (phone !== was) buildTrees(); else if (fracChanged) trees?.setFraction(frac);
+      retexture();
+      if (envOn() !== wasEnv) buildGreen();   // [grass] the grass is deepened under an environment light (Visual)
+      else if (qs.grassDetail !== wasDetail) patchGroup?.userData.setDetail?.(qs.grassDetail);
     },
     setTheme(t = {}) {
       if ('ground' in t) ground = t.ground.clone(); if ('light' in t) light = !!t.light; if ('blue' in t) blue = t.blue.clone();
@@ -211,7 +235,7 @@ export function buildContext(site, opts = {}) {
       waterMat.uniforms.uLight.value = 0.4 + 0.6 * Math.max(0, Math.min(1, (a + 6) / 26));
       waterMat.uniforms.uSunCol.value.setRGB(1, 0.93 - 0.2 * Math.max(0, 1 - a / 25), 0.8 - 0.3 * Math.max(0, 1 - a / 25));
     },
-    setInside(on) { inside = !!on; trees?.setShadows(visual && !inside); },
+    setInside(on) { inside = !!on; trees?.setShadows(treeShadowsOn()); },
     treeStats: () => trees?.stats() || { near: 0, far: 0, cones: 0, n: 0 },
     dispose() { disposed = true; scenes.forEach((s) => unhook(s, api)); scenes.clear(); trees?.dispose(); disposeObj(group); own.tex.forEach((t) => t.dispose()); own.mats.forEach((m) => m.dispose()); },
   };
