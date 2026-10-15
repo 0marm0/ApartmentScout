@@ -60,7 +60,7 @@ subway station and the Harvard Club building in the NYC footprints.
 
 ## 3. Review every image
 
-`docs/gallery/manifest.json` lists every image in `docs/images/`, `docs/gallery/` and `docs/archive/` (earlier screenshots kept until the owner decides to delete them) with a `publication_status`:
+`docs/gallery/manifest.json` lists every image in `docs/images/` and `docs/gallery/` with a `publication_status`:
 
 | Status | Meaning |
 |---|---|
