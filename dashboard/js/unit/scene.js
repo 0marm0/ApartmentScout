@@ -682,7 +682,11 @@ export class UnitStage {
     if (!this.dirty && !force) return false;
     this.dirty = false;
     const cam = this.activeCam();
-    if (this.mode === 'win' && this.win) {
+    // [inside] the Inside camera never stands anywhere but in the room: with no standing point yet it takes the first window's, and with no room built
+    // (or no plan) it looks out of the window like the Window camera, instead of being left wherever the camera was last (the ground, with no view out)
+    if (this.mode === 'in' && this.interior && !this.inEye && this.win) this.setInteriorEye(0);
+    const outOfWindow = this.win && (this.mode === 'win' || (this.mode === 'in' && !(this.interior && this.inEye)));
+    if (outOfWindow) {
       const az = (this.win.az + this.look.yaw) * DEG, pt = this.look.pitch * DEG;
       cam.position.copy(W3(this.win.x, this.win.y, this.win.z)); cam.fov = this.look.fov; cam.updateProjectionMatrix();
       cam.lookAt(cam.position.clone().add(new THREE.Vector3(Math.sin(az) * Math.cos(pt), Math.sin(pt), -Math.cos(az) * Math.cos(pt))));
