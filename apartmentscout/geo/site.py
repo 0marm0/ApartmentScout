@@ -371,7 +371,8 @@ def add_green(site: dict, cache_dir: Path | None = None, radius: float | None = 
         return False
     r = radius or float((site.get("green") or {}).get("radius_m") or 600)
     with collect_receipts() as rc:
-        g = build_green(origin["lat"], origin["lon"], r, city, cache_dir, refresh, say, keep=site.get("green") if keep_osm else None)
+        g = build_green(origin["lat"], origin["lon"], r, city, cache_dir, refresh, say, keep=site.get("green") if keep_osm else None,
+                        fallback=site.get("green"))
         if g is None:
             raise RuntimeError("green space unavailable")
         site["green"] = g

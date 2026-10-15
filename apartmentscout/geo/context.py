@@ -23,27 +23,33 @@ from . import water as water_mod
 
 
 def build_green(lat: float, lon: float, radius: float, city: str | None, cache_dir=None, refresh: bool = False,
-                say: Callable[..., None] = lambda *a: None, census: bool = True, keep: dict | None = None) -> dict | None:
+                say: Callable[..., None] = lambda *a: None, census: bool = True, keep: dict | None = None,
+                fallback: dict | None = None) -> dict | None:
     """The ``green`` block: OpenStreetMap parks and trees, plus in New York the city's own layers. None if nothing loaded.
 
-    New York adds, each failing on its own: NYC Parks Properties and Greenstreets polygons (``geo/parks.py``), the Street
+    New York adds, each failing on its own: NYC Parks Properties, Greenstreets and planimetric court polygons (``geo/parks.py``), the Street
     Tree Census (``geo/trees.py``) pruned of the trees the current inventory lists as removed, and the NYC Parks Forestry
     Tree Points (``geo/forestry.py``): park trees, and street trees planted since the census.
 
     ``keep``: an existing ``green`` block whose OpenStreetMap parks and trees are kept as they are (no Overpass call),
-    so only the city layers are added or refreshed (``--keep-osm``; Overpass is slow and rate-limited).
+    so only the city layers are added or refreshed (``--keep-osm``; Overpass is slow and rate-limited). ``fallback``: the
+    block to keep the OpenStreetMap part of only when Overpass cannot be reached (a refresh that finds the mirrors down
+    keeps the parks and mapped trees it already had instead of dropping them).
     """
     block = None
     if keep is not None and keep.get("polys") is not None:
         block = {k: v for k, v in keep.items() if k not in ("census", "forestry")}
         block["counts"] = {k: v for k, v in (keep.get("counts") or {}).items()
-                           if k not in ("census_trees", "forestry_trees", "parks_polys", "greenstreet_polys", "census_removed")}
+                           if k not in ("census_trees", "forestry_trees", "parks_polys", "greenstreet_polys", "court_polys", "census_removed")}
         block["polys"] = parks_mod.strip_nyc(block["polys"])
     else:
         try:
             block = green_mod.fetch_green(lat, lon, radius, cache_dir, refresh)
         except RuntimeError as e:
             say(f"  green space unavailable: {e}")
+            if fallback is not None and fallback.get("polys") is not None:
+                say("  keeping the OpenStreetMap parks and trees already in the site file")
+                return build_green(lat, lon, radius, city, cache_dir, refresh, say, census, keep=fallback)
     if city == "nyc":
         block = _nyc_layers(block, lat, lon, radius, cache_dir, refresh, say, census)
     if block is None:
@@ -87,6 +93,7 @@ def _nyc_layers(block: dict | None, lat: float, lon: float, radius: float, cache
     if nyc:
         counts["parks_polys"] = sum(1 for p in nyc if p["src"] == "parks")
         counts["greenstreet_polys"] = sum(1 for p in nyc if p["src"] == "greenstreet")
+        counts["court_polys"] = sum(1 for p in nyc if p["src"] == "courts")
     if c is not None:
         if live or gone:
             c = forestry_mod.prune_census(c, live, gone)

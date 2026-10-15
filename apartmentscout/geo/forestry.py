@@ -37,6 +37,7 @@ from .trees import GROUPS, MAX_DBH_IN, Q_M, species_group
 DATASET = "hn5i-inap"
 SOURCE = "NYC Parks Forestry Tree Points (NYC Open Data, hn5i-inap)"
 MATCH_M = 3.0          # two points this close are one tree (GPS error of both surveys is of that order)
+EDGE_M = 60.0          # live trees are kept this far past the site radius, so a park that straddles the edge is not drawn as empty (the views draw to 640 m)
 MAX_TREES = 6000
 GONE_STRUCTURES = {"retired", "stump", "stump - uprooted"}
 NOTE = ("Context only: park trees are drawn from the NYC Parks forestry inventory and are not counted as obstructions "
@@ -102,7 +103,7 @@ class _Grid:
 
 
 def read_points(rows: list[dict], frame: LocalFrame, radius_m: float) -> tuple[list[dict], list[tuple[float, float]]]:
-    """Rows -> (live trees [{x, y, dbh, grp}] within the radius, positions of removed trees)."""
+    """Rows -> (live trees [{x, y, dbh, grp}] within the radius plus ``EDGE_M``, positions of removed trees)."""
     live: list[dict] = []
     gone: list[tuple[float, float]] = []
     for r in rows:
@@ -110,11 +111,9 @@ def read_points(rows: list[dict], frame: LocalFrame, radius_m: float) -> tuple[l
         if ll is None:
             continue
         x, y = frame.to_xy(*ll)
-        if math.hypot(x, y) > radius_m + 10:
+        if math.hypot(x, y) > radius_m + EDGE_M:
             continue
         if is_live(r):
-            if math.hypot(x, y) > radius_m:
-                continue
             dbh = _num(r.get("dbh"))
             dbh_i = int(min(MAX_DBH_IN, max(1, round(dbh)))) if dbh is not None else 6
             latin = str(r.get("genusspecies") or "").split(" - ")[0]
@@ -206,5 +205,5 @@ def count_in_polys(block: dict, polys: list[dict]) -> None:
 def fetch_rows(lat: float, lon: float, radius_m: float = 600, cache_dir: Path | None = None,
                refresh: bool = False) -> tuple[list[dict], str | None]:
     """The raw tree-point rows around a point (cached Socrata download) and the dataset's 'rows updated' date."""
-    rows = socrata(DATASET, forestry_query(lat, lon, radius_m + 20), cache_dir, refresh=refresh)
+    rows = socrata(DATASET, forestry_query(lat, lon, radius_m + EDGE_M + 20), cache_dir, refresh=refresh)
     return rows, rows_updated(DATASET, cache_dir)
