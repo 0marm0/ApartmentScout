@@ -253,6 +253,13 @@ def _write_csv(path: Path, rows: list[dict]) -> None:
         w.writerows(rows)
 
 
+def _components_file(sites_dir, listing_id):
+    """The hand-written components file for a listing: ``<id>.components.yaml``, else ``<id>.components.json``."""
+    yml = sites_dir / f"{listing_id}.components.yaml"
+    js = sites_dir / f"{listing_id}.components.json"
+    return js if js.exists() and not yml.exists() else yml
+
+
 def cmd_site(args):
     from .geo.checks import summary_line
     from .geo.site import make_site
@@ -282,8 +289,8 @@ def cmd_site(args):
                                     future=not args.no_future, refresh=args.refresh, landmarks=lms,
                                     panes=_panes_arg(args), slab_height=args.slab_height,
                                     floor_height=args.floor_height, components=not args.no_components,
-                                    overrides=ws.sites_dir / f"{L['id']}.components.yaml",
-                                    green=not args.no_green, face_index=args.face, say=log)
+                                    overrides=_components_file(ws.sites_dir, L["id"]),
+                                    green=not args.no_green, face_index=args.face, eye_height=args.eye_height, say=log)
     prov = site.get("provenance") or {}
     log(f"  target matched by {prov.get('target') or '?'}; storey height {site['floor_height_m']} m "
         f"({site.get('floor_height_src')})")
@@ -681,6 +688,9 @@ def main(argv=None):
     s.add_argument("--slab-height", type=float, help="height of the listing floor's slab above street level in "
                    "metres (sets the storey height; default: roof height / PLUTO floors)")
     s.add_argument("--floor-height", type=float, help="storey height in metres (overrides the calibration)")
+    s.add_argument("--eye-height", type=float, help="measured height of the window's eye level above street level "
+                   "in metres (slab + 1.6 m); kept apart from the floor-count estimate in the site file's "
+                   "`calibration` block")
     s.add_argument("--samples", action="store_true", help="write research/<id>-sun-samples.csv: every 6 min on "
                    "move-in day and the solstices, with the building that shades the window")
     s.add_argument("--neighbours", action="store_true", help="write research/<id>-neighbours.csv: every building "
