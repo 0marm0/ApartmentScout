@@ -30,7 +30,7 @@ import { getPin, clearPin } from './unit/anchor.js';   // [model project] the wi
 import { buildFurniture, addRoomView } from './unit/furniture.js';   // [model project] the studio's furniture in the Inside view
 import { modelHooks } from './unit/model-hooks.js';   // [model project] Model panel, project import and the comparison board
 import { insideViews, viewForWindow } from './unit/inside-views.js';   // [interior] the Inside camera's rooms, bays, corners and seats
-import { lookChipsHTML, bindLookChips } from './plan/look-ui.js';
+import { setLookChips, bindLookChips } from './plan/look-ui.js';
 import { resolve as resolveItem } from './plan/catalog.js';
 import { stepView } from './plan/viewpoints.js';
 
@@ -157,7 +157,7 @@ export function init() {
   mh = modelHooks(modelBridge());   // [model project]
   mh.mount($('modelPanel'));
   // read-only hook for headless checks (Playwright): never used by the page itself
-  window.__unit3d = { st, get cal() { return CAL; }, get plan() { return plan; }, get planInfo() { return planInfo; }, get B() { return B; }, get faces() { return FACES; }, get sun() { return curSun; }, get hit() { return curHit; }, get blockers() { return blkRows; }, get neighbours() { return NBR.length; }, get interior() { return !!stage?.interior; }, get stage() { return stage; } };
+  window.__unit3d = { st, get views() { return views; }, get curView() { return curView; }, get cam() { return stage?.winCam; }, get cal() { return CAL; }, get plan() { return plan; }, get planInfo() { return planInfo; }, get B() { return B; }, get faces() { return FACES; }, get sun() { return curSun; }, get hit() { return curHit; }, get blockers() { return blkRows; }, get neighbours() { return NBR.length; }, get interior() { return !!stage?.interior; }, get stage() { return stage; } };
 }
 
 export async function show(id) {
@@ -582,10 +582,12 @@ let views = [], curView = null;
 const curOff = () => (curView ? curView.off : interior?.windows[st.inWin]?.bearingOff || 0);
 function lookChips() {
   const el = $('uLook'); if (!el) return;
-  const html = lookChipsHTML(views.filter((v) => v.kind !== 'inward'), curView?.key, {}) + (views.some((v) => v.kind === 'inward') ? `<div class="lk-grp"><button type="button" role="radio" class="lk-chip${curView?.kind === 'inward' ? ' on' : ''}" data-vp="into-room" aria-checked="${curView?.kind === 'inward'}" tabindex="-1" title="Stand at the window and look back into the apartment">Into the room</button></div>` : '');
-  el.innerHTML = html; el.hidden = !html || st.mode !== 'in';
-  $('uInWin').innerHTML = views.map((v) => `<option value="${esc(v.key)}">${esc(v.kind === 'seat' ? `From the ${v.label.toLowerCase()}` : v.label)}</option>`).join('');
-  if (curView) $('uInWin').value = curView.key;
+  const any = setLookChips(el, views, curView?.key, {});
+  el.hidden = !any || st.mode !== 'in';
+  const on = el.querySelector('.lk-chip.on'); if (on && el.scrollWidth > el.clientWidth + 2) el.scrollLeft = Math.max(0, on.offsetLeft - 24);   // a phone's row scrolls to the active chip
+  const sel = $('uInWin'), sig = views.map((v) => v.key).join('|');
+  if (sel.dataset.sig !== sig) { sel.innerHTML = views.map((v) => `<option value="${esc(v.key)}">${esc(v.kind === 'seat' ? `From the ${v.label.toLowerCase()}` : v.label)}</option>`).join(''); sel.dataset.sig = sig; }
+  if (curView) sel.value = curView.key;
 }
 /** Stand at a viewpoint (a chip, the dropdown, the arrow keys): the camera glides there, the state follows. */
 function goView(key, o = {}) {
@@ -595,7 +597,7 @@ function goView(key, o = {}) {
   stage.setInteriorView(v, { animate: o.animate !== false && st.mode === 'in', open: room, onEnd: () => { syncLens(); hud(curSun, hudState()); } });
   syncLens(); lookChips(); hud(curSun, hudState()); syncUrlSoon();
 }
-function stepLook(step) { const n = stepView(views, curView?.key, step); if (n) { goView(n.key); $('uLook').querySelector('.lk-chip.on')?.focus?.(); } }
+function stepLook(step) { const n = stepView(views, curView?.key, step); if (n) goView(n.key); }
 
 // ------------------------------------------------------------------ geometry helpers
 function winPos(floor, t = st.t) {

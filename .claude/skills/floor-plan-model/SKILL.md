@@ -54,7 +54,8 @@ The full format is in `docs/guides/floor-plans.md`. Write schema 2; every field 
    `dining-6`, `desk`, `ac-unit`, ...) with `x`, `y` in the plan's units and `rot` = the direction
    the piece's back points, in degrees clockwise from the top of the drawing (0 top wall, 90 right,
    180 bottom, 270 left). Use the renter's own furniture sizes when you know them (`w`, `d`, `h` in
-   inches). Place each piece against the wall face (room edge plus half the wall thickness).
+   inches): list them once in `furniture.json` beside `listings.json` (schema in `docs/guides/floor-plans.md#your-furniture`,
+   with a `source` for each piece, never a guess) and make the first layout `your-furniture`, fitted with the checks. Place each piece against the wall face (room edge plus half the wall thickness).
 8. **Check the layouts** before you hand them over: run the plan through the checks in node (they
    are pure ES modules) and fix anything tight or blocked, or say in the `note` why it is acceptable.
 

@@ -37,7 +37,7 @@ function canvasTex(key, w, h, draw) {
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; t.userData.shared = true; cache.set(key, t); return t;
 }
 const screenTex = () => canvasTex('screen', 256, 144, (g, w, h) => {
-  const k = g.createLinearGradient(0, 0, w, h); k.addColorStop(0, '#121a2a'); k.addColorStop(0.45, '#070a10'); k.addColorStop(0.5, '#1b2438'); k.addColorStop(0.56, '#05070b'); k.addColorStop(1, '#0a0f18');
+  const k = g.createLinearGradient(0, 0, w, h); k.addColorStop(0, '#2a3a5c'); k.addColorStop(0.42, '#0d1220'); k.addColorStop(0.5, '#2b3a58'); k.addColorStop(0.58, '#080b14'); k.addColorStop(1, '#141c2e');
   g.fillStyle = k; g.fillRect(0, 0, w, h);
 });
 const hex = (c) => `#${new THREE.Color(c).getHexString()}`;

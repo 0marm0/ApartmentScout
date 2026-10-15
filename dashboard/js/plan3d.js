@@ -47,7 +47,7 @@ import * as LX from './plan/lighting-ui.js';   // [feature J] daylight grid, gla
 import { validateInventory, fitInventory, pieceItem, placedIds } from './plan/inventory.js';   // [furniture] the renter's own pieces
 import { inventoryHTML } from './plan/inventory-ui.js';
 import { allViews, stepView } from './plan/viewpoints.js';   // [interior] where to stand to look out of the windows
-import { lookChipsHTML, bindLookChips } from './plan/look-ui.js';
+import { setLookChips, bindLookChips } from './plan/look-ui.js';
 
 const st = {
   id: null, date: '', min: 720, playing: false, site: null, mode: 'both', view: 'bird', wall: 'cut', tab: 'furniture',
@@ -98,6 +98,7 @@ const PILL = { clear: 'good', tight: 'warn', blocked: 'bad' };
 
 // ------------------------------------------------------------------ view contract
 export function init() {
+  window.__plan3d = { get views() { return viewsNow(); }, get cam() { return G3.getCamera(); }, get eye() { return G3.viewMode(); }, get hasCity() { return G3.hasCity(); }, get view() { return st.view; }, get items() { return items; }, get inventory() { return inventory; } };   // [interior] test and debugging handle, like __unit3d
   $('view-plan').innerHTML = `<div class="view-pad ps">
     <header class="page-h ps-head">
       <div class="t"><h1 id="psTitle">Floor plan</h1><p id="psSub">Lay out your furniture at true size and check it fits.</p></div>
@@ -501,9 +502,8 @@ function viewsNow() {
 }
 function lookChips() {
   const el = $('psLook'); if (!el || !model) return;
-  const vs = viewsNow(), html = lookChipsHTML(vs, G3.viewMode() === 'eye' ? st.view : null);
-  if (el.dataset.sig !== `${html}`) { const had = el.contains(document.activeElement); el.innerHTML = html; el.dataset.sig = html; if (had) el.querySelector('.lk-chip.on')?.focus(); }
-  el.hidden = !html;
+  el.hidden = !setLookChips(el, viewsNow(), G3.viewMode() === 'eye' ? st.view : null, {});
+  const on = el.querySelector('.lk-chip.on'); if (on && el.scrollWidth > el.clientWidth + 2) el.scrollLeft = Math.max(0, on.offsetLeft - 24);   // a phone's row scrolls to the active chip
 }
 function lookAt(key) {
   const v = viewsNow().find((q) => q.key === key); if (!v || !model) return;
