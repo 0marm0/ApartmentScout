@@ -29,6 +29,7 @@ import webbrowser
 from pathlib import Path
 
 from . import __version__
+from . import tours as tours_mod
 from .config import Workspace, load_criteria
 from .listings import CSV_TEMPLATE_COLUMNS, load, normalize, save
 from .lqip import alias_remote, build_sidecar
@@ -402,7 +403,7 @@ def cmd_score(args):
     from .score import score_all
     ws = ws_from(args)
     Ls = _listings(ws)
-    score_all(Ls, ws.criteria())
+    score_all(Ls, ws.criteria(), tours=tours_mod.load_all(ws.root))
     save(Ls, ws.listings_path)
     top = sorted((L for L in Ls if L["score"].get("rank")), key=lambda L: L["score"]["rank"])[:args.top]
     log(f"{'#':>3}  {'score':>5}  {'conf':>4}  {'$/mo':>6}  listing")
@@ -566,7 +567,7 @@ def _rescore(ws: Workspace) -> None:
     """Score and rank every listing and save: what `apartmentscout score` does, without the printout."""
     from .score import score_all
     Ls = _listings(ws)
-    score_all(Ls, ws.criteria())
+    score_all(Ls, ws.criteria(), tours=tours_mod.load_all(ws.root))
     save(Ls, ws.listings_path)
 
 
