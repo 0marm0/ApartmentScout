@@ -2,7 +2,7 @@
 // duration written into the header (Chrome's MediaRecorder leaves it out), and the times of day a render can be made at (render/encode.js, render/timeofday.js).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { pickVideoType, extOf, isApple, videoBitrate, videoSize, slug, fileName, canShareFiles, withWebmDuration, webmDuration } from '../../dashboard/js/render/encode.js';
+import { pickVideoType, extOf, isApple, videoBitrate, videoSize, slug, fileName, canShareFiles, withWebmDuration, webmDuration, photoSize, maxPhotoPx } from '../../dashboard/js/render/encode.js';
 import { TIMES, timeOfDay, clock } from '../../dashboard/js/render/timeofday.js';
 
 test('Chrome records WebM (VP9 first), Apple browsers MP4; each falls back to the other; no recorder gives null', () => {
@@ -113,4 +113,14 @@ test('where the sun never gets low or never gets high, a preset still answers wi
   const polarDay = () => 20, winter = () => -2;
   for (const alt of [polarDay, winter]) for (const t of TIMES) { const r = timeOfDay(t.key, alt, { from: 300, to: 1285, now: 800 }); assert.ok(r.min >= 300 && r.min <= 1285, `${t.key}: ${r.min}`); }
   assert.equal(clock(1055), '5:35 pm'); assert.equal(clock(0), '12:00 am'); assert.equal(clock(725), '12:05 pm');
+});
+
+test('a photo is the view times the scale, the aspect kept, the long side within what the device can take and not under 960 px', () => {
+  const view = { w: 1400, h: 600 };
+  assert.deepEqual(photoSize(view, 1.5, 3840), { w: 2100, h: 900 });
+  assert.deepEqual(photoSize(view, 4, 3840), { w: 3840, h: 1646 }, 'capped on the long side');
+  assert.deepEqual(photoSize({ w: 340, h: 640 }, 1.5, 1920), { w: 510, h: 960 }, 'a phone-sized view is brought up to 960 px');
+  const small = photoSize({ w: 300, h: 200 }, 1.5, 3840); assert.equal(Math.max(small.w, small.h) >= 960, true); assert.ok(Math.abs(small.w / small.h - 1.5) < 0.01);
+  assert.equal(maxPhotoPx({ capabilities: { maxTextureSize: 16384 } }, false), 3840); assert.equal(maxPhotoPx({ capabilities: { maxTextureSize: 16384 } }, true), 1920);
+  assert.equal(maxPhotoPx({ capabilities: { maxTextureSize: 2048 } }, false), 2048); assert.equal(maxPhotoPx(null, false), 3840);
 });

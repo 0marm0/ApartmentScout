@@ -4,7 +4,7 @@
 import { esc } from '../util.js';
 import { quality, phoneClass } from '../room3d/quality.js';
 import { TIMES, timeOfDay, clock } from './timeofday.js';
-import { fileName, canShareFiles, videoSize } from './encode.js';
+import { fileName, canShareFiles, videoSize, photoSize, maxPhotoPx } from './encode.js';
 
 const ICON = {
   photo: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" aria-hidden="true"><path d="M2 5.2h2.4l1.1-1.8h5l1.1 1.8H14v7.3H2z"/><circle cx="8" cy="8.8" r="2.3"/><path d="M12 7.4h.01" stroke-linecap="round"/></svg>',
@@ -53,7 +53,7 @@ async function heicOk() {
  */
 export async function makePhoto(id, o = {}) {
   const b = bridges[id]; if (!b) throw new Error(`no ${id} view mounted`);
-  const [{ renderPhoto, photoSize, maxPhotoPx }] = await Promise.all([import('./photo.js')]);
+  const { renderPhoto } = await import('./photo.js');
   return withVisual(async () => {
     const host = await b.host(); if (!host) return null;
     const view = host.view(), scale = o.scale ?? SIZES.find((s) => s.k === o.size)?.scale ?? 2.5;
@@ -140,7 +140,7 @@ export function openSheet(id, kind, opener = null) {
     const info = b.info();
     if (kind === 'photo') {
       const h = await b.host().catch(() => null); if (sheet !== S) return;
-      const view = h?.view() || { w: 1200, h: 700 }, { photoSize, maxPhotoPx } = await import('./photo.js'), cap = h ? maxPhotoPx(h.renderer, phone) : 1920;
+      const view = h?.view() || { w: 1200, h: 700 }, cap = h ? maxPhotoPx(h.renderer, phone) : 1920;
       const px = (s) => { const z = photoSize(view, s.scale, cap); return `${z.w} × ${z.h}`; };
       set(`<p class="rnd-sub">${esc(info.title)} · ${esc(info.when)}</p>
         <div class="rnd-f"><span class="rnd-l">Size</span>${seg('size', SIZES.filter((s) => !(phone && s.k === 'poster')).map((s) => ({ k: s.k, html: `${s.name}<small>${px(s)}</small>` })), opts.size, 'Picture size')}</div>
