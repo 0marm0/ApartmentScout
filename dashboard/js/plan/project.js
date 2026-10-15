@@ -9,7 +9,7 @@ export const MAX_PROJECT_BYTES = MAX_BYTES;
 const ID = /^[A-Za-z0-9_-]{1,80}$/;
 const FIELDS = {
   project: 'schema kind plan layout lighting inventory',
-  plan: 'schema id title units ceiling wall up_bearing floor source provenance rooms walls windows doors open_walls fixtures keepout layouts',
+  plan: 'schema id title units ceiling wall up_bearing floor floor_finish source provenance rooms walls windows doors open_walls fixtures keepout layouts',
   rooms: 'name kind x y w h poly stated est',
   walls: 'a b t',
   windows: 'room note x1 y1 x2 y2 a b sill head',
@@ -117,6 +117,7 @@ function validatePlan(p) {
   for (const key of ['title', 'source']) if (own(p, key)) text(p[key], `plan.${key}`);
   for (const key of ['ceiling', 'wall']) if (own(p, key)) length(p[key], `plan.${key}`, k, true);
   if (own(p, 'up_bearing') && p.up_bearing !== null && (!fin(p.up_bearing) || p.up_bearing < 0 || p.up_bearing >= 360)) fail('Plan bearing must be null or 0 to less than 360');
+  if (own(p, 'floor_finish') && p.floor_finish !== null && !['basket', 'parquet', 'oak'].includes(p.floor_finish)) fail('Floor finish must be null, basket, parquet or oak');
   if (own(p, 'floor') && p.floor !== null && (!Number.isInteger(p.floor) || p.floor < -10 || p.floor > 200)) fail('Plan floor must be null or an integer from -10 to 200');
   array(p.rooms, 'rooms', 100); if (!p.rooms.length) fail('Plan needs rooms');
   for (const type of ['rooms', 'walls', 'windows', 'doors', 'open_walls', 'fixtures', 'keepout']) {

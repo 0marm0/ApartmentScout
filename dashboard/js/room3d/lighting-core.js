@@ -25,17 +25,17 @@ export function roomLightState(o) {
   const sunOn = o.sunOn !== false && !night;
   // Visual adds an environment light, so the hemisphere steps back a little (as the studio always did)
   const k = visual ? 0.62 : 1;
-  const exposureByMood = day ? 1.15 : eve ? 1.25 : 1.35, fastLift = visual ? 1 : 1.18;   // Reinhard has a lower mid-grey than ACES: lift it so a room is as bright
+  const exposureByMood = day ? 1.2 : eve ? 1.38 : 1.5, fastLift = visual ? 1 : 1.5;   // Reinhard has a lower mid-grey than ACES: lift it so a room is as bright
   return {
-    sunI: sunOn ? (3.6 + 4 * sin) * sc.sun * (eve ? 0.6 : 1) : 0,
-    sunColor: eve ? 0xffc890 : 0xfff1d6,
-    hemiI: (day ? 1.6 : eve ? 0.64 : 0.5) * sc.ambient * k,
+    sunI: sunOn ? (4.2 + 5 * sin) * sc.sun * (eve ? 0.7 : 1) : 0,
+    sunColor: eve ? 0xffc080 : 0xffe6bd,   // warm: the patches on the floor are golden, not white
+    hemiI: (day ? 1.9 : eve ? 1.2 : 0.95) * sc.ambient * k,
     hemiSky: night ? 0x8090b0 : 0xf2f4f8,
     hemiGround: night ? 0x2a2e36 : eve ? 0x6e6458 : 0xb3a796,
     // the warm fill of an evening or night room (the bounce of its lamps and of the city): a room with no lamp placed is never black
-    ambI: (day ? 0.4 : eve ? 0.22 : 0.32) * sc.ambient,
+    ambI: (day ? 0.55 : eve ? 0.5 : 0.55) * sc.ambient,
     ambColor: day ? 0xfff3e6 : eve ? 0xffe2c0 : 0xffd6a8,
-    glowI: (day ? 2.4 : eve ? 0.7 : 0) * Math.max(0, Math.min(1, sc.sky)) * (o.shaded ? 0.55 : 1),
+    glowI: (day ? 3.2 : eve ? 1.2 : 0.35) * Math.max(0, Math.min(1, sc.sky)) * (o.shaded ? 0.55 : 1),
     glowColor: eve ? 0xb9c4e0 : 0xdfe9f5,
     exposure: exposureByMood * fastLift,
     tone: visual ? TONE.visual : TONE.fast,

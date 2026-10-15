@@ -14,7 +14,10 @@ const M = 0.0254;
 // ------------------------------------------------------------------ floors
 export const FLOOR_BY_KIND = { living: 'parquet', dining: 'parquet', bedroom: 'oak', office: 'oak', hall: 'oak', other: 'oak', kitchen: 'tile-large', bath: 'tile-small', closet: 'oak', outdoor: 'tile-large' };
 /** The floor finish for a room kind: 'parquet' | 'oak' | 'tile-large' | 'tile-small'. */
-export const floorKind = (room) => FLOOR_BY_KIND[room?.kind] || 'oak';
+/** A plan may name the finish of its dry rooms (`floor_finish`: 'basket' | 'parquet' | 'oak'): the real floor of the unit, read from its photos. Kitchens, baths, closets and terraces keep their own. */
+export const FLOOR_FINISHES = ['basket', 'parquet', 'oak'];
+const OWN_FLOOR = new Set(['kitchen', 'bath', 'closet', 'outdoor']);
+export const floorKind = (room, model) => (model && FLOOR_FINISHES.includes(model.floor_finish) && !OWN_FLOOR.has(room?.kind) ? model.floor_finish : FLOOR_BY_KIND[room?.kind] || 'oak');
 
 const texCache = new Map();
 const seeded = (seed) => { let s = seed >>> 0; return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296); };
@@ -28,7 +31,7 @@ const shade = (base, k, a = 1) => { const x = base.clone().multiplyScalar(k); re
  */
 export function floorTexture(kind, base) {
   const key = `${kind}|${base.getHexString()}`; if (texCache.has(key)) return texCache.get(key);
-  const wood = kind === 'oak' || kind === 'parquet', N = wood ? 1024 : 512, mk = () => { const c = document.createElement('canvas'); c.width = c.height = N; return c; };
+  const wood = kind === 'oak' || kind === 'parquet' || kind === 'basket', N = wood ? 1024 : 512, mk = () => { const c = document.createElement('canvas'); c.width = c.height = N; return c; };
   const c = mk(); const g = c.getContext('2d');
   let size = 1.2, bump = null;
   if (wood) {
@@ -59,6 +62,24 @@ export function floorTexture(kind, base) {
           }
           g.fillStyle = sh(0.5, 0.7); g.fillRect(0, r * h, N, 1.6 * S);
         }
+      } else if (kind === 'basket') {  // basket-weave block parquet (the classic New York apartment floor): 8 in squares of four slats, the slats of neighbouring squares at right angles
+        const nb = 4, B = N / nb, ns = 4, sw = B / ns;   // 4 x 4 squares to the tile, four slats to a square
+        g.fillStyle = sh(0.6); g.fillRect(0, 0, N, N);
+        for (let by = 0; by < nb; by++) for (let bx = 0; bx < nb; bx++) {
+          const horiz = (bx + by) % 2 === 0, blockTone = 0.93 + rnd() * 0.12;
+          for (let k = 0; k < ns; k++) {
+            const x = bx * B + (horiz ? 0 : k * sw), y = by * B + (horiz ? k * sw : 0), w = horiz ? B : sw, h = horiz ? sw : B, tone = blockTone * (0.94 + rnd() * 0.12);
+            g.fillStyle = sh(tone); g.fillRect(x + S, y + S, w - 2 * S, h - 2 * S);
+            const lg = horiz ? g.createLinearGradient(0, y, 0, y + h) : g.createLinearGradient(x, 0, x + w, 0);   // each slat is a little rounded: lighter on one edge, darker on the other
+            lg.addColorStop(0, sh(1.1, 0.22)); lg.addColorStop(0.5, sh(1, 0)); lg.addColorStop(1, sh(0.8, 0.26)); g.fillStyle = lg; g.fillRect(x + S, y + S, w - 2 * S, h - 2 * S);
+            for (let q = 0; q < 6; q++) {   // grain along the slat
+              g.strokeStyle = rnd() > 0.3 ? sh(0.72 + rnd() * 0.14, 0.14 + rnd() * 0.16) : sh(1.14, 0.14); g.lineWidth = (0.5 + rnd() * 0.9) * S; g.beginPath();
+              if (horiz) { const yy = y + S + rnd() * (h - 2 * S); g.moveTo(x + S, yy); g.bezierCurveTo(x + w * 0.3, yy + (rnd() - 0.5) * 2 * S, x + w * 0.7, yy + (rnd() - 0.5) * 2 * S, x + w - S, yy + (rnd() - 0.5) * S); }
+              else { const xx = x + S + rnd() * (w - 2 * S); g.moveTo(xx, y + S); g.bezierCurveTo(xx + (rnd() - 0.5) * 2 * S, y + h * 0.3, xx + (rnd() - 0.5) * 2 * S, y + h * 0.7, xx + (rnd() - 0.5) * S, y + h - S); }
+              g.stroke();
+            }
+          }
+        }
       } else {                         // chevron parquet: boards cut at 45 degrees, mirrored about a centre line, seamless when tiled
         const m = 8, per = N / m, s = per / Math.SQRT2;           // stripe pitch across the board, so N is a whole number of periods
         g.fillStyle = sh(0.62); g.fillRect(0, 0, N, N);
@@ -80,7 +101,7 @@ export function floorTexture(kind, base) {
     };
     draw(g, false);
     const b = mk(); draw(b.getContext('2d'), true); bump = b;
-    size = kind === 'oak' ? 1.27 : 1.15;   // 7 boards of about 7 in make 1.27 m
+    size = kind === 'oak' ? 1.27 : kind === 'basket' ? 0.8128 : 1.15;   // 7 boards of about 7 in make 1.27 m; 4 basket squares of 8 in make 0.81 m
   } else {
     const rnd = seeded(kind.length * 4099 + 17);
     if (kind === 'tile-large') { // 24 in porcelain, soft veining
@@ -104,10 +125,11 @@ export function floorTexture(kind, base) {
 }
 export const clearFloorTextures = () => { for (const t of texCache.values()) { t.userData.bump?.dispose(); t.dispose(); } texCache.clear(); };
 /** Roughness for a finish (varnished wood, polished tile). */
-export const floorRoughness = (kind) => (kind === 'parquet' ? 0.5 : kind === 'oak' ? 0.58 : 0.34);
+export const floorRoughness = (kind) => (kind === 'basket' ? 0.44 : kind === 'parquet' ? 0.5 : kind === 'oak' ? 0.58 : 0.34);
 /** The theme-tinted base colour for a finish out of the studio's colour set `C` (wood, tile). */
 export function floorBase(kind, C) {
   const wood = C.wood || new THREE.Color(0xc2a27c), tile = C.tile || new THREE.Color(0xc4c6c6);
+  if (kind === 'basket') return new THREE.Color(0xe3bd88).lerp(wood, 0.1);   // honey oak, as in the listing photos (a golden mid-tone, not brown or orange)
   if (kind === 'parquet') return wood.clone().multiplyScalar(0.92).lerp(new THREE.Color(0x8a5a35), 0.12);
   if (kind === 'oak') return wood.clone().lerp(new THREE.Color(0xe0c9a2), 0.18);
   if (kind === 'tile-large') return tile.clone().lerp(new THREE.Color(0xdcd8d0), 0.5);

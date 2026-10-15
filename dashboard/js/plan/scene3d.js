@@ -211,7 +211,7 @@ export function buildShellInto(T, m, C, mode = 'cut', opts = {}) {
   for (const r of m.rooms) {
     const shape = new THREE.Shape(r.poly.map(([x, y]) => new THREE.Vector2(x * M, y * M)));
     const g = new THREE.ShapeGeometry(shape); g.rotateX(-Math.PI / 2);
-    const fk = r.kind === 'closet' ? 'carpet' : I3.floorKind(r), base = fk === 'carpet' ? C.carpet : I3.floorBase(fk, C);   // [interior] parquet, oak or tile by room type
+    const fk = r.kind === 'closet' ? 'carpet' : I3.floorKind(r, m), base = fk === 'carpet' ? C.carpet : I3.floorBase(fk, C);   // [interior] parquet, oak or tile by room type
     const ftex = fk === 'carpet' ? texture('carpet', base) : I3.floorTexture(fk, base);
     const mat = std(0xffffff, { roughness: fk === 'carpet' ? 0.95 : I3.floorRoughness(fk), map: ftex, ...(ftex.userData.bump ? { bumpMap: ftex.userData.bump, bumpScale: 1.4 } : {}) });   // [floor] wood: boards and joints catch the light
     const mm = new THREE.Mesh(g, mat); mm.position.y = 0.001; mm.receiveShadow = true; mm.name = `floor: ${r.name}`; T.shell.add(mm);
