@@ -33,7 +33,7 @@ def listings():
 @pytest.fixture()
 def routed(tmp_path, feeds):  # noqa: F811
     ws, Ls, crit = Workspace(tmp_path), listings(), crit_for(feeds)
-    run_commute(ws, Ls, crit, cell_m=100, pad_m=600, log=lambda *_: None)
+    run_commute(ws, Ls, crit, cell_m=100, pad_m=600, log=lambda *_: None, times=False)
     return ws, Ls, crit
 
 
@@ -59,7 +59,7 @@ def test_dest_routes_only_the_named_destination_and_keeps_the_rest(routed, feeds
     Ls[1]["commute"]["Partner"] = {"minutes": 999}   # something stale, to prove it is replaced
     crit["commute"]["destinations"][1]["lat"] = 40.7270   # the partner's office moves to where the first one is
     crit["commute"]["destinations"][1]["lon"] = -74.0
-    run_commute(ws, Ls, crit, cell_m=100, pad_m=600, log=lambda *_: None, only_dests=["Partner"])
+    run_commute(ws, Ls, crit, cell_m=100, pad_m=600, log=lambda *_: None, only_dests=["Partner"], times=False)
     assert office.read_bytes() == before_layer, "the other destination's grid is untouched"
     assert json.dumps(Ls[1]["commute"]["Office"], sort_keys=True) == before_entry
     assert Ls[1]["commute"]["Partner"]["minutes"] == pytest.approx(Ls[1]["commute"]["Office"]["minutes"], abs=0.6)

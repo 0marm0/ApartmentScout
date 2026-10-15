@@ -237,9 +237,13 @@ def cmd_commute(args):
     Ls = _listings(ws)
     only = [_find(Ls, k)["id"] for k in args.ids] if getattr(args, "ids", None) else None
     try:
-        run_commute(ws, Ls, ws.criteria(), cell_m=args.cell, log=log,
-                    mode_grids=False if getattr(args, "no_mode_grids", False) else None, only=only,
-                    only_dests=getattr(args, "dest", None))
+        if getattr(args, "times_only", False):   # the other times of day only, against the arrive_by layers already on disk
+            from .commute.times import run_times
+            run_times(ws, Ls, ws.criteria(), log=log, only=only, only_dests=getattr(args, "dest", None))
+        else:
+            run_commute(ws, Ls, ws.criteria(), cell_m=args.cell, log=log,
+                        mode_grids=False if getattr(args, "no_mode_grids", False) else None, only=only,
+                        only_dests=getattr(args, "dest", None), times=False if getattr(args, "no_times", False) else None)
     except ValueError as e:   # [onboarding] a missing coordinate or a feed with no service that day: say what to do, no traceback
         sys.exit(f"commute: {e}")
     save(Ls, ws.listings_path)
@@ -894,6 +898,11 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--ids", nargs="+", metavar="ID",
                    help="re-time only these listings (ids, or unique id fragments); the heat-map layers on disk "
                         "and every other listing's commute are left as they are")
+    s.add_argument("--no-times", action="store_true",
+                   help="skip the other times of day (midday, the evening way home, late evening, weekend): arrive_by only")
+    s.add_argument("--times-only", action="store_true",
+                   help="route only the other times of day, against the arrive_by layers already on disk (the layers and "
+                        "per-listing minutes you have for the arrive_by trip stay exactly as they are)")
     s = add("layers", cmd_layers, "city map layers (NYC: 311 noise)")
     s.add_argument("--months", type=int, default=12)
     s.add_argument("--transit-only", action="store_true", help="only rebuild the transit lines layer")
