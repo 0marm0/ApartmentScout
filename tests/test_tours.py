@@ -102,6 +102,88 @@ def test_parse_feet_in_the_dashboard() -> None:
     assert json.loads(out.stdout) == [f for _, f in CASES["feet"]]
 
 
+# --------------------------------------------------------------------------- the shared page and the memo
+SHARE_PICKS = {"version": 1, "search": "x", "picks": {"paramount-tower-25e": {"saved": True, "tier": "S", "note": "PRIVATE-NOTE"}, "orion-condominium-23a": {"saved": True, "tier": "A"}},
+               "findings": {"paramount-tower-25e": CASES["findings"]["fx-a-promoted"], "orion-condominium-23a": CASES["findings"]["fx-c"]},
+               "history": [{**x, "home": "paramount-tower-25e"} for x in CASES["trail"]]}
+
+
+def payload_of(html: str) -> dict:
+    import re
+    m = re.search(r'<script type="application/json" id="as-data">(.*?)</script>', html, re.S)
+    assert m
+    return json.loads(m.group(1))
+
+
+@node
+@pytest.mark.parametrize("notes", [False, True])
+def test_the_browser_and_cli_builders_make_the_same_visit_and_trail(tmp_path: Path, notes: bool) -> None:
+    from apartmentscout import share as sh
+    data = ROOT / "dashboard" / "data"
+    listings = json.loads((data / "listings.json").read_text())
+    crit = json.loads((data / "criteria.json").read_text())
+    transit = json.loads((data / "layers" / "transit-lines.json").read_text())["features"]
+    picks_file = tmp_path / "picks.json"
+    picks_file.write_text(json.dumps(SHARE_PICKS))
+    picks, weights = sh.read_picks(SHARE_PICKS)
+    py = sh.build_payload(listings, crit, picks, weights=weights, include_notes=notes, with_photos=False, transit_features=transit, generated="2026-10-14",
+                          findings={k: tours.normalize(v) for k, v in SHARE_PICKS["findings"].items()}, trail=tours.clean_trail(SHARE_PICKS["history"]))
+    cmd = ["node", "tests/js/emit-share-payload.mjs", str(picks_file)] + (["--notes"] if notes else [])
+    js = json.loads(subprocess.run(cmd, cwd=ROOT, check=True, capture_output=True, text=True, timeout=60).stdout)
+    for d in (py, js):
+        d.pop("source", None)
+        d.pop("photo_bytes", None)
+    assert py["homes"] == js["homes"] and py == js
+    top = py["homes"][0]
+    assert top["tour"]["checks"][0]["promoted"] is True and top["trail"] and "photos" not in top["tour"]
+    assert ("note" in top["tour"]) is notes and any("why" in t for t in top["trail"]) is notes
+
+
+def test_cli_share_carries_the_visit_and_trail_and_keeps_private_things_out(tmp_path: Path) -> None:
+    from apartmentscout.cli import main
+    picks = tmp_path / "picks.json"
+    picks.write_text(json.dumps(SHARE_PICKS))
+    out = tmp_path / "s.html"
+    main(["share", "--search", str(ROOT / "examples" / "nyc-2026"), "--picks", str(picks), "--out", str(out), "--no-photos", "--memo"])
+    html = out.read_text(encoding="utf-8")
+    p = payload_of(html)
+    home = next(h for h in p["homes"] if h["id"] == "paramount-tower-25e")
+    assert [c["key"] for c in home["tour"]["checks"]] == ["wd", "doorman", "size", "exposure"]
+    assert home["tour"]["rooms"][0]["name"] == "Living" and home["trail"][0]["text"] == "Starred"
+    # without --notes: the free note, the reasons, the text of a note and the renter's own note stay out
+    for secret in ("Smelled damp near the radiator", "Damp smell and no W/D", "Great light in the photos", "Prefer the bigger unit", "PRIVATE-NOTE"):
+        assert secret not in html, secret
+    out2 = tmp_path / "s2.html"
+    main(["share", "--search", str(ROOT / "examples" / "nyc-2026"), "--picks", str(picks), "--out", str(out2), "--no-photos", "--notes"])
+    for shown in ("Smelled damp near the radiator", "Damp smell and no W/D", "Prefer the bigger unit"):
+        assert shown in out2.read_text(encoding="utf-8")
+    # a hostile note cannot break out of the page
+    evil = {**SHARE_PICKS, "findings": {"paramount-tower-25e": {**CASES["findings"]["fx-a"], "note": "</script><script>alert(1)</script>", "view": "</script>"}}}
+    picks.write_text(json.dumps(evil))
+    main(["share", "--search", str(ROOT / "examples" / "nyc-2026"), "--picks", str(picks), "--out", str(out2), "--no-photos", "--notes"])
+    assert "</script><script>alert(1)" not in out2.read_text(encoding="utf-8")
+
+
+def test_visit_photos_need_the_flag_and_come_from_the_search_folder(tmp_path: Path) -> None:
+    from PIL import Image
+    from apartmentscout.cli import main
+    root = tmp_path / "search"
+    (root / "tours" / "h-1" / "photos").mkdir(parents=True)
+    Image.new("RGB", (1600, 1200), (30, 90, 200)).save(root / "tours" / "h-1" / "photos" / "abc123def4.webp")
+    (root / "media").mkdir()
+    shutil.copy(ROOT / "examples" / "nyc-2026" / "criteria.yaml", root / "criteria.yaml")
+    listing = {"id": "h-1", "building": "Test House", "unit": "4A", "address": "1 Test St", "status": "shortlist", "price": {"gross": 4000},
+               "score": {"overall": 70, "parts": {"cost": 70}, "monthly_cost": 4000, "confidence": 80, "reasons": [], "cost": {"monthly": 4000}}}
+    (root / "listings.json").write_text(json.dumps([listing]))
+    tours.write_findings(root, "h-1", {"observed": "2026-10-14", "water": 3, "photos": [{"id": "abc123def4", "store": "disk", "caption": "Bedroom window"}]})
+    out = tmp_path / "s.html"
+    main(["share", "--search", str(root), "--out", str(out)])
+    assert "photos" not in payload_of(out.read_text())["homes"][0]["tour"], "visit photos are opt-in"
+    main(["share", "--search", str(root), "--out", str(out), "--tour-photos"])
+    ph = payload_of(out.read_text())["homes"][0]["tour"]["photos"]
+    assert ph[0]["src"].startswith("data:image/jpeg;base64,") and ph[0]["caption"] == "Bedroom window" and len(ph[0]["src"]) < 40_000
+
+
 # --------------------------------------------------------------------------- scoring
 def example() -> tuple[dict, list[dict]]:
     crit = json.loads((ROOT / "dashboard" / "data" / "criteria.json").read_text())

@@ -530,3 +530,33 @@ def newest(a: dict | None, b: dict | None) -> dict | None:
     if not a or not b:
         return a or b
     return b if (b.get("updated") or "") > (a.get("updated") or "") else a
+
+
+# --------------------------------------------------------------------------- the share page
+def share_extras(listings: dict[str, dict], ids: list[str], findings: dict[str, dict], trail: list[dict], *, notes: bool = False,
+                 photos: bool = False, root: Path | None = None, cfg: dict | None = None) -> dict[str, dict]:
+    """Per home, what the share page and memo add: the visit (its photos only with ``photos``, as embedded thumbnails inside
+    the template's byte budget) and the decision trail. Mirrors ``shareExtras`` in tour-findings.js."""
+    cfg = cfg or {"max_per_home": 4, "thumb_px": 560, "quality": 0.74, "budget_kb": 600}
+    out: dict[str, dict] = {}
+    for lid in ids:
+        L, f = listings.get(lid), findings.get(lid)
+        tour = share_tour(L, f, notes) if L and f else None
+        if tour and photos and root is not None and TOUR_ID.match(lid):
+            from .share import _thumb_data_uri
+            got: list[dict] = []
+            used = 0
+            for p in (normalize(f).get("photos") or [])[: cfg["max_per_home"]]:
+                if p.get("store") != "disk":
+                    continue
+                path = tours_dir(root) / lid / "photos" / f"{p['id']}.webp"
+                uri = _thumb_data_uri(path, cfg["thumb_px"], cfg["quality"]) if path.is_file() else None
+                if uri and used + len(uri) <= cfg["budget_kb"] * 1024:
+                    used += len(uri)
+                    got.append({"src": uri, **({"caption": p["caption"]} if p.get("caption") else {})})
+            if got:
+                tour["photos"] = got
+        tr = trail_for_share(trail, lid, notes)
+        if tour or tr:
+            out[lid] = {**({"tour": tour} if tour else {}), **({"trail": tr} if tr else {})}
+    return out
