@@ -100,8 +100,8 @@ export function askFor(btn) {
   f.innerHTML = '<label><span class="sr">Reason</span><input type="text" maxlength="400" placeholder="Why?" autocomplete="off"></label><button type="submit" class="btn sm primary">Save</button>';
   btn.replaceWith(f);
   const input = f.querySelector('input'); input.focus();
-  f.addEventListener('submit', (ev) => { ev.preventDefault(); if (input.value.trim()) setReason(e, input.value); else notify(); });
-  input.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') { ev.stopPropagation(); notify(); } });
+  f.addEventListener('submit', (ev) => { ev.preventDefault(); input.blur(); if (input.value.trim()) setReason(e, input.value); else notify(); });
+  input.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') { ev.stopPropagation(); input.blur(); notify(); } });
   return li;
 }
 

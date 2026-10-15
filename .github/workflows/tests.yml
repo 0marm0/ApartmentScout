@@ -33,7 +33,7 @@ jobs:
           - name: views
             files: tests/e2e/test_dashboard.py
           - name: decide-and-shell
-            files: tests/e2e/test_decision.py tests/e2e/test_shell_extras.py
+            files: tests/e2e/test_decision.py tests/e2e/test_shell_extras.py tests/e2e/test_tour_findings.py
           - name: map-media-results
             files: tests/e2e/test_map_features.py tests/e2e/test_lightbox.py tests/e2e/test_results_rail.py tests/e2e/test_pdf_tracer.py
           - name: wizard
