@@ -41,6 +41,9 @@ def _send_plan_to_unit_3d(s, uid: str = UNIT) -> None:
     pg.goto(f"{s.origin}/#plan/{uid}")
     pg.wait_for_selector("#psFileBtn", timeout=60000)
     pg.wait_for_timeout(1500)
+    if uid == UNIT:   # the header names the host facade (ESE), with the bays as a range, not the first pane (SSW)
+        sub = pg.locator("#psSub").inner_text()
+        assert "windows face ESE 119° · bays" in sub and "SSW" not in sub
     pg.click("#psFileBtn")
     pg.click("#psMenu [data-tr=scenario]")
     pg.wait_for_function("(id) => !!localStorage.getItem('as:plan-scenario:' + id)", arg=uid, timeout=10000)

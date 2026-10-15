@@ -259,6 +259,8 @@ Unit 3D's **Use this window in the Floor plan** pins the window it is showing (f
 height) in this browser; the studio then places the plan there instead of at the site file's window, and says so. **Unpin** (or Unit 3D's
 **Back to the listing**) removes the pin.
 
+The studio header reads the facing from the same anchor: "windows face ESE 119° · bays 74–209°" is the host facade's bearing with bay or angled windows as a range around it, never the bearing of the first pane.
+
 **Open air.** For every plan window the model checks that the air 0.4 m and 1.0 m outside the glass, at the sill, the middle and the head,
 is open (not inside the host building, a setback component or a neighbour). A window that maps into its own building, as can happen with a wide plan on
 a narrow facade or a facade chosen behind a setback, is not given the host-free skyline any more: the studio shows "Not in open air here · sun
