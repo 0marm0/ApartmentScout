@@ -34,6 +34,10 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install Pillow   # the landing screenshots are converted to WebP at build time
+      - name: Fetch the example photos from their release (they are not in git)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: scripts/fetch_media.sh
       - name: Assemble the site (copy, then bundle, split and make the dashboard installable)
         env:
           REPO_URL: ${{ github.server_url }}/${{ github.repository }}

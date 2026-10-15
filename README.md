@@ -165,6 +165,10 @@ with prices, amenities, review summaries and statuses; walk, subway, bus and bes
 Grand Central on the MTA timetables; a 311 noise layer; 30 building dossiers from NYC Open Data; 16 3D site models and 9 floor
 plans with a furnished layout; and saved photos for 286 homes, with an aerial view where a home has none.
 
+The photos (about 400 MB) are kept in a GitHub release rather than in git, so clones stay small. To see them in a local
+copy of the demo, run `scripts/fetch_media.sh` (it needs the GitHub CLI signed in); without them the dashboard falls back
+to the photos' original links and aerial views.
+
 ## Host it, install it
 
 `.github/workflows/pages.yml` publishes the landing page at the site root and the dashboard, with the worked example, at `/demo/`

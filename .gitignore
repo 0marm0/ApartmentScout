@@ -20,3 +20,6 @@ HANDOFF.md
 dashboard/data-private/
 dashboard/_mockup/
 .playwright-cli/
+
+# example photos live in a GitHub release (scripts/fetch_media.sh), not in git
+examples/*/media/
