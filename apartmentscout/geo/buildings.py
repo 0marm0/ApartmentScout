@@ -365,15 +365,63 @@ def build_site(listing: dict, buildings: list[dict], source: str, landmark_names
     return site
 
 
+# --------------------------------------------------------------------------- matching the listing's building by name and address
+
+NAME_RADIUS_M = 250.0          # a building matched by name or address must lie this close to the geocoded point
+_GENERIC = {"the", "a", "an", "of", "and", "at", "on", "tower", "towers", "apartment", "apartments", "residence", "residences", "building",
+            "condominium", "condominiums", "condo", "house", "court", "place", "plaza", "lofts", "loft", "hotel", "club"}
+_ABBR = {"street": "st", "avenue": "ave", "drive": "dr", "road": "rd", "boulevard": "blvd", "place": "pl", "court": "ct", "lane": "ln",
+         "parkway": "pkwy", "north": "n", "south": "s", "east": "e", "west": "w", "highway": "hwy", "square": "sq", "terrace": "ter"}
+
+
+def _tokens(text) -> list[str]:
+    s = "".join(c if c.isalnum() else " " for c in str(text or "").casefold())
+    return [t for t in s.split() if t]
+
+
+def name_matches(listing_name, osm_name) -> bool:
+    """The listing's building name against an OpenStreetMap / footprint name: one name's words contain the other's, and the shared
+    words include one that is not generic ("Tower", "Apartments", "The" alone never match: "Aqua" matches "Aqua at Lakeshore East")."""
+    a, b = set(_tokens(listing_name)), set(_tokens(osm_name))
+    if not a or not b:
+        return False
+    shared = a & b
+    return (a <= b or b <= a) and any(t not in _GENERIC and len(t) >= 3 for t in shared)
+
+
+def split_address(text) -> tuple[str | None, str]:
+    """"225 N Columbus Dr, Chicago, IL 60601" -> ("225", "n columbus dr"): house number and street with the usual abbreviations."""
+    first = str(text or "").split(",")[0]
+    toks = _tokens(first)
+    if not toks or not toks[0][0].isdigit():
+        return None, " ".join(_ABBR.get(t, t) for t in toks)
+    return toks[0], " ".join(_ABBR.get(t, t) for t in toks[1:])
+
+
+def address_matches(listing_address, osm_address) -> bool:
+    n1, s1 = split_address(listing_address)
+    n2, s2 = split_address(osm_address)
+    return bool(n1 and n1 == n2 and s1 and s2 and (s1 == s2 or set(s1.split()) <= set(s2.split()) or set(s2.split()) <= set(s1.split())))
+
+
+def _closest(hits: list[int], rows: list) -> int:
+    """Of several buildings that match: the one holding the geocoded point, else the nearest, else the tallest."""
+    return min(hits, key=lambda i: (dist_to_ring(0, 0, rows[i][1]), -rows[i][0]["height"]))
+
+
 def pick_target(rows: list, listing: dict, near_m: float = 45) -> tuple[int | None, str | None]:
     """Index of the listing's building among ``rows`` ((building, local ring, holes)) and how it was found.
 
     1. ``bin``: footprints with the listing's BIN (the tallest when a BIN has several polygons);
     2. ``bbl``: footprints on the listing's tax lot (the one containing the point, else the tallest);
-    3. ``point``: the footprint containing the geocoded point, if tall enough for the listing's floor;
-    4. ``nearest``: the nearest footprint within ``near_m`` that is tall enough (else the nearest).
+    3. ``name``: a footprint named like the listing's building (OpenStreetMap ``name``, the city's footprint name) within 250 m of the
+       point; of several (the four Presidential Towers) the one holding the point, else the nearest;
+    4. ``address``: a footprint with the listing's house number and street (``addr:housenumber`` + ``addr:street``) within 250 m;
+    5. ``point``: the footprint containing the geocoded point, if tall enough for the listing's floor;
+    6. ``nearest``: the nearest footprint within ``near_m`` that is tall enough (else the nearest).
 
-    Address points often fall in the street or on a neighbour, so the city's own identifiers win.
+    Address points often fall in the street or on a neighbour (in Chicago the nearest footprint to Aqua's point was the Fairmont Hotel across the
+    street, and to Presidential Towers' 540 West Madison), so identifiers and names win over distance; ``point`` and ``nearest`` are the guess.
     """
     lb, ll = _bin(listing.get("bin")), _bbl(listing.get("bbl"))
     if lb:
@@ -385,6 +433,19 @@ def pick_target(rows: list, listing: dict, near_m: float = 45) -> tuple[int | No
         if hits:
             inside = [i for i in hits if point_in_ring(0, 0, rows[i][1])]
             return (inside[0] if inside else max(hits, key=lambda i: rows[i][0]["height"])), "bbl"
+    close = [i for i, (_b, pts, _h) in enumerate(rows) if dist_to_ring(0, 0, pts) <= NAME_RADIUS_M]
+    lname = listing.get("building") or listing.get("name")
+    if lname:
+        hits = [i for i in close if name_matches(lname, rows[i][0].get("name"))]
+        if hits:
+            if len(hits) > 1 and listing.get("address"):      # several towers share a name: the one with the street number first
+                by_addr = [i for i in hits if address_matches(listing.get("address"), rows[i][0].get("address"))]
+                hits = by_addr or hits
+            return _closest(hits, rows), "name"
+    if listing.get("address"):
+        hits = [i for i in close if address_matches(listing.get("address"), rows[i][0].get("address"))]
+        if hits:
+            return _closest(hits, rows), "address"
     need = ((listing.get("floor") or 1) - 1) * LEVEL_M + 2
     for i, (b, pts, _) in enumerate(rows):
         if point_in_ring(0, 0, pts) and b["height"] >= need:

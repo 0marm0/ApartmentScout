@@ -365,7 +365,7 @@ const provChip = (k) => { const [t, c] = PROV[k] || [String(k), '']; return `<sp
 function subline() {
   const L = listing(), p = provenance(), P = site.provenance || {};
   if (!hasWindow()) { $('uSub').textContent = `${L.address || site.listing?.address || ''} · Window unresolved`; return; }
-  const tgt = P.target === 'bin' ? 'Matched by BIN' : P.target === 'bbl' ? 'Matched by tax lot' : P.target === 'nearest' ? 'Nearest footprint' : '';
+  const tgt = P.target === 'bin' ? 'Matched by BIN' : P.target === 'bbl' ? 'Matched by tax lot' : P.target === 'name' ? 'Matched by name' : P.target === 'address' ? 'Matched by address' : P.target === 'nearest' ? 'Nearest footprint' : '';
   $('uSub').innerHTML = `<span class="u-addr">${esc(L.address || site.listing?.address || '')}</span>
     <span class="u-fact"><b>Floor ${st.floor}</b>${provChip(p.floor)}</span>
     <span class="u-fact"><b>Faces ${compass(st.az)} ${Math.round(st.az)}°${st.bay ? ' · bay' : ''}</b>${provChip(p.exposure)}</span>
@@ -1134,7 +1134,7 @@ function openCard(bi) {
     m?.hflag === 'floors' ? ['Height vs floors', 'warn', heightProvenance(m).tip] : null,   // [buildings3d]
     ['5100', '1003'].includes(String(m?.fcode)) || /construct/i.test(String(m?.status || '')) ? ['Under construction', 'warn', 'The footprint data marks this as under construction: its height may change'] : null,
     String(m?.fcode) === '1006' ? ['Cantilevered', '', 'Part of this building overhangs its footprint'] : null,
-    isT && ['bin', 'bbl'].includes(site.provenance?.target) ? [site.provenance.target === 'bin' ? 'Matched by BIN' : 'Matched by tax lot', 'good', 'Picked by the listing’s building number, not the address point'] : null,
+    isT && ['bin', 'bbl', 'name', 'address'].includes(site.provenance?.target) ? [{ bin: 'Matched by BIN', bbl: 'Matched by tax lot', name: 'Matched by name', address: 'Matched by address' }[site.provenance.target], 'good', site.provenance.target === 'name' || site.provenance.target === 'address' ? 'Picked by the listing’s building name or street address among the nearby footprints, not by the address point alone' : 'Picked by the listing’s building number, not the address point'] : null,
   ].filter(Boolean);
   const blkMin = blkRows.find((r) => r.bi === bi);
   const rows = [

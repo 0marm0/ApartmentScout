@@ -351,6 +351,9 @@ def _make_site(L, crit, cache_dir, floor, bearing, t, radius, streets, future, r
         if match.get("point_offset_m", 0) > 10:
             notes.append(f"address point is {match['point_offset_m']:.0f} m outside the building; "
                          f"building matched by {match['by'].upper() if match['by'] in ('bin', 'bbl') else match['by']}")
+        elif match["by"] in ("name", "address"):
+            notes.append(f"building matched by {match['by']} (OpenStreetMap or footprint {'name' if match['by'] == 'name' else 'house number and street'}), "
+                         "not by the address point")
     site["provenance"]["notes"] = "; ".join(filter(None, notes)) or None
     return site, face, T
 
