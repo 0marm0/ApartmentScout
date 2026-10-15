@@ -46,7 +46,7 @@ jobs:
           - name: interior-views
             files: tests/e2e/test_interior_view.py
           - name: measure-fit-pair
-            files: tests/e2e/test_measure.py tests/e2e/test_fit_check.py
+            files: tests/e2e/test_measure.py tests/e2e/test_fit_check.py tests/e2e/test_pair3d.py
           - name: city-context
             files: tests/e2e/test_context3d.py
           - name: buildings-3d
