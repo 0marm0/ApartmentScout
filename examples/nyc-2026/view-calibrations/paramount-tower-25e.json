@@ -1,0 +1,70 @@
+{
+  "schema": 1,
+  "kind": "apartmentscout-view-calibration",
+  "site": "paramount-tower-25e",
+  "saved": "2026-10-15T12:00:00.000Z",
+  "photo": {
+    "n": 0,
+    "path": null,
+    "title": "Frame of the renter's own video, bedroom bay (private, not kept in the repository)",
+    "scope": "unit",
+    "source": "file",
+    "floor": 25,
+    "aspect": 0.7510008006405124
+  },
+  "eye": {
+    "x": 21.5,
+    "y": -18.5,
+    "z": 76
+  },
+  "landmarks": [
+    {
+      "name": "685 First Avenue top",
+      "kind": "picked",
+      "x": 287,
+      "y": -93.4,
+      "z": 138.5,
+      "u": 0.309,
+      "v": 0.228
+    },
+    {
+      "name": "The Corinthian top (330 East 38 Street)",
+      "kind": "picked",
+      "x": 156.2,
+      "y": -154.8,
+      "z": 161.4,
+      "u": 0.599,
+      "v": 0.05
+    },
+    {
+      "name": "626 First Avenue tower top",
+      "kind": "picked",
+      "x": 230.5,
+      "y": -362.8,
+      "z": 157.7,
+      "u": 0.77,
+      "v": 0.223
+    }
+  ],
+  "result": {
+    "bearing_deg": 124.52,
+    "tilt_deg": -21.49,
+    "vfov_deg": 109.36,
+    "hfov_deg": 93.34,
+    "eye_height_m": 76,
+    "eye_determined": false,
+    "lens_determined": false,
+    "rms_deg": 1.736,
+    "max_deg": 2.105,
+    "n": 3,
+    "dof": 2,
+    "quality": "fair",
+    "sigma": {
+      "bearing": 1.56,
+      "tilt": 9.24,
+      "vfov": 9.17,
+      "eye": null
+    }
+  },
+  "applied": null
+}

@@ -243,7 +243,7 @@ export function buildShellInto(T, m, C0, mode = 'cut', opts = {}) {
     const g = new THREE.ShapeGeometry(shape); g.rotateX(-Math.PI / 2);
     const fk = r.kind === 'closet' ? 'carpet' : I3.floorKind(r, m), base = I3.floorBase(fk, C, r, m);   // [interior] parquet, oak or tile by room type
     const ftex = fk === 'carpet' ? texture('carpet', base) : I3.floorTexture(fk, base);
-    const mat = std(0xffffff, { roughness: fk === 'carpet' ? 0.95 : I3.floorRoughness(fk), map: ftex, ...(ftex.userData.bump ? { bumpMap: ftex.userData.bump, bumpScale: 1.4 } : {}) });   // [floor] wood: boards and joints catch the light
+    const mat = fk === 'carpet' ? std(0xffffff, { roughness: 0.95, map: ftex }) : I3.floorMaterial(fk, ftex);   // [floor] wood: slats, joints and varnish catch the light (plan/interior3d.js floorMaterial)
     const mm = new THREE.Mesh(g, mat); mm.position.y = 0.001; mm.receiveShadow = true; mm.name = `floor: ${r.name}`; T.shell.add(mm);
     if (cut == null) { // ceiling: faces down, so it is culled from above and only seen from inside
       const cg = new THREE.ShapeGeometry(new THREE.Shape(r.poly.map(([x, y]) => new THREE.Vector2(x * M, -y * M)))); cg.rotateX(Math.PI / 2);

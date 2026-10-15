@@ -1825,7 +1825,9 @@ function facadeNear(bearing) {
 }
 /** Take a saved photo match into the page state: the facade it looks toward (within 30 degrees), its bearing, and the camera height as a measured eye height. */
 function applyViewCalState(rec) {
-  const V = stateFromViewCal(rec), f = facadeNear(V.bearing);
+  // two facades can share a bearing (a long wall with a step in it): the site file's own window facade wins a tie, so a photo match never moves the window along the wall
+  const V = stateFromViewCal(rec), near = facadeNear(V.bearing), own = FACES.find((q) => q.i === site?.window?.face && !q.shared);
+  const f = own && near && Math.abs(angDiff(own.bearing, V.bearing)) <= Math.abs(angDiff(near.bearing, V.bearing)) + 1 ? own : near;
   if (f && Math.abs(angDiff(f.bearing, V.bearing)) <= 30) {
     const i = FACES.indexOf(f);
     if (i !== st.face) { st.face = i; st.t = snapPosition(f, st.t, snapOpen) ?? st.t; }
