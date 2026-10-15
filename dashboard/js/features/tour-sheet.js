@@ -179,7 +179,7 @@ function onClick(e) {
   const t = e.target.closest('button, label.vs-cam'); if (!t || !root.contains(t)) return;
   const d = t.dataset;
   if (d.close != null) { close(); return; }
-  if (d.jump) { root.querySelector(`#${d.jump}`)?.scrollIntoView({ behavior: reducedMotion() ? 'auto' : 'smooth', block: 'start' }); return; }
+  if (d.jump) { root.querySelector(`#${d.jump}`)?.scrollIntoView({ behavior: reducedMotion() ? 'auto' : 'smooth', block: 'start', inline: 'nearest' }); return; }
   if (d.set) { const cur = d.set.split('.').reduce((o, k) => o?.[k], rec()), v = +d.v; set(d.set, cur === v ? null : v); if (d.set === 'light.rating' && !rec().light?.time) set('light.time', new Date().toTimeString().slice(0, 5)); render(); return; }
   if (d.set === undefined && d.smell) {
     const cur = rec().smells || [], v = d.smell;
