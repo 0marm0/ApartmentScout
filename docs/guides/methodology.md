@@ -699,6 +699,18 @@ as the average of 16 frames with sub-pixel camera jitter and a tiny jitter of th
 PNG carries a caption saying it is a visual render. Visual realism changes no number, no sun patch and no skyline: the evidence
 confidence of a result is the provenance and the Modelled / Estimate / Visual preview label beside it.
 
+**Lighter mode for this device.** The Fast / Visual choice is one setting shared by Unit 3D and the Floor plan studio (change it in
+either and both follow). On top of it the views time their own frames: the first frames after a view opens, then a short burst every
+45 seconds while it stays open, and any frames drawn while you move around. When the median frame takes more than about 40 ms the
+picture steps down one level (two when it is above 90 ms): a lower pixel ratio, a smaller and plainer shadow map, half the trees and
+no tree shadows, plain grass and simple furniture, plain facades and no window glow lights, and finally smaller ground textures.
+It steps back up only when frames are comfortably short (20 ms or under, with a predicted cost well under the limit) and only after
+a pause that doubles every time a step up had to be undone, so the picture never flickers between levels. A small note says
+"Lighter mode for this device"; its **Force Visual** button draws at full quality and stops the automatic step-down (choose Fast to
+turn it back on). Levels change how the picture is drawn, never a number: no sun hour, skyline or score depends on them.
+`scripts/perf_check.py --render` prints the draw calls, triangles and texture memory of each level on a desktop and on a throttled
+phone, and checks them against `scripts/perf_budget.json`.
+
 **Towards real photometry.** Illuminance in lux, glare and annual climate-based metrics need a
 physically based lighting engine with materials, a calibrated room and weather files. The Radiance
 suite (https://www.radiance-online.org/) is the standard route; ApartmentScout does not run it and

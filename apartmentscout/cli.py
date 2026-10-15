@@ -343,6 +343,43 @@ def _components_file(sites_dir, listing_id):
     return js if js.exists() and not yml.exists() else yml
 
 
+def cmd_viewcal(args):
+    """``viewcal import FILE`` / ``viewcal list``: photo matches of window views (apartmentscout/viewcal.py)."""
+    from . import viewcal as vc
+    ws = ws_from(args)
+    if args.action == "list":
+        rows = [(i, vc.load(ws.root, i)) for i in vc.ids(ws.root)]
+        if not rows:
+            log("No photo matches saved. In Unit 3D's Window camera, choose Match a photo.")
+        for i, rec in rows:
+            if rec is None:
+                log(f"  {i}: unreadable (apartmentscout viewcal import a fresh export)")
+                continue
+            r = rec["result"]
+            log(f"  {i}: photo {rec['photo']['n']} (floor {rec['photo']['floor']}), looks toward {r['bearing_deg']:.0f} deg, tilt {r['tilt_deg']:.1f}, "
+                f"lens {r['vfov_deg']:.0f} deg, eye {r['eye_height_m']:.1f} m{'' if r['eye_determined'] else ' (not fixed)'}, fits within {r['rms_deg']} deg on {r['n']} landmarks ({r['quality']})")
+        return
+    if not args.file:
+        sys.exit("viewcal import needs the exported file: apartmentscout viewcal import ID.view-calibration.json")
+    try:
+        doc = json.loads(Path(args.file).read_text(encoding="utf-8"))
+        out = vc.save(ws.root, doc, overwrite=bool(args.replace))
+    except (OSError, ValueError) as e:
+        sys.exit(f"Could not import {args.file}: {e}" + (" (use --replace to overwrite it)" if "already exists" in str(e) else ""))
+    log(f"  {'saved' if out['created'] else 'replaced'} {out['path']}")
+    for w in out["warnings"]:
+        log(f"  note: {w}")
+    sid = doc["site"]
+    base_m = 0.0
+    p = ws.sites_dir / f"{sid}.json"
+    try:
+        s0 = json.loads(p.read_text())
+        base_m = max(float(s0["b"][s0["target"]][1]), 0.0)
+    except (OSError, ValueError, KeyError, IndexError, TypeError):
+        log(f"  no site file for {sid} yet: run apartmentscout site {sid} first")
+    log(f"  next: {vc.site_command(vc.load(ws.root, sid), base_m)}   (then: apartmentscout build)")
+
+
 def cmd_site(args):
     from .geo.checks import summary_line
     from .geo.site import make_site
@@ -367,14 +404,40 @@ def cmd_site(args):
         return
     log(f"  footprints around {L['id']} ({'NYC Open Data' if city == 'nyc' else 'OpenStreetMap'})")
     lms = (crit.get("landmarks") or []) + (city_profile(city).get("landmarks") or [])
-    site, face, timings = make_site(L, crit, cache_dir=ws.cache_dir / "site", floor=args.floor, bearing=args.bearing,
+    # [photo match] a window view matched to a listing photo (Unit 3D, `viewcal import`): its bearing and, when it fixed it, its camera height
+    from . import viewcal as _vc
+    vrec = None if args.no_view_calibration else _vc.load(ws.root, L["id"])
+    bearing, eye_height = args.bearing, args.eye_height
+    if vrec:
+        ap = vrec.get("applied") or {}
+        floor_v = args.floor or int(L.get("floor") or ap.get("floor") or vrec["photo"]["floor"])
+        prev = ws.sites_dir / f"{L['id']}.json"
+        try:
+            s0 = json.loads(prev.read_text()) if prev.exists() else None
+            base_m = max(float(s0["b"][s0["target"]][1]), 0.0) if s0 else 0.0
+        except (OSError, ValueError, KeyError, IndexError, TypeError):
+            base_m = 0.0
+        if bearing is None and args.face is None and ap.get("az_deg") is not None:
+            bearing = float(ap["az_deg"])
+            log(f"  window facing {bearing:.1f} deg from your photo match (photo {vrec['photo']['n']}, fits within {vrec['result']['rms_deg']} deg)")
+        if eye_height is None and args.slab_height is None:
+            eye_height = _vc.eye_at_floor(vrec, base_m, floor_v)
+            if eye_height is not None:
+                log(f"  eye height {eye_height:.2f} m at floor {floor_v} from your photo match (taken on floor {vrec['photo']['floor']})")
+            else:
+                log("  the photo match could not fix the camera height: the floor-count estimate stays")
+    site, face, timings = make_site(L, crit, cache_dir=ws.cache_dir / "site", floor=args.floor, bearing=bearing,
                                     t=args.position, radius=args.radius, streets=not args.no_streets,
                                     future=not args.no_future, refresh=args.refresh, landmarks=lms,
                                     panes=_panes_arg(args), slab_height=args.slab_height,
                                     floor_height=args.floor_height, components=not args.no_components,
                                     overrides=_components_file(ws.sites_dir, L["id"]),
-                                    green=not args.no_green, face_index=args.face, eye_height=args.eye_height, say=log,
+                                    green=not args.no_green, face_index=args.face, eye_height=eye_height, say=log,
                                     water=not args.no_water)
+    if vrec:
+        site.setdefault("calibration", {})["view"] = _vc.calibration_note(vrec)
+        if bearing is not None and bearing != args.bearing and isinstance(site.get("provenance"), dict):
+            site["provenance"].update({"exposure": "photo-landmarks", "basis": f"photo match (photo {vrec['photo']['n']})"})
     prov = site.get("provenance") or {}
     log(f"  target matched by {prov.get('target') or '?'}; storey height {site['floor_height_m']} m "
         f"({site.get('floor_height_src')})")
@@ -676,7 +739,7 @@ def _export(ws: Workspace, out: Path):
     previews = build_sidecar(slim, ws.root / "media", out, cache_path=ws.cache_dir / "lqip.json", log=log,   # blur-up previews: the full set,
                              fallback=[ws.root / "media-lite"])                                                  # else the last sidecar, else the starter set
     (out / "criteria.json").write_text(json.dumps(crit, default=str, indent=1))
-    for sub in ("layers", "sites", "plans"):
+    for sub in ("layers", "sites", "plans", "view-calibrations"):
         src = ws.root / sub
         dst = out / sub
         if dst.exists():
@@ -706,6 +769,7 @@ def _export(ws: Workspace, out: Path):
                 "search": crit["search"].get("name"), "layers": sorted(p.name for p in (out / "layers").glob("*.json")) if (out / "layers").exists() else [],
                 "sites": sorted(p.stem for p in (out / "sites").glob("*.json")) if (out / "sites").exists() else [],
                 "plans": sorted(p.stem for p in (out / "plans").glob("*.json")) if (out / "plans").exists() else [],
+                "view_calibrations": sorted(p.stem for p in (out / "view-calibrations").glob("*.json")) if (out / "view-calibrations").exists() else [],
                 "dossiers": sorted(p.stem for p in ddst.glob("*.json")) if ddst.exists() else [],
                 "furniture": fdst.exists(),
                 "lqip": bool(previews)}
@@ -864,6 +928,8 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--slab-height", type=float, help="height of the listing floor's slab above street level in "
                    "metres (sets the storey height; default: roof height / PLUTO floors)")
     s.add_argument("--floor-height", type=float, help="storey height in metres (overrides the calibration)")
+    s.add_argument("--no-view-calibration", action="store_true", help="ignore the photo match saved for this home "
+                   "(view-calibrations/<id>.json): use the listing's exposure and the floor-count height")
     s.add_argument("--eye-height", type=float, help="measured height of the window's eye level above street level "
                    "in metres (slab + 1.6 m); kept apart from the floor-count estimate in the site file's "
                    "`calibration` block")
@@ -871,6 +937,10 @@ def build_parser() -> argparse.ArgumentParser:
                    "move-in day and the solstices, with the building that shades the window")
     s.add_argument("--neighbours", action="store_true", help="write research/<id>-neighbours.csv: every building "
                    "within 300 m with distance, bearing, height and sources")
+    s = add("viewcal", cmd_viewcal, "photo matches of window views (Unit 3D's Match a photo): import an exported file, list them")
+    s.add_argument("action", choices=["import", "list"])
+    s.add_argument("file", nargs="?", help="import: the exported *.view-calibration.json")
+    s.add_argument("--replace", action="store_true", help="import: replace the match already saved for that home (the old file is kept as .bak)")
     s = add("photos", cmd_photos, "licensed building photos (Wikimedia Commons) and local photo copies")
     s.add_argument("ids", nargs="*")
     s.add_argument("--source", default="commons", choices=["commons", "local", "all", "wikidata", "web"],

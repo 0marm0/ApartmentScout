@@ -7,10 +7,11 @@ import * as THREE from 'three';
 import { createCity, nightAmount } from '../city3d/city.js';
 import { palette } from '../city3d/look.js';
 import { prism } from '../city3d/buildings.js';
-import { roomQuality } from '../room3d/quality.js';
+import { quality as Q } from '../room3d/quality.js';
 import { phoneClass } from '../features/render-quality.js';
 
 const M = 0.0254;
+const legacyQuality = (m) => ({ visual: m === 'visual', phone: phoneClass() });   // a caller that names only 'fast' | 'visual'
 
 /**
  * The matrix taking the context layer's site-frame three.js coordinates (x, up, -y in site metres) to the plan's
@@ -27,12 +28,12 @@ export const planFrameOf = (ctx) => ({ place: (x, y) => ctx.toPlanM([x, y]), mat
 
 /**
  * The shared city as a group in the plan's frame, plus this building below the apartment as a faint podium.
- * `opts.quality` ('fast' | 'visual', default the room quality). userData: context (the context layer's info), green (tree counts),
+ * `opts.quality` ('fast' | 'visual', default the shared quality's city settings: room3d/quality.js). userData: context (the context layer's info), green (tree counts),
  * count (neighbours), api {setSun, setNight, setQuality, ids(): building ids with their first vertex, dispose}.
  */
 export function cityGroup(ctx, opts = {}) {
   const pal = opts.pal || palette({ daylight: !!opts.daylight });   // [daylight] the eye-level views look out at a bright day
-  const quality = opts.quality || roomQuality(), q = { visual: quality === 'visual', phone: phoneClass() };
+  const q = opts.quality ? legacyQuality(opts.quality) : Q.city;
   const frame = planFrameOf(ctx);
   const C = createCity({ B: ctx.B, T: ctx.T, ti: ctx.ti, meta: ctx.meta, green: ctx.green, water: ctx.water, streets: ctx.streets }, { pal, center: [(ctx.T.bb[0] + ctx.T.bb[2]) / 2, (ctx.T.bb[1] + ctx.T.bb[3]) / 2], frame, quality: q, castShadow: false });   // (the same centre as Unit 3D's: the same trees, the same near and far buildings));
   C.facU.uFloorH.value = Math.max(2.4, +ctx.fh || 3.2);
@@ -51,7 +52,7 @@ export function cityGroup(ctx, opts = {}) {
     city: C,
     setSun(dir, alt) { C.ctx?.setSun({ dir, alt }); C.facU.uNight.value = nightAmount(alt, pal); },
     setNight(v) { C.facU.uNight.value = v; },
-    setQuality(qq) { C.quality = { visual: qq === 'visual', phone: phoneClass() }; C.ctx?.setQuality(C.quality); C.facU.uQual.value = qq === 'visual' ? 1 : 0; },   // [massing] Visual: full facades
+    setQuality(qq) { C.quality = typeof qq === 'object' && qq ? qq : legacyQuality(qq); C.ctx?.setQuality(C.quality); C.facU.uQual.value = (C.quality.fullFacades ?? C.quality.visual) ? 1 : 0; },   // [massing] Visual: full facades
     /** building id -> its first vertex (world position in the plan frame), for alignment checks */
     anchorsOf(ids) {
       const out = {}; const v = new THREE.Vector3();
