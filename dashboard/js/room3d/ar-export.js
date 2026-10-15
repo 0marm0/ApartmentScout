@@ -33,7 +33,7 @@ export function arPlatform(nav = typeof navigator !== 'undefined' ? navigator : 
 /** A normal map (tangent space, +y up, canvas orientation of the source) from a height map canvas. Browser only; null without a DOM. */
 export function heightToNormalCanvas(src, strength = 2) {
   if (typeof document === 'undefined' || !src || !src.width) return null;
-  const w = src.width, h = src.height, c = document.createElement('canvas'); c.width = w; c.height = h;
+  const k = Math.min(1, 512 / Math.max(src.width, src.height)), w = Math.max(1, Math.round(src.width * k)), h = Math.max(1, Math.round(src.height * k)), c = document.createElement('canvas'); c.width = w; c.height = h;
   const g = c.getContext('2d'), s = document.createElement('canvas'); s.width = w; s.height = h;
   const sg = s.getContext('2d'); sg.drawImage(src, 0, 0, w, h);
   const A = sg.getImageData(0, 0, w, h).data, out = g.createImageData(w, h), O = out.data, H = new Float32Array(w * h);
@@ -45,6 +45,26 @@ export function heightToNormalCanvas(src, strength = 2) {
     O[i] = Math.round((nx / l * 0.5 + 0.5) * 255); O[i + 1] = Math.round((ny / l * 0.5 + 0.5) * 255); O[i + 2] = Math.round((nz / l * 0.5 + 0.5) * 255); O[i + 3] = 255;
   }
   g.putImageData(out, 0, 0);
+  return c;
+}
+
+/**
+ * A colour map multiplied by the material's colour, baked into the pixels (browser only; null without a DOM or an image). three.js
+ * tints a map by `material.color`; USD does it with a `scale` on the texture reader, which Apple's own importers ignore, so a near-white
+ * wood grain with a dark brown colour came out pale. The product is taken in linear light, as the renderer does, and the material's
+ * colour becomes white.
+ */
+export function tintedMapCanvas(map, color, max = 512) {
+  const img = map?.image;
+  if (typeof document === 'undefined' || !img || !img.width) return null;
+  const k = Math.min(1, max / Math.max(img.width, img.height)), w = Math.max(1, Math.round(img.width * k)), h = Math.max(1, Math.round(img.height * k));
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const g = c.getContext('2d', { willReadFrequently: true }); g.drawImage(img, 0, 0, w, h);
+  const im = g.getImageData(0, 0, w, h), D = im.data, lin = new Float32Array(256);
+  for (let i = 0; i < 256; i++) { const v = i / 255; lin[i] = v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }
+  const enc = (v) => Math.round(255 * (v <= 0.0031308 ? v * 12.92 : 1.055 * v ** (1 / 2.4) - 0.055)), t = [color.r, color.g, color.b];
+  for (let i = 0; i < D.length; i += 4) for (let j = 0; j < 3; j++) D[i + j] = enc(Math.min(1, lin[D[i + j]] * t[j]));
+  g.putImageData(im, 0, 0);
   return c;
 }
 
@@ -103,6 +123,7 @@ export function bakeForAR(source, opts = {}) {
     if (!normals.has(bump)) { const c = heightToNormalCanvas(bump.image, (opts.normalStrength ?? 2)); let t = null; if (c) { t = new THREE.CanvasTexture(c); t.colorSpace = THREE.NoColorSpace; t.wrapS = bump.wrapS; t.wrapT = bump.wrapT; t.repeat.copy(bump.repeat); t.offset.copy(bump.offset); } normals.set(bump, t); }
     return normals.get(bump);
   };
+  const tints = new Map();
   const bakeMat = (m, tint) => {
     const arM = m.userData?.arMetalness, metal = arM != null ? arM : (m.metalness ?? 0), tintHex = tint ? tint.getHex() : -1;
     const nm = m.normalMap || (m.bumpMap ? normalOf(m.bumpMap) : null);
@@ -110,6 +131,15 @@ export function bakeForAR(source, opts = {}) {
     if (mats.has(key)) return mats.get(key);
     const o = { color: (m.color || new THREE.Color(0xffffff)).clone(), roughness: THREE.MathUtils.clamp(m.roughness ?? 0.8, 0.04, 1), metalness: THREE.MathUtils.clamp(metal, 0, 1), map: m.map || null, normalMap: nm, emissive: m.emissive ? m.emissive.clone() : new THREE.Color(0), opacity: m.opacity ?? 1 };
     if (tint) o.color.multiply(tint);
+    if (o.map && !o.color.equals(new THREE.Color(1, 1, 1))) {   // bake the colour into the map (see tintedMapCanvas)
+      const tk = `${texKey(o.map)}|${o.color.getHexString()}`;
+      if (!tints.has(tk)) {
+        const c = tintedMapCanvas(o.map, o.color); let t = null;
+        if (c) { t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = o.map.wrapS; t.wrapT = o.map.wrapT; t.repeat.copy(o.map.repeat); t.offset.copy(o.map.offset); t.rotation = o.map.rotation; t.flipY = o.map.flipY; }
+        tints.set(tk, t);
+      }
+      const t = tints.get(tk); if (t) { o.map = t; o.color = new THREE.Color(1, 1, 1); }
+    }
     if (nm) o.normalScale = new THREE.Vector2(1, 1);
     const baked = m.clearcoat > 0 ? new THREE.MeshPhysicalMaterial({ ...o, clearcoat: m.clearcoat, clearcoatRoughness: m.clearcoatRoughness ?? 0.5 }) : new THREE.MeshStandardMaterial(o);
     baked.name = m.name || ''; baked.transparent = (m.opacity ?? 1) < 0.98; baked.userData.arKey = key;
