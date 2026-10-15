@@ -157,12 +157,19 @@ def fetch_nyc(lat: float, lon: float, radius_m: float = 600, tall_radius_m: floa
     rows: list[dict] = []
     tiers = [f"within_circle(the_geom,{lat},{lon},{radius_m})",
              f"within_circle(the_geom,{lat},{lon},{tall_radius_m}) AND height_roof > {tall_min_ft}"]
-    if mid_radius_m and mid_radius_m > radius_m:
-        tiers.append(f"within_circle(the_geom,{lat},{lon},{mid_radius_m}) AND height_roof > {mid_min_ft}")
+    mid_where = (f"within_circle(the_geom,{lat},{lon},{mid_radius_m}) AND height_roof > {mid_min_ft}"
+                 if mid_radius_m and mid_radius_m > radius_m else None)
     for where in tiers:
         rows += socrata("5zhs-2jue", {"$where": where, "$select": sel, "$limit": 50000}, cache_dir,
                         refresh=refresh)
-    return parse_nyc_rows(rows)
+    out = parse_nyc_rows(rows)
+    if mid_where:
+        seen = {(b["bin"], b["ring"][0]) for b in out}
+        for b in parse_nyc_rows(socrata("5zhs-2jue", {"$where": mid_where, "$select": sel, "$limit": 50000}, cache_dir,
+                                         refresh=refresh)):
+            if (b["bin"], b["ring"][0]) not in seen:
+                out.append({**b, "mid": True})      # a mid-rise of the far city: drawn for the view, so its outline is simplified (build_site)
+    return out
 
 
 def nyc_pluto(bbls: list[str], cache_dir: Path | None = None, refresh: bool = False) -> dict[str, dict]:
@@ -332,6 +339,10 @@ def _local(F: LocalFrame, ring, tol: float = 0.3) -> list[tuple[float, float]]:
     return simplify_ring(clean_ring([F.to_xy(lo, la) for lo, la in ring]), tol)
 
 
+MID_TOL_M = 2.5            # the far mid-rise tier: outlines simplified to 2.5 m (they are seen from hundreds of metres away)
+MID_MIN_AREA_M2 = 150.0    # ... and the small ones left out (a 30 m shed-sized footprint is not a landmark)
+
+
 def build_site(listing: dict, buildings: list[dict], source: str, landmark_names: dict | None = None,
                named_points: list | None = None) -> dict:
     """Convert footprints to a compact local-metre model centred on the listing (site JSON v2).
@@ -344,10 +355,11 @@ def build_site(listing: dict, buildings: list[dict], source: str, landmark_names
     for b in buildings:
         if b.get("height") is None:
             b = {**b, "height": DEFAULT_H, "height_src": "default"}
-        clean = _local(F, b["ring"])
-        if len(clean) < 3:
+        mid = bool(b.get("mid"))
+        clean = _local(F, b["ring"], MID_TOL_M if mid else 0.3)
+        if len(clean) < 3 or (mid and abs(ring_area(clean)) < MID_MIN_AREA_M2):
             continue
-        holes = [h for h in (_local(F, r) for r in b.get("holes") or []) if len(h) >= 3 and abs(ring_area(h)) > 4]
+        holes = [] if mid else [h for h in (_local(F, r) for r in b.get("holes") or []) if len(h) >= 3 and abs(ring_area(h)) > 4]
         rows.append((b, clean, holes))
     target_idx, how = pick_target(rows, listing)
     g0 = rows[target_idx][0]["ground"] if target_idx is not None else 0
