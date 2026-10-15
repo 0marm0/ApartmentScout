@@ -280,7 +280,7 @@ def cmd_site(args):
         if not path.exists():
             sys.exit(f"No site file for {L['id']}: run `apartmentscout site {L['id']}` first.")
         site = json.loads(path.read_text())
-        log(f"  parks, street trees{' and water' if args.context_only else ''} around {L['id']}")
+        log(f"  parks, trees{' and water' if args.context_only else ''} around {L['id']}")
         if not add_green(site, ws.cache_dir / "site", radius=args.radius if args.radius != 600 else None,
                          refresh=args.refresh, say=log, city=city, water=args.context_only, keep_osm=args.keep_osm):
             sys.exit("The site file has no origin: rebuild it with `apartmentscout site`.")
@@ -731,9 +731,10 @@ def main(argv=None):
     s.add_argument("--no-green", action="store_true", help="skip parks, lawns and trees from OpenStreetMap")
     s.add_argument("--no-water", action="store_true", help="skip rivers and ponds (the 3D views' blue water)")
     s.add_argument("--green-only", action="store_true", help="only add (or refresh) the parks and trees of an "
-                   "existing site file (NYC: and the street tree census), leaving the rest of it as it is")
+                   "existing site file (NYC: and the city's park polygons, street tree census and Parks tree inventory), leaving the "
+                   "rest of it as it is")
     s.add_argument("--keep-osm", action="store_true", help="with --green-only / --context-only: keep the parks and "
-                   "mapped trees already in the site file (no Overpass call) and only add the street tree census and water")
+                   "mapped trees already in the site file (no Overpass call) and only add the city layers and water")
     s.add_argument("--context-only", action="store_true", help="like --green-only, and also add (or refresh) the "
                    "water block: everything the 3D views draw around the buildings")
     s.add_argument("--no-components", action="store_true", help="keep every building a single prism (skip "

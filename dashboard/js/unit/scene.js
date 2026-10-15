@@ -35,7 +35,7 @@ export class UnitStage {
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.maxTex = this.renderer.capabilities.maxTextureSize || 4096;
     this.mode = 'orbit'; this.look = { yaw: 0, pitch: 6, fov: 70 }; this.dirty = true; this.tween = null;
-    this.opts = { shadows: true, labels: true, streets: true, future: true, green: true, water: true, cone: false, ray: true, target: 'solid' };
+    this.opts = { shadows: true, labels: true, streets: true, future: true, green: true, water: true, streetTrees: true, parkTrees: true, cone: false, ray: true, target: 'solid' };   // [park trees] streetTrees / parkTrees switch the two kinds of tree
     this.quality = { visual: false, phone: false };   // [city context] set by unit/quality3d.js: tree shadows and the water glint
     this.labels = []; this.pal = palette(); this.onCompass = null;
     this.opts.heights = false;
@@ -167,7 +167,7 @@ export class UnitStage {
     this.ctx = null; this.greenGrp = null;
     const d = this.data, any = d.green || d.water || (d.streets || []).length;
     if (any) {
-      this.ctx = buildContext({ green: d.green, water: d.water, streets: d.streets }, { B: d.B, center: this.cxy, radius: 640, y0: 0, ground: this.pal.ground, light: this.pal.light, blue: this.pal.blue, visual: this.quality.visual, phone: this.quality.phone, layers: { green: this.opts.green, water: this.opts.water } });
+      this.ctx = buildContext({ green: d.green, water: d.water, streets: d.streets }, { B: d.B, center: this.cxy, radius: 640, y0: 0, ground: this.pal.ground, light: this.pal.light, blue: this.pal.blue, visual: this.quality.visual, phone: this.quality.phone, layers: { green: this.opts.green, water: this.opts.water, streetTrees: this.opts.streetTrees, parkTrees: this.opts.parkTrees } });
       this.scene.add(this.ctx.group); this.ctx.watch(this.ctx.group); this.greenGrp = this.ctx.parts.green;
       if (this.lastSun) this.ctx.setSun({ dir: this.sunDir, alt: this.lastSun.alt });
       this.ctx.setInside(this.mode === 'in');
@@ -328,7 +328,7 @@ export class UnitStage {
     [this.bMat, this.groundMat, this.tMat].forEach((m) => (m.needsUpdate = true));
     if (this.streets) this.streets.visible = o.streets;
     if (this.future) this.future.visible = o.future;
-    this.ctx?.setLayers({ green: o.green, water: o.water }); this.syncGroundBase();   // [city context]
+    this.ctx?.setLayers({ green: o.green, water: o.water, streetTrees: o.streetTrees, parkTrees: o.parkTrees }); this.syncGroundBase();   // [city context]
     this.rings.visible = !!o.heights && this.mode !== 'win' && this.mode !== 'in';
     this.cone.visible = o.cone && this.mode !== 'win';
     const t = this.mode === 'in' ? 'hidden' : o.target;
@@ -717,8 +717,8 @@ export class UnitStage {
     const t = new THREE.Mesh(this.tMesh.geometry, new THREE.MeshStandardMaterial({ color: this.pal.accent, roughness: 0.6 })); t.name = 'this-building';
     root.add(city, t);
     if (this.streets) { const s = new THREE.Mesh(this.streets.geometry, new THREE.MeshStandardMaterial({ color: this.pal.street, roughness: 1 })); s.name = 'streets'; root.add(s); }
-    const gp = this.opts.green ? this.greenGrp?.getObjectByName('green-patches') : null; // parks and lawns; the instanced canopies stay out of the file
-    if (gp) { const g = new THREE.Mesh(gp.geometry, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1, side: THREE.DoubleSide })); g.name = 'green'; root.add(g); }
+    // parks, lawns and paved playgrounds (every ground layer, flat vertex colours); the instanced canopies stay out of the file
+    if (this.opts.green) this.greenGrp?.children.forEach((gp) => { if (gp.isMesh) { const g = new THREE.Mesh(gp.geometry, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1, side: THREE.DoubleSide })); g.name = gp.name === 'green-patches' ? 'green' : gp.name.replace('green-patches', 'green'); root.add(g); } });
     if (this.future) { const f = new THREE.Group(); f.name = 'proposed'; this.future.children.forEach((c) => { if (c.isMesh) f.add(new THREE.Mesh(c.geometry, new THREE.MeshStandardMaterial({ color: this.pal.warn, transparent: true, opacity: 0.35 }))); }); root.add(f); }
     if (this.interior) { const a = this.interior.group.clone(); a.visible = true; a.name = 'apartment'; a.traverse((o) => { o.visible = true; }); root.add(a); }
     const w = this.win;

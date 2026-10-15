@@ -52,9 +52,14 @@ def green_cells(green: dict, cell_m: float = CELL_M) -> list[dict]:
     """Grid samples inside each green polygon (holes excluded): [{x, y, area, poly}].
 
     Polygons smaller than a cell still get one sample at their centroid so a small garden is not lost.
+    Paved polygons (``hard``: playgrounds, courts) are not green and are skipped; where polygons overlap (a city park
+    property and the OpenStreetMap park inside it) a ground cell counts once, for the larger polygon.
     """
     out = []
+    taken: set[tuple[int, int]] = set()      # [city context] one sample per ground cell, however many polygons cover it
     for k, p in enumerate((green or {}).get("polys") or []):
+        if p.get("hard"):
+            continue
         ring = [tuple(q) for q in p["ring"]]
         holes = [[tuple(q) for q in h] for h in p.get("holes") or []]
         x0, y0, x1, y1 = _bbox(ring)
@@ -71,7 +76,12 @@ def green_cells(green: dict, cell_m: float = CELL_M) -> list[dict]:
             cx, cy = sum(q[0] for q in ring) / len(ring), sum(q[1] for q in ring) / len(ring)
             if point_in_ring(cx, cy, ring):
                 pts = [(cx, cy)]
-        out += [{"x": x, "y": y, "area": cell_m * cell_m, "poly": k} for x, y in pts]
+        for x, y in pts:
+            key = (int(x // cell_m), int(y // cell_m))
+            if key in taken:
+                continue
+            taken.add(key)
+            out.append({"x": x, "y": y, "area": cell_m * cell_m, "poly": k})
     return out
 
 
