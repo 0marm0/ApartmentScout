@@ -48,6 +48,7 @@ import * as Q3 from './plan/quality3d.js';   // [feature J] render quality (Fast
 import * as LX from './plan/lighting-ui.js';   // [feature J] daylight grid, glass/surface inputs, luminaires, annual summary
 import { validateInventory, fitInventory, pieceItem, placedIds } from './plan/inventory.js';   // [furniture] the renter's own pieces
 import { inventoryHTML } from './plan/inventory-ui.js';
+import { mountSelbar } from './plan/selbar.js';   // [furniture] the floating toolbar beside the selected piece
 import { applyLooks } from './plan/looks.js';   // [furniture] colour, material and finish from furniture.json
 import { allViews, stepView, windowGroups } from './plan/viewpoints.js';   // [interior] where to stand to look out of the windows
 import { setLookChips, bindLookChips } from './plan/look-ui.js';
@@ -227,7 +228,7 @@ async function load(id) {
       }
     }
   }
-  if (!ready) { G3.init($('pgl'), $('pstage'), () => {}); P2.mount($('p2d'), { item: (i) => R.find((x) => x.id === i), select, move: dragTo, commit: () => commit() }); bind3D(); ready = true; LX.attach3D(); Q3.mount({ stage: $('pstage'), model: () => model, toast, store }); }
+  if (!ready) { G3.init($('pgl'), $('pstage'), () => {}); P2.mount($('p2d'), { item: (i) => R.find((x) => x.id === i), select, move: dragTo, commit: () => commit() }); bind3D(); mountBars(); ready = true; LX.attach3D(); Q3.mount({ stage: $('pstage'), model: () => model, toast, store }); }
   G3.setModel(model); G3.setWallMode(st.wall);
   P2.setModel(model); LX.reattach2D(); Q3.modelChanged();   // [feature J]
   st.city = !!store.get(`plan-city.${S.base}`, false); applyCity();
@@ -338,6 +339,7 @@ function recompute(opts = {}) {
   inspector();
   if (opts.panels !== false) tab();
   tabCounts(); lookChips();   // [interior]
+  ensureBars();
 }
 function computeRoutes() { try { routesRes = accessRoutes(model, R); } catch { routesRes = null; } }
 const shownRoutes = () => (routesRes ? routesRes.routes.filter((r) => st.routes || r.key === st.routeKey) : []);
@@ -359,6 +361,27 @@ function overlays() {
   G3.setOverlay({ zones: eye ? [] : zones, gaps: eye || st.dims === 'off' ? [] : gaps, sights: eye ? [] : sights, flash: fl, swings: st.swings ? model.doorways.map((d) => swingPoly(d, 12)).filter(Boolean) : [], routes: eye ? [] : routes });
 }
 const gradeRank = (g) => ['clear', 'tight', 'blocked'].indexOf(g);
+
+// [furniture] The toolbar beside the selected piece, one in each pane (the 2D plan and the 3D view), kept on the piece while the
+// camera moves or the plan is panned or zoomed.
+let bars = null, barLoop = 0;
+function mountBars() {
+  const on = { rot: () => rotateSel(90), free: rotateTo, move: (dx, dy) => nudge(dx, dy), del: () => removeSel(), done: () => select(null) };
+  bars = { p2: mountSelbar($('p2dWrap'), on), p3: mountSelbar($('pstage'), on) };
+}
+function syncBars() {
+  const it = bars && sel ? R.find((x) => x.id === sel && !x.hidden) : null;
+  if (!it) { bars?.p2.hide(); bars?.p3.hide(); return; }
+  const info = { name: it.label || it.name, rot: it.rot }, shown = (id) => $(id).offsetWidth > 0;
+  const r2 = shown('p2dWrap') ? P2.screenRect(it) : null, r3 = shown('pstage') && G3.viewMode() === 'orbit' && !st.dragging ? G3.screenRect(it.id) : null;
+  if (r2) bars.p2.show(r2, info); else bars.p2.hide();
+  if (r3) bars.p3.show(r3, info); else bars.p3.hide();
+}
+function ensureBars() {
+  if (!sel || barLoop) { if (!sel) syncBars(); return; }
+  const tick = () => { syncBars(); barLoop = sel ? requestAnimationFrame(tick) : 0; };
+  barLoop = requestAnimationFrame(tick);
+}
 
 function select(id) {
   if (sel === id) return;
@@ -384,6 +407,14 @@ function snapToWalls(it) {
 function endDrag() { if (st.dragging) { st.dragging = false; commit(); } }
 
 function mutate(fn, msg) { checkpoint(); fn(); persist(); recompute({ all: true }); if (msg) toast(msg); }
+/** Rotate the selected piece to any angle: live while a dial is dragged (one undo step), settled when it is let go. */
+function rotateTo(deg, live) {
+  const it = items.find((q) => q.id === sel); if (!it) return;
+  const set = () => { it.rot = ((Math.round(deg) % 360) + 360) % 360; };
+  if (live) { if (!st.rotating) { checkpoint(); st.rotating = true; } set(); persist(); recompute({ panels: false }); }
+  else if (st.rotating) { st.rotating = false; commit(); }
+  else mutate(set);
+}
 function rotateSel(d) { const it = items.find((q) => q.id === sel); if (it) mutate(() => { it.rot = ((Math.round(it.rot || 0) + d) % 360 + 360) % 360; }); }
 function nudge(dx, dy) { const it = items.find((q) => q.id === sel); if (!it) return; if (!st.nudging) { checkpoint(); st.nudging = true; } it.x += dx; it.y += dy; persist(); recompute({ panels: false }); clearTimeout(st.nudgeT); st.nudgeT = setTimeout(() => { st.nudging = false; tab(); }, 500); }
 function removeSel() { const it = items.find((q) => q.id === sel); if (!it) return; const n = resolve(it)?.name || it.ref; mutate(() => { items = items.filter((q) => q.id !== sel); sel = null; }, `Removed ${n.toLowerCase()}`); }
