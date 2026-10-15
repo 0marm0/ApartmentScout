@@ -65,6 +65,7 @@ export function buildReport({ listings, crit, ids, picks = {}, weights = null, i
   const dests = crit.commute?.destinations || [];
   const homes = chosen.map((L) => {
     const h = pruneHome(L, schema, null, picks[L.id], includeNotes);
+    if (isObj(h.score) && isObj(h.score.cost)) h.score.cost = pickKeys(h.score.cost, schema.cost);   // the money model reduced to what the page reads
     h.reasons = reasonsFor(L, w, dims);
     const fit = weightedScore(L, w, dims);
     if (fit != null) h.fit = rnd(fit, 1);
