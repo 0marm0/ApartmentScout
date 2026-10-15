@@ -500,6 +500,51 @@ as three separate panels and a table.
 Render image** saves a 2x or 4x PNG averaged over 16 jittered frames, capped at 4096 px, with a caption that says it is a
 visual render. Visual realism is never evidence: no number changes with it.
 
+### Photos and videos
+
+Unit 3D (in the render control above the picture) and the Floor plan studio (a small bar over the 3D pane) have two buttons, **Photo** and **Video**. Both
+make a better-looking picture of the same light; neither changes a sun hour, a window's exposure or any number, and the picture is not evidence
+(`dashboard/js/render/`).
+
+**Render a photo** draws the current view in 5, 12 or 20 seconds (a time budget: a fast GPU gets more frames in it, a phone fewer, at a size it can afford) at
+1.5, 2.5 or 4 times the size of the picture on screen, and averages the frames:
+
+- the camera moves by a sub-pixel amount each frame (smooth edges, no MSAA), the sun moves across its disc (soft penumbrae that grow with distance), and a second,
+  shadow-casting light moves over the sky dome and takes a share of the hemisphere light: the sky's light is blocked by walls and neighbouring buildings, so a room is
+  brightest at its windows and the street canyon darker at the bottom;
+- each frame gets three.js's GTAO ambient occlusion (the vendored addon, r160), a bloom on whatever is brighter than the display can show (the sun, the sky through
+  glass, lit windows at night), an optional **soft depth of field** (focus on what is in the middle of the picture), three's filmic tone mapping and sRGB output, and
+  a small grade and vignette;
+- the average is kept in a half-float target (60 frames lose no precision) and dithered when it goes to 8 bits.
+
+The result is a PNG and a JPEG, a HEIC where the browser encodes it (none does today), and a **Share** button where the browser's share sheet takes files (an iPhone,
+Android). It always renders at the Visual quality and full level, then puts the view's own quality back. Honest limits: the shadows are shadow maps, the occlusion is screen
+space and the window light is the view's window glow lights plus bloom, so there is no bounce (a sunlit floor does not light the ceiling) and glass shows no reflections.
+
+*Path tracing was evaluated and not added.* `three-gpu-pathtracer` 0.0.23 is the newest release that accepts the vendored three r160 (the current one needs r185),
+and it needs `three-mesh-bvh` and `xatlas-web` besides (about 1.6 MB unpacked on its own, more with them). It cannot draw this scene faithfully: the facades, the sky dome
+and the night windows are custom shader materials it ignores, and the city's thousands of buildings would have to be rebuilt as a BVH on every date and time change. It was not
+built or timed here; the accumulation path above gives a clearly better picture than the old 16-frame average at no extra weight.
+
+**Make a video** records a camera tour at 1080p (720p on a phone) and 30 frames a second, 10 to 20 seconds, with `canvas.captureStream` and `MediaRecorder`
+(WebM in Chrome, Edge and Firefox; MP4 on Apple's browsers). Two shots:
+
+- **Walk-through** (`render/tour.js`): in at the front door, a pause in the living room, a look into the bedroom, and a finish standing back from a window of the last room
+  looking out. The way is the plan's walkable floor (`plan/walkcore.js`: a person's radius off every wall and piece of furniture, around the furniture, through the doors);
+  corners are rounded and every point of the rounded path is checked against that floor again, so the camera never touches anything. The pace is eased, the heading looks
+  ahead along the way and turns into each pause's view in the last fifth of the leg, and the turns are filtered so nothing snaps. The time of day is chosen on the date and
+  at the place of the view: **golden hour** (the default: the evening sun 6.5 degrees up), morning, midday, blue hour, night, or as it is now.
+- **The day from a window**: the camera stands back from the widest window of the living room and the time runs from first light to last light.
+
+*Even motion.* MediaRecorder stamps each frame with the moment it arrives, so a frame that took 90 ms to draw would play late. So every frame is drawn at whatever speed it takes
+(frame i is the view at time i / 30 s exactly: the pose and the light are functions of time, not of the clock), kept as a JPEG, and then played into the recorder at exactly 30 frames
+a second. Drawing takes a few seconds on a laptop and a minute or so on a phone; the playback takes the length of the video. A frame whose slot passed during a stall is skipped
+rather than sent late. The WebM header gets its duration written in (Chrome leaves it out), so the file reports its length and can be scrubbed. **Cinematic** adds the photo
+look (3 samples a frame); **Standard** is the view as it is.
+
+Needs a floor plan for the walk-through. Safari's MP4 path (and `navigator.share` on an iPhone) is written to the specification and has not been run on a device; Chromium
+is what the tests (`tests/js/render-tour.test.mjs`, `render-encode.test.mjs`, `tests/e2e/test_render.py`) cover.
+
 ## Same plan in Unit 3D
 
 **Layout ▸ Use this plan in Unit 3D** (and the same button in the tracer's Save step) is the explicit bridge: it stores the
