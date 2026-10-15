@@ -9,7 +9,7 @@ import { contours } from '../vendor/d3-contour.js';
 import * as MF from './features/map-features.js';   // [features] route preview, starred-only lens, sun lens
 import * as MD from './features/multidest.js';   // [multi-destination] worst-of / weighted commute surfaces
 import * as PM from './features/places-map.js';   // [places] the streets and outlines the place filters refer to
-import { pinPlan, buildingId, lowestCost, unitsLabel, NO_PRICE } from './features/map-pins.js';   // which homes get a pin of their own, which share a building pin
+import { pinPlan, buildingId, isBuildingId, lowestCost, unitsLabel, NO_PRICE } from './features/map-pins.js';   // which homes get a pin of their own, which share a building pin
 import { unitPreviewHTML, buildingPreviewHTML, buildingListHTML } from './features/map-preview.js';   // hover / tap cards and a building's unit list
 
 const CLUSTER_Z = 12;                                 // below this zoom nearby pins merge into count bubbles
@@ -727,7 +727,12 @@ function wire() {
   const lookup = (id) => S.listings.find((x) => x.id === id);
   const unitHTML = (L, touch) => unitPreviewHTML(L, { extra: MF.hoverLine(L), touch });
   let shown = null;   // what the open preview is for: a mouse moving over one pin does not rebuild its card on every pixel
-  const showPopup = (key, lngLat, html) => { if (shown === key && popup.isOpen()) return; shown = key; popup.setLngLat(lngLat).setHTML(html).addTo(map); };
+  // a home's own price tag stands above its pin, so a card opening upward clears it; a building pin has no tag
+  const OFFSET = { home: { bottom: [0, -42], 'bottom-left': [0, -42], 'bottom-right': [0, -42], top: [0, 14], 'top-left': [0, 14], 'top-right': [0, 14], left: [14, 0], right: [-14, 0], center: [0, 0] }, building: 16 };
+  const showPopup = (key, lngLat, html) => {
+    if (shown === key && popup.isOpen()) return;
+    shown = key; popup.setOffset(isBuildingId(key) ? OFFSET.building : OFFSET.home).setLngLat(lngLat).setHTML(html).addTo(map);
+  };
   const hidePopup = () => { shown = null; popup.remove(); };
   const clearHov = () => { if (hov) hoverState(hov, false); hov = null; };
   const setHov = (id) => { if (hov !== id) { clearHov(); hov = id; hoverState(id, true); } };
