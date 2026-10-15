@@ -134,13 +134,13 @@ export const VERT_MAIN = 'vFa = aFa; vFb = aFb; vWN2 = normalize(mat3(modelMatri
 
 /**
  * Fragment-shader additions. Per vertex: aFa = (u 0..1 along the wall, height above the building's ground in metres, bays on the
- * wall, floor height), aFb = (style 0..4 or 9 for none, seed 0..1, kind 0 wall | 1 flat roof | 2 plain wall | 3 pitched roof,
- * tint jitter). Uniforms: uNight 0..1, uDetail 0 (Fast) | 1 (Visual), uLod 0 near | 1 far, uTintMix 0..1 (0 under the Heights
+ * wall, floor height), aFb = (style 0..4 or 9 for none, seed 0..1 (+2 for a building on the far level of detail), kind 0 wall | 1 flat roof | 2 plain wall | 3 pitched roof,
+ * tint jitter). Uniforms: uNight 0..1, uQual 0 (Fast) | 1 (Visual), uTintMix 0..1 (0 under the Heights
  * layer), uSty / uSty2 / uTint / uGlass per style, uLitCol, uSkyCol (the glass's sky).
  */
 export const FRAG_PARS = `
 varying vec4 vFa; varying vec4 vFb; varying vec3 vWN2; varying vec3 vWP2;
-uniform float uNight; uniform float uDetail; uniform float uLod; uniform float uTintMix; uniform vec3 uLitCol; uniform vec3 uSkyCol;
+uniform float uNight; uniform float uQual; uniform float uTintMix; uniform vec3 uLitCol; uniform vec3 uSkyCol;
 uniform vec4 uSty[5]; uniform vec4 uSty2[5]; uniform vec3 uTint[20]; uniform vec3 uGlass[20];
 float fHash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
 float fBox(float x, float a, float b, float w) { return smoothstep(a - w, a + w, x) * (1.0 - smoothstep(b - w, b + w, x)); }
@@ -149,7 +149,7 @@ float fGlass = 0.0; float fLit = 0.0; float fAo = 1.0; float fRough = 1.0; float
 
 export const FRAG_COLOR = `
 {
-  fLit = 0.0; fGlass = 0.0; fGlassCol = uLitCol;
+  fLit = 0.0; fGlass = 0.0; fGlassCol = uLitCol * vec3(1.0, 0.82, 0.55);
   int kind = int(vFb.z + 0.5);
   int st = int(vFb.x + 0.5);
   bool wall = kind == 0 && st < 9;
@@ -158,7 +158,8 @@ export const FRAG_COLOR = `
   // grime and shade at the foot of every wall (ambient occlusion where it meets the street), a little more with height of the wall
   float ao = mix(1.0, mix(0.55, 1.0, smoothstep(0.0, 22.0, vM)), isWallN);
   vec3 base = diffuseColor.rgb;
-  if (uLod > 0.5) {
+  bool farLod = vFb.y >= 1.5;
+  if (farLod) {
     // far buildings: a flat wall tint, a vertical gradient, and a faint scatter of lit windows at night
     float sc = wall ? 1.0 : 0.0;
     int pi0 = int(fract(vFb.w) * 4.0);
@@ -181,11 +182,11 @@ export const FRAG_COLOR = `
     float winY = fBox(f.y, sill, sill + wh, fw.y * 0.7);
     float win = winX * winY;
     float open = mix(win, ww * wh, far);
-    float seed = vFb.y;
+    float seed = fract(vFb.y);
     float rnd = fHash(floor(cell) + vec2(seed * 91.0, seed * 17.0));
     // mullions: thin vertical bars inside curtain-wall and glass windows
     float mull = 0.0;
-    if (s1.w > 1.5 && uDetail > 0.5) { float mc = fract(f.x * s1.w); mc = min(mc, 1.0 - mc); mull = (1.0 - smoothstep(0.0, 0.05 + fw.x * s1.w, mc)) * win * (1.0 - far); }
+    if (s1.w > 1.5 && uQual > 0.5) { float mc = fract(f.x * s1.w); mc = min(mc, 1.0 - mc); mull = (1.0 - smoothstep(0.0, 0.05 + fw.x * s1.w, mc)) * win * (1.0 - far); }
     float own = step(1.0, vFb.w);
     float fw4 = fract(vFb.w) * 4.0;
     int pi = int(fw4);
@@ -193,8 +194,8 @@ export const FRAG_COLOR = `
     vec3 wallCol = mix(base, uTint[st * 4 + pi] * (1.0 + jit), uTintMix * (1.0 - own) * 0.9);
     // belt course / spandrel band: darker strip under the sill on curtain styles; grain and coursing on the walls (Visual, near)
     float spand = (st >= 2 ? 1.0 - winY : 0.0) * (1.0 - far);
-    float vis = uDetail * (1.0 - far);
-    wallCol *= 1.0 - s2.z * 4.0 * spand * uDetail;
+    float vis = uQual * (1.0 - far);
+    wallCol *= 1.0 - s2.z * 4.0 * spand * uQual;
     vec2 gp = vec2(vFa.x * nB * 3.2, vM * 3.6);
     wallCol *= 1.0 + ((fHash(floor(gp) + seed * 7.0) - 0.5) * 0.09 + (st < 2 ? smoothstep(0.86, 1.0, fract(gp.y)) * -0.05 : 0.0)) * vis;
     wallCol *= 1.0 + (rnd - 0.5) * 0.06 * vis;
@@ -206,7 +207,7 @@ export const FRAG_COLOR = `
     // glass: a sky-tinted dark blue, lighter higher up and toward the top of each pane, with a faint diagonal reflection
     vec3 gcol = uGlass[st * 4 + pi];
     float up = clamp(vM / 260.0, 0.0, 1.0);
-    gcol = mix(gcol, uSkyCol * 0.5, (0.12 + 0.28 * up) * s2.x * mix(0.4, 1.0, uDetail)) * (0.9 + 0.2 * rnd);
+    gcol = mix(gcol, uSkyCol * 0.5, (0.12 + 0.28 * up) * s2.x * mix(0.4, 1.0, uQual)) * (0.9 + 0.2 * rnd);
     gcol *= mix(1.0, 1.0 + 0.45 * (1.0 - clamp((f.y - sill) / max(wh, 0.1), 0.0, 1.0)) - 0.2, vis * s2.x);
     gcol += uSkyCol * 0.07 * smoothstep(0.4, 0.5, fract(f.x * 0.8 + f.y * 0.6 + seed * 3.0)) * s2.x * vis;
     gcol = mix(gcol, wallCol * 0.5, rim * 0.6 * vis);
@@ -219,17 +220,17 @@ export const FRAG_COLOR = `
     else lit = step(rnd, s2.y);
     lit = mix(lit * win, s2.y * ww * wh * (s2.w > 0.5 ? 0.5 : 1.0), far);
     float warm = fHash(floor(cell) + 9.1);
-    vec3 lc = mix(uLitCol, vec3(0.78, 0.86, 1.0), step(0.78, warm) * 0.8);
-    fLit = lit * (uDetail > 0.5 ? 1.0 : 0.8);
+    vec3 lc = mix(uLitCol * vec3(1.0, 0.82, 0.55), vec3(0.78, 0.86, 1.0), step(0.78, warm) * 0.8);
+    fLit = lit * (uQual > 0.5 ? 1.0 : 0.8);
     fGlassCol = lc;
   } else {
     // roofs, parapets and bulkheads: plain surfaces, tar and gravel on top
     float gr = fHash(floor(vWP2.xz * 1.7));
-    diffuseColor.rgb = base * (kind == 1 ? (0.9 + 0.2 * gr * uDetail) : 1.0) * mix(1.0, ao, isWallN);
+    diffuseColor.rgb = base * (kind == 1 ? (0.9 + 0.2 * gr * uQual) : 1.0) * mix(1.0, ao, isWallN);
   }
 }
 `;
 
 /** After roughness / metalness: windows mirror the sky (Visual lights them with the scene's environment). */
-export const FRAG_ROUGH = 'roughnessFactor = mix(roughnessFactor, 0.12, fGlass * uDetail); metalnessFactor = mix(metalnessFactor, 0.55, fGlass * uDetail);';
+export const FRAG_ROUGH = 'roughnessFactor = mix(roughnessFactor, 0.12, fGlass * uQual); metalnessFactor = mix(metalnessFactor, 0.55, fGlass * uQual);';
 export const FRAG_EMISSIVE = 'totalEmissiveRadiance += fGlassCol * fLit * uNight * 0.95;';

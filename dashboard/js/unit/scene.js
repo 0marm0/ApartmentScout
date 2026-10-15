@@ -12,111 +12,20 @@ import { heightClass, pickLabels } from './heights.js';
 // [city context] ground plate, water, parks and trees (unit/context3d.js) and the river and park labels
 import { buildContext } from './context3d.js';
 import { contextLabels } from './context-core.js';
-// [buildings3d] facades, parapets, roof shapes and night windows for every building (city3d/buildings.js)
-import { buildBuildings } from '../city3d/buildings.js';
+import { palette, skyAt, SKY_VS, SKY_FS, glowTexture } from '../city3d/look.js';   // [city3d] the shared look of the city: palette, sky keyframes and dome, sun glow
+import { decorate } from '../city3d/facade.js';   // [city3d] the shared facade shader
+import { RectAreaLightUniformsLib } from 'three/addons/lights/RectAreaLightUniformsLib.js';
+import { roomLightState, moodFor, applyRoomLight } from '../room3d/lighting.js';   // [room3d] the room's own light, shared with the studio
+import { roomQuality } from '../room3d/quality.js';
+import { createSky, applySky } from '../city3d/sky.js';   // [city3d] the shared sky
+import { createCity } from '../city3d/city.js';   // [city3d] THE city: buildings, outlines, context and ground, shared with the studio
+import { shapeOf, prism, prismsOf, solidGeo, heightColor, mergeBuildings, edgeGeo, outlineGeo } from '../city3d/buildings.js';   // [city3d] THE building mesher
 
 const isLight = () => document.documentElement.dataset.theme === 'light';
 const col = (name, fb) => { const v = css(name); return new THREE.Color(/^#[0-9a-f]{3,8}$/i.test(v) ? v.slice(0, 7) : fb); };
 const mix = (a, b, t) => a.clone().lerp(b, t);
 const W3 = (x, y, z = 0) => new THREE.Vector3(x, z, -y);   // local metres (x east, y north, z up) -> three.js
 
-/** Colours for the scene, derived from the design tokens of the current theme. */
-export function palette() {
-  const L = isLight();
-  const ground = col('--ground', '#08090c'), s1 = col('--surface-1', '#0e1015'), s2 = col('--surface-2', '#13161d'), s3 = col('--surface-3', '#1a1e27');
-  const ink = col('--ink', '#eef1f6'), ink2 = col('--ink-2', '#a9b1bf'), ink3 = col('--ink-3', '#6f7889'), ink4 = col('--ink-4', '#4a5160');
-  const accent = col('--accent', '#8b96ff'), sun = col('--sun', '#f5b547'), warn = col('--warn', '#f0b04c'), bad = col('--bad', '#f2735f');
-  const blue = col('--band-30', '#3a93e0'), coral = col('--score-1', '#e5604f'), violet = col('--band-45', '#6a55b8');
-  const white = new THREE.Color(1, 1, 1);
-  // height classes (unit/heights.js HCLASS): light theme runs pale to deep blue, dark theme muted to bright
-  const hcls = L
-    ? [mix(s1, blue, 0.06), mix(s1, blue, 0.22), mix(s1, blue, 0.42), mix(s1, blue, 0.68), blue.clone(), mix(blue, ink, 0.4), mix(violet, ink, 0.5)]
-    : [mix(s3, ink4, 0.55), mix(s3, blue, 0.3), mix(s3, blue, 0.55), mix(s3, blue, 0.8), mix(blue, ink, 0.22), mix(blue, ink, 0.48), mix(violet, ink, 0.5)];
-  const lit = mix(sun, white, 0.45);
-  return L ? {
-    hcls, lit, blue,
-    tBase: accent.clone(),
-    light: true, ground: mix(s3, ink4, 0.22), bLow: mix(s3, ink4, 0.42), bHigh: mix(s1, s3, 0.25), street: mix(s1, s3, 0.2), streetOp: 0.95,
-    outline: ink3, outlineOp: 0.32, edge: ink3, edgeOp: 0.22, accent, sun, warn, bad, ink, white,
-    sky: {
-      zen: [mix(ink, violet, 0.35), mix(ink2, violet, 0.45), mix(s1, blue, 0.5), mix(s1, blue, 0.58)],
-      hor: [mix(ink, blue, 0.22), mix(s1, coral, 0.42), mix(s1, sun, 0.42), mix(s1, blue, 0.14)],
-    },
-    hemiDay: 1.9, hemiNight: 0.9, sunMax: 3.4,
-  } : {
-    hcls, lit, blue,
-    tBase: mix(accent, ground, 0.42),
-    light: false, ground: mix(s3, ink4, 0.3), bLow: mix(s3, ink4, 0.5), bHigh: mix(ink4, ink3, 0.4), street: mix(s3, ink4, 0.55), streetOp: 0.9,
-    outline: ink3, outlineOp: 0.3, edge: ground, edgeOp: 0.45, accent, sun, warn, bad, ink, white,
-    sky: {
-      zen: [ground.clone(), mix(ground, violet, 0.3), mix(s2, blue, 0.32), mix(s2, blue, 0.42)],
-      hor: [mix(s2, s3, 0.5), mix(s3, coral, 0.38), mix(s3, sun, 0.42), mix(s3, blue, 0.24)],
-    },
-    hemiDay: 1.35, hemiNight: 1.1, sunMax: 4.6,
-  };
-}
-// sky keyframes by sun altitude: night, dusk, golden, day
-const SKY_ALT = [-10, -2, 5, 22];
-function skyAt(stops, alt) {
-  if (alt <= SKY_ALT[0]) return stops[0].clone();
-  for (let i = 1; i < SKY_ALT.length; i++) if (alt <= SKY_ALT[i]) return mix(stops[i - 1], stops[i], (alt - SKY_ALT[i - 1]) / (SKY_ALT[i] - SKY_ALT[i - 1]));
-  return stops[stops.length - 1].clone();
-}
-
-const SKY_VS = `varying vec3 vDir; void main() { vDir = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`;
-const SKY_FS = `uniform vec3 zen; uniform vec3 hor; uniform vec3 gnd; uniform vec3 sunDir; uniform vec3 sunCol; uniform float glow;
-varying vec3 vDir;
-void main() {
-  vec3 d = normalize(vDir); float h = d.y;
-  vec3 c = h > 0.0 ? mix(hor, zen, pow(clamp(h, 0.0, 1.0), 0.6)) : mix(hor, gnd, clamp(-h * 6.0, 0.0, 1.0));
-  float s = max(dot(d, normalize(sunDir)), 0.0);
-  c += sunCol * (pow(s, 900.0) * 1.2 + pow(s, 48.0) * 0.32 + pow(s, 6.0) * 0.1) * glow;
-  gl_FragColor = vec4(c, 1.0);
-  #include <colorspace_fragment>
-}`;
-
-function glowTexture() {
-  const c = document.createElement('canvas'); c.width = c.height = 128;
-  const g = c.getContext('2d'), gr = g.createRadialGradient(64, 64, 0, 64, 64, 64);
-  gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.25, 'rgba(255,255,255,.45)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
-  g.fillStyle = gr; g.fillRect(0, 0, 128, 128);
-  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
-}
-
-/**
- * Facade detail for the building materials, all in the shader (no textures, no extra geometry): a hint of a
- * window grid on walls (one row per floor height, a bay every 3 m) that fades to its average as cells get smaller
- * than a few pixels, a darker band at the foot of every wall (cheap ambient occlusion where walls meet the street),
- * and after dusk a scatter of lit windows. `U` holds the shared uniforms: uNight 0..1, uFloorH, uDetail, uLitCol.
- */
-function decorate(mat, U, key) {
-  mat.onBeforeCompile = (sh) => {
-    Object.assign(sh.uniforms, U);
-    sh.vertexShader = sh.vertexShader
-      .replace('#include <common>', '#include <common>\nvarying vec3 vWP; varying vec3 vWN;')
-      .replace('#include <project_vertex>', '#include <project_vertex>\nvWP = (modelMatrix * vec4(transformed, 1.0)).xyz; vWN = normalize(mat3(modelMatrix) * objectNormal);');
-    sh.fragmentShader = sh.fragmentShader
-      .replace('#include <common>', `#include <common>
-varying vec3 vWP; varying vec3 vWN; uniform float uNight; uniform float uFloorH; uniform float uDetail; uniform vec3 uLitCol;
-float uHash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }`)
-      .replace('#include <color_fragment>', `#include <color_fragment>
-float uWall = 1.0 - smoothstep(0.35, 0.6, abs(vWN.y));
-vec2 uT = normalize(vec2(-vWN.z, vWN.x) + 1e-5);
-float uV = vWP.y;
-vec2 uCell = vec2(dot(vWP.xz, uT) / 3.0, uV / uFloorH);
-vec2 uF = fract(uCell), uW = fwidth(uCell);
-float uFar = smoothstep(0.3, 0.75, max(uW.x, uW.y));
-float uWin = smoothstep(0.2 - uW.x, 0.2 + uW.x, uF.x) * (1.0 - smoothstep(0.8 - uW.x, 0.8 + uW.x, uF.x))
-  * smoothstep(0.3 - uW.y, 0.3 + uW.y, uF.y) * (1.0 - smoothstep(0.86 - uW.y, 0.86 + uW.y, uF.y));
-uWin = mix(uWin, 0.36, uFar) * step(4.0, uV) * uWall;
-float uAo = mix(1.0, mix(0.58, 1.0, smoothstep(0.0, 24.0, uV)), uWall);
-diffuseColor.rgb *= uAo * (1.0 - 0.3 * uWin * uDetail);
-float uSeed = uHash(floor(uCell) + vec2(floor(dot(vWP.xz, normalize(vWN.xz + 1e-5)) * 0.37), 7.0));
-float uLit = mix(step(0.66, uSeed) * uWin, 0.045 * step(4.0, uV) * uWall, uFar) * uDetail;`)
-      .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\ntotalEmissiveRadiance += uLitCol * uLit * uNight;');
-  };
-  mat.customProgramCacheKey = () => key;
-}
 
 function disposeTree(o) {
   o.traverse((m) => { m.geometry?.dispose?.(); const ms = Array.isArray(m.material) ? m.material : m.material ? [m.material] : []; ms.forEach((x) => { x.map?.dispose?.(); x.dispose?.(); }); });
@@ -129,6 +38,7 @@ export class UnitStage {
     this.renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
     this.renderer.shadowMap.enabled = true; this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
+    RectAreaLightUniformsLib.init();   // [room3d] the windows' sky glow
     this.maxTex = this.renderer.capabilities.maxTextureSize || 4096;
     this.mode = 'orbit'; this.look = { yaw: 0, pitch: 6, fov: 70 }; this.dirty = true; this.tween = null;
     this.opts = { shadows: true, labels: true, streets: true, future: true, green: true, water: true, streetTrees: true, parkTrees: true, cone: false, ray: true, target: 'solid' };   // [park trees] streetTrees / parkTrees switch the two kinds of tree
@@ -144,7 +54,7 @@ export class UnitStage {
   /** data: {B, T, ti, streets, future, lm, ownLabel, R} */
   build(data) {
     this.data = data;
-    if (this.scene) disposeTree(this.scene);
+    if (this.scene) { this.cityObj?.ctx?.dispose(); disposeTree(this.scene); }
     const scene = this.scene = new THREE.Scene();
     this.interior = null; this.inEye = null; this.fanLine = null;
     const { B, T } = data;
@@ -167,42 +77,26 @@ export class UnitStage {
     this.resetOrbit(false); this.resetPlan();
 
     // sky dome, fog, lights
-    this.skyU = { zen: { value: new THREE.Color() }, hor: { value: new THREE.Color() }, gnd: { value: pal.ground.clone() }, sunDir: { value: new THREE.Vector3(0, 1, 0) }, sunCol: { value: pal.sun.clone() }, glow: { value: 1 } };
-    this.sky = new THREE.Mesh(new THREE.SphereGeometry(6000, 48, 24), new THREE.ShaderMaterial({ uniforms: this.skyU, vertexShader: SKY_VS, fragmentShader: SKY_FS, side: THREE.BackSide, depthWrite: false, fog: false }));
-    this.sky.renderOrder = -10; this.sky.frustumCulled = false; scene.add(this.sky);
+    const SK = this.skyObj = createSky(pal);   // [city3d] the sky the studio's eye-level views share
+    this.skyU = SK.U; this.sky = SK.dome; scene.add(SK.dome);
     scene.fog = new THREE.Fog(0x000000, 900, 3600);
     this.hemi = new THREE.HemisphereLight(0xffffff, 0x444444, 1.2); scene.add(this.hemi);
+    this.amb = new THREE.AmbientLight(0xfff3e6, 0); scene.add(this.amb);   // [room3d] the bounce fill of the room's light (0 outside)
     const sunL = this.sunL = new THREE.DirectionalLight(0xffffff, 2.6);
     sunL.castShadow = true; const ms = Math.min(4096, this.maxTex); sunL.shadow.mapSize.set(ms, ms);
     Object.assign(sunL.shadow.camera, { left: -560, right: 560, top: 560, bottom: -560, near: 10, far: 4200 });
     sunL.shadow.bias = -0.00035; sunL.shadow.normalBias = 0.6; sunL.shadow.radius = 3;
     sunL.target.position.copy(this.center); scene.add(sunL); scene.add(sunL.target);
 
-    // ground
-    this.groundMat = new THREE.MeshStandardMaterial({ color: pal.ground, roughness: 1, metalness: 0 });
-    const ground = this.groundBase = new THREE.Mesh(new THREE.PlaneGeometry(24000, 24000), this.groundMat);
-    ground.rotation.x = -Math.PI / 2; ground.position.copy(this.center).setY(-0.02); ground.receiveShadow = true; scene.add(ground);
-
-    // city: merged prisms, near ones cast shadows
-    this.bMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9, metalness: 0 });
-    this.facU.uLitCol.value.copy(pal.lit);
-    decorate(this.bMat, this.facU, 'unit-city');
-    this.vrange = new Map();
-    const near = [], far = [];
-    B.forEach((b, i) => { if (b === T) return; const d = Math.hypot((b.bb[0] + b.bb[2]) / 2 - cx, (b.bb[1] + b.bb[3]) / 2 - cy); (d < 900 ? near : far).push(i); });
-    this.city = this.richCity() || [this.merged(near, true), this.merged(far, false)];   // [buildings3d] the plain prisms stay as the fallback
-    this.city.forEach((m) => scene.add(m));
-    this.edgeMat = new THREE.LineBasicMaterial({ color: pal.edge, transparent: true, opacity: pal.edgeOp, depthWrite: false });
-    this.edgeIdx = near.filter((i) => this.distTo(B[i]) < 760);
-    this.edges = new THREE.LineSegments(this.edgeGeo(this.edgeIdx), this.edgeMat); scene.add(this.edges);
-    this.outlineMat = new THREE.LineBasicMaterial({ color: pal.outline, transparent: true, opacity: pal.outlineOp, depthWrite: false });
-    this.outlines = new THREE.LineSegments(this.outlineGeo(near.filter((i) => this.distTo(B[i]) < 820)), this.outlineMat); scene.add(this.outlines);
+    // [city3d] ground, buildings, roof and footprint outlines: the city both engines share (city3d/city.js), in the site frame, near ones casting shadows
+    const C = this.cityObj = createCity({ B, T, ti: data.ti, meta: data.meta, green: data.green, water: data.water, streets: data.streets }, { pal, center: this.cxy, quality: this.quality, castShadow: true, facU: this.facU });
+    Object.assign(this, { groundMat: C.groundMat, groundBase: C.groundBase, bMat: C.bMat, vrange: C.vrange, city: C.meshes, edgeMat: C.edgeMat, edgeIdx: C.edgeIdx, edges: C.edges, outlineMat: C.outlineMat, outlines: C.outlines });
+    scene.add(C.group);
 
     // target building in the accent, with solid / faint / hidden display
     this.tMat = new THREE.MeshStandardMaterial({ color: pal.tBase, roughness: 0.62, metalness: 0.05, transparent: true, opacity: 1 });
-    const rtGeo = this.richTarget();   // [buildings3d] this building with the same facade shader, tinted by the accent
-    if (!rtGeo) decorate(this.tMat, this.facU, 'unit-target');
-    this.tMesh = new THREE.Mesh(rtGeo || this.solidGeo(T), this.tMat); this.tMesh.castShadow = this.tMesh.receiveShadow = true; this.tMesh.userData.bi = data.ti; scene.add(this.tMesh);
+    decorate(this.tMat, this.facU, 'unit-target');
+    this.tMesh = new THREE.Mesh(this.solidGeo(T), this.tMat); this.tMesh.castShadow = this.tMesh.receiveShadow = true; this.tMesh.userData.bi = data.ti; scene.add(this.tMesh);
     this.tEdgeMat = new THREE.LineBasicMaterial({ color: pal.accent, transparent: true, opacity: 0.9, depthWrite: false });
     this.tEdges = new THREE.LineSegments(this.edgeGeo([data.ti], true), this.tEdgeMat); scene.add(this.tEdges);
     this.tFoot = new THREE.LineSegments(this.outlineGeo([data.ti], 0.35), new THREE.LineBasicMaterial({ color: pal.accent, transparent: true, opacity: 0.95 })); scene.add(this.tFoot);
@@ -234,9 +128,7 @@ export class UnitStage {
     this.cone = new THREE.Mesh(new THREE.CircleGeometry(320, 48, 0, Math.PI * 2 / 3), this.coneMat); this.cone.rotation.x = -Math.PI / 2; scene.add(this.cone);
 
     // sun disc and glow (drawn far away, never fogged)
-    this.sunDisc = new THREE.Mesh(new THREE.SphereGeometry(30, 24, 16), new THREE.MeshBasicMaterial({ color: pal.sun, fog: false }));
-    this.sunGlow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTexture(), color: pal.sun, transparent: true, depthWrite: false, fog: false, blending: THREE.AdditiveBlending }));
-    this.sunGlow.scale.set(420, 420, 1); scene.add(this.sunDisc, this.sunGlow);
+    this.sunDisc = this.skyObj.disc; this.sunGlow = this.skyObj.glow; scene.add(this.sunDisc, this.sunGlow);
 
     // height rings (Heights layer): 150 m and 300 m around the window, drawn on the ground
     this.rings = new THREE.Group();
@@ -260,59 +152,26 @@ export class UnitStage {
    * from the site file's streets, `water` and `green`, rebuilt on a theme change. Context only, never in the sun numbers.
    */
   buildGreen() {
-    if (this.ctx) { this.scene.remove(this.ctx.group); this.ctx.dispose(); }
     this.ctx = null; this.greenGrp = null;
-    const d = this.data, any = d.green || d.water || (d.streets || []).length;
-    if (any) {
-      this.ctx = buildContext({ green: d.green, water: d.water, streets: d.streets }, { B: d.B, center: this.cxy, radius: 640, y0: 0, ground: this.pal.ground, light: this.pal.light, blue: this.pal.blue, visual: this.quality.visual, phone: this.quality.phone, layers: { green: this.opts.green, water: this.opts.water, streetTrees: this.opts.streetTrees, parkTrees: this.opts.parkTrees } });
-      this.scene.add(this.ctx.group); this.ctx.watch(this.ctx.group); this.greenGrp = this.ctx.parts.green;
+    const o = this.opts;
+    this.ctx = this.cityObj.buildContext({ pal: this.pal, quality: this.quality, layers: { green: o.green, water: o.water, streetTrees: o.streetTrees, parkTrees: o.parkTrees } });   // [city3d] the same context the studio draws
+    if (this.ctx) {
+      this.greenGrp = this.ctx.parts.green;
       if (this.lastSun) this.ctx.setSun({ dir: this.sunDir, alt: this.lastSun.alt });
       this.ctx.setInside(this.mode === 'in');
     }
     this.syncGroundBase();
   }
   /** The plate stands in for the base ground where it is on; the base drops under the water so the plate's holes show it. */
-  syncGroundBase() { if (this.groundBase) this.groundBase.position.y = this.ctx?.hasGround && this.opts.water ? -0.9 : -0.02; }
+  syncGroundBase() { if (this.cityObj) { this.cityObj.layers = { ...this.cityObj.layers, water: this.opts.water }; this.cityObj.syncGroundBase(); } }
   /** [city context] Render quality from unit/quality3d.js: tree shadows (Visual) and the water's sky reflection and sun glint. */
-  setContextQuality(q) { this.quality = { visual: !!q.visual, phone: !!q.phone }; this.ctx?.setQuality(this.quality); this.bb?.setQuality(this.quality); this.bbT?.setQuality(this.quality); this.dirty = true; }
+  setContextQuality(q) { this.quality = { visual: !!q.visual, phone: !!q.phone }; this.ctx?.setQuality(this.quality); if (this.facU.uQual) this.facU.uQual.value = q.visual ? 1 : 0; this.dirty = true; }   // [massing] Visual: full facades
   distTo(b) { return Math.hypot((b.bb[0] + b.bb[2]) / 2 - this.cxy[0], (b.bb[1] + b.bb[3]) / 2 - this.cxy[1]); }
-  shapeOf(b) {
-    const sh = new THREE.Shape();
-    for (let j = 0; j < b.n; j++) { const x = b.p[2 * j], y = b.p[2 * j + 1]; j ? sh.lineTo(x, y) : sh.moveTo(x, y); }
-    for (const h of b.holes || []) { const pa = new THREE.Path(); for (let j = 0; j < h.length / 2; j++) { j ? pa.lineTo(h[2 * j], h[2 * j + 1]) : pa.moveTo(h[2 * j], h[2 * j + 1]); } sh.holes.push(pa); }
-    return sh;
-  }
-  /** A prism geometry for b in world space (bottom buried a little so buildings on lower ground do not float). */
-  prism(b, z0 = null, z1 = null, grow = 0) {
-    const bottom = z0 ?? Math.min(b.g, 0) - 1.5, top = z1 ?? b.top;
-    const geo = new THREE.ExtrudeGeometry(this.shapeOf(b), { depth: Math.max(0.5, top - bottom), bevelEnabled: false, curveSegments: 1 });
-    geo.rotateX(-Math.PI / 2); geo.translate(0, bottom, 0);
-    if (grow) { // push outward a little for the floor band so it sits on the facade
-      geo.computeBoundingBox(); const c = new THREE.Vector3(); geo.boundingBox.getCenter(c);
-      const s = 1 + grow / Math.max(8, Math.max(b.bb[2] - b.bb[0], b.bb[3] - b.bb[1]));
-      geo.translate(-c.x, 0, -c.z); geo.scale(s, 1, s); geo.translate(c.x, 0, c.z);
-    }
-    return geo;
-  }
-  /**
-   * The prisms that draw building b: its components (podium, tower, setback, bulkhead; each from its own base to
-   * its own top, the lowest buried like a footprint) when the site file has them, else the footprint prism.
-   */
-  prismsOf(b) {
-    if (!b.parts) return [{ geo: this.prism(b), h: b.top - Math.max(b.g, 0) }];
-    return b.parts.map((q) => ({ geo: this.prism(q, q.base_m <= 0.5 ? Math.min(b.g, 0) - 1.5 : q.base, q.top), h: q.top - Math.max(b.g, 0) }));
-  }
-  /** One geometry for building b (its components merged), for the target mesh. */
-  solidGeo(b) {
-    const list = this.prismsOf(b);
-    if (list.length === 1) return list[0].geo;
-    const P = [], N = [];
-    for (const { geo } of list) { P.push(...geo.attributes.position.array); N.push(...geo.attributes.normal.array); geo.dispose(); }
-    const g = new THREE.BufferGeometry();
-    g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(P), 3));
-    g.setAttribute('normal', new THREE.BufferAttribute(new Float32Array(N), 3));
-    g.computeBoundingSphere(); return g;
-  }
+  // [city3d] the buildings are meshed by city3d/buildings.js (prismsOf is its single entry point), the same code the studio uses
+  shapeOf(b) { return shapeOf(b); }
+  prism(b, z0 = null, z1 = null, grow = 0) { return prism(b, z0, z1, grow); }
+  prismsOf(b) { return prismsOf(b); }
+  solidGeo(b) { return solidGeo(b); }
   /** Unit-height outward-offset walls (no caps) around b, for floor bands. */
   wallsGeo(b, off) {
     const P = [];
@@ -329,89 +188,10 @@ export class UnitStage {
     }
     const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(P), 3)); return g;
   }
-  heightColor(h) {
-    const t = Math.max(0, Math.min(1, Math.log(Math.max(h, 6) / 6) / Math.log(260 / 6)));
-    return mix(this.pal.bLow, this.pal.bHigh, Math.pow(t, 0.85));
-  }
-  /**
-   * [buildings3d] The city from city3d/buildings.js: the same prepared buildings and parts as the sun maths, with facades in the shader. Returns
-   * the two meshes (near casts shadows) in the contract `merged` has (userData.starts / ids / h, this.vrange), or null to fall back to prisms.
-   */
-  richCity() {
-    this.bb = null;
-    try {
-      const { B, T } = this.data, pal = this.pal;
-      const bb = buildBuildings(this.data.site || null, { B, meta: this.data.meta, center: this.cxy, nearR: 600, skip: new Set([this.data.ti]), light: pal.light, quality: this.quality,
-        colorFor: (h, roof) => { const c = this.heightColor(h), r = roof ? mix(c, pal.white, pal.light ? 0.25 : 0.08) : c; return [r.r, r.g, r.b]; } });
-      bb.userData.setLight(pal.sun, mix(pal.sun, pal.white, 0.6));
-      this.bb = bb.userData; this.vrange = bb.userData.vrange;
-      return bb.userData.meshes;
-    } catch (e) { console.warn('rich buildings unavailable, drawing prisms', e); return null; }
-  }
-  /** [buildings3d] The geometry of this building from city3d/buildings.js (accent-coloured, windows and parapets), or null to fall back to the plain solid. */
-  richTarget() {
-    this.bbT = null;
-    try {
-      const { B, ti } = this.data, pal = this.pal;
-      this.tMat.vertexColors = true;
-      const g = buildBuildings(this.data.site || null, { B, meta: this.data.meta, only: new Set([ti]), center: this.cxy, nearR: Infinity, material: this.tMat, key: 'target', tintMix: 0.3, quality: this.quality, shadows: true, colorFor: () => [1, 1, 1] });
-      g.userData.setLight(pal.sun, mix(pal.sun, pal.white, 0.6));
-      this.bbT = g.userData;
-      return g.userData.meshes[0].geometry;
-    } catch (e) { this.tMat.vertexColors = false; console.warn('rich target unavailable', e); return null; }
-  }
-  merged(idx, cast) {
-    const { B } = this.data, P = [], N = [], C = [], H = [], starts = [], ids = [];
-    let v = 0;
-    const mesh = { r: [] };
-    for (const i of idx) {
-      starts.push(v); ids.push(i); mesh.r.push([i, v]);
-      for (const { geo, h } of this.prismsOf(B[i])) {
-        const pos = geo.attributes.position.array, nor = geo.attributes.normal.array;
-        const c = this.heightColor(h), roof = mix(c, this.pal.white, this.pal.light ? 0.25 : 0.08);
-        for (let k = 0; k < pos.length; k += 3) {
-          P.push(pos[k], pos[k + 1], pos[k + 2]); N.push(nor[k], nor[k + 1], nor[k + 2]); H.push(h);
-          const cc = nor[k + 1] > 0.9 ? roof : c; C.push(cc.r, cc.g, cc.b);
-        }
-        v += pos.length / 3; geo.dispose();
-      }
-    }
-    const g = new THREE.BufferGeometry();
-    g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(P), 3));
-    g.setAttribute('normal', new THREE.BufferAttribute(new Float32Array(N), 3));
-    g.setAttribute('color', new THREE.BufferAttribute(new Float32Array(C), 3));
-    g.computeBoundingSphere();
-    const m = new THREE.Mesh(g, this.bMat); m.castShadow = cast; m.receiveShadow = true;
-    m.userData.starts = Int32Array.from(starts); m.userData.ids = Int32Array.from(ids); m.userData.h = Float32Array.from(H);
-    mesh.r.forEach(([i, s0], k) => this.vrange.set(i, [m, s0, k + 1 < mesh.r.length ? mesh.r[k + 1][1] : v]));
-    return m;
-  }
+  heightColor(h) { return heightColor(this.pal, h); }
   /** Roof outlines plus vertical lines at real corners. */
-  edgeGeo(idx, all = false) {
-    const { B } = this.data, P = [];
-    for (const i of idx) {
-      const B0 = B[i];
-      for (const b of B0.parts || [B0]) {
-        const bot = b === B0 || b.base_m <= 0.5 ? Math.min(B0.g, 0) - 1.5 : b.base;
-        for (const p of [b.p, ...(b.holes || [])]) {
-          const n = p.length / 2;
-          for (let j = 0; j < n; j++) {
-            const j2 = (j + 1) % n, j0 = (j - 1 + n) % n;
-            const x = p[2 * j], y = p[2 * j + 1], x2 = p[2 * j2], y2 = p[2 * j2 + 1];
-            P.push(x, b.top, -y, x2, b.top, -y2);
-            const a1 = Math.atan2(y - p[2 * j0 + 1], x - p[2 * j0]), a2 = Math.atan2(y2 - y, x2 - x);
-            if (all || Math.abs(((a2 - a1 + 3 * Math.PI) % (2 * Math.PI)) - Math.PI) > 0.4) P.push(x, bot, -y, x, b.top, -y);
-          }
-        }
-      }
-    }
-    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(P), 3)); return g;
-  }
-  outlineGeo(idx, z = 0.25) {
-    const { B } = this.data, P = [];
-    for (const i of idx) for (const p of [B[i].p, ...(B[i].holes || [])]) { const n = p.length / 2; for (let j = 0; j < n; j++) { const j2 = (j + 1) % n; P.push(p[2 * j], z, -p[2 * j + 1], p[2 * j2], z, -p[2 * j2 + 1]); } }
-    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(P), 3)); return g;
-  }
+  edgeGeo(idx, all = false) { return edgeGeo(this.data.B, idx, all); }
+  outlineGeo(idx, z = 0.25) { return outlineGeo(this.data.B, idx, z); }
   streetMesh(streets) {
     if (!streets.length) return null;
     const P = [];
@@ -491,7 +271,7 @@ export class UnitStage {
     const W = this.el.clientWidth, H = this.el.clientHeight, placed = [], v = new THREE.Vector3();
     const order = [...this.labels].sort((a, b) => b.prio - a.prio);
     // inside the apartment, a label only shows when the glass (not a wall or the ceiling) is in front of it
-    const solid = this.mode === 'in' && this.interior ? this.interior.group.children.filter((o) => o.isMesh && o.name !== 'glass') : null;
+    const solid = this.mode === 'in' && this.interior ? (this.interior.blockers || []) : null;   // [room3d] the walls, floors and ceilings of the shared shell
     const rc = solid ? new THREE.Raycaster() : null;
     const walled = (pos) => { const d = pos.clone().sub(cam.position), L = d.length(); rc.set(cam.position, d.normalize()); rc.far = L; return rc.intersectObjects(solid, false).length > 0; };
     for (const L of order) {
@@ -542,13 +322,11 @@ export class UnitStage {
   setPalette() {
     const pal = this.pal = palette();
     if (!this.scene) return;
-    this.groundMat.color.copy(pal.ground); this.skyU.gnd.value.copy(pal.ground);
-    this.edgeMat.color.copy(pal.edge); this.edgeMat.opacity = pal.edgeOp;
-    this.outlineMat.color.copy(pal.outline); this.outlineMat.opacity = pal.outlineOp;
+    this.cityObj.setPalette(pal); this.skyU.gnd.value.copy(pal.ground);
     this.tMat.color.copy(pal.tBase); this.tEdgeMat.color.copy(pal.accent); this.tFoot.material.color.copy(pal.accent);
     this.cmpBand.material.color.copy(pal.ink); this.coneMat.color.copy(pal.accent);
     if (this.streetMat) { this.streetMat.color.copy(pal.street); this.streetMat.opacity = pal.streetOp; }
-    this.ringMat.color.copy(pal.ink); this.facU.uLitCol.value.copy(pal.lit); this.bb?.setLight(pal.sun, mix(pal.sun, pal.white, 0.6)); this.bbT?.setLight(pal.sun, mix(pal.sun, pal.white, 0.6));
+    this.ringMat.color.copy(pal.ink); this.facU.uLitCol.value.copy(pal.lit);
     this.buildGreen();
     this.recolor();
     if (this.lastSun) this.setSun(this.lastSun);
@@ -557,7 +335,7 @@ export class UnitStage {
   /** Vertex colours of the city: the continuous height ramp, or the height classes when the Heights layer is on. */
   recolor() {
     const pal = this.pal, cls = !!this.opts.heights;
-    this.bb?.setTintMix(cls ? 0 : 1);   // [buildings3d] the Heights layer shows its class colours, not wall tints
+    if (this.facU.uTintMix) this.facU.uTintMix.value = cls ? 0 : 1;   // [massing] the Heights layer shows its class colours, not wall palettes
     for (const m of this.city) {
       const colA = m.geometry.attributes.color, nor = m.geometry.attributes.normal.array, H = m.userData.h, memo = new Map();
       for (let v = 0; v < colA.count; v++) {
@@ -653,24 +431,46 @@ export class UnitStage {
     this.sunL.position.copy(focus).addScaledVector(d, 2000);
     this.sunL.color.copy(mix(pal.sun, pal.white, 0.35 + 0.6 * k));
     this.sunL.intensity = up ? pal.sunMax * (0.35 + 0.65 * Math.sin((Math.min(Math.max(s.alt, 0), 60) / 60) * Math.PI / 2)) : 0;
-    const zen = skyAt(pal.sky.zen, s.alt), hor = skyAt(pal.sky.hor, s.alt);
-    this.skyU.zen.value.copy(zen); this.skyU.hor.value.copy(hor); this.skyU.sunDir.value.copy(d);
-    this.skyU.glow.value = s.alt > -4 ? Math.min(1, (s.alt + 4) / 8) : 0;
-    this.skyU.sunCol.value.copy(mix(pal.sun, pal.white, 0.2 * k));
+    const { zen, hor } = applySky(this.skyObj, pal, s, d, this.center);   // [city3d]
     this.ctx?.setSun({ dir: d, alt: s.alt });   // [city context] the water's light
     this.scene.fog.color.copy(hor);
     // hemisphere light: the sky's hue at full brightness (its darkness is carried by the intensity)
     const tint = mix(hor, zen, 0.5), mx = Math.max(tint.r, tint.g, tint.b, 1e-3); tint.multiplyScalar(1 / mx);
     this.hemi.color.copy(mix(pal.white, tint, 0.3)); this.hemi.groundColor.copy(mix(pal.white, tint, 0.3)).multiplyScalar(0.45);
     this.hemi.intensity = up ? pal.hemiNight + (pal.hemiDay - pal.hemiNight) * Math.min(1, (s.alt + 2) / 14) : pal.hemiNight * (s.alt > -8 ? 1 : 0.85);
-    const sp = this.center.clone().addScaledVector(d, 5000);
-    this.sunDisc.position.copy(sp); this.sunGlow.position.copy(sp);
-    this.sunDisc.visible = this.sunGlow.visible = s.alt > -1.5;
-    this.sunDisc.material.color.copy(mix(pal.sun, pal.white, 0.25 + 0.5 * k));
     // lit windows fade in through dusk
     this.facU.uNight.value = Math.max(0, Math.min(1, (3 - s.alt) / 9)) * (pal.light ? 0.75 : 1);
-    this.bb?.setNight(this.facU.uNight.value); this.bbT?.setNight(this.facU.uNight.value);   // [buildings3d]
+    this.applyRoomLook();   // [room3d]
     this.dirty = true;
+  }
+  /**
+   * [room3d] The Inside and Window cameras are lit by the room's own light (room3d/lighting.js): a hemisphere sky light, a bounce fill, the sun with
+   * its soft shadows, the windows' sky glow, ACES (Visual) or a gentle curve (Fast) and warm lamps after dark. It is the Floor plan studio's light
+   * look, so the same room and the same city look the same in both engines. The orbit, plan and top cameras keep the sun-study lighting.
+   */
+  /** The studio's glass and blinds as light scales {sun, sky} (plan/light.js glazingScale), applied to the room's sun and the windows' glow. */
+  setRoomScale(sc) { this.roomScale = sc && Number.isFinite(sc.sun) && Number.isFinite(sc.sky) ? { sun: sc.sun, sky: sc.sky } : undefined; this.applyRoomLook(); this.dirty = true; }
+  roomLook() { return (this.mode === 'in' || this.mode === 'win') && !!this.lastSun; }
+  applyRoomLook() {
+    const r = this.renderer;
+    if (!this.baseTone) this.baseTone = { mapping: r.toneMapping, exposure: r.toneMappingExposure };
+    if (!this.roomLook()) {
+      this.amb.intensity = 0; this.roomState = null;
+      if (r.toneMapping !== this.baseTone.mapping) r.toneMapping = this.baseTone.mapping;
+      r.toneMappingExposure = this.baseTone.exposure;
+      for (const L of this.interior?.glow?.children || []) L.intensity = 0;
+      return;
+    }
+    const s = this.lastSun, up = s.alt > 0, sin = Math.max(0, Math.sin(s.alt * DEG));
+    const st = this.roomState = roomLightState({ mood: moodFor(this.moodWant || 'auto', up, sin), sunOn: up, sinAlt: sin, quality: roomQuality(), scale: this.roomScale });
+    applyRoomLight({ sunL: this.sunL, hemi: this.hemi, amb: this.amb, glow: this.interior?.glow, renderer: r }, st);
+    // lamps from the layout (floor and table lamps, pendants) come on after dark, like the studio's
+    for (const g of this.interior?.furniture?.group.children || []) {
+      const l = g.userData.lamp; if (!l) continue;
+      l.light.intensity = st.lamps ? l.cd * st.lamps : 0; l.light.visible = st.lamps > 0;
+      if (l.shade) l.shade.material.emissiveIntensity = st.lamps ? (st.lamps === 1 ? 1.4 : 1) : 0;
+    }
+    this.facU.uNight.value = st.lamps === 1 ? 1 : st.lamps ? Math.max(this.facU.uNight.value, 0.5) : this.facU.uNight.value;
   }
   /** w: {x,y,z,fx,fy}, az: window bearing; floorZ / cmpZ: slab heights; fh floor height. */
   setWindow(w, az, floorZ, cmpZ, fh, label, panes = [0]) {
@@ -763,7 +563,7 @@ export class UnitStage {
     this.endInTween(false);
     if (still) { this.inEye = { local: to.local, off: to.off }; Object.assign(this.look, { yaw: to.yaw, fov: to.fov, pitch: to.pitch }); this.dirty = true; o.onEnd?.(); return; }
     this.inTween = { t0: performance.now(), ms: o.ms ?? 750, from, to, onEnd: o.onEnd, open: !!o.open };
-    if (o.open) I.group.traverse((m) => { if (m.name === 'wall' || m.name === 'ceiling') { m.userData.wasVisible = m.visible; m.visible = false; } });
+    if (o.open) I.group.traverse((m) => { if (m.name === 'wall' || m.name.startsWith('ceiling')) { m.userData.wasVisible = m.visible; m.visible = false; } });
     this.dirty = true;
   }
   /** Finish or cancel a glide (restores the walls). `land`: jump to the end pose. */
@@ -916,8 +716,9 @@ export class UnitStage {
     const root = new THREE.Group(); root.name = meta.name || 'site'; root.userData = meta;
     const city = new THREE.Group(); city.name = 'city';
     const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9 });
-    this.city.forEach((m, i) => { const gg = m.geometry.clone(); gg.deleteAttribute('aFa'); gg.deleteAttribute('aFb'); /* [buildings3d] facade attributes are shader inputs, not model data */ const c = new THREE.Mesh(gg, mat); c.name = i ? 'city-far' : 'city-near'; city.add(c); });
-    const t = new THREE.Mesh(this.tMesh.geometry, new THREE.MeshStandardMaterial({ color: this.pal.accent, roughness: 0.6 })); t.name = 'this-building';
+    const plain = (g) => { const q = g.clone(); q.deleteAttribute('aFa'); q.deleteAttribute('aFb'); return q; };   // [massing] facade attributes are shader inputs, not model data
+    this.city.forEach((m, i) => { const c = new THREE.Mesh(plain(m.geometry), mat); c.name = i ? 'city-far' : 'city-near'; city.add(c); });
+    const t = new THREE.Mesh(plain(this.tMesh.geometry), new THREE.MeshStandardMaterial({ color: this.pal.accent, roughness: 0.6 })); t.name = 'this-building';
     root.add(city, t);
     if (this.streets) { const s = new THREE.Mesh(this.streets.geometry, new THREE.MeshStandardMaterial({ color: this.pal.street, roughness: 1 })); s.name = 'streets'; root.add(s); }
     // parks, lawns and paved playgrounds (every ground layer, flat vertex colours); the instanced canopies stay out of the file

@@ -9,7 +9,7 @@
 // confidence "assumed" so nothing built from it can pass for source data.
 export const KINDS = ['podium', 'tower', 'setback', 'bulkhead', 'spire'];
 export const CONFIDENCE = ['high', 'medium', 'low', 'assumed'];
-export const MAX_PARTS = 40, MAX_BUILDINGS = 200, MAX_COORD_M = 5000, MAX_HEIGHT_M = 900;
+export const MAX_PARTS = 200, MAX_BUILDINGS = 400, MAX_COORD_M = 5000, MAX_HEIGHT_M = 900;
 export const ASSUMED = 'assumed: ';
 const fin = Number.isFinite;
 const r2 = (v) => Math.round(v * 100) / 100;

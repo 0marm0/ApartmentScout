@@ -140,3 +140,12 @@ def test_a_roof_height_that_does_not_fit_the_floor_count_is_flagged_and_not_trus
     bs[0]["floors"] = 36
     site = build_site({"lat": LAT, "lon": LON, "floor": 5}, bs, "test")
     assert site["bmeta"][0]["hconf"] == "low" and site["bmeta"][0]["hflag"] == "floors"
+
+
+def test_a_landmark_with_dozens_of_parts_validates():
+    from apartmentscout.geo.anchor import MAX_PARTS, validate_components
+    ring = [[0, 0], [10, 0], [10, 10], [0, 10]]
+    parts = [{"ring": ring, "base_m": 0, "top_m": 20 + k, "kind": "spire" if k % 9 == 8 else "tower", "source": f"osm way {k}"} for k in range(79)]
+    out, problems = validate_components({"5": parts}, 10)
+    assert problems == [] and len(out["5"]) == 79
+    assert validate_components({"5": parts * 3}, 10)[1] and MAX_PARTS >= 79

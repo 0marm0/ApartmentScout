@@ -7,7 +7,7 @@
 // roof-furniture patterns, and whether it is near or far from the viewer (levels of detail).
 import { prepBuildings } from '../sun.js';
 import { effectiveComponents } from '../unit/parts.js';
-import { facadeStyle, seedOf, stableId, NO_WINDOWS } from './facades.js';
+import { facadeStyle, seedOf, stableId, NO_WINDOWS } from './facade-rules.js';
 
 const ringOf = (p) => { const r = []; for (let i = 0; i < p.length; i += 2) r.push([p[i], p[i + 1]]); return r; };
 export const ringArea = (p) => { let a = 0; const n = p.length / 2; for (let i = 0; i < n; i++) { const j = (i + 1) % n; a += p[2 * i] * p[2 * j + 1] - p[2 * j] * p[2 * i + 1]; } return a / 2; };
@@ -60,24 +60,30 @@ export function buildingEntries(site, o = {}) {
     if (o.skip?.has(i) || (o.only && !o.only.has(i))) { info.skipped++; continue; }
     const cx = (b.bb[0] + b.bb[2]) / 2, cy = (b.bb[1] + b.bb[3]) / 2, dist = Math.hypot(cx - cx0, cy - cy0);
     if (dist > radius) { info.skipped++; continue; }
-    const m = meta[i] || {};
-    const id = stableId(m, i);
-    const roof = b.top - Math.max(b.g, 0);
-    const raw = b.parts && b.parts.length ? b.parts : null;
-    const bmat = raw ? dominant(raw.map((q) => q.mat).filter(Boolean)) : null;
-    const style = facadeStyle(m, roof, bmat);
-    const seed = seedOf(id);
-    const parts = (raw || [wholePart(b)]).map((q) => normalPart(q, b, m, bmat, style, seed)).sort((a, c) => a.top - c.top || a.base - c.base);
-    markExposed(parts);
     const near = dist <= nearR;
-    const e = { i, id, g: b.g, top: b.top, roof, p: b.p, holes: b.holes || [], bb: b.bb, cx, cy, dist, near, meta: m, style, seed, parts, whole: !raw, floors: +m.floors > 0 ? +m.floors : null };
-    e.decor = o.decor === false || !near ? [] : decorFor(e);
+    const e = entryOf(b, i, meta[i], { near, decor: o.decor, dist });
     entries.push(e);
-    info.buildings++; info.parts += parts.length; info[near ? 'near' : 'far']++; info.decor += e.decor.length;
-    if (raw) info.partBuildings++;
-    for (const q of parts) { const k = q.style.style; info.styles[k] = (info.styles[k] || 0) + 1; }
+    info.buildings++; info.parts += e.parts.length; info[near ? 'near' : 'far']++; info.decor += e.decor.length;
+    if (!e.whole) info.partBuildings++;
+    for (const q of e.parts) { const k = q.style.style; info.styles[k] = (info.styles[k] || 0) + 1; }
   }
   return { entries, info };
+}
+/**
+ * The entry for one prepared building b (index i, bmeta m): its id, parts (podium, tower ... or one whole prism), facade style, seed and roof
+ * furniture. `o`: {near (detailed level: parapets and furniture), decor (false: none), dist}. The single place a building's drawing model is made.
+ */
+export function entryOf(b, i, m, o = {}) {
+  m = m || {};
+  const id = stableId(m, i), roof = b.top - Math.max(b.g, 0), raw = b.parts && b.parts.length ? b.parts : null;
+  const bmat = raw ? dominant(raw.map((q) => q.mat).filter(Boolean)) : null;
+  const style = facadeStyle(m, roof, bmat), seed = seedOf(id);
+  const parts = (raw || [wholePart(b)]).map((q) => normalPart(q, b, m, bmat, style, seed)).sort((a, c) => a.top - c.top || a.base - c.base);
+  markExposed(parts);
+  const near = o.near !== false, cx = (b.bb[0] + b.bb[2]) / 2, cy = (b.bb[1] + b.bb[3]) / 2;
+  const e = { i, id, g: b.g, top: b.top, roof, p: b.p, holes: b.holes || [], bb: b.bb, cx, cy, dist: o.dist ?? 0, near, meta: m, style, seed, parts, whole: !raw, floors: +m.floors > 0 ? +m.floors : null };
+  e.decor = o.decor === false || !near ? [] : decorFor(e);
+  return e;
 }
 const dominant = (a) => { if (!a.length) return null; const c = {}; for (const v of a) c[v] = (c[v] || 0) + 1; return Object.entries(c).sort((x, y) => y[1] - x[1])[0][0]; };
 const wholePart = (b) => ({ p: b.p, holes: b.holes || [], g: b.g, base: b.g, top: b.top, base_m: 0, top_m: b.top - b.g, kind: 'whole', roof: '', eave_m: null, dir: null, mat: '', col: '', confidence: '', source: '' });
