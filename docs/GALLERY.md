@@ -1,166 +1,131 @@
 # Gallery
 
-Screenshots of the ApartmentScout dashboard on the included example (a Manhattan one-bedroom search from
-fall 2026 with a commute to a Midtown office near Grand Central), followed by the earlier one-off tools
-built during that search, which the dashboard grew out of. Listing photos in the cards were cleared for use in
-this private repository; re-check their rights before making it public.
+ApartmentScout on its worked example, in the order a search goes: [Find](#find), [Compare](#compare), [See inside](#see-inside),
+[Decide](#decide) and [Set up](#set-up), then the [phone layout](#on-a-phone). The example is a Manhattan one-bedroom search from
+fall 2026 with a commute to a Midtown office near Grand Central. Everything is shot from the committed dashboard with
+`scripts/screenshots.py`, desktop at 1600 x 1000, phone at 390 x 844 and the 3D panes at 1140 x 716, mostly in the dark theme and a
+few in the light one.
 
-Every image here is marked `public` in [`gallery/manifest.json`](gallery/manifest.json); see
-[THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md) for map and photo attribution.
+The listings, prices, commutes, records and 3D models in these pictures are the example search's own. The saved picks, the visit
+notes and the decision history are sample entries written for the screenshots (the script lists them). Listing photos were cleared
+for use in this private repository; re-check their rights before making it public. Every image is marked `public` in
+[`gallery/manifest.json`](gallery/manifest.json); see [THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md) for map and photo
+attribution. Earlier screenshots of the previous interface are kept, unused, in
+[`archive/images-2026-10-15`](archive/images-2026-10-15/README.md) until the owner decides whether to delete them.
 
-## The ApartmentScout dashboard
+## Find
 
-### Map
-
-The home view: a filter rail with budget tiers, histograms, must-haves and live weight sliders (the sections fold away); ranked
-listing cards with walk, subway and bus minutes; and a vector map with heat layers, official subway
-lines, price tags and a floating listing drawer.
-
-<table>
-<tr><td width="50%"><img src="images/map-commute.png" alt="Commute layer"><br><sub>Best-of-transit door-to-door minutes to Grand Central, arriving 09:00, walking on the real street network to real station entrances: greens to 15 minutes, yellow and gold to the 30-minute limit (dashed), reds past it</sub></td><td width="50%"><img src="images/map-drawer.png" alt="Listing drawer"><br><sub>Listing drawer: a credited building photo, monthly cost, gross rent and paid month, move-in cash, unknown fees left unknown, tier headroom and why it ranks here</sub></td></tr>
-<tr><td width="50%"><img src="images/map-noise.png" alt="Noise layer"><br><sub>311 noise complaints per year in 150 m cells (335,923 requests), labelled as reports, not findings</sub></td><td width="50%"><img src="images/map-rent.png" alt="Rent layer"><br><sub>Monthly cost per ft², interpolated from the listings</sub></td></tr>
-<tr><td width="50%"><img src="images/map-score.png" alt="Score layer"><br><sub>Average score nearby with your weights</sub></td><td width="50%"><img src="images/map-commute-light.png" alt="Light theme"><br><sub>The light theme</sub></td></tr>
-<tr><td width="50%"><img src="images/map-3d.png" alt="3D buildings"><br><sub>3D buildings over the commute bands, with subway lines, stations and walking-time rings</sub></td><td width="50%"><img src="images/map-drawer-commute.png" alt="Commute by mode in the drawer"><br><sub>Commute by mode: best, subway, bus and walk tiles, the route leg by leg with times, records flags, what residents say and open questions</sub></td></tr>
-<tr><td width="50%" align="center"><img src="images/mobile-map.png" alt="Phone layout" width="300"><br><sub>On a phone: the map on top, ranked cards in a sheet below</sub></td><td></td></tr>
-</table>
-
-### Shortlist
+The map ranks every listing on your weights, colours the city by door-to-door time, and opens a home with its money, photos and
+reasons. Search takes plain words.
 
 <table>
-<tr><td><img src="images/shortlist.png" alt="Shortlist table"><br><sub>Every filtered listing ranked live by your weights: monthly cost, budget tier, size and $/ft², commute, floor and exposure, laundry, doorman and gym (? means unconfirmed), score, the share of the score resting on known facts, and status. Keyboard: arrows move, Enter opens, s saves, c compares. Share shortlist (top right) is for your saved picks; the Map button docks a mini map.</sub></td></tr>
+<tr>
+<td width="50%" valign="top"><img src="images/hero-map.png" alt="The commute map with a listing drawer open"><br><b>A listing over the commute map</b><br><sub>Paramount Tower 25E in the drawer: a credited photo, a first-lease monthly cost of $5,032 against $4,995 gross, what is paid every month and at signing (the deposit is unknown), and $60,384 over a 12-month lease that is marked as assumed. The ranked cards sit on the left.</sub></td>
+<td width="50%" valign="top"><img src="images/find-commute-map.png" alt="Door-to-door commute bands over Manhattan"><br><b>Door to door, by the best of transit</b><br><sub>Minutes to Grand Central arriving at 9:00, from greens within 15 minutes through yellow and gold to the 30-minute limit and reds beyond it, with scored price tags and the subway lines. The filter rail holds budget tiers, must-haves and weights; 289 homes match.</sub></td>
+</tr>
+<tr>
+<td valign="top"><img src="images/find-route-preview.png" alt="Hovering a home draws its subway route"><br><b>Hover a home, see the trip</b><br><sub>Subway lens: hovering Orion Condominium 23A draws its trip to Grand Central on the map, a 9-minute walk (dashed), the S shuttle on its own line, a short walk at the end and a 15-minute pill.</sub></td>
+<td valign="top"><img src="images/find-place-search.png" alt="The command menu previewing a plain-words search"><br><b>Ask in plain words</b><br><sub>The command menu with "east of 3rd ave under 5k with w/d" typed: the first row says what it understood (up to $5,000, W/D, east of 3rd Avenue) and counts 15 of 434 active homes before anything changes.</sub></td>
+</tr>
+<tr>
+<td valign="top"><img src="images/find-price-drops.png" alt="Homes whose price fell, with their price history"><br><b>Real price history</b><br><sub>"Price drops under 5.5k" keeps the 28 homes whose latest recorded price move was down. Each card draws its price history and the size of the drop, for example $294 on One Manhattan Square 57G and $500 on Gramercy Starck 10L.</sub></td>
+<td valign="top"><img src="images/find-price-audit.png" alt="A listing's money section marked price unverified"><br><b>The price audit</b><br><sub>Orion Condominium 43E carries "price unverified": the $5,250 came from an agent report and the unit page could not be read. The drawer says so, ranks on that price with a range, leaves the monthly fees unknown (the ranking assumes about $80) and lists what is still undocumented.</sub></td>
+</tr>
+<tr>
+<td valign="top"><img src="images/find-lightbox.png" alt="The photo lightbox beside the listing's floor plan"><br><b>Photos and the floor plan</b><br><sub>The lightbox on Orion Condominium 23A: tabs for All 41, Unit 12, Building 28 and Floor plans 1, a thumbnail strip, the credit under the photo and the listing's own floor plan beside it (Plan, Side by side).</sub></td>
+<td valign="top"><img src="images/find-light-theme.png" alt="The map in the light theme with a listing open"><br><b>The light theme</b><br><sub>The same map and drawer in the light theme (the menu's Theme row, or <kbd>t</kbd>). Dark is the default, and a system setting is one click away.</sub></td>
+</tr>
 </table>
 
-### Compare
+## Compare
+
+Put finalists side by side, trade the weights against each other and watch the ranking move.
 
 <table>
-<tr><td><img src="images/compare.png" alt="Compare view"><br><sub>Four finalists in lettered columns: money, space, commute, building, light and score rows with the best value in each row marked and unknowns that never count as the worst; hard requirements and open questions; a cost-against-space scatter of every eligible listing with the value frontier; and where each one wins, dimension by dimension.</sub></td></tr>
+<tr>
+<td colspan="2" valign="top"><img src="images/compare-four.png" alt="Four finalists compared in lettered columns"><br><b>Four finalists, row by row</b><br><sub>Paramount Tower 25E, Orion Condominium 23A, 7 Platt 14G and One Manhattan Square 57G in columns A to D, with money, space and commute rows below. The best value in each row is marked, and a fact nobody has confirmed (free months, fees, size) is drawn as unknown instead of counting as the worst.</sub></td>
+</tr>
+<tr>
+<td width="50%" valign="top"><img src="images/compare-tradeoff-pad.png" alt="The trade-off pad previewing a weight preset"><br><b>The trade-off pad</b><br><sub>One dot trades Cost, Commute and Space against each other. Pointing at the Biggest and nicest ring previews the top ten if it were applied: ten of ten places change and six homes fall out. Clicking applies it through the same weights as the sliders.</sub></td>
+<td width="50%" valign="top"><img src="images/compare-split-view.png" alt="The shortlist table beside a docked map"><br><b>The shortlist beside its map</b><br><sub>Shortlist split view: 55 homes in the Target tier with a gym, next to a map of exactly those homes. Hovering Emerald Green 24D previews its 17-minute subway trip.</sub></td>
+</tr>
 </table>
 
-### Unit 3D
+## See inside
 
-The building and its real neighbours in 3D, with sun, shadows, the view from the window and from inside
-the apartment.
+The 3D tab holds Unit 3D (the building in its real city, with sun and shadows) and the Floor plan studio. Both draw the same room
+and the same city. The Paramount Tower 25E views use the renter's own furniture and a facade bearing read from their photos.
 
 <table>
-<tr><td colspan="2"><img src="images/unit-orbit.png" alt="Unit 3D"><br><sub>Emerald Green 1211: provenance chips (listing says, assumed, matched by BIN), units in the building with compass dials, Orbit / Window / Inside / Plan / Top cameras, towers under construction drawn dashed, the window panel and a day strip comparing floors 12 and 21 on October 15</sub></td></tr>
-<tr><td width="50%"><img src="images/unit-window-12.png" alt="Floor 12 window"><br><sub>From the 12th-floor window at 1 pm: in the shadow of 326 West 37th Street</sub></td><td width="50%"><img src="images/unit-window-21.png" alt="Floor 21 window"><br><sub>Same line, 21st floor: direct sun, One Manhattan West, and a permitted tower outlined where it will stand</sub></td></tr>
-<tr><td width="50%"><img src="images/unit-inside.png" alt="Inside camera"><br><sub>Inside: the floor plan's walls and windows at the real slab height, with the sun patch on the floor at 11:30 am</sub></td><td width="50%"><img src="images/unit-plan-view.png" alt="Plan camera"><br><sub>North-up plan camera with the window and the filed new buildings around it</sub></td></tr>
-<tr><td width="50%"><img src="images/unit-orbit-dec.png" alt="Winter shadows"><br><sub>December 21 at 12:30 pm: long winter shadows</sub></td><td width="50%"><img src="images/unit-maybury.png" alt="Another building at sunset"><br><sub>Another building, 22nd floor, 7:30 pm on June 21: Hudson Yards with proposed and rising towers outlined</sub></td></tr>
-<tr><td width="50%"><img src="images/unit-sunpath.png" alt="Sun path"><br><sub>Sun paths against the skyline from the window; dashed, the skyline from the compare floor</sub></td><td width="50%"><img src="images/unit-floors.png" alt="Sun by floor and month"><br><sub>Direct-sun hours on the 15th of each month for every floor; your floor outlined</sub></td></tr>
-<tr><td width="50%"><img src="images/chart-sunpath.png" alt="Report chart: sun path"><br><sub>Report chart from <code>apartmentscout site --charts</code>: sun path, floor 12</sub></td><td width="50%"><img src="images/chart-sun-by-floor.png" alt="Report chart: sun by floor"><br><sub>Report chart: direct sun by floor and month</sub></td></tr>
+<tr>
+<td width="50%" valign="top"><img src="images/inside-orbit-day.png" alt="Unit 3D by day: the tower among its neighbours with the window marked"><br><b>Unit 3D by day</b><br><sub>Paramount Tower 25E at 1 pm on October 15: the window on floor 25 facing ESE (a bay), the sun ray to it, a tower under construction drawn dashed, street trees and the "What's measured vs assumed" chip at the top left.</sub></td>
+<td width="50%" valign="top"><img src="images/inside-orbit-night.png" alt="Unit 3D at night with lit windows"><br><b>The same view at night</b><br><sub>8:30 pm: facades are shader-drawn with lit windows, the sun is below the horizon and the HUD says Night.</sub></td>
+</tr>
+<tr>
+<td valign="top"><img src="images/inside-skyline-dusk.png" alt="The Midtown skyline at dusk from Unit 3D"><br><b>The skyline, drawn from its parts</b><br><sub>6:30 pm, looking west from above and east of the tower: the Empire State Building and the Chrysler Building are built from their set-back parts and spires, with 30 Hudson Yards, Bank of America Tower and One Vanderbilt labelled.</sub></td>
+<td valign="top"><img src="images/inside-measured-chip.png" alt="The measured vs assumed chip opened"><br><b>Measured, sourced or assumed</b><br><sub>The chip open: building heights from a source (1,029 buildings), the facade bearing of 119 degrees measured against landmarks in the renter's photos, the position along the facade assumed, the floor height estimated, the floor plan from a source and the furniture confirmed as the renter's own.</sub></td>
+</tr>
+<tr>
+<td valign="top"><img src="images/inside-bay.png" alt="Inside the bedroom, looking out of the bay window"><br><b>Inside, through the bay</b><br><sub>The Inside camera at 11:30 am, looking out of the bedroom's angled windows at the 25th-floor slab height: the river, a park's canopy and the neighbouring towers, with the sun coming through the glass. Chips switch between rooms, bays, corners and the sofa, bed and desk.</sub></td>
+<td valign="top"><img src="images/inside-furniture.png" alt="Inside the living room from the sofa"><br><b>Your own furniture</b><br><sub>From the sofa: the desk, chair and sofa the renter owns, at their real sizes in a bright room, with the same city outside the window. The daylight map and the blinds are one click away.</sub></td>
+</tr>
+<tr>
+<td valign="top"><img src="images/inside-floor-plan.png" alt="The floor plan studio with the 2D plan and the 3D room"><br><b>The floor plan studio</b><br><sub>The Paramount Tower 25E plan in 2D and 3D, "Using your furniture" with 10 of 10 pieces placed and all clear, and bed and sofa TV distances marked ideal. Sun patches, fit checks and eye-level cameras are in the same studio.</sub></td>
+<td valign="top"><img src="images/inside-sun-by-floor.png" alt="Direct sun hours by floor and month" width="300"><br><b>Sun by floor and month</b><br><sub>Emerald Green 1211's facade: hours of direct sun on the 15th of each month for every floor, from 0 to 9 hours, with floor 12 outlined as the chosen floor. A click jumps the 3D view to that floor and month.</sub></td>
+</tr>
+<tr>
+<td valign="top"><img src="images/inside-park-trees.png" alt="A park drawn as grass and trees in Unit 3D"><br><b>Parks and trees</b><br><sub>Atlas 38D, floor 38, at 2 pm: a park drawn as a lawn with its trees from the NYC Parks inventory, and street trees along the avenues. They are context and are never counted as shade in the sun hours.</sub></td>
+<td valign="top"><img src="images/inside-river.png" alt="The Hudson River and piers in Unit 3D at sunset"><br><b>Water and permitted towers</b><br><sub>Henry Hall 23J on June 21 at 7 pm: the Hudson River and the piers from surveyed hydrography, and proposed and permitted towers drawn dashed where they will stand. The sun is behind the facade.</sub></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><img src="images/inside-light-theme.png" alt="Unit 3D in the light theme"><br><b>Unit 3D in the light theme</b><br><sub>The Maybury, floor 22, at 6 pm on June 21: direct sun on the window from the west (280 degrees), with the Hudson River beyond, in the light theme.</sub></td>
+</tr>
 </table>
 
-### Floor plan
+## Decide
+
+Visit, plan the tours, then share a page or a memo.
 
 <table>
-<tr><td width="68%"><img src="images/plan-bird.png" alt="Floor plan studio"><br><sub>Synced 2D plan and 3D model under the real sun: ten pieces placed with fit checks all clear, bed and sofa TV distances marked ideal, eye-level cameras and two layout presets written for this plan</sub></td><td width="32%"><img src="images/plan-top.png" alt="Top down"><br><sub>Top-down at 5 pm on June 21; every window shaded by neighbours</sub></td></tr>
+<tr>
+<td width="50%" valign="top"><img src="images/decide-visit-history.png" alt="Visit notes in the listing drawer"><br><b>Visit notes and decision history</b><br><sub>Sample notes from a visit to Paramount Tower 25E: rooms measured (293 ft²), ceiling, water pressure, noise at the window with a dB reading, signal, laundry, light with the time, the view, and whether the doorman, size and windows matched the listing. Findings sit beside the listing's facts, and the decision history below dates each tier and status change.</sub></td>
+<td width="50%" valign="top"><img src="images/decide-tour-planner.png" alt="The tour-day planner"><br><b>The tour-day planner</b><br><sub>Five stops from 10:00 am to 3:10 pm: when to leave by for each hop, walking or an estimated transit trip, a viewing time and a buffer, and a warning where a booked time is later than the plan. Add to calendar and Copy plan are at the top right.</sub></td>
+</tr>
+<tr>
+<td valign="top"><img src="images/decide-memo.png" alt="The decision memo"><br><b>The decision memo</b><br><sub>A ranked table of the five saved homes with money, size, commute, score, tier and open items, then the weights that mattered and a page per home. Print it or save it as a PDF; your notes stay out unless you tick them.</sub></td>
+<td valign="top"><img src="images/decide-share-page.png" alt="The read-only shortlist page"><br><b>A page to send</b><br><sub>The read-only Share shortlist page: five homes, a median of $5,032 a month, a schematic map with the subway lines and a ranked list, then a card per home with its photos, price and reasons.</sub></td>
+</tr>
+<tr>
+<td valign="top"><img src="images/decide-records.png" alt="A building's public records report"><br><b>Building records</b><br><sub>The due-diligence report for Emerald Green #1211: a records score of 90 and a street-noise score of 51, four areas to check (heat and hot water complaints, heavy construction nearby, 311 noise, bedbug filings) and a "What matters" table that labels every item a report, not a finding.</sub></td>
+<td valign="top"><img src="images/decide-research-queue.png" alt="The research queue"><br><b>What you still don't know</b><br><sub>The Research tab: the finalist standard (none of the 434 open homes has every fact yet), counts of missing size, fees and media, and a queue ranked by the points each unknown could swing, with questions ready to copy for the leasing office.</sub></td>
+</tr>
 </table>
 
-### Paramount Tower 25E
-
-The unit the search ended on: $4,995 a month plus $37 in fees, E line on the 24th floor, a nine-minute walk to
-Grand Central. It has no in-unit washer/dryer; the renter waived that must-have for the space and the view, so
-it still costs amenity points but no longer gates the unit out. With the renter's building ratings and the graded
-interiors it ranks #1.
+## Set up
 
 <table>
-<tr><td colspan="2"><img src="images/map-paramount.png" alt="Paramount Tower 25E on the map"><br><sub>The listing drawer for 25E over the commute map</sub></td></tr>
-<tr><td width="50%"><img src="images/unit-paramount.png" alt="Paramount Tower 25E in Unit 3D"><br><sub>Unit 3D: the tower among its Murray Hill neighbours on October 15. The bay faces ESE (119°), read from the renter's own photos and a park sightline check: the only open side, and the only one with park canopy in view</sub></td><td width="50%"><img src="images/plan-paramount.png" alt="Paramount Tower 25E floor plan"><br><sub>Floor plan studio on the Glenwood E-line drawing: nine pieces placed, all clear, TV distances marked ideal</sub></td></tr>
-<tr><td width="50%"><img src="images/unit-paramount-window.png" alt="Window camera"><br><sub>Window camera, 24th floor, facing ESE over Second Avenue toward the East River, with parks and trees drawn from OpenStreetMap</sub></td><td width="50%"><img src="images/unit-paramount-inside.png" alt="Inside camera"><br><sub>Inside: the bedroom bay at the 25th-floor slab height, park canopy low in the right-hand angled pane as in the renter's photo</sub></td></tr>
+<tr>
+<td width="50%" valign="top"><img src="images/setup-wizard-city.png" alt="The new search wizard, step 1"><br><b>The new search wizard</b><br><sub>Step 1 of 8 (<code>?new=1</code>, or New search in the menu): a search name and the city, here Another city with Chicago typed in. Each step's answer is summarised on the left and a draft is kept in the browser. Served locally it also looks the city up.</sub></td>
+<td width="50%" valign="top"><img src="images/setup-wizard-review.png" alt="The wizard's review step"><br><b>Review the criteria.yaml</b><br><sub>The last step shows the generated <code>criteria.yaml</code>, a diff against the open search (13 differences) and, because this page cannot write files, Copy YAML, Apply as preview and Download criteria.yaml.</sub></td>
+</tr>
+<tr>
+<td valign="top"><img src="images/setup-menu.png" alt="The one menu at the top right"><br><b>One menu</b><br><sub>The top-right menu: this search (edit criteria, settings, new search), data (CSV, back up and restore picks, share, decision memo), appearance (theme, accent, density, office pin, golden-hour tint), comfort (motion, transparency, contrast, text size) and help.</sub></td>
+<td valign="top"><img src="images/setup-cli.png" alt="Command-line output"><br><b>The command line</b><br><sub>Real output on the example: <code>apartmentscout city</code> says what the city has (geocoding, OpenStreetMap buildings, streets and parks, floor plans, NYC open data, three GTFS feeds), and <code>score --top 10</code> prints the ranking.</sub></td>
+</tr>
 </table>
 
-### Research: records
-
-Records now sit inside the Research tab, next to the research queue and media.
+## On a phone
 
 <table>
-<tr><td><img src="images/records.png" alt="Records report"><br><sub>A due-diligence report for one building: PLUTO facts, record and street-noise scores, metric tiles, a "What matters" table (issue, evidence, practical significance), monthly timelines of 311 and official records, 311 by hour and type, complaints and crime by category, collapsible ledgers, research notes and sources.</sub></td></tr>
+<tr>
+<td width="33%" valign="top" align="center"><img src="images/phone-map.png" alt="The map and ranked cards on a phone" width="260"><br><b>Map and cards</b><br><sub>The commute map on top, ranked cards in a sheet below, and a bottom tab bar.</sub></td>
+<td width="33%" valign="top" align="center"><img src="images/phone-unit-3d.png" alt="Unit 3D on a phone" width="260"><br><b>Unit 3D</b><br><sub>The 3D tab with the Unit 3D and Floor plan switch, the camera modes and the layer tools.</sub></td>
+<td width="33%" valign="top" align="center"><img src="images/phone-visit-notes.png" alt="Visit notes on a phone" width="260"><br><b>Visit notes</b><br><sub>Sample notes opened with <code>?visit=&lt;listing-id&gt;</code> for one hand at the home: big steppers, rooms with their areas, and the camera in the bar below.</sub></td>
+</tr>
 </table>
 
-### Research
-
-<table>
-<tr><td width="50%"><img src="images/research.png" alt="Research queue"><br><sub>The finalist standard and its gaps, then the research queue: missing and stale facts, points at stake, last check and copyable questions</sub></td><td width="50%"><img src="images/research-media.png" alt="Research media"><br><sub>Media: every image of a home grouped by listing, with scope tabs and counts, a broker-mark filter and the credit on hover; details under Photos below</sub></td></tr>
-</table>
-
-### Shortlist: tours
-
-Tours are a section of the Shortlist tab.
-
-<table>
-<tr><td><img src="images/tours.png" alt="Tours"><br><sub>Saved picks on a tier board (S, A, B, C, Pass) with tour times and notes, and below it the tour plan in nearest-next order from the office with walking and viewing minutes and a route map. The tour-day planner above it is shown under "Deciding".</sub></td></tr>
-</table>
-
-### Map lenses and route preview
-
-Hover a home and its commute route is drawn; the star and sun lenses change what the pins mean; the Shortlist can dock a
-map beside its table. The picks used in the starred, tray and tour shots are five example saves, not data from the search.
-
-<table>
-<tr><td width="50%"><img src="images/map-route-preview.png" alt="Route preview on hover"><br><sub>Route preview, subway lens: hovering the Emerald Green 24D card draws its trip to Grand Central on the map, an 11-minute walk (dashed), the S shuttle on its own line, a short walk at the end, and a 17-minute pill</sub></td><td width="50%"><img src="images/map-starred-lens.png" alt="Starred-only lens"><br><sub>The "★ 5" chip counts your saved picks and shows only those pins, ringed in gold, with a fit button and <b>+ List</b> to filter the cards too; the Shortlist tab counts the same five</sub></td></tr>
-<tr><td width="50%"><img src="images/map-sun-lens.png" alt="Sun lens"><br><sub>Sun lens: pins and price tags coloured by direct-sun hours in October (0.0 to 5.7 h) for the four homes that have a site model; every other home is grey and marked "?" and the legend says so, with a month stepper</sub></td><td width="50%"><img src="images/list-split-view.png" alt="Shortlist split view"><br><sub>Shortlist split view: the table's 60 filtered homes beside a docked mini map of exactly those homes; hovering a row (Orion Condominium 14D) previews its route, here a bus trip marked "path approximate"</sub></td></tr>
-</table>
-
-### Filters, rail and ranking
-
-<table>
-<tr><td width="50%"><img src="images/map-filter-chips.png" alt="Filter chips"><br><sub>Filter chips above the results: Target ≤ $5,000, ≤ 25 min · Best, Full-time doorman and Gym, each removable with its ×, plus Clear all; the list is down to 40 homes</sub></td><td width="50%"><img src="images/rail-collapsed.png" alt="Collapsible rail sections"><br><sub>Collapsible rail: Search, Budget, Must-haves and Status are folded to one-line summaries ("Within budget ≤ $5,450", "None", "Active") so the weight controls fit on screen</sub></td></tr>
-<tr><td width="50%"><img src="images/tradeoff-pad.png" alt="Trade-off pad"><br><sub>Trade-off pad: one dot trades Cost, Commute and Space against each other; pointing at a preset ring (Biggest and nicest) previews how the top ten would re-order and who falls out, before you click to apply it</sub></td><td width="50%"><img src="images/map-rank-changes.png" alt="Rank-change badges"><br><sub>After switching the weight preset to Cheapest good enough, ▲ and ▼ badges beside each card's rank show how far it moved (▲7 on the new #1, ▲175 on #6, ▼1 on #5)</sub></td></tr>
-<tr><td width="50%"><img src="images/map-compact.png" alt="Compact density"><br><sub>Compact density: smaller photos, two badges per card and a tighter rail, so more cards fit on screen</sub></td><td width="50%"><img src="images/card-photo-counts.png" alt="Card photo counts" width="300"><br><sub>The results column at 2x: each photo shows its count by group ("2 unit · 24 building", "20 building"); the count is a button that opens the lightbox</sub></td></tr>
-</table>
-
-Price-history sparklines and the "since your last visit" pill are not shown: the example data records no price changes
-or snapshots, and the dashboard draws neither without them.
-
-### Undo, search, shortcuts and comfort
-
-<table>
-<tr><td width="50%"><img src="images/undo-toast.png" alt="Undo toast"><br><sub>Starring Orion Condominium 23A shows a toast with an Undo button and the ⌘Z hint; the star, the Shortlist count and the "★ 1" chip have already changed</sub></td><td width="50%"><img src="images/palette-plain-words.png" alt="Plain-language search"><br><sub>⌘K with a sentence typed: the first row previews what it understood ("1 bd · ≤ $5,000 · ≤ 20 min subway to Grand Central · W/D", 20 of 434 active homes) before anything changes</sub></td></tr>
-<tr><td width="50%"><img src="images/cheatsheet.png" alt="Keyboard cheat sheet"><br><sub>The <kbd>?</kbd> cheat sheet: searchable, with the keys for the view you are on (Map and results) listed first and Shortlist, Compare and Unit 3D beside them; 50 shortcuts in all</sub></td><td width="50%"><img src="images/coach-mark.png" alt="First-run tour"><br><sub>First-run tour (<code>?coach=1</code>): step 1 of 5 spotlights the filter rail with Skip tour and Next</sub></td></tr>
-<tr><td width="50%"><img src="images/settings-menu.png" alt="Settings menu"><br><sub>The settings menu: theme, density, search and picks actions including Share shortlist and Decision memo, accent swatches, the golden-hour tint, the three comfort switches, text size and Take the tour</sub></td><td width="50%"><img src="images/accent-amber.png" alt="Amber accent"><br><sub>The Amber accent: the active budget tiers, histogram, commute slider and the map pins follow it; nothing else changes</sub></td></tr>
-<tr><td width="50%"><img src="images/high-contrast.png" alt="High contrast"><br><sub>High contrast: every card and control gets a solid outline, text is brighter and the Top match link is underlined</sub></td><td></td></tr>
-</table>
-
-### Photos
-
-<table>
-<tr><td width="50%"><img src="images/lightbox.png" alt="Photo lightbox"><br><sub>The lightbox on Orion Condominium 23A: tabs by group with counts (All 41, Unit 12, Building 28, Floor plans 1), a thumbnail strip, the group, credit and position under the photo, zoom controls and the Plan switch</sub></td><td width="50%"><img src="images/lightbox-floor-plan.png" alt="Lightbox with floor plan"><br><sub>Plan set to Side by side: the unit photo beside the listing's own floor plan for 23A</sub></td></tr>
-<tr><td width="50%"><img src="images/blur-up-preview.png" alt="Blur-up previews"><br><sub>Blur-up: with the photo files held back, each card already shows a blurred preview of its photo and the unit and building counts</sub></td><td width="50%"><img src="images/research-media.png" alt="Research media gallery"><br><sub>Research &gt; Media: a justified gallery with scope filters and counts, <b>Hide broker-marked</b>, and By listing, By building and All images; tiles carry their group, and "2 units" marks photos shared with another unit</sub></td></tr>
-</table>
-
-### Deciding: tray, share and tours
-
-<table>
-<tr><td colspan="2"><img src="images/decision-tray.png" alt="Decision tray"><br><sub>The decision tray along the bottom: Compare picks A, B and C with photo, price and score, an empty slot D to drag a home onto, a Compare button with the count and a fold control; it is the same list as the Compare tab</sub></td></tr>
-<tr><td width="50%"><img src="images/share-shortlist-page.png" alt="Share shortlist page"><br><sub>The Share shortlist page (<code>dashboard/share/snapshot.html</code>): read-only, five homes, summary figures, a schematic map with the subway lines and a ranked list; each home below gets its photos, price and reasons</sub></td><td width="50%"><img src="images/share-decision-memo.png" alt="Decision memo"><br><sub>The decision memo: a ranked table with money, size, commute, score, tier and open items, the weights that mattered, then a page per home; use Print or save as PDF</sub></td></tr>
-<tr><td colspan="2"><img src="images/tour-day-planner.png" alt="Tour-day planner"><br><sub>Tour-day planner at the top of Shortlist &gt; Tours: day, start, where you set off from, viewing time and buffer; a timeline of five stops (4 h 45 min, 1 h 12 min of estimated travel), when to leave by for each hop, and "Arrive early, wait" flags where a booked time is later than the plan; Add to calendar and Copy plan sit top right</sub></td></tr>
-</table>
-
-### New search wizard
-
-<table>
-<tr><td width="50%"><img src="images/wizard-basics.png" alt="New search wizard: basics"><br><sub><code>?new=1</code>: step 1 of 8, with every step's answer summarised in the left rail and the draft saved in the browser</sub></td><td width="50%"><img src="images/wizard-pick-on-map.png" alt="Placing a destination on the map"><br><sub>Places: <b>Place on map</b> hides the dialog and asks you to click the map to drop the destination pin</sub></td></tr>
-<tr><td colspan="2"><img src="images/wizard-review.png" alt="Wizard review step"><br><sub>Review: the generated criteria.yaml, a diff against the open search (13 differences), and, because this page cannot write files, Copy YAML, Apply as preview and Download criteria.yaml</sub></td></tr>
-</table>
-
-### The CLI
-
-<table>
-<tr><td><img src="images/cli.png" alt="CLI output"><br><sub><code>commute</code>, <code>site</code> and <code>score</code> on the example search</sub></td></tr>
-</table>
-
-### More screens
-
-<table>
-<tr><td width="50%"><img src="images/map-bus.png" alt="Bus lens"><br><sub>Commute lens: bus</sub></td><td width="50%"><img src="images/map-walk.png" alt="Walk lens"><br><sub>Commute lens: walk rings</sub></td></tr>
-<tr><td><img src="images/settings.png" alt="Search settings"><br><sub>Search settings</sub></td><td><img src="images/drawer-money.png" alt="Money"><br><sub>Money: every month, at signing, over the lease</sub></td></tr>
-<tr><td><img src="images/unit-daylight.png" alt="Daylight"><br><sub>Daylight and blockers</sub></td><td><img src="images/unit-light-theme.png" alt="Unit 3D light"><br><sub>Unit 3D, light theme</sub></td></tr>
-<tr><td><img src="images/plan-light-tab.png" alt="Plan light"><br><sub>Floor plan light tab</sub></td><td><img src="images/plan-tracer.png" alt="Tracer"><br><sub>Plan tracer</sub></td></tr>
-<tr><td><img src="images/compare-light.png" alt="Compare light"><br><sub>Compare, light theme</sub></td><td><img src="images/map-light-drawer.png" alt="Map light"><br><sub>Map, light theme</sub></td></tr>
-<tr><td><img src="images/mobile-drawer.png" alt="Phone drawer" width="300"><br><sub>Phone: listing panel</sub></td><td><img src="images/mobile-unit.png" alt="Phone unit" width="300"><br><sub>Phone: Unit 3D</sub></td></tr>
-</table>
-
-## Earlier tools from the search
+<details>
+<summary><b>Earlier tools from the search</b>: the one-off prototypes the dashboard grew out of (click to open)</summary>
 
 The one-off tools an agent built during the Manhattan search, kept as design references and as examples
 of what an agent can produce with this workflow. *Each was a prototype built by an agent during the
@@ -289,3 +254,5 @@ The reports that became the Records view.
 <tr><td width="50%"><img src="gallery/henry--henry-hall-311.jpg" alt="Henry Hall 23J 311 and enforcement"><br><sub>Henry Hall 23J: 311 and enforcement</sub></td><td width="50%"><img src="gallery/paramount--paramount-comparison.jpg" alt="Paramount and alternatives"><br><sub>Paramount and alternatives: a ranked exact-unit comparison</sub></td></tr>
 <tr><td width="50%"><img src="gallery/poker--poker-amenities.jpg" alt="Poker tables hiding behind amenity names"><br><sub>Poker rooms: tables hiding behind amenity names, and an eight-player shortlist</sub></td><td></td></tr>
 </table>
+
+</details>

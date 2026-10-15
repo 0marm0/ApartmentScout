@@ -3,14 +3,14 @@
 
     python scripts/landing_images.py _site/images
 
-The screenshots in docs/images/ are 1 MB PNGs, fine for the README and far too heavy for a web page. landing/index.html
+The screenshots in docs/images/ are 0.4 to 1 MB PNGs, fine for the README and far too heavy for a web page. landing/index.html
 names the files it wants (`images/<name>.webp`, and `images/<name>-800.webp` for the small step of a `srcset`); each is
 made here from docs/images/<name>.png, so re-shooting a screenshot under the same name updates the page with no other
-change. Only the files the page names are written, so the published site no longer carries all 80 PNGs.
+change. Only the files the page names are written, so the published site carries a few dozen WebP files, not every PNG.
 
     <name>.webp        the screenshot at its own size (never upscaled), quality 80
     <name>-800.webp    800 px wide; a tall screenshot (a long panel) is cropped to 16:10 from the top, which is all the page shows of it
-    og.jpg             1200 x 630 social card cut from map-commute.png (WebP is not reliably accepted by link previews)
+    og.jpg             1200 x 630 social card cut from hero-map.png (WebP is not reliably accepted by link previews)
 
 Needs Pillow (`pip install Pillow`, part of the dev extras).
 """
@@ -67,7 +67,7 @@ def main() -> int:
             p = a.out / f"{name}-{SMALL}.webp"
             s.save(p, "WEBP", quality=76, method=6)
             total += p.stat().st_size
-    card = Image.open(SRC / "map-commute.png").convert("RGB")
+    card = Image.open(SRC / "hero-map.png").convert("RGB")
     card = card.crop((0, 0, card.width, int(card.width * 630 / 1200))).resize((1200, 630), Image.LANCZOS)
     card.save(a.out / "og.jpg", "JPEG", quality=84, optimize=True, progressive=True)
     total += (a.out / "og.jpg").stat().st_size
