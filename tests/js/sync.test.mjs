@@ -73,6 +73,18 @@ test('facts, weights, office answers, the decision trail and whole-value keys ro
   assert.deepEqual(roundTrip('compare', ['a', 'b']), ['a', 'b']);
 });
 
+test('the move plan is cut per field of each home, a ticked step per step; what is read in What\'s new is one item', () => {
+  const plan = { v: 1, chosen: 'h1', homes: { h1: { start: '2026-12-01', movers: 1100, done: { apply: '2026-10-15', sign: '2026-10-20' }, dates: { book: '2026-11-10' }, custom: [{ id: 'c1', title: 'Cable box', date: '2026-11-30' }], updated: '2026-10-15' } } };
+  assert.deepEqual(M.flatten('moveplan:S', plan).map((i) => i.key).sort(), ['moveplan:S/chosen', 'moveplan:S/homes/h1/custom', 'moveplan:S/homes/h1/dates/book', 'moveplan:S/homes/h1/done/apply',
+    'moveplan:S/homes/h1/done/sign', 'moveplan:S/homes/h1/movers', 'moveplan:S/homes/h1/start', 'moveplan:S/homes/h1/updated', 'moveplan:S/v']);
+  assert.deepEqual(roundTrip('moveplan:S', plan), plan);
+  assert.ok(M.isSynced('whatsnew:seen:S') && !M.isSynced('whatsnew:notify:S') && !M.isSynced('whatsnew:notified:S') && !M.isSynced('report-opts'), 'a device\'s notification choice and display options stay put');
+  assert.deepEqual(M.flatten('whatsnew:seen:S', 'digest-7').map((i) => i.key), ['whatsnew:seen:S']);
+  // two devices tick different steps of one home: both stay
+  const mac = { 'moveplan:S/homes/h1/done/apply': live('2026-10-15', 5, 'mac1') }, phone = { 'moveplan:S/homes/h1/done/sign': live('2026-10-16', 6, 'ph01') };
+  assert.deepEqual(Object.keys(M.mergeItems(mac, phone)).length, 2);
+});
+
 test('the studio library is cut per project, so two projects saved on two devices both stay', () => {
   const lib = { p1: { name: 'One', rooms: [] }, p2: { name: 'Two', rooms: [] } };
   assert.deepEqual(M.flatten('plan-projects.data', lib).map((i) => i.key).sort(), ['plan-projects.data/p1', 'plan-projects.data/p2']);
@@ -276,6 +288,15 @@ test('a version-1 picks backup imports as old items: a copy that has the item ke
   assert.equal(merged['picks/h/note'].v, 'newer here');
   assert.equal(merged['picks/h/saved'].v, true);
   assert.equal(merged['weights/cost'].v, 30);
+});
+
+test('a backup with a move plan imports it, dated by each home\'s own day, and the file view carries it back', () => {
+  const backup = { version: 1, search: 'S', picks: {}, moveplan: { v: 1, homes: { h1: { start: '2026-12-01', done: { apply: '2026-10-15' }, updated: '2026-10-15' } } } };
+  const doc = M.parseDoc(backup);
+  assert.equal(doc.items['moveplan:S/homes/h1/start'].t, '2026-10-15T00:00:00.000Z');
+  assert.equal(doc.items['moveplan:S/homes/h1/done/apply'].v, '2026-10-15');
+  const v1 = M.legacyView(doc.items, 'S');
+  assert.deepEqual(v1.moveplan.homes.h1.done, { apply: '2026-10-15' });
 });
 
 test('old backups of every shape import without throwing', () => {

@@ -4,7 +4,7 @@
 // as seen in this browser. Where the browser has them it also sets the app badge on the Home Screen icon (Badging API) and, only
 // after the renter presses the button in the panel, shows one local notification when the installed app opens and finds something new
 // (Notification API). Neither needs a server. Alerts while the app is closed come from the GitHub issue (docs/guides/alerts.md).
-import { S, store, loadJSON, openDrawer } from '../app.js';
+import { S, store, loadJSON, openDrawer, reloaders } from '../app.js';
 import { $, esc, toast } from '../util.js';
 import { parseAlerts, badgeCount, shouldNotify, notificationText, sectionsOf, subtitle, notifyState } from './whatsnew-model.js';
 
@@ -175,6 +175,7 @@ export async function init() {
   // a tap on the notification: the service worker focuses this tab and sends the message (or opens ?whatsnew=1)
   navigator.serviceWorker?.addEventListener('message', (e) => { if (e.data?.type === 'OPEN_WHATSNEW') show($('menuBtn')); });
   seenId = loadSeen();
+  reloaders['whatsnew:seen'] = () => { seenId = loadSeen(); if (loaded) paint(); };   // the sync layer wrote what the other device has read
   digest = await loadAlerts();
   loaded = true;
   paint();

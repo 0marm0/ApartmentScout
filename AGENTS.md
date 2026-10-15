@@ -88,6 +88,7 @@ apartmentscout finishes                           # fill each plan's floor, wall
 apartmentscout viewcal import FILE                # a photo match exported from Unit 3D (Match a photo); `viewcal list`; `site <id>` then uses it
 apartmentscout score                              # score and rank
 apartmentscout report                             # shortlist.md
+apartmentscout report --homes ID ID --out report.pdf   # the decision report for 2 to 4 homes: cover, side-by-side table, a page per home, checklist (PDF through a headless browser, else HTML)
 apartmentscout questions --building knox --units 6B 7BA   # draft the leasing-office questions per building (never sends)
 apartmentscout share --picks picks.json --out shortlist.html   # read-only shortlist page; --memo for the decision memo
 apartmentscout tours-import picks.json            # visit findings from a picks backup into tours/ (score reads promoted facts)
