@@ -130,10 +130,11 @@ def test_unit_3d_on_a_phone_has_the_time_and_the_cameras_within_thumb_reach_and_
       return { h: st.height, w: st.width, vh: innerHeight, stageTop: st.top, dock: R(dock), modes: R(modes), over, range: dock.querySelector('input').min + '..' + dock.querySelector('input').max };
     }""")
     assert box["h"] >= 480, box                                                   # the picture gets the screen
-    assert box["dock"][1] > box["h"] * 0.8 and box["modes"][1] > box["h"] * 0.7, box   # time and cameras sit along the bottom edge
+    assert box["dock"][1] > box["h"] * 0.8, box                                   # the time sits along the bottom edge
+    assert 0 <= box["modes"][1] and box["modes"][3] < box["h"] * 0.4, box           # the camera buttons are inside the picture, in the top rows with the room switcher (css/views/unit.css)
     assert box["dock"][3] - box["dock"][1] >= 44 and box["modes"][3] - box["modes"][1] >= 36, box   # thumb-sized
-    # nothing sits over the middle of the picture: the centre box (30-70 % across, 25-65 % down) is free of overlays
-    cx0, cx1, cy0, cy1 = box["w"] * 0.3, box["w"] * 0.7, box["h"] * 0.25, box["h"] * 0.65
+    # nothing sits over the middle of the picture: the centre box (30-70 % across, 35-65 % down: the camera buttons and the room switcher take the top rows) is free of overlays
+    cx0, cx1, cy0, cy1 = box["w"] * 0.3, box["w"] * 0.7, box["h"] * 0.35, box["h"] * 0.65
     for name, (l, t, r, b) in box["over"]:
         assert r <= cx0 or l >= cx1 or b <= cy0 or t >= cy1, f"{name} covers the middle of the picture: {box}"
     # the dock moves the time: drag the slider and the clock follows; Play starts the day
@@ -163,7 +164,7 @@ def test_the_studio_on_a_phone_has_the_same_dock_and_a_clear_picture(open_page, 
       return { h: st.height, w: st.width, dock: R(document.querySelector('#pstage .rnq-dock')), cams: R(document.getElementById('psCams')), over };
     }""")
     assert box["h"] >= 480 and box["dock"][1] > box["h"] * 0.8 and box["cams"][1] > box["h"] * 0.7, box
-    cx0, cx1, cy0, cy1 = box["w"] * 0.3, box["w"] * 0.7, box["h"] * 0.25, box["h"] * 0.65
+    cx0, cx1, cy0, cy1 = box["w"] * 0.3, box["w"] * 0.7, box["h"] * 0.35, box["h"] * 0.65
     for name, (l, t, r, b) in box["over"]:
         assert r <= cx0 or l >= cx1 or b <= cy0 or t >= cy1, f"{name} covers the middle of the picture: {box}"
     pg.evaluate("() => { const r = document.querySelector('#pstage .rnq-dock-range'); r.value = '420'; r.dispatchEvent(new Event('input', { bubbles: true })); }")
