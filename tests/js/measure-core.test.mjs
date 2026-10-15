@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { normalisePlan } from '../../dashboard/js/plan/model.js';
 import { resolve } from '../../dashboard/js/plan/catalog.js';
 import {
-  fmtFtIn, fmtMetric, describeLength, dist3, measureInfo, measureLabel, snapTargets, flattenTargets, pickSnap, createMeasureStore, closestOnSegment, summarise,
+  fmtFtIn, fmtMetric, describeLength, dist3, measureInfo, measureLabel, snapTargets, flattenTargets, pickSnap, createMeasureStore, closestOnSegment, summarise, isMetricSearch, insetPoly,
 } from '../../dashboard/js/measure/core.js';
 
 // a 12 ft x 10 ft room, walls 4.8 in thick on the room edges, one window on the top wall, one door on the right wall
@@ -170,4 +170,20 @@ test('the list is bounded and loads back', () => {
   assert.equal(s.count, 3);
   s.place([0, 0, 0]); const next = s.place([9, 0, 0]);
   assert.ok(next.id > Math.max(...keep.map((m) => m.id)), 'ids keep counting');
+});
+
+test('a search is metric when its criteria say so, or when its plan was drawn in metres', () => {
+  assert.equal(isMetricSearch({ search: { units: 'metric' } }, { units: 'ft' }), true);
+  assert.equal(isMetricSearch({ search: { units: 'imperial' } }, { units: 'm' }), false);
+  assert.equal(isMetricSearch({}, { units: 'm' }), true);
+  assert.equal(isMetricSearch({}, { units: 'ft' }), false);
+  assert.equal(isMetricSearch(undefined, null), false);
+});
+
+test('an L-shaped room insets at every corner, reflex ones included', () => {
+  const L = [[0, 0], [100, 0], [100, 50], [50, 50], [50, 100], [0, 100]];
+  const inner = insetPoly(L, 2);
+  assert.deepEqual(inner[0].map(Math.round), [2, 2]);
+  assert.deepEqual(inner[3].map(Math.round), [48, 48], 'the reflex corner stays on the room side of the notch');
+  assert.deepEqual(inner[2].map(Math.round), [98, 48]);
 });

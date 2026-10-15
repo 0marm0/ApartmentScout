@@ -41,6 +41,8 @@ import { resolve as resolveItem } from './plan/catalog.js';
 import { stepView } from './plan/viewpoints.js';
 import { heightProvenance, confOf } from './city3d/facade-rules.js';   // [buildings3d] height source and confidence labels
 import { loadTreeLayers, saveTreeLayers, STREET_TREES_TITLE, PARK_TREES_TITLE } from './unit/treelayers.js';   // [park trees] street / park tree toggles, remembered per browser
+import { mountUnitMeasure } from './measure/unit-hook.js';   // [measure] the measuring tape in the Inside camera
+import { isMetricSearch } from './measure/core.js';
 
 let site = null, B0 = [], FUTB = [], edits = new Map(), B = [], T = null, FACES = [], LM = [], FUT = [], BF = null, stage = null, plan = null, interior = null;
 const st = {
@@ -278,6 +280,7 @@ async function load(id) {
     stage = new UnitStage($('gl'), $('stage'), $('uLabels')); UQ.adopt(stage);   // [feature J]
     stage.onCompass = (az) => { const n = $('uNeedle'); if (n) n.setAttribute('transform', `rotate(${-az} 20 20)`); };
     wireStage();
+    mountMeasure();   // [measure]
     new ResizeObserver(() => { stage.resize(); }).observe($('stage'));
     new ResizeObserver(() => drawPathChart()).observe($('pathCv').parentElement);
   }
@@ -594,6 +597,16 @@ function buildApartment() {
   syncTools();
 }
 let views = [], curView = null;
+/** [measure] The tape: a bridge of getters (the Inside camera's plan, pieces and stage), nothing copied. */
+let MS = null;
+function mountMeasure() {
+  if (MS || !stage) return;
+  MS = mountUnitMeasure({
+    stage: () => stage, canvas: $('gl'), stageEl: $('stage'), toolbar: $('uTools'), mode: () => st.mode, plan: () => plan, id: () => st.id,
+    items: () => (planInfo.layout?.items?.length && st.showFurniture !== false ? planInfo.layout.items : []).map((x) => resolveItem(x)).filter(Boolean),
+    metric: () => isMetricSearch(S.crit, plan), store, base: S.base,
+  });
+}
 const curOff = () => (curView ? curView.off : interior?.windows[st.inWin]?.bearingOff || 0);
 // [room3d] the studio's glass, blinds and relative-daylight map in the Inside camera: the same saved Light-tab inputs, the same model, drawn on this room's floor
 let dlOn = false, dlGroup = null;

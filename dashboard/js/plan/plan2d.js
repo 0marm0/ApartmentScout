@@ -193,7 +193,7 @@ function down(e) {
   if (ptrs.size === 2) { drag = null; pan = null; const [a, b] = [...ptrs.values()]; pinch0 = Math.hypot(a[0] - b[0], a[1] - b[1]); return; }
   const g = e.target.closest('[data-id]');
   svg.setPointerCapture(e.pointerId);
-  if (g) {
+  if (g && !handlers.locked?.()) {   // [measure] while the tape is out a click on a piece is a measurement, not a drag
     const id = g.dataset.id, p = toPlan(e.clientX, e.clientY);
     const it = handlers.item(id); if (!it) return;
     drag = { id, ox: it.x - p[0], oy: it.y - p[1], moved: false, sx: e.clientX, sy: e.clientY };
