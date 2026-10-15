@@ -33,5 +33,26 @@ Record everything under `price` with a source; put the quote date in `checked`.
 
 ## Draft the questions
 
-Fill `templates/landlord-questions.md` for each finalist and show it to the renter. Do not send it.
-Update `notes` with what is still open and rescore.
+Generate the draft instead of writing it from memory, one message per building:
+
+```bash
+apartmentscout questions --building knox            # units of interest in that building (shortlist, touring, applied, favourites, top-ranked)
+apartmentscout questions --units 6B 7BA --format md # named units, as Markdown
+apartmentscout questions --standard                 # add renewal, early exit, utilities and regulation questions
+```
+
+It reads the evidence already in `listings.json` and asks only what is open: which of two prices is right
+when `claims[]` disagree with `price` (the draft names both readings and where each came from), required
+monthly fees, an in-unit washer/dryer or other must-have behind an `unverified:` gate, an estimated size, a
+floor read off the unit number, availability and move-in costs. Fees and building amenities are asked once for
+the building; a question several units share is merged ("For 7BA and 6B: ..."); the rest are grouped by unit.
+The sign-off is the placeholder `[Your name]`, no address is filled in, and nothing is sent.
+
+Show the draft to the renter, who sends it from their own mail app (the dashboard's **Questions for the
+leasing office** sheet has Copy and a `mailto:` link with checkboxes per question). When the office replies,
+the renter pastes the answer under **Mark answered**; to put a confirmed value into `listings.json`, write it as
+an `updates.json` entry with the source and date ("leasing office reply (email), 2026-10-16") and run
+`apartmentscout handoff import updates.json --dry-run`. Detail: `docs/guides/leasing-office-questions.md`.
+
+Use `templates/landlord-questions.md` only when nothing is known yet about a unit. Update `notes` with what is
+still open and rescore.
