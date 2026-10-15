@@ -95,3 +95,31 @@ def test_neighbour_rows_carry_the_id_class_confidence_and_part_count():
             "components": {"0": [{"ring": [list(p) for p in lot], "base_m": 0, "top_m": 50, "kind": "tower", "source": "t"}]}}
     row = neighbour_records(site)[0]
     assert (row["id"], row["class"], row["height_conf"], row["parts"]) == ("1015862", "O4", "high", 1)
+
+
+def test_a_failed_landmark_chunk_costs_only_that_chunk(monkeypatch):
+    """The near blocks keep their parts when a request for far landmarks fails; the failure is reported, not raised."""
+    from apartmentscout.geo import components as comp
+
+    monkeypatch.undo()                                      # conftest stubs fetch_osm_parts for every test: this one tests the real one
+    near_way = _way(1, _box(0, 0, 20, 20), height="30")
+    far_way = _way(2, _box(900, 0, 920, 20), height="300")
+    calls = []
+
+    def fake(query, cache_dir=None, refresh=False):
+        calls.append(query)
+        if len(calls) == 1:
+            return [near_way]
+        if "40.75" in query:                               # the second chunk fails
+            raise RuntimeError("Overpass unavailable: HTTP 500")
+        return [far_way, near_way]                         # a duplicate element is kept once
+
+    monkeypatch.setattr(comp, "overpass", fake)
+    tall = [(40.74, -73.98, 60.0)] * comp.TALL_CHUNK + [(40.75, -73.98, 60.0)] * 3
+    problems: list[str] = []
+    parts = comp.fetch_osm_parts(LAT, LON, 600, None, False, tall=tall, problems=problems)
+    assert sorted(p["osm"] for p in parts) == ["way/1", "way/2"]
+    assert len(calls) == 3 and len(problems) == 1 and "HTTP 500" in problems[0]
+    with pytest.raises(RuntimeError):                       # the near query itself still raises: the site builder reports it
+        monkeypatch.setattr(comp, "overpass", lambda *a, **k: (_ for _ in ()).throw(RuntimeError("down")))
+        comp.fetch_osm_parts(LAT, LON, 600, None, False)

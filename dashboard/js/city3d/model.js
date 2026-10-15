@@ -115,7 +115,7 @@ function decorFor(e) {
   const d = Math.min(12, Math.max(3, w * (0.6 + 0.5 * ((s * 13) % 1))));
   const hh = Math.min(5.5, 2.6 + Math.log10(Math.max(e.roof, 10)) * 1.2 * (0.8 + 0.4 * ((s * 5) % 1)));
   const rot = Math.atan2(q.p[3] - q.p[1], q.p[2] - q.p[0]);   // along the first wall
-  if (!hasBulk && inRing(q.p, rx, ry)) out.push({ kind: 'box', x: rx, y: ry, w, d, rot, z0: q.top, z1: q.top + hh });
+  if (!hasBulk && (e.roof > 90 || (s * 19) % 1 < 0.72) && inRing(q.p, rx, ry)) out.push({ kind: 'box', x: rx, y: ry, w, d, rot, z0: q.top, z1: q.top + hh });
   const yr = +e.meta.year || 2000, tank = yr < 1945 && e.roof >= 18 && e.roof <= 95 && ((s * 11) % 1) < 0.65;
   if (tank) {
     const ang = rot + 1.2, k = Math.sqrt(q.area) * 0.3;
