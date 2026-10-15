@@ -38,13 +38,19 @@ export function mountBedControl(host, o) {
   const pop = document.createElement('div'); pop.className = 'bd-pop'; pop.hidden = true; pop.setAttribute('role', 'region'); pop.setAttribute('aria-label', 'Does the storage bed fit?');
   const bar = document.createElement('div'); bar.className = 'bd-bar';
   el.append(bar, pop); host.append(el);
-  let open = false, cache = null;
+  let open = false, cache = null, barSig = '';
   const verdict = () => { try { cache = o.report(); } catch { cache = null; } return cache; };
   function render() {
     const st = o.state();
     el.hidden = !st?.available;
     if (!st?.available) return;
-    bar.innerHTML = bedControlHTML(st, { fit: verdict()?.grade ?? null, open });
+    const grade = verdict()?.grade ?? null, sig = JSON.stringify([st.current, st.exact, grade, st.choices.map((c) => c.id)]);
+    if (sig !== barSig) {   // redraw the buttons only when they changed, and keep the keyboard where it was
+      const had = el.contains(document.activeElement) ? document.activeElement.dataset?.bedChoice || (document.activeElement.matches?.('[data-bed-fit]') ? '#fit' : '') : '';
+      bar.innerHTML = bedControlHTML(st, { fit: grade, open }); barSig = sig;
+      if (had) (had === '#fit' ? bar.querySelector('[data-bed-fit]') : bar.querySelector(`[data-bed-choice="${had}"]`))?.focus();
+    }
+    bar.querySelector('[data-bed-fit]')?.setAttribute('aria-expanded', String(open));
     pop.hidden = !open;
     if (open) pop.innerHTML = bedFitHTML(cache || verdict(), o.piece?.());
   }

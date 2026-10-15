@@ -1470,9 +1470,9 @@ let accUI = null, furnMeta = null;
 function accChip() {
   if (!site || !CAL) return;
   if (!accUI) { accUI = accuracyChip({ host: 'unit', onOpen: openEvidence, openLabel: 'Open the evidence' }); $('uViews').append(accUI.el);   /* [camera] under the camera controls, in the same column */ loadFurnitureMeta(S.base, S.manifest).then((m) => { furnMeta = m; accChip(); }); }
-  const n = planInfo.layout?.items?.length || 0;
+  const cand = new Set((planInfo.inventory?.pieces || []).filter((p) => p.candidate).map((p) => p.id)), n = (planInfo.layout?.items || []).filter((x) => !cand.has(x.id)).length;   // [bed option] a candidate purchase is not one of the renter's pieces
   accUI.update(accuracyRows({ site, plan: plan || null, cal: { state: CAL.state, fh: CAL.fh, slab: CAL.slabAt(st.floor), src: CAL.measured?.src }, floor: st.floor, facing: st.az, t: st.t, viewCal: st.src === 'photo-landmarks' ? viewCal : null,
-    furniture: n ? { name: furnMeta?.name || 'Furniture', confirmed: furnMeta?.confirmed || null, count: n, looks: furnMeta?.looks || null } : null }));
+    furniture: n ? { name: furnMeta?.name || 'Furniture', confirmed: furnMeta?.confirmed || null, count: n, looks: furnMeta?.looks || null, candidates: furnMeta?.candidates || [] } : null }));
 }
 function openEvidence() {
   const el = $('evPanel'); el?.closest('details')?.setAttribute('open', '');
