@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 
 import pytest
+from conftest import look_click
 
 pytestmark = pytest.mark.e2e
 
@@ -68,7 +69,7 @@ def _unit(s, unit: str) -> None:
 def _studio(s, unit: str) -> None:
     s.page.goto(f"{s.origin}/?date=2026-10-15&pmin=720#plan/{unit}")
     s.page.wait_for_function("() => window.__plan3d && !!document.querySelector('#psLook .lk-chip')", timeout=90000)
-    s.page.click("#psLook .lk-chip:has-text('Living room')")   # an eye-level view: full-height walls and windows
+    look_click(s.page, "#psLook .lk-chip:has-text('Living room')")   # an eye-level view: full-height walls and windows
     s.page.wait_for_timeout(1500)
 
 
