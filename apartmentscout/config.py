@@ -53,6 +53,7 @@ SCORING_DEFAULTS: dict[str, Any] = {
     "preset": None,          # name of a preset; `weights:` entries then adjust it key by key
     "stale_days": 21,        # a listing checked longer ago than this gets a stale gate
     "as_of": None,           # date to score against (default: today); pin it for reproducible runs
+    "unverified_price_band": 0.05,   # how far above the seen rent an unverified price may sit (the cost range's top)
 }
 
 
