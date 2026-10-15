@@ -218,6 +218,15 @@ that keep snapshots, `apartmentscout history snapshot`). Price drops and rises c
 visit with the latest; a home that is now gone or rejected is never announced as new. *Mark as seen* moves the baseline to today.
 A reload in the same tab keeps the baseline; a first visit has none.
 
+### What's new (alerts)
+
+Code: `features/whatsnew.js` (screen, badge, notification), `whatsnew-model.js` (pure), `css/whatsnew.css`; data: `alerts.json`, written by
+`apartmentscout build` from `apartmentscout alerts`. A **What's new** row in the *This search* section of the top-right menu opens a panel (a bottom sheet on
+a phone) listing new homes that fit, price drops and rises, gone, rank jumps and answered unknowns, each a link to the home; a dot on the
+menu button says there is a digest you have not opened. Where the browser has the Badging API the Home Screen icon shows the count, and a
+button in the panel (never earlier) turns on one local notification when the installed app opens with something new. Unlike the pill
+above, which compares recorded history with your last visit, this is the digest of the last alerts run. See [alerts](alerts.md).
+
 ### Why a home moved, and the unknowns that move its score
 
 Code: `features/moves.js` (screen) and `moves-model.js` (the arithmetic and the sentences), `unknowns.js` (screen), `facts-model.js`

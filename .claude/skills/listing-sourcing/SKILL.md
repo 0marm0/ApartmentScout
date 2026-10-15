@@ -99,3 +99,21 @@ After every batch of new or edited rows:
    is a change, not a new listing.
 
 Finish with `apartmentscout geocode && apartmentscout commute && apartmentscout score`.
+
+## Watching for changes and alerting the renter
+
+Inventory changes daily, so loop back here regularly (and see `docs/guides/alerts.md`).
+
+1. **Re-check what you are allowed to.** `apartmentscout monitor --dry-run` shows the plan; without `--dry-run` it re-reads the
+   watchlist's own pages on allowed hosts only. Portals (StreetEasy, Zillow, RentHop, Apartments.com, Corcoran ...) block automated
+   reads: never name them in `monitor.allow_hosts` to force it, never solve a bot check, never log in. For those, ask the renter to
+   open the page or paste the details, or work from the renter's own saved-search alert emails.
+2. **Add what you learned**: new units as rows with sources and `checked` dates; a changed price in `price.*` with `price.basis`
+   and `price.checked`; a gone unit as `status: gone`, kept.
+3. **Say what changed**: `apartmentscout score && apartmentscout alerts`. The digest (new homes that fit, homes that now fit, price
+   drops and rises, gone or back, rank jumps into the top 10, unknowns resolved) is what to tell the renter, in that order. Do not
+   paraphrase beyond it, and report an unverified price as unverified. Then `apartmentscout build` so the dashboard's What's new
+   panel shows it.
+4. **Phone alerts are the renter's choice.** The opt-in GitHub workflow (`.github/workflows/alerts.yml`, variable
+   `APARTMENTSCOUT_ALERTS=on`) needs the search in a private repository. Offer it; do not set repository variables, push or create
+   issues on the renter's behalf unless they ask.
