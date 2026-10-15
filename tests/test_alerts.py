@@ -61,8 +61,9 @@ def test_a_known_home_that_starts_to_fit_says_why_it_did_not():
     g = groups(old, new)
     assert ids(g["fits"]) == ["a", "b"]
     assert g["fits"][0]["why"] == "was over budget" and g["fits"][1]["why"] == "was failing a must-have: in unit wd"
-    assert {r["id"] for r in g["drops"]} == {"a"}                      # the rent also moved: 5300 to 4950
-    assert "jumps" not in g and "new" not in g
+    assert (g["fits"][0]["from"], g["fits"][0]["to"], g["fits"][0]["delta"]) == (5300, 4950, -350)   # got cheaper: one item, not two
+    assert "drops" not in g and "jumps" not in g and "new" not in g
+    assert "(was over budget before; down from $5,300)" in A.digest_text(A.make_digest(old, new))
 
 
 def test_price_drops_and_rises_with_the_amount_largest_drop_first():
@@ -134,7 +135,7 @@ def test_headline_names_the_kinds_of_change_and_caps_them():
     assert A.headline({}) == ""
     assert A.headline({"fits": 1, "gone": 2, "jumps": 3}, top=10) == "1 now fits, 2 gone, 3 into the top 10"
     long = A.headline({g: 1 for g in A.GROUPS})
-    assert long.count(",") == 3 and long.endswith("5 more kinds of change")
+    assert long == "1 new, 1 now fits, 1 price drop, 1 price rise, 4 more"
 
 
 def test_first_run_is_a_baseline_with_nothing_to_report():
