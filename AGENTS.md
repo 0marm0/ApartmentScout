@@ -48,14 +48,14 @@ Work through these stages in order. Each has a skill with the detail.
 
 | # | Stage | Skill | Output |
 |---|---|---|---|
-| 1 | Intake: interview the renter (`config/intake.yaml`), write `criteria.yaml` | `apartment-search` | `searches/<name>/criteria.yaml` |
+| 1 | Intake: interview the renter (`config/intake.yaml`: city, places, transit feed, money, home, taste), write `criteria.yaml` | `apartment-search` | `searches/<name>/criteria.yaml` |
 | 2 | Sourcing: find every candidate listing | `listing-sourcing` | `listings.json` rows with sources |
-| 3 | Enrichment: geocode, commute, city layers | `commute-analysis` | `apartmentscout geocode / commute / layers` |
+| 3 | Enrichment: city, geocode, commute, city layers | `commute-analysis` | `apartmentscout city / geocode / commute / layers` |
 | 4 | Scoring and first shortlist | `apartment-search` | `apartmentscout score`, `report` |
 | 5 | Building dossier for every shortlisted building | `building-dossier` | `research/<id>.md`, `research/dossiers/` |
 | 6 | Noise deep dive where noise is a risk | `noise-deep-dive` | section in the research note |
-| 7 | Light and view study for the finalists | `unit-light-and-view` | `sites/<id>.json`, charts |
-| 8 | Floor plan model when a plan is available | `floor-plan-model` | `plans/<id>.json` |
+| 7 | The buildings around each home, then the light and view study | `unit-light-and-view` | `apartmentscout surroundings`, `sites/<id>.json`, charts |
+| 8 | Floor plans: ask for one for every finalist; trace, write or add it | `floor-plan-model` | `plans/<id>.json` (`apartmentscout plans`) |
 | 9 | Lease, fees and concessions check | `lease-and-fees` | price fields, questions list |
 | 10 | Tour prep and decision memo | `tour-and-decide` | `templates/` filled in |
 
@@ -66,17 +66,22 @@ them, because price history and "what else was there" matter at negotiation time
 
 ```bash
 pip install -e .                                  # once
-apartmentscout init searches/my-search --city nyc # new search folder from the template
-apartmentscout init searches/my-search --criteria answers.yaml   # ... or from a checked criteria file (or --interactive)
+apartmentscout init searches/my-search --city "Chicago, IL" --interactive   # new search: asks for the city (looked up), places, transit feed, money ...
+apartmentscout init searches/my-search --city nyc # ... or the commented template (nyc switches on NYC Open Data)
+apartmentscout init searches/my-search --criteria answers.yaml   # ... or from a checked criteria file
 apartmentscout criteria --check searches/my-search/criteria.yaml  # validate criteria.yaml and print a summary
 export APARTMENTSCOUT_SEARCH=searches/my-search   # or pass --search to every command
 apartmentscout import listings.csv                # add or update listings from CSV/JSON
-apartmentscout geocode                            # coordinates (NYC also gets BBL/BIN)
+apartmentscout city                               # this search's city, time zone, map centre, feeds and what the city lacks
+apartmentscout city "Chicago, IL" --starter       # set the city; add the starter transit feed (or --feed URL, checked before it is written)
+apartmentscout geocode                            # coordinates for listings and destinations (saved into criteria.yaml; NYC also gets BBL/BIN)
 apartmentscout commute                            # transit commute grid + per-listing times, every destination (--dest NAME: just some)
 apartmentscout places                             # street, park and neighbourhood geometry for place filters (east of 3rd Ave, near a park)
 apartmentscout layers                             # NYC: 311 noise density layer
 apartmentscout dossier [id ...]                   # NYC public records (default: shortlist)
-apartmentscout site <id> --floor 12 --charts      # 3D site model, sun and view study
+apartmentscout surroundings                       # buildings, parks and streets around the shortlist (--all, --status, --rebuild ID, --refresh)
+apartmentscout site <id> --floor 12 --charts      # one home's 3D site model, sun and view study (surroundings runs this for many)
+apartmentscout plans                              # which homes have a floor plan; `plans add FILE --id <listing-id>` adds one
 apartmentscout score                              # score and rank
 apartmentscout report                             # shortlist.md
 apartmentscout share --picks picks.json --out shortlist.html   # read-only shortlist page; --memo for the decision memo
@@ -145,7 +150,24 @@ apartmentscout handoff import updates.json --dry-run   # read the adjudication t
 - Buildings and heights: city footprint datasets where available, otherwise OpenStreetMap.
 
 For NYC the CLI already wires in GeoSearch, PLUTO, HPD, DOB, ECB, 311, NYPD and building
-footprints. For other cities, see `docs/guides/new-city.md`.
+footprints. Every other city runs on OpenStreetMap and the generic modules.
+
+## A renter in a new city
+
+Do not assume New York. Ask for the city first and run `apartmentscout city "<city>"` (or `init --city "<city>"`): it sets
+`search.city`, `city_name`, `timezone` and `map_center`, and `criteria --check` warns about New York leftovers. Then, in order:
+
+1. **Transit.** Offer the starter feed (`apartmentscout city --starter`) or find the agency's GTFS zip with the renter (Mobility
+   Database, Transitland, the agency's developer page) and add it with `--feed URL`. Without a feed, commute times are walking only: say so.
+2. **Places.** Geocode each destination and confirm the match with the renter (`geocode` saves the coordinates).
+3. **Surroundings.** After the shortlist exists, run `apartmentscout surroundings` and read `--status` with the renter: default heights
+   close by, which building each home matched, what the city does not provide. Do not present sun hours as exact where defaults are many.
+4. **Floor plans.** For every finalist ask whether the listing has a plan. If the renter has the image or PDF, offer the tracer
+   (Floor plan tab, *New plan from image*, *Save to the search folder*) or read it yourself with the `floor-plan-model` skill; if only
+   room sizes exist, write the plan from those. Save at `plans/<listing-id>.json` (`apartmentscout plans add` checks it), then `build`.
+
+The whole path for a human is `docs/guides/getting-started.md`; going further (a city profile, records, a noise layer) is
+`docs/guides/new-city.md`.
 
 ## Quality bar for a finalist
 

@@ -216,19 +216,21 @@ def surround_args(root: Path, **kw: Any) -> types.SimpleNamespace:
 def test_surroundings_runs_each_home_keeps_going_after_a_failure_and_skips_finished_ones(tmp_path: Path, monkeypatch, capsys) -> None:
     root = make_search(tmp_path)
     calls: list[str] = []
+    monkeypatch.setattr(sur, "RETRY_WAIT_S", 0.0)
     monkeypatch.setattr(cli, "main", fake_main(calls, {"alfama-1a"}))
     sur.cmd_surroundings(surround_args(root))
     out = capsys.readouterr().out
-    assert calls == ["rua-augusta-3e", "alfama-1a"]
+    assert calls == ["rua-augusta-3e", "alfama-1a", "alfama-1a"], "a download failure is tried once more"
+    assert "trying again" in out
     assert "done in" in out and "failed - RuntimeError" in out and "Overpass servers are busy" in out
     assert "1 built, 0 skipped, 1 failed." in out
     calls.clear()
     sur.cmd_surroundings(surround_args(root))
-    assert calls == ["alfama-1a"], "the finished home is not fetched again"
+    assert calls == ["alfama-1a", "alfama-1a"], "the finished home is not fetched again (the failing one is, and retried)"
     assert "already has a site model" in capsys.readouterr().out
     calls.clear()
     sur.cmd_surroundings(surround_args(root, rebuild=True))
-    assert calls == ["rua-augusta-3e", "alfama-1a"]
+    assert calls == ["rua-augusta-3e", "alfama-1a", "alfama-1a"]
 
 
 def test_surroundings_status_fetches_nothing(tmp_path: Path, monkeypatch, capsys) -> None:
