@@ -8,7 +8,8 @@ import { initEnhance } from './enhance.js';
 import { initTheme, flipTheme, initShell, parseRoute, syncSubnav } from './shell.js';
 import { initMedia, cardMediaHTML, afterDrawerMedia, mediaTransition } from './features/media.js';   // photos: lightbox, blur-up, counts
 import { loadPreviews } from './features/lqip.js';
-import './features/comfort.js';   // [feature C] comfort + accent attributes on <html> apply at import, before first paint
+import './features/comfort.js';
+import { initDestPin } from './features/dest-pin-style.js';   // [office pin] gold or classic destination marker   // [feature C] comfort + accent attributes on <html> apply at import, before first paint
 import { cardsEmpty } from './features/empty.js';   // [feature C]
 // results list and filter rail features (chips, collapsible sections, windowed cards, rank motion, density, price history, worker scoring)
 import { initResults, setCardItems, clearCardList, cardIds, cardPos, cardEl, revealCard, decorateRail, railFocus, restoreRailFocus, rescoreWeights, deltaHTML, trendHTML } from './features/results.js';
@@ -850,6 +851,7 @@ async function boot() {
   emit('compare'); emit('saved');
   // the top-bar search box opens the command palette; the text filter it sets shows here with a clear button
   initPalette(); initEnhance(); initMedia({ S, loadJSON, openDrawer, label });
+  initDestPin();
   import('./features/index.js').then((m) => m.initFeatures()).catch((e) => console.warn('features unavailable', e));   // [features] decision workflow
   const q = $('q'), openQ = (seed = '') => openPalette(seed || S.filters.q || '');
   q.addEventListener('click', () => openQ());

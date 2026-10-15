@@ -402259,7 +402259,7 @@
   },
   "score": {
    "version": "2.1",
-   "overall": 78.4,
+   "overall": 77.1,
    "parts": {
     "cost": 81.4,
     "space": 44.2,
@@ -402267,7 +402267,7 @@
     "amenities": 73.3,
     "light_view": 90.6,
     "building": 93.7,
-    "interior": 79.0,
+    "interior": 70.3,
     "quiet": 46.0,
     "move_date": null,
     "renewal_risk": 100.0,
@@ -402281,8 +402281,8 @@
    },
    "confidence": 100,
    "range": [
-    77.8,
-    79.0
+    76.4,
+    77.7
    ],
    "monthly_cost": 5032.0,
    "budget_tier": "Stretch",
@@ -402353,12 +402353,13 @@
     },
     {
      "dim": "interior",
-     "pts": 4.3,
-     "text": "+4 interior: from the unit's photos: 4/5",
+     "pts": 3.0,
+     "text": "+3 interior: from the unit's photos: 4/5",
      "items": [
       "interior 4/5, kitchen 4/5",
       "renovation updated, appliances modern-stainless (+4)",
-      "Renter's photos 1-2 show the 25E bedroom bay and its view; Glenwood same-building photos 3-14 (virtually staged) show granite, stainless GE appliances, white cabinets, parquet and bay windows."
+      "staged, rendered or low-confidence photos: pulled 30% toward neutral",
+      "Glenwood same-line and same-building photos (virtually staged) show granite, stainless GE appliances, white cabinets, parquet and bay windows; the view grade comes from the renter, who saw the unit."
      ]
     },
     {
@@ -402387,6 +402388,7 @@
    ],
    "flags": [
     "floor_inferred",
+    "interior_staged",
     "renter_rated",
     "size_estimated"
    ],
@@ -402622,8 +402624,6 @@
   },
   "photos": [
    "https://glenwoodadmin.com/webdav/images/listings/Paramount%20Tower/32E%20Living%20Dining%20v_2.jpg",
-   "media/paramount-tower-25e/p-37793b79b9a4.webp",
-   "media/paramount-tower-25e/p-114397b39450.webp",
    "https://glenwoodadmin.com/webdav/images/listings/Paramount%20Tower/43H%20Living%20Dining%20%20v_1.jpg",
    "https://glenwoodadmin.com/webdav/images/listings/Paramount%20Tower/33B%20Living%20Dining%20B%20v_2.jpg",
    "https://glenwoodadmin.com/webdav/images/listings/Paramount%20Tower/33B%20Living%20Dining%20B%20v_1.jpg",
@@ -402638,8 +402638,6 @@
   ],
   "photos_local": [
    "media/shared/57247fc91788745e.webp",
-   "media/paramount-tower-25e/p-37793b79b9a4.webp",
-   "media/paramount-tower-25e/p-114397b39450.webp",
    "media/shared/f2700a9904a6e4e4.webp",
    "media/shared/6d98bc306eaa8137.webp",
    "media/shared/fa08c3c3615dd61d.webp",
@@ -402661,24 +402659,6 @@
     "credit": "Glenwood Management marketing image",
     "title": "32E living/dining (E line, virtually staged)",
     "page": "https://www.glenwoodnyc.com/properties/midtown-east/paramount-tower/"
-   },
-   {
-    "url": "media/paramount-tower-25e/p-37793b79b9a4.webp",
-    "local": "media/paramount-tower-25e/p-37793b79b9a4.webp",
-    "scope": "exact-unit",
-    "source": "renter",
-    "credit": "Renter's own photo",
-    "title": "25E · Corner bay window in the bedroom: PTAC unit under it, floor covered in brown paper and blue tape, city view with green tree canopy",
-    "page": null
-   },
-   {
-    "url": "media/paramount-tower-25e/p-114397b39450.webp",
-    "local": "media/paramount-tower-25e/p-114397b39450.webp",
-    "scope": "exact-unit",
-    "source": "renter",
-    "credit": "Renter's own photo",
-    "title": "25E · Bay window corner looking out over the street grid and green tree canopy below",
-    "page": null
    },
    {
     "url": "https://glenwoodadmin.com/webdav/images/listings/Paramount%20Tower/43H%20Living%20Dining%20%20v_1.jpg",
@@ -402791,9 +402771,9 @@
    "view": 5,
    "view_note": "open skyline with park canopy below (renter's photos from the unit)",
    "building_luxury": 4,
-   "scope": "mixed",
+   "scope": "staged-or-rendered",
    "confidence": "medium",
-   "evidence": "Renter's photos 1-2 show the 25E bedroom bay and its view; Glenwood same-building photos 3-14 (virtually staged) show granite, stainless GE appliances, white cabinets, parquet and bay windows.",
+   "evidence": "Glenwood same-line and same-building photos (virtually staged) show granite, stainless GE appliances, white cabinets, parquet and bay windows; the view grade comes from the renter, who saw the unit.",
    "method": "listing photos graded against a written rubric (AI-assisted)",
    "reviewed": "2026-10-14"
   },
