@@ -7,6 +7,7 @@ import threading
 from pathlib import Path
 
 import pytest
+from conftest import block_foreign, settled
 import yaml
 
 from apartmentscout import cities as C
@@ -33,7 +34,8 @@ def _next(page, n: int = 1) -> None:
 def _open_static(open_page):
     s = open_page("?new=1#map")
     s.page.wait_for_selector(WIZARD, timeout=10000)
-    s.page.wait_for_timeout(300)
+    s.page.wait_for_selector(".wz-scrim.on", timeout=10000)
+    settled(s.page, 20000, ticks=3)
     return s
 
 
@@ -106,7 +108,7 @@ def served(tmp_path: Path, browser):
     threading.Thread(target=lambda: httpd.serve_forever(0.02), daemon=True).start()
     base = f"http://127.0.0.1:{state.port}"
     ctx = browser.new_context(viewport={"width": 1440, "height": 900}, reduced_motion="reduce", accept_downloads=True)
-    ctx.route("**/*", lambda r: r.continue_() if r.request.url.startswith((base, "data:", "blob:")) else r.abort())
+    block_foreign(ctx, base)
     page = ctx.new_page()
     errors: list[str] = []
     page.on("pageerror", lambda e: errors.append(str(e)))

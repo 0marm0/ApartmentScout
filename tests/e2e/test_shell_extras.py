@@ -10,6 +10,8 @@ from __future__ import annotations
 import json
 
 import pytest
+from conftest import block_foreign
+from conftest import settled
 
 pytestmark = pytest.mark.e2e
 
@@ -318,7 +320,9 @@ def test_the_tour_walks_five_steps_once_and_restarts_from_the_menu(op) -> None:
         spot = pg.evaluate("() => { const r = document.querySelector('.coach-spot').getBoundingClientRect(); return [r.width, r.height]; }")
         assert spot[0] > 20 and spot[1] > 20
         pg.keyboard.press("ArrowRight")
-        pg.wait_for_timeout(450)
+        if i < 4:   # the next step's card is up (after the last step the card goes away, which is awaited below)
+            pg.wait_for_function("(n) => document.getElementById('coachStep').textContent.toLowerCase() === `step ${n} of 5`", arg=i + 2, timeout=10000)
+            settled(pg, 20000, ticks=3)
     assert titles[0].startswith("Start with the filters") and titles[-1].startswith("See the light")
     pg.wait_for_selector(".coach-card", state="detached")
     assert pg.evaluate("() => JSON.parse(localStorage.getItem('as:coach')).done") is True
@@ -327,8 +331,10 @@ def test_the_tour_walks_five_steps_once_and_restarts_from_the_menu(op) -> None:
     pg.click("#mnTour")
     pg.wait_for_selector(".coach-card", timeout=10000)
     assert pg.evaluate("() => document.activeElement.textContent") == "Next"
-    pg.keyboard.press("ArrowRight"); pg.wait_for_timeout(300)
-    pg.keyboard.press("ArrowLeft"); pg.wait_for_timeout(300)
+    pg.keyboard.press("ArrowRight")
+    pg.wait_for_function("() => document.getElementById('coachStep').textContent.toLowerCase() === 'step 2 of 5'", timeout=10000)
+    pg.keyboard.press("ArrowLeft")
+    pg.wait_for_function("() => document.getElementById('coachStep').textContent.toLowerCase() === 'step 1 of 5'", timeout=10000)
     assert pg.inner_text("#coachT").startswith("Start with the filters")
     pg.keyboard.press("Escape")
     pg.wait_for_selector(".coach-card", state="detached")
@@ -411,7 +417,7 @@ def calm_page(browser, base_url: str):
     def _open(theme: str = "dark", init: str | None = None):
         ctx = browser.new_context(viewport={"width": 1440, "height": 900}, color_scheme=theme, reduced_motion="no-preference")
         ctxs.append(ctx)
-        ctx.route("**/*", lambda r: r.continue_() if r.request.url.startswith((base_url, "data:", "blob:")) else r.abort())
+        block_foreign(ctx, base_url)
         if init:
             ctx.add_init_script(init)
         pg = ctx.new_page()
@@ -491,7 +497,8 @@ def test_golden_hour_tint_is_off_by_default_and_follows_the_sun(calm_page, base_
         pg2, errs2 = calm_page(init="localStorage.setItem('as:comfort', JSON.stringify({golden: true}));")
         pg2.goto(f"{base_url}/?goldenAt={at}#map")
         pg2.wait_for_selector("#goldenTint")
-        pg2.wait_for_timeout(1500)
+        pg2.wait_for_function("() => !!(window.__golden && window.__golden.tint)", timeout=10000)
+        settled(pg2, 20000, ticks=4)
         strength = pg2.evaluate("() => window.__golden.tint.strength")
         assert lo <= strength <= hi, (at, strength)
         assert not errs2

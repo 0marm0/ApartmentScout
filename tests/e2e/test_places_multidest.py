@@ -14,6 +14,7 @@ import sys
 from pathlib import Path
 
 import pytest
+from conftest import block_foreign
 import yaml
 
 # the e2e helpers (server, Session, console filter) live in tests/e2e/conftest.py; load them by path so the name `conftest`
@@ -254,7 +255,7 @@ def open_multi(browser, multi):
     def _open(path: str = "#map", theme: str = "dark", width: int = 1440, height: int = 900) -> Session:
         ctx = browser.new_context(viewport={"width": width, "height": height}, color_scheme=theme, device_scale_factor=1, reduced_motion="reduce")
         contexts.append(ctx)
-        ctx.route("**/*", lambda r: r.continue_() if r.request.url.startswith((multi, "data:", "blob:")) else r.abort())
+        block_foreign(ctx, multi)
         page = ctx.new_page()
         if THROTTLE > 1:
             ctx.new_cdp_session(page).send("Emulation.setCPUThrottlingRate", {"rate": THROTTLE})

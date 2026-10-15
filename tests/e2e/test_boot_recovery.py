@@ -11,6 +11,7 @@ import json
 from pathlib import Path
 
 import pytest
+from conftest import block_foreign
 
 pytestmark = pytest.mark.e2e
 
@@ -31,7 +32,7 @@ CORRUPT = {
 
 def _context(browser, base_url: str, width: int = 1280, height: int = 800):
     ctx = browser.new_context(viewport={"width": width, "height": height}, reduced_motion="reduce", service_workers="block")
-    ctx.route("**/*", lambda r: r.continue_() if r.request.url.startswith((base_url, "data:", "blob:")) else r.abort())
+    block_foreign(ctx, base_url)
     return ctx
 
 

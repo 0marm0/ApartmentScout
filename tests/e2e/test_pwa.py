@@ -22,6 +22,7 @@ import urllib.parse
 from pathlib import Path
 
 import pytest
+from conftest import block_foreign
 
 pytestmark = pytest.mark.e2e
 ROOT = Path(__file__).resolve().parents[2]
@@ -107,7 +108,7 @@ def open_app(browser, server):
     def _open(query: str = "", hash_: str = "#map", width: int = 1280, height: int = 860):
         ctx = browser.new_context(viewport={"width": width, "height": height}, reduced_motion="reduce")
         ctxs.append(ctx)
-        ctx.route("**/*", lambda r: r.continue_() if r.request.url.startswith((server.origin, "data:", "blob:")) else r.abort())
+        block_foreign(ctx, server.origin)
         page = ctx.new_page()
         errors: list[str] = []
         page.on("pageerror", lambda e: errors.append(str(e)[:300]))
@@ -288,7 +289,7 @@ def test_saved_photos_are_cached_on_demand_and_capped(open_app, server) -> None:
 # ------------------------------------------------------------------ where it must stay out of the way
 def test_a_source_copy_of_the_dashboard_never_registers_a_worker(browser, base_url) -> None:
     ctx = browser.new_context(viewport={"width": 1280, "height": 860})   # service workers allowed (the default)
-    ctx.route("**/*", lambda r: r.continue_() if r.request.url.startswith((base_url, "data:", "blob:")) else r.abort())
+    block_foreign(ctx, base_url)
     page = ctx.new_page()
     errors: list[str] = []
     page.on("pageerror", lambda e: errors.append(str(e)))
