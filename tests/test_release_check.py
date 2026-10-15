@@ -94,7 +94,7 @@ def test_repo_manifest_covers_every_image_with_the_agreed_statuses() -> None:
 @pytest.mark.skipif(not shutil.which("git"), reason="git not installed")
 def test_ignore_rules(tmp_path: Path) -> None:
     subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
-    (tmp_path / ".gitignore").write_text("searches/*\n!searches/.gitkeep\n_reference/\nHANDOFF.md\n")
+    (tmp_path / ".gitignore").write_text("searches/*\n!searches/.gitkeep\n_reference/\nHANDOFF.md\nexamples/*/media/\n")
     f = rc.check_ignored(tmp_path)
     assert levels(f, "FAIL") == ["dashboard/data-private/ is not git-ignored"]
     (tmp_path / ".git" / "info").mkdir(exist_ok=True)
