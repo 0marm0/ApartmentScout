@@ -119,7 +119,7 @@ routes every destination and writes the heat maps. Check three or four homes aga
 them: it is a timetable estimate, see [methodology](methodology.md).
 
 For more accurate walking, set `commute.transit.walk_model: network` (walk the OpenStreetMap street network to the station's
-real entrances; `station_entrances: osm`). The first run downloads the street network for the area and takes a few minutes.
+real entrances; `station_entrances: osm`). The first run downloads the street network for the area and takes a few minutes; if the shared OpenStreetMap server is busy it says so and uses the straight-line metric instead.
 
 ## 6. Getting the buildings around each home
 
@@ -220,7 +220,7 @@ To take the search with you:
 ```bash
 apartmentscout export --xlsx my-search.xlsx            # workbook: edit the weights, scores and ranks recalculate
 apartmentscout handoff pack out.zip --to codex         # hand the search to another agent
-apartmentscout build --standalone my-search.html       # the whole dashboard in one file (run scripts/bundle.sh once first; needs Node.js)
+apartmentscout build --standalone my-search.html       # the whole dashboard in one file (uses the bundle in dashboard/dist; after editing dashboard/js run scripts/bundle.sh, which needs Node.js)
 ```
 
 The standalone file embeds your data, so share it only with people who should see your listings and notes. To host the
@@ -240,4 +240,4 @@ dashboard publicly see [dashboard](dashboard.md), and run `python scripts/releas
 | `surroundings`: "Overpass servers are busy" | the shared OpenStreetMap server is overloaded | wait a few minutes and run it again; finished homes are kept |
 | Unit 3D has no home / says nothing for it | no site model yet | `apartmentscout surroundings ID` |
 | `criteria --check` warns about the time zone or map centre | New York defaults left in another city | `apartmentscout city "<your city>"` |
-| `build --standalone` says the bundle is missing | the single-file build needs Node.js once | `scripts/bundle.sh` |
+| `build --standalone` says the bundle is missing | the single-file build embeds the bundle in `dashboard/dist` | `scripts/bundle.sh` (needs Node.js) |
