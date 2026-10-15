@@ -93,6 +93,7 @@
   "preset": "balanced",
   "stale_days": 21,
   "as_of": null,
+  "unverified_price_band": 0.05,
   "presets": {
    "balanced": {
     "version": 1,
