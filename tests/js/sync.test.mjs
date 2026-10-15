@@ -92,7 +92,7 @@ test('values of an unexpected shape are cut as far as they go, never thrown on',
 function device(id, start = 0) {
   let n = start;
   const clock = M.makeClock(M.EPOCH, () => Date.UTC(2026, 9, 14, 12, 0, 0) + (n += 1000));
-  return { id, clock, ledger: M.newLedger(), tick: () => (n += 1000), run(values, hints = {}) { const r = M.reconcile(this.ledger, values, { clock, device: id, hints }); this.ledger = r.ledger; return r; } };
+  return { id, clock, ledger: M.newLedger(), tick: () => (n += 1000), run(values, hints = {}) { const r = M.reconcile(this.ledger, values, { clock, device: id, hints, now: M.iso(Date.UTC(2026, 9, 14, 12, 0, 0) + n) }); this.ledger = r.ledger; return r; } };
 }
 
 test('the first scan keeps the times the data carries; later edits get the time of the edit', () => {
@@ -107,6 +107,20 @@ test('the first scan keeps the times the data carries; later edits get the time 
   assert.equal(second.local['picks/h/saved'].t, M.EPOCH, 'an unchanged item keeps its time');
   const third = a.run({ 'picks/h/note': 'new', 'picks/h/saved': true });
   assert.deepEqual(third.changed, [], 'nothing changed, nothing stamped');
+});
+
+test('a change that arrives with its own recent-enough time (a visit read from the search folder) keeps it; a day, or a time of now, does not', () => {
+  const a = device('aaaa');
+  a.run({ 'findings:S/h/note': 'x' });
+  const old = '2026-10-10T09:30:00.000Z';
+  const r = a.run({ 'findings:S/h/note': 'x', 'findings:S/h/water': 3, 'picks/h/saved': true }, { 'findings:S/h/water': old, 'picks/h/saved': '2026-10-10T00:00:00.000Z' });
+  assert.equal(r.local['findings:S/h/water'].t, old, 'dated by the visit it came from');
+  assert.ok(r.local['picks/h/saved'].t > '2026-10-14', 'a bare day is not trusted');
+  const fresh = M.iso(Date.UTC(2026, 9, 14, 12, 0, 5));
+  const r2 = a.run({ 'findings:S/h/note': 'y' }, { 'findings:S/h/note': fresh });
+  assert.notEqual(r2.local['findings:S/h/note'].t, fresh, 'an edit made now is stamped by the clock');
+  const r3 = a.run({ 'findings:S/h/note': 'z' }, { 'findings:S/h/note': '2026-10-01T00:00:01.000Z' });
+  assert.ok(r3.local['findings:S/h/note'].t > r2.local['findings:S/h/note'].t, 'never older than the write it replaces');
 });
 
 test('an item that appears after the first scan is stamped now, not with the epoch', () => {

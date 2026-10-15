@@ -40,8 +40,8 @@ def github() -> FakeGitHub:
 @pytest.fixture
 def device(open_page, github):
     """device(name) -> Session of a fresh browser context wired to the fake GitHub, with sync loaded."""
-    def make(path: str = "#map"):
-        s = open_page(path)
+    def make(path: str = "#map", theme: str = "dark", width: int = 1440, height: int = 900):
+        s = open_page(path, theme=theme, width=width, height=height)
         ctx = s.page.context
         ctx.add_init_script(TUNING)
         github.install(ctx)
@@ -545,3 +545,82 @@ def test_a_photo_taken_on_the_phone_ends_up_in_the_macs_search_folder(browser, s
         assert list(folder.glob("*.webp")), "the photo copy was stored in the folder by the local API, like a photo taken on the Mac"
     finally:
         ctx.close()
+
+
+# ------------------------------------------------------------------ the panel itself: accessibility and a 390 px phone
+AXE = Path(__file__).parent / "vendor" / "axe.min.js"
+AXE_JS = """async () => { const r = await axe.run(document.querySelector('#syncSheet'), { runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'] } });
+  return r.violations.map((v) => v.id + ': ' + v.nodes.map((n) => n.target.join(' ')).join(' | ')); }"""
+
+
+@pytest.mark.parametrize("theme", ["dark", "light"])
+def test_the_panel_passes_axe_in_every_state(device, github, theme: str) -> None:
+    s = device(theme=theme)
+    s.page.add_script_tag(path=str(AXE))
+    open_panel(s)
+    assert s.page.evaluate(AXE_JS) == [], "setup"
+    s.page.fill("#syToken", "not a token")
+    assert s.page.evaluate(AXE_JS) == [], "setup with a hint about the token"
+    s.page.fill("#syToken", TOKEN)
+    s.page.click("[data-sy-go]")
+    wait_status(s, "st.connected && st.phase === 'synced'")
+    assert s.page.evaluate(AXE_JS) == [], "connected"
+    s.page.click("[data-pane=file]")
+    s.page.wait_for_selector("[data-sy-download]:not([disabled])", timeout=20000)
+    assert s.page.evaluate(AXE_JS) == [], "file"
+    s.page.click("#syncSheet .sh-close")
+    s.page.click("#menuBtn")
+    assert s.page.evaluate("""async () => { const r = await axe.run(document.getElementById('appMenu'), { runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa'] } });
+      return r.violations.map((v) => v.id + ': ' + v.nodes.map((n) => n.target.join(' ')).join(' | ')); }""") == [], "the menu with its sync row"
+
+
+def test_the_panel_fits_a_390_px_phone_and_the_controls_are_thumb_sized(device, github) -> None:
+    s = device(width=390, height=844)
+    open_panel(s)
+    page = s.page
+    def check(label: str) -> None:
+        over = page.evaluate("""() => { const sh = document.querySelector('#syncSheet .sheet').getBoundingClientRect(), bad = [];
+          for (const el of document.querySelectorAll('#syncSheet .sh-body *')) { const r = el.getBoundingClientRect(); if (r.width && r.right > sh.right + 0.5) bad.push(el.className || el.tagName); }
+          return { bad: bad.slice(0, 5), sheetRight: sh.right, scrollX: document.documentElement.scrollWidth - innerWidth }; }""")
+        assert over["bad"] == [] and over["scrollX"] <= 0 and over["sheetRight"] <= 390.5, f"{label}: {over}"
+        small = page.evaluate("""() => [...document.querySelectorAll('#syncSheet button, #syncSheet label.btn, #syncSheet input:not([type=file]), #syncSheet [role=switch]')].filter((e) => e.offsetParent && !e.classList.contains('sh-close')
+          && e.getBoundingClientRect().height < 34 && !e.closest('details')).map((e) => (e.className || e.tagName) + ' ' + Math.round(e.getBoundingClientRect().height))""")
+        assert small == [], f"{label}: controls under 34 px tall: {small}"
+    check("setup")
+    page.fill("#syToken", TOKEN)
+    page.click("[data-sy-go]")
+    wait_status(s, "st.connected && st.phase === 'synced'")
+    check("connected")
+    page.click("[data-pane=file]")
+    page.wait_for_selector("[data-sy-download]:not([disabled])", timeout=20000)
+    check("file")
+    # the sheet is a bottom sheet on a phone and scrolls inside itself
+    box = page.evaluate("() => { const r = document.querySelector('#syncSheet .sheet').getBoundingClientRect(); return { top: r.top, bottom: r.bottom, h: innerHeight }; }")
+    assert box["bottom"] >= box["h"] - 1 and box["top"] > 20
+    assert page.evaluate("() => { const b = document.querySelector('#syncSheet .sh-body'); return b.scrollHeight > b.clientHeight; }")
+
+
+def test_the_menu_row_and_the_menu_button_show_the_state(device, github) -> None:
+    s = device()
+    assert s.page.inner_text("#mnSyncSt") == "Off"
+    assert s.page.evaluate("() => document.getElementById('menuBtn').dataset.sync ?? null") is None, "no dot while sync is off"
+    connect(s)
+    assert s.page.evaluate("() => document.getElementById('menuBtn').dataset.sync") == "ok"
+    assert re.match(r"Synced (just now|\d+ min ago)", s.page.inner_text("#mnSyncSt")), s.page.inner_text("#mnSyncSt")
+    github.down = True
+    set_pick(s, HOME, saved=True)
+    wait_status(s, "st.phase === 'offline'")
+    assert s.page.evaluate("() => document.getElementById('menuBtn').dataset.sync") == "warn"
+    github.down = False
+    s.page.keyboard.press("Escape")
+    wait_status(s, "st.phase === 'synced' && !st.pending", 20000)
+
+
+def test_the_palette_can_open_sync_and_run_it(device, github) -> None:
+    s = device()
+    s.page.keyboard.press("Control+k")
+    s.page.fill("#plQ", "sync across")
+    s.page.locator("#plList [role=option]", has_text="Sync across devices").click()
+    s.page.wait_for_selector("#syncSheet.on", timeout=10000)
+    s.page.keyboard.press("Escape")
+    s.page.wait_for_function("() => document.querySelector('#syncSheet')?.hidden === true", timeout=5000)

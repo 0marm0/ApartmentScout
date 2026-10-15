@@ -248,7 +248,10 @@ export function reconcile(ledger, values, { clock, device, hints = {}, hold = nu
     if (prev && !prev.x && prev.h === h) items[key] = prev;
     else {
       const first = !prev && !established;
-      items[key] = { t: first ? (hints[key] && legacyTime(key, value) === EPOCH ? hints[key] : legacyTime(key, value)) : clock.tick(), d: device, h };
+      // A change that arrives with a time the data itself carries (a visit read from the search folder keeps its own `updated`, minutes or days old) is
+      // dated by it; a change made here carries "now" in that field and gets the clock. A bare day is too coarse to trust: it is never used this way.
+      const h0 = hints[key], own = h0 && !/T00:00:00\.000Z$/.test(h0) && ms(h0) < ms(now) - 90000 && (!prev || h0 > prev.t) ? h0 : null;
+      items[key] = { t: first ? (hints[key] && legacyTime(key, value) === EPOCH ? hints[key] : legacyTime(key, value)) : own || clock.tick(), d: device, h };
       if (!first) changed.push(key);
     }
     local[key] = { t: items[key].t, d: items[key].d, v: value };
