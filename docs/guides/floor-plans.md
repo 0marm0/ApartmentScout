@@ -134,6 +134,53 @@ wall-mounted 55-inch TVs and a 4-seat dining table) and its first sizes come fro
 Apartment layout studio, with the TV study for Emerald Green 1211. The renter has since corrected the desk (71 in, brown wood, a
 task chair, a 32-inch monitor) and the dresser (IKEA MALM, 6 drawers), and answered where things go.
 
+### A bed you may buy beside your own (option pieces and candidates)
+
+A piece in `furniture.json` can be a **candidate purchase**: not something the renter owns, modelled from the maker's dimensions so they
+can see it in the room before they buy it. The example carries one, the Latitude Run storage bed (SKU BHLT1182, Queen, Brown Oak), beside the renter's own
+grey bed:
+
+```json
+{"id": "bed-latitude", "ref": "queen-storage-bed-towers", "label": "Latitude Run bed", "room": "bedroom", "w": 94, "d": 83.3, "h": 47.4,
+ "source": "manufacturer",
+ "candidate": {"name": "…", "brand": "Latitude Run", "retailer": "Wayfair", "sku": "BHLT1182", "size": "Queen", "colour": "Brown Oak",
+               "url": "https://…", "status": "candidate purchase, not owned", "weight_capacity_lb": 1000, "note": "…"},
+ "spec": {"overall": {"w": 94, "d": 83.3, "h": 47.4}, "headboard": {"depth": 3.9, "tower_w": 16.7}, "nightstand": {"w": 16.7, "d": 17, "h": 8.3, "bottom": 12},
+          "frame": {"w": 60.5, "rail_h": 13, "clearance": 4.5}, "mattress": {"w": 60, "d": 80, "h": 12},
+          "drawers": {"per_side": 2, "front_l": 30.7, "front_h": 11.8, "pull": 17}},
+ "spec_basis": {"overall.w": "spec", "headboard.tower_w": "diagram", "nightstand.bottom": "measured", "mattress.h": "assumed"},
+ "look": {"color": "#876f5c", "material": "wood", "basis": "manufacturer", "parts": {"panels": {"color": "#ece3d0", "material": "fabric", "finish": "sheen"}}}}
+```
+
+- **`spec` is the one place the maker's numbers live.** The 3D models in both engines, the 2D plan and the fit checks read it
+  (`plan/bedspec.js`); nothing else repeats a size. `spec_basis` says where each number comes from: `spec` (the retailer's
+  specification table), `diagram` (printed on the maker's drawing), `measured` (measured off that drawing's proportions, about 1.5 in
+  either way: the underside of the floating nightstands at 12 in, the depth of the towers), or `assumed` (our choice, such as the 12 in
+  mattress inside the maker's 10 to 15 in). A candidate has `source: "manufacturer"`, a `look.basis` of `manufacturer` and no price: prices
+  change and are deliberately not stored.
+- **The checks see its real shape**, not a 94 x 83 in block: a bed with a `spec` is a set of solid parts (headboard unit, two towers, two
+  floating nightstands, the platform), each checked at its own height, so a low box slides in under a nightstand and the corners beside the
+  foot are free. Its clearance zones hang off the 60.5 in platform: a free side to get in, the foot, and each side's drawer run, which has
+  to be free for the drawers to pull out (17 in) plus room to stand at them (about 31 in).
+- **`options`** (top level) names groups of pieces the renter switches between: the `bed` group has the choices *My bed*, *Latitude Run storage
+  bed* and *No bed*, each listing the pieces it shows (the storage bed brings its own nightstands, so the separate ones are not listed). The
+  **Bed** control, in the studio's 2D plan and 3D view and over Unit 3D's Inside view, switches the choice. The choice is stored as the
+  pieces' own `hidden` marks in the saved layout (`plan/choices.js`), so it is remembered with the layout, undone with it and read by both
+  views; choosing never moves, turns or resizes a piece. A plan whose layout has no such piece shows no control; the auto-fit never places a
+  candidate beside the renter's own bed (`offByDefault`).
+- **Where it stands** is data, like every placement: the plan's `your-furniture` layout holds the piece, `"placed": true, "hidden": true`,
+  with its headboard against the same wall as the renter's bed and centred on it (the windows on the right as you lie in it).
+- **Fit** (`plan/bedfit.js`): the control's *Fit* button answers the questions a renter asks, in plain words with numbers: does 94 in fit that
+  wall between the corners and the window ("fits: 22 in to spare on the left, 8 in on the right"), the bed's length against the walkway to
+  the TV wall and the chest, the side drawers' pull-out room on each side, every door's swing and the way in to the closet, the window
+  sill and glass beside the towers, and the heating and cooling units. Left and right are the person's, lying in the bed. When the wall
+  is too short the card says so ("blocks the closet door by 4 in", "the tower would stand in front of the glass"), how far to slide the
+  unit along the wall to make it fit, and the best other wall with its own answers; it never moves the bed for you, and your own
+  orientation stays the default.
+- **At night** the cubby back walls, the reading lights and the hidden strip under the headboard band glow warm (`setLeds` in
+  `room3d/furniture.js`: emissive parts and soft additive washes, no extra scene lights). An LED is not a lamp: the room's own ceiling light
+  stays on. Fast draws the bed in about 1,400 triangles, Visual in about 5,800 (the budgets in `room3d/quality.js`).
+
 ### Where a piece stands, and why it stays there
 
 One rule (`dashboard/js/plan/placement.js`) decides it for the Floor plan studio and Unit 3D's Inside view, so the two always agree:
