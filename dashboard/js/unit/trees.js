@@ -24,14 +24,15 @@ export const SHAPE = {
 };
 
 // Allometry: the same rule as geo/trees.py (crown_radius_m, tree_height_m), checked against tests/fixtures/tree_allometry.json.
-// Crown diameter = 2.0 m + 0.24 m per cm of trunk diameter, capped at 18 m; height = 1.3 m + 0.8 x DBH(cm)^0.8, capped at 28 m.
+// Crown diameter = 1.2 m + 0.19 m per cm of trunk diameter, capped at 16 m; height = 1.3 m + 0.62 x DBH(cm)^0.82, capped at 24 m
+// (rounded typical values for open-grown urban trees; geo/trees.py has the derivation and the figures it was fitted to).
 export const CM_PER_IN = 2.54;
-export const ALLOMETRY = { crownBase: 2.0, crownPerCm: 0.24, crownMax: 18, heightBase: 1.3, heightCoef: 0.8, heightExp: 0.8, heightMax: 28 };
+export const ALLOMETRY = { crownBase: 1.2, crownPerCm: 0.19, crownMax: 16, heightBase: 1.3, heightCoef: 0.62, heightExp: 0.82, heightMax: 24 };
 export const crownRadius = (dbhIn) => Math.min(ALLOMETRY.crownMax, ALLOMETRY.crownBase + ALLOMETRY.crownPerCm * Math.max(0, +dbhIn || 0) * CM_PER_IN) / 2;
 export const treeHeight = (dbhIn) => Math.min(ALLOMETRY.heightMax, ALLOMETRY.heightBase + ALLOMETRY.heightCoef * Math.pow(Math.max(0, +dbhIn || 0) * CM_PER_IN, ALLOMETRY.heightExp));
 
-/** The census is from 2015: street trees add ~0.2 in of trunk a year, so a census tree is sized from its surveyed diameter plus this (geo/trees.py GROWTH_IN). */
-export const GROWTH_IN = 2;
+/** The census is from 2015: the 1,195 census trees matched to the live NYC Parks inventory grew a median 1.0 in in about a decade, so a census tree is sized from its surveyed diameter plus this (geo/trees.py GROWTH_IN). */
+export const GROWTH_IN = 1;
 /** Where one tree is dropped in favour of another: an OpenStreetMap tree this close to a census tree is the same tree. */
 export const DEDUPE_M = 2.5;
 /** Typical trunk diameter (inches) of a mapped OpenStreetMap tree, which carries no size. */
