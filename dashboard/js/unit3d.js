@@ -23,6 +23,7 @@ import { illustration } from './features/empty.js';   // [feature C] empty-state
 import { missingNotice } from './features/plan-empty.js';   // [feature C]
 import { chooseHome, homeToRemember, SAVED_KEY } from './features/default-home.js';   // the home the 3D views open: address, session, renter's last, search default
 import * as UQ from './unit/quality3d.js';   // [feature J] render quality and progressive render
+import { mountDock } from './room3d/dock.js';   // [phone] the time slider within thumb reach
 import { annualFor, panelHTML as annualPanelHTML } from './unit/daylight-annual.js';   // [feature J] annual daylight summary
 import { resolveCal, geoFromSite, measuredFromSite, calSummary } from './unit/calibration.js';   // [model project] measured vs estimated height
 import { effectiveComponents, isAssumed } from './unit/parts.js';   // [model project] source parts plus the assumed override
@@ -195,6 +196,7 @@ export function init() {
   sel.addEventListener('change', () => { location.hash = '#unit/' + encodeURIComponent(sel.value); });
   $('uSnap').addEventListener('click', () => snapshot());
   UQ.mount({ host: root.querySelector('.u-head .actions'), stageEl: $('stage'), store, toast, render: (scale) => snapshot({ hires: scale }) });   // [feature J]
+  mountDock($('stage'), { min: STRIP_FROM, max: STRIP_TO - STRIP_STEP, step: STRIP_STEP, get: () => st.min, set: (v) => setTime(v), text: () => fmtT(st.min), playing: () => !!st.playing, toggle: () => togglePlay() });   // [phone]
   $('annualPanel').addEventListener('toggle', (e) => { if (e.target.id === 'uAnnualDetails' && e.target.open !== !!st.annualOpen) { st.annualOpen = e.target.open; annualPanel(); } }, true);   // [feature J]
   new ResizeObserver(fitGrid).observe(root);
   $('uGlb').addEventListener('click', exportGLB);
@@ -224,6 +226,7 @@ export async function show(id) {
   else if (seeInsideIntent && plan && stage && hasWindow()) { seeInsideIntent = false; st.picked = false; goView(mainViewpoint(views)?.key); setMode('in'); revealStage(); }   // already open on this home: stand inside it
   seeInsideIntent = false;
   stage?.resize(); drawPathChart();
+  if (stage?.scene) UQ.opened();   // [quality] the view is in front: time its first frames
   if (!loopOn) { loopOn = true; requestAnimationFrame(frame); }
 }
 
@@ -619,6 +622,7 @@ function setMode(m, quiet = false) {
   if (!hasWindow() && (m === 'win' || m === 'in')) m = 'orbit';
   if (m === 'in' && !interior) buildApartment();
   st.mode = m; stage.setMode(m); matchUI?.onMode(m);
+  if (!quiet) UQ.opened();   // [quality] another camera is another cost: time its first frames
   $('uModes').querySelectorAll('[data-mode]').forEach((b) => { b.disabled = !hasWindow() && (b.dataset.mode === 'win' || b.dataset.mode === 'in'); b.classList.toggle('on', b.dataset.mode === m); b.setAttribute('aria-pressed', String(b.dataset.mode === m)); });
   $('uLens').hidden = m !== 'win' && m !== 'in'; $('stage').dataset.mode = m; if ($('uLook')) $('uLook').hidden = m !== 'in' || !views.length;
   overlayVisible();
@@ -1760,5 +1764,6 @@ function frame(t) {
     st.min += dt * 0.09; if (st.min >= STRIP_TO - STRIP_STEP) st.min = STRIP_FROM;
     refreshTime(); syncUrlSoon();
   }
-  stage.frame();
+  const t0 = performance.now(), drew = stage.frame();
+  UQ.pulse(t0, drew, performance.now() - t0);   // [quality] the step-down times the frames that are really drawn
 }

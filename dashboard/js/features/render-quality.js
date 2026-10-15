@@ -6,32 +6,12 @@
 // number, and does not make a modelled sun patch or a skyline more accurate. Evidence confidence is shown separately,
 // in the views' provenance and "modelled / estimate / visual preview" labels.
 
-export const MODES = {
-  fast: { label: 'Fast', note: 'The standard view: the quickest to draw and the one phones start in.' },
-  visual: { label: 'Visual', note: 'Soft shadows from a larger shadow map, an environment light and contact shadows (an ambient-occlusion approximation, not screen-space AO). A look, not extra evidence.' },
-};
+// The mode, its remembered choice, the settings a mode and a level ask for and the automatic step-down live in room3d/quality.js, THE shared
+// quality control; they are re-exported here because the export helpers and the small UI below are used with them.
+export { MODES, phoneClass, readMode, saveMode, settingsFor } from '../room3d/quality.js';
+import { MODES, quality } from '../room3d/quality.js';
 export const EXPORT_SCALES = [2, 4];
 export const MAX_EXPORT_PX = 4096;       // the longest side of an export, the safe texture size on most GPUs and phones
-const KEY = 'render-quality';
-
-/** A narrow or touch-first device: Fast is the default there, and Visual is lighter. */
-export function phoneClass() {
-  try { return matchMedia('(max-width: 760px)').matches || (matchMedia('(pointer: coarse)').matches && matchMedia('(max-width: 1100px)').matches); } catch { return false; }
-}
-/** Stored choice if any, else 'fast' (everywhere: Visual is always opt-in). `store` is app.js's {get,set}. */
-export function readMode(store) {
-  try { const v = store?.get(KEY, 'fast'); return v === 'visual' ? 'visual' : 'fast'; } catch { return 'fast'; }
-}
-export function saveMode(store, mode) { try { store?.set(KEY, mode === 'visual' ? 'visual' : 'fast'); } catch { /* private window: the choice lasts for the session */ } }
-
-/** The settings a mode asks for; `phone` lowers them. Pure, so it is testable. */
-export function settingsFor(mode, { phone = false, maxTexture = 4096, dpr = 1 } = {}) {
-  if (mode !== 'visual') return { mode: 'fast', shadowSize: 2048, softShadows: false, environment: false, contact: false, pixelRatio: Math.min(dpr || 1, 2) };
-  return {
-    mode: 'visual', shadowSize: Math.min(phone ? 2048 : 4096, maxTexture), softShadows: true, environment: true, contact: !phone,
-    pixelRatio: Math.min(dpr || 1, phone ? 1.5 : 2), blurSamples: phone ? 8 : 16, radius: phone ? 3 : 4,
-  };
-}
 
 // ------------------------------------------------------------------ progressive export
 /** Halton low-discrepancy sequence value: jitter offsets that cover a pixel evenly after few frames. */
@@ -97,4 +77,29 @@ export function progressStrip(host) {
     show(done, total, text) { el.querySelector('progress').value = done / total; el.querySelector('.rnq-t').textContent = text || `Rendering ${done} of ${total}`; },
     hide() { el.hidden = true; ctl = null; },
   };
+}
+
+/**
+ * The small "Lighter mode for this device" note: shown while the automatic step-down has lowered the quality, with a button that pins the renter's
+ * choice at full quality (Visual, or the current mode when Fast is chosen). Unobtrusive: one line in a corner of the stage. Returns {el, sync}.
+ */
+export function autoNote(host) {
+  const el = document.createElement('div');
+  el.className = 'float rnq-auto'; el.hidden = true; el.setAttribute('role', 'status');
+  el.innerHTML = '<span class="rnq-auto-t">Lighter mode for this device</span><button type="button" class="rnq-auto-b"></button>';
+  host.appendChild(el);
+  const btn = el.querySelector('button'), txt = el.querySelector('.rnq-auto-t');
+  const sync = () => {
+    const on = quality.level > 0 && !quality.pinned;
+    el.hidden = !on;
+    if (!on) return;
+    const visual = quality.mode === 'visual';
+    btn.textContent = visual ? 'Force Visual' : 'Full detail';
+    btn.title = visual ? 'Draw Visual at full quality and stop lowering it automatically. Choose Fast to turn the automatic lighter mode back on.' : 'Draw at full detail and stop lowering it automatically. Choose Fast again later to turn the automatic lighter mode back on.';
+    txt.title = `${MODES[quality.mode].label}, level ${quality.level} of 5: ${quality.levelName()}. The picture is drawn lighter because frames took too long here; numbers and sun hours are unchanged.`;
+  };
+  btn.addEventListener('click', () => { if (quality.mode === 'visual') quality.forceVisual(); else quality.pin(true); sync(); });
+  quality.onChange(() => sync());
+  sync();
+  return { el, sync };
 }
