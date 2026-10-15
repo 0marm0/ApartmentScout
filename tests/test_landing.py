@@ -48,9 +48,9 @@ def test_landing_images_script_reads_the_page_and_writes_what_it_names(tmp_path:
     full, small = mod.wanted('<img src="images/a-b.webp" srcset="images/a-b-800.webp 800w, images/a-b.webp 1600w"> images/c.webp')
     assert full == {"a-b", "c"} and small == {"a-b"}
     page = tmp_path / "page.html"
-    page.write_text('<img src="images/mobile-map.webp"> <img srcset="images/map-commute-800.webp 800w">')
+    page.write_text('<img src="images/phone-map.webp"> <img srcset="images/hero-map-800.webp 800w">')
     out = tmp_path / "images"
     subprocess.run([sys.executable, str(ROOT / "scripts" / "landing_images.py"), str(out), "--html", str(page)], check=True, capture_output=True)
-    assert sorted(p.name for p in out.iterdir()) == ["map-commute-800.webp", "mobile-map.webp", "og.jpg"]
-    assert Image.open(out / "map-commute-800.webp").size == (800, 500)
+    assert sorted(p.name for p in out.iterdir()) == ["hero-map-800.webp", "og.jpg", "phone-map.webp"]
+    assert Image.open(out / "hero-map-800.webp").size == (800, 500)
     assert Image.open(out / "og.jpg").size == (1200, 630)

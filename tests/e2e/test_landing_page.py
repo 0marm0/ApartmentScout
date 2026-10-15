@@ -193,9 +193,9 @@ def test_images_are_sized_lazy_and_exist(browser, origin, site: Path) -> None:
     ctx, page, foreign, _ = open_landing(browser, origin, 1440, 900, "dark")
     imgs = page.evaluate("""() => [...document.images].map((i) => ({ src: i.getAttribute('src'), srcset: i.getAttribute('srcset'), w: i.getAttribute('width'), h: i.getAttribute('height'),
         lazy: i.loading, alt: i.getAttribute('alt'), prio: i.getAttribute('fetchpriority'), inDialog: !!i.closest('dialog') }))""")
-    assert len(imgs) > 40
+    assert len(imgs) > 30
     eager = [i for i in imgs if i["lazy"] != "lazy" and not i["inDialog"]]
-    assert [i["src"] for i in eager] == ["images/map-commute.webp"], "only the hero image loads eagerly"
+    assert [i["src"] for i in eager] == ["images/hero-map.webp"], "only the hero image loads eagerly"
     assert eager[0]["prio"] == "high"
     for i in imgs:
         if i["inDialog"]:

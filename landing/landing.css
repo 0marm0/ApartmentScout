@@ -124,7 +124,7 @@ h1 {
 .phone {
   padding: 5px; border-radius: 30px; background: var(--surface-1); border: 1px solid var(--line-strong); box-shadow: var(--shadow-3);
 }
-.phone img { border-radius: 25px; width: 100%; aspect-ratio: 630 / 1350; object-fit: cover; object-position: top; }
+.phone img { border-radius: 25px; width: 100%; aspect-ratio: 585 / 1266; object-fit: cover; object-position: top; }
 .hero-phone { position: absolute; right: -28px; bottom: -48px; width: 17%; min-width: 150px; }
 @media (prefers-reduced-motion: no-preference) {
   .hero-copy > * { animation: rise var(--t-page) var(--ease-out) both; }
@@ -198,10 +198,6 @@ h2 { margin-top: 14px; font-size: clamp(32px, 4.2vw, 52px); line-height: 1.06; f
 .feat-media.stack { padding-bottom: 12%; }
 .feat-media.stack .inset { position: absolute; width: 46%; right: -6%; bottom: 0; box-shadow: var(--shadow-3), 0 0 0 1px var(--line); }
 .feat.flip .feat-media.stack .inset { right: auto; left: -6%; }
-/* Screenshots that are not 16:10: .mid centres the crop, .tall shows the top of a tall panel. */
-.frame img.mid, .shot img.mid { object-position: center; }
-.feat-media.stack .inset.tall { width: 34%; right: -4%; }
-.feat-media.stack .inset.tall img { aspect-ratio: 448 / 540; object-position: top; }
 .cards4.extras { margin-top: 120px; }
 
 /* --------------------------------------------------------------- agents */
@@ -403,7 +399,6 @@ h2 { margin-top: 14px; font-size: clamp(32px, 4.2vw, 52px); line-height: 1.06; f
   .feat { margin-top: 80px; gap: 28px; }
   .sec-h + .feat { margin-top: 56px; }
   .feat-media.stack .inset, .feat.flip .feat-media.stack .inset { left: auto; right: -4px; width: 52%; }
-  .feat-media.stack .inset.tall { width: 40%; }
   .cards4.extras { margin-top: 80px; }
   .skills { grid-template-columns: 1fr; }
   .console-body { padding: 18px; }
@@ -496,7 +491,7 @@ html:not(.js) .tour-panel + .tour-panel { margin-top: 112px; }
 
 @media (max-width: 1080px) {
   /* the inset screenshot may bleed past its figure on a wide screen; below that it would be cut off by the viewport edge */
-  .feat-media.stack .inset, .feat.flip .feat-media.stack .inset, .feat-media.stack .inset.tall { right: 0; left: auto; }
+  .feat-media.stack .inset, .feat.flip .feat-media.stack .inset { right: 0; left: auto; }
   .parts { grid-template-columns: minmax(0, 1fr); max-width: 640px; }
   .part + .part::after { left: 50px; top: -17px; transform: rotate(135deg) scale(.7); }
   .band { grid-template-columns: minmax(0, 1fr); padding: 44px 36px; gap: 28px; }
