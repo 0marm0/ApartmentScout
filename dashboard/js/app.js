@@ -37,6 +37,9 @@ export const S = {
   commuteMode: 'best', destName: null,
   crit0: {}, preview: null,   // criteria.json as loaded, and the applied browser preview of edited criteria (or null)
 };
+// [feature K] seams for tour findings and the decision trail (features/tour-findings.js, features/decision-trail.js): HTML for a
+// drawer section, a pass over the scores after criteria are (re)applied, and extra fields in the picks backup
+export const hooks = { drawer: null, score: null, exportExtra: null, importExtra: null };
 export const on = (ev, fn) => ((S.listeners[ev] ||= []).push(fn));
 export const emit = (ev, x) => (S.listeners[ev] || []).forEach((f) => f(x));
 export const byId = (id) => S.listings.find((L) => L.id === id);
@@ -109,6 +112,7 @@ export function applyCriteria(profile, { quiet = false } = {}) {
     for (const L of S.listings) L.score = L._score0;
     store.set(searchKey('criteria'), null);
   }
+  hooks.score?.();   // [feature K] tour findings: promoted facts re-evaluated, contradictions flagged
   if (!allDests().some((d) => d.name === S.destName)) S.destName = allDests()[0]?.name || null;
   fitMode(!!profile && !quiet);
   store.set(searchKey('commute'), { mode: S.commuteMode, dest: S.destName });
@@ -170,6 +174,7 @@ export const GATE_LABEL = (g) => {
   const m = { over_budget: 'Over budget', unknown_cost: 'Cost unknown', price_dispute: 'Price claims disagree', 'concession': 'Concession may not apply', 'move_date': 'Available after your window', stale: 'Not rechecked recently' };
   if (k === 'unverified') return { fees: 'Fees unknown', lease_term: 'Lease term unknown' }[v] || `Unconfirmed: ${String(v || '').replaceAll('_', ' ')}`;
   if (k === 'fails') return `Fails: ${String(v || '').replaceAll('_', ' ')}`;
+  if (k === 'contradicted') return `Differs on tour: ${{ in_unit_wd: 'in-unit W/D', doorman: 'doorman', sqft: 'size', exposure: 'exposure' }[v] || String(v || '').replaceAll('_', ' ')}`;
   if (k === 'stale') return `Last checked ${String(v || '').replace('checked_', '').replaceAll('_', ' ')}`;
   return m[k] || String(g).replaceAll('_', ' ').replace(':', ': ');
 };
@@ -243,12 +248,13 @@ export function setPick(id, patch) {
 }
 export function toggleSave(id) { setPick(id, { saved: !isSaved(id) }); toast(isSaved(id) ? 'Saved to your picks' : 'Removed from your picks'); }
 export function exportPicks() {
-  download(`apartmentscout-picks-${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify({ version: 1, search: S.crit.search?.name, picks: S.picks, weights: S.weights }, null, 1), 'application/json');
+  download(`apartmentscout-picks-${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify({ version: 1, search: S.crit.search?.name, picks: S.picks, weights: S.weights, ...(hooks.exportExtra?.() || {}) }, null, 1), 'application/json');
 }
 export async function importPicks(file) {
   try {
     const js = JSON.parse(await file.text());
     if (!js || typeof js.picks !== 'object') throw new Error('not a picks file');
+    hooks.importExtra?.(js);   // [feature K] tour findings and the decision trail ride along
     for (const [id, p] of Object.entries(js.picks)) if (typeof id === 'string' && p && typeof p === 'object') S.picks[id] = { ...(S.picks[id] || {}), ...p };
     store.set('picks', S.picks); emit('saved'); toast(`Imported ${Object.keys(js.picks).length} picks`);
   } catch (e) { toast('That file is not an ApartmentScout picks backup'); }
@@ -707,6 +713,7 @@ ${whySection(L)}
     <div class="d-sec" ${L.notes ? '' : 'id="dNotes" data-tab="Notes"'}><h3>Your notes <span>kept in this browser</span></h3>
       <div class="seg" id="dTier" role="group" aria-label="Your tier">${['S', 'A', 'B', 'C', 'Pass'].map((x) => `<button type="button" data-tier="${x}" class="${my.tier === x ? 'on' : ''}">${x}</button>`).join('')}</div>
       <textarea id="dNote" rows="3" placeholder="What you liked, what to ask, tour impressions" style="width:100%;margin-top:10px">${esc(my.note || '')}</textarea></div>
+    ${hooks.drawer?.(L) ?? ''}
     <p class="faint" style="font-size:var(--fs-xs);padding:0 20px 18px;margin:0">Last checked ${esc(L.checked || '?')} · <span class="mono">${esc(L.id)}</span>${links.length ? ' · ' + links.map(([k, u]) => `<a href="${esc(u)}" target="_blank" rel="noopener">${esc(k)}</a>`).join(' · ') : ''}</p>
     </div>
     <div class="d-actions">${hasSite ? `<a class="btn primary" href="#unit/${esc(L.id)}">${ICONS.cube}Unit 3D</a>` : ''}${hasPlan ? `<a class="btn" href="#plan/${esc(L.id)}">${ICONS.plan}Plan</a>` : ''}${hasDos ? `<a class="btn" href="#research/records/${esc(L.id)}">${ICONS.doc}Records</a>` : ''}<button class="btn ${S.compare.includes(L.id) ? 'primary' : ''}" type="button" id="dCmp">${S.compare.includes(L.id) ? ICONS.check + 'Comparing' : ICONS.plus + 'Compare'}</button>${safeUrl(L.links?.listing) ? `<a class="btn" href="${esc(safeUrl(L.links.listing))}" target="_blank" rel="noopener">Listing ${ICONS.ext}</a>` : ''}</div>`;
