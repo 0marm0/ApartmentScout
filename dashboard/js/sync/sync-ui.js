@@ -20,7 +20,7 @@ const I = {
   mac: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="2" y="3" width="12" height="8" rx="1.6"/><path d="M5.5 13.5h5"/></svg>',
 };
 
-let root = null, opener = null, draftToken = '', draftGist = '', busy = '', note = null, prepared = null, preparing = 0, ticker = 0, unsub = null, fileWithPhotos = null;
+let pane = 'gist', root = null, opener = null, draftToken = '', draftGist = '', busy = '', note = null, prepared = null, preparing = 0, ticker = 0, unsub = null, fileWithPhotos = null;
 
 // ------------------------------------------------------------------ the menu row
 function paintMenu(s) {
@@ -51,12 +51,13 @@ export function openSync() {
   }
   root.hidden = false;
   note = null;
+  pane = E.status().target === 'file' ? 'file' : 'gist';
   render();
   requestAnimationFrame(() => root.classList.add('on'));
   root.querySelector('.sh-close')?.focus();
   unsub = E.onChange(() => paintStatus());
   ticker = setInterval(paintStatus, 20000);
-  if (E.status().target === 'file') prepare();
+  if (pane === 'file') prepare();
 }
 export function close() {
   if (!root || root.hidden) return;
@@ -115,7 +116,7 @@ function lastHTML(s) {
 
 function heroHTML(s) {
   const st = statusLine(s);
-  const gist = s.target === 'gist' && s.connected;
+  const gist = s.connected;
   return `<section class="sy-hero" data-tone="${st.tone}" aria-live="polite">
     <span class="sy-dot" data-sy-dot data-tone="${st.tone}" aria-hidden="true"></span>
     <div class="sy-hero-t"><b data-sy-line data-tone="${st.tone}">${esc(st.text)}</b>
@@ -125,10 +126,10 @@ function heroHTML(s) {
   <p class="sy-err" data-sy-error role="alert" ${s.error ? '' : 'hidden'}>${esc(s.error?.message || '')}</p>`;
 }
 
-function targetHTML(s) {
-  const T = [['gist', 'GitHub gist', 'Recommended'], ['file', 'Sync file', 'No account'], ['off', 'Off', '']];
+function targetHTML() {
+  const T = [['gist', 'GitHub gist', 'Automatic · recommended'], ['file', 'Sync file', 'By hand · no account']];
   return `<section class="sh-sec"><h3>Where your data goes <span>choose one</span></h3>
-    <div class="sy-targets" role="radiogroup" aria-label="Sync target">${T.map(([k, t, hint]) => `<button type="button" role="radio" aria-checked="${s.target === k}" class="sy-target ${s.target === k ? 'on' : ''}" data-target="${k}"><b>${t}</b><small>${hint || '&nbsp;'}</small></button>`).join('')}</div>
+    <div class="sy-targets" role="radiogroup" aria-label="Sync method">${T.map(([k, t, hint]) => `<button type="button" role="radio" aria-checked="${pane === k}" class="sy-target ${pane === k ? 'on' : ''}" data-pane="${k}"><b>${t}</b><small>${hint}</small></button>`).join('')}</div>
   </section>`;
 }
 
@@ -221,8 +222,8 @@ function render() {
       <button type="button" class="icon-btn sh-close" aria-label="Close sync">${I.x}</button></header>
     <div class="sh-body">
       ${heroHTML(s)}
-      ${targetHTML(s)}
-      ${s.target === 'gist' ? gistHTML(s) : s.target === 'file' ? fileHTML(s) : `<section class="sh-sec"><p class="sh-hint">Sync is off. Nothing leaves this browser. Pick GitHub gist to keep your devices in step automatically, or Sync file to move a file by hand.</p></section>`}
+      ${targetHTML()}
+      ${pane === 'gist' ? gistHTML(s) : fileHTML(s)}
       ${whatHTML()}
     </div>
   </aside>`;
@@ -240,7 +241,7 @@ async function prepare() {
   } catch { prepared = null; }
   refreshFile();
 }
-function refreshFile() { if (root && !root.hidden && E.status().target === 'file') render(); }
+function refreshFile() { if (root && !root.hidden && pane === 'file') render(); }
 
 function failText(e) { return e?.message || 'Something went wrong. Your data on this device is safe.'; }
 
@@ -288,8 +289,8 @@ function onClick(e) {
   const t = e.target;
   if (t.closest('.sh-close')) { close(); return; }
   if (t.closest('[data-reload]')) { location.reload(); return; }
-  const tg = t.closest('[data-target]');
-  if (tg) { E.setTarget(tg.dataset.target); note = null; render(); if (tg.dataset.target === 'file') prepare(); return; }
+  const tg = t.closest('[data-pane]');
+  if (tg) { pane = tg.dataset.pane; note = null; render(); if (pane === 'file') prepare(); return; }
   if (t.closest('[data-sy-now]')) { E.syncNow('manual'); return; }
   if (t.closest('[data-sy-disconnect]')) { E.disconnect(); render(); toast('Disconnected. Your data stays on this device.', 3200); return; }
   if (t.closest('[data-sy-dropphotos]')) {
