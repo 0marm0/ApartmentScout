@@ -294,6 +294,10 @@ def make_handler(state: ServeState) -> type[http.server.SimpleHTTPRequestHandler
             except ValueError as e:
                 raise ApiError(400, "Bad Content-Length.") from e
             if n > MAX_BODY:
+                if n <= 4 * MAX_BODY:   # read and drop a modestly oversized body, so the client sees the 413, not a reset
+                    self.rfile.read(n)
+                else:
+                    self.close_connection = True
                 raise ApiError(413, "That is too large for a criteria file.")
             try:
                 v = json.loads(self.rfile.read(n) or b"{}")
