@@ -242,7 +242,7 @@ def multi(tmp_path_factory):
             (dash / item.name).symlink_to(item)
     main(["build", "--search", str(search), "--out", str(dash / "data")])
     shutil.copy(ROOT / "dashboard" / "data" / "lqip.json", dash / "data" / "lqip.json")   # the page asks for the blur-up sidecar; this copy has no photos of its own
-    httpd = serve(dash, (EXAMPLE / "media").resolve())
+    httpd = serve(dash, _h.media_roots())
     yield f"http://127.0.0.1:{httpd.server_address[1]}"
     httpd.shutdown()
 

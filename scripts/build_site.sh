@@ -11,6 +11,7 @@
 #   /assets/     dashboard/assets/ (brand icon, favicon, app icons)
 #   /fonts/      dashboard/vendor/fonts/ (self-hosted Geist, no Google Fonts)
 #   /demo/       dashboard/ with its example data, bundled, split and made installable by scripts/optimize_site.py
+#   /demo/media/ the example's full photo set (from the release), or /demo/media-lite/ its starter set when NO_MEDIA=1
 set -euo pipefail
 cd "$(dirname "$0")/.."
 OUT="${1:-_site}"
@@ -24,8 +25,13 @@ cp dashboard/assets/*.svg "$OUT/assets/"
 cp -R dashboard/assets/pwa "$OUT/assets/pwa"      # the app icons: the landing page uses them as favicons too
 cp dashboard/vendor/fonts/* "$OUT/fonts/"
 cp -R dashboard/. "$OUT/demo/"
-# listing photos of the example search (owner cleared; see docs/gallery/manifest.json policy)
-if [ -d examples/nyc-2026/media ] && [ -z "${NO_MEDIA:-}" ]; then cp -R examples/nyc-2026/media "$OUT/demo/media"; fi   # NO_MEDIA=1: quick local build without the 400 MB of photos
+# listing photos of the example search (owner cleared; see docs/gallery/manifest.json policy):
+#   the full set (examples/nyc-2026/media, fetched by scripts/fetch_media.sh from the release) is published at /demo/media/;
+#   NO_MEDIA=1 skips those 400 MB and publishes the starter set (examples/nyc-2026/media-lite, kept in the repository) at
+#   /demo/media-lite/, which the photo chain (dashboard/js/features/media-chain.js) tries after media/, so a quick local
+#   build still shows photos.
+if [ -d examples/nyc-2026/media ] && [ -z "${NO_MEDIA:-}" ]; then cp -R examples/nyc-2026/media "$OUT/demo/media"
+elif [ -d examples/nyc-2026/media-lite ]; then cp -R examples/nyc-2026/media-lite "$OUT/demo/media-lite" && rm -f "$OUT/demo/media-lite/MANIFEST.json"; fi
 # never publish private or scratch folders, even if they ever get committed
 rm -rf "$OUT/demo/data-private" "$OUT/demo/_mockup" "$OUT/demo/dist"
 # bundle and split the dashboard, slim its data, make it installable and available offline

@@ -7,6 +7,7 @@
 // amenities, lobby, exterior and other units), plan (floor plans), street (the block). Inside a group a clean photo
 // comes before one flagged as carrying a broker mark (`photo_flags[path].watermark`), and otherwise the data order holds.
 import { safeUrl } from '../util.js';
+import { rememberOriginal } from './media-chain.js';
 
 export const GROUPS = [
   { key: 'unit', label: 'Unit', long: 'This unit' },
@@ -50,6 +51,7 @@ export function photoItems(L) {
   const push = (it) => {
     if (!it.url || seen.has(it.url)) return;
     seen.add(it.url);
+    if (it.remote) rememberOriginal(it.url, it.remote);   // the last tier of the photo's fallback chain (features/media-chain.js)
     const f = flagOf(it.url, it.remote);
     out.push({ ...it, flagged: !!f?.watermark, why: f?.why || [], keys: [it.url, it.remote].filter(Boolean), L, n: out.length });
   };

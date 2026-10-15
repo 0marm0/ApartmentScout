@@ -6,6 +6,10 @@ saved photos under /media/) with a threaded static server on a free port, and bl
 that server, so map tiles, remote photos and any CDN fail the same way in CI as on a plane (the map shows its offline
 basemap).
 
+The photos are the starter set that ships with the repository (examples/nyc-2026/media-lite, also reachable as /media-lite/), the
+same on every machine, so a test sees what a fresh clone sees: a full gallery for the top-ranked listings and one or two photos
+for the rest. APARTMENTSCOUT_E2E_MEDIA=full answers /media/ from the full set (examples/nyc-2026/media) first, when it is on disk.
+
     APARTMENTSCOUT_E2E=1 pytest -m e2e tests/e2e -q
 
 APARTMENTSCOUT_E2E_CPU_THROTTLE=<n> slows every page's JavaScript n times (Chromium's CPU throttling), to reproduce a
@@ -39,17 +43,32 @@ def _skip_or_fail(reason: str) -> None:
     pytest.skip(reason)
 
 
-def serve(dashboard: Path, media: Path) -> http.server.ThreadingHTTPServer:
-    """dashboard/ on a free port, with /media/ mapped to the example's saved photos like `apartmentscout serve`."""
+def media_roots() -> list[Path]:
+    """Where /media/ is answered from: the full set first when asked for and present, then the starter set."""
+    ex = ROOT / "examples" / "nyc-2026"
+    full = [(ex / "media").resolve()] if os.environ.get("APARTMENTSCOUT_E2E_MEDIA") == "full" and (ex / "media").is_dir() else []
+    return [*full, (ex / "media-lite").resolve()]
+
+
+def serve(dashboard: Path, media: list[Path] | Path) -> http.server.ThreadingHTTPServer:
+    """dashboard/ on a free port, with /media/ mapped to the example's saved photos like `apartmentscout serve`: each folder
+    in turn (media/, then media-lite/); /media-lite/ is the starter set itself (the last folder)."""
+    roots = [media] if isinstance(media, Path) else list(media)
+    lite = roots[-1]
+
     class Handler(http.server.SimpleHTTPRequestHandler):
         def __init__(self, *a, **kw) -> None:
             super().__init__(*a, directory=str(dashboard), **kw)
 
         def translate_path(self, path: str) -> str:
             clean = urllib.parse.unquote(path.split("?", 1)[0].split("#", 1)[0])
-            if clean.startswith("/media/"):
-                target = (media / clean[len("/media/"):]).resolve()
-                return str(target if media in target.parents else media / "__forbidden__")
+            for prefix, folders in (("/media/", roots), ("/media-lite/", [lite])):
+                if clean.startswith(prefix):
+                    for root in folders:
+                        target = (root / clean[len(prefix):]).resolve()
+                        if root in target.parents and target.is_file():
+                            return str(target)
+                    return str(folders[0] / "__missing__")
             return super().translate_path(path)
 
         def log_message(self, *a) -> None:
@@ -64,7 +83,7 @@ def serve(dashboard: Path, media: Path) -> http.server.ThreadingHTTPServer:
 @pytest.fixture(scope="session")
 def base_url() -> Iterator[str]:
     # [perf] APARTMENTSCOUT_E2E_DASHBOARD=<folder> runs the suite against a built copy (scripts/build_site.sh output: _site/demo)
-    httpd = serve(Path(os.environ.get("APARTMENTSCOUT_E2E_DASHBOARD") or ROOT / "dashboard"), (ROOT / "examples" / "nyc-2026" / "media").resolve())
+    httpd = serve(Path(os.environ.get("APARTMENTSCOUT_E2E_DASHBOARD") or ROOT / "dashboard"), media_roots())
     yield f"http://127.0.0.1:{httpd.server_address[1]}"
     httpd.shutdown()
 
@@ -106,8 +125,9 @@ def allowed_console(msg_text: str, url: str, origin: str) -> bool:
     external = bool(url) and not url.startswith((origin, "data:", "blob:"))
     if msg_text.startswith("Failed to load resource") and external:
         return True
-    # a saved listing photo that is not in this checkout: the card falls back to the photo link (blocked above)
-    if msg_text.startswith("Failed to load resource") and "404" in msg_text and url.startswith(origin + "/media/"):
+    # a saved listing photo that is not in the starter set (or the full set, if it is on disk): the photo chain goes on to the
+    # published copy and the original link (both blocked above); each step is a 404 on /media/ or /media-lite/
+    if msg_text.startswith("Failed to load resource") and "404" in msg_text and url.startswith((origin + "/media/", origin + "/media-lite/")):
         return True
     # MapLibre/three report blocked tile, glyph and texture fetches with the URL in the message
     return "Failed to fetch" in msg_text and external

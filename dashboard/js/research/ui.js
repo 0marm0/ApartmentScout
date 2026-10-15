@@ -1,7 +1,7 @@
 // Small shared pieces for the Research sub-views: sparkline, empty state, copy-to-clipboard, thumbnails.
 import { esc, money, toast } from '../util.js';
 import { thumb as kitThumb } from '../views/table-kit.js';
-import { imagesOf } from '../util.js';
+import { imagesOf, mediaSrc } from '../util.js';
 import { illustration } from '../features/empty.js';   // [feature C] empty-state art
 
 /** Price sparkline: one line, the last point marked; colour says which way the price went. */
@@ -40,7 +40,7 @@ export async function copyText(text, what = 'Copied') {
 export function thumb(L, w = 56, h = 44) {
   const im = imagesOf(L);
   const u = im.own[0] || im.building[0]?.url;
-  return u ? `<img src="${esc(u)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" width="${w}" height="${h}">` : kitThumb(L, w, h);
+  return u ? `<img src="${esc(mediaSrc(u))}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" width="${w}" height="${h}">` : kitThumb(L, w, h);
 }
 
 export const IC = {

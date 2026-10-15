@@ -9,7 +9,7 @@
 //   - a dialog: focus is trapped and returned, the page behind is inert, changes are announced politely
 //
 // Colours come from the theme tokens, so it follows light and dark. Motion is skipped under prefers-reduced-motion.
-import { esc, safeUrl } from '../util.js';
+import { esc, safeUrl, mediaSrc } from '../util.js';
 import { groupInfo, tabsOf, inGroup, photoItems } from './photos.js';
 import { previewFor } from './lqip.js';
 
@@ -97,7 +97,7 @@ export function openLightbox({ items, index = 0, url = null, from = null, inDraw
   // ---- image preload
   const preload = (it) => {
     if (!it || pre.has(it.url)) return;
-    const im = new Image(); im.decoding = 'async'; im.referrerPolicy = 'no-referrer'; im.src = it.url;
+    const im = new Image(); im.decoding = 'async'; im.referrerPolicy = 'no-referrer'; im.src = mediaSrc(it.url);
     pre.set(it.url, im);
     if (pre.size > 16) pre.delete(pre.keys().next().value);
   };
@@ -146,7 +146,7 @@ export function openLightbox({ items, index = 0, url = null, from = null, inDraw
   function renderStrip() {
     el.strip.innerHTML = view.map((it, i) => {
       const p = previewFor(it.keys);
-      return `<button type="button" class="lbx-th${it.flagged ? ' flagged' : ''}" data-i="${i}" tabindex="${i === cur ? 0 : -1}" aria-label="Photo ${i + 1} of ${view.length}: ${esc(groupInfo(it.group).long)}${single ? '' : ', ' + esc(labelOf(it))}${it.flagged ? ', carries a broker mark' : ''}"${i === cur ? ' aria-current="true"' : ''}${p ? ` style="background-image:url(${p.src})"` : ''}><img src="${esc(it.url)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer"></button>`;
+      return `<button type="button" class="lbx-th${it.flagged ? ' flagged' : ''}" data-i="${i}" tabindex="${i === cur ? 0 : -1}" aria-label="Photo ${i + 1} of ${view.length}: ${esc(groupInfo(it.group).long)}${single ? '' : ', ' + esc(labelOf(it))}${it.flagged ? ', carries a broker mark' : ''}"${i === cur ? ' aria-current="true"' : ''}${p ? ` style="background-image:url(${p.src})"` : ''}><img src="${esc(mediaSrc(it.url))}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer"></button>`;
     }).join('');
     el.strip.querySelectorAll('img').forEach((im) => im.addEventListener('error', () => im.closest('.lbx-th')?.classList.add('err'), { once: true }));
   }
@@ -164,10 +164,9 @@ export function openLightbox({ items, index = 0, url = null, from = null, inDraw
     const plan = planOf(it);
     el.plan.hidden = !plan;
     if (!plan) { setPlanMode('off', true); return; }
-    if (el.ov.getAttribute('src') !== plan.url) el.ov.src = plan.url;
-    if (el.sideImg.getAttribute('src') !== plan.url) el.sideImg.src = plan.url;
-    const fb = (im) => im.addEventListener('error', () => { if (plan.remote && im.src !== plan.remote) im.src = plan.remote; }, { once: true });
-    fb(el.ov); fb(el.sideImg);
+    const planSrc = mediaSrc(plan.url);   // a missing saved copy walks the photo chain by itself (features/media-chain.js)
+    if (el.ov.dataset.planFor !== plan.url) { el.ov.dataset.planFor = plan.url; el.ov.src = planSrc; }
+    if (el.sideImg.dataset.planFor !== plan.url) { el.sideImg.dataset.planFor = plan.url; el.sideImg.src = planSrc; }
   }
   function setPlanMode(m, quiet = false) {
     planMode = m;
@@ -194,12 +193,8 @@ export function openLightbox({ items, index = 0, url = null, from = null, inDraw
     const done = () => { el.img.classList.add('on'); el.zoom.classList.add('ld'); layout(); };
     el.zoom.classList.remove('ld');
     el.img.onload = done;
-    el.img.onerror = () => {
-      if (it.remote && !el.img.dataset.fb) { el.img.dataset.fb = '1'; el.img.src = it.remote; return; }
-      el.img.classList.remove('on'); el.dead.hidden = false;
-    };
-    delete el.img.dataset.fb;
-    if (el.img.getAttribute('src') !== it.url) { el.img.classList.remove('on'); el.img.src = it.url; }
+    el.img.onerror = () => { el.img.classList.remove('on'); el.dead.hidden = false; };   // after the whole chain failed (media-chain.js)
+    if (el.img.dataset.shown !== it.url) { el.img.dataset.shown = it.url; el.img.classList.remove('on'); el.img.src = mediaSrc(it.url); }
     layout();
     if (el.img.complete && el.img.naturalWidth) done();
     el.img.alt = `${info.long} photo ${cur + 1} of ${view.length}, ${labelOf(it)}`;

@@ -14,6 +14,7 @@ from typing import Any
 import yaml
 
 from .config import DIMENSION_LABELS, load_criteria_text
+from .mediabase import normalize_base
 
 BASES = ("monthly_cost", "net", "gross")
 MODES = ("best", "subway", "bus", "walk")
@@ -107,6 +108,10 @@ def _check_search(raw: dict[str, Any], r: Report) -> None:
     mz = s.get("map_zoom")
     if mz is not None and (_num(mz) is None or not 1 <= mz <= 20):
         r.errors.append("search.map_zoom: use a number between 1 and 20.")
+    mb = s.get("media_base_url")
+    if mb not in (None, "") and normalize_base(mb) is None:
+        r.errors.append("search.media_base_url: use the https:// address of the folder that holds the published photos "
+                        "(for example https://you.github.io/app/demo/media/), or delete the line.")
 
 
 def _check_budget(raw: dict[str, Any], r: Report) -> None:

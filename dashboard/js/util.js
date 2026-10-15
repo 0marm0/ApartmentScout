@@ -1,5 +1,5 @@
 // Shared helpers: formatting, colour ramps, grids, tiny DOM utilities.
-import { imageLists, ownFallback } from './features/photos.js';   // photo ordering lives in features/photos.js
+import { imageLists } from './features/photos.js';   // photo ordering lives in features/photos.js
 export const $ = (id) => document.getElementById(id);
 export const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 export const money = (v) => (v == null || isNaN(v) ? '—' : '$' + Math.round(v).toLocaleString());
@@ -264,9 +264,8 @@ export function routeBadge(leg) {
 export const legBadges = (legs = [], max = 3) => legs.filter((l) => l.route).slice(0, max).map(routeBadge).join('');
 export const miles = (m) => (m == null ? '' : m < 160 ? `${Math.round(m * 3.28084 / 10) * 10} ft` : `${(m / 1609.34).toFixed(m < 1609 ? 1 : 1)} mi`);
 
-/** onerror attribute for an <img>: swap a missing local copy for the listing's original photo link once. `i` indexes
- *  the listing's own photos in display order (imagesOf(L).own). */
-export function imgFallback(L, i = 0) {
-  const web = ownFallback(L, i);
-  return web ? ` onerror="this.onerror=null;this.src='${esc(web)}'"` : '';
-}
+/** Kept so call sites need no change: a missing saved photo no longer needs an `onerror` attribute. One page-wide listener
+ *  (features/media-chain.js) walks media/ -> media-lite/ -> the published copy -> the photo's original link for every image. */
+export const imgFallback = (_L, _i = 0) => '';
+/** The URL to put in `src` for a saved photo path: the first place not known to be missing it (features/media-chain.js). */
+export { mediaSrc } from './features/media-chain.js';

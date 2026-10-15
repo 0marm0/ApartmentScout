@@ -105,7 +105,25 @@ machine but a fresh clone would not ignore it.
 
 ## Example photos
 
-`examples/nyc-2026/media` is git-ignored. The photos live in the GitHub release named in
-`examples/nyc-2026/MEDIA_RELEASE` and the Pages workflow downloads them with `scripts/fetch_media.sh`. After adding photos:
-run `scripts/dedupe_media.py examples/nyc-2026`, upload a new tar as a new release (see the script's header), and update
-`MEDIA_RELEASE` in the same commit as the listings that reference the new files.
+The example's photos come in three tiers with the same relative paths (the order the dashboard tries them is in
+[the data model](guides/data-model.md#where-a-saved-photo-comes-from-media-media-lite-media_base_url)):
+
+| Tier | Where | In the repository? |
+|---|---|---|
+| Full set (about 400 MB) | the GitHub release named in `examples/nyc-2026/MEDIA_RELEASE`; the Pages workflow downloads it with `scripts/fetch_media.sh` and publishes it at `/demo/media/` (the public photo host, `search.media_base_url`) | no |
+| Starter set (34 MB) | `examples/nyc-2026/media-lite/`, built by `scripts/make_media_lite.py` | yes, capped at 40 MB by `release_check.py` |
+| Full set on a disk | `examples/nyc-2026/media/`, filled by `scripts/fetch_media.sh` for anyone who wants it offline | no (ignored; safe to delete) |
+
+**After adding or changing photos, or after a re-score** (the top twelve are chosen by `score.rank`):
+
+1. Put the new files in `examples/nyc-2026/media/` (a machine that has deleted the folder runs `scripts/fetch_media.sh` first) and run
+   `scripts/dedupe_media.py examples/nyc-2026`.
+2. Upload a new tar as a new release (see the header of `scripts/fetch_media.sh`) and write its tag into `examples/nyc-2026/MEDIA_RELEASE`.
+3. Regenerate the starter set from the full one: `python scripts/make_media_lite.py examples/nyc-2026`. It prints the size by tier
+   (target at most 35 MB) and the listings that got a full gallery; it only rewrites files that changed. If the total is over,
+   lower `--lite-quality` or `--gallery-px` rather than dropping photos.
+4. `python scripts/make_media_lite.py examples/nyc-2026 --check` and `python scripts/release_check.py --only photos` must pass; CI runs both.
+5. Commit `MEDIA_RELEASE`, `listings.json`, `dashboard/data` (`apartmentscout build --search examples/nyc-2026`) and `media-lite/` together.
+   The Pages deploy that follows publishes the new full set.
+
+Only the release and `media-lite/` matter to anyone else: the owner's own `media/` folder can be deleted after step 3.
