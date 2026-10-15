@@ -16,7 +16,7 @@ import * as I3 from './interior3d.js';   // [interior] reveals, sills, casings, 
 import * as SKY from './sky3d.js';   // [interior] the sky and haze behind the city in eye-level views
 import * as F3 from './furniture3d.js';   // [interior] low-poly furniture models
 import * as R3F from '../room3d/furniture.js';   // [room3d] the shared, refined furniture models (tried first)
-import { roomQuality } from '../room3d/quality.js';
+import { roomQuality, onRoomQuality } from '../room3d/quality.js';
 import { ROOM_HEX } from '../room3d/palette.js';   // [room3d] one paint and floor for both engines
 import { roomLightState, moodFor, applyRoomLight, windowGlowLights } from '../room3d/lighting.js';   // [room3d] one light for both engines
 
@@ -164,7 +164,7 @@ let city = null;
 export function setCity(group) {
   if (city) { scene.remove(city); city.traverse((o) => { o.geometry?.dispose(); o.material?.dispose?.(); }); }
   city = group || null;
-  if (city) scene.add(city);
+  if (city) { scene.add(city); applyMood(); }   // [city3d] the new city takes the current sun, mood and quality
   cam.far = city ? 12000 : 400; cam.updateProjectionMatrix();   // [city3d] the shared city reaches the horizon (its sky dome is 6 km out)
   const gr = shell?.getObjectByName('ground'); if (gr) gr.visible = !city; // the floor-level ground would hide the street
   controls.maxDistance = city ? 240 : 60;
@@ -176,6 +176,14 @@ export function setCity(group) {
     controls.update();
   }
   dirty = true;
+}
+/** [city3d] the city outside follows the sun (the water's light) and the mood (lit windows after dusk, as Unit 3D's). */
+function syncCity(now) {
+  const api = city?.userData.api; if (!api || !sunL) return;
+  const v = sunL.position.clone().sub(sunL.target.position).normalize();
+  api.setSun(v, Math.asin(Math.max(-1, Math.min(1, v.y))) / DEG);
+  api.setNight(now === 'night' ? 1 : now === 'evening' ? 0.5 : 0);
+  api.setQuality(roomQuality());
 }
 export const hasCity = () => !!city;
 /** [city3d] the city outside's handle (setSun, setNight, setQuality, anchorsOf) or null. */
@@ -355,7 +363,6 @@ export function setSun(dir, on, up) {
   const v = new THREE.Vector3(dir.x, dir.up, -dir.y).normalize();
   sunL.position.copy(sunL.target.position).addScaledVector(v, 60);
   sunL.userData.on = on; sunL.userData.up = Math.max(0, dir.up);
-  city?.userData.api?.setSun(v, Math.asin(Math.max(-1, Math.min(1, v.y))) / DEG);   // [city3d] the water's light and the lit windows follow the sun
   mood.sunUp = !!up; mood.alt = Math.max(0, dir.up);
   applyMood();
 }
@@ -366,7 +373,7 @@ function applyMood() {
   if (!sunL || !colors) return;
   const now = mood.want === 'auto' ? (mood.sunUp ? (mood.alt < 0.12 ? 'evening' : 'day') : 'night') : mood.want;
   mood.now = now;
-  city?.userData.api?.setNight(now === 'night' ? 1 : now === 'evening' ? 0.5 : 0);   // [city3d] lit windows in the city outside
+  syncCity(now);
   const day = now === 'day', eve = now === 'evening', night = now === 'night';
   // [room3d] the room's light is one definition for both engines (room3d/lighting.js)
   const st = roomLightState({ mood: now, sunOn: !!sunL.userData.on && mood.sunUp, sinAlt: sunL.userData.up || 0, quality: roomQuality(), scale: { ambient: lighting.ambient, sun: lighting.sun, sky: lighting.sky } });
@@ -394,6 +401,7 @@ function applyMood() {
 // ------------------------------------------------------------------ furniture
 export function setItems(items) { lastItems = items; const ids = new Set(items.map((i) => i.id)); for (const [id, g] of groups) if (!ids.has(id)) { furn.remove(g); disposeGroup(g); groups.delete(id); } for (const it of items) syncItem(it, true); applyMood(); dirty = true; }
 function disposeGroup(g) { g.traverse((o) => { o.geometry?.dispose(); if (o.material && !o.material.userData?.shared) (Array.isArray(o.material) ? o.material : [o.material]).forEach((m) => { if (m.map && !m.map.userData?.shared) m.map.dispose(); m.dispose(); }); o.dispose?.(); }); }
+onRoomQuality(() => { if (typeof rebuildAllItems === 'function' && groups.size) rebuildAllItems(); });   // [room3d] the furniture models are simpler in Fast, richer in Visual
 function rebuildAllItems() { for (const [, g] of groups) { furn.remove(g); disposeGroup(g); } groups.clear(); setItems(lastItems); }
 const sigOf = (it) => `${it.ref}|${it.w}|${it.d}|${it.h}|${it.elev}|${it.variant || ''}|${it.product || ''}`;
 /** Update an item's transform, rebuilding its meshes when its shape changed. */

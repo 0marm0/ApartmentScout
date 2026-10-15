@@ -511,7 +511,7 @@ function accChip() {
   const key = [st.id, !!st.site, onSite?.floor, onSite?.t, onSite?.az, onSite?.cal?.state, !!inventory, items.length, !!furnMeta].join('|');
   if (key === accKey) return; accKey = key;
   accUI.update(accuracyRows({ site: st.site || {}, plan: model, cal: onSite ? { state: onSite.cal.state, fh: onSite.cal.fh, slab: onSite.slab } : null, floor: onSite?.floor, facing: onSite?.az ?? null, t: onSite?.t ?? null,
-    furniture: items.length && inventory ? { name: furnMeta?.name || inventory.name, confirmed: inventory.confirmed || furnMeta?.confirmed || null, count: items.length } : items.length ? { name: 'A starter layout', confirmed: null, count: items.length } : null }));
+    furniture: items.length && inventory ? { name: furnMeta?.name || inventory.name, confirmed: furnMeta?.confirmed || null, count: items.length } : items.length ? { name: 'A starter layout', confirmed: null, count: items.length } : null }));
 }
 // [room3d] "Sun today" in the look panel: the direct sun the window of this view gets today (its own skyline against the shared city), with a way into Unit 3D
 let sunCtx = null, sunMemo = { key: '', html: '' };

@@ -49,9 +49,7 @@ export function validateInventory(obj, { catalog = CATALOG } = {}) {
     for (const k of ['w', 'd', 'h', 'elev']) if (p[k] != null) clean[k] = Math.round(p[k] * 10) / 10;
     pieces.push(clean);
   }
-  // [room3d] the renter's confirmation travels with the inventory ("What's measured vs assumed" says furniture is theirs)
-  const cf = obj.confirmed && typeof obj.confirmed === 'object' && !Array.isArray(obj.confirmed) ? { by: plain(obj.confirmed.by, 40) ? obj.confirmed.by : '', date: /^\d{4}-\d{2}-\d{2}$/.test(obj.confirmed.date || '') ? obj.confirmed.date : '', note: plain(obj.confirmed.note, 300) ? obj.confirmed.note : '' } : null;
-  return { ok: true, inventory: { schema: 1, kind: 'apartmentscout-furniture', name: obj.name || 'Your furniture', source: obj.source || '', ...(cf ? { confirmed: cf } : {}), pieces } };
+  return { ok: true, inventory: { schema: 1, kind: 'apartmentscout-furniture', name: obj.name || 'Your furniture', source: obj.source || '', pieces } };
 }
 
 export function parseInventory(text, opts) {

@@ -34,8 +34,9 @@ export function cityGroup(ctx, opts = {}) {
   const pal = opts.pal || palette();
   const quality = opts.quality || roomQuality(), q = { visual: quality === 'visual', phone: phoneClass() };
   const frame = planFrameOf(ctx);
-  const C = createCity({ B: ctx.B, T: ctx.T, ti: ctx.ti, green: ctx.green, water: ctx.water, streets: ctx.streets }, { pal, center: ctx.anchor, frame, quality: q, castShadow: false });
+  const C = createCity({ B: ctx.B, T: ctx.T, ti: ctx.ti, green: ctx.green, water: ctx.water, streets: ctx.streets }, { pal, center: [(ctx.T.bb[0] + ctx.T.bb[2]) / 2, (ctx.T.bb[1] + ctx.T.bb[3]) / 2], frame, quality: q, castShadow: false });   // (the same centre as Unit 3D's: the same trees, the same near and far buildings));
   C.facU.uFloorH.value = Math.max(2.4, +ctx.fh || 3.2);
+  C.facU.uToSite = { value: new THREE.Matrix4().copy(C.bakeM).invert() };   // the facade windows are laid out in the site frame, as in Unit 3D
   if (opts.trees !== false) C.buildContext(); else C.syncGroundBase();
   const g = C.group; g.name = 'city';
   // this building below the apartment (its own floors above are left out so the plan stays visible), in the city's own material
