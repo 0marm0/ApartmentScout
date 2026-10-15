@@ -5,6 +5,7 @@
 // that never hides the view. Pure geometry: no engine state. Plan frame: inches, +y toward the top of the drawing. A VISUAL PREVIEW.
 import * as THREE from 'three';
 import { FRAME, windowLayout } from './windows-core.js';
+import { lightness } from '../plan/finishes.js';
 
 const M = 0.0254;
 export { FRAME, windowLayout };
@@ -32,7 +33,9 @@ export function windowGroup(model, opts = {}) {
   const g = new THREE.Group(); g.name = 'windows';
   const L = (p) => [(p[0] - ox) * M, -(p[1] - oy) * M];
   const up = (h) => h * M;
-  const trim = std(0xfbf9f4, { roughness: 0.55 }), frame = std(FRAME.colour, { roughness: 0.42, metalness: 0.5 });
+  // the frame's colour is the plan's (`finishes.window_frames`: black-framed windows are common, so is white), else the default charcoal bronze; a pale frame is painted, not metal
+  const fc = model.finishes?.window_frames?.colour, pale = fc ? lightness(fc) > 0.6 : false;
+  const trim = std(0xfbf9f4, { roughness: 0.55 }), frame = fc ? std(parseInt(fc.slice(1), 16), pale ? { roughness: 0.5, metalness: 0.05 } : { roughness: 0.4, metalness: 0.35 }) : std(FRAME.colour, { roughness: 0.42, metalness: 0.5 });
   const bar = (mat, ang, centre, len, thick, z0, z1, cast = false) => {
     const m = new THREE.Mesh(new THREE.BoxGeometry(len * M, up(z1 - z0), thick * M), mat);
     const [x, z] = L(centre); m.position.set(x, up((z0 + z1) / 2), z); m.rotation.y = ang;
