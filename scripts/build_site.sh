@@ -7,8 +7,8 @@
 # Layout (landing/README.md has the table):
 #   /            landing/ (index.html, landing.css, landing.js)
 #   /tokens.css  dashboard/css/tokens.css (shared design tokens)
-#   /images/     docs/images/*.png (screenshots)
-#   /assets/     dashboard/assets/ (brand icon, favicon)
+#   /images/     the docs/images/*.png screenshots the landing page uses, as WebP (scripts/landing_images.py), plus og.jpg
+#   /assets/     dashboard/assets/ (brand icon, favicon, app icons)
 #   /fonts/      dashboard/vendor/fonts/ (self-hosted Geist, no Google Fonts)
 #   /demo/       dashboard/ with its example data, bundled, split and made installable by scripts/optimize_site.py
 set -euo pipefail
@@ -19,8 +19,9 @@ PY="${PYTHON:-python3}"
 rm -rf "$OUT" && mkdir -p "$OUT/images" "$OUT/assets" "$OUT/fonts" "$OUT/demo"
 cp landing/index.html landing/landing.css landing/landing.js "$OUT/"
 cp dashboard/css/tokens.css "$OUT/tokens.css"
-cp docs/images/*.png "$OUT/images/"
+"$PY" scripts/landing_images.py "$OUT/images"      # the screenshots the landing page names, as WebP (needs Pillow)
 cp dashboard/assets/*.svg "$OUT/assets/"
+cp -R dashboard/assets/pwa "$OUT/assets/pwa"      # the app icons: the landing page uses them as favicons too
 cp dashboard/vendor/fonts/* "$OUT/fonts/"
 cp -R dashboard/. "$OUT/demo/"
 # listing photos of the example search (owner cleared; see docs/gallery/manifest.json policy)

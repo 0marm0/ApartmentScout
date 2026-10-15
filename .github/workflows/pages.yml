@@ -2,7 +2,7 @@ name: Landing page and dashboard demo on GitHub Pages
 # Published layout (scripts/build_site.sh does the assembly; landing/README.md has the table):
 #   /            landing/ (index.html, landing.css, landing.js)
 #   /tokens.css  dashboard/css/tokens.css (shared design tokens)
-#   /images/     docs/images/*.png (screenshots)
+#   /images/     the screenshots the landing page uses, as WebP (scripts/landing_images.py)
 #   /assets/     dashboard/assets/ (brand icon, favicon)
 #   /fonts/      dashboard/vendor/fonts/ (self-hosted Geist, no Google Fonts)
 #   /demo/       dashboard/ with its example data, bundled and split by scripts/optimize_site.py, installable and offline-capable
@@ -30,6 +30,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install Pillow   # the landing screenshots are converted to WebP at build time
       - name: Assemble the site (copy, then bundle, split and make the dashboard installable)
         env:
           REPO_URL: ${{ github.server_url }}/${{ github.repository }}
