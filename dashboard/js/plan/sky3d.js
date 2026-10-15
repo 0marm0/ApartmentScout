@@ -8,7 +8,7 @@ import { palette } from '../city3d/look.js';
 const D2R = 180 / Math.PI;
 let sky = null, lastKey = '';
 
-const ensure = () => (sky || (sky = createSky(palette())));
+const ensure = () => (sky || (sky = createSky(palette({ daylight: true }))));
 
 /** The sky objects to add to the scene (built on first use). */
 export function objects() { ensure(); return sky.objects; }
@@ -26,7 +26,7 @@ export function moodAltitude(mood, alt) {
  */
 export function setMood(mood, sunDir, sunUp = true) {
   ensure();
-  const pal = palette(), d = sunDir ? sunDir.clone().normalize() : new THREE.Vector3(0, 1, 0), real = Math.asin(Math.max(-1, Math.min(1, d.y))) * D2R;
+  const pal = palette({ daylight: true }), d = sunDir ? sunDir.clone().normalize() : new THREE.Vector3(0, 1, 0), real = Math.asin(Math.max(-1, Math.min(1, d.y))) * D2R;
   const alt = moodAltitude(mood, sunUp ? real : Math.min(real, -1));
   const az = ((Math.atan2(d.x, -d.z) * D2R) + 360) % 360;
   sky.U.gnd.value.copy(pal.ground);

@@ -31,7 +31,7 @@ export const planFrameOf = (ctx) => ({ place: (x, y) => ctx.toPlanM([x, y]), mat
  * count (neighbours), api {setSun, setNight, setQuality, ids(): building ids with their first vertex, dispose}.
  */
 export function cityGroup(ctx, opts = {}) {
-  const pal = opts.pal || palette();
+  const pal = opts.pal || palette({ daylight: !!opts.daylight });   // [daylight] the eye-level views look out at a bright day
   const quality = opts.quality || roomQuality(), q = { visual: quality === 'visual', phone: phoneClass() };
   const frame = planFrameOf(ctx);
   const C = createCity({ B: ctx.B, T: ctx.T, ti: ctx.ti, meta: ctx.meta, green: ctx.green, water: ctx.water, streets: ctx.streets }, { pal, center: [(ctx.T.bb[0] + ctx.T.bb[2]) / 2, (ctx.T.bb[1] + ctx.T.bb[3]) / 2], frame, quality: q, castShadow: false });   // (the same centre as Unit 3D's: the same trees, the same near and far buildings));
