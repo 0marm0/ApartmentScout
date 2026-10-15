@@ -8,12 +8,11 @@
 .cmdk { align-items: center; }
 .topbar .icon-btn { width: 32px; }
 .nav { padding: 3px; }
-.nav a { display: inline-flex; align-items: center; height: 28px; padding: 0 12px; }
+@media (min-width: 761px) { .nav a { display: inline-flex; align-items: center; height: 28px; padding: 0 12px; } }   /* a phone keeps its 44 px tab targets */
 .topbar { gap: var(--s-2); }
 .topbar > .brand { margin-right: var(--s-1); }
 @media (max-width: 760px) {
   .search-switch, .kpi-chip, .cmdk, .topbar .icon-btn, .topbar .btn { height: 32px; }
-  .nav a { height: 30px; }
 }
 
 /* ------------------------------------------------------------------ results header: the segment and the sort match (32 px), 8 px above and below */
