@@ -1,0 +1,17 @@
+/* The interior pass: "Your furniture" in the Floor plan studio, the viewpoint chips over the 3D views (studio and
+   Unit 3D's Inside camera). Tokens only: colours follow the dashboard theme, dark and light. */
+
+/* ---- Your furniture (Furniture tab) */
+.iv { margin: 0 0 var(--s-4, 16px); }
+.iv-acts { display: flex; align-items: center; gap: 10px; margin: 6px 0 8px; flex-wrap: wrap; }
+.iv-n { font-size: var(--fs-xs); color: var(--ink-3); }
+.iv-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 1px; }
+.iv-row { display: grid; grid-template-columns: 14px 1fr auto; gap: 10px; align-items: center; padding: 7px 6px; border-radius: var(--r-md); }
+.iv-row:hover { background: var(--surface-2); }
+.iv-t { display: flex; flex-direction: column; min-width: 0; }
+.iv-t b { font-size: var(--fs-sm); font-weight: 600; }
+.iv-t small { font-size: var(--fs-xs); color: var(--ink-3); line-height: 1.4; }
+.iv-add { min-height: 28px; padding: 0 10px; }
+.iv-src { margin-top: 8px; font-size: var(--fs-xs); color: var(--ink-3); }
+.iv-src summary { cursor: pointer; }
+.iv-src p { margin: 6px 0 0; line-height: 1.5; }

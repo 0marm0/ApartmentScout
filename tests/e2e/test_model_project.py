@@ -78,7 +78,7 @@ def test_local_plan_scenario_shows_in_unit_3d_at_the_studios_window_and_never_fo
     _send_plan_to_unit_3d(s)
     _unit(s, query="?mode=inside")
     info = pg.evaluate("() => ({src: window.__unit3d.planInfo.source, furn: window.__unit3d.planInfo.furniture, group: !!window.__unit3d.stage.interior.furniture, mode: window.__unit3d.st.mode})")
-    assert info == {"src": "local scenario", "furn": 9, "group": True, "mode": "in"}
+    assert info == {"src": "local scenario", "furn": 10, "group": True, "mode": "in"}
     # the same windows, in the same place, with the same dimensions in both viewers (the studio's placement maths vs the 3D transform)
     for w in pg.evaluate(GLASS_JS, UNIT):
         assert w["studio"] == pytest.approx(w["unit"], abs=0.011), w
@@ -259,7 +259,7 @@ def test_model_project_exports_and_restores_offline_in_a_fresh_browser(open_page
     b.page.set_input_files("input[data-act=project-import]", str(f))
     b.page.wait_for_selector("[data-act=project-restore]")
     review = b.page.locator("#mpImport").inner_text()
-    assert "1,0" in review.replace("\n", " ") and "9 pieces" in review and "Measured slab height 80.5 m" in review
+    assert "1,0" in review.replace("\n", " ") and "10 pieces" in review and "Measured slab height 80.5 m" in review
     b.page.click("[data-act=project-restore]")
     _unit_ready(b, new)
     got = b.page.evaluate("() => ({floor: window.__unit3d.st.floor, mode: window.__unit3d.st.mode, cal: window.__unit3d.cal.state, slab: window.__unit3d.cal.slabAt(window.__unit3d.st.floor), plan: window.__unit3d.planInfo.source, furn: !!window.__unit3d.stage.interior.furniture, n: window.__unit3d.B.length})")

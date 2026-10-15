@@ -44,6 +44,8 @@ import { planEmpty, missingNotice } from './features/plan-empty.js';   // [featu
 import { renderOptions } from './plan/options.js';
 import * as Q3 from './plan/quality3d.js';   // [feature J] render quality (Fast / Visual) and progressive export
 import * as LX from './plan/lighting-ui.js';   // [feature J] daylight grid, glass/surface inputs, luminaires, annual summary
+import { validateInventory, fitInventory, pieceItem, placedIds } from './plan/inventory.js';   // [furniture] the renter's own pieces
+import { inventoryHTML } from './plan/inventory-ui.js';
 
 const st = {
   id: null, date: '', min: 720, playing: false, site: null, mode: 'both', view: 'bird', wall: 'cut', tab: 'furniture',
@@ -56,6 +58,7 @@ let routesRes = null, routeT = 0, lastFrame = 0;
 // onSite: the plan placed on its site; winSky: one skyline per plan window (per-window city occlusion)
 let onSite = null, winSky = null, winMin = null, winMinKey = '';
 let winSkyView = null;
+let inventory = null;   // [furniture] "Your furniture": the renter's pieces (furniture.json, or the ones a project carried)
 let model = null, rawPlan = null, projectLibrary = Object.create(null), siteProf = null, items = [], R = [], ev = null, sel = null, flash = null, flashT = 0, loop = false, ready = false;
 const undo = [], redo = [];
 const isPhone = () => matchMedia('(max-width: 760px)').matches;
@@ -228,7 +231,8 @@ async function load(id) {
   st.ambient = typeof light.ambient === 'number' && Number.isFinite(light.ambient) ? Math.max(0, Math.min(2, light.ambient)) : 1;
   st.glazing = clampGlazing(light.glazing); st.blinds = blindsOf(light.blinds);
   LX.load(light);   // [feature J] daylight inputs and luminaires
-  if (!model.layouts.length) { try { model.layouts.push(suggestLayout(model)); } catch { /* a plan the placer cannot handle keeps no preset */ } }
+  inventory = await loadInventory(id);   // [furniture]
+  if (!model.layouts.length) { try { model.layouts.push(inventory ? ownLayout() : suggestLayout(model)); } catch { /* a plan the placer cannot handle keeps no preset */ } }
   items = v?.ok ? v.layout.items : (model.layouts[0]?.items || []).map((x) => ({ ...x }));
   undo.length = 0; redo.length = 0; sel = null; cancelCompare(); $('psCompare').hidden = true; st.routeKey = null; st.finder = null; routesRes = null;
   G3.setMood(st.mood);
@@ -236,6 +240,20 @@ async function load(id) {
   head(); setMode(st.mode); setWall(st.wall, true); G3.setView(st.view === 'top' ? 'top' : 'bird'); markCams();
   recompute({ all: true }); sunPanel(); refreshSun();
 }
+
+// [furniture] "Your furniture" (furniture.json beside the search, or the inventory a project carried)
+let fileInventory;
+async function loadInventory(id) {
+  if (projectLibrary[id]?.inventory) return projectLibrary[id].inventory;
+  if (fileInventory === undefined) {
+    const raw = S.manifest.furniture ? await loadJSON(`${S.base}/furniture.json`, null) : null, v = raw && validateInventory(raw);
+    fileInventory = v?.ok ? v.inventory : null;
+  }
+  return fileInventory;
+}
+/** The renter's pieces fitted into this plan with the checks, as a layout preset. */
+function ownLayout() { const r = fitInventory(model, inventory, { step: 8 }); return { id: 'your-furniture', name: r.name, note: r.note, items: r.items, auto: true }; }
+const OWN = 'your-furniture';
 
 function head() {
   const L = byId(st.id);
@@ -274,7 +292,7 @@ function checkpoint() { undo.push(snapshot()); if (undo.length > 80) undo.shift(
 function persist() {
   store.set(key(st.id), serialiseLayout(st.id, items));
   if(projectLibrary[st.id]) {
-    const project=serialiseProject(rawPlan,items,lightingOf());
+    const project=serialiseProject(rawPlan,items,lightingOf(),inventory);
     try{saveProjectLibrary(Object.assign(Object.create(null),projectLibrary,{[st.id]:project}));}
     catch(e){toast('Browser project could not be saved. Export a complete project backup.',6000);}
   }
@@ -293,7 +311,7 @@ function doUndo(back = true) {
   }
   if(saved.lighting) {st.directSun=saved.lighting.directSun;st.ambient=saved.lighting.ambient;st.glazing=clampGlazing(saved.lighting.glazing);st.blinds=blindsOf(saved.lighting.blinds);LX.load(saved.lighting);}
   if (sel && !items.some((x) => x.id === sel)) sel = null;
-  if(projectLibrary[st.id])projectLibrary[st.id]=serialiseProject(rawPlan,items,lightingOf());
+  if(projectLibrary[st.id])projectLibrary[st.id]=serialiseProject(rawPlan,items,lightingOf(),inventory);
   persist(); markUndo(); recompute({ all: true });
   refreshSun();head();
 }
@@ -387,6 +405,19 @@ function applyPreset(lid) {
   const L = model.layouts.find((l) => l.id === lid); if (!L) return;
   mutate(() => { items = L.items.map((x) => ({ ...x })); sel = null; st.activePreset = lid; }, `Layout: ${L.name}`);
 }
+/** [furniture] Use the plan's "Your furniture" layout, or fit the renter's pieces into this plan with the checks. */
+function useOwn() {
+  if (!inventory) return;
+  if (!model.layouts.some((l) => l.id === OWN)) { try { model.layouts.unshift(ownLayout()); } catch (e) { toast(`Could not fit your furniture: ${e.message || e}`, 4200); return; } }
+  applyPreset(OWN);
+}
+/** [furniture] Add one of the renter's pieces (its own size) to the layout, placed in the kind of room it lives in. */
+function addOwn(pid) {
+  const p = inventory?.pieces.find((q) => q.id === pid); if (!p || items.some((q) => q.id === pid)) return;
+  const room = (model.rooms.filter((r) => r.kind === (p.room === 'dining' ? 'living' : p.room)).sort((a, b) => b.area - a.area)[0] || [...model.rooms].sort((a, b) => b.area - a.area)[0]);
+  const it = pieceItem(p, { x: Math.round(room.label[0]), y: Math.round(room.label[1]), rot: 0 });
+  mutate(() => { items.push(it); const ok = place(it, room.name, true); sel = it.id; st.activePreset = null; toast(ok ? `Added ${(p.label || p.ref).toLowerCase()} to the ${room.name.toLowerCase()}` : `No clear spot in the ${room.name.toLowerCase()}; it is in the middle`); });
+}
 function flashPoly(poly) { flash = poly; flashT = performance.now() + 2400; overlays(); setTimeout(() => { if (performance.now() >= flashT) { flash = null; overlays(); } }, 2500); }
 
 // ------------------------------------------------------------------ chrome: modes, cameras, walls, tabs, files, keys
@@ -478,7 +509,7 @@ async function fileAction(f) {
   if (!model) return;
   if (f === 'save') saveBlob(new Blob([JSON.stringify(serialiseLayout(st.id, items), null, 2)], { type: 'application/json' }), `${st.id}-layout.json`);
   else if(f==='project-save') {
-    try { const project=serialiseProject(rawPlan,items,lightingOf());saveBlob(new Blob([JSON.stringify(project,null,2)],{type:'application/json'}),`${st.id}-project.json`); }
+    try { const project=serialiseProject(rawPlan,items,lightingOf(),inventory);saveBlob(new Blob([JSON.stringify(project,null,2)],{type:'application/json'}),`${st.id}-project.json`); }
     catch(e) { toast(`Project export failed: ${e.message || e}`,5000); }
   }
   else if(f==='project-restore') {
@@ -686,7 +717,7 @@ function bindArchitecture() {
     try {
       const values={};for(const el of $('psArchFields').querySelectorAll('[data-arch]')){if(el.value.trim()==='')throw Error('Enter a value for each dimension.');values[el.dataset.arch]=+el.value;}
       const [kind,index]=target.value.split(':');const edited=kind==='fx'?editFixture(rawPlan,+index,values):kind==='win'?editWindow(rawPlan,+index,values):editOrientation(rawPlan,values.bearing);
-      const project=serialiseProject(edited,items,lightingOf());
+      const project=serialiseProject(edited,items,lightingOf(),inventory);
       saveProjectLibrary(Object.assign(Object.create(null),projectLibrary,{[st.id]:project}));
       checkpoint();rawPlan=project.plan;model=normalisePlan(rawPlan);
       G3.setModel(model);G3.setWallMode(st.wall);P2.setModel(model);LX.reattach2D();
@@ -703,7 +734,8 @@ function furnitureTab() {
     return `<div class="ps-item${it.id === sel ? ' on' : ''}${it.hidden ? ' off' : ''}" data-id="${esc(it.id)}"><button type="button" class="ps-ib" data-sel="${esc(it.id)}"><span class="ps-sw" style="--c:#${(it.base.color ?? 0x888888).toString(16).padStart(6, '0')}"></span><span class="t"><b>${esc(it.name)}</b><small>${fmtIn(it.w)} × ${fmtIn(it.d)}${it.hidden ? ' · hidden' : r?.room ? ` · ${esc(r.room)}` : ''}</small></span><i class="dot g-${s}" title="${s === 'off' ? 'hidden' : GRADE_TXT[s]}"></i></button><button type="button" class="icon-btn" data-vis="${esc(it.id)}" aria-label="${it.hidden ? 'Show' : 'Hide'}" title="${it.hidden ? 'Show' : 'Hide'}">${it.hidden ? IC.eyeOff : IC.eye}</button></div>`;
   }).join('') : '<p class="faint">Nothing placed yet.</p>';
   const cat = CATEGORIES.map(([k, t]) => { const refs = Object.entries(CATALOG).filter(([, c]) => c.cat === k); return refs.length ? `<div class="ps-cat"><span class="ps-cat-h">${t}</span><div class="chips">${refs.map(([r, c]) => `<button type="button" class="chip" data-add="${esc(r)}" title="${esc(c.src)}">${IC.plus}${esc(c.name)}</button>`).join('')}</div></div>` : ''; }).join('');
-  return `${pres}<h3 class="label">In this layout <span>${R.filter((x) => !x.hidden).length} pieces</span></h3><div class="ps-list">${list}</div>
+  const own = inventory ? inventoryHTML(inventory, { held: placedIds(inventory, items), hasPreset: model.layouts.some((l) => l.id === OWN), active: st.activePreset === OWN }) : '';   // [furniture]
+  return `${own}${pres}<h3 class="label">In this layout <span>${R.filter((x) => !x.hidden).length} pieces</span></h3><div class="ps-list">${list}</div>
     <h3 class="label">Add furniture <span>real sizes, hover for the source</span></h3>${cat}
     <div class="ps-opts">${[['snap', 'Snap to walls'], ['zonesAll', 'Show every clearance zone'], ['sight', 'Show TV sightlines'], ['swings', 'Shade door swings in 3D']].map(([k, t]) => `<label class="tg ${st[k] ? 'on' : ''}"><input type="checkbox" class="sr" data-opt="${k}" ${st[k] ? 'checked' : ''}><span class="switch"></span><span class="lbl">${t}</span></label>`).join('')}</div>`;
 }
@@ -766,6 +798,8 @@ function planTab() {
 function tabClick(e) {
   const b = e.target.closest('button, [data-sel]'); if (!b) return;
   if (b.dataset.p) applyPreset(b.dataset.p);
+  else if ('invUse' in b.dataset) useOwn();
+  else if (b.dataset.invAdd) addOwn(b.dataset.invAdd);
   else if (b.dataset.sel) { select(b.dataset.sel === sel ? null : b.dataset.sel); markList(); }
   else if (b.dataset.vis) { const it = items.find((q) => q.id === b.dataset.vis); if (it) mutate(() => { it.hidden = !it.hidden; if (it.hidden && sel === it.id) sel = null; }); }
   else if (b.dataset.add) addRef(b.dataset.add);
