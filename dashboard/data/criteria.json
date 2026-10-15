@@ -10,7 +10,8 @@
    40.753,
    -73.979
   ],
-  "map_zoom": 13
+  "map_zoom": 13,
+  "media_base_url": "https://0marm0.github.io/ApartmentScout/demo/media/"
  },
  "budget": {
   "basis": "monthly_cost",

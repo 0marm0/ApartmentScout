@@ -3,7 +3,7 @@
 // listing's save / compare / share). One modal; the query input keeps focus and the options are a listbox.
 import { S, on, store, openDrawer, label, cost, score, isSaved, toggleSave, toggleCompare, setFilter, openSettings, filtered, openWizard } from './app.js';
 import { flipTheme } from './shell.js';
-import { $, esc, money, ICONS, imagesOf, imgFallback, scoreColor, toast } from './util.js';
+import { $, esc, money, ICONS, imagesOf, mediaSrc, scoreColor, toast } from './util.js';
 import { nlItem } from './features/nlsearch.js';   // [feature C] plain-language search row
 import { extraActions } from './features/palette-actions.js';   // [feature C] undo, redo, tour, cheat sheet
 
@@ -77,7 +77,7 @@ function listingItem(L, group) {
   const im = imagesOf(L), ph = im.own[0] || im.building[0]?.url, sv = score(L);
   return {
     group, id: 'l:' + L.id,
-    icon: ph ? `<img src="${esc(ph)}" alt="" referrerpolicy="no-referrer" loading="lazy"${im.own[0] ? imgFallback(L, 0) : ''}>` : `<span class="pl-gly">${ICONS.doc}</span>`,
+    icon: ph ? `<img src="${esc(mediaSrc(ph))}" alt="" referrerpolicy="no-referrer" loading="lazy">` : `<span class="pl-gly">${ICONS.doc}</span>`,
     title: `${esc(L.building || L.address)} <span>${esc(L.unit || '')}</span>${isSaved(L.id) ? `<span class="pl-star">${ICONS.star}</span>` : ''}`,
     sub: esc([L.neighborhood, L.beds != null ? (L.beds ? L.beds + ' bd' : 'Studio') : null, L.sqft ? Math.round(L.sqft) + ' ft²' : null, L._rank ? '#' + L._rank : null].filter(Boolean).join(' · ')),
     meta: `<b>${money(cost(L))}</b><i class="pl-score" style="--c:${scoreColor(sv)}">${sv == null ? '?' : Math.round(sv)}</i>`,

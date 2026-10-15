@@ -1,5 +1,5 @@
 {
-  "_about": "Limits enforced by `scripts/perf_check.py --check` (the perf job in .github/workflows/tests.yml). Sizes are bytes on the wire (gzip), times are milliseconds on a cold load with no CPU throttle on a GitHub-hosted runner (set 2026-10 from a measured 0.8 s LCP / 150 ms TBT on a laptop, about three times looser). Tighten them when the numbers fall; raise one only with a reason in the commit.",
+  "_about": "Limits enforced by `scripts/perf_check.py --check` (the perf job in .github/workflows/tests.yml). Sizes are bytes on the wire (gzip), times are milliseconds on a cold load with no CPU throttle on a GitHub-hosted runner (set 2026-10 from a measured 0.8 s LCP / 150 ms TBT on a laptop, about three times looser). Tighten them when the numbers fall; raise one only with a reason in the commit. Standalone file_bytes 27.0 -> 27.4 MB (2026-10): the file now keeps each photo's saved path (+0.15 MB) so its photos come from the published copy instead of the listing sites' links.",
   "site": {
     "first_js_gz": 110000,
     "all_js_gz": 500000,
@@ -13,7 +13,7 @@
     "tbt": 1500
   },
   "standalone": {
-    "file_bytes": 27000000,
+    "file_bytes": 27400000,
     "lcp": 4500
   }
 }

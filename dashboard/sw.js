@@ -12,7 +12,7 @@
  *                  consistent version and the app opens with no network. The browser's own worker update check
  *                  (sw.js is fetched uncached on every visit) finds a new deploy and the page offers a Reload button.
  *                  Without precache.json the page is network first (4 s timeout), then the cached copy.
- *   photos         Saved listing photos (media/) are cached on first view in their own cache, which is not tied to a
+ *   photos         Saved listing photos (media/, or the starter set media-lite/) are cached on first view in their own cache, which is not tied to a
  *                  build and is capped (PHOTO_CAP_BYTES, oldest first). Remote photos and map tiles are not touched.
  *   no precache.json (a plain copy of dashboard/ with no deploy step) the worker caches what the page asks it to
  *                  (message WARM) and serves network-first, so a stale copy never hides new data.
@@ -49,9 +49,9 @@ function planEviction(index, cap, incoming) {
   return { drop, total };
 }
 
-/** Is this a saved listing photo (media/ under the scope), the one family capped for size? */
+/** Is this a saved listing photo (media/, or the starter set media-lite/, under the scope), the one family capped for size? */
 function isPhoto(url) {
-  return url.href.startsWith(new URL('media/', SCOPE).href) && /\.(?:webp|jpe?g|png|avif|gif)$/i.test(url.pathname);
+  return (url.href.startsWith(new URL('media/', SCOPE).href) || url.href.startsWith(new URL('media-lite/', SCOPE).href)) && /\.(?:webp|jpe?g|png|avif|gif)$/i.test(url.pathname);
 }
 
 /** Never cached: the worker itself, its manifest and the local-only API. */

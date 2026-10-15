@@ -4,7 +4,7 @@
 // Compare with one click. Empty, collapsed or on a phone it is a small pill. The list is S.compare, so every Compare
 // toggle in the app and the Compare view itself stay in step. The list operations are in tray-model.js.
 import { S, on, emit, store, byId, cost, score, label, openDrawer } from '../app.js';
-import { $, esc, money, scoreColor, ICONS, imagesOf, toast } from '../util.js';
+import { $, esc, money, scoreColor, ICONS, imagesOf, mediaSrc, toast } from '../util.js';
 import { miniGlyph } from '../views/table-kit.js';
 import { placeAt, removeId, nudge, MAX } from './tray-model.js';
 import { watch, reducedMotion } from './dom.js';
@@ -45,7 +45,7 @@ function place(id, index) {
 // ------------------------------------------------------------------ markup
 function photoHTML(L) {
   const im = imagesOf(L), u = im.own[0] || im.building[0]?.url;
-  return `<span class="ts-ph">${miniGlyph(L, 44, 44)}${u ? `<img src="${esc(u)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" draggable="false" onerror="this.remove()">` : ''}</span>`;
+  return `<span class="ts-ph">${miniGlyph(L, 44, 44)}${u ? `<img src="${esc(mediaSrc(u))}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" draggable="false" onerror="this.remove()">` : ''}</span>`;
 }
 function slotHTML(id, i, fresh) {
   const L = byId(id), c = cost(L), sc = score(L), n = label(L);

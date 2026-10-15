@@ -4,7 +4,7 @@
 // Falls back to Esri raster tiles when vector tiles are switched off or fail.
 import { S, on, emit, store, filtered, openDrawer, label, cost, commuteOf, loadJSON, dest, score, isSaved, sorted, setCommute, modeSegHTML, MODE_LABEL } from './app.js';
 import { commuteLayerKey, walkRingMetres } from './criteria.js';
-import { $, esc, money, moneyShort, safeUrl, css, scoreColor, unitGlyph, gridImage, gridValueAt, idwGrid, RAMPS, bullet, aerialHTML, imagesOf, imgFallback } from './util.js';
+import { $, esc, money, moneyShort, safeUrl, css, scoreColor, unitGlyph, gridImage, gridValueAt, idwGrid, RAMPS, bullet, aerialHTML, imagesOf, mediaSrc } from './util.js';
 import { contours } from '../vendor/d3-contour.js';
 import * as MF from './features/map-features.js';   // [features] route preview, starred-only lens, sun lens
 import * as MD from './features/multidest.js';   // [multi-destination] worst-of / weighted commute surfaces
@@ -494,7 +494,7 @@ function showCard(id) {
   }
   const im = imagesOf(L), ph = im.own[0] || im.building[0]?.url, sv = score(L), cm = commuteOf(L);
   const cml = S.commuteMode === 'best' ? '' : ' by ' + MODE_LABEL[S.commuteMode].toLowerCase();
-  el.innerHTML = `<div class="mc-ph">${ph ? `<img src="${esc(ph)}" alt="" referrerpolicy="no-referrer"${im.own[0] ? imgFallback(L, 0) : ''}>` : L.lat != null ? aerialHTML(L, 88, 88, 18) : `<div class="glyph">${unitGlyph(L, 88, 88)}</div>`}</div>
+  el.innerHTML = `<div class="mc-ph">${ph ? `<img src="${esc(mediaSrc(ph))}" alt="" referrerpolicy="no-referrer">` : L.lat != null ? aerialHTML(L, 88, 88, 18) : `<div class="glyph">${unitGlyph(L, 88, 88)}</div>`}</div>
     <div class="mc-b"><div class="mc-t">${esc(L.building || L.address)} <span>${esc(L.unit || '')}</span></div>
       <div class="mc-s">${esc([L.neighborhood, L.sqft ? Math.round(L.sqft) + ' ft²' : null, cm != null ? `${Math.round(cm)} min${cml} to ${dest()?.name || 'work'}` : null].filter(Boolean).join(' · '))}</div>
       <div class="mc-p"><b>${money(cost(L))}</b><span>/mo</span><i class="mc-sc" style="--c:${scoreColor(sv)}">${sv == null ? '?' : Math.round(sv)}</i></div>
@@ -649,7 +649,7 @@ function wire() {
     const im = imagesOf(L), ph = im.own[0] || im.building[0]?.url;
     if (picking) return;
     const cm = commuteOf(L), cml = S.commuteMode === 'best' ? '' : ' ' + MODE_LABEL[S.commuteMode].toLowerCase();
-    popup.setLngLat([L.lon, L.lat]).setHTML(`<div class="hovercard">${ph ? `<img src="${esc(ph)}" alt="" referrerpolicy="no-referrer">` : aerialHTML(L, 236, 118, 18)}<div class="hb"><div class="t">${esc(label(L))}</div><div class="s">${esc(L.neighborhood || '')}${L.sqft ? ' · ' + Math.round(L.sqft) + ' ft²' : ''}</div><div class="p"><b>${money(cost(L))}/mo</b><span>${cm != null ? Math.round(cm) + ' min' + cml + ' · ' : ''}score ${Math.round(score(L) ?? 0)}</span></div>${MF.hoverLine(L)}${hoverTrendHTML(L)}</div></div>`).addTo(map);
+    popup.setLngLat([L.lon, L.lat]).setHTML(`<div class="hovercard">${ph ? `<img src="${esc(mediaSrc(ph))}" alt="" referrerpolicy="no-referrer">` : aerialHTML(L, 236, 118, 18)}<div class="hb"><div class="t">${esc(label(L))}</div><div class="s">${esc(L.neighborhood || '')}${L.sqft ? ' · ' + Math.round(L.sqft) + ' ft²' : ''}</div><div class="p"><b>${money(cost(L))}/mo</b><span>${cm != null ? Math.round(cm) + ' min' + cml + ' · ' : ''}score ${Math.round(score(L) ?? 0)}</span></div>${MF.hoverLine(L)}${hoverTrendHTML(L)}</div></div>`).addTo(map);
   });
   onPins('mouseleave', () => { map.getCanvas().style.cursor = ''; if (hov) hoverState(hov, false); hov = null; popup.remove(); emit('hover', null); });
   onPins('click', (e) => { if (!picking) openDrawer(e.features[0].id); });

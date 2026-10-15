@@ -37,7 +37,7 @@ management behaviour and lease terms.
 | `config/intake.yaml` | The intake questionnaire: question, why, default and criteria key, in the order the wizard asks. |
 | `config/cities/*.yaml` | City profiles: data sources, transit feeds, landmark names. |
 | `searches/<name>/` | One folder per search (criteria, listings, research, caches). Git-ignored. |
-| `examples/nyc-2026/` | A complete worked example (Manhattan 1BR search, 732 listings). |
+| `examples/nyc-2026/` | A complete worked example (Manhattan 1BR search, 738 listings). Its photos: `media-lite/` is the starter set in the repo, the full `media/` set is ignored (`scripts/fetch_media.sh`), `search.media_base_url` names where it is published. |
 | `templates/` | Markdown templates for notes, landlord questions, tours and decision memos. |
 | `.claude/skills/` | Step-by-step playbooks for each stage. Other agents can read them as plain Markdown. |
 | `docs/guides/` | Human documentation, including data model and methodology. |

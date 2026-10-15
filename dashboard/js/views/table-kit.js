@@ -1,7 +1,7 @@
 // Small shared pieces for the Shortlist, Compare and Tours views: thumbnails, gate labels, amenity
 // states and formatting. Everything that comes from data goes through esc() or safeUrl().
 import { S, cost, commuteOf, dests, tierIndex, TIER_VARS, pick, score, label } from '../app.js';
-import { esc, money, bullets, COMPASS, scoreColor } from '../util.js';
+import { esc, money, bullets, COMPASS, scoreColor, mediaSrc } from '../util.js';
 import { heroOf } from '../features/photos.js';   // photo media: card-consistent thumbnail
 
 export const TIERS = ['S', 'A', 'B', 'C', 'Pass'];
@@ -45,8 +45,7 @@ export function miniGlyph(L, w = 56, h = 44) {
 export function thumb(L, w = 56, h = 44) {
   // photo media: the same source and order as the result cards (saved copy, own photos, building photos; clean first)
   const hero = heroOf(L);
-  const fb = hero?.remote ? ` onerror="this.onerror=null;this.src='${esc(hero.remote)}'"` : '';
-  return hero ? `<img src="${esc(hero.url)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" width="${w}" height="${h}"${fb}>` : miniGlyph(L, w, h);
+  return hero ? `<img src="${esc(mediaSrc(hero.url))}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" width="${w}" height="${h}">` : miniGlyph(L, w, h);
 }
 
 export function tierPill(L, short = false) {

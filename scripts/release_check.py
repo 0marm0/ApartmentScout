@@ -19,8 +19,10 @@ Checks
             publication_status "public" and an unchanged sha256. "private" and "review" fail.
   ignored   searches/, _reference/, HANDOFF.md and dashboard/data-private/ are git-ignored and nothing in them is
             tracked.
-  photos    no listing photos in tracked example data: no image files outside examples/*/research/charts/, no media/
-            or photos/ folders, no photos / photos_local fields or local building-photo copies in example listings.
+  photos    no listing photos in tracked example data: no image files outside examples/*/research/charts/ and the
+            starter set examples/*/media-lite/ (allowed by the owner's photo policy, at most 40 MB), no media/ or
+            photos/ folders (the full set, examples/*/media/, is ignored), no photos / photos_local fields or local
+            building-photo copies in example listings.
   tests     pytest and `node --test tests/js`.
 
 Exit status 0 when nothing FAILs (WARN and INFO never fail the gate).
@@ -48,7 +50,9 @@ IMAGE_DIRS = ("docs/images", "docs/gallery", "docs/archive")   # the archive kee
 MANIFEST = "docs/gallery/manifest.json"
 STATUSES = ("public", "private", "review")
 MUST_IGNORE = {"searches/": "searches/example-private/criteria.yaml", "_reference/": "_reference/x.md",
-               "HANDOFF.md": "HANDOFF.md", "dashboard/data-private/": "dashboard/data-private/listings.json"}
+               "HANDOFF.md": "HANDOFF.md", "dashboard/data-private/": "dashboard/data-private/listings.json",
+               "examples/nyc-2026/media/": "examples/nyc-2026/media/shared/x.webp"}   # the full photo set lives in a release
+LITE_MAX_MB = 40   # examples/*/media-lite/ (the starter photos in the repository) must stay small; make_media_lite.py aims at 35
 # Public phrases that contain a string an owner may reasonably list as private (a station name, a landmark).
 DEFAULT_ALLOW = ("Simpson St", "Harvard Club")
 DEFAULT_PATTERN_FILE = Path.home() / ".config" / "apartmentscout" / "privacy-patterns.txt"
@@ -272,15 +276,25 @@ def _listing_photo_problems(rel: str, data: object, policy: dict | None = None) 
 def check_photos(repo: Path, files: list[str]) -> list[Finding]:
     found: list[Finding] = []
     scope = [f for f in files if f.startswith(("examples/", "dashboard/data/", "dist/"))]
-    allow_media, media_ok = _photo_policy(repo).get("listing_photo_files") == "allowed", 0
+    allow_media = _photo_policy(repo).get("listing_photo_files") == "allowed"
+    lite_n, lite_bytes = 0, 0
     for rel in scope:
         parts = rel.split("/")
         ext = Path(rel).suffix.lower()
-        if "media" in parts[:-1] or "photos" in parts[:-1]:
-            if allow_media and re.match(r"^examples/[^/]+/media/", rel):
-                media_ok += 1
-                continue
-            found.append(Finding("FAIL", "photos", f"{rel}: media or photos folder in tracked example data"))
+        if re.match(r"^examples/[^/]+/media-lite/", rel):
+            # the starter photos: in the repository on purpose, small, and only where the owner's policy allows photo files
+            if not allow_media:
+                found.append(Finding("FAIL", "photos", f"{rel}: listing photo copy (media-lite) without the owner's policy "
+                                     "in docs/gallery/manifest.json"))
+            else:
+                lite_n += ext in IMAGE_EXT
+                try:
+                    lite_bytes += (repo / rel).stat().st_size
+                except OSError:
+                    pass
+        elif "media" in parts[:-1] or "photos" in parts[:-1]:
+            found.append(Finding("FAIL", "photos", f"{rel}: media or photos folder in tracked example data "
+                                 "(the full photo set is ignored by the repository; the starter photos go in media-lite)"))
         elif ext in IMAGE_EXT and not re.match(r"^examples/[^/]+/research/charts/", rel):
             found.append(Finding("FAIL", "photos", f"{rel}: image file in example data"))
         elif rel.endswith("listings.json"):
@@ -300,11 +314,18 @@ def check_photos(repo: Path, files: list[str]) -> list[Finding]:
                              else Finding("FAIL", "photos", p))
         elif ext == ".html":
             text = (repo / rel).read_text(encoding="utf-8", errors="replace")
-            if '"photos_local"' in text or "data:image/jpeg" in text:
+            # saved photo paths (not the photos) are what a single-file build keeps so it can fetch them from the published copy;
+            # like the paths in listings.json they need the owner's photo policy. Embedded JPEG data never passes.
+            if ('"photos_local"' in text and not allow_media) or "data:image/jpeg" in text:
                 found.append(Finding("FAIL", "photos", f"{rel}: embeds local photo paths or JPEG data"))
-    if media_ok:
-        found.append(Finding("INFO", "photos", f"{media_ok} listing photo files under examples/*/media "
-                             f"(allowed by the owner's policy in docs/gallery/manifest.json)"))
+    if lite_n:
+        mb = lite_bytes / 1e6
+        if mb > LITE_MAX_MB:
+            found.append(Finding("FAIL", "photos", f"examples/*/media-lite is {mb:.1f} MB; the limit is {LITE_MAX_MB} MB "
+                                 "(re-run scripts/make_media_lite.py with smaller settings)"))
+        else:
+            found.append(Finding("INFO", "photos", f"{lite_n} starter photos under examples/*/media-lite, {mb:.1f} MB "
+                                 f"(limit {LITE_MAX_MB} MB; allowed by the owner's policy in docs/gallery/manifest.json)"))
     if not any(f.level == "FAIL" for f in found):
         found.append(Finding("PASS", "photos", f"{len(scope)} example and dashboard data files"))
     return found
