@@ -1013,7 +1013,7 @@ function applyCity() {
   const dark = document.documentElement.dataset.theme !== 'light', css = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
   const colors = eye ? { low: '#7f8996', high: '#b9c2cf', roof: '#dde1e7', own: css('--accent'), ground: '#6e7378' }
     : { low: dark ? css('--surface-3') : css('--ink-4'), high: css('--ink-3'), roof: dark ? css('--ink-3') : css('--surface-1'), own: css('--accent'), ground: dark ? css('--surface-1') : css('--surface-3') };
-  G3.setCity(cityGroup(onSite, { light: eye || !dark, colors }));
+  G3.setCity(cityGroup(onSite, { daylight: eye, light: eye || !dark, colors }));
 }
 let cityKey = '';
 

@@ -60,7 +60,7 @@ export class UnitStage {
     const { B, T } = data;
     const cx = (T.bb[0] + T.bb[2]) / 2, cy = (T.bb[1] + T.bb[3]) / 2;
     this.center = W3(cx, cy, 0); this.cxy = [cx, cy];
-    const pal = this.pal = palette();
+    const pal = this.pal = this.livePalette();
 
     // cameras and controls
     this.orbitCam = new THREE.PerspectiveCamera(42, 1.6, 2, 12000);
@@ -320,7 +320,7 @@ export class UnitStage {
     this.dirty = true;
   }
   setPalette() {
-    const pal = this.pal = palette();
+    const pal = this.pal = this.livePalette();
     if (!this.scene) return;
     this.cityObj.setPalette(pal); this.skyU.gnd.value.copy(pal.ground);
     this.tMat.color.copy(pal.tBase); this.tEdgeMat.color.copy(pal.accent); this.tFoot.material.color.copy(pal.accent);
@@ -620,8 +620,12 @@ export class UnitStage {
     if (!animate || reduce) { cam.position.copy(pos); ctl.target.copy(tgt); ctl.update(); this.dirty = true; return; }
     this.tween = { cam, ctl, p0: cam.position.clone(), t0: ctl.target.clone(), p1: pos, t1: tgt, start: performance.now(), dur: 750 };
   }
+  /** The window and Inside cameras look out at a bright day (the natural sky, the light colours of city, park and trees) whatever the dashboard's theme; the orbit, plan and top cameras keep the theme's. */
+  eyeLevel() { return this.mode === 'in' || this.mode === 'win'; }
+  livePalette() { return palette({ daylight: this.eyeLevel() }); }
   setMode(m) {
     const prev = this.mode; this.mode = m;
+    if (this.scene && !!this.pal.daylight !== this.eyeLevel()) this.setPalette();   // [daylight] the city, park and sky change look with the camera
     this.controls.enabled = m === 'orbit' || m === 'top'; this.planControls.enabled = m === 'plan';
     if (m === 'top') this.topDown(prev !== 'plan' && prev !== 'win' && prev !== 'in');
     if (m === 'orbit' && (prev === 'top' || prev === 'orbit')) this.resetOrbit(true);
