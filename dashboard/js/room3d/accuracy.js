@@ -105,7 +105,7 @@ export function accuracyChip({ host = 'unit', onOpen, openLabel = 'Open the evid
 }
 
 /** How many pieces have a look from the renter, one example, and the details still guessed (from each look's `assumed` list). */
-function looksMeta(pieces) {
+export function looksMeta(pieces) {
   if (!Array.isArray(pieces)) return null;
   const ok = pieces.filter((p) => p && typeof p === 'object'), sum = lookSummary({ pieces: ok }), guesses = new Set();
   for (const p of ok) if (lookBasis(p.look) === 'renter' && Array.isArray(p.look.assumed)) for (const g of p.look.assumed.slice(0, 6)) if (typeof g === 'string' && g.length < 24) guesses.add(g);

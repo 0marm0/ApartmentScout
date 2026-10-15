@@ -299,9 +299,9 @@ function kit(it, ctx) {
     /** Leather: a pebbled grain and a soft sheen. Visual adds a velvety rim (sheen) and a thin clear coat; Fast keeps the grain and the specular only. */
     leather(col, finish = 'sheen') {
       return K.mat(`leather|${hexOf(col)}|${finish}|${fast ? 1 : 2}`, () => {
-        const t = leatherTex(), rough = ROUGH.leather[finish] ?? 0.42, o = { roughness: rough, ...(t ? { bumpMap: t, bumpScale: fast ? 1.4 : 2.2 } : {}) };
+        const t = leatherTex(), rough = ROUGH.leather[finish] ?? 0.42, o = { roughness: rough, ...(t ? { bumpMap: t, bumpScale: fast ? 0.6 : 0.7 } : {}) };
         if (fast) return ctx.std(col, o);
-        const m = new THREE.MeshPhysicalMaterial({ color: col, ...o, sheen: 0.6, sheenRoughness: 0.5, sheenColor: mix(col, 0xffffff, 0.35), clearcoat: finish === 'matte' ? 0 : 0.18, clearcoatRoughness: 0.5 });
+        const m = new THREE.MeshPhysicalMaterial({ color: tone(col, 0.7), ...o, sheen: 0.4, sheenRoughness: 0.5, sheenColor: mix(col, 0xffffff, 0.22), clearcoat: finish === 'matte' ? 0 : 0.18, clearcoatRoughness: 0.5 });
         return m;
       });
     },
@@ -312,7 +312,7 @@ function kit(it, ctx) {
         case 'leather': return K.leather(s.color, fin);
         case 'fabric': return K.fabric(s.color);
         case 'wood': return K.wood(s.color, rough);
-        case 'metal': return K.metal(s.color, rough, 0.6);
+        case 'metal': return K.metal(s.color, rough, fast ? 0.15 : 0.6);   // Fast has no environment light, so a full metal would render near black
         case 'glass': return K.mat(`glass|${hexOf(s.color)}`, () => ctx.std(s.color, { roughness: 0.08, metalness: 0.2 }));
         default: return K.paint(s.color, rough);   // paint, laminate, plastic
       }
@@ -394,25 +394,25 @@ function futon(it, K) {
   tube([-hx, deckY - 2.2, zf], [hx, deckY - 2.2, zf], rr * 0.75); tube([-hx, deckY - 2.2, zr], [hx, deckY - 2.2, zr], rr * 0.75);
   const slatN = f ? 3 : 6, slatG = K.board(2 * hx, 0.5, 2.0, 0, true);   // the slatted deck under the mattress
   for (let i = 0; i < slatN; i++) K.add(slatG, fm, 0, deckY - 1.1, zr + ((zf - zr) * (i + 0.5)) / slatN);
-  const chan = (len, depth, thick, o) => K.soft(len, thick, depth, { r: Math.min(1.9, thick / 2.3, depth / 2.3), ...o });
+  const chan = (len, depth, thick, o) => K.soft(len, thick, depth, { r: Math.min(1.4, thick / 2.3, depth / 2.3), ...o });
   if (flat) {   // opened as a bed: one flat mattress made of padded channels across its length
-    const nC = f ? 5 : 7, md = d - 2.4, cd = md / nC, cg = chan(mW, cd + 0.5, mt, { puff: { py: 0.8 }, pow: 0.8, kf: [2, 1, 1], k: [5, 1, 2], keepPuff: true });
+    const nC = f ? 5 : 7, md = d - 2.4, cd = md / nC, cg = chan(mW, cd + 0.5, mt, { puff: { py: 0.6 }, pow: 0.8, kf: [2, 1, 1], k: [3, 1, 2], s: 1, keepPuff: true });
     for (let i = 0; i < nC; i++) K.add(cg, mat, 0, deckY, -md / 2 + cd * (i + 0.5));
     return;
   }
   // the back: two raked stiles and rails carrying the back cushion
   const by0 = deckY - 1, bz0 = -hd + 5.5, by1 = h - 1.2, bz1 = -hd + 1.4, lean = Math.atan2(bz0 - bz1, by1 - by0), bx = hx - 2.5;
   for (const sx of [-1, 1]) tube([sx * bx, by0, bz0], [sx * bx, by1, bz1], rr * 0.9);
-  tube([-bx, by1, bz1], [bx, by1, bz1], rr); ball([-bx, by1, bz1], rr); ball([bx, by1, bz1], rr);
+  tube([-bx, by1, bz1], [bx, by1, bz1], rr); if (!f) { ball([-bx, by1, bz1], rr); ball([bx, by1, bz1], rr); }
   tube([-bx, by0 + (by1 - by0) * 0.5, bz0 + (bz1 - bz0) * 0.5], [bx, by0 + (by1 - by0) * 0.5, bz0 + (bz1 - bz0) * 0.5], rr * 0.7);
   // the seat: padded channels from the back stiles to the front rail, each crowned like a soft roll
-  const zb = bz0 - 0.5, seatD = hd - 0.6 - zb, nS = f ? 4 : 5, cd = seatD / nS;
-  const sg = chan(mW, cd + 0.5, mt, { puff: { py: 0.9 }, pow: 0.8, kf: [2, 1, 1], k: [5, 1, 2], keepPuff: true });
+  const zb = bz0 - 0.5, seatD = hd - 0.6 - zb, nS = f ? 3 : 5, cd = seatD / nS;
+  const sg = chan(mW, cd + 0.5, mt, { puff: { py: 0.6 }, pow: 0.8, kf: [2, 1, 1], k: [3, 1, 2], s: 1, keepPuff: true });
   for (let i = 0; i < nS; i++) K.add(sg, mat, 0, deckY, zb + cd * (i + 0.5));
   // the back cushion leans on the stiles: channels stacked up its length, crowned toward the sitter
-  const baseY = deckY + mt - 1.4, backLen = (h - 2.4 - baseY) / Math.cos(lean), nB = f ? 4 : 6, bl = backLen / nB;
+  const baseY = deckY + mt - 1.4, backLen = (h - 2.4 - baseY) / Math.cos(lean), nB = f ? 3 : 6, bl = backLen / nB;
   const bg = K.group(0, baseY, bz0 + mt / 2 + 1.0, 0); bg.rotation.x = -lean;
-  const bgeo = chan(mW, mt, bl + 0.5, { puff: { pz: 0.9 }, pow: 0.8, kf: [2, 2, 1], k: [5, 2, 1], keepPuff: true });
+  const bgeo = chan(mW, mt, bl + 0.5, { puff: { pz: 0.6 }, pow: 0.8, kf: [2, 2, 1], k: [3, 2, 1], s: 1, keepPuff: true });
   for (let i = 0; i < nB; i++) K.add(bgeo, mat, 0, bl * i, 0, { parent: bg });
 }
 
