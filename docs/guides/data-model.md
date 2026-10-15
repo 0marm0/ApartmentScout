@@ -684,6 +684,11 @@ monitor:
 | `price_history` | Listings with two or more distinct price points (snapshots and dated price claims). |
 | `availability` | The availability ladder state for every listing (extension). |
 
+## Questions
+
+`questions.json` (dashboard export, written by `apartmentscout build`): each active unit's open questions for its building's leasing
+office, with the wording stored once per merge key. Schema and the dashboard flow: [leasing-office questions](leasing-office-questions.md#the-data-file).
+
 ## Coverage
 
 `coverage.json` (dashboard export; `apartmentscout coverage --json` prints the same document):

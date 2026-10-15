@@ -6,7 +6,8 @@
 //   share.js     Share shortlist (read-only HTML) and the decision memo
 //   tour-plan.js the tour-day planner under Shortlist > Tours
 //   tour-findings.js visit notes, promoted facts and the decision trail (tour-sheet.js, findings-store.js, decision-trail.js)
-const FEATURES = [() => import('./visit.js'), () => import('./tray.js'), () => import('./tradeoff.js'), () => import('./share.js'), () => import('./tour-plan.js'), () => import('./tour-findings.js')];
+//   office.js    questions for the leasing office: a drawer section, building-row chips and a draft sheet (office-model.js, office-answer.js)
+const FEATURES = [() => import('./visit.js'), () => import('./tray.js'), () => import('./tradeoff.js'), () => import('./share.js'), () => import('./tour-plan.js'), () => import('./tour-findings.js'), () => import('./office.js')];
 
 export async function initFeatures() {
   for (const load of FEATURES) {
