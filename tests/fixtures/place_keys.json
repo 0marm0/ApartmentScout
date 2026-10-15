@@ -1,0 +1,34 @@
+{
+  "street": [
+    ["East 30th Street", "30th street"],
+    ["W. 14th St.", "14th street"],
+    ["3rd Avenue", "3rd avenue"],
+    ["Third Ave.", "3rd avenue"],
+    ["third avenue", "3rd avenue"],
+    ["fifth", "5th"],
+    ["5 av", "5th avenue"],
+    ["96", "96th"],
+    ["west 112 st", "112th street"],
+    ["Avenue A", "avenue a"],
+    ["Avenue of the Americas", "avenue of the americas"],
+    ["West End Avenue", "west end avenue"],
+    ["East River Drive", "east river drive"],
+    ["St. Nicholas Avenue", "saint nicholas avenue"],
+    ["St Marks Place", "saint marks place"],
+    ["Broadway", "broadway"],
+    ["FDR Drive", "fdr drive"],
+    ["Adam Clayton Powell Jr. Boulevard", "adam clayton powell jr boulevard"],
+    ["Park Ave", "park avenue"],
+    ["twelfth ave", "12th avenue"],
+    ["Rue Saint-Denis", "rue saint denis"]
+  ],
+  "area": [
+    ["Hell's Kitchen", "hells kitchen"],
+    ["Hell’s Kitchen", "hells kitchen"],
+    ["Murray Hill-Kips Bay", "murray hill kips bay"],
+    ["Upper West Side (Central)", "upper west side central"],
+    ["Yolanda García Park", "yolanda garcia park"],
+    ["Bryant Park", "bryant park"],
+    ["  Union   Square ", "union square"]
+  ]
+}

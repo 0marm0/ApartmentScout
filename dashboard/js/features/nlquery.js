@@ -10,7 +10,15 @@
 // and a sort (cheapest, closest, largest, best value). Anything it cannot place is returned in `rest`, and phrases
 // it recognises but cannot filter on yet (east of 3rd Ave) in `unsupported`, so the preview never pretends.
 //
-// `ctx` = { destinations: [{ name }], places: [string] } where `places` are neighbourhood, building and street names.
+// `ctx` = { destinations: [{ name }], places: [string], geo? } where `places` are neighbourhood, building and street names and
+// `geo` is the indexed places.json (features/places-geo.js indexPlaces): with it "east of 3rd ave", "between 30th and 45th
+// street", "near Central Park" and "in Murray Hill" become filters (f.where) and an unknown street is reported in `unknown`;
+// without it those phrases stay in `unsupported`. With two or more destinations, "25 min to work and 30 min to partner"
+// becomes a limit per destination (f.limits).
+
+import { parsePlaces } from './places-parse.js';   // [places] street, park and neighbourhood phrases
+import { parseDestLimits } from './multidest-model.js';   // [multi-destination] "25 min to work and 30 min to partner"
+import { addPlus, chipsFromParse, chipsForPlus, matchesPlus } from './nlplus.js';
 
 export const FEATURE_LABEL = {
   in_unit_wd: 'W/D', elevator: 'Elevator', doorman: 'Doorman', gym: 'Gym', dishwasher: 'Dishwasher', roof_deck: 'Roof deck', pets: 'Pets',
@@ -76,6 +84,16 @@ export function parseQuery(text, ctx = {}) {
   let t = normalise(text);
   /** Replace every match of `re` with a space, unless the callback returns false (then the text stays for later steps). */
   const eat = (re, cb) => { t = t.replace(re, (...a) => (cb(a) === false ? a[0] : ' ')); };
+
+  // [places] [multi-destination] phrases that name a street, park, neighbourhood or a limit per destination
+  const unknown = [];
+  if (ctx.geo) {
+    const pl = parsePlaces(t, ctx.geo, { destinations: ctx.destinations });
+    t = pl.text; unknown.push(...pl.unknown); unsupported.push(...pl.unsupported);
+    if (pl.clauses.length) f.where = pl.clauses;
+  }
+  const dl = parseDestLimits(t, ctx.destinations);
+  if (dl) { t = dl.text; f.limits = dl.limits; }
 
   // 1. requests we recognise but cannot filter on: say so instead of guessing
   const ORD = '(?:first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth)';
@@ -225,9 +243,10 @@ export function parseQuery(text, ctx = {}) {
   if (f.savedOnly) chips.push({ key: 'saved', label: 'Starred' });
   if (f.priceDrops) chips.push({ key: 'drops', label: 'Price drops' });
   if (f.text) chips.push({ key: 'text', label: `In \u201c${titleCase(norm(f.text))}\u201d` });
+  chips.push(...chipsFromParse(f));   // [places] [multi-destination]
   if (f.sort) chips.push({ key: 'sort', label: SORT_LABEL[f.sort] });
 
-  return { found: chips.length > 0, f, chips, rest, unsupported, summary: chips.map((c) => c.label).join(' \u00b7 ') };
+  return { found: chips.length > 0, f, chips, rest, unsupported, unknown, summary: chips.map((c) => c.label).join(' \u00b7 ') };
 }
 
 // ------------------------------------------------------------------ from a parse to the dashboard's filter model
@@ -242,6 +261,7 @@ export function toFilters(parsed, base) {
   const nl = {};
   for (const k of ['minBeds', 'maxBeds', 'minBaths', 'maxCost', 'minCost', 'minSqft', 'minFloor']) if (f[k] != null) nl[k] = f[k];
   if (f.priceDrops) nl.priceDrops = true;
+  addPlus(nl, f);   // [places] [multi-destination]
   const aboveTiers = f.maxCost != null && base.tierCap != null && f.maxCost > base.tierCap;   // the tiers would hide what was asked for
   return {
     filters: {
@@ -258,8 +278,9 @@ export function toFilters(parsed, base) {
  * whose latest price move was down. Unknown facts fail a filter that asks about them: asking for "2 bd" must not
  * return a home whose bedrooms nobody recorded.
  */
-export function matchesNL(L, nl, { price = () => null, drops = new Set() } = {}) {
+export function matchesNL(L, nl, { price = () => null, drops = new Set(), geo = null, dests = [], kmh = 4.8 } = {}) {
   if (!nl) return true;
+  if (!matchesPlus(L, nl, { geo, dests, kmh })) return false;   // [places] [multi-destination]
   const p = price(L);
   if (nl.maxCost != null && (p == null || p > nl.maxCost)) return false;
   if (nl.minCost != null && (p == null || p < nl.minCost)) return false;
@@ -282,6 +303,7 @@ export function chipsForNL(nl) {
   if (nl.minFloor != null) out.push({ key: 'floor', label: `Floor ${nl.minFloor}+`, clear: ['minFloor'] });
   if (nl.minBaths != null) out.push({ key: 'baths', label: `${nl.minBaths}+ bath`, clear: ['minBaths'] });
   if (nl.priceDrops) out.push({ key: 'drops', label: 'Price drops', clear: ['priceDrops'] });
+  out.push(...chipsForPlus(nl));   // [places] [multi-destination]
   return out;
 }
 
