@@ -23,8 +23,8 @@ export function windowReach({ bearing, sunAzimuth, altitude, head, orientationKn
 
 // ------------------------------------------------------------------ glazing and blinds (preview, not photometry)
 export const GLAZING_DEFAULT = 0.6;
-export const BLINDS = { open: 1, half: 0.5, closed: 0.1 };
-export const BLINDS_LABEL = { open: 'Open', half: 'Half', closed: 'Closed' };
+export const BLINDS = { open: 1, sheer: 0.55, half: 0.5, closed: 0.1 };   // [feature J] sheer added; values mirror features/daylight-core.js BLINDS_T
+export const BLINDS_LABEL = { open: 'Open', sheer: 'Sheer', half: 'Half', closed: 'Closed' };
 const IN2M = 0.0254;
 export const clampGlazing = (t) => (typeof t === 'number' && Number.isFinite(t) ? Math.max(0.05, Math.min(1, t)) : GLAZING_DEFAULT);
 export const blindsOf = (b) => (Object.hasOwn(BLINDS, b) ? b : 'open');
@@ -56,7 +56,9 @@ export function roomDaylight(model, sky, { transmittance = GLAZING_DEFAULT, blin
     const floor = (r.area || 0) * IN2M * IN2M, A = 2 * floor + perimeter(r.poly || []) * IN2M * H;
     if (!(aw > 0) || !(A > 0)) continue;
     const theta = th / aw;
-    out.push({ room: r.name, windows: ws.map(([, i]) => i), glazed_m2: aw, surface_m2: A, theta, df: (g.through * aw * theta) / (A * (1 - reflectance * reflectance)) });
+    // [feature J] `reflectance` may be a function (room, floorM2, wallM2) -> the room's mean reflectance, from the surfaces chosen in the Light tab
+    const R = typeof reflectance === 'function' ? reflectance(r, floor, A - 2 * floor) : reflectance;
+    out.push({ room: r.name, windows: ws.map(([, i]) => i), glazed_m2: aw, surface_m2: A, theta, df: (g.through * aw * theta) / (A * (1 - R * R)) });
   }
   return out;
 }

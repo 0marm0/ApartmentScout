@@ -11,6 +11,7 @@ import { RectAreaLightUniformsLib } from 'three/addons/lights/RectAreaLightUnifo
 import { MAT, LAMP_K } from './catalog.js';
 import { axes, footprint, toWorld, swingPoly } from './checks.js';
 import { pointInPoly, fmtIn } from './model.js';
+import { applySurfaceTint, setSurfaceState } from './surfaces3d.js';   // [feature J] reflectance -> colours
 
 export const M = 0.0254;
 const DEG = Math.PI / 180;
@@ -27,6 +28,14 @@ const mood = { want: 'auto', sunUp: true, now: 'day' };
 let glide = null, tourS = null;
 
 export const markDirty = () => { dirty = true; };
+// [feature J] hooks for lighting, surfaces and render quality (plan/lighting3d.js, plan/quality3d.js)
+const moodHooks = [];
+/** Call fn(moodNow) after every lighting mood update ('day' | 'evening' | 'night'). */
+export const onMood = (fn) => { moodHooks.push(fn); };
+/** The three.js parts the lighting and quality modules add to. */
+export const parts = () => ({ renderer, scene, cam, controls, sunL, hemi, amb, shell, furn, overlay, rig, mood });
+/** Reflectances {floor, walls, ceiling} for the room colours (a visual preview), or null for the built-in look. */
+export function setSurfaces(rho) { if (setSurfaceState(rho) && model) { colors = applySurfaceTint(themeColors()); texCache.clear(); buildShell(); dirty = true; } }
 export const getCamera = () => cam;
 export const viewMode = () => rig.mode;
 
@@ -130,9 +139,9 @@ function clear(g) {
 const std = (color, o = {}) => new THREE.MeshStandardMaterial({ color, roughness: 0.85, metalness: 0, ...o });
 
 // ------------------------------------------------------------------ shell
-export function setModel(m) { model = m; colors = themeColors(); buildShell(); frameLights(); }
+export function setModel(m) { model = m; colors = applySurfaceTint(themeColors()); buildShell(); frameLights(); }
 export function setWallMode(m) { wallMode = m; if (model) buildShell(); }
-export function retheme() { colors = themeColors(); texCache.clear(); if (model) { buildShell(); rebuildAllItems(); } }
+export function retheme() { colors = applySurfaceTint(themeColors()); texCache.clear(); if (model) { buildShell(); rebuildAllItems(); } }
 let lastItems = [];
 let lighting = { ambient: 1, sun: 1, sky: 1 };
 // per-window city shade: an invisible shadow caster fills the opening of every window a neighbour blocks
@@ -189,7 +198,7 @@ export function buildShellInto(T, m, C, mode = 'cut', opts = {}) {
     const mm = new THREE.Mesh(g, mat); mm.position.y = 0.001; mm.receiveShadow = true; mm.name = `floor: ${r.name}`; T.shell.add(mm);
     if (cut == null) { // ceiling: faces down, so it is culled from above and only seen from inside
       const cg = new THREE.ShapeGeometry(new THREE.Shape(r.poly.map(([x, y]) => new THREE.Vector2(x * M, -y * M)))); cg.rotateX(Math.PI / 2);
-      const ce = new THREE.Mesh(cg, std(C.wall.clone().multiplyScalar(1.04), { roughness: 0.95 })); ce.position.y = H * M - 0.001; ce.name = `ceiling: ${r.name}`; ce.receiveShadow = true; T.shell.add(ce);
+      const ce = new THREE.Mesh(cg, std(C.ceiling || C.wall.clone().multiplyScalar(1.04), { roughness: 0.95 })); ce.position.y = H * M - 0.001; ce.name = `ceiling: ${r.name}`; ce.receiveShadow = true; T.shell.add(ce);
     }
     if (opts.grid !== false) floorGrid(T.shell, r, C);
     if (opts.labels !== false) T.labels.add(floorLabel(r, C));
@@ -388,6 +397,7 @@ function applyMood() {
   const skyBg = rig.mode === 'eye' && !city ? (day ? new THREE.Color(0xc9d6e3) : eve ? new THREE.Color(0x6d6f8f) : new THREE.Color(0x0b1020)) : null;
   if (scene) scene.background = skyBg || (day ? colors.bg : eve ? colors.bg.clone().lerp(colors.night, 0.5) : colors.night).clone();
   renderer.toneMappingExposure = day ? 1.15 : eve ? 1.25 : 1.35;
+  for (const f of moodHooks) f(now);   // [feature J] lamps, quality mode
   dirty = true;
 }
 

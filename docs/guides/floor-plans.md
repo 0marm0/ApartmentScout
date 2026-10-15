@@ -18,6 +18,11 @@ The **Floor plan** tab opens a studio for that unit:
   furniture casts shadows, so you can see where morning sun lands on the bed;
 - layout presets written into the plan file, and layouts saved per plan in the browser, as a JSON
   file (download and load), as a 3D model (`.glb`, one named node per piece) or as a PNG.
+- a **Light** tab for lighting design: relative daylight on a sensor grid in each room (a heat map on the plan and on the 3D
+  floor), glass, frame, blinds and surface inputs that say whether each number is assumed or from a source, editable luminaires
+  with a lamp-light estimate and a night preview, and an annual daylight summary per window
+  ([Lighting design](#lighting-design-the-light-tab));
+- **Fast** and **Visual** render quality for the 3D view, and a progressive 2x or 4x PNG render.
 - a plan tracer (**New plan from image**) that turns a plan image or PDF page into a plan file, and
   **Edit plan** for corners, doors, windows, ceiling and walls, saved as a local version
   ([Trace a plan](#trace-a-plan)).
@@ -137,7 +142,7 @@ The catalogue lives in `dashboard/js/plan/catalog.js`, with a cited source for e
 | `ptac`, `window-ac`, `radiator` | 42 x 13.9 x 16, 19 x 9 x 13.5 on the sill, 36 x 8 x 24 | 12-18 airflow, 12-24 airflow (must sit in a window at sill height), 4-8 heat clearance |
 | `rug` (variants `5x8`, `6x9`, `8x10`, `round6`) | 96 x 60 and up | not an obstacle; tight under a door swing |
 | `wall-art` (variants `s`, `m`, `l`) | 36 x 24 at 45 in up | centre at 57 ± 3 in; 6-12 in above the furniture below; solid wall behind |
-| `floor-lamp`, `table-lamp`, `pendant`, `ceiling-light` | 12 x 60 tall, 10 x 20 at 24 in, 16 at 66 in, 14 at 100 in | a table lamp needs a surface at its height; lamps light the room in Evening and Night |
+| `floor-lamp`, `table-lamp`, `pendant`, `ceiling-light` | 12 x 60 tall, 10 x 20 at 24 in, 16 at 66 in, 14 at 100 in | a table lamp needs a surface at its height; lamps light the room in Evening and Night and count in the Light tab's lamp estimate (catalogue lumens) |
 
 TV viewing distance is graded by the share of your view the screen fills: 28 to 42 degrees is ideal
 (SMPTE recommends at least 30, THX about 40), 20 to 28 is workable, under 20 is too far. The screen
@@ -221,6 +226,36 @@ plan origin is the image's bottom-left corner), `length` is in plan units, `conf
 `medium`, `low` or `unchecked`. An edit writes `"mode": "edit"`, its `label` and up to 20 `changes`.
 `source` also says, in words, that the plan is a tracing and not a survey.
 
+## Lighting design (the Light tab)
+
+Everything here is labelled by what it is: **Modelled** (the relative daylight model: not lux, not calibrated),
+**Estimate** (lamps by inverse square and cosine, no bounce) or **Visual preview** (what the 3D view shows).
+[Methodology](methodology.md#relative-daylight-in-a-room-glass-and-surfaces-a-year-of-it-and-lamps) has the method; the
+Python and browser implementations agree (`tests/fixtures/daylight_parity.json`).
+
+**Daylight.** Needs the plan placed on its site (a site model for the unit and a known plan orientation); each window then has
+its own skyline. Pick the sky (overcast, or clear for the sun position on screen), switch on the heat map on the plan and the
+3D floor tint, and read the room table (average, low to high, evenness). Hover the heat map for the value under the pointer.
+Rooms without a window are listed and left unmapped. **Inputs and sources** holds the glass preset (the slider above still
+fine-tunes it), the frame factor, the blinds (open, sheer, half, closed, set above) and floor, wall and ceiling reflectance.
+Each has an *Assumed / From a source* choice and a note (a spec sheet, a window label, a paint chip). The count of sourced
+inputs is shown, and the choices are saved with the plan in the browser and inside a complete plan project
+(`lighting.daylight`). The 3D room's colours follow the chosen reflectances.
+
+**Lamps.** Add a recessed downlight, pendant, floor lamp or light strip; drag it on the plan (a strip has a handle at its
+end), nudge it with the arrow keys (Shift for 6 in) or type its position in feet, height, lumens, colour temperature and beam
+angle. Defaults are typical values and say **Assumed** until you pick *From a product or spec sheet*. The estimate is lux on
+the floor or on the 0.76 m work plane, per room, for the lamps standing in that room, plus floor and table lamps from the
+Furniture and Shop tabs. **Preview at night** switches the 3D view to Night so the lamps glow. Luminaires are saved in the same
+`lighting` object (`lighting.luminaires`, at most 24) and validated on import.
+
+**Year.** Pick a window to see direct sun hours (possible and expected), sky visibility and relative daylight month by month,
+as three separate panels and a table.
+
+**Render quality.** The Fast / Visual switch sits on the 3D pane (Fast is the default, and the only start on phones). **Layout ▸
+Render image** saves a 2x or 4x PNG averaged over 16 jittered frames, capped at 4096 px, with a caption that says it is a
+visual render. Visual realism is never evidence: no number changes with it.
+
 ## Same plan in Unit 3D
 
 **Layout ▸ Use this plan in Unit 3D** (and the same button in the tracer's Save step) stores the
@@ -263,7 +298,11 @@ fixtures) and a `furniture` node holding one group per piece, named `<name> (<re
 
 The normaliser, the fit rules, layout validation, the tracer geometry (`plan/tracer.js`: lengths,
 scale and check, snapping, polygon area, wall derivation, door and window placement, export) and the
-scenario bridge are pure ES modules covered by `node --test tests/js`.
+scenario bridge are pure ES modules covered by `node --test tests/js`. The lighting model
+(`plan/lighting-model.js`: inputs and their source labels, luminaires, the lamp estimate, the daylight grid adapter), the heat-map
+scale, surface tint, render-quality settings and the annual chart are covered by `plan-lighting-model.test.mjs` and
+`lighting-render.test.mjs`; `daylight-parity.test.mjs` and `tests/test_daylight.py` check the sky model against Python. The
+browser flows are in `tests/e2e/test_lighting.py`.
 
 Agents: the `floor-plan-model` skill explains how to read a plan image into this format (or hand it
 to the renter to trace) and how to write layouts.
