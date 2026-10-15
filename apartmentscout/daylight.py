@@ -16,7 +16,8 @@ Method, in the order it is used:
   *diffuse* sky only; direct sun is the separate ``sun_study`` number.
 * **Vertical sky component (VSC).** The share of the horizontal illuminance of the whole unobstructed sky that
   a vertical window receives from the part of the sky its skyline leaves visible (the BRE / UK "VSC"; an unobstructed
-  window under the overcast sky gets 39.6 %). Per window, from the same skyline the direct-sun model uses.
+  window under the overcast sky gets 39.6 %). Per window, from the same skyline the direct-sun model uses; a bay
+  is the mean of its panes' VSCs (equal panes, one skyline).
 * **Sensor grid.** For a point at working-plane height in a room, the sky component through each window of that room:
   the window rectangle is sampled, each sample sends the sky luminance of its direction (zero below the window's
   skyline) with the cosines to the horizontal plane and the window plane over r^2. The skyline is the window point's,
@@ -167,9 +168,11 @@ def vertical_sky_component(profile, facing: float, panes: Sequence[float] | None
                            field: float = FIELD_DEG) -> float:
     """VSC as a fraction (0.396 for an unobstructed window under the overcast sky): vertical illuminance on the window
     from the sky above its skyline, over the horizontal illuminance of the same unobstructed sky. Under the clear sky
-    a window facing the sun can exceed 0.396 because that sky's horizontal illuminance is lower. A bay takes the
-    union of its panes' fields."""
+    a window facing the sun can exceed 0.396 because that sky's horizontal illuminance is lower. A bay is the mean of
+    its panes' own VSCs (equal panes, each a separate piece of glass, all under the one skyline)."""
     fs = pane_facings(facing, panes)
+    if len(fs) > 1:
+        return sum(vertical_sky_component(profile, f, None, sky, field) for f in fs) / len(fs)
     if not is_clear(sky):
         step = OVERCAST_STEP
         az = (np.arange(int(round(360 / step))) + 0.5) * step

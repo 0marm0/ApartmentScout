@@ -4,7 +4,7 @@
 // roofs, direct-sun hours for every floor, a sortable neighbours table with CSV, photo matching for the facing,
 // the other listed units of the building, and the evidence behind each input. Reads sites/<id>.json (v1 or v2;
 // every v2 key is optional) and plans/<id>.json when there is one.
-import { S, byId, label, loadJSON, on, download } from './app.js';
+import { S, byId, label, loadJSON, on, download, store } from './app.js';
 import { $, esc, css, toast, ICONS, safeUrl } from './util.js';
 import {
   DEG, sunPos, zonedMs, zoneAbbr, angDiff, fmtT, prepBuildings, horizonProfile, horizonDir, hAt, litInfo,
@@ -21,6 +21,8 @@ import { heightMapHTML, sectorChartSVG, sectorTable, renderFloorViews, renderPan
 import { normalisePlan } from './plan/model.js';
 import { illustration } from './features/empty.js';   // [feature C] empty-state art
 import { missingNotice } from './features/plan-empty.js';   // [feature C]
+import * as UQ from './unit/quality3d.js';   // [feature J] render quality and progressive render
+import { annualFor, panelHTML as annualPanelHTML } from './unit/daylight-annual.js';   // [feature J] annual daylight summary
 
 let site = null, B0 = [], FUTB = [], edits = new Map(), B = [], T = null, FACES = [], LM = [], FUT = [], BF = null, stage = null, plan = null, interior = null;
 const st = {
@@ -113,6 +115,7 @@ export function init() {
       <aside class="u-side">
         <section class="panel" id="winPanel"></section>
         <section class="panel" id="sunPanel"></section>
+        <section class="panel u-annual" id="annualPanel" aria-label="Daylight through the year"></section>
         <section class="panel u-if" id="ifPanel" aria-label="What if"></section>
         <section class="panel" id="seePanel"></section>
         <section class="panel"><h3>Sun path against the skyline <span id="pathNote"></span></h3><canvas id="pathCv" class="plot u-path" role="img" aria-label="Sun path against the skyline seen from the window"></canvas>
@@ -127,7 +130,9 @@ export function init() {
   const sel = $('unitSel');
   sel.innerHTML = ids.length ? ids.map((id) => { const L = byId(id); return `<option value="${esc(id)}">${esc(L ? label(L) : id)}${L?.floor ? ' · floor ' + Math.round(L.floor) : ''}</option>`; }).join('') : '<option>No site models yet</option>';
   sel.addEventListener('change', () => { location.hash = '#unit/' + encodeURIComponent(sel.value); });
-  $('uSnap').addEventListener('click', snapshot);
+  $('uSnap').addEventListener('click', () => snapshot());
+  UQ.mount({ host: root.querySelector('.u-head .actions'), stageEl: $('stage'), store, toast, render: (scale) => snapshot({ hires: scale }) });   // [feature J]
+  $('annualPanel').addEventListener('toggle', (e) => { if (e.target.id === 'uAnnualDetails' && e.target.open !== !!st.annualOpen) { st.annualOpen = e.target.open; annualPanel(); } }, true);   // [feature J]
   new ResizeObserver(fitGrid).observe(root);
   $('uGlb').addEventListener('click', exportGLB);
   on('theme', () => { stage?.setPalette(); if (site && hasWindow()) { buildApartment(); drawPathChart(); landmarks(); stage.dirty = true; studyStale(true); } });
@@ -222,7 +227,7 @@ async function load(id) {
   st.floor = Math.min(maxFloor(), st.floor); st.cmp = Math.min(maxFloor(), st.cmp);
   header(); fitGrid();
   if (!stage) {
-    stage = new UnitStage($('gl'), $('stage'), $('uLabels'));
+    stage = new UnitStage($('gl'), $('stage'), $('uLabels')); UQ.adopt(stage);   // [feature J]
     stage.onCompass = (az) => { const n = $('uNeedle'); if (n) n.setAttribute('transform', `rotate(${-az} 20 20)`); };
     wireStage();
     new ResizeObserver(() => { stage.resize(); }).observe($('stage'));
@@ -231,7 +236,7 @@ async function load(id) {
   stage.opts.streets = true; stage.opts.future = restored?.future ?? true;
   if (restored) Object.assign(stage.look, restored.look);
   await new Promise((r) => requestAnimationFrame(r)); // let the loading state paint before the heavy build
-  stage.build({ B: B0, T, ti: B0.indexOf(T), streets: Array.isArray(site.streets) ? site.streets : [], future: FUT, green: site.green || null, lm: LM, ownLabel: site.listing?.building || L.building || 'This building' });
+  stage.build({ B: B0, T, ti: B0.indexOf(T), streets: Array.isArray(site.streets) ? site.streets : [], future: FUT, green: site.green || null, lm: LM, ownLabel: site.listing?.building || L.building || 'This building' }); UQ.adopt(stage);   // [feature J] the scene was rebuilt
   stage.setFloorH(FH());
   for (const [bi, h] of edits) stage.setHeight(bi, h / Math.max(0.01, B0[bi].top - B0[bi].g), B0[bi].g, B);
   stage.resize();
@@ -656,6 +661,12 @@ function syncWindowPanel() {
   $('uSlabHelp').textContent = `${FH().toFixed(2)} m per floor${src === 'pluto' ? ' (roof ÷ PLUTO floors)' : src === 'default' ? ' (default)' : ''}. Type the real height if you know it.`;
   if (st.bay && $('uBayNote')) $('uBayNote').hidden = true;
 }
+/** [feature J] The annual daylight summary for the current window (modelled; the chart is computed only while it is open). */
+function annualPanel() {
+  const el = $('annualPanel'); if (!el || !profA || !hasWindow()) return;
+  const who = `floor ${st.floor}, window facing ${Math.round(st.az)}° ${compass(st.az)}${st.bay ? ' (bay)' : ''}`;
+  el.innerHTML = annualPanelHTML({ open: !!st.annualOpen, who, compute: () => annualFor({ prof: profA, facing: st.az, panes: panes(), year: ymd()[0], lat: site.origin.lat, lon: site.origin.lon, tz: tz(), skyViewShare: skyView(profA, st.az, panes()), fraction: sunshineFrac(), place: site?.study?.sunshine?.place || (sunshineFrac() ? 'New York Central Park' : '') }) });
+}
 /** Paint the filled part of a range track (app.css reads --p). */
 function fill(el) { if (!el) return; const p = ((+el.value - +el.min) / ((+el.max - +el.min) || 1)) * 100; el.style.setProperty('--p', p + '%'); }
 
@@ -668,7 +679,7 @@ function refreshWindow(heavy) {
   stage.setWindow(a, st.az, slabZ(st.floor), slabZ(st.cmp), FH(), `Floor ${st.floor} · ${compass(st.az)}${st.bay ? ' · bay' : ''}`, panes() || [0]);
   syncWindowPanel(); subline(); refreshStrip(); computeNeighbours(); landmarks(); neighboursPanel(); refreshTime();
   if (heavy || !heat) computeHeat(); else drawHeat();
-  evidencePanel(); ifPanel(heavy);
+  evidencePanel(); ifPanel(heavy); annualPanel();
   studyStale(true);
   syncUrlSoon();
 }
@@ -680,7 +691,7 @@ function unresolvedWindow() {
   $('hud').textContent = 'Window unresolved · City context only';
   $('sunPanel').innerHTML = '<h3>Sunlight unresolved</h3><p>No valid window placement. No unit-specific sunlight estimate is available.</p>';
   $('seePanel').innerHTML = '<h3>Outlook unresolved</h3><p>Inspect the building context in Orbit or Plan. This does not establish an apartment view.</p>';
-  $('heatPanel').innerHTML = ''; $('nbPanel').innerHTML = '';
+  $('heatPanel').innerHTML = ''; $('nbPanel').innerHTML = ''; $('annualPanel').innerHTML = '';
   const cv = $('pathCv'); cv.getContext('2d')?.clearRect(0, 0, cv.width, cv.height);
   $('pathNote').textContent = ''; $('pathLegend').innerHTML = '';
   subline(); stage.dirty = true;
@@ -1311,10 +1322,12 @@ function syncUrl() {
 }
 
 // ------------------------------------------------------------------ snapshot and 3D model
-function snapshot() {
+async function snapshot(o) {
   if (!stage || !site || !hasWindow()) return;
   stage.frame(true);
-  const src = $('gl'), w = src.width, h = src.height, k = w / (src.clientWidth || w), cap = Math.round(66 * k);
+  let src = $('gl'); const hi = o && typeof o.hires === 'number' ? o.hires : 0;   // [feature J] progressive high-resolution source
+  if (hi) { const r = await UQ.renderAccumulated(hi); if (!r) return; src = r.canvas; }
+  const w = src.width, h = src.height, k = w / ($('gl').clientWidth || w), cap = Math.round(66 * k);
   const c = document.createElement('canvas'); c.width = w; c.height = h + cap;
   const g = c.getContext('2d'); g.drawImage(src, 0, 0);
   const sans = css('--font-sans') || 'sans-serif';
@@ -1345,7 +1358,7 @@ function snapshot() {
   g.fillStyle = css('--ink-2'); g.font = `500 ${11.5 * k}px ${sans}`;
   g.fillText(`${state} · direct sun this date ${hm(A.min)} · exposure: ${(PROV[p.exposure] || [p.exposure])[0].toLowerCase()} · window position: ${(PROV[p.position] || [p.position])[0].toLowerCase()} · ${site.source || 'footprints'} as ${B.some((b) => b.parts) ? 'prisms and building parts' : 'straight prisms'}, direct sun only${edits.size ? ` · what-if: ${edits.size} neighbour height${edits.size > 1 ? 's' : ''} changed` : ''}`, 16 * k, h + 45 * k);
   g.textAlign = 'right'; g.fillStyle = css('--ink-3'); g.font = `600 ${11 * k}px ${sans}`; g.fillText('ApartmentScout', w - 16 * k, h + 22 * k);
-  const name = `${st.id}-floor${st.floor}-${st.date}-${String(Math.floor(st.min / 60)).padStart(2, '0')}${String(st.min % 60).padStart(2, '0')}-${{ win: 'window', in: 'inside' }[st.mode] || st.mode}.png`;
+  const name = `${st.id}-floor${st.floor}-${st.date}-${String(Math.floor(st.min / 60)).padStart(2, '0')}${String(st.min % 60).padStart(2, '0')}-${{ win: 'window', in: 'inside' }[st.mode] || st.mode}${hi ? '-' + hi + 'x' : ''}.png`;
   c.toBlob((blob) => { if (!blob) { toast('Snapshot failed'); return; } download(name, blob, 'image/png'); toast('Snapshot saved'); }, 'image/png');
 }
 async function exportGLB() {
