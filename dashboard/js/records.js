@@ -1,6 +1,7 @@
 // Records view: a due-diligence report for one building, built from its public-records dossier
 // (NYC built in; other cities via agent research notes) plus the listing and research notes.
-import { S, byId, label, loadJSON, openDrawer } from './app.js';
+import { S, byId, label, loadJSON, openDrawer, store } from './app.js';
+import { chooseHome, SAVED_KEY } from './features/default-home.js';
 import { illustration } from './features/empty.js';   // [feature C] empty-state art
 import { $, esc, md, safeUrl, ICONS, ring, scoreColor } from './util.js';
 import { buildModel, fmtDate, fmtMonth, SEV_LABEL, SEV_PILL, plural, num } from './records/model.js';
@@ -51,7 +52,7 @@ export async function show(arg) {
   const root = $('rec'); if (!root) return;
   const my = ++token;
   if (!ids.length) { root.innerHTML = emptyHTML({ title: 'No building dossiers yet', body: 'In NYC run <code>apartmentscout dossier --shortlist</code>; elsewhere ask your agent to follow the building-dossier skill.' }, null); return; }
-  const want = arg || current || ids[0];
+  const want = arg || chooseHome({ current, saved: store.get(SAVED_KEY, null), preferred: S.manifest.default_listing, ids });   // the search's default home unless the renter chose one
   const r = resolve(want);
   if (r.unknown) { root.innerHTML = emptyHTML({ title: 'No listing with that id', body: `Nothing is tracked as <code>${esc(r.unknown)}</code>. Pick a building above.` }, null); wirePicker(null); return; }
   current = want;

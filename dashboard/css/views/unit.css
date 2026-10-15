@@ -216,7 +216,10 @@
 .u-unit { flex: none; display: flex; align-items: center; gap: 10px; min-width: 196px; max-width: 250px; padding: 9px 12px 9px 9px; border-radius: var(--r-md); border: 1px solid var(--line); background: var(--surface-1); color: var(--ink); text-align: left; cursor: pointer; font: inherit; transition: border-color var(--t-fast), background var(--t-fast); }
 .u-unit:hover { border-color: var(--line-strong); background: var(--surface-2); }
 .u-unit.cur { border-color: var(--accent-line); background: var(--accent-soft); cursor: default; }
-.u-unit.gone { opacity: .55; }
+.u-unit.cur small { color: var(--ink-2); }   /* on the accent tint (light theme) the quiet text colour is too faint */
+.u-unit.cur .pill.accent { color: var(--ink); }
+.u-unit.gone { border-style: dashed; }   /* dimmed by a dashed edge and a quiet dial, not by opacity: faded text fails the contrast check */
+.u-unit.gone > svg { opacity: .55; }
 .u-unit-t { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .u-unit-t b { font-size: var(--fs-sm); font-weight: 600; }
 .u-unit-t small { font-size: var(--fs-2xs); color: var(--ink-3); font-variant-numeric: tabular-nums; }

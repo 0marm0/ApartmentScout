@@ -21,6 +21,7 @@ import { heightMapHTML, sectorChartSVG, sectorTable, renderFloorViews, renderPan
 import { normalisePlan } from './plan/model.js';
 import { illustration } from './features/empty.js';   // [feature C] empty-state art
 import { missingNotice } from './features/plan-empty.js';   // [feature C]
+import { chooseHome, homeToRemember, SAVED_KEY } from './features/default-home.js';   // the home the 3D views open: address, session, renter's last, search default
 import * as UQ from './unit/quality3d.js';   // [feature J] render quality and progressive render
 import { annualFor, panelHTML as annualPanelHTML } from './unit/daylight-annual.js';   // [feature J] annual daylight summary
 import { resolveCal, geoFromSite, measuredFromSite, calSummary } from './unit/calibration.js';   // [model project] measured vs estimated height
@@ -181,7 +182,9 @@ export async function show(id) {
     $('uSnap').hidden = $('uGlb').hidden = true; return;
   }
   if (id && !ids.includes(id)) missingNotice('site model', id);   // [feature C]
-  id = id && ids.includes(id) ? id : st.id || ids[0];
+  const asked = homeToRemember({ want: id, ids });   // a home the address names is the renter's own choice: remember it, it beats the default
+  id = chooseHome({ want: id, current: st.id, saved: store.get(SAVED_KEY, null), preferred: S.manifest.default_listing, ids });
+  if (asked) store.set(SAVED_KEY, asked);
   $('unitSel').value = id;
   if (id !== st.id) await load(id);
   stage?.resize(); drawPathChart();
@@ -1091,7 +1094,7 @@ function drawHeat(busy = false) {
   if (first) {
     $('heatPanel').innerHTML = `<h3>Direct sun by floor and month <span id="uHeatNote"></span></h3>
       <p class="u-note">Hours of direct sun on the 15th of each month at this facade, position and bearing. Click a cell to jump to that floor and month.</p>
-      <div class="u-heat-box" id="uHeatBox"></div>
+      <div class="u-heat-box" id="uHeatBox" tabindex="0" role="region" aria-label="Direct sun hours by floor and month"></div>
       <div class="legend-row"><span><i class="sw u-sw-cur"></i>Your floor</span><span><i class="sw u-sw-cmp"></i>Compare floor</span><span class="u-heat-scale"><i></i>0 h → 9 h</span></div>`;
     $('uHeatBox').addEventListener('click', (e) => {
       const c = e.target.closest('[data-fl]'); if (!c) return;

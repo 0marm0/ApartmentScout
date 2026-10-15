@@ -96,7 +96,7 @@ test('auto mood follows the sun: day, a low evening sun, night', () => {
 
 test('Paramount 25E: six rows with the states the task names', () => {
   const site = json('sites/paramount-tower-25e.json'), plan = json('plans/paramount-tower-25e.json');
-  const rows = A.accuracyRows({ site, plan, cal: { state: 'estimated', fh: 3.08, slab: 70.8 }, floor: 25, facing: 118.7, t: 0.55, furniture: { name: 'Your furniture', confirmed: { by: 'renter', date: '2026-10-15' }, count: 10 } });
+  const rows = A.accuracyRows({ site, plan, cal: { state: 'estimated', fh: 3.08, slab: 73.9 }, floor: 25, facing: 118.7, t: 0.55, furniture: { name: 'Your furniture', confirmed: { by: 'renter', date: '2026-10-15' }, count: 10 } });
   const by = Object.fromEntries(rows.map((r) => [r.key, r]));
   assert.deepEqual(rows.map((r) => r.key), ['heights', 'bearing', 'position', 'floor-height', 'plan', 'furniture']);
   assert.equal(by.heights.state, 'source'); assert.match(by.heights.text, /PLUTO/);
