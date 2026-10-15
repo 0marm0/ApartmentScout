@@ -5,7 +5,7 @@ import { S, on, store, openDrawer, label, cost, score, isSaved, toggleSave, togg
 import { flipTheme } from './shell.js';
 import { $, esc, money, ICONS, imagesOf, mediaSrc, scoreColor, toast } from './util.js';
 import { nlItem } from './features/nlsearch.js';   // [feature C] plain-language search row
-import { hasInterior, markSeeInside } from './unit/camera-pref.js';   // [camera] the See inside command
+import { hasInterior, goSeeInside } from './unit/camera-pref.js';   // [camera] the See inside command
 import { extraActions } from './features/palette-actions.js';   // [feature C] undo, redo, tour, cheat sheet
 
 const VIEWS = [['map', 'Map', 'Pins, commute surface and price tags'], ['list', 'Shortlist', 'Every home in a sortable table'], ['compare', 'Compare', 'Up to four homes side by side'],
@@ -108,7 +108,7 @@ function build(q) {
   const hashId = decodeURIComponent((location.hash.match(/^#unit\/([^/?]+)/) || [])[1] || '');
   const seeIn = [sel, S.listings.find((L) => L.id === hashId), ...[...S.listings].filter((L) => L._rank).sort((a, b) => a._rank - b._rank)].find((L) => L && hasInterior(S.manifest, L.id)) || null;
   const acts = [
-    seeIn && ['See inside ' + label(seeIn), 'Stand in the apartment and look out of its windows (Unit 3D, Inside camera)', IC.inside, '', () => { markSeeInside(seeIn.id); location.hash = '#unit/' + encodeURIComponent(seeIn.id); }],
+    seeIn && ['See inside ' + label(seeIn), 'Stand in the apartment and look out of its windows (Unit 3D, Inside camera)', IC.inside, '', () => goSeeInside(seeIn.id)],
     sel && ['Save or unsave the open home', isSaved(sel.id) ? 'Remove ' + label(sel) + ' from your picks' : 'Save ' + label(sel) + ' to your picks', ICONS.starO, 's', () => toggleSave(sel.id)],
     sel && [S.compare.includes(sel.id) ? 'Remove the open home from Compare' : 'Add the open home to Compare', label(sel), ICONS.plus, 'c', () => toggleCompare(sel.id)],
     sel && ['Copy a link to the open home', 'Opens ' + label(sel) + ' for whoever you send it to', IC.link, '', () => shareListing(sel.id)],
