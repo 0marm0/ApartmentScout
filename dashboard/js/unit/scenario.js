@@ -1,4 +1,5 @@
 // Pure, same-site scenario and facade rules. Source geometry is never modified.
+import { calToParam, calFromParam } from './calibration.js';   // [model project] measured height in the page address
 export function canonicalFaces(faces, records = [], version = 1) {
   return faces.map((face) => {
     const f = { ...face }, r = records.find((x) => x.i === f.i);
@@ -32,7 +33,7 @@ export function baselineStudyMatches(site, state, face) {
     && Number.isInteger(year) && year > 0 && Number(state.date.slice(0, 4)) === year;
 }
 
-const KEYS = ['sv', 'site', 'face', 'pos', 'az', 'cmp', 'future', 'fov', 'yaw', 'pitch', 'bay', 'src', 'lm', 'slab', 'inWin'];
+const KEYS = ['sv', 'site', 'face', 'pos', 'az', 'cmp', 'future', 'fov', 'yaw', 'pitch', 'bay', 'src', 'lm', 'slab', 'inWin', 'cal'];
 export function clearScenario(qs) { for (const k of KEYS) qs.delete(k); return qs; }
 
 // Optional v1 additions: absence keeps older links working. Invalid additions reject the scenario.
@@ -45,6 +46,7 @@ export function readScenarioExtras(qs) {
     if (!Number.isFinite(n) || Math.abs(n) >= 60) return null;
     out.slabOff = n;
   }
+  if (qs.has('cal')) { const m = calFromParam(qs.get('cal')); if (!m) return null; out.cal = m; }   // kind:value:floor:spread
   if (qs.has('inWin')) {
     const n = qs.get('inWin').trim() === '' ? NaN : Number(qs.get('inWin'));
     if (!Number.isInteger(n) || n < -1 || n > 63) return null;
@@ -66,6 +68,7 @@ export function writeScenario(qs, state, face, look, future) {
   if (typeof state.bay === 'boolean') qs.set('bay', state.bay ? '1' : '0');
   if (state.src === 'photo-landmarks') qs.set('src', 'photo');
   if (state.slabOff != null) qs.set('slab', String(state.slabOff));
+  if (state.cal) qs.set('cal', calToParam(state.cal));
   if (Number.isInteger(state.inWin)) qs.set('inWin', String(state.inWin));
   if (state.lmSel?.size) qs.set('lm', [...state.lmSel].join('|'));
   return qs;

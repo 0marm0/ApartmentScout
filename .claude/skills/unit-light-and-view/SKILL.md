@@ -51,6 +51,7 @@ apartmentscout site <id> --floor 12 --bearing 209     # or give the facade beari
 apartmentscout site <id> --position 0.25              # window a quarter of the way along the facade
 apartmentscout site <id> --bay                        # 45 degree bay (or --panes -30,0,30)
 apartmentscout site <id> --slab-height 34.5           # floor's slab is 34.5 m above the street
+apartmentscout site <id> --eye-height 36.1            # or the measured window-eye height (slab + 1.6 m)
 apartmentscout site <id> --samples --neighbours       # CSVs: who shades the window, every building in 300 m
 apartmentscout site <id> --no-components              # every building one prism (skip OSM building parts)
 apartmentscout score && apartmentscout build          # then the Unit 3D tab
@@ -80,7 +81,9 @@ Check the run's output before reporting:
   floors was implausible, `limits` when a download was cut off.
 - **Storey height.** `floor_height_src` is `pluto` (roof / floors), `manual` or `default`. If the
   plan, a section or the listing gives the floor's height above the street, rerun with
-  `--slab-height`; it changes every eye height and the hours.
+  `--slab-height` (or `--eye-height` for a measured window-eye height); it changes every eye height and the hours,
+  and the site file's `calibration` block keeps the measurement beside the floor-count estimate. The renter can also
+  type a measured height in Unit 3D (Model ▸ Height); the floor-count estimate is never overwritten.
 
 - **Party walls.** Facades built against a neighbour are listed as party walls and never used for
   the window. If the listing's exposure only matches a party wall, no window is chosen: the listing
@@ -98,8 +101,9 @@ Check the run's output before reporting:
   or tops that disagree with the measured roof). When a main blocker (`study.blockers`) is a stepped
   tower still drawn as one prism, its shade is overstated: if a zoning diagram, section or measured
   photo gives its setbacks, write `sites/<id>.components.yaml` (format in the data-model guide; every
-  component needs a `source`) and rerun. Do the same for the unit's own building when the window is
-  on a setback; a `window-component` warning means the window sits where the facade steps back.
+  component needs a `source`; `.components.json` works too) and rerun. The renter can assume a podium and
+  tower in Unit 3D (Model ▸ Building parts): it is labelled assumed and never replaces source data. Do the same
+  for the unit's own building when the window is on a setback; a `window-component` warning means the window sits where the facade steps back.
 
 ## 3. Read and report
 

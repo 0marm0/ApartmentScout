@@ -233,11 +233,11 @@ def test_checks_pass_on_a_clean_site_and_fail_on_a_party_wall_window():
     faces = {round(f["bearing"]): f for f in target_faces(site)}
     site["window"] = {"face": faces[180]["i"], "bearing": 180.0, "floor": 5, "t": 0.5}
     ok = {c["id"]: c["status"] for c in site_checks(site, faces[180])}
-    assert ok == {"origin": "pass", "ground": "pass", "anchor": "pass", "outside": "pass", "streets": "pass",
-                  "heights": "pass"}
+    assert ok == {"origin": "pass", "ground": "pass", "anchor": "pass", "outside": "pass", "open-air": "pass",
+                  "streets": "pass", "heights": "pass"}
     site["window"] = {"face": faces[90]["i"], "bearing": 90.0, "floor": 5, "t": 0.5}
     bad = {c["id"]: c["status"] for c in site_checks(site, faces[90])}
-    assert bad["outside"] == "fail"
+    assert bad["outside"] == "fail" and bad["open-air"] == "fail"      # the neighbour is 25 m tall, the window is at 13 m
 
 
 def test_checks_warn_on_origin_in_street_one_sided_streets_and_datum():

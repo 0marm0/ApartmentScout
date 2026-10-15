@@ -258,8 +258,9 @@ visual render. Visual realism is never evidence: no number changes with it.
 
 ## Same plan in Unit 3D
 
-**Layout ▸ Use this plan in Unit 3D** (and the same button in the tracer's Save step) stores the
-current plan with its furniture as a local plan scenario that the Unit 3D Inside view can use:
+**Layout ▸ Use this plan in Unit 3D** (and the same button in the tracer's Save step) is the explicit bridge: it stores the
+current plan, with its furniture and every architectural edit (corners, doors, windows, ceiling, walls), as a local plan scenario
+that Unit 3D's Inside view can use. Nothing is applied until you press it, and nothing is ever applied to another unit.
 
 ```text
 localStorage["as:plan-scenario:<plan id>"] = {
@@ -269,11 +270,36 @@ localStorage["as:plan-scenario:<plan id>"] = {
 }
 ```
 
-Read it with `getPlanScenario(id, {base})` from `dashboard/js/plan/scenario-bridge.js`: it validates
-the project with the same strict checks as a project import and returns `{id, base, label, from,
-saved, plan, layout, lighting, model}` (`model` is the normalised plan in inches), or `null` when
-nothing valid is saved for that id or it was saved from another search folder. A scenario applies
-only to the plan id it was saved under, never to a sibling unit.
+Read it with `getPlanScenario(id, {base})` from `dashboard/js/plan/scenario-bridge.js`: it validates the project with the same strict
+checks as a project import and returns `{id, base, label, from, saved, plan, layout, lighting, model}` (`model` is the normalised plan
+in inches), or `null` when nothing valid is saved for that id or it was saved from another search folder. A scenario applies only to the
+plan id it was saved under (the listing's own id), never to a sibling unit.
+
+In Unit 3D the **Model ▸ Plan and anchor** fold says which plan the Inside camera shows (the source file, a local scenario with its label and
+time, or a generic room), lets you switch between the scenario and the source file, and shows the scenario's furniture in the Inside
+view (drawn with the studio's own meshes, so the pieces sit where the studio put them; a switch hides them). **Look out of ▸ Back into the room**
+is a viewpoint at the main window that looks into the apartment, so you can see your layout and the light across it.
+
+### One window, one anchor
+
+The studio and Unit 3D place the plan with the same function (`placePlan` in `dashboard/js/plan/city.js`): the plan's window wall sits
+0.15 m inside the facade at the window position, turned to the facade's bearing, with the floor at the slab height. The same window
+therefore has the same world position, width, sill and head in both (a browser test compares the studio's numbers with the 3D
+transform to a centimetre). The **shared anchor** is the record of that placement: origin, rotation, slab datum, host facade, and
+which plan window lands where, each fact marked *source*, *measured*, *your setting* or *assumed*. It is shown in Unit 3D (Model ▸ Plan and
+anchor) and in the studio (Light tab ▸ Where this plan sits in the city), and exported with a model project
+([data model](data-model.md#model-anchor-pin-assumed-parts-and-the-model-project)).
+
+Unit 3D's **Use this window in the Floor plan** pins the window it is showing (facade, position along it, facing, bay, floor and measured
+height) in this browser; the studio then places the plan there instead of at the site file's window, and says so. **Unpin** (or Unit 3D's
+**Back to the listing**) removes the pin.
+
+The studio header reads the facing from the same anchor: "windows face ESE 119° · bays 74–209°" is the host facade's bearing with bay or angled windows as a range around it, never the bearing of the first pane.
+
+**Open air.** For every plan window the model checks that the air 0.4 m and 1.0 m outside the glass, at the sill, the middle and the head,
+is open (not inside the host building, a setback component or a neighbour). A window that maps into its own building, as can happen with a wide plan on
+a narrow facade or a facade chosen behind a setback, is not given the host-free skyline any more: the studio shows "Not in open air here · sun
+withheld", its sun patch is switched off and Unit 3D says so and keeps its sun and view numbers withheld until the window is moved.
 
 ## Layout files
 
@@ -303,6 +329,7 @@ scenario bridge are pure ES modules covered by `node --test tests/js`. The light
 scale, surface tint, render-quality settings and the annual chart are covered by `plan-lighting-model.test.mjs` and
 `lighting-render.test.mjs`; `daylight-parity.test.mjs` and `tests/test_daylight.py` check the sky model against Python. The
 browser flows are in `tests/e2e/test_lighting.py`.
+scenario bridge, the shared anchor, the open-air check, the pin, the comparison maths and the model project are pure ES modules covered by `node --test tests/js`; `tests/e2e/test_model_project.py` checks the bridge in a browser.
 
 Agents: the `floor-plan-model` skill explains how to read a plan image into this format (or hand it
 to the renter to trace) and how to write layouts.

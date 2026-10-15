@@ -29,7 +29,12 @@ import { lightState, windowReach, glazingScale, roomDaylight, clampGlazing, blin
 import { parseProject, serialiseProject } from './plan/project.js';
 import { editFixture, editWindow, editOrientation } from './plan/architecture.js';
 import { canonicalFaces, snapPosition } from './unit/scenario.js';
-import { placePlan, windowSkylines, windowBlocked, windowMinutes } from './plan/city.js';
+import { placePlan, windowSkylines, windowBlocked, windowMinutes, windowWithheld } from './plan/city.js';
+import { effectiveComponents } from './unit/parts.js';   // [model project] source parts + the assumed override, same as Unit 3D
+import { resolveCal, geoFromSite, measuredFromSite } from './unit/calibration.js';   // [model project] measured vs estimated height
+import { getPin, pinOption } from './unit/anchor.js';   // [model project] the window pinned in Unit 3D
+import { facingSummary } from './plan/facing.js';   // [model project] host facade bearing, bays as a range
+import { anchorNoteHTML } from './plan/anchor-note.js';   // [model project] where the plan sits, source vs assumed
 import { cityGroup } from './plan/citymesh.js';
 import { accessRoutes, entryPoint } from './plan/route.js';
 import { PRODUCT_MAP, productsFor, shoppingList, shoppingCSV, CHECKED } from './plan/products.js';
@@ -196,16 +201,18 @@ async function load(id) {
   if ((S.manifest.sites || []).includes(id)) {
     const site = await loadJSON(`${S.base}/sites/${id}.json`, null);
     if (site?.b?.length && site.b[site.target]) {
-      const B = prepBuildings(site.b, site.holes && typeof site.holes === 'object' ? site.holes : null, site.components && typeof site.components === 'object' ? site.components : null), T = B[site.target] || B[0];
+      const B = prepBuildings(site.b, site.holes && typeof site.holes === 'object' ? site.holes : null, effectiveComponents(site)), T = B[site.target] || B[0];
       const F = canonicalFaces(facesOf(T,8,B),site.faces||[],site.version);
       const pool = F.filter((f) => !f.shared);
       st.site=site;
       if(pool.length) {
       const want = model.up_bearing ?? site.window?.bearing ?? 180;
-      const face = pool.reduce((best, f) => (Math.abs(angDiff(f.bearing, want)) < Math.abs(angDiff(best.bearing, want)) - 0.5 || (Math.abs(Math.abs(angDiff(f.bearing, want)) - Math.abs(angDiff(best.bearing, want))) <= 0.5 && f.length > best.length) ? f : best), pool[0]);
-      const t = snapPosition(face, face.i === site.window?.face ? site.window?.t ?? 0.5 : 0.5,snapOpen), x = face.a[0] + (face.b[0] - face.a[0]) * t, y = face.a[1] + (face.b[1] - face.a[1]) * t;
-      const floor = model.floor || byId(id)?.floor || 5;
-      siteProf = horizonProfile(B, x + Math.sin(face.bearing * DEG) * 0.4, y + Math.cos(face.bearing * DEG) * 0.4, T.g + (floor - 1) * (site.floor_height_m || 3.2) + 1.6);
+      const pin = getPin(id, { base: S.base }), pinned = pin ? pool.find((f) => f.i === pin.face) : null;   // [model project]
+      const face = pinned || pool.reduce((best, f) => (Math.abs(angDiff(f.bearing, want)) < Math.abs(angDiff(best.bearing, want)) - 0.5 || (Math.abs(Math.abs(angDiff(f.bearing, want)) - Math.abs(angDiff(best.bearing, want))) <= 0.5 && f.length > best.length) ? f : best), pool[0]);
+      const t = snapPosition(face, pinned ? pin.t : face.i === site.window?.face ? site.window?.t ?? 0.5 : 0.5,snapOpen), x = face.a[0] + (face.b[0] - face.a[0]) * t, y = face.a[1] + (face.b[1] - face.a[1]) * t;
+      const floor = pin?.floor ?? (model.floor || byId(id)?.floor || 5);   // [model project] a pinned window carries its own floor
+      const cal = resolveCal(geoFromSite(site, T.g), pinned && Object.hasOwn(pin, 'cal') ? pin.cal : measuredFromSite(site));
+      siteProf = horizonProfile(B, x + Math.sin(face.bearing * DEG) * 0.4, y + Math.cos(face.bearing * DEG) * 0.4, cal.slabAt(floor) + 1.6);
       placeOnSite(site, floor);
       }
     }
@@ -235,7 +242,7 @@ function head() {
   $('psTitle').innerHTML = `${esc(model.title || (L ? label(L) : st.id))} <span>floor plan</span>`;
   const pv = model.provenance, est = model.fixtures.filter((f) => f.est).length;
   const match = { 'exact-unit': 'Exact unit plan', 'line-tier': 'Same line, other floor', representative: 'Representative plan', 'stated-dims': 'Drawn from stated room sizes', 'photo-estimate': 'Estimated from photos' }[pv.match];
-  $('psSub').innerHTML = `${match ? `<span class="pill accent">${esc(match)}</span> ` : ''}${Math.round(model.area)} ft² of rooms drawn${model.up_bearing != null ? ` · windows face ${Math.round(model.windows[0]?.bearing ?? model.up_bearing)}° ${compass(model.windows[0]?.bearing ?? model.up_bearing)}` : ''}${model.floor ? ` · floor ${model.floor}` : ''}${est ? ` · <span class="warnline">${est} fixture${est > 1 ? 's' : ''} estimated</span>` : ''}`;
+  $('psSub').innerHTML = `${match ? `<span class="pill accent">${esc(match)}</span> ` : ''}${Math.round(model.area)} ft² of rooms drawn${facingSummary(model, onSite?.az ?? model.up_bearing).text ? ` · ${facingSummary(model, onSite?.az ?? model.up_bearing).text}` : ''}${model.floor ? ` · floor ${model.floor}` : ''}${est ? ` · <span class="warnline">${est} fixture${est > 1 ? 's' : ''} estimated</span>` : ''}`;
   const n = $('psNorth'); if (n) { n.hidden = model.up_bearing == null; n.style.setProperty('--rot', `${-(model.up_bearing || 0)}deg`); }
 }
 
@@ -816,7 +823,8 @@ function refreshSun() {
   const perWin = up_(s) && winSky && winSky.length === model.windows.length ? model.windows.map((w, i) => windowBlocked(winSky, i, s)) : null;
   const up = s.alt > 0, blocked = perWin ? perWin.every(Boolean) : up && siteProf && s.alt <= hAt(siteProf, s.az);
   G3.setWindowShade(perWin || []);
-  const nBlk = perWin ? perWin.filter(Boolean).length : 0;
+  const withheld = winSky && winSky.length === model.windows.length ? model.windows.map((w, i) => windowWithheld(winSky, i)) : [];   // [model project]
+  const nWh = withheld.filter(Boolean).length, nBlk = perWin ? perWin.filter((b, i) => b && !withheld[i]).length : 0;
   const mk = `${st.date}|${winSky ? winSky.length : 0}`;
   if (winSky && mk !== winMinKey) { winMinKey = mk; winMin = windowMinutes(winSky, model, y, m - 1, d, lat, lon, tz); }
   const placementKnown=!st.site||!!siteProf;
@@ -828,7 +836,7 @@ function refreshSun() {
   const tv = $('pTimeV'); if (tv) tv.textContent = fmtT(st.min);
   const t = $('pTime'); if (t) t.style.setProperty('--p', `${((st.min - 300) / 930) * 100}%`);
   const lamps = R.filter((x) => !x.hidden && x.kind === 'lamp').length + LX.count(), mn = G3.moodNow();
-  $('phud').innerHTML = `<span>${esc(st.date)} ${fmtT(st.min)}${mn !== 'day' ? ` · ${mn === 'night' ? 'night' : 'evening'}, ${lamps ? `${lamps} lamp${lamps > 1 ? 's' : ''} on` : 'no lamps placed'}` : ''}</span><span class="${light.directional ? 'lit' : 'shade'}">${!placementKnown ? 'Window placement unresolved · direct sun withheld' : !light.orientationKnown ? 'Orientation unknown · direct sun unresolved' : !up ? 'Night' : blocked ? (perWin ? 'Every window shaded by neighbours' : 'Site observation point shaded') : nBlk ? `Sun blocked at ${nBlk} of ${perWin.length} windows` : !st.directSun ? 'Direct sun hidden in preview' : `Sun ${Math.round(s.alt)}° up, ${compass(s.az)}`}</span>`;
+  $('phud').innerHTML = `<span>${esc(st.date)} ${fmtT(st.min)}${mn !== 'day' ? ` · ${mn === 'night' ? 'night' : 'evening'}, ${lamps ? `${lamps} lamp${lamps > 1 ? 's' : ''} on` : 'no lamps placed'}` : ''}</span><span class="${light.directional ? 'lit' : 'shade'}">${!placementKnown ? 'Window placement unresolved · direct sun withheld' : !light.orientationKnown ? 'Orientation unknown · direct sun unresolved' : !up ? 'Night' : blocked ? (perWin ? 'Every window shaded by neighbours' : 'Site observation point shaded') : nWh && nWh === model.windows.length ? 'Windows not in open air · sun withheld' : nBlk ? `Sun blocked at ${nBlk} of ${perWin.length} windows${nWh ? ` · ${nWh} withheld` : ''}` : !st.directSun ? 'Direct sun hidden in preview' : `Sun ${Math.round(s.alt)}° up, ${compass(s.az)}`}</span>`;
   const el = $('psLight'); if (!el) return;
   if (!el.querySelector('#psLightResults')) {
     el.innerHTML = `<div class="ps-light-controls"><label class="tg"><input id="psDirectSun" type="checkbox"> Show directional sunlight</label>${onSite ? `<label class="tg ps-city-tg"><input id="psCityTg" type="checkbox"> Show the city outside</label>` : ''}<div class="field"><label for="psAmbient">Background light preview <span id="psAmbientValue"></span></label><input id="psAmbient" type="range" min="0" max="2" step="0.05"></div><p class="ps-note faint">Background intensity is a display preference, not measured brightness or lux.</p>
@@ -842,6 +850,7 @@ function refreshSun() {
     $('psDirectSun').onchange=e=>{st.directSun=e.target.checked;saveLight();};
     $('psAmbient').oninput=e=>{st.ambient=+e.target.value;saveLight();};
     $('psCityTg')?.addEventListener('change', (e) => { st.city = e.target.checked; store.set(`plan-city.${S.base}`, st.city); applyCity(); });
+    el.addEventListener('toggle', (e) => { if (e.target.classList?.contains('ps-anchor')) { st.anchorOpen = e.target.open; if (e.target.open) refreshSun(); } }, true);   // [model project]
   }
   if ($('psCityTg')) $('psCityTg').checked = !!st.city;
   $('psDirectSun').checked=st.directSun;
@@ -856,9 +865,10 @@ function refreshSun() {
     const reach=windowReach({bearing:w.bearing,sunAzimuth:s.az,altitude:s.alt,head:w.head,orientationKnown:light.orientationKnown,blocked:perWin ? perWin[wi] : !!blocked});
     const status={'orientation-unknown':'Orientation unresolved',night:'Night','site-blocked':perWin ? 'Shaded by neighbours' : 'Site observation point shaded',behind:'Sun behind this wall',unresolved:'Window dimensions unresolved'}[reach.state];
     const today = winMin && winMin[wi] != null && light.orientationKnown ? hmShort(winMin[wi]) : '—';
-    return `<tr><td>${esc(w.room || 'Window')}${w.note ? `<br><small class="faint">${esc(w.note)}</small>` : ''}</td><td class="num">${light.orientationKnown ? Math.round(w.bearing)+'° '+compass(w.bearing) : 'Unknown'}</td><td>${reach.inches!=null ? `<span>${fmtIn(reach.inches)} unoccluded reach</span>` : `<span class="faint">${status}</span>`}</td>${winSky ? `<td class="num">${today}</td>` : ''}</tr>`;
+    return `<tr><td>${esc(w.room || 'Window')}${w.note ? `<br><small class="faint">${esc(w.note)}</small>` : ''}</td><td class="num">${light.orientationKnown ? Math.round(w.bearing)+'° '+compass(w.bearing) : 'Unknown'}</td><td>${withheld[wi] ? '<span class="faint">Not in open air here · sun withheld</span>' : reach.inches!=null ? `<span>${fmtIn(reach.inches)} unoccluded reach</span>` : `<span class="faint">${status}</span>`}</td>${winSky ? `<td class="num">${today}</td>` : ''}</tr>`;
   }).join('');
   $('psLightResults').innerHTML = `<p class="ps-sunline">${esc(st.date)} at ${fmtT(st.min)}: sun ${Math.round(s.az)}° ${compass(s.az)}, ${up ? Math.round(s.alt) + '° up' : 'below the horizon'}.</p>
+    ${st.site && onSite ? anchorNoteHTML({ onSite, model, site: st.site, siteId: st.id, base: S.base, floor: onSite.floor, planSource: projectLibrary[st.id] ? 'local scenario' : 'file', planLabel: projectLibrary[st.id] ? 'Local plan project' : '', open: !!st.anchorOpen }) : ''}
     ${!light.orientationKnown ? `<p class="ps-note">${!placementKnown ? 'The city model does not resolve a valid window observation point for this edited plan. Re-establish its placement before interpreting sunlight.' : 'Confirm the plan orientation to enable directional sunlight. No north-facing assumption is applied.'}</p>` : ''}
     <table class="mini"><thead><tr><th>Window</th><th class="num">Faces</th><th>Geometric estimate</th>${winSky ? '<th class="num">Sun today</th>' : ''}</tr></thead><tbody>${rows}</tbody></table>
     ${daylightTable(rooms, sky)}
@@ -889,7 +899,7 @@ function daylightTable(rooms, sky) {
 const up_ = (s) => s.alt > 0;
 const hmShort = (min) => { if (!min) return 'none'; const h = Math.floor(min / 60), mm = Math.round(min % 60); return h && mm ? `${h} h ${String(mm).padStart(2, '0')}` : h ? `${h} h` : `${mm} m`; };
 function placeOnSite(site, floor) {
-  try { onSite = placePlan(site, model, floor); winSky = onSite ? windowSkylines(onSite, model) : null; } catch { onSite = winSky = null; }
+  try { const pin = getPin(st.id, { base: S.base }); onSite = placePlan(site, model, pin?.floor ?? floor, { anchor: pinOption(pin) }); winSky = onSite ? windowSkylines(onSite, model) : null; } catch { onSite = winSky = null; }
   winMin = null; winMinKey = '';
   if (ready) applyCity();
 }

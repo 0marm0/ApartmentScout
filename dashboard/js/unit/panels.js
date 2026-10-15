@@ -99,7 +99,7 @@ export function evidenceExtras(site, ctx) {
   return { notes, rows };
 }
 const CHECK_PILL = { pass: ['good', 'Pass'], ok: ['good', 'Pass'], warn: ['warn', 'Warn'], fail: ['bad', 'Fail'], error: ['bad', 'Fail'] };
-const CHECK_NAMES = { origin: 'Address point', ground: 'Ground level', storey: 'Floor height', anchor: 'Window anchor', outside: 'Open air outside', 'outside-future': 'Open air with proposed', streets: 'Streets around', 'future-overlap': 'Proposed vs this building', heights: 'Heights in front', limits: 'Query limits', future: 'Proposed buildings', target: 'Target building', components: 'Building parts', 'window-component': 'Window on a part' };
+const CHECK_NAMES = { origin: 'Address point', ground: 'Ground level', storey: 'Floor height', anchor: 'Window anchor', outside: 'Open air outside', 'open-air': 'Open air at window height', 'outside-future': 'Open air with proposed', streets: 'Streets around', 'future-overlap': 'Proposed vs this building', heights: 'Heights in front', limits: 'Query limits', future: 'Proposed buildings', target: 'Target building', components: 'Building parts', 'window-component': 'Window on a part' };
 const checkName = (c) => { const k = String(c.label || c.name || c.id || 'check').toLowerCase(); return CHECK_NAMES[k] || k.replace(/[_-]+/g, ' ').replace(/^./, (m) => m.toUpperCase()); };
 /** Model self-checks: a badge line and the list of anything that did not pass. */
 export function checksBlock(checks) {
