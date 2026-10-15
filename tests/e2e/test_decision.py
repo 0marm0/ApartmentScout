@@ -11,7 +11,7 @@ import re
 from pathlib import Path
 
 import pytest
-from conftest import frames, poll
+from conftest import frames, poll, settled
 
 pytestmark = pytest.mark.e2e
 
@@ -275,6 +275,7 @@ def test_trade_off_pad_keyboard_presets_and_sliders_switch(open_page) -> None:
     w1 = weights(s)
     assert w1["cost"] == w0["cost"] + 1 and w1["commute"] + w1["space"] == w0["commute"] + w0["space"] - 1
     # a preset ghost previews the top ten and applies on click, through the rail's own select
+    settled(s.page, 20000, ticks=4)   # the pad redraws its ghosts after a weight change: hover the new ones, not the ones it replaced
     ghost = s.page.locator(".tp-ghost").nth(1)
     ghost.hover()
     s.page.wait_for_selector(".tp-pop li", timeout=5000)
