@@ -213,6 +213,9 @@ def test_inside_view_has_room_chips_with_the_renters_furniture_and_switches_by_k
     _unit(s)
     assert pg.evaluate("() => !document.getElementById('uLook').hidden")
     assert _chips(pg, "#uLook") == ["Living room", "Bay", "Bedroom", "Corner", "Sofa", "Sofa, window", "Bed", "Bed, window", "Desk", "Desk, window", "Into the room"]
+    assert _on(pg, "#uLook") == "Sofa, window"                                       # opens at the main seat, looking out of the window
+    pg.click("#uLook [data-vp^='room:Living']")
+    pg.wait_for_function("() => window.__unit3d.curView.key.startsWith('room:Living')")
     assert _on(pg, "#uLook") == "Living room"
     info = pg.evaluate("() => ({ src: window.__unit3d.planInfo.source, name: window.__unit3d.planInfo.layoutName, n: window.__unit3d.stage.interior.furniture.count })")
     assert info == {"src": "file", "name": "Your furniture", "n": 10}                # the source plan's default layout, in the real city
@@ -275,5 +278,159 @@ def test_inside_view_on_a_phone_keeps_the_dropdown_and_a_scrolling_chip_row(open
     pg.select_option("#uInWin", index=2)
     pg.wait_for_function("() => window.__unit3d.curView.key.startsWith('room:Bedroom')")
     assert _on(pg, "#uLook") == "Bedroom"                                              # the chips follow the dropdown
+    assert pg.evaluate("() => document.documentElement.scrollWidth <= window.innerWidth + 1")
+    assert not s.take()
+
+
+# --------------------------------------------------------------------------- opening Unit 3D inside the home
+
+NO_PLAN = "atlas-38d"   # a home with a site model but no floor plan
+
+
+def _opened(pg, uid: str = UNIT) -> None:
+    """Unit 3D has built the model of `uid` (the Inside camera needs the interior group)."""
+    pg.wait_for_function(
+        "(id) => window.__unit3d && window.__unit3d.st.id === id && window.__unit3d.stage && window.__unit3d.stage.interior && document.getElementById('uLoad').hidden",
+        arg=uid, timeout=120000)
+    pg.wait_for_timeout(400)
+
+
+def _cam(pg) -> dict:
+    return pg.evaluate("() => ({ mode: window.__unit3d.st.mode, view: window.__unit3d.curView && window.__unit3d.curView.key, url: location.search, saved: localStorage.getItem('as:unit-cam') })")
+
+
+def test_a_home_with_a_plan_opens_inside_from_the_card_with_big_labelled_camera_buttons(open_page, webgl: bool) -> None:
+    _need_webgl(webgl)
+    s = open_page("#map", width=1440, height=900)
+    pg = s.page
+    card = pg.locator(f'#cards .card[data-id="{UNIT}"]')
+    pill = card.locator("a[data-see-inside]")
+    assert pill.count() == 1 and "See inside" in pill.inner_text() and pill.get_attribute("href") == f"#unit/{UNIT}"
+    pill.evaluate("(e) => e.click()")   # the quick actions show on hover; the click is the same
+    _opened(pg)
+    cam = _cam(pg)
+    assert cam["mode"] == "in" and cam["view"] == "seat:sofa-window", cam                      # standing at the main seat, looking out
+    assert "mode=inside" in cam["url"]
+    assert pg.evaluate("() => !!window.__unit3d.interior && !document.getElementById('uLook').hidden")
+    # the camera choice is a labelled control: Inside, Window view, Outside, then the small tools and the Floor plan link
+    names = pg.evaluate("() => [...document.querySelectorAll('#uModes .um-b')].map((b) => b.textContent.trim())")
+    assert names == ["Inside", "Window view", "Outside"]
+    assert pg.evaluate("() => [...document.querySelectorAll('#uModes .um-b')].every((b) => b.querySelector('svg') && b.getBoundingClientRect().height >= 36)")
+    assert pg.locator("#uModes .um-b.on").inner_text().strip() == "Inside" and pg.locator("#uModes .um-b[data-mode=in]").get_attribute("aria-pressed") == "true"
+    assert [t.strip() for t in pg.locator("#uModes .um-s").all_inner_texts()] == ["Street plan", "Top down"]
+    fp = pg.locator("#uModes .um-fp")
+    assert fp.is_visible() and fp.get_attribute("href") == f"#plan/{UNIT}"
+    # Outside is one click away, the room switcher is drawn as buttons, and nothing in the stage overlaps the camera buttons
+    chip = pg.locator("#uLook .lk-chip").first.evaluate("(e) => { const c = getComputedStyle(e); return { b: c.borderTopWidth, h: e.getBoundingClientRect().height }; }")
+    assert chip["b"] == "1px" and chip["h"] >= 28
+    pg.click("#uModes [data-mode=orbit]")
+    assert _cam(pg)["mode"] == "orbit" and pg.locator("#uModes .um-b.on").inner_text().strip() == "Outside"
+    assert pg.evaluate("() => document.getElementById('uLook').hidden")
+    pg.click("#uModes [data-mode=in]")
+    assert _cam(pg)["mode"] == "in" and _cam(pg)["view"] == "seat:sofa-window"                  # Inside again: the same seat
+    assert not s.take()
+
+
+def test_see_inside_is_in_the_drawer_the_3d_tab_and_the_command_palette(open_page, webgl: bool) -> None:
+    _need_webgl(webgl)
+    # the drawer: See inside leads, Unit 3D stays beside it
+    s = open_page(f"?open={UNIT}#map", width=1440, height=900)
+    pg = s.page
+    pg.wait_for_selector("#drawer.open .d-actions")
+    btns = [t.strip() for t in pg.locator("#drawer .d-actions > :is(a, button)").all_inner_texts()]
+    assert btns[:2] == ["See inside", "Unit 3D"], btns
+    assert "primary" in pg.locator("#drawer [data-see-inside]").get_attribute("class")
+    pg.click("#drawer [data-see-inside]")
+    _opened(pg)
+    assert _cam(pg)["mode"] == "in" and _cam(pg)["view"] == "seat:sofa-window"
+    # a home with a site model but no plan keeps one plain Unit 3D button and opens Outside
+    pg.goto(f"{s.origin}/?open={NO_PLAN}#map")
+    pg.wait_for_selector("#drawer.open .d-actions")
+    assert pg.locator("#drawer [data-see-inside]").count() == 0
+    pg.click("#drawer .d-actions a[href^='#unit/']")
+    _opened(pg, NO_PLAN)
+    assert _cam(pg)["mode"] == "orbit"
+    # the 3D tab: the first home with a plan opens inside
+    s2 = open_page("#map", width=1440, height=900)
+    s2.page.click("#tabHome")
+    s2.page.wait_for_function("() => window.__unit3d && window.__unit3d.stage && window.__unit3d.stage.interior && document.getElementById('uLoad').hidden", timeout=120000)
+    assert _cam(s2.page)["mode"] == "in"
+    # the command palette: "See inside <the open home>", and it works from Unit 3D's own page too
+    s3 = open_page(f"?open={UNIT}#map", width=1440, height=900)
+    p3 = s3.page
+    p3.wait_for_selector("#drawer.open")
+    p3.keyboard.press("Control+k")
+    p3.fill("#plQ", "inside")
+    row = p3.locator("#plList [role=option]", has_text="See inside Paramount Tower 25E")
+    assert row.count() == 1 and "Unit 3D, Inside camera" in row.inner_text()
+    row.click()
+    _opened(p3)
+    assert _cam(p3)["mode"] == "in"
+    p3.click("#uModes [data-mode=win]")
+    assert _cam(p3)["mode"] == "win"
+    p3.keyboard.press("Control+k")
+    p3.fill("#plQ", "see inside")
+    p3.locator("#plList [role=option]", has_text="See inside Paramount Tower 25E").click()
+    p3.wait_for_function("() => window.__unit3d.st.mode === 'in'")                      # already on that home: it still stands inside
+    assert not s.take() and not s2.take() and not s3.take()
+
+
+def test_the_renters_saved_camera_and_a_deep_link_still_win_but_see_inside_is_always_inside(open_page, webgl: bool) -> None:
+    _need_webgl(webgl)
+    s = open_page("#map", width=1440, height=900)
+    pg = s.page
+    _unit(s, query="")
+    assert _cam(pg)["mode"] == "in" and _cam(pg)["saved"] is None                        # nothing chosen yet: inside, and nothing stored for the renter
+    pg.click("#uModes [data-mode=orbit]")
+    assert _cam(pg)["saved"] == '"orbit"'                                                # picking a camera is remembered
+    pg.click("#uModes [data-mode=plan]")
+    assert _cam(pg)["saved"] == '"orbit"'                                                # the street plan is a tool: not remembered
+    # a fresh visit with an address that says nothing opens the camera the renter chose last
+    pg.goto(f"{s.origin}/?visit=2#unit/{UNIT}")
+    _opened(pg)
+    assert _cam(pg)["mode"] == "orbit" and "mode=orbit" in _cam(pg)["url"]
+    # a deep link names its own camera, and neither it nor the opening changes what is remembered
+    pg.goto(f"{s.origin}/?mode=window#unit/{UNIT}")
+    _opened(pg)
+    assert _cam(pg)["mode"] == "win" and _cam(pg)["saved"] == '"orbit"'
+    pg.goto(f"{s.origin}/?mode=inside#unit/{UNIT}")
+    _opened(pg)
+    assert _cam(pg)["mode"] == "in" and _cam(pg)["saved"] == '"orbit"'
+    # "See inside" is an explicit ask: inside, whatever was saved, from the card too
+    pg.goto(f"{s.origin}/?visit=3#map")
+    pg.wait_for_selector("#cards .card")
+    pg.locator(f'#cards .card[data-id="{UNIT}"] a[data-see-inside]').evaluate("(e) => e.click()")
+    _opened(pg)
+    assert _cam(pg)["mode"] == "in" and _cam(pg)["view"] == "seat:sofa-window" and _cam(pg)["saved"] == '"orbit"'
+    # a home with no plan never opens in a made-up room, even for a renter who last chose Inside
+    pg.click("#uModes [data-mode=in]")
+    assert _cam(pg)["saved"] == '"in"'
+    pg.goto(f"{s.origin}/?visit=4#unit/{NO_PLAN}")
+    _opened(pg, NO_PLAN)
+    assert _cam(pg)["mode"] == "orbit"
+    # a stored value that is not a camera is ignored
+    pg.evaluate("() => localStorage.setItem('as:unit-cam', '\"sideways\"')")
+    pg.goto(f"{s.origin}/?visit=5#unit/{UNIT}")
+    _opened(pg)
+    assert _cam(pg)["mode"] == "in"
+    assert not s.take()
+
+
+def test_the_camera_controls_fit_a_phone_and_the_model_comes_to_the_top(open_page, webgl: bool) -> None:
+    _need_webgl(webgl)
+    s = open_page("#map", width=375, height=812)
+    pg = s.page
+    _unit(s, query="")
+    assert _cam(pg)["mode"] == "in"
+    # inside the home on a phone, the model is brought to the top of the screen (under the sub-navigation)
+    top = pg.evaluate("() => document.getElementById('stage').getBoundingClientRect().top")
+    assert top < 200, f"the stage starts {top}px down"
+    boxes = pg.evaluate("() => [...document.querySelectorAll('#uModes .um-b')].map((b) => { const r = b.getBoundingClientRect(); return [r.left, r.right, r.height]; })")
+    tools = pg.evaluate("() => document.getElementById('uTools').getBoundingClientRect().left")
+    assert all(b[1] <= tools - 4 and b[2] >= 34 for b in boxes), (boxes, tools)           # the three big buttons clear the layer tools
+    assert pg.evaluate("() => [...document.querySelectorAll('#uModes .um-b')].map((b) => b.innerText.trim())") == ["Inside", "Window", "Outside"]
+    overlap = pg.evaluate("""() => { const q = (s) => document.querySelector(s).getBoundingClientRect(); const a = q('#uModes'), l = q('#uLook');
+      return a.bottom <= l.top + 1; }""")
+    assert overlap, "the room switcher sits under the camera buttons"
     assert pg.evaluate("() => document.documentElement.scrollWidth <= window.innerWidth + 1")
     assert not s.take()

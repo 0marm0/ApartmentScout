@@ -5,10 +5,11 @@ import { S, on, store, openDrawer, label, cost, score, isSaved, toggleSave, togg
 import { flipTheme } from './shell.js';
 import { $, esc, money, ICONS, imagesOf, mediaSrc, scoreColor, toast } from './util.js';
 import { nlItem } from './features/nlsearch.js';   // [feature C] plain-language search row
+import { hasInterior, goSeeInside } from './unit/camera-pref.js';   // [camera] the See inside command
 import { extraActions } from './features/palette-actions.js';   // [feature C] undo, redo, tour, cheat sheet
 
 const VIEWS = [['map', 'Map', 'Pins, commute surface and price tags'], ['list', 'Shortlist', 'Every home in a sortable table'], ['compare', 'Compare', 'Up to four homes side by side'],
-  ['unit', 'Unit 3D', 'The unit in its block, with the sun (3D tab)'], ['plan', 'Floor plan', 'Plan studio and tracer (3D tab)'],
+  ['unit', 'Unit 3D', 'The unit in its block, with the sun; inside it when there is a floor plan (3D tab)'], ['plan', 'Floor plan', 'Plan studio and tracer (3D tab)'],
   ['research', 'Research', 'What to find out next'], ['list/tours', 'Tours', 'Plan visits and decide (under Shortlist)'], ['research/records', 'Records', 'Building records and reviews (under Research)']];
 const hereView = (k) => (k === 'list/tours' ? S.view === 'tours' : k === 'research/records' ? S.view === 'research' && location.hash.startsWith('#research/records') : S.view === k && !(k === 'research' && location.hash.startsWith('#research/records')));
 const IC = {
@@ -20,6 +21,7 @@ const IC = {
   dl: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M8 2v8M4.5 6.5L8 10l3.5-3.5M3 13h10"/></svg>',
   key: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><rect x="1.5" y="4" width="13" height="8.5" rx="1.8"/><path d="M4 7h1M7 7h1M10 7h2M4.5 10h7"/></svg>',
   link: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M6.8 9.2a3 3 0 004.2 0l2-2a3 3 0 00-4.2-4.2l-.9.9M9.2 6.8a3 3 0 00-4.2 0l-2 2a3 3 0 004.2 4.2l.9-.9"/></svg>',
+  inside: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M1.8 7.2L8 2l6.2 5.2M3.2 6.3V14h9.6V6.3"/><path d="M6.6 14V9.6h2.8V14"/></svg>',
   clock: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M8 4.5V8l2.5 1.5"/></svg>',
   rail: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M2.5 4h11M2.5 8h11M2.5 12h11"/><circle cx="5" cy="4" r="1.3" fill="currentColor"/><circle cx="10.5" cy="8" r="1.3" fill="currentColor"/><circle cx="7" cy="12" r="1.3" fill="currentColor"/></svg>',
 };
@@ -102,7 +104,11 @@ function build(q) {
   }
   VIEWS.forEach(([k, n, d], i) => { if (has(n) || has(d) || has(k)) out.push({ group: 'Go to', id: 'v:' + k, name: n, icon: IC.view, title: esc(n), sub: esc(d), meta: `${hereView(k) ? '<span class="pl-on">Current</span>' : ''}${i < 6 ? `<kbd>${i + 1}</kbd>` : ''}`, run: () => { location.hash = k; } }); });
   const sel = S.sel && S.listings.find((L) => L.id === S.sel);
+  // [camera] "See inside": the open home when it has an interior model, else the home Unit 3D is on, else the best-ranked one that has one
+  const hashId = decodeURIComponent((location.hash.match(/^#unit\/([^/?]+)/) || [])[1] || '');
+  const seeIn = [sel, S.listings.find((L) => L.id === hashId), ...[...S.listings].filter((L) => L._rank).sort((a, b) => a._rank - b._rank)].find((L) => L && hasInterior(S.manifest, L.id)) || null;
   const acts = [
+    seeIn && ['See inside ' + label(seeIn), 'Stand in the apartment and look out of its windows (Unit 3D, Inside camera)', IC.inside, '', () => goSeeInside(seeIn.id)],
     sel && ['Save or unsave the open home', isSaved(sel.id) ? 'Remove ' + label(sel) + ' from your picks' : 'Save ' + label(sel) + ' to your picks', ICONS.starO, 's', () => toggleSave(sel.id)],
     sel && [S.compare.includes(sel.id) ? 'Remove the open home from Compare' : 'Add the open home to Compare', label(sel), ICONS.plus, 'c', () => toggleCompare(sel.id)],
     sel && ['Copy a link to the open home', 'Opens ' + label(sel) + ' for whoever you send it to', IC.link, '', () => shareListing(sel.id)],
