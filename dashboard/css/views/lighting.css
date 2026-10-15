@@ -129,6 +129,7 @@
 .rnq-inline .rnq-sep { border-left: 1px solid var(--line-strong); margin-left: 4px; padding-left: 8px; }
 .u-head .rnq-inline button.on { background: var(--surface-3); color: var(--ink); box-shadow: var(--shadow-1); }
 @media (max-width: 760px) {
+  .u-head .rnq-inline { display: flex; flex-wrap: wrap; width: 100%; }
   .rnq { bottom: 86px; max-width: calc(100% - 20px); flex-wrap: wrap; }
   .rnq-note { bottom: 124px; }
   .lx-src { grid-template-columns: minmax(0, 1fr); }
