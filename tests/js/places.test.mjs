@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { streetKey, areaKey, decodeLine, indexPlaces, sideOf, toXY, inArea, distToArea, distToStreet, evalClause, walkMetres, separates } from '../../dashboard/js/features/places-geo.js';
+import { streetKey, areaKey, decodeLine, indexPlaces, sideOf, toXY, inArea, distToArea, distToStreet, evalClause, walkMetres, separates, clauseGeometry } from '../../dashboard/js/features/places-geo.js';
 import { parsePlaces } from '../../dashboard/js/features/places-parse.js';
 import { parseQuery, toFilters, matchesNL, chipsForNL, withoutKeys } from '../../dashboard/js/features/nlquery.js';
 
@@ -114,6 +114,22 @@ test('areas: inside, holes, distance to the edge, walking minutes', () => {
   assert.equal(evalClause(geo, near, home(250, 500), { kmh: 3 }), true);
   assert.equal(evalClause(geo, { ...near, minutes: 1 }, home(250, 500)), false);
   assert.equal(evalClause(geo, near, { lat: null, lon: null }), null, 'no coordinates: unknown');
+});
+
+test('a clause draws as the streets and outlines it refers to', () => {
+  const side = clauseGeometry(geo, one('east of 3rd ave'));
+  assert.deepEqual(side.map((f) => [f.geometry.type, f.properties.kind, f.properties.label || null]), [['LineString', 'street', null], ['Point', 'label', '3rd Avenue']]);
+  const [lon, lat] = side[0].geometry.coordinates[0], want = ll(500, -3000);
+  assert.ok(Math.abs(lon - want[0]) < 2e-5 && Math.abs(lat - want[1]) < 2e-5, 'in lon/lat, where the street is');
+  const strip = clauseGeometry(geo, one('between 30th and 45th street'));
+  assert.equal(strip.filter((f) => f.properties.kind === 'street').length, 2);
+  assert.deepEqual(strip.filter((f) => f.properties.kind === 'label').map((f) => f.properties.label).sort(), ['30th Street', '45th Street']);
+  const hood = clauseGeometry(geo, one('in murray hill'));
+  assert.equal(hood[0].geometry.type, 'Polygon');
+  assert.equal(hood[0].geometry.coordinates.length, 2, 'the outline and the hole');
+  assert.deepEqual(hood[0].geometry.coordinates[0][0], hood[0].geometry.coordinates[0].at(-1), 'rings are closed');
+  assert.equal(clauseGeometry(geo, one('near bryant park')).at(-1).properties.label, 'Bryant Park');
+  assert.deepEqual(clauseGeometry(geo, { op: 'side', street: 'nowhere avenue', dir: 'east' }), []);
 });
 
 // ------------------------------------------------------------------ phrases

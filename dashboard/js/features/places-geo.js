@@ -212,3 +212,33 @@ export function evalClause(geo, c, L, { kmh = DEFAULT_KMH } = {}) {
   }
   return true;
 }
+
+// ------------------------------------------------------------------ drawing
+const toLL = (geo, a) => { const out = []; for (let i = 0; i < a.length; i += 2) out.push([+(geo.lon0 + a[i] / geo.kx).toFixed(6), +(geo.lat0 + a[i + 1] / geo.ky).toFixed(6)]); return out; };
+const closed = (r) => (r.length && (r[0][0] !== r[r.length - 1][0] || r[0][1] !== r[r.length - 1][1]) ? [...r, r[0]] : r);
+
+/**
+ * What a clause refers to on the map, as GeoJSON features in lon/lat: the street line(s) a side or "between" clause is
+ * measured against, the outline of the area(s) a neighbourhood or "near" clause means, each with a label (a Point
+ * feature carries the text). Pure, so the overlay in places-map.js has nothing to decide.
+ */
+export function clauseGeometry(geo, c) {
+  const out = [];
+  const street = (key) => {
+    const st = geo.streetByKey.get(key); if (!st) return;
+    st.parts.forEach((p) => out.push({ type: 'Feature', properties: { kind: 'street' }, geometry: { type: 'LineString', coordinates: toLL(geo, p) } }));
+    const big = st.parts.reduce((a, b) => (b.length > a.length ? b : a), st.parts[0] || []);
+    if (big.length >= 4) { const m = Math.floor(big.length / 4) * 2; out.push({ type: 'Feature', properties: { kind: 'label', label: st.name }, geometry: { type: 'Point', coordinates: toLL(geo, [big[m], big[m + 1]])[0] } }); }
+  };
+  const area = (id) => {
+    const a = geo.byAreaId.get(id); if (!a) return;
+    for (const p of a.polys) out.push({ type: 'Feature', properties: { kind: 'area' }, geometry: { type: 'Polygon', coordinates: p.rings.map((r) => closed(toLL(geo, r))) } });
+    const big = a.polys.reduce((x, y) => ((y.box[2] - y.box[0]) * (y.box[3] - y.box[1]) > (x.box[2] - x.box[0]) * (x.box[3] - x.box[1]) ? y : x), a.polys[0]);
+    if (big) out.push({ type: 'Feature', properties: { kind: 'label', label: a.name }, geometry: { type: 'Point', coordinates: toLL(geo, [(big.box[0] + big.box[2]) / 2, (big.box[1] + big.box[3]) / 2])[0] } });
+  };
+  if (c.op === 'side') street(c.street);
+  else if (c.op === 'between') { street(c.a.street); street(c.b.street); }
+  else if (c.op === 'in') c.areas.forEach(area);
+  else if (c.op === 'near') { if (c.areas) c.areas.forEach(area); else street(c.street); }
+  return out;
+}
