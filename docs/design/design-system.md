@@ -12,11 +12,11 @@ reference for the dashboard and the landing page. The tokens live in `dashboard/
 3. **Numbers first.** Prices and minutes are the largest type on a card, set in tabular figures so columns line up.
 4. **Show uncertainty.** Unknown facts look unknown (hatched bars, "?" compass, "Exposure unknown"), never like zero.
 5. **One shell.** Every view lives inside the same top bar, stats strip, rail and drawer.
-6. **Compact first.** Chrome is thin: a 48 px top bar and a 28 px stats subline. Settings (theme, export, shortcuts) live in one menu, not as loose buttons.
+6. **Compact first.** Chrome is thin: a 48 px top bar and a 28 px stats subline. Everything that is not a view lives in one menu (this search, data, appearance, comfort, help), not as loose buttons.
 
 ## Density
 
-Two densities, set once in the settings menu and applied by `html[data-density]`: **Comfortable** (the default
+Two densities, set once in the menu and applied by `html[data-density]`: **Comfortable** (the default
 above) and **Compact**, which shrinks card photos (136 to 92 px, 84 on narrow layouts), shows two badges instead of
 four, tightens rail sections and table rows, and keeps the numbers that decide a home: price, score, commute. Every
 component that has a compact form reads the attribute; none keeps its own density state.
@@ -41,7 +41,7 @@ Borders are hairlines: `--line` 6.5% white, `--line-strong` 11% white. Floating 
 **Ink.** `--ink` for primary text, `--ink-2` for secondary, `--ink-3` for labels, `--ink-4` for disabled and glyph strokes.
 
 **Accent.** Iris `--accent #8b96ff` (light theme `#4952e2`): selection, primary buttons, slider fill,
-active toggles. Never used for data. The renter can pick another accent in the settings menu; each is a token set for
+active toggles. Never used for data. The renter can pick another accent in the menu; each is a token set for
 both themes in `dashboard/css/accents.css` (the accent family `--accent`, `--accent-strong`, `--accent-ink`,
 `--accent-soft`, `--accent-line`, plus the two glass values that borrow its hue):
 
@@ -84,7 +84,7 @@ separate mask. The light theme swaps the same layer paints.
 ## Liquid glass
 
 Floating panels over the map (layer switch, legend, map controls, mini card, readout, hover card), the settings
-menu and the stats popover, and the drawer's sticky header are glass: a tinted translucent surface
+menu (a bottom sheet on a phone), the tab bar on a phone and the stats popover, and the drawer's sticky header are glass: a tinted translucent surface
 (`--glass-bg` over `--glass-tint`), a 22 px backdrop blur with saturation (`--glass-blur`), a 1 px inner highlight on
 the top edge (`--glass-hi`), a soft outer shadow (`--glass-shadow`) and a faint edge gradient (`--glass-edge-a` at the
 top-left rim, `--glass-edge-b` at the bottom-right). Both themes have their own values. The base alpha is high (0.80 dark,
@@ -139,7 +139,7 @@ Map moves use `easeTo` at 700 ms. Interactive controls lift 0.5 px on hover, pre
 ## App shell
 
 ```
-┌ top bar 48: brand · search switcher · 6 tabs · search (/) · settings menu ───────────────────┐
+┌ top bar 48: brand · search switcher · 5 tabs · search (/) · menu ───────────────────────────┐
 ├ stats strip 28: tracked · match filters · eligible · shortlisted · median $/mo · median min · top match ┤
 ├ rail 288 ──────┬ results 432 ──────────┬ stage (map or view) ───────────────┬ drawer 448 (floats) ┤
 │ budget tiers   │ count + sort          │ layer switch          map controls │ photos / unit glyph │
@@ -153,8 +153,19 @@ Map moves use `easeTo` at 700 ms. Interactive controls lift 0.5 px on hover, pre
 
 Below 1180 px the rail becomes a sheet behind a Filters button and the secondary stats fold into an "all figures"
 popover; below 760 px the map sits on top and the results become a bottom sheet. Shortlist (with Tours as a sub-tab),
-Compare, Unit 3D, Floor plan and Research (with Records as a sub-tab) replace the stage (and, where they need the width,
-the results column) inside the same shell.
+Compare, Home (Unit 3D and Floor plan as sub-tabs) and Research (with Records as a sub-tab) replace the stage (and, where they need
+the width, the results column) inside the same shell.
+
+**Tabs.** A segmented control in the top bar: 15 px stroke icon plus label, a sliding indicator (`.nav-ink`, instant under reduced
+motion) and count badges in tabular figures. Sub-tabs (Shortlist/Tours, Unit 3D/Floor plan) are a thin 38 px row under the bar, so a
+group never adds a tab. On a phone the control becomes a bottom bar (54 px plus the safe-area inset, five equal columns, 21 px icon over a
+10.5 px label, badge on the icon corner). It is a bottom bar rather than a scrolling strip because all five tabs stay visible, the targets
+are in thumb reach and nothing hides behind a fade; the cost is about 54 px of height, paid back by the tab row it removes from the top.
+Anything that floats at the bottom (compare tray, toast, chord hint) sits above it. Source: `css/tabs.css`.
+
+**Menu.** One popover from the top-right button (a bottom sheet on a phone), in the glass surface, 316 px wide, five labelled sections
+(This search, Data, Appearance, Comfort, Help), choices as inline-labelled segmented rows, switches for on/off settings, one tab stop
+with roving arrow-key focus. Source: `css/appmenu.css`, `js/app-menu.js`.
 
 ## Components
 
@@ -200,6 +211,6 @@ the results column) inside the same shell.
 
 ## Accessibility
 
-Body text on every surface meets WCAG AA in both themes, in every accent, and in the high-contrast and largest-text settings; the e2e axe sweep fails the build on any serious or critical violation on all six tabs, Tours and Records. Focus rings use the accent at 2 px with
+Body text on every surface meets WCAG AA in both themes, in every accent, and in the high-contrast and largest-text settings; the e2e axe sweep fails the build on any serious or critical violation on every view (Unit 3D and Floor plan included), Tours and Records, and on the open menu. Focus rings use the accent at 2 px with
 offset. Colour never carries meaning alone: bands have minute labels, tiers have names, unknowns have
 text. Links built from data pass through `safeUrl()` (http and https only).
