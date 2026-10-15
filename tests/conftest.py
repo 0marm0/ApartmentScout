@@ -66,3 +66,10 @@ def _no_parks_or_forestry(monkeypatch):
 
     monkeypatch.setattr(parks, "fetch_parks", offline)
     monkeypatch.setattr(forestry, "fetch_rows", offline)
+
+
+@pytest.fixture(autouse=True)
+def _no_search_from_the_shell(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A test never inherits APARTMENTSCOUT_SEARCH from the shell: with it set, a test that falls back to the
+    environment would write into a real search folder (it once edited examples/nyc-2026/criteria.yaml)."""
+    monkeypatch.delenv("APARTMENTSCOUT_SEARCH", raising=False)
