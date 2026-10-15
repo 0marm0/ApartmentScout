@@ -70,16 +70,16 @@
 }
 
 /* ------------------------------------------------------------------ map markers: starred homes
-   A starred (saved) home keeps its dark price pill but wears a gold ring and a soft gold glow. The tag is never
+   A starred (saved) home keeps its dark price pill but wears a 1 px gold border and a soft gold glow. The tag is never
    hidden by decluttering, sits above ordinary tags, and the selected state (accent fill) keeps the ring. */
 .tag-anchor:has(.price-tag.fav) { z-index: 3; }
 /* the score hue is a data colour tuned for the dark ground: on the light pill its number is mixed toward ink (AA); the ring keeps the hue */
 :root[data-theme="light"] .price-tag:not(.sel) > i { color: color-mix(in srgb, var(--c) 38%, var(--ink)); }
-.price-tag.fav { border-color: var(--fav); box-shadow: 0 0 0 1.5px var(--fav), 0 0 16px color-mix(in srgb, var(--fav) 42%, transparent), 0 8px 22px rgba(0, 0, 0, .38), inset 0 1px 0 rgba(255, 255, 255, .08); }
+.price-tag.fav { border-color: var(--fav); box-shadow: 0 0 10px color-mix(in srgb, var(--fav) 26%, transparent), 0 8px 22px rgba(0, 0, 0, .38), inset 0 1px 0 rgba(255, 255, 255, .08); }
 .price-tag.fav::after { border-right-color: var(--fav); border-bottom-color: var(--fav); }
-:root[data-theme="light"] .price-tag.fav { box-shadow: 0 0 0 1.5px var(--fav), 0 0 14px color-mix(in srgb, var(--fav) 38%, transparent), 0 6px 18px rgba(20, 24, 34, .16); }
-.price-tag.fav:hover, .price-tag.fav.hl { box-shadow: 0 0 0 1.5px var(--fav), 0 0 20px color-mix(in srgb, var(--fav) 55%, transparent), 0 12px 28px rgba(0, 0, 0, .45); }
-.price-tag.fav.sel { border-color: var(--fav); box-shadow: 0 0 0 2px var(--fav), 0 0 0 5px var(--accent-soft), 0 0 20px color-mix(in srgb, var(--fav) 45%, transparent), 0 14px 30px rgba(0, 0, 0, .5); }
+:root[data-theme="light"] .price-tag.fav { box-shadow: 0 0 8px color-mix(in srgb, var(--fav) 24%, transparent), 0 6px 18px rgba(20, 24, 34, .16); }
+.price-tag.fav:hover, .price-tag.fav.hl { box-shadow: 0 0 14px color-mix(in srgb, var(--fav) 38%, transparent), 0 12px 28px rgba(0, 0, 0, .45); }
+.price-tag.fav.sel { border-color: var(--fav); box-shadow: 0 0 0 4px var(--accent-soft), 0 0 14px color-mix(in srgb, var(--fav) 32%, transparent), 0 14px 30px rgba(0, 0, 0, .5); }
 .price-tag.fav.sel::after { border-right-color: var(--fav); border-bottom-color: var(--fav); }
 .price-tag.fav.sel .st { color: var(--accent-ink); }
 .price-tag .st { filter: drop-shadow(0 0 3px color-mix(in srgb, var(--fav) 60%, transparent)); }

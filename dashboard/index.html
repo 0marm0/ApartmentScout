@@ -81,6 +81,12 @@
           <button type="button" role="menuitemradio" aria-checked="false" data-theme-mode="light"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><circle cx="8" cy="8" r="2.8"/><path d="M8 1.5v1.6M8 12.9v1.6M1.5 8h1.6M12.9 8h1.6M3.4 3.4l1.1 1.1M11.5 11.5l1.1 1.1M3.4 12.6l1.1-1.1M11.5 4.5l1.1-1.1"/></svg>Light</button>
         </div>
         <!-- density: comfortable or compact cards, rail and tables (js/features/density.js) -->
+        <!-- [office pin] style of the destination marker -->
+        <div class="mn-h" id="mnPinLbl">Office pin</div>
+        <div class="mn-seg mn-seg-2" role="group" aria-labelledby="mnPinLbl">
+          <button type="button" role="menuitemradio" aria-checked="true" data-dest-pin="gold" data-keep title="White pin with a gold outline">Gold</button>
+          <button type="button" role="menuitemradio" aria-checked="false" data-dest-pin="classic" data-keep title="The green pin with a white briefcase">Green</button>
+        </div>
         <div class="mn-h" id="mnDensLbl">Density</div>
         <div class="mn-seg mn-seg-2" role="group" aria-labelledby="mnDensLbl">
           <button type="button" role="menuitemradio" aria-checked="true" data-density="comfortable" title="Roomy cards, rail and tables"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><rect x="2.5" y="2.5" width="11" height="4" rx="1"/><rect x="2.5" y="9.5" width="11" height="4" rx="1"/></svg>Comfortable</button>

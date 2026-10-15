@@ -285,6 +285,12 @@ select.sel { appearance: none; height: 28px; padding: 0 26px 0 10px; border-radi
 .dest-mk { position: relative; width: 30px; height: 38px; }
 .dest-pin { width: 30px; height: 38px; filter: drop-shadow(0 2px 3px rgba(0,0,0,.4)); }
 .dest-pin svg { display: block; width: 100%; height: 100%; }
+.dest-pin .dp-body { fill: #fff; stroke: var(--fav); stroke-width: 1.8; }   /* default: white pin, gold outline, green briefcase */
+.dest-pin .dp-glyph { fill: var(--dest-pin); }
+.dest-pin .dp-cut { fill: #fff; }
+:root[data-dest-pin="classic"] .dest-pin .dp-body { fill: var(--dest-pin); stroke: #fff; stroke-width: 1.4; }   /* the green pin, white briefcase */
+:root[data-dest-pin="classic"] .dest-pin .dp-glyph { fill: #fff; }
+:root[data-dest-pin="classic"] .dest-pin .dp-cut { fill: var(--dest-pin); }
 .dest-label { position: absolute; left: 36px; top: 14px; transform: translateY(-50%); white-space: nowrap; padding: 3px 8px; border-radius: 8px; background: color-mix(in srgb, var(--surface-1) 88%, transparent); border: 1px solid var(--line-strong); box-shadow: var(--shadow-2); font: 600 11.5px/1.2 var(--font-sans); color: var(--ink); }
 .dest-label span { display: block; font-weight: 400; color: var(--ink-2); font-size: 10.5px; }
 .maplibregl-popup-content { background: var(--surface-1) !important; color: var(--ink); border: 1px solid var(--line-strong); border-radius: var(--r-lg) !important; box-shadow: var(--shadow-3) !important; padding: 0 !important; overflow: hidden; font-family: var(--font-sans); }

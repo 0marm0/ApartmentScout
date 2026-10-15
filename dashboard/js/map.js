@@ -386,12 +386,12 @@ function addOverlays() {
   map.addLayer({ id: 'pins', type: 'circle', source: 'listings', filter: UNCL, paint: {
     'circle-radius': ['interpolate', ['linear'], ['zoom'], 11, ['case', ['get', 'fav'], 4, 2.6], 15, ['case', ['get', 'fav'], 9, 6.5]],
     'circle-color': heat === 'commute' ? ['case', ['get', 'fav'], css('--accent'), theme() === 'light' ? '#2b303b' : '#eef1f6'] : ['get', 'col'], 'circle-opacity': ['case', ['get', 'gone'], 0.35, 1],
-    'circle-stroke-width': ['case', ['boolean', ['feature-state', 'hover'], false], 3, ['get', 'fav'], 2.2, 1.6],
+    'circle-stroke-width': ['case', ['boolean', ['feature-state', 'hover'], false], 2.4, ['get', 'fav'], 1.6, 1.4],
     'circle-stroke-color': ['case', ['boolean', ['feature-state', 'hover'], false], css('--ink'), p.pinLine] } });
   // starred homes: their own unclustered source, so a count bubble never swallows them at any zoom
   map.addSource('starred', { type: 'geojson', data: starData(), promoteId: 'id' });
   map.addLayer({ id: 'pins-s-halo', type: 'circle', source: 'starred', paint: {
-    'circle-radius': ['interpolate', ['linear'], ['zoom'], 11, 9, 15, 17], 'circle-color': css('--fav'), 'circle-blur': 0.8, 'circle-opacity': 0.5 } });
+    'circle-radius': ['interpolate', ['linear'], ['zoom'], 11, 6, 15, 11], 'circle-color': css('--fav'), 'circle-blur': 0.8, 'circle-opacity': 0.32 } });
   map.addLayer({ id: 'pin-sel-s', type: 'circle', source: 'starred', filter: ['==', ['get', 'id'], S.sel || ''], paint: {
     'circle-radius': 14, 'circle-color': 'rgba(0,0,0,0)', 'circle-stroke-width': 2.5, 'circle-stroke-color': css('--accent'), 'circle-stroke-opacity': 0.9 } });
   map.addLayer({ id: 'pins-s', type: 'circle', source: 'starred', paint: {
@@ -519,7 +519,8 @@ function hideCard(forget = false) {
 }
 
 /** Map-pin teardrop in the destination green with a filled white briefcase (same artwork as assets/icons/office-pin.svg). */
-const DEST_PIN_SVG = '<svg viewBox="0 0 30 38" aria-hidden="true" focusable="false"><path fill="var(--dest-pin)" stroke="#fff" stroke-width="1.4" stroke-linejoin="round" d="M15 .8C7.6.8 1.8 6.7 1.8 14c0 9.4 13.2 23.2 13.2 23.2S28.2 23.4 28.2 14C28.2 6.7 22.4.8 15 .8Z"/><path fill="#fff" fill-rule="evenodd" d="M11.1 9.7V8.4c0-1.1.9-2 2-2h3.8c1.1 0 2 .9 2 2v1.3h-1.9V8.5c0-.1-.1-.2-.2-.2h-3.6c-.1 0-.2.1-.2.2v1.2Z"/><path fill="#fff" d="M9.7 9.5h10.6c1.2 0 2.2 1 2.2 2.2v7.1c0 1.2-1 2.2-2.2 2.2H9.7c-1.2 0-2.2-1-2.2-2.2v-7.1c0-1.2 1-2.2 2.2-2.2Z"/><path fill="var(--dest-pin)" d="M7.5 14h15v1.3h-15Z"/><rect fill="var(--dest-pin)" x="13.4" y="12.9" width="3.2" height="3.5" rx=".6"/></svg>';
+// colours come from CSS (.dest-pin .dp-*): the gold-outlined white pin by default, html[data-dest-pin="classic"] for the green one
+const DEST_PIN_SVG = '<svg viewBox="0 0 30 38" aria-hidden="true" focusable="false"><path class="dp-body" stroke-linejoin="round" d="M15 .8C7.6.8 1.8 6.7 1.8 14c0 9.4 13.2 23.2 13.2 23.2S28.2 23.4 28.2 14C28.2 6.7 22.4.8 15 .8Z"/><path class="dp-glyph" fill-rule="evenodd" d="M11.1 9.7V8.4c0-1.1.9-2 2-2h3.8c1.1 0 2 .9 2 2v1.3h-1.9V8.5c0-.1-.1-.2-.2-.2h-3.6c-.1 0-.2.1-.2.2v1.2Z"/><path class="dp-glyph" d="M9.7 9.5h10.6c1.2 0 2.2 1 2.2 2.2v7.1c0 1.2-1 2.2-2.2 2.2H9.7c-1.2 0-2.2-1-2.2-2.2v-7.1c0-1.2 1-2.2 2.2-2.2Z"/><path class="dp-cut" d="M7.5 14h15v1.3h-15Z"/><rect class="dp-cut" x="13.4" y="12.9" width="3.2" height="3.5" rx=".6"/></svg>';
 function addDest() {
   destMarkers.forEach((m) => m.remove()); destMarkers = [];
   const sel = dest();
