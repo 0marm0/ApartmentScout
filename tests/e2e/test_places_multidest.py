@@ -371,6 +371,21 @@ def test_the_drawer_lists_every_destination_and_a_row_shows_that_route(open_mult
     assert not s.take()
 
 
+def test_the_shortlist_table_has_an_every_destination_column(open_multi) -> None:
+    s = open_multi("#list")
+    pg = s.page
+    pg.wait_for_selector("#view-list table tbody tr .md-line", timeout=20000)
+    heads = pg.evaluate("() => [...document.querySelectorAll('#view-list thead th')].map((t) => t.innerText.trim().toLowerCase())")
+    assert "all destinations" in heads and "to grand central" in heads, heads
+    cells = pg.locator("#view-list tbody tr").first.locator(".md-line .cd")
+    assert cells.count() == 3
+    pg.click("#view-list thead th:has-text('All destinations')")   # sorts by the combined score, best first
+    pg.wait_for_function("() => document.querySelector('#view-list thead th.on')?.textContent.toLowerCase().includes('all destinations')")
+    scores = pg.evaluate("() => [...document.querySelectorAll('#view-list tbody tr .md-line .cd-all b')].slice(0, 10).map((b) => +b.textContent)")
+    assert scores == sorted(scores, reverse=True), scores
+    assert not s.take()
+
+
 def test_the_heat_map_can_show_the_farthest_or_the_weighted_destinations(open_multi, webgl) -> None:
     if not webgl:
         pytest.skip("no WebGL in this browser (SwiftShader unavailable)")

@@ -178,10 +178,11 @@ def test_starred_and_sorting_words_and_the_unsupported_phrase(op) -> None:
     pg.keyboard.press("Enter")
     pg.wait_for_function("() => document.getElementById('sortSel').value === 'cost'")
     assert pg.evaluate("() => JSON.parse(localStorage.getItem('as:filters2')).savedOnly") is True
-    # a phrase it understands but cannot filter on is said out loud, not guessed
-    _palette(pg, "east of 3rd ave")
+    # a phrase it understands but cannot filter on is said out loud, not guessed ("east of 3rd ave" is a real filter now:
+    # tests/e2e/test_places_multidest.py; an avenue has no north side)
+    _palette(pg, "north of 3rd ave")
     first = pg.locator("#plList .pl-it").first.inner_text()
-    assert "filter by" in first and "east of 3rd ave" in first, first
+    assert "filter by" in first and "north of 3rd" in first, first
     pg.keyboard.press("Escape")
     # plain words keep working as before
     _palette(pg, "compare")

@@ -30,7 +30,7 @@ from typing import Callable
 import numpy as np
 
 from ..listings import slugify
-from .run import NODATA, TRANSIT, decode_minutes, encode_minutes
+from .run import NODATA, TRANSIT, decode_minutes
 
 MODES = (TRANSIT, "subway", "bus")
 LABEL = {TRANSIT: "best", "subway": "subway", "bus": "bus"}   # the dashboard's name for each mode
