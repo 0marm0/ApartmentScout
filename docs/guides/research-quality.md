@@ -180,7 +180,8 @@ watchlist:
 or on any unit of the building in `listings.json`: `"watch": true` or
 `"watch": {"reason": "...", "trigger": "...", "cadence": "daily"}`. Entries are merged by building.
 `watchlist.json` adds every unit seen in the building, its last check and units that appeared since
-then.
+then. `apartmentscout monitor` re-checks the watched units from their own pages and writes a digest of
+what changed; see [monitoring](monitoring.md).
 
 ## For agents
 

@@ -12,6 +12,7 @@ Grand Central, arriving by 9:00.
 |---|---|
 | `criteria.yaml` | The criteria above in ApartmentScout format. |
 | `listings.json` | 732 units (430 active when last checked) with prices, amenities, review summaries, commute times, records and scores. |
+| `history/claims.jsonl` | Dated price and status history taken from the research record: every point cites the file it came from, relative to the research folder (see [methodology](../../docs/guides/methodology.md#history)). Prices carry `price.basis`, `price.source` and `price.checked`. |
 | `layers/commute-office.json` | Subway commute grid (150 m) to the office. |
 | `layers/noise.json` | 311 noise complaints in the area over 12 months (335,923 requests). |
 | `research/dossiers/` | NYC Open Data dossiers for the 23 shortlisted units. |
