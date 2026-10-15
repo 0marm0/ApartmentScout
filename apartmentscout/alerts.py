@@ -53,7 +53,7 @@ _GATE_WORDS = {"price": "price", "fees": "monthly fees", "lease_term": "lease te
 _HEAD = (("new", "{n} new", "{n} new"), ("fits", "{n} now fits", "{n} now fit"), ("drops", "{n} price drop", "{n} price drops"),
          ("rises", "{n} price rise", "{n} price rises"), ("gone", "{n} gone", "{n} gone"), ("back", "{n} back on the market", "{n} back on the market"),
          ("jumps", "{n} into the top {top}", "{n} into the top {top}"), ("resolved", "{n} unknown resolved", "{n} unknowns resolved"))
-HEADLINE_PARTS = 4
+HEADLINE_PARTS = 4   # kinds of change named in a headline; the rest are counted as '+N more'
 
 
 # --------------------------------------------------------------------------- paths
@@ -202,12 +202,18 @@ def diff_states(old: dict, new: dict, top: int = TOP, include_all: bool = False)
             if now["status"] == "gone" and (_watching(was) or include_all):
                 out["gone"].append(_item(id, now, was_rank=was.get("rank")))
             continue
+        fit_item = None
         if now["fit"] and not was["fit"]:
-            out["fits"].append(_item(id, now, why=_why_blocked(was.get("gates") or [])))
+            fit_item = _item(id, now, why=_why_blocked(was.get("gates") or []))
+            out["fits"].append(fit_item)
         pc = _price_change(was, now) if relevant else None
         if pc:
             a, b, basis = pc
-            out["drops" if b < a else "rises"].append(_item(id, now, **{"from": a, "to": b, "delta": b - a, "basis": basis}))
+            move = {"from": a, "to": b, "delta": b - a, "basis": basis}
+            if fit_item is not None:
+                fit_item.update(move)        # a home that now fits because it got cheaper is one piece of news, not two
+            else:
+                out["drops" if b < a else "rises"].append(_item(id, now, **move))
         if now["fit"] and was["fit"] and was.get("rank") and now.get("rank") and now["rank"] <= top < was["rank"]:
             out["jumps"].append(_item(id, now, **{"from": was["rank"], "to": now["rank"]}))
         if relevant:
@@ -231,13 +237,15 @@ def diff_states(old: dict, new: dict, top: int = TOP, include_all: bool = False)
 
 def headline(counts: dict[str, int], top: int = TOP) -> str:
     """'3 new, 2 price drops': the first few kinds of change, biggest news first. Empty when nothing changed."""
-    parts = []
+    parts, rest = [], 0
     for g, one, many in _HEAD:
         n = counts.get(g, 0)
-        if n:
+        if n and len(parts) < HEADLINE_PARTS:
             parts.append((one if n == 1 else many).format(n=n, top=top))
-    if len(parts) > HEADLINE_PARTS:
-        parts = parts[:HEADLINE_PARTS - 1] + [f"{len(parts) - HEADLINE_PARTS + 1} more kinds of change"]
+        elif n:
+            rest += n
+    if rest:
+        parts.append(f"{rest} more")
     return ", ".join(parts)
 
 
@@ -296,7 +304,8 @@ def _line(group: str, r: dict, md: bool) -> str:
     if group in ("new", "back"):
         return f"{name}{hood}: {_money(r.get('gross'))} a month{rank}"
     if group == "fits":
-        return f"{name}{hood}: {_money(r.get('gross'))} a month{rank}" + (f" ({r['why']} before)" if r.get("why") else "")
+        extra = [x for x in (f"{r['why']} before" if r.get("why") else "", f"{'down' if r['delta'] < 0 else 'up'} from {_money(r['from'])}" if r.get("from") else "") if x]
+        return f"{name}{hood}: {_money(r.get('gross'))} a month{rank}" + (f" ({'; '.join(extra)})" if extra else "")
     if group in ("drops", "rises"):
         sign = "-" if r["delta"] < 0 else "+"
         basis = "" if r.get("basis") == "rent" else f" ({r['basis']})"

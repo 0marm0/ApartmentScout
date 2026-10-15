@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-15T13:37:29",
+ "generated": "2026-10-15T18:50:35",
  "version": "0.1.0",
  "search": "Manhattan 1BR, fall 2026",
  "layers": [
@@ -78,6 +78,7 @@
  "media_base_url": "https://0marm0.github.io/ApartmentScout/demo/media/",
  "default_listing": "paramount-tower-25e",
  "extra": [
+  "alerts.json",
   "coverage.json",
   "digest.json",
   "history.json",
