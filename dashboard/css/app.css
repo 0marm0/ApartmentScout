@@ -215,6 +215,7 @@ select.sel { appearance: none; height: 28px; padding: 0 26px 0 10px; border-radi
 .c-price .ph { margin: 0; gap: 0; }
 .c-price .ph-d { font-size: var(--fs-2xs); line-height: 1; padding: 3px 6px; align-self: center; letter-spacing: 0; }
 .c-price .ph-s { display: none; }
+.c-price .ph:not(:has(.ph-d)) .ph-s { display: block; width: 32px; height: 12px; align-self: center; }   /* a rise or a flat history keeps its line; a drop is said by its chip */
 .c-price .tierpill { margin-left: auto; line-height: calc(24px * var(--ts, 1)); height: auto; }
 .c-chips { display: flex; align-items: center; gap: var(--s-1); height: calc(20px * var(--ts, 1)); min-width: 0; }
 .c-chips > .c-modes, .c-chips > .md-line { flex: none; }
