@@ -14,6 +14,11 @@
   --r-xs: 4px; --r-sm: 6px; --r-md: 10px; --r-lg: 14px; --r-xl: 20px; --r-pill: 999px;
   --r-inner: 7px;   /* a segment inside a 10px control with 3px padding: outer radius minus padding */
 
+  /* the notch, the Dynamic Island's strip and the home indicator, as tokens: every phone rule reads these (never env() directly), so a test can
+     stand in a notch by overriding them */
+  --safe-t: env(safe-area-inset-top, 0px); --safe-r: env(safe-area-inset-right, 0px);
+  --safe-b: env(safe-area-inset-bottom, 0px); --safe-l: env(safe-area-inset-left, 0px);
+
   /* layout */
   --topbar-h: 48px; --stats-h: 28px; --subnav-h: 38px; --rail-w: 288px; --list-w: 432px; --drawer-w: 448px;
 
