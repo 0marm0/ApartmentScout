@@ -1,6 +1,6 @@
 // Media glue for the cards and the drawer: photo counts by group, the blur-up previews, the lightbox entry points
 // and the card-photo-to-drawer-hero transition. app.js calls the four exports below from small, marked hooks.
-import { esc } from '../util.js';
+import { esc, mediaSrc } from '../util.js';
 import { photoItems, heroOf, countsOf, countParts, countSentence, groupInfo } from './photos.js';
 import { loadPreviews, whenPreviewsReady, armCards, armTrack } from './lqip.js';
 import { openLightbox, configureLightbox, creditHTML } from './lightbox.js';
@@ -36,10 +36,9 @@ export function cardMediaHTML(L, im) {
   const hero = heroOf(L);
   if (!hero) return null;
   const items = photoItems(L), counts = countsOf(items), parts = countParts(counts), sentence = countSentence(counts);
-  const fb = hero.remote ? ` onerror="this.onerror=null;this.src='${esc(hero.remote)}'"` : '';
   const chip = parts.length
     ? `<button type="button" class="nph" data-lb="${esc(L.id)}" aria-label="View ${esc(sentence)} full screen" title="${esc(sentence)}">${parts.map((p, i) => `${i ? '<span class="sep"> · </span>' : ''}<b>${p.n}</b><span class="w"> ${esc(p.word)}</span>`).join('')}</button>` : '';
-  return `<img src="${esc(hero.url)}" alt="" loading="lazy" referrerpolicy="no-referrer" data-lq="${esc(hero.keys.join('|'))}"${fb}>${chip}`;
+  return `<img src="${esc(mediaSrc(hero.url))}" alt="" loading="lazy" referrerpolicy="no-referrer" data-lq="${esc(hero.keys.join('|'))}">${chip}`;
 }
 
 /** After the drawer renders: blur-up previews per slide, the full-screen entry points and group-aware captions. */

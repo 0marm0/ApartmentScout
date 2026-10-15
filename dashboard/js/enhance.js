@@ -3,7 +3,7 @@
 // active view tab has a sliding indicator, and result cards cycle their first photos on hover.
 // Everything here is progressive: with JS off or reduced motion the markup is unchanged.
 import { byId } from './app.js';
-import { $, imagesOf, safeUrl } from './util.js';
+import { $, imagesOf, safeUrl, mediaSrc } from './util.js';
 
 const reduce = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -153,10 +153,7 @@ function cardPhotos() {
       urls.slice(1).forEach((u, k) => {
         const im2 = document.createElement('img');
         im2.className = 'cyc'; im2.alt = ''; im2.referrerPolicy = 'no-referrer'; im2.decoding = 'async';
-        // a local copy that is missing falls back to the photo's original link, as the card's first photo does
-        const web = im.own.length ? safeUrl((L.photos || [])[k + 1]) : null;
-        if (web && web !== u) im2.addEventListener('error', () => { im2.src = web; }, { once: true });
-        im2.src = u;
+        im2.src = mediaSrc(u);   // a missing saved copy walks the photo chain by itself (features/media-chain.js)
         media.insertBefore(im2, base.nextSibling);
       });
       const dots = document.createElement('span');

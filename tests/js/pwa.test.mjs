@@ -45,6 +45,8 @@ test('the worker treats only saved listing photos under its scope as photos', ()
   const u = (p) => new URL(p, 'https://u.github.io/app/demo/');
   assert.equal(sw.isPhoto(u('media/a-1/p-1.webp')), true);
   assert.equal(sw.isPhoto(u('media/shared/x.JPG')), true);
+  assert.equal(sw.isPhoto(u('media-lite/shared/x.webp')), true, 'the starter set is a photo family too');
+  assert.equal(sw.isPhoto(u('media-lite/MANIFEST.json')), false);
   assert.equal(sw.isPhoto(u('data/listings.json')), false);
   assert.equal(sw.isPhoto(u('media/a-1/notes.txt')), false);
   assert.equal(sw.isPhoto(new URL('https://u.github.io/app/media/a.webp')), false, 'outside the scope');

@@ -1,7 +1,7 @@
 // ApartmentScout dashboard core: data loading, shared state, live ranking, filters rail, result cards,
 // listing drawer, saved picks, router, theme and keyboard shortcuts. Views live in their own modules and
 // talk to the core through the exports below and the event bus (on/emit).
-import { $, esc, money, moneyShort, safeUrl, scoreColor, ring, unitGlyph, bullets, bullet, routeNames, ICONS, toast, LINE_COLORS, aerialHTML, imagesOf, imgFallback, routeBadge, legBadges, miles } from './util.js';
+import { $, esc, money, moneyShort, safeUrl, scoreColor, ring, unitGlyph, bullets, bullet, routeNames, ICONS, toast, LINE_COLORS, aerialHTML, imagesOf, mediaSrc, routeBadge, legBadges, miles } from './util.js';
 import { COMMUTE_MODES, commuteEntry, modeMinutes, modeOptions, evaluate, applyProfile, profileOf, diffProfile, serverSteps, parseDay, cashFlow, basisLabel } from './criteria.js';
 import { initPalette, openPalette, shareListing, syncTrigger } from './palette.js';
 import { initEnhance } from './enhance.js';
@@ -9,6 +9,7 @@ import { takeEarly } from './perf/early.js';   // [perf] boot data requested bef
 import { initTheme, flipTheme, initShell, parseRoute, syncSubnav, homeTarget } from './shell.js';
 import { initMedia, cardMediaHTML, afterDrawerMedia, mediaTransition } from './features/media.js';   // photos: lightbox, blur-up, counts
 import { loadPreviews } from './features/lqip.js';
+import { configureMedia, installMediaFallback } from './features/media-chain.js';   // saved photos: media/ -> media-lite/ -> published copy -> original link
 import { cleanStored } from './state-guard.js';
 import './features/comfort.js';
 import { initDestPin } from './features/dest-pin-style.js';   // [office pin] gold or classic destination marker   // [feature C] comfort + accent attributes on <html> apply at import, before first paint
@@ -444,8 +445,8 @@ function modesHTML(L) {
 }
 function mediaHTML(L, im) {
   const fx = cardMediaHTML(L, im); if (fx) return fx;   // features/media.js: ordered photo, blur-up preview, count by group
-  if (im.own.length) return `<img src="${esc(im.own[0])}" alt="" loading="lazy" referrerpolicy="no-referrer"${imgFallback(L, 0)}><span class="nph">${im.own.length} photo${im.own.length > 1 ? 's' : ''}</span>`;
-  if (im.building.length) return `<img src="${esc(im.building[0].url)}" alt="" loading="lazy" referrerpolicy="no-referrer"><span class="kind">Building</span>`;
+  if (im.own.length) return `<img src="${esc(mediaSrc(im.own[0]))}" alt="" loading="lazy" referrerpolicy="no-referrer"><span class="nph">${im.own.length} photo${im.own.length > 1 ? 's' : ''}</span>`;
+  if (im.building.length) return `<img src="${esc(mediaSrc(im.building[0].url))}" alt="" loading="lazy" referrerpolicy="no-referrer"><span class="kind">Building</span>`;
   if (L.lat != null) return `${aerialHTML(L, 136, 108, 18)}<span class="kind">Aerial</span>`;
   return `<div class="glyph">${unitGlyph(L)}</div>`;
 }
@@ -702,7 +703,7 @@ export function openDrawer(id, opt = {}) {
   const many = slides.length > 1;
   dw.setAttribute('aria-label', `Details for ${label(L)}`);
   dw.innerHTML = `<div class="d-scroll">
-    <div class="d-hero">${slides.length ? `<div class="track" id="dTrack" tabindex="0" role="group" aria-roledescription="carousel" aria-label="Photos of ${esc(label(L))}${many ? ': arrow keys move between them' : ''}">${slides.map((x, i) => `<img src="${esc(x.url)}" alt="${esc(x.kind)} ${i + 1} of ${slides.length}, ${esc(label(L))}" referrerpolicy="no-referrer" draggable="false" class="${x.plan ? 'plan' : ''}" ${i > 1 ? 'loading="lazy"' : ''}${x.kind === 'Photo' ? imgFallback(L, i) : ''}>`).join('')}</div><div class="shade"></div>
+    <div class="d-hero">${slides.length ? `<div class="track" id="dTrack" tabindex="0" role="group" aria-roledescription="carousel" aria-label="Photos of ${esc(label(L))}${many ? ': arrow keys move between them' : ''}">${slides.map((x, i) => `<img src="${esc(mediaSrc(x.url))}" alt="${esc(x.kind)} ${i + 1} of ${slides.length}, ${esc(label(L))}" referrerpolicy="no-referrer" draggable="false" class="${x.plan ? 'plan' : ''}" ${i > 1 ? 'loading="lazy"' : ''}>`).join('')}</div><div class="shade"></div>
         ${many ? `<button type="button" class="h-nav prev" id="dPrev" aria-label="Previous photo" disabled><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M10 3L5 8l5 5"/></svg></button><button type="button" class="h-nav next" id="dNext" aria-label="Next photo"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 3l5 5-5 5"/></svg></button>
         ${slides.length <= 12 ? `<div class="h-dots" id="dDots" aria-hidden="true">${slides.map((_, i) => `<i class="${i ? '' : 'on'}"></i>`).join('')}</div>` : ''}` : ''}
         <span class="count" id="dCount" aria-live="polite">1 / ${slides.length}</span><span class="credit" id="dCredit"></span>`
@@ -820,11 +821,13 @@ function setupKeys() {
 async function boot() {
   const qs = new URLSearchParams(location.search);
   S.base = qs.get('data') || 'data';
+  installMediaFallback();   // features/media-chain.js: one listener walks every saved photo's fallback chain
   loadPreviews(getJSON, S.base);   // features/lqip.js: blur-up previews load beside the main data, not inside it
   const [listings, crit, manifest, notes] = await Promise.all([
     getJSON(`${S.base}/listings.json`, []), getJSON(`${S.base}/criteria.json`, {}), getJSON(`${S.base}/manifest.json`, {}), getJSON(`${S.base}/notes.json`, {}),
   ]);
   Object.assign(S, { listings, crit, manifest, notes, crit0: crit });
+  configureMedia({ base: manifest.media_base_url, local: manifest.media_local !== false });   // where photos missing here are published
   for (const L of listings) L._score0 = L.score;   // the scorer's result; a browser preview never overwrites it
   if (crit.scoring?.dimensions?.length) DIMS.splice(0, DIMS.length, ...crit.scoring.dimensions);
   const cm = store.get(searchKey('commute'), null);
