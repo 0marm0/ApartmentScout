@@ -229,6 +229,10 @@ function softGeo(w, h, d, o = {}) {
   }
   if (smooth) weldNormals(g);
   boxUV(g, o.uv, w, d);
+  if (o.drop) {   // faces nobody sees (the underside on a slatted deck, the back against a rail): 0 +x, 1 -x, 2 +y, 3 -y, 4 +z, 5 -z
+    const idx = g.index.array, keep = []; for (const gr of g.groups) if (!o.drop.includes(gr.materialIndex)) for (let i = gr.start; i < gr.start + gr.count; i++) keep.push(idx[i]);
+    g.setIndex(keep); g.clearGroups();
+  }
   return g;
 }
 /** A plain box, bottom at y = 0, with metre UVs (Fast mode's boards). */
@@ -453,14 +457,14 @@ function futon(it, K) {
   const pad = (w0, h0, d0, axis, nc, nr, crown) => {   // axis 1: the top face of a seat (x by z); axis 2: the front face of a back (x by y)
     const hu = w0 / 2, hv = (axis === 1 ? d0 : h0) / 2, inset = 5, pts = [];
     for (let j = 0; j < nr; j++) for (let i = 0; i < nc; i++) pts.push([-hu + inset + ((2 * hu - 2 * inset) * (nc === 1 ? 0.5 : i / (nc - 1))), -hv + inset + ((2 * hv - 2 * inset) * (nr === 1 ? 0.5 : j / (nr - 1)))]);
-    const dep = 0.8, rad = 2.3, kx = Math.round(w0 / 1.9), kv = Math.round((axis === 1 ? d0 : h0) / 1.9);
-    const geo = K.soft(w0, h0, d0, { r: 1.5, s: 2, k: axis === 1 ? [kx, 1, kv] : [kx, kv, 1], kf: axis === 1 ? [10, 1, 5] : [10, 5, 1], puff: axis === 1 ? { py: crown } : { pz: crown }, pow: 0.7, keepPuff: true,
+    const dep = 0.8, rad = 2.3, kx = Math.round(w0 / 3.4), kv = Math.round((axis === 1 ? d0 : h0) / 3.4);
+    const geo = K.soft(w0, h0, d0, { r: 1.5, s: 2, drop: axis === 1 ? [3] : [5, 3], k: axis === 1 ? [kx, 1, kv] : [kx, kv, 1], kf: axis === 1 ? [8, 1, 4] : [8, 4, 1], puff: axis === 1 ? { py: crown } : { pz: crown }, pow: 0.7, keepPuff: true,
       ...(f ? {} : { tufts: { axis, side: 1, pts, depth: dep, rad } }) });
     return { geo, pts, hu, hv, crown, dep };
   };
   const dress = (P, axis, par, y0, zc, thick, depthAxis) => {   // buttons and seams on a pad placed with its bottom at y0, centre z = zc
     if (f) return;
-    const bp = [], ball = K.geo('btn', () => new THREE.SphereGeometry(0.62, 8, 5));
+    const bp = [], ball = K.geo('btn', () => new THREE.SphereGeometry(0.62, 6, 4));
     for (const [u, v] of P.pts) {
       const top = axis === 1 ? thick + crownAt(P.crown, u, v, P.hu, P.hv, 0.7) - P.dep + 0.28 : depthAxis / 2 + crownAt(P.crown, u, v, P.hu, P.hv, 0.7) - P.dep + 0.28;
       bp.push({ g: ball, m: axis === 1 ? mtx(u, top, v, 0, 0, 0, 1, 0.55, 1) : mtx(u, v + P.hv, top, 0, 0, 0, 1, 1, 0.55) });
@@ -521,7 +525,7 @@ function bed(it, K) {
   K.add(hbG, upM, 0, 1, -hd);
   if (!f) {
     const nCh = clamp(Math.round((w - 6) / 10.5), 4, 9), chW = (w - 6) / nCh, chY0 = deck + 1, chH = hbH - 4.5 - chY0;
-    const chG = K.soft(chW - 0.45, chH, 2.0, { r: 0.8, s: 2, k: [1, 8, 1], puff: { pz: 1.3, py: 0.0 }, pow: 0.55, keepPuff: true });
+    const chG = K.soft(chW - 0.45, chH, 2.0, { r: 0.8, s: 1, k: [1, 4, 1], drop: [5, 3], puff: { pz: 1.3 }, pow: 0.55, keepPuff: true });
     for (let i = 0; i < nCh; i++) K.add(chG, upM, -w / 2 + 3 + chW * (i + 0.5), chY0, headZ + 0.35);
   }
   // frame: upholstered rails on tapered legs, or drawer boxes for a storage bed
@@ -558,13 +562,13 @@ function bed(it, K) {
   K.add(K.soft(2 * (ax + R) + 0.3, 2.4, 11, { r: 1.1, k: [3, 1, 1], puff: { py: 0.5, pz: 0.3 }, pow: 0.8 }), foldM, 0, top - 0.95, z0 + 4.6);
   // a knitted throw folded across the foot third, hanging a little over each side
   const tz1 = z1 - 0.5, tz0 = tz1 - 24, ttop = top + 0.85;
-  K.add(K.geo('throw', () => drapeGeo({ ax: ax + 1.6, z0: tz0, z1: tz1, top: ttop, R: 1.3, dropX: Math.min(9, ttop - 1.3 - deck - 0.6), dropZ: Math.min(8, ttop - 1.3 - deck - 0.6), flareX: 0.6, flareZ: 0.3, fold: f ? 0.2 : 0.4, period: 9,
-    ridges: [], lumps: f ? 0 : 0.25, nTopX: f ? 3 : 8, nTopZ: f ? 3 : 9, nArc: 2 + (f ? 0 : 1), nDrop: f ? 1 : 3 })), throwM, 0, 0, 0);
+  K.add(K.geo('throw', () => drapeGeo({ ax: ax + 0.9, z0: tz0, z1: tz1, top: ttop, R: 1.3, dropX: Math.min(9, ttop - 1.3 - deck - 0.6), dropZ: Math.min(8, ttop - 1.3 - deck - 0.6), flareX: 0.3, flareZ: 0.2, fold: f ? 0.15 : 0.3, period: 9,
+    ridges: [], lumps: f ? 0 : 0.25, nTopX: f ? 3 : 6, nTopZ: f ? 3 : 6, nArc: 2 + (f ? 0 : 1), nDrop: f ? 1 : 3 })), throwM, 0, 0, 0);
   // pillows: two sleeping pillows propped on the headboard
   const pw = Math.min(26, mw / 2 - 2.5), pd = 17, pillowG = K.soft(pw, 6, pd, { r: 1.2, k: [2, 1, 2], puff: { py: 1.7, ny: 0.9 }, pow: 0.6 });
   for (const sx of [-1, 1]) K.add(pillowG, sheet, sx * (pw / 2 + 0.6), mTop + 1.4, headZ + pd / 2 + 1.6, { rx: 0.42, ry: sx * 0.03 });
   if (!f) {   // two square euro pillows leaning in front of them
-    const eg = K.soft(19, 5.6, 19, { r: 1.2, k: [2, 1, 2], puff: { py: 1.6, ny: 0.8 }, pow: 0.6 });
+    const eg = K.soft(19, 5.6, 19, { r: 1.2, s: 1, k: [3, 1, 3], puff: { py: 1.6, ny: 0.8 }, pow: 0.6, drop: [3] });
     for (const sx of [-1, 1]) K.add(eg, euroM, sx * 13.5, mTop + 3.1, headZ + 17.5, { rx: 1.0, ry: -sx * 0.14 });
   }
 }
