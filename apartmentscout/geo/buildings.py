@@ -294,6 +294,17 @@ def height_confidence(b: dict) -> str:
     return "low"
 
 
+FLOOR_RATIO_M = (2.2, 5.2)       # a roof height per floor outside this is not a storey height: the footprint or the floor count is off
+
+
+def floors_disagree(b: dict) -> bool:
+    """A measured roof height that cannot belong to the PLUTO floor count (a 36-floor tower on an 18 m footprint is a podium's)."""
+    f, h = b.get("floors"), b.get("height")
+    if b.get("height_src") != "roof" or not f or f < 4 or not h:
+        return False
+    return not FLOOR_RATIO_M[0] <= h / f <= FLOOR_RATIO_M[1]
+
+
 def stable_id(b: dict, index: int) -> str:
     """The building's id in every view: its BIN, else its OpenStreetMap element (``osmw123``), else ``b<index>``."""
     for k in ("bin", "id"):
@@ -337,7 +348,8 @@ def build_site(listing: dict, buildings: list[dict], source: str, landmark_names
         sid = stable_id(b, i)
         m = {"id": sid if sid != str(b.get("bin")) else None, "bin": b.get("bin"), "bbl": b.get("bbl"), "address": b.get("address"),
              "name": b.get("name"), "year": b.get("year"), "floors": b.get("floors"), "cls": b.get("cls"),
-             "height_src": b.get("height_src") or "default", "hconf": height_confidence(b),
+             "height_src": b.get("height_src") or "default",
+             "hconf": "low" if floors_disagree(b) else height_confidence(b), "hflag": "floors" if floors_disagree(b) else None,
              "src": b.get("src") or ("osm" if str(b.get("id", "")).startswith("osm") else "nyc-footprints"),
              "geom_src": b.get("geom_src"), "edited": b.get("edited"), "fcode": b.get("fcode")}
         meta.append({k: v for k, v in m.items() if v is not None})

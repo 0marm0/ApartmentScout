@@ -123,3 +123,20 @@ def test_a_failed_landmark_chunk_costs_only_that_chunk(monkeypatch):
     with pytest.raises(RuntimeError):                       # the near query itself still raises: the site builder reports it
         monkeypatch.setattr(comp, "overpass", lambda *a, **k: (_ for _ in ()).throw(RuntimeError("down")))
         comp.fetch_osm_parts(LAT, LON, 600, None, False)
+
+
+def test_a_roof_height_that_does_not_fit_the_floor_count_is_flagged_and_not_trusted():
+    from apartmentscout.geo.buildings import floors_disagree
+    assert floors_disagree({"height_src": "roof", "floors": 36, "height": 18.3})           # 0.5 m a floor: a podium's footprint
+    assert floors_disagree({"height_src": "roof", "floors": 10, "height": 80.0})           # 8 m a floor
+    assert not floors_disagree({"height_src": "roof", "floors": 52, "height": 160.3})      # 3.1 m a floor
+    assert not floors_disagree({"height_src": "roof", "floors": 3, "height": 40.0})        # too few floors to say
+    assert not floors_disagree({"height_src": "pluto-floors", "floors": 36, "height": 117.0})
+    from apartmentscout.geo.buildings import build_site, parse_nyc_rows
+    sq = [[(-10, -10), (10, -10), (10, 10), (-10, 10), (-10, -10)]]
+    rows = [{"bin": "1000001", "mappluto_bbl": "1000010001", "height_roof": "60", "ground_elevation": "0",
+             "the_geom": {"type": "Polygon", "coordinates": [[[F.to_lonlat(x, y)[0], F.to_lonlat(x, y)[1]] for x, y in sq[0]]]}}]
+    bs = parse_nyc_rows(rows)
+    bs[0]["floors"] = 36
+    site = build_site({"lat": LAT, "lon": LON, "floor": 5}, bs, "test")
+    assert site["bmeta"][0]["hconf"] == "low" and site["bmeta"][0]["hflag"] == "floors"
