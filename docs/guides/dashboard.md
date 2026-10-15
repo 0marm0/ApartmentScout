@@ -237,14 +237,64 @@ before anything changes:
 | `w/d`, `washer dryer`, `doorman`, `gym`, `elevator`, `dishwasher`, `roof deck`, `pets` | The must-have and feature switches |
 | `700 sq ft`, `high floor`, `floor 15+` | Minimum size and floor |
 | `starred`, `price drops` | Saved picks only; homes whose latest recorded price move was down (needs `history.json`; the row says when there is none) |
-| `hell's kitchen`, `murray hill`, a building or street | The text filter, using the spelling in your data |
+| `east of 3rd ave`, `west of broadway`, `south of 14th`, `between 30th and 45th street` | A side of a street, or a strip between two (see "Streets, parks and neighbourhoods") |
+| `near central park`, `within 5 min walk of bryant park`, `in murray hill / kips bay`, `on the UES` | Walking distance to a park or street, or inside a neighbourhood |
+| `within 25 min of work and 30 min of partner` | A commute limit for each of several destinations (see "Several destinations") |
+| a building, or a place the map data does not have | The text filter, using the spelling in your data |
 | `cheapest`, `closest`, `largest`, `best value` | The sort |
 
 A query is a whole new search: filters it does not mention go back to their defaults, which is also why it is one undo
 step. The constraints the rail has no control for (bedrooms, price, size, floor, baths, price drops) show as chips above
 the results, each with an × that removes it. Words it does not recognise are listed as "not understood" in the preview
-instead of being guessed at, and a phrase it understands but cannot filter on yet (such as `east of 3rd ave`) says so.
-The parser is a pure module (`dashboard/js/features/nlquery.js`) with its own node tests.
+instead of being guessed at, and a phrase it understands but cannot filter on says so (`north of 3rd ave`: the avenue
+runs north-south, so it has no north side). The parser is a pure module (`dashboard/js/features/nlquery.js`) with its own
+node tests.
+
+### Streets, parks and neighbourhoods
+
+`apartmentscout places` writes `places.json` (street centrelines and park and neighbourhood outlines, about 100 KB for
+Manhattan) from OpenStreetMap and, where the city profile names one, an open neighbourhood dataset (NYC: the 2020
+Neighborhood Tabulation Areas); `apartmentscout build` copies it next to the rest of the dashboard data, and `all` builds
+it too. Everything is tested in the browser, offline. Without the file the same phrases are reported as not supported yet
+and the row says to run the command.
+
+| Phrase | Means |
+|---|---|
+| `east of 3rd ave`, `west of fifth`, `west of broadway` | The side of that street's line on the named side. East and west are judged along the **street's own axis**, so on the Manhattan grid (29 degrees off true north) east of 3rd Avenue is the side away from the Hudson at every latitude, not the compass east of one point on it. A diagonal street such as Broadway uses its direction where the home stands. The line is extended past the street's last block |
+| `south of 14th`, `north of 96th st`, `above 59th`, `below 14th` | The same for a crosstown street. `east of 14th` or `north of 3rd ave` say the street has no such side |
+| `between 30th and 45th street`, `between 2nd and 3rd ave` | The strip between two parallel streets, in either order; `street` or `ave` said once is enough. Two avenues or two streets only |
+| `near central park`, `close to bryant park`, `near 3rd ave` | Within a five-minute walk of the park's or street's nearest edge (straight-line equivalent at your walking speed with the street detour: 320 m at 4.8 km/h) |
+| `within 8 min walk of union square` | The same with your minutes (1 to 30) |
+| `in murray hill / kips bay`, `on the UES`, `in hell's kitchen`, `east village` | Inside the neighbourhood outline. A name shared by several areas (Upper East Side) is their union; `/`, `,`, `or` and `and` join several |
+
+The chips say what was understood (`East of 3rd Avenue`, `≤ 5 min walk to Bryant Park`, `In Murray Hill-Kips Bay`), each
+with an ×, and undo takes them back one at a time. A name the map data does not have (`east of foo avenue`, `near foo
+park`) is reported as "No place ... in this search's map data" and nothing is guessed or approximated. A home without
+coordinates fails a place filter, like any unknown fact. Names that are also a commute destination or a building stay
+with those: `near grand central` is still the commute lens.
+
+### Several destinations
+
+With two or more `commute.destinations` (your work, a partner's work, a gym) the dashboard shows every one of them:
+
+- **Rail.** An *Every destination* section under Commute has a limit slider per destination (the right end means no limit),
+  each shown as a chip and undoable. Say it in a sentence too: `within 25 min of work and 30 min of partner`. With only one
+  destination in the sentence the existing commute lens takes it, as before. Homes with no minutes for a destination stay
+  in, like the commute slider.
+- **Cards and drawer.** Each card has a compact line, `Work 18 · Partner 26 · Gym 9 ▲ · Σ 78`: minutes in the lens's mode
+  to every destination (▲ marks a destination over its own limit) and the combined commute score. The drawer lists every
+  destination with minutes, score, limit and weight; a row switches the lens (and the route above it) to that destination.
+- **Combined score.** The score that ranks homes already averages the destinations by `weight` (methodology: Scoring). The
+  combined figure is that same number: 100 at half a destination's limit, 50 at the limit, 0 at twice it, so a 15-minute
+  gym and a 45-minute office are each judged against their own limit. *Sort > Best combined commute* orders by it.
+- **Heat map.** The legend's destination menu adds **Farthest of all** (the longest trip to any destination at each point:
+  where you are within reach of everyone) and **Weighted average** (minutes averaged by the destinations' weights). They are
+  drawn from `layers/commute-combined-<mode>.json`, which `apartmentscout build` writes from the grids already computed
+  (24 KB for three destinations). They need a grid for every destination in that mode; the legend says when one is missing
+  and when your destinations or weights changed after the build. Picking a destination anywhere returns to its own surface.
+
+Add a destination in the criteria editor (or `criteria.yaml`), run `apartmentscout geocode` for its coordinates, then
+`apartmentscout commute --dest "Partner"` to route only the new one (the others keep their grids and times), and `build`.
 
 ## First-run tour
 
