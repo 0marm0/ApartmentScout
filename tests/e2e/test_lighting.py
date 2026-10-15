@@ -82,7 +82,10 @@ def test_daylight_grid_is_labelled_as_a_relative_model_and_draws_a_heat_map(open
     means = _means(s)
     assert {"Bedroom", "Living room"} <= set(means) and all(v > 0 for v in means.values()), means
     assert "Bath (no window)" in text            # rooms without a window are listed, never given a made-up number
-    assert pg.locator("#p2heat image").count() == 0
+    for box in ("#lxHeat2d", "#lxHeat3d"):        # the heat toggles are remembered: an earlier test may have left them on
+        if pg.is_checked(box):
+            pg.uncheck(box)
+    pg.wait_for_function("() => !document.querySelector('#p2heat image')", timeout=SLOW)
     pg.check("#lxHeat2d")
     pg.wait_for_selector("#p2heat image.lx-heat", state="attached", timeout=SLOW)
     assert pg.locator("#p2heat image.lx-heat").count() == len(means)
@@ -97,7 +100,7 @@ def test_daylight_grid_is_labelled_as_a_relative_model_and_draws_a_heat_map(open
     pg.wait_for_selector(".lx-tip:not([hidden])", timeout=5000)
     assert "Modelled" in pg.locator(".lx-tip").inner_text() or "modelled" in pg.locator(".lx-tip").inner_text()
     pg.uncheck("#lxHeat2d")
-    assert pg.locator("#p2heat image").count() == 0
+    pg.wait_for_function("() => !document.querySelector('#p2heat image')", timeout=SLOW)   # the overlay is cleared on the next draw
     assert not s.take()
 
 
