@@ -166,7 +166,7 @@
    "replaces": [[{"id": "bed", "x": 230, "y": 238.5, "rot": 270}, {"id": "nightstand-1", "x": 198, "y": 280, "rot": 270}, {"id": "nightstand-2", "x": 198, "y": 197, "rot": 270}, {"id": "tv-bed", "x": 306.75, "y": 238.5, "rot": 90}, {"id": "dresser", "x": 294.2, "y": 159.5, "rot": 180}, {"id": "desk", "x": 33, "y": 306, "rot": 270}, {"id": "futon", "x": 118, "y": 238.5, "rot": 90}, {"id": "coffee", "x": 72, "y": 238.5, "rot": 90}, {"id": "tv", "x": 21.75, "y": 238.5, "rot": 270}, {"id": "dining", "x": 71, "y": 163.5, "rot": 0}]],
    "items": [
     {"id": "bed", "ref": "queen-bed", "x": 266.5, "y": 218, "rot": 90, "placed": true, "w": 64, "d": 84, "h": 40, "label": "Queen bed"},
-    {"id": "bed-latitude", "ref": "queen-storage-bed-towers", "x": 266.85, "y": 218, "rot": 90, "placed": true, "hidden": true, "w": 94, "d": 83.3, "h": 47.4, "label": "Latitude Run storage bed (Brown Oak)"},
+    {"id": "bed-latitude", "ref": "queen-storage-bed-towers", "x": 266.85, "y": 218, "rot": 90, "placed": true, "hidden": true, "w": 94, "d": 83.3, "h": 47.4, "label": "Latitude Run bed"},
     {"id": "nightstand-1", "ref": "nightstand", "x": 300.5, "y": 176, "rot": 90, "placed": true, "w": 18, "d": 16, "h": 24, "label": "Nightstand"},
     {"id": "nightstand-2", "ref": "nightstand", "x": 300.5, "y": 260, "rot": 90, "placed": true, "w": 18, "d": 16, "h": 24, "label": "Nightstand"},
     {"id": "tv-bed", "ref": "tv-55", "x": 175.75, "y": 218, "rot": 270, "placed": true, "w": 48.4, "d": 3.5, "h": 27.8, "elev": 32, "label": "55-inch TV, bedroom"},
