@@ -65,7 +65,8 @@ def vertical_calibration(site: dict, floor: int, slab_m: float | None = None, ey
         slab = val if kind == "slab" else val - EYE_M
         if not (math.isfinite(slab) and 0 <= slab <= 700):
             raise ValueError("a measured height must be between 0 and 700 m above the street")
-        measured = {"kind": kind, "value_m": round(val, 2), "floor": int(floor), "spread": spread if spread in ("scale", "offset") else "scale"}
+        measured = {"kind": kind, "value_m": round(val, 2), "floor": int(floor),
+                    "spread": spread if spread in ("scale", "offset") else "scale"}
         if src:
             measured["src"] = str(src)[:200]
     else:
@@ -147,7 +148,8 @@ def window_open_air(site: dict, face: dict, t: float, z_lo: float, z_hi: float, 
         for d in out:
             r = open_air_at(site, x + nx * d, y + ny * d, z)
             if not r["open"]:
-                return {"ok": False, "reason": "host" if r["host"] else "neighbour", "building": site.get("target") if r["host"] else r["other"]}
+                return {"ok": False, "reason": "host" if r["host"] else "neighbour",
+                        "building": site.get("target") if r["host"] else r["other"]}
     return {"ok": True, "reason": None, "building": None}
 
 
@@ -189,7 +191,8 @@ def window_anchor(site: dict, face: dict, t: float, floor: int, az: float | None
                    "panes": list(panes) if panes else None, "floor": int(floor)},
         "north": {"facade_normal_deg": face["bearing"], "rotation_deg": round(az, 1),
                   "plan_up_bearing_deg": plan_up_bearing,
-                  "mismatch_deg": None if plan_up_bearing is None else round(abs((az - plan_up_bearing + 540) % 360 - 180), 1)},
+                  "mismatch_deg": None if plan_up_bearing is None
+                  else round(abs((az - plan_up_bearing + 540) % 360 - 180), 1)},
         "datum": {k: cal[k] for k in ("state", "ground_m", "slab_m", "eye_m", "estimated_slab_m", "delta_m",
                                        "floor_height_m", "estimated_floor_height_m", "estimated_floor_height_src",
                                        "measured")},
@@ -284,7 +287,8 @@ def _clip(ring: list[tuple[float, float]], ax: float, ay: float, limit: float) -
     return out
 
 
-def podium_tower(site: dict, index: int, podium_m: float, setback_m: float, out_deg: float, side_m: float = 0.0) -> list[dict]:
+def podium_tower(site: dict, index: int, podium_m: float, setback_m: float, out_deg: float,
+                 side_m: float = 0.0) -> list[dict]:
     """A podium under a tower, assumed for building ``index``.
 
     The podium is the whole footprint up to ``podium_m``. The tower is the footprint held back ``setback_m``
@@ -306,7 +310,8 @@ def podium_tower(site: dict, index: int, podium_m: float, setback_m: float, out_
         tower = _clip(tower, -r[0], -r[1], max(-r[0] * x - r[1] * y for x, y in tower) - side_m)
     if len(tower) < 3 or abs(ring_area(tower)) < 20:
         raise ValueError("that setback leaves no tower on the lot")
-    label = f"podium {podium_m:g} m, tower set back {setback_m:g} m" + (f" and {side_m:g} m at the sides" if side_m else "") + f" from the {out_deg:.0f}° facade"
+    sides = f" and {side_m:g} m at the sides" if side_m else ""
+    label = f"podium {podium_m:g} m, tower set back {setback_m:g} m{sides} from the {out_deg:.0f}° facade"
     base = {"source": ASSUMED_SOURCE + label, "confidence": "assumed"}
     return [{"ring": [list(p) for p in ring], "base_m": 0.0, "top_m": float(podium_m), "kind": "podium", **base},
             {"ring": [[round(x, 2), round(y, 2)] for x, y in tower], "base_m": float(podium_m), "top_m": round(roof, 2),

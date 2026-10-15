@@ -45,7 +45,8 @@ test('floors, facades and proposed buildings are scenarios too, at most four', (
   assert.ok(sky.some((v, i) => i && v !== sky[0]), 'a higher floor sees more sky');
   const faces = K.presetSpecs('facades', base, env);
   assert.ok(faces.length >= 2 && faces.length <= 4 && faces[0].face === base.face);
-  assert.deepEqual(K.presetSpecs('proposed', base, env), [{ future: false }, { future: true }]);
+  assert.deepEqual(K.presetSpecs('proposed', base, env).map((s) => [s.future, s.label]), [[false, 'Without proposed'], [true, 'With proposed']]);
+  assert.deepEqual(floors.map((s) => s.label), floors.map((s) => `Floor ${s.floor}`)); assert.match(faces[0].label, /^[A-Z]+ facade \d+°$/);
   assert.equal(K.normaliseSpec({ floor: 99 }, env), null); assert.equal(K.normaliseSpec({ date: '2026-13-40' }, env), null);
   assert.equal(K.normaliseSpec({ parts: 'assumed' }, envFor(false)), null, 'no assumed parts to compare against');
   assert.equal(K.normaliseSpec({ face: 99 }, env), null); assert.equal(K.normaliseSpec({ cal: { kind: 'slab', value: 9999, floor: 3 } }, env), null);

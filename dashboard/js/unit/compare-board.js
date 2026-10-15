@@ -19,7 +19,7 @@ const PRESETS = [['seasons2', 'Winter vs summer'], ['seasons4', 'Four seasons'],
 const STORE = 'as:compare-specs:';
 const last = new Map();   // site id -> {specs, results, receipt}: the latest board, for the project export
 const hm = (min) => { if (!min) return 'none'; const h = Math.floor(min / 60), m = Math.round(min % 60); return h && m ? `${h} h ${String(m).padStart(2, '0')}` : h ? `${h} h` : `${m} m`; };
-const sgn = (v, f = (x) => x) => (v > 0 ? '+' : v < 0 ? '−' : '±') + f(Math.abs(v));
+const sgn = (v, f = (x) => x) => (v === 0 ? 'no change' : (v > 0 ? '+' : '−') + f(Math.abs(v)));
 const timeVal = (m) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
 
 export const savedScenarios = (id) => { try { const v = JSON.parse(localStorage.getItem(STORE + id) || '[]'); return Array.isArray(v) ? v.slice(0, MAX_SCENARIOS) : []; } catch { return []; } };
@@ -41,15 +41,18 @@ export function openCompareBoard(ctx) {
   const enabled = { seasons2: 1, seasons4: 1, floors: 1, facades: openFaces.length > 1, proposed: hasFut, parts: hasParts };
   dlg.innerHTML = `<div class="cb-in">
     <header class="cb-h"><div><h2 id="cbTitle">Compare scenarios</h2><p class="cb-sub">${esc(ctx.title)} · one camera, identical assumptions except what you change</p></div><button type="button" class="icon-btn" id="cbX" aria-label="Close the comparison">×</button></header>
+    <div class="cb-cols"><div class="cb-side">
     <div class="cb-ctl">
       <div class="cb-presets" role="group" aria-label="Start from a comparison">${PRESETS.map(([k, t]) => `<button type="button" class="btn sm" data-preset="${k}"${enabled[k] ? '' : ` disabled title="${k === 'proposed' ? 'This site has no proposed buildings' : k === 'parts' ? 'Assume building parts first (Model ▸ Building parts)' : 'Needs more than one open facade'}"`}>${t}</button>`).join('')}</div>
       <div class="field cb-cam"><label for="cbCam">Camera</label><select id="cbCam"><option value="current">The orbit view you have now</option><option value="default">Three-quarter view of the window</option><option value="window">From each scenario’s window (same bearing, tilt, lens)</option></select></div>
     </div>
     <ol class="cb-rows" id="cbRows"></ol>
     <div class="cb-acts"><button type="button" class="btn sm" id="cbAdd">Add a scenario</button><span class="cb-msg" id="cbMsg" role="status" aria-live="polite"></span></div>
+    </div><div class="cb-main">
     <div class="cb-board"><canvas id="cbCv" role="img" aria-label="Scenarios side by side"></canvas><div class="cb-busy" id="cbBusy" hidden><span class="skeleton"></span>Rendering the scenarios…</div></div>
     <div class="cb-tablewrap" tabindex="0" role="region" aria-label="Metrics by scenario"><table class="mini cb-table" id="cbTable"></table></div>
     <p class="u-note" id="cbShared"></p>
+    </div></div>
     <footer class="cb-f"><button type="button" class="btn primary" id="cbPng">Export PNG</button><button type="button" class="btn" id="cbJson">Export receipt (JSON)</button><button type="button" class="btn ghost" id="cbClose">Close</button></footer>
     <div class="cb-hide" id="cbStageHost" aria-hidden="true"><canvas id="cbGl"></canvas><div id="cbLab"></div></div></div>`;
   document.body.appendChild(dlg);

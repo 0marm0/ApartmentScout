@@ -74,15 +74,15 @@ export function presetSpecs(kind, base, env) {
   if (kind === 'seasons4') return [{ date: `${y}-03-20` }, { date: `${y}-06-21` }, { date: `${y}-09-22` }, { date: `${y}-12-21` }];
   if (kind === 'floors') {
     const mf = env.maxFloor, want = [base.floor, Math.min(mf, base.floor + 6), Math.min(mf, base.floor + 14), Math.max(1, base.floor - 6)];
-    return [...new Set(want)].slice(0, 4).sort((a, b) => a - b).map((floor) => ({ floor }));
+    return [...new Set(want)].slice(0, 4).sort((a, b) => a - b).map((floor) => ({ floor, label: `Floor ${floor}` }));
   }
   if (kind === 'facades') {
     const open = env.faces.map((f, i) => [f, i]).filter(([f]) => !f.shared).sort((a, b) => b[0].length - a[0].length);
     const pick = [open.find(([, i]) => i === base.face), ...open.filter(([, i]) => i !== base.face)].filter(Boolean).slice(0, 4);
-    return pick.map(([, i]) => ({ face: i }));
+    return pick.map(([f, i]) => ({ face: i, label: `${compass(f.bearing)} facade ${Math.round(f.bearing)}°` }));
   }
-  if (kind === 'proposed') return [{ future: false }, { future: true }];
-  if (kind === 'parts') return [{ parts: 'source' }, { parts: 'assumed' }];
+  if (kind === 'proposed') return [{ future: false, label: 'Without proposed' }, { future: true, label: 'With proposed' }];
+  if (kind === 'parts') return [{ parts: 'source', label: 'Source geometry' }, { parts: 'assumed', label: 'Assumed building parts' }];
   return [];
 }
 
