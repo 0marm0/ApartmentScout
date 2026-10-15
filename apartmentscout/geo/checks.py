@@ -80,6 +80,16 @@ def site_checks(site: dict, face: dict | None = None) -> list[dict]:
                           "or points inward"))
         else:
             out.append(_c("outside", "pass", "open air 0.5-1.5 m outside the window"))
+        # height-aware: the air just outside the glass at the window's own height (podium roofs and courts are open air)
+        from .anchor import window_open_air
+        z0 = (w["floor"] - 1) * float(site.get("floor_height_m", 3.2))
+        air = window_open_air(site, face, t, z0 + 0.6, z0 + 2.2)
+        if air["ok"]:
+            out.append(_c("open-air", "pass", "open air 0.4-1.0 m outside the window at its height"))
+        else:
+            who = "the target itself" if air["reason"] == "host" else _label(site, air["building"])
+            out.append(_c("open-air", "fail", f"at the window's height the air just outside is inside {who}: the window is not "
+                          "in open air, so its sun and view numbers cannot be trusted"))
         fut = [f for f in site.get("future") or [] if f.get("ring")
                and point_in_poly(ax + nx * 1.0, ay + ny * 1.0, [tuple(p) for p in f["ring"]])]
         if fut:

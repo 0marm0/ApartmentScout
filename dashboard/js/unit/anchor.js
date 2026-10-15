@@ -51,9 +51,9 @@ export function buildAnchor({ site, siteId, B, T, face, t, az, floor, cal, panes
     frame: "site metres: x east, y north, origin at the geocoded address point; z up from the target's ground",
     origin: { lat: site.origin.lat, lon: site.origin.lon },
     host: { index: ti, name: meta.name || meta.address || null, model: T.parts ? 'components' : 'prism', parts: T.parts ? T.parts.length : 1, assumed_parts: !!T.parts?.some((q) => q.confidence === 'assumed'), height_m: r1(T.top - T.g), ground_m: r2(T.g) },
-    facade: { index: face.i, bearing_deg: face.bearing, length_m: face.length, shared: !!face.shared, clear: face.clearInterval ? [...face.clearInterval] : face.open ? [...face.open] : null, a: [r2(face.a[0]), r2(face.a[1])], b: [r2(face.b[0]), r2(face.b[1])] },
+    facade: { index: face.i, bearing_deg: r1(face.bearing), length_m: r1(face.length), shared: !!face.shared, clear: face.clearInterval ? [...face.clearInterval] : face.open ? [...face.open] : null, a: [r2(face.a[0]), r2(face.a[1])], b: [r2(face.b[0]), r2(face.b[1])] },
     window: { t: Math.round(t * 1000) / 1000, point_m: [r2(fx), r2(fy)], faces_deg: r1(az), panes: panes?.length ? panes.map(Number) : null, floor },
-    north: { facade_normal_deg: face.bearing, rotation_deg: r1(az), plan_up_bearing_deg: Number.isFinite(up) ? up : null, mismatch_deg: Number.isFinite(up) ? r1(Math.abs(angDiff(az, up))) : null },
+    north: { facade_normal_deg: r1(face.bearing), rotation_deg: r1(az), plan_up_bearing_deg: Number.isFinite(up) ? up : null, mismatch_deg: Number.isFinite(up) ? r1(Math.abs(angDiff(az, up))) : null },
     datum: (({ state, ground_m, slab_m, eye_m, estimated_slab_m, delta_m, floor_height_m, estimated_floor_height_m, measured }) => ({ state, ground_m, slab_m, eye_m, estimated_slab_m, delta_m, floor_height_m, estimated_floor_height_m, measured }))(describeCal(cal, floor)),
     air: { ok: air.ok, reason: air.reason, building: air.building, out_m: [0.4, 1.0] },
     sources, assumed, plan: null,
@@ -73,7 +73,7 @@ export function buildAnchor({ site, siteId, B, T, face, t, az, floor, cal, panes
 
 /** Sections for panels: [{title, rows: [{k, v, state: 'source' | 'measured' | 'assumed' | 'warn', hint?}]}]. */
 export function describeAnchor(rec) {
-  const st = (s) => (['assumed', 'inferred', 'estimated', 'unknown', 'manual'].includes(s) ? 'assumed' : s === 'measured' ? 'measured' : 'source');
+  const st = (s) => (['assumed', 'inferred', 'estimated', 'unknown'].includes(s) ? 'assumed' : s === 'manual' ? 'manual' : s === 'measured' ? 'measured' : 'source');
   const d = rec.datum, f = rec.facade, w = rec.window, n = rec.north;
   const sec = [
     { title: 'Origin', rows: [{ k: 'Site origin', v: `${rec.origin.lat.toFixed(5)}, ${rec.origin.lon.toFixed(5)} (geocoded address point)`, state: 'source' }, { k: 'Window point', v: `${w.point_m[0]} m E, ${w.point_m[1]} m N of the origin`, state: st(rec.sources.position), hint: 'where along the facade the unit sits is rarely published' }] },
