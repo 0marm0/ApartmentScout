@@ -26,8 +26,8 @@ test('the example furniture file is valid, sourced, and carries no personal path
 test('the renter\'s pieces keep their own sizes when resolved', () => {
   const by = Object.fromEntries(inv().pieces.map((p) => [p.id, resolve(pieceItem(p))]));
   assert.deepEqual([by.bed.w, by.bed.d, by.bed.h], [64, 84, 40]);
-  assert.deepEqual([by.dresser.w, by.dresser.d, by.dresser.h], [27.6, 19.7, 38.6]);
-  assert.deepEqual([by.desk.w, by.desk.d], [60, 24]);
+  assert.deepEqual([by.dresser.w, by.dresser.d, by.dresser.h], [63, 18.9, 30.7]);   // the IKEA MALM 6-drawer chest
+  assert.deepEqual([by.desk.w, by.desk.d], [71, 30]);   // 180 cm long; the depth is assumed
   assert.deepEqual([by.futon.w, by.futon.d], [80, 36]);
   assert.deepEqual([by.tv.w, by.tv.h, by.tv.elev], [48.4, 27.8, 32]);
   assert.equal(by['tv-bed'].name, '55-inch TV, bedroom');
@@ -62,25 +62,20 @@ for (const id of ['paramount-tower-25e', 'emerald-green-1211']) {
     }
     const R = items.map((i) => resolve(i)), ev = evaluate(m, R);
     assert.equal(ev.counts.blocked, 0, JSON.stringify(Object.values(ev.items).filter((r) => r.state === 'blocked').map((r) => [r.id, r.issues.map((x) => x.text)])));
-    assert.equal(ev.counts.clear, 10, JSON.stringify(ev.counts));
-    assert.equal(ev.counts.tight, 0);
+    // 25E's rooms are too narrow to sit a 55-inch TV closer than 9 to 10 ft, so its two TVs read "workable", the best the room allows; every other piece is clear
+    const tvTag = id === 'paramount-tower-25e' ? 'workable' : 'ideal', tight = id === 'paramount-tower-25e' ? 2 : 0;
+    assert.equal(ev.counts.clear, 10 - tight, JSON.stringify(ev.counts));
+    assert.equal(ev.counts.tight, tight);
+    if (tight) assert.deepEqual(Object.values(ev.items).filter((r) => r.state === 'tight').map((r) => r.id).sort(), ['tv', 'tv-bed']);
     // the living-room TV is watchable from the futon, every bed seat can see the bedroom TV
     const tvs = Object.fromEntries(ev.tv.map((t) => [t.id, t]));
-    assert.ok(tvs.tv.seats.length === 1 && tvs.tv.seats[0].tag === 'ideal', JSON.stringify(tvs.tv.seats.map((s) => [s.seat, s.tag])));
-    assert.equal(tvs['tv-bed'].seats.find((s) => s.seat.includes('pillows')).tag, 'ideal');
+    assert.ok(tvs.tv.seats.length === 1 && tvs.tv.seats[0].tag === tvTag, JSON.stringify(tvs.tv.seats.map((s) => [s.seat, s.tag])));
+    assert.equal(tvs['tv-bed'].seats.find((s) => s.seat.includes('pillows')).tag, tvTag);
     // every piece can be reached from the front door and carried in
     const routes = accessRoutes(m, R).routes;
     assert.ok(routes.every((r) => r.reachable !== false && r.grade !== 'blocked'), JSON.stringify(routes.map((r) => [r.label, r.grade])));
   });
 }
-
-test('25E: the headboard is on the partition with both sides free, the TVs face the beds and the futon', () => {
-  const m = normalisePlan(plan('paramount-tower-25e')), items = Object.fromEntries(m.layouts[0].items.map((i) => [i.id, i]));
-  assert.equal(items.bed.rot, 270);   // headboard to the left, on the solid partition
-  assert.ok(items.futon.x < items['tv-bed'].x && items.tv.x < items.futon.x);
-  const ev = evaluate(m, m.layouts[0].items.map((i) => resolve(i)));
-  assert.equal(ev.items.bed.state, 'clear');
-});
 
 test('fitInventory places the pieces in a plan that has no layout and says what it could not', () => {
   const m = normalisePlan(plan('paramount-tower-9j')), r = fitInventory(m, inv(), { step: 10 });

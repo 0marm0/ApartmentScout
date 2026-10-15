@@ -118,6 +118,7 @@ view you are on listed first. The same list, in full:
 | `↑` `↓` `Home` `End`, `←` `→` | Move between Shortlist rows, jump to the first or last, fold or unfold a building group | Shortlist |
 | `p`, `,` `.` | Play or pause the day; step the time 15 minutes | Unit 3D |
 | arrows, `+` `−`, `Home` `End` | Orbit or look around (Shift for a bigger step), zoom; jump along the day strip | Unit 3D |
+| `W` `S` / `↑` `↓`, `A` `D` / `← →`, `Q` `E`, `Shift` | Inside camera: walk, turn, sidestep, hurry (click the floor to walk there, drag to look, double-click a window to stand at it) | Unit 3D, Floor plan Walk |
 | `R` / `Shift R`, arrows, `D`, `Del`, `⌘Z` | Turn, nudge (1 in, Shift 6 in), duplicate, remove a furniture piece, undo and redo layout changes | Floor plan |
 | `W` `A` `S` `D` `Q` `E` | Walk and look in the eye-level camera (Shift runs) | Floor plan |
 | `←` `→` `Home` `End` | Move between the research tabs | Research |

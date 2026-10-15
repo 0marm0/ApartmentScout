@@ -232,12 +232,13 @@ export function normalisePlan(raw) {
   }).filter(Boolean);
 
   const layouts = (raw.layouts || []).map((l, i) => ({
-    id: cleanStr(l.id || `layout-${i + 1}`, 40), name: cleanStr(l.name || `Layout ${i + 1}`, 80), note: cleanStr(l.note || '', 240),
+    id: cleanStr(l.id || `layout-${i + 1}`, 40), name: cleanStr(l.name || `Layout ${i + 1}`, 80), note: cleanStr(l.note || '', 600),
+    ...(Array.isArray(l.replaces) ? { replaces: l.replaces.slice(0, 20).map((r) => (Array.isArray(r) ? r : []).filter((q) => q && typeof q.id === 'string' && num(+q.x) && num(+q.y)).map((q) => ({ id: q.id, x: +q.x * k, y: +q.y * k, rot: num(+q.rot) ? +q.rot : 0 }))) } : {}),   // [placement] positions an earlier default put each piece at
     items: (l.items || []).filter((it) => it && typeof it.ref === 'string' && num(+it.x) && num(+it.y)).map((it, j) => ({
       id: /^[A-Za-z0-9_-]{1,40}$/.test(it.id || '') ? it.id : `${it.ref}-${j + 1}`, ref: it.ref, x: +it.x * k, y: +it.y * k, rot: num(+it.rot) ? +it.rot : 0,
       ...(num(it.w) ? { w: it.w } : {}), ...(num(it.d) ? { d: it.d } : {}), ...(num(it.h) ? { h: it.h } : {}), ...(num(it.elev) && it.elev >= 0 ? { elev: it.elev } : {}),   // [furniture] a wall TV's own height off the floor
       ...(typeof it.product === 'string' && /^[a-z0-9][a-z0-9-]{0,63}$/.test(it.product) ? { product: it.product } : {}),
-      ...(typeof it.variant === 'string' ? { variant: it.variant } : {}), ...(typeof it.label === 'string' ? { label: cleanStr(it.label, 80) } : {}), ...(it.hidden ? { hidden: true } : {}),
+      ...(typeof it.variant === 'string' ? { variant: it.variant } : {}), ...(typeof it.label === 'string' ? { label: cleanStr(it.label, 80) } : {}), ...(it.hidden ? { hidden: true } : {}), ...(it.placed ? { placed: true } : {}),   // [placement] the renter put this piece there
     })),
   }));
 
