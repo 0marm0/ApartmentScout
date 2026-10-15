@@ -35,15 +35,20 @@ export function detentHeights(vh) {
 
 const nearestStop = (stops, v) => stops.reduce((bi, s, i) => (Math.abs(s - v) < Math.abs(stops[bi] - v) ? i : bi), 0);
 
-/** Where the sheet settles when a drag ends. `visible` = how much of it shows now, `v` = release velocity in px/ms (positive = moving
- *  up, i.e. showing more). A slow release goes to the nearest detent; a flick goes at least one detent in its direction, and a hard
- *  flick down from peek closes. Momentum is a projection 160 ms ahead, like a decelerating scroll. */
-export function snapDetent(visible, v, heights) {
+/** Where the sheet settles when a drag ends. `visible` = how much of it shows now, `v` = release velocity in px/ms (positive = moving up,
+ *  i.e. showing more), `from` = the detent it was at when the drag began (default: the nearest to where it is). A slow release goes to the
+ *  nearest detent, with a little momentum (a projection 160 ms ahead, like a decelerating scroll). A flick (0.7 px/ms or faster) goes exactly
+ *  one detent from where the drag began, in its direction, however hard it was: a hard flick down from peek closes, from half it stops at peek. */
+export function snapDetent(visible, v, heights, from = null) {
   const stops = [0, heights.peek, heights.half, heights.full];
-  const projected = visible + v * 160;
-  let to = nearestStop(stops, projected);
-  const cur = nearestStop(stops, visible);
-  if (Math.abs(v) >= 0.7) to = v > 0 ? Math.max(to, Math.min(cur + 1, 3)) : Math.min(to, Math.max(cur - 1, 0));
+  const near = nearestStop(stops, visible);
+  const start = from && SHEET_STOPS.includes(from) ? SHEET_STOPS.indexOf(from) : near;
+  let to = nearestStop(stops, visible + v * 160);
+  if (Math.abs(v) >= 0.7) {
+    const dir = Math.sign(v);
+    to = Math.max(0, Math.min(3, start + dir));
+    to = dir > 0 ? Math.max(to, near) : Math.min(to, near);   // never against the flick, whatever the starting detent was
+  }
   return SHEET_STOPS[to];
 }
 

@@ -16,9 +16,12 @@ test('detent heights: peek < half < full, full keeps the map edge, a short phone
 test('a slow release settles at the nearest detent, a flick goes one detent further', () => {
   assert.equal(N.snapDetent(H.half + 20, 0, H), 'half');
   assert.equal(N.snapDetent(H.half + 120, 0, H), 'full', 'past the midpoint of half and full');
-  assert.equal(N.snapDetent(H.half - 20, 0.8, H), 'full', 'a flick up from just under half skips to full');
-  assert.equal(N.snapDetent(H.full - 5, -0.9, H), 'half', 'a flick down from full stops at half, not at the bottom');
-  assert.equal(N.snapDetent(H.peek, -0.9, H), 'closed', 'a hard flick down from peek closes');
+  assert.equal(N.snapDetent(H.half - 20, 0.8, H, 'half'), 'full', 'a flick up from just under half goes one detent up');
+  assert.equal(N.snapDetent(H.full - 5, -0.9, H, 'full'), 'half', 'a flick down from full stops at half, not at the bottom');
+  assert.equal(N.snapDetent(H.half - 5, -6, H, 'half'), 'peek', 'however hard: one detent from where the drag began');
+  assert.equal(N.snapDetent(H.full - 5, -0.9, H), 'half', 'without a starting detent, from the nearest');
+  assert.equal(N.snapDetent(H.peek, -0.9, H, 'peek'), 'closed', 'a hard flick down from peek closes');
+  assert.equal(N.snapDetent(H.half + 30, 0.9, H, 'peek'), 'half', 'a flick up never lands below where the finger already is');
   assert.equal(N.snapDetent(H.peek - 30, 0, H), 'peek');
   assert.equal(N.snapDetent(H.peek * 0.4, 0, H), 'closed', 'dragged well below peek');
   assert.equal(N.snapDetent(H.peek * 0.4, 0.3, H), 'peek', 'the same drag with a little upward momentum comes back to peek');

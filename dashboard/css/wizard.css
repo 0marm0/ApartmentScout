@@ -261,7 +261,7 @@
   .wz-w { grid-template-columns: 96px minmax(0, 1fr) 38px; gap: 10px; }
   .wz-rate { grid-template-columns: minmax(0, 1fr) 28px; } .wz-rate .wz-stars { grid-column: 1 / 2; grid-row: 2; }
   .wz-rate .icon-btn { grid-column: 2; grid-row: 1; }
-  .wz-f { flex-wrap: wrap; padding: 12px 14px max(12px, env(safe-area-inset-bottom)); }
+  .wz-f { flex-wrap: wrap; padding: 12px 14px max(12px, var(--safe-b)); }
   .wz-fnote { display: none; }
   .wz-fseg { order: -1; width: 100%; margin: 0; justify-content: stretch; } .wz-fseg .btn { flex: 1; justify-content: center; }
   .wz-f > .btn { flex: 1; justify-content: center; }

@@ -56,7 +56,7 @@
 .trail-ask p span { font-size: var(--fs-xs); color: var(--ink-3-glass); }
 .trail-ask input { width: 100%; height: 40px; padding: 0 12px; border-radius: var(--r-md); border: 1px solid var(--line-strong); background: var(--surface-1); color: var(--ink); font-size: 16px; }
 .tk-b { display: flex; gap: 6px; }
-@media (max-width: 760px) { .trail-ask { bottom: calc(76px + env(safe-area-inset-bottom)); grid-template-columns: 1fr; } .tk-b { justify-content: flex-end; } }
+@media (max-width: 760px) { .trail-ask { bottom: calc(76px + var(--safe-b)); grid-template-columns: 1fr; } .tk-b { justify-content: flex-end; } }
 
 /* the Tours card */
 .vf-tc { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 2px 0 4px; }
@@ -67,7 +67,7 @@
 .vs-scrim { position: absolute; inset: 0; background: rgba(0, 0, 0, .5); }
 .vs-panel { position: relative; overflow: clip; width: min(560px, 100%); height: 100%; display: flex; flex-direction: column; background: var(--surface-1); border-left: 1px solid var(--line-strong); box-shadow: var(--shadow-3); transform: translateX(24px); transition: transform var(--t-slow) var(--ease-out); }
 .vs.on .vs-panel { transform: none; }
-.vs-h { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: max(14px, env(safe-area-inset-top)) 14px 6px 18px; }
+.vs-h { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: max(14px, var(--safe-t)) 14px 6px 18px; }
 .vs-k { font-size: var(--fs-2xs); font-weight: 600; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--ink-3); }
 .vs-h h2 { margin: 2px 0 0; font-size: var(--fs-xl); font-weight: 650; letter-spacing: var(--tracking-tight); line-height: 1.2; outline: none; overflow-wrap: anywhere; }
 .vs-sub { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; margin: 6px 0 0; font-size: var(--fs-xs); color: var(--ink-3); }
@@ -156,7 +156,7 @@
 .vs-ph .vs-rm { position: absolute; top: 4px; right: 4px; width: 36px; height: 36px; background: rgba(0, 0, 0, .55); color: #fff; }
 .vs-ph .vs-rm:hover { background: var(--bad); color: #fff; }
 /* the bar under the thumb */
-.vs-bar { display: flex; align-items: center; gap: 8px; padding: 10px 14px max(12px, env(safe-area-inset-bottom)) 18px; border-top: 1px solid var(--line-strong); background: var(--surface-1); }
+.vs-bar { display: flex; align-items: center; gap: 8px; padding: 10px 14px max(12px, var(--safe-b)) 18px; border-top: 1px solid var(--line-strong); background: var(--surface-1); }
 .vs-prog { flex: 1; min-width: 0; font-size: var(--fs-xs); color: var(--ink-3); }
 .vs-prog b { color: var(--ink); font-size: var(--fs-md); }
 .vs-cam { width: 52px; height: 48px; padding: 0; justify-content: center; cursor: pointer; }
@@ -164,7 +164,7 @@
 .vs-cam svg { width: 20px; height: 20px; }
 .vs-done { min-width: 92px; height: 48px; justify-content: center; font-size: var(--fs-md); }
 html.vs-open { overflow: hidden; }
-html.vs-open .toast { bottom: calc(88px + env(safe-area-inset-bottom)); }
+html.vs-open .toast { bottom: calc(88px + var(--safe-b)); }
 @media (max-width: 720px) {
   .vs-scrim { display: none; }
   .vs-panel { width: 100%; border-left: 0; transform: translateY(18px); }

@@ -58,7 +58,7 @@ body.am-open .topbar { z-index: 66; }   /* the menu lives in the top bar's stack
 @media (max-width: 760px) {
   .am-scrim:not([hidden]) { display: block; position: fixed; inset: 0; z-index: 59; background: rgba(0, 0, 0, .46); animation: amFade var(--t-base) var(--ease-out); }
   .app-menu, .app-menu[data-from="pill"] { position: fixed; z-index: 60; left: 0; right: 0; top: auto; bottom: 0; width: auto; border-radius: var(--r-xl) var(--r-xl) 0 0; border-bottom: 0;
-    max-height: min(84vh, 760px); max-height: min(84dvh, 760px); padding-bottom: env(safe-area-inset-bottom, 0px); transform-origin: 50% 100%; animation: amUp var(--t-page) var(--ease-out); }
+    max-height: min(84vh, 760px); max-height: min(84dvh, 760px); padding-bottom: var(--safe-b); transform-origin: 50% 100%; animation: amUp var(--t-page) var(--ease-out); }
   .am-grab { display: block; flex: none; width: 36px; height: 4px; margin: 8px auto 2px; border-radius: 2px; background: var(--line-strong); }
   .am-body { padding: 2px 10px 14px; }
   .app-menu button[role="menuitem"] { height: 44px; }
