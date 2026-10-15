@@ -16,6 +16,8 @@
 // bloom. It does not trace light bounces, so a sunlit floor does not light the ceiling, and glass shows no reflections.
 import * as THREE from 'three';
 import { halton, sunDisc } from '../features/render-quality.js';
+import { photoSize, maxPhotoPx } from './encode.js';
+export { photoSize, maxPhotoPx };   // (pure, in encode.js, so node tests read them)
 
 const NEEDED = ['EffectComposer', 'GTAOPass', 'UnrealBloomPass', 'OutputPass', 'BokehPass', 'Pass'];
 let addonsP = null;
@@ -178,18 +180,6 @@ export function prepareLights(host, { skyShadows = true, share = LOOK.skyShare, 
   return L;
 }
 
-/** Largest render size (long side, pixels) this device should attempt: the GPU's texture limit and a memory-friendly cap, lower on a phone. */
-export function maxPhotoPx(renderer, phone) {
-  const tex = renderer?.capabilities?.maxTextureSize || 4096;
-  return Math.min(tex, phone ? 1920 : 3840);
-}
-/** The size of a photo: `scale` times the view, the long side within [min, cap], the aspect kept. */
-export function photoSize(view, scale, cap, min = 960) {
-  const k0 = scale, long = Math.max(view.w, view.h);
-  const k = Math.min(k0, cap / long), kk = Math.max(k, Math.min(1, min / long));
-  return { w: Math.max(2, Math.round(view.w * kk)), h: Math.max(2, Math.round(view.h * kk)) };
-}
-
 /**
  * Render a photo of the host's current view.
  * @param {object} host
@@ -202,12 +192,12 @@ export async function renderPhoto(host, o) {
   let W = Math.round(o.width), H = Math.round(o.height);
   const r = host.renderer, cam = host.camera(), t0 = performance.now(), budget = seconds * 1000;
   const gl = r.getContext();
-  host.begin?.({ boost: bloom });
-  const lights = prepareLights(host, { skyShadows, share: host.look?.skyShare ?? LOOK.skyShare, sunRadius: host.look?.sunRadius ?? LOOK.sunRadius });
-  lights.capture();
   const view0 = cam.view ? { ...cam.view } : null, exposure0 = r.toneMappingExposure;
-  let pipe = null;
+  let pipe = null, lights = null;
+  host.begin?.({ boost: bloom });
   try {
+    lights = prepareLights(host, { skyShadows, share: host.look?.skyShare ?? LOOK.skyShare, sunRadius: host.look?.sunRadius ?? LOOK.sunRadius });
+    lights.capture();
     onProgress?.({ samples: 0, fraction: 0, text: 'Preparing the render…' });
     r.toneMappingExposure = exposure0 * (host.look?.exposure ?? LOOK.exposure);
     host.setAspect(W / H);
@@ -246,7 +236,7 @@ export async function renderPhoto(host, o) {
     return { canvas, samples: i, ms: Math.round(performance.now() - t0), width: W, height: H, aborted: !!signal?.aborted };
   } finally {
     if (view0) cam.setViewOffset(view0.fullWidth, view0.fullHeight, view0.offsetX, view0.offsetY, view0.width, view0.height); else cam.clearViewOffset();
-    pipe?.dispose(); lights.restore(); r.setRenderTarget(null); r.toneMappingExposure = exposure0;
+    pipe?.dispose(); lights?.restore(); r.setRenderTarget(null); r.toneMappingExposure = exposure0;
     host.end?.();
   }
 }

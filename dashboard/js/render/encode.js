@@ -37,6 +37,17 @@ export function videoSize(height = 1080, { portrait = false, maxPx = 4096 } = {}
   return portrait ? { w: short, h: long } : { w: long, h: short };
 }
 
+/** Largest render size (long side, pixels) this device should attempt: the GPU's texture limit and a memory-friendly cap, lower on a phone. */
+export function maxPhotoPx(renderer, phone) {
+  const tex = renderer?.capabilities?.maxTextureSize || 4096;
+  return Math.min(tex, phone ? 1920 : 3840);
+}
+/** The size of a photo: `scale` times the view, the long side within [min, cap], the aspect kept. */
+export function photoSize(view, scale, cap, min = 960) {
+  const long = Math.max(view.w, view.h), k = Math.min(scale, cap / long), kk = Math.max(k, Math.min(min / long, cap / long));
+  return { w: Math.max(2, Math.round(view.w * kk)), h: Math.max(2, Math.round(view.h * kk)) };
+}
+
 /** A safe file name from parts: lower case, letters digits and dashes. */
 export const slug = (...parts) => parts.filter((p) => p !== null && p !== undefined && p !== '').map((p) => String(p).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')).filter(Boolean).join('-');
 /** A file name for a render: `<slug>.<ext>`. */

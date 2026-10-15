@@ -68,7 +68,7 @@ export async function recordVideo(host, o) {
         lights.revert(); o.setFrame(i); lights.capture();
         pipe.restart();
         for (let s = 0; s < S; s++) {
-          const k = i * S + s;
+          const k = s;   // the same jitter every frame: a pattern that holds still on the walls, not a shimmer
           cam.setViewOffset(W, H, halton(k, 2) - 0.5, halton(k, 3) - 0.5, W, H);
           lights.jitter(k); host.pose(); pipe.frame();
         }
