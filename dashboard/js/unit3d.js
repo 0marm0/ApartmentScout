@@ -41,7 +41,8 @@ import { setLookChips, bindLookChips } from './plan/look-ui.js';
 import { askedCamera, cameraParam, openingCamera, mainViewpoint, takeSeeInside, CAMERA_KEY, SAVED_CAMERAS } from './unit/camera-pref.js';   // [camera] which camera a home opens in: Inside when it has a plan
 import { resolve as resolveItem } from './plan/catalog.js';
 import { loadInventoryFile } from './plan/inventory.js';   // [furniture] the renter's pieces: colour, material and finish
-import { resolveLayout, applyInventory, savedLayoutFor } from './plan/placement.js';   // [placement] the same rule for where each piece stands as the Floor plan studio
+import { resolveLayout, applyInventory, savedLayoutFor } from './plan/placement.js';
+import { createWalk, WALK_KEYS } from './unit/walk.js';   // [walk] click the floor to walk, drag to look, W S A D, go to the window   // [placement] the same rule for where each piece stands as the Floor plan studio
 import { stepView } from './plan/viewpoints.js';
 import { heightProvenance, confOf } from './city3d/facade-rules.js';   // [buildings3d] height source and confidence labels
 import { loadTreeLayers, saveTreeLayers, STREET_TREES_TITLE, PARK_TREES_TITLE } from './unit/treelayers.js';   // [park trees] street / park tree toggles, remembered per browser
@@ -204,7 +205,7 @@ export function init() {
   matchUI = createMatch(matchBridge());   // [photo match]
   $('uMatch').addEventListener('click', () => matchUI.open());
   // read-only hook for headless checks (Playwright): never used by the page itself
-  window.__unit3d = { st, get views() { return views; }, get curView() { return curView; }, get cam() { return stage?.winCam; }, get cal() { return CAL; }, get plan() { return plan; }, get planInfo() { return planInfo; }, get B() { return B; }, get faces() { return FACES; }, get sun() { return curSun; }, get hit() { return curHit; }, get blockers() { return blkRows; }, get neighbours() { return NBR.length; }, get interior() { return !!stage?.interior; }, get stage() { return stage; }, get match() { return matchUI; }, get viewCal() { return viewCal; }, winPos: (f) => winPos(f) };
+  window.__unit3d = { st, get views() { return views; }, get curView() { return curView; }, get cam() { return stage?.winCam; }, get cal() { return CAL; }, get plan() { return plan; }, get planInfo() { return planInfo; }, get B() { return B; }, get faces() { return FACES; }, get sun() { return curSun; }, get hit() { return curHit; }, get blockers() { return blkRows; }, get neighbours() { return NBR.length; }, get interior() { return !!stage?.interior; }, get stage() { return stage; }, get walk() { return walk; }, get match() { return matchUI; }, get viewCal() { return viewCal; }, winPos: (f) => winPos(f) };
 }
 
 export async function show(id) {
@@ -519,28 +520,48 @@ function wireStage() {
   $('ifPanel').addEventListener('click', (e) => { const x = e.target.closest('[data-unedit]'); if (x) { setEdit(+x.dataset.unedit, null, true); ifPanel(true); syncUrl(); } if (e.target.closest('#uIfReset')) { resetEdits(); syncUrl(); } });
   $('sunPanel').addEventListener('click', (e) => { if (e.target.closest('#uSamples')) samplesCSV(); });
   // click to inspect a building; drag to look around in window and inside modes
-  const cv = $('gl'); let down = null;
+  const cv = $('gl'); let down = null, pickT = 0;
   const looking = () => st.mode === 'win' || st.mode === 'in';
-  cv.addEventListener('pointerdown', (e) => { down = { x: e.clientX, y: e.clientY, yaw: stage.look.yaw, pitch: stage.look.pitch, id: e.pointerId }; if (looking()) cv.setPointerCapture(e.pointerId); });
+  cv.addEventListener('pointerdown', (e) => { down = { x: e.clientX, y: e.clientY, px: e.clientX, py: e.clientY, yaw: stage.look.yaw, pitch: stage.look.pitch, id: e.pointerId }; if (looking()) cv.setPointerCapture(e.pointerId); });
   cv.addEventListener('pointermove', (e) => {
+    if (st.mode === 'in' && walk && !(e.buttons & 1) && e.pointerType === 'mouse') { walk.hover(e.clientX, e.clientY); return; }   // [walk] where a click will take you
     if (!down || !looking() || !(e.buttons & 1)) return;
+    if (st.mode === 'in' && walk) {   // [walk] drag to look around in any direction
+      if (Math.hypot(e.clientX - down.x, e.clientY - down.y) >= 5 || down.looked) { down.looked = true; walk.drag(e.clientX - down.px, e.clientY - down.py); if (curView?.kind !== 'walk') markWalking(); }
+      down.px = e.clientX; down.py = e.clientY; return;
+    }
     const k = 70 / (cv.clientHeight || 500) * (stage.look.fov / 70);
     setLook(stage.look.fov, down.yaw - (e.clientX - down.x) * k, down.pitch + (e.clientY - down.y) * k);
   });
   cv.addEventListener('pointerup', (e) => {
     if (down && Math.hypot(e.clientX - down.x, e.clientY - down.y) < 5) {
       if (matchUI?.isPicking() && matchUI.pickIn(e.clientX, e.clientY)) { down = null; return; }   // [photo match] a click names the landmark a pin stands for
-      const bi = stage.pick(e.clientX, e.clientY); bi == null ? closeCard() : openCard(bi);
+      if (st.mode === 'in' && walk ) { const at = walk.floorAt(e.clientX, e.clientY); if (at && walk.goTo(at)) { markWalking(); closeCard(); down = null; return; } }   // [walk] a click on the floor walks there
+      const bi = stage.pick(e.clientX, e.clientY), show = () => (bi == null ? closeCard() : openCard(bi));
+      clearTimeout(pickT);
+      if (st.mode === 'in' && walk && walk.windowAt(e.clientX, e.clientY) >= 0) pickT = setTimeout(show, 320);   // [walk] a click on glass waits a moment: a second click is "stand at this window", not a building card over the glass
+      else show();
     }
     down = null;
   });
   cv.addEventListener('keydown', onStageKey);
+  cv.addEventListener('dblclick', (e) => { clearTimeout(pickT); if (st.mode !== 'in' || !walk) return; const g = walk.windowAt(e.clientX, e.clientY); if (g >= 0) goToWindow(g); });   // [walk] double-click a window: stand at it
+  cv.addEventListener('pointerleave', () => { if (st.mode === 'in' && walk && !walk.walking()) walk.showMarker(null); });
+  addEventListener('keyup', (e) => { walk?.hold(e.key, false); });
+  addEventListener('blur', () => walk?.release());
   addEventListener('keydown', (e) => {
     if ($('view-unit').hidden || !site) return;
     const tag = e.target.tagName;
     if (e.key === 'Escape' && !$('uCard').hidden) { closeCard(); return; }
     if (['INPUT', 'TEXTAREA', 'SELECT'].includes(tag) || e.metaKey || e.ctrlKey || e.altKey) return;
     if (st.mode === 'in' && (e.key === '[' || e.key === ']')) { stepLook(e.key === ']' ? 1 : -1); e.preventDefault(); return; }   // [interior] next / previous room
+    if (st.mode === 'in' && walk && (WALK_KEYS.includes(e.key.toLowerCase()) || e.key === 'Shift')) {   // [walk] W S ↑ ↓ walk, A D ← → turn, Q E sidestep, Shift hurries
+      if (e.key === 'Shift') { walk.hold('shift', true); return; }
+      walk.hold('shift', e.shiftKey); walk.hold(e.key, true); if (walk.walking()) walk.stop();
+      if (curView?.kind !== 'walk') markWalking();
+      e.preventDefault(); return;
+    }
+    if (st.mode === 'in' && walk && e.key === 'Escape' && walk.walking()) { walk.stop(); return; }
     if (e.key === 'p') { togglePlay(); e.preventDefault(); }
     else if (e.key === ',' || e.key === '.') { setTime(st.min + (e.key === '.' ? 15 : -15)); e.preventDefault(); }
   });
@@ -569,6 +590,7 @@ function aimAt(bi) {
 }
 function onStageKey(e) {
   const k = e.key, step = e.shiftKey ? 15 : 5;
+  if (st.mode === 'in' && walk && WALK_KEYS.includes(k.toLowerCase())) return;   // [walk] the window-level handler walks
   if (st.mode === 'win' || st.mode === 'in') {
     const L = stage.look;
     if (k === 'ArrowLeft') setLook(L.fov, L.yaw - step, L.pitch); else if (k === 'ArrowRight') setLook(L.fov, L.yaw + step, L.pitch);
@@ -628,6 +650,7 @@ function revealStage() {
 function setMode(m, quiet = false) {
   if (!hasWindow() && (m === 'win' || m === 'in')) m = 'orbit';
   if (m === 'in' && !interior) buildApartment();
+  if (m !== 'in' && walk) { walk.stop(); walk.release(); walk.showMarker(null); }   // [walk]
   st.mode = m; stage.setMode(m); matchUI?.onMode(m);
   $('uModes').querySelectorAll('[data-mode]').forEach((b) => { b.disabled = !hasWindow() && (b.dataset.mode === 'win' || b.dataset.mode === 'in'); b.classList.toggle('on', b.dataset.mode === m); b.setAttribute('aria-pressed', String(b.dataset.mode === m)); });
   $('uLens').hidden = m !== 'win' && m !== 'in'; $('stage').dataset.mode = m; if ($('uLook')) $('uLook').hidden = m !== 'in' || !views.length;
@@ -673,6 +696,7 @@ function buildApartment() {
   // [interior] the rooms, bays, corners and seats to stand at, as chips over the view (and the dropdown on a phone)
   const model = plan || genericPlan(), R = (planInfo.layout?.items?.length && st.showFurniture !== false ? planInfo.layout.items : []).map((x) => resolveItem(x)).filter(Boolean);
   views = insideViews(model, R, interior.frame);
+  walk = plan ? createWalk({ stage, plan: model, items: R, frame: interior.frame, onChange: () => { syncLens(); }, onArrive: () => { markWalking(); } }) : null; stage.walker = walk;   // [walk]
   const keep = views.find((v) => v.key === curView?.key);
   curView = keep || (st.inWin >= 0 ? viewForWindow(views, st.inWin) : mainViewpoint(views)) || viewForWindow(views, st.inWin);   // [camera] no window named: the sofa, looking out
   if (curView?.win != null) st.inWin = curView.win;
@@ -680,8 +704,21 @@ function buildApartment() {
   lookChips();
   syncTools();
 }
-let views = [], curView = null;
-const curOff = () => (curView ? curView.off : interior?.windows[st.inWin]?.bearingOff || 0);
+let views = [], curView = null, walk = null;
+const curOff = () => (curView?.kind === 'walk' && stage?.inEye ? stage.inEye.off : curView ? curView.off : interior?.windows[st.inWin]?.bearingOff || 0);
+/** [walk] The camera is wherever the renter walked to: no seat or window chip is current, and the HUD names the room they are in. */
+function markWalking() {
+  if (!walk || !stage?.inEye) return;
+  const room = walk.roomAt(walk.pos());
+  curView = { key: 'walk', label: room ? `walking in the ${room.toLowerCase()}` : 'walking', kind: 'walk', room, off: stage.inEye.off, win: st.inWin };
+  lookChips(); hud(curSun, hudState()); syncUrlSoon();
+}
+/** [walk] One click to stand at the nearest window and look out of it (or at window group `group`). */
+function goToWindow(group = null) {
+  if (!walk || st.mode !== 'in') return;
+  if (!walk.goToWindow(group)) { toast('No clear floor to stand at that window'); return; }
+  markWalking();
+}
 // [room3d] the studio's glass, blinds and relative-daylight map in the Inside camera: the same saved Light-tab inputs, the same model, drawn on this room's floor
 let dlOn = false, dlGroup = null;
 const roomLight = () => savedLighting(store, S.base, st.id);
@@ -708,6 +745,7 @@ function setDaylightMap(on) {
 function onInsideAct(e) {
   const b = e.target.closest('[data-act]'); if (!b) return;
   if (b.dataset.act === 'dl' && e.type === 'click') setDaylightMap(!dlOn);
+  if (b.dataset.act === 'to-window' && e.type === 'click') goToWindow();   // [walk]
   if (b.dataset.act === 'blinds' && e.type === 'change') {
     let raw = null; try { raw = store.get(`plan-light.${S.base}.${st.id}`, null); } catch { raw = null; }
     try { store.set(`plan-light.${S.base}.${st.id}`, { ...(raw && typeof raw === 'object' ? raw : {}), blinds: blindsOf(b.value) }); } catch { /* storage unavailable: it lasts for this view */ }
@@ -717,7 +755,7 @@ function onInsideAct(e) {
 function lookChips() {
   const el = $('uLook'); if (!el) return;
   const ex = insideExtra();
-  const any = setLookChips(el, views, curView?.key, { extra: ex.html, extraKey: ex.key });
+  const any = setLookChips(el, views, curView?.key, { extra: ex.html, extraKey: ex.key, walk: !!walk });
   el.hidden = !any || st.mode !== 'in';
   const on = el.querySelector('.lk-chip.on'); if (on && el.scrollWidth > el.clientWidth + 2) el.scrollLeft = Math.max(0, on.offsetLeft - 24);   // a phone's row scrolls to the active chip
   const sel = $('uInWin'), sig = views.map((v) => v.key).join('|');
@@ -727,6 +765,7 @@ function lookChips() {
 /** Stand at a viewpoint (a chip, the dropdown, the arrow keys): the camera glides there, the state follows. */
 function goView(key, o = {}) {
   const v = views.find((q) => q.key === key); if (!v || !stage) return;
+  walk?.stop(); walk?.release();   // [walk]
   const room = curView?.room !== v.room;
   curView = v; if (v.win != null) st.inWin = v.win;
   stage.setInteriorView(v, { animate: o.animate !== false && st.mode === 'in', open: room, onEnd: () => { syncLens(); hud(curSun, hudState()); } });
@@ -957,7 +996,7 @@ function hud(s, state) {
   const tag = { night: ['Night', 'shade'], behind: ['Sun behind the window', 'shade'], lit: ['Direct sun on the window', 'lit'], side: ['Sun through a side pane', 'lit'], shade: ['Window in shadow', 'shade'] }[state];
   const blk = state === 'shade' && curHit ? bname(curHit.bi, true) : '';
   const inside = st.mode === 'in' && interior ? `<span class="u-hud-x">Inside · ${esc(interior.generic ? 'generic room, no floor plan' : plan?.title || 'floor plan')}${curView ? ' · ' + esc(curView.kind === 'seat' ? `from the ${curView.label.toLowerCase()}` : curView.label) : interior.windows[st.inWin] ? ' · ' + esc(interior.windows[st.inWin].room) : ''}</span>` : '';
-  $('hud').innerHTML = `<span class="${tag[1]}">${tag[0]}${blk ? ` · ${esc(blk)}` : ''}</span><span>Sun ${Math.round(s.az)}° ${compass(s.az)} · ${s.alt > 0 ? Math.round(s.alt) + '° up' : 'below horizon'}</span><span class="u-hud-x">Floor ${st.floor} · faces ${Math.round(st.az)}° ${compass(st.az)}</span>${inside}${st.mode === 'win' ? '<span class="u-hud-x">Drag to look around</span>' : st.mode === 'in' ? '<span class="u-hud-x">Drag to look around · ← → on a room, or [ ] to switch</span>' : ''}`;
+  $('hud').innerHTML = `<span class="${tag[1]}">${tag[0]}${blk ? ` · ${esc(blk)}` : ''}</span><span>Sun ${Math.round(s.az)}° ${compass(s.az)} · ${s.alt > 0 ? Math.round(s.alt) + '° up' : 'below horizon'}</span><span class="u-hud-x">Floor ${st.floor} · faces ${Math.round(st.az)}° ${compass(st.az)}</span>${inside}${st.mode === 'win' ? '<span class="u-hud-x">Drag to look around</span>' : st.mode === 'in' ? `<span class="u-hud-x">${walk ? 'Click the floor to walk · drag to look · W S ↑ ↓ to walk · [ ] to switch rooms' : 'Drag to look around · ← → on a room, or [ ] to switch'}</span>` : ''}`;
 }
 /** A short name for building bi: landmark name, footprint name, address, or "a 61 m building". */
 function bname(bi, short = false) {

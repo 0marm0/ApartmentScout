@@ -6,12 +6,12 @@ import { esc } from '../util.js';
 const WINDOW_KINDS = ['room', 'bay', 'corner'];
 
 /** The chips as HTML. `views` = viewpoints (plan/viewpoints.js), `current` = the active key or null. */
-export function lookChipsHTML(views, current, { label = 'Look out of the window', extra = '' } = {}) {
+export function lookChipsHTML(views, current, { label = 'Look out of the window', extra = '', walk = false } = {}) {
   const win = views.filter((v) => WINDOW_KINDS.includes(v.kind)), seat = views.filter((v) => v.kind === 'seat'), back = views.filter((v) => v.kind === 'inward');
   if (!win.length && !seat.length) return '';
   const first = views[0];
   const chip = (v) => `<button type="button" role="radio" class="lk-chip${v.key === current ? ' on' : ''}${v.kind === 'bay' || v.kind === 'corner' ? ' wide' : ''}" data-vp="${esc(v.key)}" aria-checked="${v.key === current}" tabindex="${v.key === current || (!current && v === first) ? 0 : -1}" title="${esc(v.kind === 'seat' ? `Look out of the window from the ${v.label.toLowerCase()}` : v.kind === 'inward' ? 'Stand at the window and look back into the apartment' : `Stand at the ${v.room ? v.room.toLowerCase() + ' ' : ''}window${v.kind === 'room' ? '' : ` (${v.kind})`}`)}">${esc(v.label)}</button>`;
-  return `${win.length ? `<div class="lk-grp" role="radiogroup" aria-label="${esc(label)}"><span class="lk-h">Look out of</span>${win.map(chip).join('')}</div>` : ''}${seat.length ? `<div class="lk-grp" role="radiogroup" aria-label="Look out from a seat"><span class="lk-h">From the</span>${seat.map(chip).join('')}</div>` : ''}${back.length ? `<div class="lk-grp" role="radiogroup" aria-label="Look back into the room">${back.map(chip).join('')}</div>` : ''}<span class="lk-keys" aria-hidden="true">← → to switch</span>${extra ? `<div class="lk-grp lk-extra">${extra}</div>` : ''}`;   // [room3d] extra: the studio's sun-today group
+  return `${win.length ? `<div class="lk-grp" role="radiogroup" aria-label="${esc(label)}"><span class="lk-h">Look out of</span>${win.map(chip).join('')}</div>` : ''}${seat.length ? `<div class="lk-grp" role="radiogroup" aria-label="Look out from a seat"><span class="lk-h">From the</span>${seat.map(chip).join('')}</div>` : ''}${back.length ? `<div class="lk-grp" role="radiogroup" aria-label="Look back into the room">${back.map(chip).join('')}</div>` : ''}${walk ? `<div class="lk-grp lk-walk"><span class="lk-h">Walk</span><button type="button" class="lk-act" data-act="to-window" title="Walk to the nearest window and look out of it (double-click a window does the same)">Go to the window</button><span class="lk-keys">or click the floor</span></div>` : ''}<span class="lk-keys" aria-hidden="true">← → to switch</span>${extra ? `<div class="lk-grp lk-extra">${extra}</div>` : ''}`;   // [room3d] extra: the studio's sun-today group
 }
 
 /**
@@ -19,7 +19,7 @@ export function lookChipsHTML(views, current, { label = 'Look out of the window'
  * keyboard focus stays where it is while the arrow keys step through the views.
  */
 export function setLookChips(host, views, current, opts) {
-  const sig = views.map((v) => `${v.key}:${v.label}`).join('|') + '#' + (opts?.extraKey || '');
+  const sig = views.map((v) => `${v.key}:${v.label}`).join('|') + '#' + (opts?.extraKey || '') + (opts?.walk ? '#walk' : '');
   if (host.dataset.sig !== sig) {
     const had = host.contains(document.activeElement), keep = document.activeElement?.dataset?.vp;
     host.innerHTML = lookChipsHTML(views, current, opts); host.dataset.sig = sig;

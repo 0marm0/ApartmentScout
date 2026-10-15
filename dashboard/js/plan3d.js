@@ -53,6 +53,7 @@ import { mountSelbar } from './plan/selbar.js';   // [furniture] the floating to
 import { resolveLayout, applyInventory, savedLayoutFor, samePlaces } from './plan/placement.js';   // [placement] one rule for where the pieces stand, shared with Unit 3D
 import { allViews, stepView, windowGroups } from './plan/viewpoints.js';   // [interior] where to stand to look out of the windows
 import { setLookChips, bindLookChips } from './plan/look-ui.js';
+import { EYE_IN, nearestWindow, windowStands, windowHit, groupOfWindow } from './plan/walkcore.js';   // [walk] click to walk, go to the window
 
 const st = {
   id: null, date: '', min: 720, playing: false, site: null, mode: 'both', view: 'bird', wall: 'cut', tab: 'furniture',
@@ -148,7 +149,7 @@ export function init() {
           </div>
           <div class="ps-pane canvas-stage" id="pstage">
             <canvas id="pgl" aria-label="3D model of the apartment"></canvas>
-            <div class="float ps-cams" id="psCams" role="group" aria-label="Camera">${[['bird', 'Bird’s eye'], ['top', 'Top'], ['bed', 'From bed'], ['sofa', 'From sofa'], ['door', 'From door'], ['walk', 'Walk']].map(([k, t]) => `<button type="button" data-v="${k}">${t}</button>`).join('')}</div>
+            <div class="float ps-cams" id="psCams" role="group" aria-label="Camera">${[['bird', 'Bird’s eye'], ['top', 'Top'], ['bed', 'From bed'], ['sofa', 'From sofa'], ['door', 'From door'], ['walk', 'Walk'], ['window', 'To window']].map(([k, t]) => `<button type="button" data-v="${k}">${t}</button>`).join('')}</div>
             <div class="float ps-walls" id="psWalls" role="group" aria-label="Walls">${[['cut', 'Cut'], ['full', 'Full'], ['outline', 'Outline']].map(([k, t]) => `<button type="button" data-w="${k}">${t}</button>`).join('')}</div>
             <div class="float ps-look" id="psLook" role="toolbar" aria-label="Look out of the windows" hidden></div>
             <div class="hud" id="phud"></div>
@@ -491,7 +492,7 @@ function bindChrome() {
   $('psCams').addEventListener('click', (e) => { const b = e.target.closest('[data-v]'); if (b) camera(b.dataset.v); });
   $('psWalls').addEventListener('click', (e) => { const b = e.target.closest('[data-w]'); if (b) setWall(b.dataset.w); });
   bindLookChips($('psLook'), { pick: lookAt, order: () => viewsNow().map((v) => v.key) });   // [interior]
-  $('psLook').addEventListener('click', (e) => { if (e.target.closest('[data-act="unit-sun"]')) openInUnit(); });   // [room3d]
+  $('psLook').addEventListener('click', (e) => { if (e.target.closest('[data-act="unit-sun"]')) openInUnit(); else if (e.target.closest('[data-act="to-window"]')) goToWindow(); });   // [room3d] [walk]
   $('psTabs').addEventListener('click', (e) => { const b = e.target.closest('[data-t]'); if (b) { st.tab = b.dataset.t; tab(); } });
   $('psUndo').addEventListener('click', () => doUndo(true));
   $('psRedo').addEventListener('click', () => doUndo(false));
@@ -531,7 +532,7 @@ function markCams() {
     if (b.dataset.v === 'bed') b.disabled = !R.some((x) => x.kind === 'bed' && !x.hidden);
     if (b.dataset.v === 'sofa') b.disabled = !R.some((x) => (x.kind === 'sofa' || x.kind === 'chair') && !x.hidden);
   });
-  const hints = { walk: 'Drag to look · hold W S or ↑ ↓ to walk, A D to turn, Q E to step sideways, Shift to hurry · Esc to stop', tour: 'Walking the route · drag or W A S D to take over · Esc to stop', bed: 'Drag to look around · scroll to move', sofa: 'Drag to look around · scroll to move', door: 'Drag to look around · scroll to move' };
+  const hints = { walk: 'Click the floor to walk there · drag to look · hold W S or ↑ ↓ to walk, A D to turn, Q E to sidestep, Shift to hurry · double-click a window to stand at it · Esc to stop', tour: 'Walking the route · drag or W A S D to take over · Esc to stop', bed: 'Drag to look around · scroll to move', sofa: 'Drag to look around · scroll to move', door: 'Drag to look around · scroll to move' };
   lookChips();   // [interior]
   $('psHint').textContent = hints[st.view] || (G3.viewMode() === 'eye' ? 'Drag to look around · scroll to step · ← → or [ ] switch the view · Esc to leave' : '') || (isPhone() ? 'Drag a piece to move it · drag the floor to orbit' : 'Drag a piece to move it · drag the floor to orbit · right-drag to pan');
 }
@@ -575,7 +576,7 @@ function lookChips() {
   accChip();
   const el = $('psLook'); if (!el || !model) return;
   const ex = sunExtra();
-  el.hidden = !setLookChips(el, viewsNow(), G3.viewMode() === 'eye' ? st.view : null, { extra: ex.html, extraKey: ex.key });
+  el.hidden = !setLookChips(el, viewsNow(), G3.viewMode() === 'eye' ? st.view : null, { extra: ex.html, extraKey: ex.key, walk: true });
   const on = el.querySelector('.lk-chip.on'); if (on && el.scrollWidth > el.clientWidth + 2) el.scrollLeft = Math.max(0, on.offsetLeft - 24);   // a phone's row scrolls to the active chip
 }
 function lookAt(key) {
@@ -588,11 +589,53 @@ function lookAt(key) {
 function stepLook(step) {
   const vs = viewsNow(), nx = stepView(vs, G3.viewMode() === 'eye' ? st.view : null, step); if (nx) lookAt(nx.key);
 }
+// [walk] Click the floor to walk there, drag to look, a floor marker where a click will take you, and one click to stand at the nearest window.
+const EYE_PITCH = -0.02;
+/** Walk from where the eye is to a plan point around the furniture and through the doors, as a smooth glide. `dir` / `pitch` say how to face on arrival. */
+function walkTo(p, { dir = null, pitch = null, speed = 72 } = {}) {
+  const sp = G3.walkFloor(); if (!sp || G3.viewMode() !== 'eye') return false;
+  const route = sp.route(G3.eyeState().at, p, { maxGoal: dir ? 8 : 36 }); if (!route || route.length < 2) return false;
+  st.view = 'walk'; markCams();
+  const goal = route[route.length - 1];
+  G3.setMarker(goal);
+  return G3.tour(route, { speed, h: EYE_IN, smooth: true, endDir: dir, endPitch: pitch, onEnd: () => { st.view = 'walk'; G3.setMarker(null); markCams(); overlays(); } });
+}
+/** Stand at the nearest window looking out: by walking there when already at eye level, else straight to it from the front door. */
+function goToWindow(group = null) {
+  if (!model) return;
+  const sp = G3.walkFloor(); if (!sp) return;
+  const from = G3.viewMode() === 'eye' ? G3.eyeState().at : entryDoor().at;
+  const spot = group != null ? (() => { const s0 = windowStands(model, sp).find((q) => q.group === group); const r = s0 && sp.route(from, s0.at, { maxGoal: 6 }); return s0 && r ? { ...s0, route: r } : null; })() : nearestWindow(model, sp, from);
+  if (!spot) { toast('No clear floor to stand at that window'); return; }
+  if (st.mode === '2d') setMode(isPhone() ? '3d' : 'both');
+  if (G3.viewMode() === 'eye') { walkTo(spot.at, { dir: spot.dir, pitch: EYE_PITCH }); return; }
+  st.view = 'walk';
+  G3.setView('look', { at: spot.at, dir: spot.dir, h: EYE_IN, pitch: EYE_PITCH, fov: 76 }); setWall('full', true);
+  applyCity(); overlays(); markCams();
+}
+/** A click on the floor in an eye-level view: walk there (the marker shows where first). */
+function clickWalk(e) {
+  const fp = G3.floorPoint(e); if (!fp) return false;
+  const sp = G3.walkFloor(), at = sp && sp.snap(fp[0], fp[1], 30); if (!at) return false;
+  return walkTo(at);
+}
+let markerAt = 0;
+function hoverMarker(e) {
+  const now = performance.now(); if (now - markerAt < 40) return; markerAt = now;
+  const fp = G3.floorPoint(e), sp = G3.walkFloor(), at = fp && sp ? sp.snap(fp[0], fp[1], 30) : null;
+  G3.setMarker(at);
+}
+function windowDouble(e) {
+  if (G3.viewMode() !== 'eye' || !model) return;
+  const { o, d } = G3.rayPlan(e), hit = windowHit(model, o, d); if (!hit) return;
+  const g = groupOfWindow(model, hit.index); if (g >= 0) goToWindow(g);
+}
 function camera(v) {
   if (!model) return;
   if (st.mode === '2d') setMode(isPhone() ? '3d' : 'both');
   st.view = v;
   if (v === 'bird' || v === 'top') { G3.setView(v); setWall(G3.currentWallMode(), true); }
+  else if (v === 'window') { goToWindow(); return; }
   else {
     let eye = null;
     if (v === 'bed' || v === 'sofa') {
@@ -699,14 +742,17 @@ function bind3D() {
     if (lookP && e.pointerId === lookP.id) { G3.look(e.clientX - lookP.x, e.clientY - lookP.y); lookP.x = e.clientX; lookP.y = e.clientY; e.stopPropagation(); return; }
     if (drag && e.pointerId === drag.pid) { const p = G3.floorPoint(e); if (p) dragTo(drag.id, p[0] + drag.ox, p[1] + drag.oy); e.stopPropagation(); return; }
     if (e.buttons === 0 && G3.viewMode() === 'orbit' && e.target === cv && e.pointerType === 'mouse') cv.style.cursor = G3.pick(e) ? 'grab' : '';
+    if (e.buttons === 0 && G3.viewMode() === 'eye' && e.target === cv && e.pointerType === 'mouse') hoverMarker(e);   // [walk] where a click will take you
   }, true);
   const up = (e) => {
-    if (lookP && e.pointerId === lookP.id) { lookP = null; return; }
+    if (lookP && e.pointerId === lookP.id) { const moved = down ? Math.hypot(e.clientX - down.x, e.clientY - down.y) : 99; lookP = null; if (moved < 5 && e.type === 'pointerup' && e.target === cv) clickWalk(e); down = null; return; }   // [walk] a click, not a drag
     if (drag && e.pointerId === drag.pid) { drag = null; G3.setOrbitEnabled(true); cv.style.cursor = ''; endDrag(); return; }
     if (down && e.pointerId === down.id && Math.hypot(e.clientX - down.x, e.clientY - down.y) < 4 && e.target === cv && G3.viewMode() === 'orbit' && !G3.pick(e)) select(null);
     down = null;
   };
   stage.addEventListener('pointerup', up, true); stage.addEventListener('pointercancel', up, true);
+  stage.addEventListener('pointerleave', () => { if (G3.viewMode() === 'eye' && !G3.touring()) G3.setMarker(null); });
+  cv.addEventListener('dblclick', windowDouble);   // [walk] double-click a window: stand at it, looking out
   cv.addEventListener('wheel', (e) => { if (G3.viewMode() !== 'eye') return; e.preventDefault(); e.stopPropagation(); G3.walk(-e.deltaY * 0.06); }, { passive: false, capture: true });
   // drags in the 2D pane end on pointerup inside plan2d (handlers.commit); 3D drags end here
   $('p2d').addEventListener('pointerup', () => { st.dragging = false; });
