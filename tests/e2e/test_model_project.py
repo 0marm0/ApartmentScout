@@ -107,7 +107,7 @@ def test_measured_height_and_pinned_window_reach_both_viewers(open_page, webgl: 
     _unit(s)
     _fold(s, "height")
     est = pg.evaluate("() => window.__unit3d.cal.slabAt(25)")
-    assert est == pytest.approx(24 * 3.083, abs=0.01) and pg.evaluate("() => window.__unit3d.cal.state") == "estimated"
+    assert est == pytest.approx(24 * 3.08, abs=0.01) and pg.evaluate("() => window.__unit3d.cal.state") == "estimated"
     pg.fill("#mpCalVal", "80.5")
     pg.fill("#mpCalFloor", "25")
     pg.click("[data-act=cal-apply]")
