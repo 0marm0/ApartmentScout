@@ -107,6 +107,7 @@ def test_findings_and_a_photo_survive_a_reload(open_page) -> None:
     sh.locator("[data-f='view']").fill("Brick wall across a light well")
     sh.locator("input[data-photo]").first.set_input_files({"name": "w.jpg", "mimeType": "image/jpeg", "buffer": jpeg()})
     s.page.wait_for_function("() => document.querySelectorAll('#visitSheet .vs-ph img').length === 1 && document.querySelector('#visitSheet .vs-ph img').naturalWidth > 0", timeout=15000)
+    s.page.wait_for_function("(h) => ((JSON.parse(localStorage.getItem('as:findings:' + document.title.split(' · ')[0]) || '{}'))[h] || {}).view", arg=HOME, timeout=15000)   # typed text saves after a short pause
     stored = s.page.evaluate("() => JSON.parse(localStorage.getItem('as:findings:' + document.title.split(' · ')[0]))")
     rec = stored[HOME]
     assert rec["water"] == 3 and rec["photos"][0]["store"] == "idb" and rec["view"].startswith("Brick")

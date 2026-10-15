@@ -11,6 +11,7 @@ import { loadPreviews } from './features/lqip.js';
 import './features/comfort.js';
 import { initDestPin } from './features/dest-pin-style.js';   // [office pin] gold or classic destination marker   // [feature C] comfort + accent attributes on <html> apply at import, before first paint
 import { cardsEmpty } from './features/empty.js';   // [feature C]
+import { destLineHTML, drawerHTML as destsDrawerHTML } from './features/multidest.js';   // [multi-destination] minutes to every destination on cards and in the drawer
 // results list and filter rail features (chips, collapsible sections, windowed cards, rank motion, density, price history, worker scoring)
 import { initResults, setCardItems, clearCardList, cardIds, cardPos, cardEl, revealCard, decorateRail, railFocus, restoreRailFocus, rescoreWeights, deltaHTML, trendHTML } from './features/results.js';
 
@@ -224,7 +225,7 @@ export function filtered() {
     return true;
   });
 }
-const SORTS = {
+export const SORTS = {   // [multi-destination] exported: features/multidest.js adds "Best combined commute"
   match: (a, b) => (score(b) ?? -1) - (score(a) ?? -1),
   cost: (a, b) => (cost(a) ?? 1e9) - (cost(b) ?? 1e9),
   commute: (a, b) => (commuteOf(a) ?? 1e9) - (commuteOf(b) ?? 1e9),
@@ -432,10 +433,10 @@ export function setWeights(w, { settled = false } = {}) {
 function modesHTML(L) {
   const d = dest(); if (!d) return '';
   const m = modesOf(L, d);
-  if (m.best == null) return '<div class="c-modes"><span class="faint">Commute not computed</span></div>';
+  if (m.best == null) return '<div class="c-modes"><span class="faint">Commute not computed</span></div>' + destLineHTML(L);
   // the selected mode is outlined; the fastest is green
   const chip = (k, icon, v, label) => `<span class="mode ${m.bestMode === k ? 'best' : ''} ${m.mode === k ? 'on' : ''} ${v == null ? 'na' : ''}" title="${label}: ${v == null ? 'not computed' : Math.round(v) + ' min door to door'}">${icon}<b>${v == null ? '—' : Math.round(v)}</b></span>`;
-  return `<div class="c-modes">${chip('walk', ICONS.walk, m.walk, 'Walk')}${chip('subway', ICONS.train, m.subway, 'Subway')}${chip('bus', ICONS.bus, m.bus, 'Bus')}<span class="line-bullets">${m.mode === 'walk' ? '' : m.legs ? legBadges(m.legs, 3) : bullets(m.route, 3)}</span><span class="to" title="minutes to ${esc(d.name)}">${allDests().length > 1 ? `min to ${esc(d.name)}` : 'min'}</span></div>`;
+  return `<div class="c-modes">${chip('walk', ICONS.walk, m.walk, 'Walk')}${chip('subway', ICONS.train, m.subway, 'Subway')}${chip('bus', ICONS.bus, m.bus, 'Bus')}<span class="line-bullets">${m.mode === 'walk' ? '' : m.legs ? legBadges(m.legs, 3) : bullets(m.route, 3)}</span><span class="to" title="minutes to ${esc(d.name)}">${allDests().length > 1 ? `min to ${esc(d.name)}` : 'min'}</span></div>` + destLineHTML(L);   // [multi-destination]
 }
 function mediaHTML(L, im) {
   const fx = cardMediaHTML(L, im); if (fx) return fx;   // features/media.js: ordered photo, blur-up preview, count by group
@@ -710,6 +711,7 @@ export function openDrawer(id, opt = {}) {
 ${moneySection(L)}
 ${whySection(L)}
     ${commuteSection(L, d)}
+    ${destsDrawerHTML(L)}
     ${sun ? `<div class="d-sec" id="dLight" data-tab="Light"><h3>Direct sun on the window <span>floor ${esc(L.site.floor)}, facing ${Math.round(L.site.bearing)}°</span></h3><div class="sunbars">${sun.map((h, i) => `<div title="${h.toFixed(1)} h possible${L.site.sun_hours_expected?.[i] != null ? ` · ${(+L.site.sun_hours_expected[i]).toFixed(1)} h expected on a typical month` : ''}"><i style="height:${Math.max(3, (h / 9) * 100)}%"></i><span>${'JFMAMJJASOND'[i]}</span></div>`).join('')}</div><div class="faint" style="font-size:var(--fs-xs);margin-top:8px">Hours of possible (clear-sky) direct sun on the 15th${L.site.sun_year?.expected != null ? ` · a year: ${Number(L.site.sun_year.possible).toLocaleString()} h possible, about ${Number(L.site.sun_year.expected).toLocaleString()} h expected with typical cloud` : ''}</div><div class="faint" style="font-size:var(--fs-xs);margin-top:4px">Skyline straight ahead ${esc(L.site.skyline_ahead_deg)}° · ${L.site.open_sky_share != null ? Math.round(L.site.open_sky_share * 100) + '% open sky in view' : ''}${L.site.sky_view != null ? ` · sky view ${Math.round(L.site.sky_view * 100)}% (overcast sky)` : ''}${L.site.daylight_factor_est != null ? ` · estimated daylight factor ≈${esc(L.site.daylight_factor_est)}%, not measured` : ''}</div></div>` : ''}
     ${rec.flags?.length ? `<div class="d-sec" id="dRecords" data-tab="Records"><h3>Public records <span>reports, not findings</span></h3>${rec.flags.slice(0, 4).map((x) => `<div class="flag">${esc(x)}</div>`).join('')}</div>` : ''}
     ${rv.summary ? `<div class="d-sec" ${rec.flags?.length ? '' : 'id="dRecords" data-tab="Records"'}><h3>Residents say</h3>${ratings ? `<div class="reviews">${ratings}</div>` : ''}<p class="muted" style="margin:0;font-size:var(--fs-sm)">${esc(rv.summary)}</p></div>` : ''}
