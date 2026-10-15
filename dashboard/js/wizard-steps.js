@@ -37,19 +37,30 @@ const card = (title, body, aside = '') => `<section class="wz-card">${title ? `<
 // ------------------------------------------------------------------ basics
 function basics(W, X) {
   const d = W.draft, cities = X.ctx.cities, c = cities.find((x) => x.id === d.city);
-  const generic = d.city === 'generic';
+  const generic = !cities.some((x) => x.id === d.city && x.id !== 'generic');   // [onboarding] any city without a profile
   const today = M.todayISO();
   const chips = [['Next 30 days', 0, 30], ['In 1 to 2 months', 30, 60], ['In 2 to 3 months', 60, 90]];
   return head('Step 1 of 8', 'What are we looking for?', 'Name the search and tell us where and when. Everything has a sensible default, so you can move fast and refine later.')
     + card('', fld(X, 'Search name', 'name', inp(X, 'name', d.name, 'type="text" maxlength="80" placeholder="Boston 2BR, fall 2026" autocomplete="off" required'), { tag: 'required', hint: 'Shown in the top bar and used for the folder name.', wide: true }))
-    + card('City', `<div class="wz-cities" role="radiogroup" aria-label="City">${cities.map((x) => `<button type="button" role="radio" aria-checked="${x.id === d.city}" class="wz-city ${x.id === d.city ? 'on' : ''}" tabindex="${x.id === d.city ? 0 : -1}" data-city="${esc(x.id)}"><b>${esc(x.name)}</b><small>${esc(x.id === 'nyc' ? x.note || '' : x.id === 'generic' ? x.note || '' : x.note || `City profile ${x.id}`)}</small></button>`).join('')}</div>`
-      + (generic ? `<div class="wz-places"><span class="wz-hint">Quick start</span><div class="chips">${M.PLACES.map(([n]) => `<button type="button" class="chip" data-place="${esc(n)}">${esc(n)}</button>`).join('')}</div></div>` : '')
+    + card('City', `<div class="wz-cities" role="radiogroup" aria-label="City">${cities.map((x) => `<button type="button" role="radio" aria-checked="${x.id === d.city || (x.id === 'generic' && generic)}" class="wz-city ${x.id === d.city || (x.id === 'generic' && generic) ? 'on' : ''}" tabindex="${x.id === d.city || (x.id === 'generic' && generic) ? 0 : -1}" data-city="${esc(x.id)}"><b>${esc(x.name)}</b><small>${esc(x.id === 'nyc' ? x.note || '' : x.id === 'generic' ? x.note || '' : x.note || `City profile ${x.id}`)}</small></button>`).join('')}</div>`
+      + (generic ? cityBlock(W, X) : '')
+      + (generic && !W.api ? `<div class="wz-places"><span class="wz-hint">Quick start</span><div class="chips">${M.PLACES.map(([n]) => `<button type="button" class="chip" data-place="${esc(n)}">${esc(n)}</button>`).join('')}</div></div>` : '')
       + `<div class="row wz-row">${fld(X, 'Time zone', 'timezone', inp(X, 'timezone', d.timezone, 'type="text" list="wzTz" placeholder="America/New_York" autocomplete="off"') + `<datalist id="wzTz">${M.TIMEZONES.map((z) => `<option value="${z}">`).join('')}</datalist>`, { hint: 'IANA name; used for sun hours and arrive-by times.' })}
         ${fld(X, 'Map opens at', 'map_center', `<div class="wz-ll"><input id="f-map_center" data-f="map.lat" type="text" inputmode="decimal" aria-label="Map latitude" placeholder="lat" value="${esc(d.map_center?.[0] ?? '')}" aria-describedby="e-map_center"><input data-f="map.lon" type="text" inputmode="decimal" aria-label="Map longitude" placeholder="lon" value="${esc(d.map_center?.[1] ?? '')}" aria-describedby="e-map_center"><button type="button" class="btn sm" data-pick="map">${I.pin}Pick</button></div>`, { hint: 'Optional. Otherwise the map centres on your first destination.' })}</div>`
       )
     + card('Move-in window', `<div class="row wz-row">${fld(X, 'Earliest start', 'move_in.earliest', inp(X, 'move_in.earliest', d.move_in.earliest, 'type="date"'))}${fld(X, 'Latest start', 'move_in.latest', inp(X, 'move_in.latest', d.move_in.latest, 'type="date"'))}</div>`
       + `<div class="chips wz-quick" aria-label="Quick windows">${chips.map(([t, a, b]) => `<button type="button" class="chip" data-window="${a},${b}">${t}</button>`).join('')}</div>`
       + `<label class="tg wz-tg ${d.move_in.hard ? 'on' : ''}" role="switch" aria-checked="${d.move_in.hard}" tabindex="0" data-toggle="move_in.hard"><span class="switch"></span><span class="lbl">Hard deadline<small>Units available after the latest date fail the gate instead of just being flagged.</small></span></label>`);
+}
+
+// [onboarding] the city's name box, its lookup result and what the city does not have
+function cityBlock(W, X) {
+  const d = W.draft, L = d.lookup;
+  const note = !L ? '' : L.error ? `<div class="wz-note bad" role="status"><span>${esc(L.error)}</span></div>`
+    : `<div class="wz-note good wz-found" role="status"><span class="ic">${I.check}</span><div><b>${esc(L.name)}</b>${L.timezone ? ` · ${esc(L.timezone)}` : ''}${L.osm ? ` · <a href="https://www.openstreetmap.org/${esc(L.osm)}" target="_blank" rel="noopener noreferrer">OpenStreetMap area</a>` : ''}`
+      + `${L.missing?.length ? `<p class="wz-hint">What this city does not have built in:</p><ul class="wz-miss">${L.missing.map((m) => `<li>${esc(m)}</li>`).join('')}</ul>` : ''}</div></div>`;
+  return `<div class="wz-citybox">${fld(X, 'Your city', 'city_name', `<span class="wz-find">${inp(X, 'city_name', d.city_name, 'type="text" maxlength="80" placeholder="Chicago, IL" autocomplete="off"')}${W.api ? `<button type="button" class="btn sm" data-act="findcity"${W.finding ? ' disabled' : ''}>${W.finding ? 'Looking…' : 'Find it'}</button>` : ''}</span>`,
+    { wide: true, hint: W.api ? 'Type the city and choose Find it: the time zone and where the map opens are filled in, and the transit feeds we know of are offered in the Places step.' : 'Type the city. This page cannot look it up, so use a quick start below or fill the time zone and map centre in yourself.' })}${note}</div>`;
 }
 
 // ------------------------------------------------------------------ places
@@ -64,6 +75,7 @@ function destCard(W, X, p, i) {
     ${fld(X, 'Address', f('address'), inp(X, f('address'), p.address, 'type="text" placeholder="Street, city" autocomplete="off"'), { wide: true, hint: has ? '' : 'No map pin yet: place one below, or <code>apartmentscout geocode</code> will find the address for you.' })}
     <div class="wz-pin ${has ? 'set' : ''}"><span class="wz-pin-i">${I.pin}</span>
       <span class="wz-pin-t">${has ? `<b>${(+p.lat).toFixed(5)}, ${(+p.lon).toFixed(5)}</b><small>Placed on the map</small>` : '<b>Not placed on the map</b><small>Click the map for the exact spot</small>'}</span>
+      ${W.api ? `<button type="button" class="btn sm" data-act="findaddr" data-i="${i}" title="Look the address up and drop the pin on it">${W.finding === `dest.${i}` ? 'Looking…' : 'Find address'}</button>` : ''}
       <button type="button" class="btn sm" data-pick="dest" data-i="${i}">${I.pin}${has ? 'Move pin' : 'Place on map'}</button>
       ${has ? `<button type="button" class="btn sm ghost" data-clearpin="${i}">Clear</button>` : ''}</div>
     <details class="wz-more" ${X.msg(f('lat')) ? 'open' : ''}><summary>Enter coordinates by hand</summary><div class="row wz-row">
@@ -78,7 +90,24 @@ function places(W, X) {
   const n = W.draft.destinations.length;
   return head('Step 2 of 8', 'Where do you go?', 'Work, a partner\'s office, a gym, family. Door-to-door commute times, the heat map and the commute score are computed for each place.')
     + (n ? W.draft.destinations.map((p, i) => destCard(W, X, p, i)).join('') : card('', '<p class="wz-empty">No destinations. Commute will not be scored, and the map will centre on the point you choose in Basics. You can add places any time.</p>'))
-    + `<div class="wz-add"><button type="button" class="btn" data-add="dest" ${n >= 4 ? 'disabled' : ''}>${I.plus}Add a place</button><span class="wz-hint">${n} of 4</span></div>`;
+    + `<div class="wz-add"><button type="button" class="btn" data-add="dest" ${n >= 4 ? 'disabled' : ''}>${I.plus}Add a place</button><span class="wz-hint">${n} of 4</span></div>`
+    + transitCard(W, X);
+}
+// [onboarding] which transit timetables the commute times use
+function transitCard(W, X) {
+  const d = W.draft, prof = X.ctx.cities.find((x) => x.id === d.city && x.id !== 'generic');
+  if (prof) return card('Transit timetables', `<p class="wz-hint">The ${esc(prof.name)} profile brings its ${(prof.feeds || []).length} timetable feed${(prof.feeds || []).length === 1 ? '' : 's'} (${esc((prof.feeds || []).map((f) => f.name).join(', '))}). Nothing to add.</p>`);
+  if (W.mode === 'edit' && S.crit0.commute?.transit?.feeds?.length) return card('Transit timetables', `<p class="wz-hint">This search already uses ${esc(S.crit0.commute.transit.feeds.map((f) => f.name || f.url).join(', '))}. Edit <code>commute.transit.feeds</code> in criteria.yaml to change them.</p>`);
+  const feeds = d.feeds || [], have = new Set(feeds.map((f) => f.url)), starters = (d.lookup?.starter_feeds || []).filter((f) => !have.has(f.url));
+  const rows = feeds.map((f, i) => `<div class="wz-feed">${fld(X, 'Name', `feed.${i}.name`, inp(X, `feed.${i}.name`, f.name, 'type="text" maxlength="60" autocomplete="off"'))}
+      ${fld(X, 'GTFS zip address', `feed.${i}.url`, inp(X, `feed.${i}.url`, f.url, 'type="text" autocomplete="off" spellcheck="false" placeholder="https://.../gtfs.zip"'), { hint: f.check ? esc(f.check) : '' })}
+      <button type="button" class="icon-btn sm" data-del="feed" data-i="${i}" aria-label="Remove ${esc(f.name || 'feed')}">${I.x}</button></div>`).join('');
+  const chips = starters.length ? `<div class="wz-places"><span class="wz-hint">Feeds we know for ${esc(d.lookup?.name || 'this city')}</span><div class="chips">${starters.map((f, i) => `<button type="button" class="chip" data-starter="${i}">${I.plus}${esc(f.name)}</button>`).join('')}</div></div>` : '';
+  return card('Transit timetables', `<p class="wz-hint">Transit commutes (subway, bus, best of transit) come from your agency's published timetable, a GTFS zip. With none, commute times are walking only.</p>
+    ${rows}${chips}
+    <div class="wz-fill"><input id="wzFeedUrl" type="text" autocomplete="off" spellcheck="false" placeholder="Paste a GTFS zip address (https://.../gtfs.zip)" aria-label="GTFS zip address"><button type="button" class="btn" data-act="addfeed">${I.plus}Add feed</button></div>
+    <p class="wz-hint">Find one at the <a href="https://mobilitydatabase.org/feeds" target="_blank" rel="noopener noreferrer">Mobility Database</a>, <a href="https://www.transit.land/operators" target="_blank" rel="noopener noreferrer">Transitland</a>, or your transit agency's developer page ("GTFS" or "open data").</p>
+    ${feeds.length ? '' : '<p class="wz-hint wz-warnline">No feed yet: commute times will be walking only. You can add one later with <code>apartmentscout city --feed URL</code>.</p>'}`);
 }
 
 // ------------------------------------------------------------------ money
@@ -173,17 +202,20 @@ function review(W, X) {
   if (W.mode === 'new' && api && !result) body += card('Where it goes', fld(X, 'Folder name', 'folder', `<span class="wz-folder"><span title="${esc(api.searches_dir || 'searches')}">${esc((api.searches_dir || 'searches').split('/').filter(Boolean).slice(-1)[0])}/</span>${inp(X, 'folder', W.draft.folder || folder, 'type="text" maxlength="60" autocomplete="off" spellcheck="false"')}</span>`, { hint: 'A new folder next to your other searches. Nothing existing is touched.' }));
   if (diff !== null) body += `<details class="wz-card wz-det" ${W.mode === 'edit' || diff.length <= 6 ? 'open' : ''}><summary><h4>${W.mode === 'edit' ? 'Changes to this search' : `How it differs from ${esc(X.currentName || 'the open search')}`}<span>${diff.length ? `${diff.length} difference${diff.length === 1 ? '' : 's'}` : 'none'}</span></h4></summary>${diff.length ? `<ul class="wz-diff">${diff.map((l) => `<li>${esc(l)}</li>`).join('')}</ul>` : '<p class="wz-hint">No differences from the open search.</p>'}</details>`;
   body += card('criteria.yaml', pre, 'preview');
+  if (W.mode === 'new' && !result) body += card('After you create it', nextHTML(M.nextSteps(`searches/${W.draft.folder || folder || 'your-search'}`)));
   if (!result || result.kind !== 'rescore') {
     body += card('At the command line', `<p class="wz-hint">${api ? 'Prefer the terminal? ' : 'This page cannot write files, so '}these do the same thing.</p>${cmdBlock('One step', [...cmds.oneStep, ...cmds.then], 'cli1')}${cmdBlock('Or step by step', [...cmds.twoStep, ...cmds.steps], 'cli2')}`);
   }
   return body;
 }
+// [onboarding] the steps after the questions (config/intake.yaml, `after`): listings, commutes, the buildings around each home, floor plans
+const nextHTML = (steps) => `<ol class="wz-next">${steps.map((n) => `<li><b>${esc(n.title)}</b><p class="wz-hint">${esc(n.why)}</p><code tabindex="0" aria-label="Command">${esc(n.command)}</code></li>`).join('')}</ol>`;
 export function resultHTML(W, X) {
   const r = X.review.result;
   if (!r) return '';
   const lines = r.next?.length ? `<div class="wz-cmd"><div class="h"><b>Next</b><button type="button" class="btn sm ghost" data-copy="next">${I.copy}Copy</button></div><pre tabindex="0" aria-label="Next commands">${esc(r.next.join('\n'))}</pre></div>` : '';
   if (r.kind === 'saved') return `<div class="wz-note good" role="status"><span class="ic">${I.check}</span><div><b>Saved criteria.yaml</b><p>${r.backup ? `The previous file is kept as <code>${esc(r.backup)}</code>.` : 'There was no previous file.'} Scores and the dashboard data still reflect the old criteria until you re-score.</p>${r.warnings?.length ? `<ul>${r.warnings.map((w) => `<li>${esc(w)}</li>`).join('')}</ul>` : ''}</div></div>${rescoreHTML(r)}${lines}`;
-  if (r.kind === 'created') return `<div class="wz-note good" role="status"><span class="ic">${I.check}</span><div><b>Created the search</b><p><code>${esc(r.path)}</code> is ready. Add listings, then score them.</p></div></div>${lines}`;
+  if (r.kind === 'created') return `<div class="wz-note good" role="status"><span class="ic">${I.check}</span><div><b>Created the search</b><p><code>${esc(r.path)}</code> is ready. Next, in order:</p></div></div>${nextHTML(M.nextSteps(r.path))}${lines}`;
   return '';
 }
 function rescoreHTML(r) {

@@ -74,7 +74,7 @@ def test_dest_rejects_a_name_the_search_does_not_have(routed, tmp_path, feeds): 
     search = tmp_path / "s2"
     main(["init", str(search), "--city", "nyc"])
     (search / "listings.json").write_text(json.dumps([{"id": "a-1", "building": "A", "unit": "1", "lat": 40.75, "lon": -73.98}]))
-    with pytest.raises(ValueError, match="no such destination: Nobody"):
+    with pytest.raises(SystemExit, match="commute: no such destination: Nobody"):   # the CLI says it without a traceback
         main(["commute", "--search", str(search), "--dest", "Nobody"])
 
 

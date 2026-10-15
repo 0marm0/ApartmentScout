@@ -44,30 +44,49 @@ included as a worked example.
 
 ## Quick start
 
+From nothing to your first ranked map in about 15 minutes, in any city: [the full walk-through](docs/guides/getting-started.md).
+
 ```bash
 git clone https://github.com/<your-username>/ApartmentScout.git
 cd ApartmentScout
+python -m venv .venv && source .venv/bin/activate
 pip install -e .                                       # ".[xlsx]" adds the workbook export, ".[dev]" the test tools
 
 # see the worked example (732 Manhattan listings)
 apartmentscout serve --search examples/nyc-2026
+```
 
-# start your own search
-apartmentscout init searches/my-search --city nyc      # leave off --city outside New York; add --interactive to be asked
+Then start your own search. It asks for your **city** (looked up, so the time zone and map are right), your **places** (addresses
+are found on the map and confirmed), and your **transit timetable** (a starter feed is offered where we have checked one):
+
+<!-- quickstart -->
+```bash
+apartmentscout init searches/my-search --city "Chicago, IL" --interactive
 export APARTMENTSCOUT_SEARCH=searches/my-search
-# edit searches/my-search/criteria.yaml, then add listings (CSV, JSON or your agent)
-apartmentscout import my-listings.csv
+apartmentscout import searches/my-search/listings.csv   # fill the listings.template.csv that init wrote, or ask your agent
 apartmentscout validate && apartmentscout lint         # catch bad data and listing traps early
-apartmentscout all                                     # geocode, commute by mode, layers, score, build
+apartmentscout all                                     # geocode, commute by mode, layers, places, score, build
+apartmentscout surroundings                            # fetch the buildings around each shortlisted home (3D, sun, view)
+apartmentscout plans                                   # floor plans: which homes have one, and how to add one
+apartmentscout serve                                   # open the dashboard on your own data
+```
+
+Floor plans: in the **Floor plan** tab choose *New plan from image*, trace a PNG or PDF plan from the listing and
+*Save to the search folder*, or give the plan or its room sizes to your agent. The 3D apartment and the sun through its windows use it
+([adding your floor plans](docs/guides/getting-started.md#7-adding-your-floor-plans)).
+
+More commands, once you have finalists:
+
+```bash
+apartmentscout city                                    # this search's city, time zone, transit feeds, and what the city lacks
 apartmentscout coverage                                # what is still unknown, and what it could swing
-apartmentscout dossier                                 # building records for your shortlist (NYC)
+apartmentscout dossier                                 # building records for your shortlist (NYC; elsewhere the building-dossier skill)
 apartmentscout photos                                  # licensed building photos with credits
-apartmentscout site <listing-id> --floor 12 --charts   # 3D site model, sun and view
+apartmentscout site <listing-id> --floor 12 --charts   # one home's 3D site model, sun and view in detail
 apartmentscout export --xlsx my-search.xlsx            # workbook with live weights and ranks
 apartmentscout handoff pack out.zip --to codex         # hand the search to another agent
 apartmentscout share --picks picks.json --out shortlist.html   # a read-only page (or --memo) of your saved picks
-apartmentscout serve                                   # open the dashboard
-apartmentscout build --standalone my-search.html       # or one self-contained file you can double-click
+apartmentscout build --standalone my-search.html       # one self-contained file you can double-click (after editing dashboard/js, run scripts/bundle.sh first; needs Node.js)
 ```
 
 Requires Python 3.10+. Everything built in uses free public data: NYC Open Data, the US Census geocoder,
@@ -93,17 +112,19 @@ Three ways in, one `criteria.yaml`. They ask the same questions in the same orde
 ([`config/intake.yaml`](config/intake.yaml): each has a why, a default and the key it sets), so you can mix them.
 
 - **In the app.** Run `apartmentscout serve`, open the search switcher in the top bar and choose *New search*
-  (also `?new=1`, and the search box's *New search* command). A step-by-step wizard sets the basics, places (click
-  the map to drop a pin), money, home size, amenities, building and interior taste, and ranking weights, checks
-  every field as you type, keeps a draft if you close it, and ends in a review with the criteria.yaml and a diff
-  against the search you have open. Served locally it creates the search folder or saves `criteria.yaml` for you
+  (also `?new=1`, and the search box's *New search* command). A step-by-step wizard sets the basics (type your city and
+  *Find it*: the time zone and map centre are filled in), places (type an address and *Find address*, or click the map to
+  drop a pin), the transit timetable (a starter feed, or paste a GTFS zip address), money, home size, amenities, building and
+  interior taste, and ranking weights. It checks every field as you type, keeps a draft if you close it, and ends in a review
+  with the criteria.yaml, a diff against the search you have open, and what happens next (listings, commutes, the buildings
+  around each home, floor plans). Served locally it creates the search folder or saves `criteria.yaml` for you
   (the old file is backed up) and can re-score in place; on GitHub Pages or a standalone file it downloads or
   copies the file and the commands instead.
 - **With an agent.** Ask it to start a search: it follows the same questionnaire, shows you what it heard, and
-  writes the file with `apartmentscout init searches/<name> --criteria answers.yaml`.
-- **In the terminal.** `apartmentscout init searches/my-search --city nyc --interactive` asks the questions with
-  defaults you can accept with Enter. Anywhere: `apartmentscout criteria --check criteria.yaml` validates a file and
-  prints a summary.
+  writes the file with `apartmentscout init searches/<name> --city "<city>" --criteria answers.yaml`.
+- **In the terminal.** `apartmentscout init searches/my-search --city "Chicago, IL" --interactive` asks the questions with
+  defaults you can accept with Enter, looks the city and your addresses up, and ends with the numbered next steps. Anywhere:
+  `apartmentscout criteria --check criteria.yaml` validates a file and prints a summary (and warns about New York leftovers in another city).
 
 ## Use it with an AI agent
 
@@ -324,10 +345,12 @@ tests/                      pytest suite and node tests (tests/js)
 
 ## Other cities
 
-Commute by mode, 3D sun and view (OpenStreetMap buildings), floor plans, photos, scoring, research
-quality and the dashboard work anywhere. Building-records automation ships for New York City; elsewhere
-the agent researches records by hand and [adding a city module](docs/guides/new-city.md) is a short
-Python file. City profiles with transit feeds and landmark names are very welcome as pull requests.
+Everything works in any city: commute by mode (any agency's GTFS feed), 3D sun and view (OpenStreetMap buildings and heights;
+`apartmentscout surroundings` reports how many heights are defaults), floor plans, photos, scoring, research quality and the
+dashboard. [Getting started](docs/guides/getting-started.md) sets a city up in a few minutes, and `apartmentscout city` shows what
+yours has and lacks. Building-records automation and the noise layer ship for New York City; elsewhere the agent researches records
+by hand, and [adding a city profile or module](docs/guides/new-city.md) is a short YAML file or Python file. City profiles and
+transit feeds are very welcome as pull requests.
 
 ## Privacy and responsible use
 

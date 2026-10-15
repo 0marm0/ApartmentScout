@@ -20,11 +20,18 @@ description: Run or resume a full apartment search with ApartmentScout - intake 
 `config/intake.yaml` is the questionnaire. Read it first: it lists seven steps (basics, places, money, home,
 amenities, building and interior taste, weights), and for every question the wording to use (`ask`), why it
 matters (`why`), the default to use when the renter has no preference (`default`) and the `criteria.yaml` key the
-answer goes to (`maps_to`). Follow it:
+answer goes to (`maps_to`). Its `after:` list is what happens once the criteria exist (listings, commutes, the
+buildings around each home, floor plans, the dashboard): walk the renter through it in section 3. Follow it:
 
 1. Ask in the file's order, one step or two at a time, in plain language. Skip what the renter already told you or
    what you can infer, and say which defaults you are assuming. Never invent an answer: an unanswered question takes
-   its default. Only `search.name` is required.
+   its default. Only `search.name` is required. **Always ask which city** and never assume New York: run
+   `apartmentscout city "<city>"` (or pass `--city "<city>"` to `init`) to look it up, which sets `search.city`,
+   `city_name`, `timezone` and `map_center` and tells you what the city has built in (a profile with open data, as for
+   `nyc`) and what it lacks. Ask for every place the renter travels to, geocode each address and confirm the match with
+   them. Then ask which transit timetable the commute should use: offer the starter feed (`apartmentscout city --starter`),
+   or help find the agency's GTFS zip (Mobility Database, Transitland, the agency's developer page) and add it with
+   `apartmentscout city --feed URL`. With no feed commute times are walking only, and you must say so.
 2. Show the renter a one-screen summary of what you heard (budget tiers and cap, size, must-haves, places, the top
    weights) and let them correct it. Criteria and weights are theirs to decide.
 3. Write the file through the CLI rather than by hand-editing the template:
@@ -44,8 +51,8 @@ answer goes to (`maps_to`). Follow it:
    essential) sets the weight of its dimension, and the weights on one dimension add up. Unanswered items change
    nothing. Buildings the renter already has a view on go under `building_ratings` (building name to a rating from
    1 to 5); more can be added as the search goes on.
-5. Run `apartmentscout geocode` (fills destination coordinates) and copy the printed coordinates into
-   `criteria.yaml` if you want them pinned.
+5. Run `apartmentscout geocode`: it finds the destinations' coordinates and saves them into `criteria.yaml` (a copy
+   of the old file goes to `backups/`), and lists any listing whose address it could not find.
 
 Amenity keys the scorer understands are listed under `amenities:` in the questionnaire (and in
 `apartmentscout/listings.py`, `AMENITY_KEYS`). New keys are fine; they just need to appear in listings too.
@@ -54,7 +61,9 @@ Amenity keys the scorer understands are listed under `amenities:` in the questio
 
 1. Follow `listing-sourcing` to collect candidates into `listings.json`, then
    `apartmentscout validate && apartmentscout lint` and fix errors and high flags.
-2. `apartmentscout geocode && apartmentscout commute && apartmentscout layers`.
+2. `apartmentscout geocode && apartmentscout commute && apartmentscout layers`. Read what `commute` prints: if it says
+   "WALKING times only" there is no transit feed yet (`apartmentscout city --starter` or `--feed URL`).
+   `apartmentscout criteria --check` warns about New York leftovers (time zone, map centre) in another city: fix them.
 3. `apartmentscout score` and `apartmentscout report`. Read `shortlist.md` yourself before
    presenting it: check that the top ten make sense and that no unit ranks high only because
    facts are missing (look at `confidence` and `range`).
@@ -68,8 +77,13 @@ For each shortlisted unit, in this order:
 1. `lease-and-fees`: pin down monthly cost and terms (cheap to do, often decisive).
 2. `building-dossier`: records, reviews, management, ownership.
 3. `noise-deep-dive` if the dossier or reviews flag noise, or the unit faces a busy street.
-4. `unit-light-and-view` once floor and exposure are known (or to find the exposure).
-5. `floor-plan-model` if a plan is available and light inside the unit matters.
+4. `apartmentscout surroundings` for the whole shortlist (fetches the buildings, heights, streets, parks and water around
+   each home and builds the 3D site model), then `unit-light-and-view` once floor and exposure are known (or to find the
+   exposure). Read `apartmentscout surroundings --status` with the renter: how many nearby heights are defaults, which
+   building each home matched, and what the city does not provide; do not present sun hours as exact where defaults are many.
+5. `floor-plan-model`: ask for a plan for every finalist. If the renter has the image or PDF they can trace it in the
+   dashboard (Floor plan tab, *New plan from image*, *Save to the search folder*) or you read it; if only room sizes exist,
+   write the plan from those. `apartmentscout plans` shows which homes have one; the 3D apartment and the sun use it.
 
 Write findings to `research/<id>.md`, update the listing fields, rescore, rebuild the dashboard.
 

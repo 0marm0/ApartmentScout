@@ -10,6 +10,24 @@ import pytest
 
 
 @pytest.fixture(autouse=True)
+def _no_city_lookups(monkeypatch):
+    """The city lookup (Nominatim) and the transit-feed check are network calls too (cities.py): tests pass fakes or get nothing."""
+    from apartmentscout import cities
+
+    def offline(*a, **k):
+        raise cities.requests.ConnectionError("offline in tests")
+
+    monkeypatch.setattr(cities, "_http_json", offline)
+
+    from apartmentscout import intake
+
+    # `init` and the interview ask this for their lookups; offline it finds nothing and keeps what was typed
+    monkeypatch.setattr(intake, "live_online", lambda: intake.Online(
+        resolve_city=lambda q: None, geocode=lambda a, i: None,
+        check_feed=lambda u: cities.FeedCheck(True, "offline in tests", None, False)))
+
+
+@pytest.fixture(autouse=True)
 def _no_osm_parts(monkeypatch):
     from apartmentscout.geo import components
 

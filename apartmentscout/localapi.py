@@ -32,10 +32,11 @@ from typing import Any
 
 import yaml
 
-from . import __version__
+from . import __version__, planfile
+from . import cities as city_lookup   # [onboarding] city and address lookups, feed checks
 from .config import Workspace
 from .criteria_check import check_text, summary_lines
-from .intake import city_profile, init_search
+from .intake import city_profile, init_search, next_steps
 from .tourapi import MAX_PHOTO_BYTES, TourError, TourFiles, pillow_available   # tour findings and photos
 
 MAX_BODY = 256 * 1024
@@ -81,6 +82,10 @@ class ServeState:
     export: Callable[[Workspace, Path], None]
     rescore: Callable[[Workspace], None]
     api: bool = True
+    # [onboarding] network lookups the wizard asks for; tests replace them so nothing reaches the internet
+    resolve_city: Callable[[str], Any] | None = None
+    locate: Callable[[str, str | None], dict | None] | None = None
+    check_feed: Callable[[str], Any] | None = None
     token: str = field(default_factory=lambda: secrets.token_urlsafe(24))
     port: int = 0
     lock: threading.RLock = field(default_factory=threading.RLock)
@@ -112,7 +117,8 @@ class ServeState:
         for p in sorted((REPO / "config" / "cities").glob("*.yaml")):
             prof = city_profile(p.stem)
             out.append({"id": p.stem, "name": prof.get("name") or p.stem, "timezone": prof.get("timezone"),
-                        "feeds": prof.get("transit_feeds") or [], "records": prof.get("records")})
+                        "feeds": prof.get("transit_feeds") or [], "records": prof.get("records"),
+                        "center": prof.get("center"), "zoom": prof.get("zoom")})
         return out
 
     def searches(self) -> list[dict[str, Any]]:
@@ -135,10 +141,70 @@ class ServeState:
         except (OSError, ValueError, yaml.YAMLError):
             name = None
         return {"api": 1, "version": __version__, "can_save": bool(ws and not self.read_only), "example": self.read_only,
+                "plans": {"save": bool(ws and not self.read_only), "folder": "plans"},
                 "tours": {"save": bool(ws and not self.read_only), "photos": bool(ws and not self.read_only and pillow_available()),
                           "max_photo_bytes": MAX_PHOTO_BYTES},
                 "search": {"folder": ws.root.name, "name": name, "path": self.display(ws.root)} if ws else None,
                 "searches_dir": self.display(self.searches_dir), "searches": self.searches(), "cities": self.cities()}
+
+    # -- [onboarding] lookups for the wizard: a city by name, an address on the map, a transit feed address
+    def find_city(self, query: str) -> dict[str, Any]:
+        q = str(query or "").strip()
+        if not q or len(q) > 120:
+            raise ApiError(400, "Type a city name.")
+        info = (self.resolve_city or city_lookup.resolve_city)(q)
+        if info is None:
+            raise ApiError(404, f"Could not find {q!r} (no match, or this computer is offline). Try \"City, State\" or \"City, Country\".")
+        feeds = city_lookup.starter_feeds(info)
+        return {"id": info.id, "name": info.name, "timezone": info.timezone, "center": info.center, "zoom": info.zoom,
+                "profile": info.profile, "osm": info.osm, "country": info.country, "state": info.state, "starter_feeds": feeds,
+                "missing": city_lookup.coverage_notes(info, feeds).missing}
+
+    def find_address(self, query: str, city: str | None) -> dict[str, Any]:
+        q = str(query or "").strip()
+        if not q or len(q) > 200:
+            raise ApiError(400, "Type an address.")
+        if self.locate is not None:
+            res = self.locate(q, city)
+        else:
+            from .geocode import Geocoder
+            g = Geocoder(None, city if city and city_lookup.load_profile(city) else None)
+            tries = [q] if not city or city.lower().split(",")[0] in q.lower() else [f"{q}, {city}", q]
+            res = next((r for r in (g.geocode(t) for t in tries) if r), None)
+        if not res:
+            raise ApiError(404, "Could not find that address. Add the city and state, or click the map to place the pin.")
+        return {"lat": round(float(res["lat"]), 6), "lon": round(float(res["lon"]), 6), "label": res.get("label") or q}
+
+    def feed_check(self, url: str) -> dict[str, Any]:
+        r = (self.check_feed or city_lookup.check_feed)(str(url or "").strip())
+        return {"ok": r.ok, "detail": r.detail, "size_mb": r.size_mb, "checked": r.checked}
+
+    # -- [onboarding] floor plans traced in the dashboard, saved into the search folder
+    def save_plan(self, plan: Any, overwrite: bool) -> dict[str, Any]:
+        ws = self.ws
+        if ws is None:
+            raise ApiError(409, "No search is open, so there is no plans folder to save into.")
+        if self.read_only:
+            raise ApiError(403, "This is a bundled example search and is read-only. Create a search of your own, or use Download plan JSON.")
+        with self.lock:
+            try:
+                out = planfile.save_plan(ws.root, plan, overwrite=bool(overwrite))
+            except planfile.PlanError as e:
+                raise ApiError(409 if "already exists" in str(e) else 422, str(e)) from e
+            # the page's data folder is a copy made at start; put the plan in it so a reload shows it without a re-build
+            try:
+                dst = self.data_dir / "plans"
+                dst.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(ws.root / out["path"], dst / Path(out["path"]).name)
+                mf = self.data_dir / "manifest.json"
+                if mf.exists():
+                    m = json.loads(mf.read_text(encoding="utf-8"))
+                    m["plans"] = sorted({*m.get("plans", []), Path(out["path"]).stem})
+                    mf.write_text(json.dumps(m, indent=1), encoding="utf-8")
+            except OSError:
+                pass
+        return {"ok": True, **out, "folder": ws.root.name,
+                "next": [f"apartmentscout build --search {self.display(ws.root)}"]}
 
     # -- tour findings and photos (apartmentscout/tourapi.py)
     def tour_files(self) -> TourFiles:
@@ -207,7 +273,7 @@ class ServeState:
                 raise ApiError(422, str(e)) from e
         rel = self.display(target)
         return {"ok": True, "folder": folder, "path": rel, "warnings": rep.warnings,
-                "next": [f"apartmentscout serve --search {rel}", f"apartmentscout import listings.csv --search {rel}", f"apartmentscout all --search {rel}"]}
+                "next": [st["command"] for st in next_steps(rel)]}   # [onboarding] the questionnaire's `after` steps
 
     def activate_folder(self, folder: str) -> dict[str, Any]:
         if not isinstance(folder, str) or not FOLDER.match(folder):
@@ -456,6 +522,14 @@ def make_handler(state: ServeState) -> type[http.server.SimpleHTTPRequestHandler
                 return state.activate_folder(body.get("folder"))
             if route == "/api/rescore":
                 return state.start_rescore()
+            if route == "/api/city":
+                return state.find_city(body.get("q"))
+            if route == "/api/geocode":
+                return state.find_address(body.get("q"), body.get("city"))
+            if route == "/api/feeds/check":
+                return state.feed_check(body.get("url"))
+            if route == "/api/plans":
+                return state.save_plan(body.get("plan"), body.get("overwrite"))
             raise ApiError(404, "Unknown endpoint.")
 
     return Handler

@@ -29,6 +29,7 @@ SCRIPT = [
     "42.36, -71.06",              # map centre
     "y", "Lab", "1 Kendall Sq, Cambridge, MA", "08:30", "40", "1.5", "subway",   # destination 1
     "n",                          # another?
+    "",                           # transit feed: none for now
     "net",                        # basis
     "Target=3800, Stretch=4200",  # tiers
     "4500",                       # hard max
@@ -42,6 +43,11 @@ SCRIPT = [
     "shortest-commute",           # preset
     "cost=12",                    # weights
 ]
+
+
+_n = SCRIPT.index("n")
+# with `--city nyc` the city question is not asked and the profile brings the transit feeds, so neither prompt appears
+SCRIPT_NYC = SCRIPT[:1] + SCRIPT[2:_n + 1] + SCRIPT[_n + 2:]
 
 
 def scripted(answers: list[str]):
@@ -104,11 +110,11 @@ def test_scripted_interview_builds_valid_criteria() -> None:
 
 def test_interview_reasks_invalid_answers() -> None:
     out: list[str] = []
-    answers = ["Name", "mars", "generic", "", "", "", "", "-", "", "n", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "",
-               "", "", "", "", "", "", "", "", ""]
+    answers = ["Name", "generic", "Mars/Phobos", "", "", "", "", "-", "", "n", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "",
+               "", "", "", "", "", "", "", "", "", "", "", ""]
     c = interview(scripted(answers), out.append, today=TODAY)
-    assert any("choose one of" in line for line in out)
-    assert c["search"]["city"] == "generic"
+    assert any("IANA name" in line for line in out), "an invalid time zone is asked again"
+    assert c["search"]["city"] == "generic" and c["search"]["timezone"] == "America/New_York"
 
 
 def test_end_of_input_stops_without_a_result() -> None:
@@ -152,7 +158,7 @@ def _args(path: Path, **kw) -> types.SimpleNamespace:
 
 
 def test_init_interactive_writes_a_valid_search(tmp_path: Path, capsys) -> None:
-    cli.cmd_init(_args(tmp_path / "s", city="nyc", interactive=True), input_fn=scripted(SCRIPT))
+    cli.cmd_init(_args(tmp_path / "s", city="nyc", interactive=True), input_fn=scripted(SCRIPT_NYC))
     crit = load_criteria(tmp_path / "s" / "criteria.yaml")
     assert crit["search"]["name"] == "Boston 2BR" and crit["search"]["city"] == "nyc"
     assert crit["commute"]["transit"]["feeds"], "the nyc profile's feeds are added"

@@ -52,6 +52,12 @@ description: Build the 3D site model for a unit, work out which way its windows 
 
 ## 2. Build the model
 
+For the whole shortlist at once, and to see how good the data is, run `apartmentscout surroundings` (then `--status`): it runs
+`site` for each home, keeps going when a download fails, and reports how many nearby buildings use a default 10 m height
+(OpenStreetMap often lacks heights), which building each home was matched to and how far that is from the address point, and what
+the city does not provide. Outside New York the buildings come from OpenStreetMap only: say so to the renter, and where many
+heights close by are defaults say that the sun hours and the view are estimates. The single-home commands below are for the details.
+
 ```bash
 apartmentscout site <id> --floor 12 --charts          # exposure taken from listing.exposure
 apartmentscout site <id> --floor 12 --bearing 209     # or give the facade bearing

@@ -19,6 +19,7 @@ import { validateLayout } from './layout.js';
 import { serialiseProject } from './project.js';
 import { savePlanScenario } from './scenario-bridge.js';
 import * as T from './tracer.js';
+import * as API from '../local-api.js';   // [onboarding] "Save to the search folder" needs the local server's API
 
 const NS = 'http://www.w3.org/2000/svg';
 const r1 = (v) => Math.round(v * 100) / 100;
@@ -155,6 +156,8 @@ export async function openTracer(mode = 'trace', planId = null) {
   Object.assign(U, { open: true, nmode: null, sideDown: false, sidePending: false, boxStart: null, mode, doc, hist: new T.History(doc), sel: null, saved: true, draft: [], cursor: null, snap: null, scaleDraft: [], checkDraft: [], arrowDraft: [], facadeWall: null, img: null, pdf: null, drag: null, pinch: null, k: UNIT_IN[doc.units] });
   U.pointers.clear();
   U.lastFocus = document.activeElement;
+  U.folder = null; U.replaceOk = null;   // [onboarding] set when `apartmentscout serve` can write plans/<id>.json
+  API.getSession().then((api) => { U.folder = api?.plans?.save ? api.plans : null; if (U.open && U.step === 'save') render(); }).catch(() => {});
   mount();
   goStep(STEPS[mode][0][0]);
   fit();
@@ -999,10 +1002,12 @@ function savePanel() {
   </section>
   <section class="panel"><h3>Provenance <span>written into the plan</span></h3><dl class="tr-prov">${prov.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}</dl><p class="tr-note">${esc(plan?.source || '')}</p></section>
   <section class="panel tr-actions"><h3>Save</h3>
-    <button class="btn primary" type="button" data-act="save-studio"${errors.length ? ' disabled' : ''}>Save and open in the studio</button>
+    ${U.mode === 'trace' && U.folder ? `<button class="btn primary" type="button" data-act="save-folder"${errors.length ? ' disabled' : ''}>${ic('down')}Save to the search folder<span class="mono">plans/${esc(d.id)}.json</span></button>` : ''}
+    <button class="btn${U.mode === 'trace' && U.folder ? '' : ' primary'}" type="button" data-act="save-studio"${errors.length ? ' disabled' : ''}>Save and open in the studio</button>
     <button class="btn" type="button" data-act="download"${errors.length ? ' disabled' : ''}>${ic('down')}Download plan JSON<span class="mono">${esc(d.id)}.json</span></button>
     <button class="btn" type="button" data-act="unit3d"${errors.length ? ' disabled' : ''}>${ic('cube')}Use this plan in Unit 3D</button>
-    <p class="tr-note">Everything is saved in this browser only. The downloaded file is plan JSON v2; an agent can save it as <span class="mono">plans/${esc(d.id)}.json</span> in the search folder.</p>
+    ${byId(d.id) ? '' : `<p class="tr-note warn">No listing has the id <span class="mono">${esc(d.id)}</span>, so Unit 3D and the sun cannot attach this plan to a home. Choose the listing under Details.</p>`}
+    <p class="tr-note">${U.mode === 'trace' && U.folder ? 'Save to the search folder writes the plan next to your listings, so it opens here after a reload, in Unit 3D, and for your agent. Save and open in the studio keeps it in this browser only. ' : 'Save and open in the studio keeps the plan in this browser only. '}The downloaded file is plan JSON v2; <span class="mono">apartmentscout plans add</span> or an agent puts it at <span class="mono">plans/${esc(d.id)}.json</span> in the search folder.</p>
   </section>`;
 }
 function selPanel() {
@@ -1080,6 +1085,7 @@ async function sideClick(e) {
   else if (a === 'pick') { U.sel = { type: 'room', id: b.dataset.id }; setTool('select', true); render(); }
   else if (a === 'download') download();
   else if (a === 'save-studio') saveToStudio();
+  else if (a === 'save-folder') saveToFolder();
   else if (a === 'unit3d') toUnit3D();
 }
 function uniqueName(base, id) {
@@ -1178,6 +1184,23 @@ function download() {
   a.download = `${plan.id}.json`; a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 2000);
   toast(`Downloaded ${plan.id}.json`);
+}
+// [onboarding] write the plan into <search>/plans/<id>.json through the local server, then reload on it so the studio, Unit 3D and the sun read the file
+async function saveToFolder() {
+  const plan = buildPlan(); if (!plan) return;
+  try { serialiseProject(plan, []); } catch (e) { toast(`The plan did not pass validation: ${e.message || e}`, 5200); return; }
+  try {
+    await API.savePlan(plan, U.replaceOk === plan.id);
+  } catch (e) {
+    if (e.status === 409) { U.replaceOk = plan.id; toast(`${e.message} Choose Save to the search folder again to replace it, or change the plan id in Details.`, 7000); }
+    else toast(e.message, 6000);
+    return;
+  }
+  U.saved = true;
+  if (U.mode === 'trace') store.set(DRAFT_KEY(), null);
+  closeTracer(true);
+  location.hash = `#plan/${encodeURIComponent(plan.id)}`;
+  location.reload();
 }
 async function saveToStudio() {
   const plan = buildPlan(); if (!plan) return;
