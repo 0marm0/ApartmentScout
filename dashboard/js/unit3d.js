@@ -21,27 +21,39 @@ import { heightMapHTML, sectorChartSVG, sectorTable, renderFloorViews, renderPan
 import { normalisePlan } from './plan/model.js';
 import { illustration } from './features/empty.js';   // [feature C] empty-state art
 import { missingNotice } from './features/plan-empty.js';   // [feature C]
+import { resolveCal, geoFromSite, measuredFromSite, calSummary } from './unit/calibration.js';   // [model project] measured vs estimated height
+import { effectiveComponents, isAssumed } from './unit/parts.js';   // [model project] source parts plus the assumed override
+import { windowOpenAir, airReason } from './unit/openair.js';   // [model project] a window must be in open air
+import { getPin, clearPin } from './unit/anchor.js';   // [model project] the window pinned for the Floor plan studio
+import { buildFurniture, addRoomView } from './unit/furniture.js';   // [model project] the studio's furniture in the Inside view
+import { modelHooks } from './unit/model-hooks.js';   // [model project] Model panel, project import and the comparison board
 
 let site = null, B0 = [], FUTB = [], edits = new Map(), B = [], T = null, FACES = [], LM = [], FUT = [], BF = null, stage = null, plan = null, interior = null;
 const st = {
   id: null, face: 0, t: 0.5, floor: 10, cmp: 20, az: 180, date: '', min: 780, mode: 'orbit', playing: false,
-  manual: {}, moved: null, sel: null, first: true, bay: false, src: null, lmSel: new Set(), slabOff: null, inWin: -1,
+  manual: {}, moved: null, sel: null, first: true, bay: false, src: null, lmSel: new Set(), slabOff: null, inWin: -1, cal: undefined, air: null, showFurniture: true,
   nbSort: { key: 'dist', dir: 1 }, nbOpen: false, allLm: false, photo: null, video: false,
   study: 'heights', ifBi: null,
 };
+// [model project] which plan the Inside view shows: the source file or a local scenario the renter sent from the Floor plan studio
+let pendingView = null;
+let planInfo = { source: 'none', label: '', saved: null, furniture: 0, layout: null }, scenario = null, useScenario = false, hasFilePlan = false, planRaw = null, mh = null;
 let profA = null, profB = null, profF = null, statesA = null, statesB = null, blkA = null, blkRows = [], NBR = [], curSun = null, curHit = null, heat = null, heatTok = 0, loopOn = false, lastT = 0;
 const tz = () => site?.timezone || S.crit.search?.timezone || 'America/New_York';
-const FH = () => +site?.floor_height_m || +site?.calibration?.floor_height_m || 3.2;
+// [model project] CAL (unit/calibration.js) is the one vertical datum: a measured slab or window-eye height (from the site file,
+// the page address, a pin or the Height fold of the Model panel) beside the floor-count estimate. Every window, the Inside
+// camera, the skyline and the sun maths read it, so the city shadows on the interior follow the same height.
+let CAL = null;
+const calcCal = () => { CAL = resolveCal(geoFromSite(site, T.g), st.cal !== undefined ? st.cal : measuredFromSite(site)); };
+const FH = () => CAL?.fh ?? (+site?.floor_height_m || +site?.calibration?.floor_height_m || 3.2);
 const BASE = () => Math.max(T.g, 0);
-// a measured slab height for the listing's floor (site.slab_m) shifts every floor by the same offset
-const siteOff = () => { const sm = +site?.slab_m, wf = +site?.window?.floor; if (Number.isFinite(sm) && sm > 0 && wf >= 1) return sm - (BASE() + (wf - 1) * FH()); return +site?.calibration?.lobby_m || +site?.lobby_m || 0; };
-const slabOff = () => (st.slabOff != null ? st.slabOff : siteOff());
-const maxFloor = () => Math.max(2, Math.floor((T.top - BASE() - Math.max(0, slabOff())) / FH()));
+const slabOff = () => CAL.s0 - BASE();
+const maxFloor = () => CAL.maxFloor(T.top);
 const MONTHS = 'Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec'.split(' ');
 const MODES = [['orbit', 'Orbit', 'Orbit the block'], ['win', 'Window', 'From the window'], ['in', 'Inside', 'Inside the apartment: its floor plan at the real floor and bearing'], ['plan', 'Plan', 'Street plan, north up'], ['top', 'Top', 'Top down']];
 const PROV = {
   established: ['Established', 'good'], plan: ['Floor plan', 'good'], listing: ['Listing says', 'accent'], agent: ['Agent says', 'accent'],
-  'photo-landmarks': ['Photo landmarks', 'accent'], model: ['Model', ''], assumed: ['Assumed', 'warn'], inferred: ['Inferred', 'warn'], manual: ['Your setting', ''],
+  'photo-landmarks': ['Photo landmarks', 'accent'], model: ['Model', ''], assumed: ['Assumed', 'warn'], inferred: ['Inferred', 'warn'], manual: ['Your setting', ''], measured: ['Measured', 'good'],
 };
 const HSRC = { roof: 'Measured roof height', 'pluto-floors': 'PLUTO floor count × 3.2 m', 'osm-levels': 'OpenStreetMap levels × 3.2 m', 'osm-height': 'OpenStreetMap height tag', default: 'Default height (unknown)' };
 const HSHORT = { roof: 'Measured roof', 'pluto-floors': 'PLUTO floors', 'osm-levels': 'OSM levels', 'osm-height': 'OSM height', default: 'Default (unknown)' };
@@ -112,6 +124,7 @@ export function init() {
       </div>
       <aside class="u-side">
         <section class="panel" id="winPanel"></section>
+        <section class="panel mp" id="modelPanel" aria-label="Model"></section>
         <section class="panel" id="sunPanel"></section>
         <section class="panel u-if" id="ifPanel" aria-label="What if"></section>
         <section class="panel" id="seePanel"></section>
@@ -131,11 +144,14 @@ export function init() {
   new ResizeObserver(fitGrid).observe(root);
   $('uGlb').addEventListener('click', exportGLB);
   on('theme', () => { stage?.setPalette(); if (site && hasWindow()) { buildApartment(); drawPathChart(); landmarks(); stage.dirty = true; studyStale(true); } });
+  mh = modelHooks(modelBridge());   // [model project]
+  mh.mount($('modelPanel'));
   // read-only hook for headless checks (Playwright): never used by the page itself
-  window.__unit3d = { st, get sun() { return curSun; }, get hit() { return curHit; }, get blockers() { return blkRows; }, get neighbours() { return NBR.length; }, get interior() { return !!stage?.interior; }, get stage() { return stage; } };
+  window.__unit3d = { st, get cal() { return CAL; }, get plan() { return plan; }, get planInfo() { return planInfo; }, get B() { return B; }, get faces() { return FACES; }, get sun() { return curSun; }, get hit() { return curHit; }, get blockers() { return blkRows; }, get neighbours() { return NBR.length; }, get interior() { return !!stage?.interior; }, get stage() { return stage; } };
 }
 
 export async function show(id) {
+  await mh?.recall();   // [model project] imported projects survive a reload
   const ids = S.manifest.sites || [];
   if (!ids.length) {
     $('uGrid').innerHTML = `<div class="empty has-ill">${illustration('unit')}<b>No site models yet</b><span>Run <code>apartmentscout site &lt;listing-id&gt;</code> for a listing, then <code>apartmentscout build</code>. Each model shows the block around a home and when the sun reaches its window.</span></div>`;
@@ -168,15 +184,11 @@ async function load(id) {
     $('uLoad').innerHTML = `<div class="empty"><b>This site model could not be read</b>Rebuild it with <code>apartmentscout site ${esc(id)}</code>.</div>`;
     return;
   }
-  site = data; st.id = id; st.manual = {}; st.moved = null; st.sel = null; st.src = null; st.slabOff = null; st.inWin = -1; st.lmSel = new Set(); heat = null; NBR = []; blkRows = [];
-  plan = null;
-  // an edited plan saved from the Floor plan studio or the tracer ("Use this plan in Unit 3D") wins over the source file
-  let scen = null;
-  try { scen = (await import('./plan/scenario-bridge.js')).getPlanScenario(id, { base: S.base }); } catch { scen = null; }
-  if (scen?.plan) { try { plan = normalisePlan(scen.plan); plan._scenario = scen.label || 'edited plan'; } catch { plan = null; } }
-  else if ((S.manifest.plans || []).includes(id)) { try { plan = normalisePlan(await loadJSON(`${S.base}/plans/${id}.json`, null)); } catch { plan = null; } }
-  B0 = prepBuildings(site.b, site.holes && typeof site.holes === 'object' ? site.holes : null, site.components && typeof site.components === 'object' ? site.components : null);
+  site = data; st.id = id; st.manual = {}; st.moved = null; st.sel = null; st.src = null; st.slabOff = null; st.cal = undefined; st.air = null; st.inWin = -1; st.lmSel = new Set(); heat = null; NBR = []; blkRows = [];
+  await loadPlan(id);   // [model project] the source plan, or the local scenario the renter chose to use
+  B0 = prepBuildings(site.b, site.holes && typeof site.holes === 'object' ? site.holes : null, effectiveComponents(site));   // [model project] source parts + the assumed override
   T = B0[site.target] || B0[0];
+  calcCal();
   edits = readEdits(new URLSearchParams(location.search), id);
   if (!edits.size && editsMem.has(id)) edits = new Map(editsMem.get(id)); // kept while you visit other units
   B = applyEdits(B0, edits);
@@ -204,6 +216,14 @@ async function load(id) {
   const qf = st.first ? +qs.get('floor') : NaN;
   st.floor = Math.max(1, Math.min(mf, Math.round(qf || w.floor || L.floor || mf / 2)));
   st.cmp = Math.min(mf, Math.max(1, st.floor + 9 > mf ? Math.max(1, st.floor - 9) : st.floor + 9));
+  // [model project] the window the renter pinned for the Floor plan studio (explicit; a page address with a scenario wins over it)
+  const pin = qs.has('sv') ? null : getPin(id, { base: S.base }), pf = pin ? FACES.findIndex((f) => f.i === pin.face && !f.shared) : -1;
+  st.pinned = pf >= 0;
+  if (pf >= 0) {
+    Object.assign(st, { face: pf, t: snapPosition(FACES[pf], pin.t, snapOpen) ?? pin.t, az: pin.az, bay: pin.bay, cal: pin.cal }); calcCal();
+    st.floor = Math.max(1, Math.min(maxFloor(), pin.floor)); st.cmp = Math.min(maxFloor(), Math.max(1, st.floor + 9 > maxFloor() ? Math.max(1, st.floor - 9) : st.floor + 9));
+    st.manual = { face: true, pos: true, az: true, floor: true };
+  }
   if (st.first) {
     const mi = moveIn();
     st.date = /^\d{4}-\d{2}-\d{2}$/.test(qs.get('date') || '') ? qs.get('date') : mi || new Date().toISOString().slice(0, 10);
@@ -213,6 +233,16 @@ async function load(id) {
     if (!qs.has('sv')) applyScenarioExtras(readScenarioExtras(qs)); // older unversioned links
     st.first = false;
   }
+  if (pendingView && pendingView.id === id) {   // [model project] the view saved in an imported project
+    const v = pendingView; pendingView = null;
+    if (v.cal !== undefined && !pin) { st.cal = v.cal; calcCal(); }
+    if (/^\d{4}-\d{2}-\d{2}$/.test(v.date || '')) st.date = v.date;
+    if (Number.isFinite(v.min)) st.min = clampMin(v.min);
+    if (['orbit', 'win', 'in', 'plan', 'top'].includes(v.mode)) st.mode = v.mode;
+    if (!pin && Number.isInteger(v.floor)) st.floor = Math.max(1, Math.min(maxFloor(), v.floor));
+    if (Number.isInteger(v.cmp)) st.cmp = Math.max(1, Math.min(maxFloor(), v.cmp));
+    if (typeof v.bay === 'boolean') st.bay = v.bay;
+  }
   const restored = readScenario(qs, id, FACES, mf);
   if (restored) {
     Object.assign(st, { face: restored.face, t: snapPosition(FACES[restored.face], restored.t, snapOpen), az: restored.az, cmp: restored.cmp });
@@ -220,6 +250,7 @@ async function load(id) {
     st.manual = { face: true, pos: true, az: true, floor: true };
   }
   st.floor = Math.min(maxFloor(), st.floor); st.cmp = Math.min(maxFloor(), st.cmp);
+  checkAir();   // [model project]
   header(); fitGrid();
   if (!stage) {
     stage = new UnitStage($('gl'), $('stage'), $('uLabels'));
@@ -237,7 +268,7 @@ async function load(id) {
   stage.resize();
   $('uSnap').disabled = $('uGlb').disabled = !hasWindow();
   unitsRow(); fitGrid();
-  if (!hasWindow()) {
+  if (!FACES[st.face] || FACES[st.face].shared) {
     st.mode = 'orbit'; st.playing = false; ++heatTok;
     profA = profB = profF = statesA = statesB = null; interior = null;
     $('timePanel').innerHTML = ''; $('studyPanel').innerHTML = ''; $('studyPanel').hidden = $('ifPanel').hidden = true; $('winPanel').innerHTML = '<h3>Window unresolved</h3><p>No exposed facade passed the placement checks. The city remains available to inspect; a verified window position is needed for sunlight and outlook estimates.</p>';
@@ -252,15 +283,36 @@ async function load(id) {
   stage.resetOrbit(false); if (st.mode === 'top') stage.topDown(false);
   closeCard();
   $('uLoad').hidden = true;
+  mh?.refresh(true);
+}
+/** [model project] The plan for the Inside view: the renter's local scenario when they sent one on purpose (and have not switched it off), else the source file. */
+async function loadPlan(id) {
+  plan = null; planRaw = null; planInfo = { source: 'none', label: '', saved: null, furniture: 0, layout: null };
+  try { scenario = (await import('./plan/scenario-bridge.js')).getPlanScenario(id, { base: S.base }); } catch { scenario = null; }
+  hasFilePlan = (S.manifest.plans || []).includes(id);
+  let pref = null; try { pref = localStorage.getItem('as:unit-scenario-use:' + id); } catch { pref = null; }
+  useScenario = !!scenario && pref !== '0';
+  if (scenario && useScenario) {
+    try { plan = normalisePlan(scenario.plan); planRaw = scenario.plan; planInfo = { source: 'local scenario', label: scenario.label || 'edited plan', saved: scenario.saved, layout: scenario.layout, furniture: scenario.layout?.items?.length || 0 }; } catch { plan = null; }
+  }
+  if (!plan && hasFilePlan) {
+    try { planRaw = await loadJSON(`${S.base}/plans/${id}.json`, null); plan = normalisePlan(planRaw); planInfo = { source: 'file', label: '', saved: null, furniture: 0, layout: null }; } catch { plan = null; planRaw = null; }
+  }
 }
 const listing = () => byId(st.id) || site?.listing || {};
+/** [model project] Do any buildings use parts the renter assumed? Then the stored site study (source geometry) no longer applies. */
+const partsAssumed = () => B0.some((b) => isAssumed(b.parts));
 const moveIn = () => (S.crit.search?.move_in?.earliest ? String(S.crit.search.move_in.earliest).slice(0, 10) : null);
 const clampMin = (m) => Math.max(STRIP_FROM, Math.min(STRIP_TO - STRIP_STEP, Number.isFinite(m) ? m : 780));
 const ymd = () => st.date.split('-').map(Number);
-const hasWindow = () => !!FACES[st.face] && !FACES[st.face].shared;
+const hasWindow = () => !!FACES[st.face] && !FACES[st.face].shared && st.air?.ok !== false;   // [model project] a window outside open air is no window
 function applyScenarioExtras(extra) {
   if (!extra) return;
   for (const k of ['bay', 'src', 'slabOff', 'inWin']) if (Object.hasOwn(extra, k)) st[k] = extra[k];
+  // [model project] cal= carries a measured height; the older slab= (a constant shift in metres) becomes the same thing
+  if (Object.hasOwn(extra, 'cal')) st.cal = extra.cal;
+  else if (Number.isFinite(extra.slabOff)) { calcCal(); st.cal = { kind: 'slab', value: Math.round((CAL.estimateAt(st.floor) + extra.slabOff) * 100) / 100, floor: st.floor, spread: 'offset' }; st.slabOff = null; }
+  calcCal();
   if (extra.landmarks) st.lmSel = new Set(extra.landmarks.filter((name) => LM.some((l) => l.name === name)));
 }
 /** Pane offsets of the window: null for a flat window, the site file's panes or a 45° bay. */
@@ -499,6 +551,9 @@ function clearPhoto() {
 function buildApartment() {
   if (!stage?.scene || !site || !hasWindow()) return;
   interior = buildInterior(plan || genericPlan(), { generic: !plan });
+  // [model project] the furniture that came with a local plan scenario, in the studio's own meshes
+  if (plan && planInfo.source === 'local scenario' && planInfo.layout?.items?.length && st.showFurniture !== false) { const F = buildFurniture(planInfo.layout.items, plan, interior.frame); interior.group.add(F.group); interior.furniture = F; }
+  if (plan) addRoomView(interior);   // [model project] a viewpoint that looks back into the room
   stage.setInterior(interior);
   const ws = interior.windows;
   if (st.inWin < 0 || st.inWin >= ws.length) {
@@ -518,7 +573,7 @@ function winPos(floor, t = st.t) {
   const nx = Math.sin(f.bearing * DEG), ny = Math.cos(f.bearing * DEG);
   return { x: x + nx * 0.4, y: y + ny * 0.4, z: slabZ(floor) + 1.6, fx: x, fy: y };
 }
-const slabZ = (floor) => BASE() + (floor - 1) * FH() + slabOff();
+const slabZ = (floor) => CAL.slabAt(floor);
 const sunAt = (min) => { const [y, m, d] = ymd(); return sunPos(zonedMs(y, m - 1, d, min, tz()), site.origin.lat, site.origin.lon); };
 const tableFor = (step = 6) => { const [y, m, d] = ymd(); return table(y, m - 1, d, site.origin.lat, site.origin.lon, tz(), step); };
 const blockerSet = () => (stage.opts.future && BF ? BF : B);
@@ -626,12 +681,13 @@ function buildWindowPanel() {
   $('uBayHint')?.addEventListener('click', () => setBay(true));
   $('uSlab').addEventListener('change', (e) => {
     const v = parseFloat(e.target.value); if (!Number.isFinite(v) || v < 0 || v > 600) { e.target.value = slabZ(st.floor).toFixed(1); return; }
-    st.slabOff = v - (BASE() + (st.floor - 1) * FH()); refreshWindow(true);
+    setCal({ kind: 'slab', value: Math.round(v * 100) / 100, floor: st.floor, spread: st.cal?.spread || 'scale', src: 'entered in Unit 3D' });   // [model project]
   });
   $('uWinReset').addEventListener('click', () => {
     const qs = clearScenario(new URLSearchParams(location.search)); qs.delete('floor'); for (const k of XKEYS) qs.delete(k);
     history.replaceState(history.state, '', `${location.pathname}?${qs}#unit/${encodeURIComponent(st.id)}`);
-    st.src = null; st.slabOff = null; st.lmSel.clear();
+    st.src = null; st.slabOff = null; st.cal = undefined; st.lmSel.clear();
+    if (getPin(st.id, { base: S.base })) { clearPin(st.id); toast('Back to the listing: the window pinned for the Floor plan was removed.'); }   // [model project]
     load(st.id);
   });
 }
@@ -645,23 +701,34 @@ function syncWindowPanel() {
   ['uPos', 'uFloor', 'uCmp', 'uAz'].forEach((id) => fill($(id)));
   const w = winPos(st.floor), s = streetAhead(site.streets, w.fx, w.fy, st.az), wall = nearestAhead(w);
   $('uWinFoot').textContent = `${Math.round(st.t * f.length)} m along a ${Math.round(f.length)} m facade · eye level ${Math.round(w.z)} m${s ? ` · ${s.name} centreline ${Math.round(s.dist)} m ahead` : ''}${wall ? ` · first building straight out: ${bname(wall.bi, true)}, ${Math.round(wall.h)} m tall, ${Math.round(wall.d)} m` : ' · nothing taller than your eyes straight out'}`;
-  $('uWinReset').hidden = !(st.manual.face || st.manual.pos || st.manual.floor || st.manual.az || st.slabOff != null || st.src);
+  $('uWinReset').hidden = !(st.manual.face || st.manual.pos || st.manual.floor || st.manual.az || st.cal !== undefined || st.src);
   $('uWinProv').innerHTML = provChip(provenance().exposure);
   const P = panes();
   $('uBayTxt').textContent = P ? paneFacings(st.az, P).sort((a, b) => a - b).map((x) => Math.round(x) + '°').join(' · ') : 'one flat pane';
   if (document.activeElement !== $('uSlab')) $('uSlab').value = slabZ(st.floor).toFixed(1);
   $('uSlabF').textContent = st.floor;
   const src = site.floor_height_src || site.calibration?.src;
-  $('uSlabSrc').innerHTML = st.slabOff != null ? provChip('manual') : '';
-  $('uSlabHelp').textContent = `${FH().toFixed(2)} m per floor${src === 'pluto' ? ' (roof ÷ PLUTO floors)' : src === 'default' ? ' (default)' : ''}. Type the real height if you know it.`;
+  $('uSlabSrc').innerHTML = st.cal !== undefined ? provChip('manual') : CAL.state === 'measured' ? provChip('measured') : '';
+  $('uSlabHelp').textContent = `${FH().toFixed(2)} m per floor${CAL.state === 'measured' ? ' (from your measured height)' : src === 'pluto' ? ' (roof ÷ PLUTO floors)' : src === 'default' ? ' (default)' : ''}. Type the real height if you know it; the Model panel has more.`;
   if (st.bay && $('uBayNote')) $('uBayNote').hidden = true;
 }
 /** Paint the filled part of a range track (app.css reads --p). */
 function fill(el) { if (!el) return; const p = ((+el.value - +el.min) / ((+el.max - +el.min) || 1)) * 100; el.style.setProperty('--p', p + '%'); }
 
 // ------------------------------------------------------------------ refresh
+/** [model project] The Window and Inside cameras need a window in open air. */
+function syncModeButtons() { $('uModes').querySelectorAll('[data-mode]').forEach((b) => { b.disabled = !hasWindow() && (b.dataset.mode === 'win' || b.dataset.mode === 'in'); }); }
+/** [model project] Is the air just outside the current window open at its height? A window inside its host or a neighbour is no window. */
+function checkAir() {
+  const f = FACES[st.face];
+  if (!f || f.shared) { st.air = null; return; }
+  const w = winPos(st.floor), z = slabZ(st.floor), r = windowOpenAir(B, B.indexOf(T), w.fx, w.fy, st.az, z + 0.6, z + 2.2);
+  st.air = r.ok ? { ok: true } : { ...r, message: airReason(r, (i) => bname(i, true)) };
+}
 function refreshWindow(heavy) {
-  if (!hasWindow()) { unresolvedWindow(); return; }
+  checkAir();
+  if (!hasWindow()) { unresolvedWindow(); mh?.refresh(); return; }
+  $('uSnap').disabled = $('uGlb').disabled = false; syncModeButtons();
   const a = winPos(st.floor), b = winPos(st.cmp);
   profA = horizonProfile(B, a.x, a.y, a.z); profB = horizonProfile(B, b.x, b.y, b.z);
   profF = BF && stage.opts.future ? horizonProfile(BF, a.x, a.y, a.z) : null;
@@ -671,14 +738,18 @@ function refreshWindow(heavy) {
   evidencePanel(); ifPanel(heavy);
   studyStale(true);
   syncUrlSoon();
+  mh?.refresh();
 }
 function unresolvedWindow() {
   st.playing = false; stage.win = null; blkRows = []; NBR = [];
+  if (st.mode === 'win' || st.mode === 'in') setMode('orbit', true);
+  syncModeButtons();
   for (const key of ['marker', 'band', 'cmpBand', 'cmpBand2', 'cone', 'ray', 'hitDot']) if (stage[key]) stage[key].visible = false;
   stage.labels = stage.labels.filter((l) => { if (l.cls !== 'win') return true; l.el.remove(); return false; });
   $('uSnap').disabled = $('uGlb').disabled = true;
   $('hud').textContent = 'Window unresolved · City context only';
-  $('sunPanel').innerHTML = '<h3>Sunlight unresolved</h3><p>No valid window placement. No unit-specific sunlight estimate is available.</p>';
+  const air = st.air?.ok === false ? `<p class="u-note warn" role="alert">${esc(st.air.message)} Move the window (facade, position, floor or height) to open air.</p>` : '';
+  $('sunPanel').innerHTML = `<h3>Sunlight unresolved</h3><p>No valid window placement. No unit-specific sunlight estimate is available.</p>${air}`;
   $('seePanel').innerHTML = '<h3>Outlook unresolved</h3><p>Inspect the building context in Orbit or Plan. This does not establish an apartment view.</p>';
   $('heatPanel').innerHTML = ''; $('nbPanel').innerHTML = '';
   const cv = $('pathCv'); cv.getContext('2d')?.clearRect(0, 0, cv.width, cv.height);
@@ -726,7 +797,7 @@ function bname(bi, short = false) {
 
 function sunPanel(s, state) {
   const P = panes(), tab = tableFor(6), A = litInfo(tab, profA, st.az, 6, P), Bc = litInfo(tab, profB, st.az, 6, P), F = profF ? litInfo(tab, profF, st.az, 6, P) : null;
-  const [, mo] = ymd(), baseline = baselineStudyMatches(site, st, FACES[st.face]) && !P && st.slabOff == null;
+  const [, mo] = ymd(), baseline = baselineStudyMatches(site, st, FACES[st.face]) && !P && st.cal === undefined && !partsAssumed();
   const rng = baseline ? site.study?.sun_hours_range : null;
   let why;
   if (state === 'night') why = `At ${fmtT(st.min)} the sun is below the horizon.`;
@@ -1031,12 +1102,16 @@ function evidencePanel() {
   const nParts = B.filter((b) => b.parts).length, ci = site.components_info || {};
   const nMan = B.filter((b) => b.parts?.some((q) => /^manual/i.test(q.source))).length;
   const partSrc = nParts ? ` (${nMan ? `${nMan} from your components file, ` : ''}${nParts - nMan} from OpenStreetMap building parts${ci.partial || ci.height_mismatch ? `; ${(ci.partial || 0) + (ci.height_mismatch || 0)} with incomplete or conflicting parts left whole` : ''})` : '';
-  const ex = evidenceExtras(site, { sector: bm.length && hasWindow() ? sector : null, staleYears: STALE_YEARS, fh: FH(), floor: st.floor, slab: hasWindow() ? slabZ(st.floor) : null, slabManual: st.slabOff != null });
+  const ex = evidenceExtras(site, { sector: bm.length && hasWindow() ? sector : null, staleYears: STALE_YEARS, fh: FH(), floor: st.floor, slab: hasWindow() ? slabZ(st.floor) : null, slabManual: st.cal !== undefined });
   const ev = [
     ['Exposure', p.exposure, st.src === 'photo-landmarks' ? `Matched against a photo from the window${st.lmSel.size ? `: ${esc([...st.lmSel].join(', '))}` : ''}.` : P.basis && p.exposure !== 'manual' ? `${esc(P.basis[0].toUpperCase() + P.basis.slice(1))}.${P.evidence ? ' ' + esc(P.evidence) : ''}` : L.exposure?.length ? `Listing gives ${esc(L.exposure.join(', '))}.` : 'No exposure on the listing: the model starts on the longest open facade.'],
     ['Window position', p.position, 'Where the unit sits along its facade is rarely published. The model puts the window at the point you choose.'],
     ['Floor', p.floor, p.floor === 'inferred' ? 'Guessed from the unit number.' : L.floor != null ? `Listing gives floor ${esc(Math.round(L.floor))}.` : 'No floor on the listing.'],
   ];
+  // [model project] height, building parts and the plan, each with its state
+  { const [, , ctext] = calSummary(CAL, st.floor); ev.push(['Height', CAL.state === 'measured' ? 'measured' : 'assumed', esc(ctext)]); }
+  if (partsAssumed()) ev.push(['Building parts', 'assumed', `${B0.filter((b) => b.parts?.some((q) => q.confidence === 'assumed')).length} building(s) are modelled with parts you assumed (${esc([...new Set(B0.flatMap((b) => (b.parts || []).filter((q) => q.confidence === 'assumed').map((q) => q.source)))].slice(0, 2).join('; '))}). The drawing and every sun and sky number use them; the source data is unchanged.`]);
+  if (planInfo.source === 'local scenario') ev.push(['Plan', 'assumed', `Your local scenario “${esc(planInfo.label)}” from the Floor plan studio, with ${planInfo.furniture} piece${planInfo.furniture === 1 ? '' : 's'} of furniture. It applies to this unit only.`]);
   if (edits.size) ev.push(['Neighbour heights', 'manual', `What-if scenario: ${[...edits].map(([bi, h]) => `${esc(bname(bi, true))} at ${Math.round(h)} m instead of ${Math.round(h0Of(bi))} m`).join('; ')}. Every number on the page uses it.`]);
   if (st.bay && hasWindow()) ev.push(['Bay window', Array.isArray(site.window?.panes) && site.window.panes.length > 1 ? 'model' : 'manual', `Counted as ${panes().length} panes at ${paneFacings(st.az, panes()).map((x) => Math.round(x) + '°').join(', ')}, all sharing one skyline point.${planSaysBay() ? ' The floor plan marks a bay.' : ''}`]);
   $('evPanel').innerHTML = `<h3>Assumptions and evidence</h3>
@@ -1052,7 +1127,7 @@ function evidencePanel() {
       ${(site.streets || []).length ? `<dt>Streets</dt><dd>${site.streets.length} centrelines (centre of the road, not the kerb).</dd>` : ''}
       ${FUT.length ? `<dt>Proposed</dt><dd>${FUT.map((f) => `${esc(f.name || 'Unnamed')} (${Math.round(f.h)} m, ${esc(f.status || 'proposed')}${safeLink(f.url)})`).join('; ')}.</dd>` : ''}
       <dt>Sun</dt><dd>Standard solar formulas, ${esc(tz())} with daylight saving. Direct sun on a clear day: no reflections, trees or haze; “expected” hours scale it by the month's sunshine share. Daylight is a relative overcast-sky model (sky view and an estimated daylight factor), not lux. A window counts as lit when the sun is within 90° of the way ${st.bay ? 'one of its panes' : 'it'} faces and above every building in that direction.</dd>
-      ${hasWindow() ? `<dt>Inside</dt><dd>${plan ? `The floor plan (${esc(plan.provenance?.match || 'unverified match')}) sits with its window wall on the facade at the window position, turned to ${Math.round(st.az)}°.` : 'No floor plan for this unit: the Inside view uses a generic 5.5 × 7 m room.'} The rest of this building does not cast shadows into it.</dd>` : ''}
+      ${hasWindow() ? `<dt>Inside</dt><dd>${plan ? `The ${planInfo.source === 'local scenario' ? 'local plan scenario' : 'floor plan'} (${esc(plan.provenance?.match || 'unverified match')}) sits with its window wall on the facade at the window position, turned to ${Math.round(st.az)}°.` : 'No floor plan for this unit: the Inside view uses a generic 5.5 × 7 m room.'} The rest of this building does not cast shadows into it.</dd>` : ''}
     </dl>
     ${receiptsBlock(site.sources || site.receipts, safeUrl)}
     <p class="u-rule">Only a floor plan with a compass, exact-unit photos or the building's own data establish which way a unit faces. Everything else is a working assumption: check it on a visit at the same time of day.</p>`;
@@ -1350,22 +1425,89 @@ function snapshot() {
 }
 async function exportGLB() {
   if (!stage || !site || !hasWindow()) return;
+  try {
+    toast('Building the 3D model…');
+    const buf = await glbBuffer();
+    download(`${st.id}-floor${st.floor}.glb`, buf, 'model/gltf-binary'); toast('3D model saved (.glb)');
+  } catch (e) { toast(`Export failed: ${e.message || e}`, 4000); }
+}
+async function glbBuffer() {
   const L = listing(), p = provenance();
   const meta = {
     name: `${st.id} site model`, listing: st.id, building: L.building || site.listing?.building || '', unit: L.unit || '', floor: st.floor,
     facade_bearing_deg: Math.round(st.az * 10) / 10, panes_deg: paneFacings(st.az, panes()).map((x) => Math.round(x * 10) / 10),
     window_position: Math.round(st.t * 100) / 100, slab_height_m: Math.round(slabZ(st.floor) * 10) / 10, floor_height_m: FH(),
+    height_state: CAL.state, estimated_slab_height_m: Math.round(CAL.estimateAt(st.floor) * 10) / 10, assumed_building_parts: partsAssumed(), plan_source: planInfo.source,
     provenance: { exposure: p.exposure, window_position: p.position, floor: p.floor, target: site.provenance?.target || null },
     apartment: interior ? (interior.generic ? 'generic room' : plan?.title || 'floor plan') : null,
     height_edits: edits.size ? [...edits].map(([bi, h]) => ({ index: bi, name: bname(bi, true), original_m: Math.round(h0Of(bi) * 10) / 10, scenario_m: Math.round(h * 10) / 10 })) : [],
     source: site.source || '', site_generated: site.generated || null, exported: new Date().toISOString(),
     frame: 'metres; glTF Y up; x east, -z north; origin at the site origin', geometry: B.some((b) => b.parts) ? 'footprints extruded to roof height; buildings with components (OpenStreetMap building parts or a manual file) drawn as stacked prisms' : 'footprints extruded to roof height (no setbacks or crowns)',
   };
+  return stage.exportGLB(meta);
+}
+
+// ------------------------------------------------------------------ [model project] bridge to the Model panel
+/** Change the measured height (null = the floor count), then re-run everything that depends on it: the window, the interior, the sun. */
+function setCal(m) {
+  st.cal = m; calcCal();
+  const mf = maxFloor(); st.floor = Math.max(1, Math.min(mf, st.floor)); st.cmp = Math.max(1, Math.min(mf, st.cmp));
+  for (const [id, v] of [['uFloor', st.floor], ['uCmp', st.cmp]]) { const el = $(id); if (el) { el.max = mf; el.value = v; fill(el); } }
+  stage.setFloorH(FH()); refreshWindow(true); syncUrl(); mh?.refresh(true);
+}
+function setUseScenario(on) {
+  try { localStorage.setItem('as:unit-scenario-use:' + st.id, on ? '1' : '0'); } catch { /* storage unavailable */ }
+  loadPlan(st.id).then(() => { interior = null; buildApartment(); evidencePanel(); unitsRow(); stage.dirty = true; mh?.refresh(true); });
+}
+function setFurniture(on) { st.showFurniture = !!on; buildApartment(); stage.dirty = true; mh?.refresh(true); }
+/** The buildings changed (assumed parts): rebuild the city, the target and the interior without losing the window, time or camera. */
+async function rebuildScene() {
+  B0 = prepBuildings(site.b, site.holes && typeof site.holes === 'object' ? site.holes : null, effectiveComponents(site));
+  T = B0[site.target] || B0[0]; B = applyEdits(B0, edits); BF = FUT.length ? B.concat(FUTB) : null;
+  FACES = canonicalFaces(facesOf(T, 8, B), site.faces, site.version); calcCal();
+  const look = { ...stage.look }, mode = st.mode;
+  $('uLoad').hidden = false; await new Promise((r) => requestAnimationFrame(r));
+  stage.build({ B: B0, T, ti: B0.indexOf(T), streets: Array.isArray(site.streets) ? site.streets : [], future: FUT, green: site.green || null, lm: LM, ownLabel: site.listing?.building || listing().building || 'This building' });
+  stage.setFloorH(FH());
+  for (const [bi, h] of edits) stage.setHeight(bi, h / Math.max(0.01, B0[bi].top - B0[bi].g), B0[bi].g, B);
+  stage.resize(); Object.assign(stage.look, look);
+  interior = null; checkAir(); if (hasWindow()) buildApartment();
+  setMode(hasWindow() ? mode : 'orbit', true); refreshWindow(true); closeCard(); $('uLoad').hidden = true; stage.dirty = true;
+}
+/** The plan with its furniture as a validated project, for the model project export. */
+async function planForExport() {
+  if (!plan || !planRaw) return null;
   try {
-    toast('Building the 3D model…');
-    const buf = await stage.exportGLB(meta);
-    download(`${st.id}-floor${st.floor}.glb`, buf, 'model/gltf-binary'); toast('3D model saved (.glb)');
-  } catch (e) { toast(`Export failed: ${e.message || e}`, 4000); }
+    const { serialiseProject } = await import('./plan/project.js');
+    const items = planInfo.source === 'local scenario' ? (planInfo.layout?.items || []) : (plan.layouts[0]?.items || []).map((x) => ({ ...x }));
+    return { id: plan.id || st.id, source: planInfo.source, label: planInfo.label, saved: planInfo.saved, project: serialiseProject(planRaw, items, scenario && useScenario ? scenario.lighting || {} : {}) };
+  } catch { return null; }
+}
+/** Everything the comparison board needs: the buildings (source and assumed), the faces, the datum and the shared base state. */
+function compareContext() {
+  const holes = site.holes && typeof site.holes === 'object' ? site.holes : null;
+  const src = partsAssumed() ? applyEdits(prepBuildings(site.b, holes, site.components && typeof site.components === 'object' ? site.components : null), edits) : B;
+  const L = listing(), bay = Array.isArray(site.window?.panes) && site.window.panes.length > 1 ? site.window.panes.map(Number) : BAY;
+  return {
+    id: st.id, site, title: `${L.building || site.listing?.building || st.id}${L.unit ? ' ' + L.unit : ''}`, faces: FACES, Bsource: src, Bassumed: partsAssumed() ? B : null,
+    FUT, FUTB: stage.opts.future ? FUTB : FUTB, ti: B.indexOf(T), geo: geoFromSite(site, T.g), measured: CAL.measured, panes: bay, lat: site.origin.lat, lon: site.origin.lon, tz: tz(),
+    fraction: sunshineFrac(), maxFloor: maxFloor(), ownLabel: L.building || 'This building', liveStage: stage,
+    base: { date: st.date, min: st.min, floor: st.floor, face: st.face, t: st.t, az: st.az, bay: st.bay, future: !!stage.opts.future && FUT.length > 0, parts: partsAssumed() ? 'assumed' : 'source', faceBearings: FACES.map((f) => f.bearing) },
+  };
+}
+function refreshSelect() {
+  const ids = S.manifest.sites || [], sel = $('unitSel'), ov = window.__AS_OVERLAY__ || {};
+  sel.innerHTML = ids.length ? ids.map((id) => { const L = byId(id); return `<option value="${esc(id)}">${esc(L ? label(L) : ov[`${S.base}/sites/${id}.json`]?.listing?.building || id)}${L?.floor ? ' · floor ' + Math.round(L.floor) : ''}${`${S.base}/sites/${id}.json` in ov ? ' · imported project' : ''}</option>`; }).join('') : '<option>No site models yet</option>';
+  if (st.id) sel.value = st.id;
+}
+function modelBridge() {
+  return {
+    get: () => (site && T && CAL ? { id: st.id, base: S.base, site, st, CAL, T, B, B0, FACES, FUT, FUTB, edits, plan, planInfo, scenario, useScenario, hasFilePlan, interior, stage, panes: panes(), prov: provenance(), future: !!stage?.opts.future, planSig: interior?.furniture?.count ?? 0, nameOf: (i) => bname(i, true), appVersion: S.manifest.version || null, imported: `${S.base}/sites/${st.id}.json` in (window.__AS_OVERLAY__ || {}), blockers: blkRows, winPoint: hasWindow() ? winPos(st.floor) : { x: 0, y: 0, z: 0 }, listing: listing() } : null),
+    setUseScenario, setFurniture, setCal, rebuildScene, glb: glbBuffer, planForExport, compareContext, refreshSelect,
+    load: (id) => { location.hash = '#unit/' + encodeURIComponent(id); return id === st.id ? load(id) : show(id); },
+    setEdits: (id, list) => editsMem.set(id, new Map(list.map((e) => [e.index, e.h]))),
+    setPendingView: (id, v) => { pendingView = v ? { ...v, id } : null; }, forceReload: () => { st.id = null; },
+  };
 }
 
 // ------------------------------------------------------------------ loop
