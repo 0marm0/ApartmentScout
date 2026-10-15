@@ -8,16 +8,37 @@
 import * as THREE from 'three';
 import { pointInPoly } from './model.js';
 import { windowGroup } from '../room3d/windows.js';   // [room3d]
+import { ROOM_HEX } from '../room3d/palette.js';
 
 const M = 0.0254;
 
 // ------------------------------------------------------------------ floors
 export const FLOOR_BY_KIND = { living: 'parquet', dining: 'parquet', bedroom: 'oak', office: 'oak', hall: 'oak', other: 'oak', kitchen: 'tile-large', bath: 'tile-small', closet: 'oak', outdoor: 'tile-large' };
-/** The floor finish for a room kind: 'parquet' | 'oak' | 'tile-large' | 'tile-small'. */
-/** A plan may name the finish of its dry rooms (`floor_finish`: 'basket' | 'parquet' | 'oak'): the real floor of the unit, read from its photos. Kitchens, baths, closets and terraces keep their own. */
+/** The floor finish for a room kind: 'parquet' | 'oak' | 'basket' | 'tile-large' | 'tile-small' | 'carpet' | 'concrete'. */
+/**
+ * A plan names the floor of its dry rooms in `finishes.floor.pattern` (plan/finishes.js: herringbone, basket, plank, tile, carpet, concrete) or, the old way,
+ * in `floor_finish` ('basket' | 'parquet' | 'oak'). The pattern is the real floor of the unit, read from its photos. Kitchens, baths, closets and terraces keep
+ * their own, unless the plan names a kitchen or bath floor (`finishes.kitchen.floor`, `finishes.bath.floor`).
+ */
 export const FLOOR_FINISHES = ['basket', 'parquet', 'oak'];
+export const PATTERN_KIND = { herringbone: 'parquet', basket: 'basket', plank: 'oak', tile: 'tile-large', carpet: 'carpet', concrete: 'concrete' };
 const OWN_FLOOR = new Set(['kitchen', 'bath', 'closet', 'outdoor']);
-export const floorKind = (room, model) => (model && FLOOR_FINISHES.includes(model.floor_finish) && !OWN_FLOOR.has(room?.kind) ? model.floor_finish : FLOOR_BY_KIND[room?.kind] || 'oak');
+const ownFloor = (room, model) => (room?.kind === 'kitchen' ? model?.finishes?.kitchen?.floor : room?.kind === 'bath' ? model?.finishes?.bath?.floor : null);
+export function floorKind(room, model) {
+  const own = ownFloor(room, model);
+  if (own?.pattern) return own.pattern === 'tile' && room.kind === 'bath' ? 'tile-small' : PATTERN_KIND[own.pattern];
+  if (OWN_FLOOR.has(room?.kind)) return FLOOR_BY_KIND[room?.kind] || 'oak';
+  const p = model?.finishes?.floor?.pattern;
+  if (PATTERN_KIND[p]) return PATTERN_KIND[p];
+  return model && FLOOR_FINISHES.includes(model.floor_finish) ? model.floor_finish : FLOOR_BY_KIND[room?.kind] || 'oak';
+}
+/** The tone the plan names for a room's floor (a THREE.Color), or null when it names none (the finish's own colour). */
+export function floorTone(room, model) {
+  const own = ownFloor(room, model), t = own ? own.tone : OWN_FLOOR.has(room?.kind) ? null : model?.finishes?.floor?.tone;
+  const bath = room?.kind === 'bath' && !own?.tone ? model?.finishes?.bath?.tile?.colour : null;   // a bath's tile colour is its floor's too
+  const hex = t || bath;
+  return hex ? new THREE.Color(hex) : null;
+}
 
 const texCache = new Map();
 const seeded = (seed) => { let s = seed >>> 0; return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296); };
@@ -113,6 +134,16 @@ export function floorTexture(kind, base) {
       }
       g.strokeStyle = shade(base, 0.62); g.lineWidth = 3; for (let i = 0; i <= n; i++) { g.beginPath(); g.moveTo(i * s, 0); g.lineTo(i * s, N); g.stroke(); g.beginPath(); g.moveTo(0, i * s); g.lineTo(N, i * s); g.stroke(); }
       size = 1.22;
+    } else if (kind === 'concrete') { // polished concrete: soft cloudy mottling, fine pores, a saw-cut joint every 1.2 m
+      g.fillStyle = shade(base, 1); g.fillRect(0, 0, N, N);
+      for (let k = 0; k < 90; k++) { const x = rnd() * N, y = rnd() * N, r = 30 + rnd() * 90, gr = g.createRadialGradient(x, y, 0, x, y, r); const t = 0.9 + rnd() * 0.2; gr.addColorStop(0, shade(base, t, 0.32)); gr.addColorStop(1, shade(base, t, 0)); g.fillStyle = gr; g.fillRect(x - r, y - r, r * 2, r * 2); }
+      for (let k = 0; k < 260; k++) { g.fillStyle = shade(base, rnd() > 0.5 ? 0.78 : 1.14, 0.2 + rnd() * 0.2); g.fillRect(rnd() * N, rnd() * N, 0.8 + rnd() * 1.6, 0.8 + rnd() * 1.6); }
+      g.strokeStyle = shade(base, 0.72, 0.8); g.lineWidth = 2; g.strokeRect(1, 1, N - 2, N - 2);
+      size = 1.2;
+    } else if (kind === 'carpet') {   // a woven carpet: fine fibre noise, no pattern
+      g.fillStyle = shade(base, 1); g.fillRect(0, 0, N, N);
+      for (let k = 0; k < 9000; k++) { g.fillStyle = shade(base, 0.86 + rnd() * 0.26, 0.5); g.fillRect(rnd() * N, rnd() * N, 1.2, 2.4); }
+      size = 0.6;
     } else {                         // tile-small: 3 in square mosaic
       g.fillStyle = shade(base, 0.7); g.fillRect(0, 0, N, N); const n = 16, s = N / n;
       for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) { g.fillStyle = shade(base, 0.94 + rnd() * 0.1); g.fillRect(i * s + 1.2, j * s + 1.2, s - 2.4, s - 2.4); }
@@ -125,17 +156,25 @@ export function floorTexture(kind, base) {
   texCache.set(key, t); return t;
 }
 export const clearFloorTextures = () => { for (const t of texCache.values()) { t.userData.bump?.dispose(); t.dispose(); } texCache.clear(); };
-/** Roughness for a finish (varnished wood, polished tile). */
-export const floorRoughness = (kind) => (kind === 'basket' ? 0.44 : kind === 'parquet' ? 0.5 : kind === 'oak' ? 0.58 : 0.34);
-/** The theme-tinted base colour for a finish out of the studio's colour set `C` (wood, tile). */
-export function floorBase(kind, C) {
+/** Roughness for a finish (varnished wood, polished tile, matt carpet). */
+export const floorRoughness = (kind) => (kind === 'basket' ? 0.44 : kind === 'parquet' ? 0.5 : kind === 'oak' ? 0.58 : kind === 'carpet' ? 0.95 : kind === 'concrete' ? 0.62 : 0.34);
+/**
+ * The base colour for a finish out of the studio's colour set `C` (wood, tile). With `room` and `model`, a tone the plan names for that room's floor
+ * replaces the finish's own colour (scaled by the same reflectance tint the Light tab applies to `C.wood`).
+ */
+export function floorBase(kind, C, room = null, model = null) {
   const wood = C.wood || new THREE.Color(0xc2a27c), tile = C.tile || new THREE.Color(0xc4c6c6);
+  const tone = room && model ? floorTone(room, model) : null;
+  if (tone) { const k = C.wood && C.wood.g > 0 ? C.wood.g / TONE_REF.wood : 1; return Math.abs(k - 1) < 1e-6 ? tone : tone.multiplyScalar(k); }
+  if (kind === 'carpet') return (C.carpet || new THREE.Color(0xd9d5cc)).clone();
+  if (kind === 'concrete') return new THREE.Color(0xb4b2ad).multiplyScalar(C.wood && C.wood.g > 0 ? C.wood.g / TONE_REF.wood : 1);
   if (kind === 'basket') return new THREE.Color(0xbf8847);   // honey oak, as in the listing photos (a golden mid-tone, not brown or orange)
   if (kind === 'parquet') return wood.clone().multiplyScalar(0.92).lerp(new THREE.Color(0x8a5a35), 0.12);
   if (kind === 'oak') return wood.clone().lerp(new THREE.Color(0xe0c9a2), 0.18);
   if (kind === 'tile-large') return tile.clone().lerp(new THREE.Color(0xdcd8d0), 0.5);
   return tile.clone().lerp(new THREE.Color(0xcfd6d8), 0.4);
 }
+const TONE_REF = { wood: new THREE.Color(ROOM_HEX.wood).g };   // the built-in wood colour, the reference for a reflectance tint
 
 export { sheenTexture } from '../room3d/windows.js';   // [room3d] moved with the windows
 

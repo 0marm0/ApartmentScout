@@ -608,6 +608,26 @@ day (listing `available`, else `search.move_in.earliest`) and of Mar 20, Jun 21 
 and altitude, the state (`night`, `behind`, `lit`, `shaded`) and, when shaded, the blocking building's name or
 address, BIN, roof and distance.
 
+### Photo match: `view-calibrations/<id>.json`
+
+Unit 3D's Window camera has a guided **Match a photo** (three steps: pick a listing photo, mark two or more landmarks in it and name each from the
+site's `lm` list or by clicking it in the 3D view, check the fit and save). A small solver (`dashboard/js/unit/view-solver.js`) works out which way
+the photo looks (`bearing_deg`), its tilt, its lens (`vfov_deg`, vertical) and the height the camera stood at (`eye_height_m`), with the residual
+(`rms_deg`, the angular distance between where each landmark was clicked and where the model puts it). Two landmarks fit bearing, tilt and height
+with the lens assumed (55 degrees unless set); three or more also fit the lens. Heights and lens are only reported as measured when the clicks can
+fix them (`eye_determined`, `lens_determined`; `sigma` holds the one-sigma uncertainties): landmarks that are all far away cannot separate tilt from
+camera height, and then the model's height stays. A neighbouring roof clicked in the 3D view usually fixes it.
+
+The record (`kind: "apartmentscout-view-calibration"`, `schema: 1`) holds `site`, `saved`, `photo` (`n` its place in the gallery, `floor` where it was
+taken, `scope`, `aspect`), `eye` (the window point and the eye height the fit started from), `landmarks` (`name`, `kind` named or picked, `x`, `y`, `z` in
+site metres, `u`, `v` the click as fractions of the picture), `result` and `applied` (`az_deg`, `floor`, `facade_offset_deg`). `apartmentscout serve`
+saves it to `<search>/view-calibrations/<id>.json` (a bundled example is read-only, so the page keeps it in the browser and offers **Export**);
+`apartmentscout viewcal import FILE` takes an export into a search folder and `viewcal list` shows them; `build` copies the folder to the page and
+lists the ids in the manifest's `view_calibrations`. `apartmentscout site <id>` then uses the match: the photo's bearing as the window's facing
+(when within 12 degrees of a wall; `--bearing` still wins, `--no-view-calibration` ignores it), and the camera height as a measured `--eye-height`
+(scaled to the unit's floor when the photo was taken on another floor: every storey is stretched to fit). The site file keeps what it used in
+`calibration.view`, and the accuracy chip reads "measured from photo N" for the facade bearing and, when the photo fixed it, the floor height.
+
 ### Unit aliases
 
 A listing can declare other listing ids for the same unit in `aliases`, or other spellings of its unit in

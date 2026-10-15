@@ -236,6 +236,7 @@ function draw() {
   $('cmpN').textContent = Ls.length ? `${Ls.length} of 4` : '';
   $('cmpSub').innerHTML = Ls.length ? 'The best value in each row is marked. Unknown facts stay unknown; they never count as the worst.' : 'Line up to four homes side by side.';
   $('cmpClear').hidden = !Ls.length;
+  { const sites = S.manifest.sites || [], two = ids.filter((id) => sites.includes(id)).slice(0, 2); $('cmpPair').hidden = sites.length < 2; $('cmpPair').href = two.length === 2 ? `#pair/${two.map(encodeURIComponent).join(',')}` : '#pair'; }   // [pair] two homes in live 3D
   $('cmpBody').innerHTML = Ls.length ? boardHTML(Ls) : emptyHTML();
   $('cmpDimsPanel').hidden = !Ls.length;
   $('cmpDimsPanel').parentElement.classList.toggle('solo', !Ls.length);
@@ -252,6 +253,7 @@ export function init() {
             <input id="cmpQ" type="search" placeholder="Add a listing to compare" autocomplete="off" role="combobox" aria-label="Add a listing to compare" aria-expanded="false" aria-controls="cmpList" aria-autocomplete="list"></label>
           <div class="cmp-list" id="cmpList" role="listbox" aria-label="Suggestions" hidden></div>
         </div>
+        <a class="btn" id="cmpPair" href="#pair" hidden title="Two apartments side by side in live 3D: the same date, time and camera, each with its own sun hours">Compare in 3D</a>
         <button type="button" class="btn ghost" id="cmpClear">Clear all</button>
       </div></div>
     <div id="cmpBody"></div>

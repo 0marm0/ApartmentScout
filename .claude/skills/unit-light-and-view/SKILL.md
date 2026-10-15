@@ -30,6 +30,12 @@ description: Build the 3D site model for a unit, work out which way its windows 
   shade, and the sightline survey above still counts OpenStreetMap trees only (it skips paved ground).
   `apartmentscout site <id> --context-only [--keep-osm]` adds or refreshes all of it on an existing
   site file.
+- A photo of the view can be **measured** instead of eyeballed: in Unit 3D's Window camera, *Match a photo* lines a listing photo up with the model
+  (mark two or three landmarks in the photo, name them from the site's landmark list or by clicking the 3D view) and fits the direction the photo looks,
+  its tilt, lens and the camera height, with a residual ("fits within 0.6 degrees"). Photos of another unit on the same line give the direction; a photo
+  from another floor still gives the storey height if the fit could fix the camera height (it needs a landmark close by, e.g. a neighbouring roof clicked in
+  the 3D view). Take the number with its uncertainty, say which photo and floor, and treat a fit worse than about 2 degrees as a mismatched landmark.
+  `apartmentscout viewcal import FILE` takes the exported match into the search and `apartmentscout site <id>` uses it (`exposure_source: photo-landmarks`).
 - Record where each came from on the listing, so the model and the dashboard can say so:
   `exposure_source` and `window_position_source` (`listing`, `plan`, `agent`, `photo-landmarks`,
   `model`, `assumed`) and `floor_inferred`. They end up in the site file's `provenance`.

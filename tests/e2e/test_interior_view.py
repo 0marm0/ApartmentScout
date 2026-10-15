@@ -192,8 +192,9 @@ def test_the_chips_are_an_accessible_radio_group_on_a_phone_too(open_page, webgl
     pg.click('#psMode [data-m="3d"]')
     pg.wait_for_timeout(400)
     box = pg.evaluate("() => { const r = document.getElementById('psLook').getBoundingClientRect(), c = document.getElementById('psCams').getBoundingClientRect(), n = document.querySelector('.rnq').getBoundingClientRect(); return { look: [r.top, r.bottom], cams: [c.top, c.bottom], rnq: [n.top, n.bottom], scrolls: document.getElementById('psLook').scrollWidth > document.getElementById('psLook').clientWidth }; }")
-    assert box["look"][0] >= box["cams"][1] - 1, box                              # under the camera row, not on the render switch
-    assert box["look"][1] <= box["rnq"][0] or box["look"][0] >= box["rnq"][1]
+    # phone layout (css/views/phone3d.css): the room chips run along the top, the render switch sits under them, the camera row is in the thumb zone
+    assert box["look"][1] <= box["rnq"][0] + 1, box                                # the render switch is under the chips, not on them
+    assert box["cams"][0] >= box["rnq"][1] and box["cams"][0] > box["look"][1], box
     look_click(pg, "#psLook [data-vp='seat:sofa']")
     pg.wait_for_function("() => window.__plan3d.view === 'seat:sofa'")
     assert pg.evaluate("() => document.documentElement.scrollWidth <= window.innerWidth + 1")   # no sideways page scroll
