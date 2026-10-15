@@ -27,6 +27,7 @@ import { resolveCal, geoFromSite, measuredFromSite, calSummary } from './unit/ca
 import { effectiveComponents, isAssumed } from './unit/parts.js';   // [model project] source parts plus the assumed override
 import { windowOpenAir, airReason } from './unit/openair.js';   // [model project] a window must be in open air
 import { getPin, clearPin } from './unit/anchor.js';   // [model project] the window pinned for the Floor plan studio
+import { onRoomQuality } from './room3d/quality.js';
 import { takeHandoff } from './room3d/sunlink.js';
 import { heatMeshes, daylightRooms, savedLighting } from './room3d/heatfloor.js';   // [room3d] the studio's daylight map and saved glass and blinds
 import { SCALES, legendHTML } from './plan/heatmap.js';
@@ -597,6 +598,7 @@ const curOff = () => (curView ? curView.off : interior?.windows[st.inWin]?.beari
 let dlOn = false, dlGroup = null;
 const roomLight = () => savedLighting(store, S.base, st.id);
 function applyRoomScale() { const L = roomLight(), g = glazingScale({ transmittance: L.glazing, blinds: L.blinds }); stage?.setRoomScale?.({ sun: g.sun, sky: g.through }); }
+onRoomQuality(() => { if (interior?.furniture && stage) { buildApartment(); stage.dirty = true; } });   // the furniture models follow Fast / Visual
 function insideExtra() {
   if (!plan || !site || st.mode !== 'in') return { html: '', key: '' };
   const L = roomLight(), opts = Object.keys(BLINDS_LABEL).map((k) => `<option value="${k}"${k === L.blinds ? ' selected' : ''}>${BLINDS_LABEL[k]}</option>`).join('');

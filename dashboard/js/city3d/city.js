@@ -56,6 +56,8 @@ export function createCity(data, o) {
   const groundMat = new THREE.MeshStandardMaterial({ color: pal.ground, roughness: 1, metalness: 0 });
   const groundBase = new THREE.Mesh(new THREE.PlaneGeometry(24000, 24000), groundMat);
   groundBase.name = 'ground-base'; groundBase.rotation.x = -Math.PI / 2; groundBase.receiveShadow = true;
+  // drawn first and never into the depth buffer: a kilometre out the 24-bit depth cannot tell it from the water plane 0.4 m above (the far river flickered grey)
+  groundBase.renderOrder = -3; groundMat.depthWrite = false;
   const place = (x, y) => (o.frame?.place ? o.frame.place(x, y) : [x, y]);
   const [gx, gy] = place(cx, cy);
   groundBase.position.set(gx, y0 - 0.02, -gy); group.add(groundBase);
@@ -80,7 +82,7 @@ export function createCity(data, o) {
   const outlines = new THREE.LineSegments(outlineGeo(B, near.filter((i) => distTo(B[i]) < 820), 0.25, bakeM), outlineMat); outlines.name = 'city-outlines'; group.add(outlines);
 
   const c = {
-    group, bMat, facU, meshes, near, far, vrange, edges, outlines, edgeMat, outlineMat, edgeIdx, groundBase, groundMat, ctx: null,
+    group, bMat, facU, meshes, near, far, vrange, bakeM, edges, outlines, edgeMat, outlineMat, edgeIdx, groundBase, groundMat, ctx: null,
     /** Build (or rebuild, after a theme or quality change) the context layer and add it to the group. */
     buildContext(extra = {}) {
       if (c.ctx) { group.remove(c.ctx.group); c.ctx.dispose(); c.ctx = null; }
