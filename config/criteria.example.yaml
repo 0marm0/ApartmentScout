@@ -10,6 +10,7 @@ search:
     latest: 2026-12-01
   map_center: [40.7549, -73.9840]   # lat, lon the map opens on
   map_zoom: 13
+  # default_listing: building-1211   # optional: the home Unit 3D and the Floor plan studio open first (a listing id); without it, the first in their lists
   # tiles: https://tile.openstreetmap.org/{z}/{x}/{y}.png   # optional custom basemap
   # tiles_attribution: © OpenStreetMap contributors
 

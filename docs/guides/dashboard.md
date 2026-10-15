@@ -35,7 +35,9 @@ The tabs are Map, Shortlist, Compare, 3D and Research. **3D** holds Unit 3D and 
 between them (the same way Tours sits under Shortlist and Records under Research), and the 3D tab opens whichever you used last.
 The numbered rows above are the sections, not the shortcuts (`1` to `5` are the tabs). Views load on first visit; `#<view>/<listing-id>` opens a view on
 a listing (for example `#unit/emerald-green-1211` or `#plan/emerald-green-1211`: both routes are unchanged, and the switch under the
-bar keeps the same home when the other view has data for it).
+bar keeps the same home when the other view has data for it). With no listing in the address, Unit 3D, Floor plan and Records open the
+home the search names in `search.default_listing` (the bundled example: Paramount Tower 25E), unless you opened another home in this
+browser before ([data model](data-model.md#the-home-the-3d-views-open-searchdefault_listing)).
 
 ### The tabs
 
