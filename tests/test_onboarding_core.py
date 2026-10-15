@@ -115,6 +115,17 @@ def test_commute_with_a_missing_coordinate_exits_with_the_fix_not_a_traceback(tm
     assert "geocode" in str(e.value)
 
 
+def test_serve_on_a_taken_port_says_what_to_do(tmp_path, monkeypatch) -> None:
+    from apartmentscout import localapi
+
+    def taken(state, port):
+        raise OSError(48, "Address already in use")
+    monkeypatch.setattr(localapi, "make_server", taken)
+    root = _search(tmp_path)
+    with pytest.raises(SystemExit, match="--port"):
+        main(["serve", "--search", str(root), "--no-open"])
+
+
 def test_a_dead_feed_url_is_skipped_with_a_message(tmp_path, monkeypatch, capsys) -> None:
     import requests
 
