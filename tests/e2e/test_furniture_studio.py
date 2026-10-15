@@ -8,7 +8,7 @@ import json
 from pathlib import Path
 
 import pytest
-from conftest import look_click, look_open
+from conftest import camera_still, look_click, look_open, settled
 
 pytestmark = pytest.mark.e2e
 
@@ -43,7 +43,7 @@ def _studio(s) -> None:
     pg = s.page
     pg.goto(f"{s.origin}/#plan/{UNIT}")
     pg.wait_for_function("() => window.__plan3d && window.__plan3d.items.length > 0 && !!document.querySelector('#psLook .lk-chip')", timeout=90000)
-    pg.wait_for_timeout(800)
+    settled(pg, 20000, ticks=5)
 
 
 def _unit(s, query: str = "?mode=inside") -> None:
@@ -51,7 +51,7 @@ def _unit(s, query: str = "?mode=inside") -> None:
     s.page.wait_for_function(
         "(id) => window.__unit3d && window.__unit3d.st.id === id && window.__unit3d.stage && window.__unit3d.stage.interior && window.__unit3d.views.length > 4 && document.getElementById('uLoad').hidden",
         arg=UNIT, timeout=120000)
-    s.page.wait_for_timeout(800)
+    settled(s.page, 20000, ticks=5)
 
 
 def _rgb(hexs: str) -> tuple[float, float, float]:
@@ -152,7 +152,8 @@ def test_from_the_sofa_you_see_the_tv_and_from_the_desk_your_monitor(open_page, 
     for chip, view, target in (("Sofa", "seat:sofa", "tv"), ("Bed", "seat:bed", "tv-bed"), ("Desk", "seat:desk", "desk")):
         look_click(pg, f"#uLook .lk-chip:text-is('{chip}')")
         pg.wait_for_function("(k) => window.__unit3d.curView && window.__unit3d.curView.key === k", arg=view)
-        pg.wait_for_timeout(2500)
+        pg.wait_for_function("() => !window.__unit3d.stage.inTween", timeout=30000)
+        camera_still(pg, "unit")
         assert pg.evaluate(in_view, target), f"{chip}: the {target} is in front of you"
     # the window view stays one click away
     look_click(pg, "#uLook .lk-chip:text-is('Sofa, window')")
@@ -261,7 +262,7 @@ def test_the_toolbar_works_by_touch(browser, base_url: str, webgl: bool) -> None
     try:
         pg.goto(f"{base_url}/#plan/{UNIT}")
         pg.wait_for_function("() => window.__plan3d && window.__plan3d.items.length > 0 && !!document.querySelector('#psLook .lk-chip')", timeout=90000)
-        pg.wait_for_timeout(800)
+        settled(pg, 20000, ticks=5)
         pg.tap("#psTab [data-sel=nightstand-1]")
         pg.wait_for_function("() => document.querySelectorAll('.selbar:not([hidden])').length >= 1")
         bar = pg.locator(".selbar:visible").first

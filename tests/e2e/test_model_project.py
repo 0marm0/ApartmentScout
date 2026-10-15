@@ -10,6 +10,7 @@ import json
 from pathlib import Path
 
 import pytest
+from conftest import settled
 
 pytestmark = pytest.mark.e2e
 
@@ -32,15 +33,21 @@ def _unit_ready(s, uid: str) -> None:
     s.page.wait_for_function(
         "(id) => window.__unit3d && window.__unit3d.st.id === id && window.__unit3d.stage && window.__unit3d.stage.scene && document.getElementById('uLoad').hidden",
         arg=uid, timeout=120000)
-    s.page.wait_for_timeout(800)
+    settled(s.page, 20000, ticks=5)
+
+
+def _studio_ready(pg) -> None:
+    """The studio's file button is there, its header says what the plan faces, and the page has gone quiet."""
+    pg.wait_for_selector("#psFileBtn", timeout=60000)
+    pg.wait_for_function("() => (document.getElementById('psSub')?.textContent || '').trim().length > 0", timeout=60000)
+    settled(pg, 20000, ticks=8)
 
 
 def _send_plan_to_unit_3d(s, uid: str = UNIT) -> None:
     """The renter's explicit step: Floor plan studio ▸ Layout ▸ Use this plan in Unit 3D."""
     pg = s.page
     pg.goto(f"{s.origin}/#plan/{uid}")
-    pg.wait_for_selector("#psFileBtn", timeout=60000)
-    pg.wait_for_timeout(1500)
+    _studio_ready(pg)
     if uid == UNIT:   # the header names the host facade (ESE), with the bays as a range, not the first pane (SSW)
         sub = pg.locator("#psSub").inner_text()
         assert "windows face ESE 119° · bays" in sub and "SSW" not in sub
@@ -53,7 +60,8 @@ def _fold(s, name: str) -> None:
     d = s.page.locator(f"#modelPanel details[data-sec={name}]")
     if not d.evaluate("(e) => e.open"):
         d.locator("summary").click()
-    s.page.wait_for_timeout(200)
+    s.page.wait_for_function("(n) => document.querySelector(`#modelPanel details[data-sec=${n}]`).open", arg=name, timeout=5000)
+    settled(s.page, 20000, ticks=3)
 
 
 GLASS_JS = """async (id) => {
@@ -127,8 +135,7 @@ def test_measured_height_and_pinned_window_reach_both_viewers(open_page, webgl: 
     pg.click("[data-act=pin]")
     pg.wait_for_function("(id) => !!localStorage.getItem('as:model-anchor:' + id)", arg=UNIT, timeout=10000)
     pg.goto(f"{s.origin}/#plan/{UNIT}")
-    pg.wait_for_selector("#psFileBtn", timeout=60000)
-    pg.wait_for_timeout(1500)
+    _studio_ready(pg)
     pg.click("[data-t=light]")
     pg.click("#psLightResults .ps-anchor > summary")
     pg.wait_for_selector("#psLightResults .ps-anchor .mp-anchor")
@@ -176,7 +183,10 @@ def test_assumed_building_parts_feed_the_drawing_and_the_sun_maths(open_page, we
     pg.fill("#mpSide", "0")
     pg.click("[data-act=parts-apply]")
     pg.wait_for_function("(bi) => { const b = window.__unit3d.B[+bi]; return b.parts && b.parts.length === 2 && b.parts.every((q) => q.confidence === 'assumed'); }", arg=blocker, timeout=60000)
-    pg.wait_for_timeout(1200)
+    # the stage is rebuilt from B0 and the daylight panel re-read: wait for the numbers the next lines look at
+    pg.wait_for_function("""([bi, sky0]) => (window.__unit3d.stage.data.B[+bi].parts || []).length === 2 && document.querySelector('#sunPanel .u-daylight .metric .v').textContent !== sky0""",
+                         arg=[blocker, sky0], timeout=60000)
+    settled(pg, 20000, ticks=5)
     # the same parts are what the sun maths reads (B) and what is drawn (the stage was rebuilt from B0)
     assert pg.evaluate("(bi) => window.__unit3d.stage.data.B[+bi].parts.length", blocker) == 2
     assert pg.evaluate("() => document.querySelector('#sunPanel .u-daylight .metric .v').textContent") != sky0
@@ -185,7 +195,7 @@ def test_assumed_building_parts_feed_the_drawing_and_the_sun_maths(open_page, we
     # the source site file is unchanged: removing the assumption restores the original number
     pg.click("[data-act=parts-clear]")
     pg.wait_for_function("(bi) => !window.__unit3d.B[+bi].parts", arg=blocker, timeout=60000)
-    pg.wait_for_timeout(800)
+    pg.wait_for_function("(sky0) => document.querySelector('#sunPanel .u-daylight .metric .v').textContent === sky0", arg=sky0, timeout=60000)
     assert pg.evaluate("() => document.querySelector('#sunPanel .u-daylight .metric .v').textContent") == sky0
     assert not s.take()
 

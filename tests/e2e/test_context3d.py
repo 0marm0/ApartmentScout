@@ -8,6 +8,7 @@ that the water really renders blue. Needs WebGL, otherwise skipped."""
 from __future__ import annotations
 
 import pytest
+from conftest import settled
 
 pytestmark = pytest.mark.e2e
 
@@ -25,7 +26,7 @@ def _unit(s, uid: str = UNIT) -> None:
     s.page.wait_for_function(
         "(id) => window.__unit3d && window.__unit3d.st.id === id && window.__unit3d.stage && window.__unit3d.stage.scene && document.getElementById('uLoad').hidden",
         arg=uid, timeout=120000)
-    s.page.wait_for_timeout(800)
+    settled(s.page, 20000, ticks=5)   # the first frames are drawn (_ctx also forces one)
 
 
 CTX_JS = """() => { const s = window.__unit3d.stage, c = s.ctx; if (!c) return null;
@@ -39,6 +40,13 @@ CTX_JS = """() => { const s = window.__unit3d.stage, c = s.ctx; if (!c) return n
 def _ctx(s):
     s.page.evaluate("() => { const s = window.__unit3d.stage; s.dirty = true; s.frame(true); }")
     return s.page.evaluate(CTX_JS)
+
+
+def _wait_ctx(s, pred: str) -> None:
+    """Wait until `pred` (a JS expression over the CTX_JS result `c`) holds: the state the next assertion looks at, not a fixed sleep."""
+    # read the state without drawing a frame per poll: with software GL a frame takes a second, and a poll that forced one would starve the very switch it waits for
+    s.page.wait_for_function(f"() => {{ const c = ({CTX_JS})(); return !!c && ({pred}); }}", timeout=60000)
+    settled(s.page, 20000, ticks=3)
 
 
 def test_unit_3d_draws_the_census_trees_ground_and_water(open_page, webgl):
@@ -153,18 +161,18 @@ def test_visual_quality_turns_on_tree_shadows_and_the_water_glint_fast_does_not(
     fast = _ctx(s)
     assert fast["glint"] == 0 and not any(fast["shadows"])
     s.page.click('[data-rnq="visual"]')
-    s.page.wait_for_timeout(800)
+    _wait_ctx(s, "c.glint === 1")
     vis = _ctx(s)
     assert vis["glint"] == 1 and all(v for v in vis["shadows"] if v is not None) and any(v for v in vis["shadows"])
     # inside the apartment the floor's sun patches follow the numbers, which ignore trees: no crown shadows there
     s.page.click('#uModes [data-mode="in"]')
-    s.page.wait_for_timeout(1500)
+    _wait_ctx(s, "!c.shadows.some(Boolean)")
     assert not any(_ctx(s)["shadows"])
     s.page.click('#uModes [data-mode="orbit"]')
-    s.page.wait_for_timeout(800)
+    _wait_ctx(s, "c.shadows.some((v) => v)")
     assert any(v for v in _ctx(s)["shadows"] if v is not None)
     s.page.click('[data-rnq="fast"]')
-    s.page.wait_for_timeout(500)
+    _wait_ctx(s, "c.glint === 0 && !c.shadows.some(Boolean)")
     back = _ctx(s)
     assert back["glint"] == 0 and not any(back["shadows"])
     assert s.take() == []
@@ -179,7 +187,7 @@ def test_trees_and_water_never_change_a_sun_number(open_page, webgl):
     with_ctx = s.page.evaluate(state)
     s.page.click('#uTools [data-tg="green"]')
     s.page.click('#uTools [data-tg="water"]')
-    s.page.wait_for_timeout(500)
+    _wait_ctx(s, "!c.layers.green && !c.layers.water")
     without = s.page.evaluate(state)
     assert with_ctx == without
     # and the site file's own saved numbers carry no mention of trees as obstructions
@@ -236,7 +244,8 @@ def test_floor_plan_studio_city_outside_uses_the_same_context(open_page, webgl):
     pg.evaluate("() => localStorage.setItem('as:plan-city.data', 'true')")    # "Show the city outside", as the studio's checkbox stores it
     pg.reload()
     pg.wait_for_selector("#psFileBtn", timeout=60000)
-    pg.wait_for_timeout(3000)
+    pg.wait_for_function("""async () => { const G3 = await import('/js/plan/scene3d.js'); const city = G3.parts().scene.getObjectByName('city');
+      if (!city || !city.userData.context) return false; let far = false; city.traverse((o) => { if (o.name === 'tree-crowns-far') far = true; }); return far; }""", timeout=60000)
     info = pg.evaluate("""async () => { const G3 = await import('/js/plan/scene3d.js'); const sc = G3.parts().scene; const city = sc.getObjectByName('city');
       if (!city) return null; const names = []; city.traverse((o) => { if (o.name) names.push(o.name); });
       return { ctx: city.userData.context ? { trees: city.userData.context.trees, water: city.userData.context.waterBodies } : null, names }; }""")

@@ -6,6 +6,7 @@ from __future__ import annotations
 import math
 
 import pytest
+from conftest import camera_still, frames, settled
 
 pytestmark = pytest.mark.e2e
 
@@ -23,7 +24,7 @@ def _studio(s, uid: str = UNIT) -> None:
     pg.goto(f"{s.origin}/#plan/{uid}")
     pg.wait_for_function("() => window.__plan3d && window.__plan3d.items.length > 0 && !!window.__measure && !!document.getElementById('studioMeasureTool')", timeout=90000)
     pg.evaluate("() => localStorage.clear()")
-    pg.wait_for_timeout(600)
+    settled(pg, 20000, ticks=5)
 
 
 def _unit(s, uid: str = UNIT, query: str = "?mode=inside") -> None:
@@ -31,7 +32,7 @@ def _unit(s, uid: str = UNIT, query: str = "?mode=inside") -> None:
     s.page.wait_for_function(
         "(id) => window.__unit3d && window.__unit3d.st.id === id && window.__unit3d.stage && window.__unit3d.stage.interior && window.__unit3d.views.length > 4 && document.getElementById('uLoad').hidden && !!window.__measure && !!window.__measure.unit",
         arg=uid, timeout=120000)
-    s.page.wait_for_timeout(600)
+    settled(s.page, 20000, ticks=5)
 
 
 def _click_plan_point(pg, surface: str, p) -> None:
@@ -57,7 +58,7 @@ def test_the_3d_tape_reads_a_pieces_real_size_and_snaps_to_its_corners(open_page
     pg = s.page
     _studio(s)
     pg.click("#psCams [data-v=top]")
-    pg.wait_for_timeout(1200)
+    camera_still(pg, "studio")
     before = pg.evaluate("() => window.__plan3d.items.map(({id, x, y, rot}) => [id, x, y, rot])")
     pg.click("#studioMeasureTool")
     assert pg.get_attribute("#studioMeasureTool", "aria-pressed") == "true"
@@ -117,7 +118,7 @@ def test_a_click_on_a_piece_with_the_tape_out_measures_and_does_not_drag_it(open
     pg = s.page
     _studio(s)
     pg.click("#psCams [data-v=top]")
-    pg.wait_for_timeout(1200)
+    camera_still(pg, "studio")
     pg.click("#studioMeasureTool")
     before = pg.evaluate("() => window.__plan3d.items.find((i) => i.id === 'bed')")
     xy = pg.evaluate("(b) => window.__measure.studio3d.clientOf([b.x, b.y, b.h])", before)
@@ -190,7 +191,7 @@ def test_the_inside_tape_measures_the_window_and_leaves_with_the_camera(open_pag
     pg = s.page
     _unit(s)
     pg.evaluate("() => document.getElementById('stage').scrollIntoView({block: 'center'})")
-    pg.wait_for_timeout(300)
+    frames(pg, 4)
     assert pg.locator("#unitMeasureTool").is_visible()
     pg.click("#unitMeasureTool")
     assert pg.get_attribute("#unitMeasureTool", "aria-pressed") == "true"

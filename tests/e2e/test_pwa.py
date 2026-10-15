@@ -22,13 +22,11 @@ import urllib.parse
 from pathlib import Path
 
 import pytest
+from conftest import block_foreign
 
 pytestmark = pytest.mark.e2e
 ROOT = Path(__file__).resolve().parents[2]
 MODE = os.environ.get("APARTMENTSCOUT_E2E", "")
-# the same flags tests/e2e/conftest.py uses: a real GPU on a Mac, SwiftShader elsewhere
-GPU_ARGS = (["--use-angle=metal", "--ignore-gpu-blocklist", "--enable-gpu"] if sys.platform == "darwin" and not os.environ.get("CI")
-            else ["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"])
 PREFIX = "/ApartmentScout/demo/"
 DASH = ROOT / "dashboard"
 
@@ -80,7 +78,7 @@ class Server(http.server.ThreadingHTTPServer):
 
 
 @pytest.fixture(scope="module")
-def site(tmp_path_factory: pytest.TempPathFactory) -> Path:
+def site(tmp_path_factory: pytest.TempPathFactory, esbuild_ready) -> Path:
     """A built copy of the dashboard at <tmp>/ApartmentScout/demo, with a few fake photos under media/."""
     if not (os.environ.get("ESBUILD") or shutil.which("npx")):
         _need("Node (npx esbuild) is needed to build the optimised site")
@@ -102,23 +100,6 @@ def server(site: Path):
     srv.shutdown()
 
 
-@pytest.fixture(scope="module")
-def browser(server):
-    try:
-        from playwright.sync_api import Error, sync_playwright
-    except ImportError:
-        _need("playwright is not installed")
-    pw = sync_playwright().start()
-    try:
-        b = pw.chromium.launch(args=GPU_ARGS)
-    except Error as e:
-        pw.stop()
-        _need(f"Chromium is not installed for Playwright: {str(e)[:160]}")
-    yield b
-    b.close()
-    pw.stop()
-
-
 @pytest.fixture
 def open_app(browser, server):
     """open_app(query='') -> (page, errors); a context that ALLOWS service workers and blocks every other origin."""
@@ -127,7 +108,7 @@ def open_app(browser, server):
     def _open(query: str = "", hash_: str = "#map", width: int = 1280, height: int = 860):
         ctx = browser.new_context(viewport={"width": width, "height": height}, reduced_motion="reduce")
         ctxs.append(ctx)
-        ctx.route("**/*", lambda r: r.continue_() if r.request.url.startswith((server.origin, "data:", "blob:")) else r.abort())
+        block_foreign(ctx, server.origin)
         page = ctx.new_page()
         errors: list[str] = []
         page.on("pageerror", lambda e: errors.append(str(e)[:300]))
@@ -335,7 +316,7 @@ def test_saved_photos_are_cached_on_demand_and_capped(open_app, server) -> None:
 # ------------------------------------------------------------------ where it must stay out of the way
 def test_a_source_copy_of_the_dashboard_never_registers_a_worker(browser, base_url) -> None:
     ctx = browser.new_context(viewport={"width": 1280, "height": 860})   # service workers allowed (the default)
-    ctx.route("**/*", lambda r: r.continue_() if r.request.url.startswith((base_url, "data:", "blob:")) else r.abort())
+    block_foreign(ctx, base_url)
     page = ctx.new_page()
     errors: list[str] = []
     page.on("pageerror", lambda e: errors.append(str(e)))

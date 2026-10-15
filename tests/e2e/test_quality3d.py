@@ -11,6 +11,7 @@ Needs WebGL, otherwise skipped.
 from __future__ import annotations
 
 import pytest
+from conftest import frames, settled
 
 pytestmark = pytest.mark.e2e
 
@@ -28,13 +29,13 @@ def _unit(s, query: str = "?mode=inside") -> None:
     s.page.wait_for_function(
         "(id) => window.__unit3d && window.__unit3d.st.id === id && window.__unit3d.stage && window.__unit3d.stage.interior && document.getElementById('uLoad').hidden",
         arg=UNIT, timeout=120000)
-    s.page.wait_for_timeout(500)
+    settled(s.page, 20000, ticks=5)
 
 
 def _studio(s) -> None:
     s.page.goto(f"{s.origin}/#plan/{UNIT}")
     s.page.wait_for_function("() => window.__plan3d && window.__plan3d.items.length > 0 && !!document.querySelector('.rnq')", timeout=SLOW)
-    s.page.wait_for_timeout(400)
+    settled(s.page, 20000, ticks=4)
 
 
 def test_one_remembered_choice_in_both_pages(open_page, webgl: bool) -> None:
@@ -122,7 +123,7 @@ def test_unit_3d_on_a_phone_has_the_time_and_the_cameras_within_thumb_reach_and_
     pg = s.page
     _unit(s)
     pg.evaluate("() => document.getElementById('stage').scrollIntoView({ block: 'start' })")
-    pg.wait_for_timeout(400)
+    frames(pg, 4)
     box = pg.evaluate("""() => {
       const st = document.getElementById('stage').getBoundingClientRect(), R = (e) => { const r = e.getBoundingClientRect(); return [r.left - st.left, r.top - st.top, r.right - st.left, r.bottom - st.top]; };
       const dock = document.querySelector('#stage .rnq-dock'), modes = document.getElementById('uModes');
@@ -155,9 +156,9 @@ def test_the_studio_on_a_phone_has_the_same_dock_and_a_clear_picture(open_page, 
     pg = s.page
     _studio(s)
     pg.click('#psMode [data-m="3d"]')
-    pg.wait_for_timeout(500)
+    settled(pg, 20000, ticks=4)
     pg.evaluate("() => document.getElementById('pstage').scrollIntoView({ block: 'start' })")
-    pg.wait_for_timeout(300)
+    frames(pg, 4)
     box = pg.evaluate("""() => {
       const st = document.getElementById('pstage').getBoundingClientRect(), R = (e) => { const r = e.getBoundingClientRect(); return [r.left - st.left, r.top - st.top, r.right - st.left, r.bottom - st.top]; };
       const over = [...document.querySelectorAll('#pstage .float, #pstage .hud')].filter((e) => e.offsetParent && !e.hidden).map((e) => [e.className.toString().slice(0, 30), R(e)]);

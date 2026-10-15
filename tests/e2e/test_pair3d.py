@@ -3,6 +3,7 @@ pane's own direct-sun readout; one pane with a toggle on a phone. Needs WebGL, o
 from __future__ import annotations
 
 import pytest
+from conftest import settled
 
 pytestmark = pytest.mark.e2e
 
@@ -16,7 +17,7 @@ def _open(s, tail: str = "") -> None:
     s.page.wait_for_selector("#cmpPair:not([hidden])")
     s.page.click("#cmpPair")
     s.page.wait_for_function(READY, timeout=150000)
-    s.page.wait_for_timeout(700)
+    settled(s.page, 20000, ticks=6)
 
 
 def test_compare_opens_two_units_in_one_live_view(open_page, webgl: bool) -> None:
@@ -77,7 +78,7 @@ def test_one_camera_mode_for_both(open_page, webgl: bool) -> None:
     _open(s)
     pg.click("#prModes [data-mode=win]")
     pg.wait_for_function("() => window.__pair3d.sides.a.stage.mode === 'win' && window.__pair3d.sides.b.stage.mode === 'win'")
-    pg.wait_for_timeout(500)
+    settled(pg, 20000, ticks=5)
     pg.screenshot(path=f"{SHOTS}/pair-window.png")
     pg.click("#prModes [data-mode=in]")
     pg.wait_for_function("() => window.__pair3d.sides.a.stage.mode === 'in' && window.__pair3d.sides.b.stage.mode === 'in'")
@@ -110,13 +111,13 @@ def test_on_a_phone_one_pane_at_a_time_with_a_toggle(open_page, webgl: bool) -> 
     pg = s.page
     pg.goto(f"{s.origin}/#pair/{A},{B}")
     pg.wait_for_function(READY, timeout=150000)
-    pg.wait_for_timeout(500)
+    settled(pg, 20000, ticks=5)
     assert pg.locator("#prSide-a").is_visible() and not pg.locator("#prSide-b").is_visible()
     assert pg.locator("#prWhich").is_visible()
     # no horizontal scroll
     assert pg.evaluate("() => document.documentElement.scrollWidth <= window.innerWidth + 1")
     pg.click("#prWhich [data-w=b]")
     pg.wait_for_function("() => document.getElementById('prSide-b').offsetParent !== null && document.getElementById('prSide-a').offsetParent === null")
-    pg.wait_for_timeout(400)
+    settled(pg, 20000, ticks=4)
     pg.screenshot(path=f"{SHOTS}/pair-phone.png")
     assert not s.take()

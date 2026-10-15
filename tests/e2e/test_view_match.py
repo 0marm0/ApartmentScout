@@ -8,6 +8,7 @@ import json
 from pathlib import Path
 
 import pytest
+from conftest import settled
 
 pytestmark = pytest.mark.e2e
 
@@ -28,7 +29,7 @@ def _unit(s, uid: str = UNIT, query: str = "?mode=window") -> None:
     s.page.wait_for_function(
         "(id) => window.__unit3d && window.__unit3d.st.id === id && window.__unit3d.stage && document.getElementById('uLoad').hidden",
         arg=uid, timeout=120000)
-    s.page.wait_for_timeout(500)
+    settled(s.page, 20000, ticks=5)
 
 
 def _tap(pg, selector: str) -> None:
@@ -139,7 +140,7 @@ def test_the_guide_recovers_a_known_camera_and_saves_it(open_page, webgl: bool) 
     # reload: the match is loaded and the accuracy chip says where its numbers came from
     pg.reload()
     pg.wait_for_function("() => window.__unit3d && window.__unit3d.viewCal && document.getElementById('uLoad').hidden", timeout=120000)
-    pg.wait_for_timeout(400)
+    settled(pg, 20000, ticks=4)
     rows = pg.evaluate("() => [...document.querySelectorAll('.acc-list li')].map((li) => ({ k: li.dataset.row, pill: li.querySelector('.acc-pill').textContent, text: li.querySelector('p').textContent }))")
     by = {r["k"]: r for r in rows}
     assert by["bearing"]["pill"] == "measured" and "measured from photo 1" in by["bearing"]["text"], by["bearing"]
