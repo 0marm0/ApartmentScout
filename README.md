@@ -153,7 +153,7 @@ included example, a Manhattan one-bedroom search from fall 2026, and every capti
 
 | | |
 |---|---|
-| Start | [Getting started](docs/guides/getting-started.md) · [The dashboard](docs/guides/dashboard.md) · [Other cities](docs/guides/new-city.md) |
+| Start | [Getting started](docs/guides/getting-started.md) · [The dashboard](docs/guides/dashboard.md) · [Sync between devices](docs/guides/sync.md) · [Other cities](docs/guides/new-city.md) |
 | How it is computed | [Methodology](docs/guides/methodology.md) · [Data model](docs/guides/data-model.md) · [Research quality](docs/guides/research-quality.md) · [Leasing-office questions](docs/guides/leasing-office-questions.md) |
 | 3D and photos | [Floor plans](docs/guides/floor-plans.md) · [Photos](docs/guides/photos.md) |
 | Agents | [AGENTS.md](AGENTS.md) · [Skills](.claude/skills) · [Agent handoff](docs/guides/agents-handoff.md) · [Monitoring](docs/guides/monitoring.md) · [Alerts on your phone](docs/guides/alerts.md) |
@@ -204,6 +204,11 @@ guide](docs/guides/dashboard.md#install-it-and-use-it-offline).
   without your say-so.
 - 311 calls, complaints and reviews are reports, not findings, and the dashboard says so. Commute, sun, money and score numbers
   are estimates, and coverage is of the listings you captured, not a market census. Check the important ones in person.
+- Sync between your devices is off until you turn it on. It then sends your picks, notes, numbers, tour findings, floor plan work
+  and (optionally) small copies of tour photos to **a secret gist in your own GitHub account** (unlisted, so anyone with its link
+  can read it) or to a file you move by hand, and nowhere else: no server of ours, no telemetry. The GitHub token stays in the
+  browser on the device and is sent only to `api.github.com`. What exactly is synced, where it goes and how to set it up on an
+  iPhone: [the sync guide](docs/guides/sync.md).
 - Anything you publish (a Pages site, a standalone file, a workbook) shows your listings and notes to whoever has it. Run
   `python scripts/release_check.py` before you publish.
 

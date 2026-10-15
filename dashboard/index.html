@@ -12,7 +12,7 @@
 (function () {
   var W = window, root = document.documentElement, errs = [], card = null, MS = +W.__AS_BOOT_MS || 12000, quiet = false;
   var ready = function () { return root.getAttribute('data-boot') === 'ready'; };
-  var KEEP = /^as:(picks$|findings:|trail:|tourplan:|plan\.|plan-projects\.|plan-tracer-draft\.|plan-scenario:|compare-specs:)/;
+  var KEEP = /^as:(picks$|findings:|trail:|tourplan:|plan\.|plan-projects\.|plan-tracer-draft\.|plan-scenario:|compare-specs:|sync\.(config|token)$)/;   // sync.ledger is not kept: after a reset it is rebuilt, and the next sync fills in anything a reset removed
   function note(e) {
     var m = e && (e.stack || e.message) ? String(e.stack || e.message) : String(e);
     if (m.indexOf('ResizeObserver loop') === 0) return false;
@@ -146,6 +146,7 @@
 <link rel="stylesheet" href="css/multidest.css">
 <link rel="stylesheet" href="css/pwa.css">
 <link rel="stylesheet" href="css/office.css">
+<link rel="stylesheet" href="css/sync.css">
 <link rel="stylesheet" href="css/report.css">
 <link rel="stylesheet" href="css/move.css">
 <link rel="stylesheet" href="css/calm.css">
@@ -204,6 +205,7 @@
           <button type="button" role="menuitem" id="csvBtn" data-act="csv" title="Export the filtered listings as CSV"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M8 2v8M4.5 6.5L8 10l3.5-3.5M3 13h10"/></svg><span>Export filtered CSV</span></button>
           <button type="button" role="menuitem" id="mnPicks" title="Save your picks, tiers, notes and weights as a file"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M8 1.8l1.9 4 4.4.5-3.3 3 .9 4.3L8 11.4 4.1 13.6 5 9.3 1.7 6.3l4.4-.5z"/></svg><span>Back up picks</span></button>
           <button type="button" role="menuitem" id="mnRestore" title="Load a picks backup from a file"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M8 10V2M4.5 5.5L8 2l3.5 3.5M3 13h10"/></svg><span>Restore picks…</span></button>
+          <button type="button" role="menuitem" id="mnSync" class="am-sync" title="Keep your picks, notes and tour findings in step between your Mac and iPhone"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13.2 6.2A5.4 5.4 0 003.3 5M2.8 9.8A5.4 5.4 0 0012.7 11"/><path d="M3.4 2.4v2.8h2.8M12.6 13.6v-2.8H9.8"/></svg><span>Sync across devices…</span><small class="am-st" id="mnSyncSt" data-tone="off">Off</small></button>
         </div>
         <div class="am-sec" role="group" aria-labelledby="amLookH">
           <div class="am-h" id="amLookH">Appearance</div>
