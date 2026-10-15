@@ -143,16 +143,37 @@ def cmd_geocode(args):
     n = geocode_listings(Ls, ws.cache_dir / "geocode.json", city, args.provider, args.force, log)
     save(Ls, ws.listings_path)
     g = Geocoder(ws.cache_dir / "geocode.json", city)
-    changed = False
+    found: dict[str, tuple[float, float]] = {}
     for d in crit["commute"]["destinations"]:
         if d.get("lat") is None and d.get("address"):
             r = g.geocode(d["address"])
             if r:
-                d["lat"], d["lon"] = round(r["lat"], 6), round(r["lon"], 6)
-                changed = True
-                log(f"  destination {d['name']}: {d['lat']}, {d['lon']}  (copy these into criteria.yaml)")
+                found[d["name"]] = (round(r["lat"], 6), round(r["lon"], 6))
+                log(f"  destination {d['name']}: {found[d['name']][0]}, {found[d['name']][1]}  ({r.get('label') or d['address']})")
+            else:
+                log(f"  destination {d['name']}: no match for {d['address']!r}. Fix the address in criteria.yaml "
+                    "(add the city and state) or place a pin in the dashboard's New search wizard.")
     g.save()
+    if found:
+        _save_destination_coords(ws, found)
     log(f"Geocoded {n} listings.")
+
+
+def _save_destination_coords(ws: Workspace, found: dict[str, tuple[float, float]]) -> None:
+    """Write the destination coordinates `geocode` found into criteria.yaml (a backup goes to backups/), so `commute` can
+    run. Falls back to printing them when the file's layout cannot be edited in place. [onboarding]"""
+    from .criteria_check import check_text
+    from .criteria_edit import set_destination_coords, write_with_backup
+    text = ws.criteria_path.read_text(encoding="utf-8")
+    new = set_destination_coords(text, found)
+    if new is None or not check_text(new).ok:
+        log("  Could not edit criteria.yaml in place. Add these under the destinations yourself:")
+        for name, (la, lo) in found.items():
+            log(f"    {name}: lat: {la}   lon: {lo}")
+        return
+    if new != text:
+        backup = write_with_backup(ws.criteria_path, new)
+        log(f"  Saved the coordinates in {ws.criteria_path.name}" + (f" (the old file is in backups/{backup.name})" if backup else ""))
 
 
 def cmd_commute(args):
@@ -160,9 +181,12 @@ def cmd_commute(args):
     ws = ws_from(args)
     Ls = _listings(ws)
     only = [_find(Ls, k)["id"] for k in args.ids] if getattr(args, "ids", None) else None
-    run_commute(ws, Ls, ws.criteria(), cell_m=args.cell, log=log,
-                mode_grids=False if getattr(args, "no_mode_grids", False) else None, only=only,
-                only_dests=getattr(args, "dest", None))
+    try:
+        run_commute(ws, Ls, ws.criteria(), cell_m=args.cell, log=log,
+                    mode_grids=False if getattr(args, "no_mode_grids", False) else None, only=only,
+                    only_dests=getattr(args, "dest", None))
+    except ValueError as e:   # [onboarding] a missing coordinate or a feed with no service that day: say what to do, no traceback
+        sys.exit(f"commute: {e}")
     save(Ls, ws.listings_path)
 
 
@@ -435,11 +459,25 @@ def cmd_report(args):
     log(f"Wrote {p}")
 
 
+def _is_example(ws: Workspace) -> bool:
+    """True for the bundled searches under examples/ (their data is the committed demo in dashboard/data)."""
+    return (REPO / "examples").resolve() in ws.root.resolve().parents
+
+
+def default_data_dir(ws: Workspace) -> Path:
+    """Where `build` writes when --out is not given. The bundled example feeds the committed demo (dashboard/data); every
+    other search gets its own ignored cache, the same folder `serve` uses, so a private search never overwrites the
+    committed demo data or lands in a commit. [onboarding]"""
+    return DASH / "data" if _is_example(ws) else ws.cache_dir / "dashboard-data"
+
+
 def cmd_build(args):
     ws = ws_from(args)
-    out = Path(args.out).resolve() if args.out else DASH / "data"
+    out = Path(args.out).resolve() if args.out else default_data_dir(ws)
     _export(ws, out)
     log(f"Dashboard data -> {out}")
+    if not args.out and not _is_example(ws):
+        log("  (your search's own cache: `apartmentscout serve` shows it. Use --out DIR to build a copy for hosting.)")
     if args.standalone:
         p = standalone(out, Path(args.standalone))
         log(f"Standalone dashboard -> {p}  (open it directly; no server needed)")
