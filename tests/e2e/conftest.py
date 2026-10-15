@@ -148,6 +148,17 @@ def build_url(base: str, path: str, theme: str = "dark") -> str:
     return f"{base}/{'?' + '&'.join(params) if params else ''}#{h}"
 
 
+def block_foreign(ctx, *allowed: str) -> None:
+    """Abort every request that is not for one of the `allowed` URL prefixes (data: and blob: always are).
+
+    Only the requests to be blocked go through the route handler; the local ones are never intercepted. A handler that said
+    `continue_()` for each of them needed this Python process to answer every request of the page, so a test that was busy in
+    Python (reading a file, polling a folder) stalled the page it was waiting for, and each page load paid one round trip per file."""
+    import re
+    prefixes = [*allowed, "data:", "blob:"]
+    ctx.route(re.compile(r"^(?!(?:" + "|".join(re.escape(p) for p in prefixes) + "))"), lambda r: r.abort())
+
+
 @pytest.fixture
 def open_page(browser, base_url: str):
     """open_page(path, theme='dark', width=1440, height=900) -> Session, with the network outside base_url blocked."""
@@ -158,7 +169,7 @@ def open_page(browser, base_url: str):
                                   device_scale_factor=1, reduced_motion="reduce",
                                   service_workers="block")   # [pwa] only tests/e2e/test_pwa.py runs with the service worker
         contexts.append(ctx)
-        ctx.route("**/*", lambda r: r.continue_() if r.request.url.startswith((base_url, "data:", "blob:")) else r.abort())
+        block_foreign(ctx, base_url)
         page = ctx.new_page()
         if THROTTLE > 1:
             ctx.new_cdp_session(page).send("Emulation.setCPUThrottlingRate", {"rate": THROTTLE})
@@ -208,6 +219,79 @@ SETTLED_JS = """([capMs, ticks]) => new Promise((resolve) => {
 def settled(page, cap_ms: int = 120_000, ticks: int = 8) -> bool:
     """Wait until the page's main thread is idle again (see SETTLED_JS); False when it never was within the cap."""
     return page.evaluate(SETTLED_JS, [cap_ms, ticks])
+
+
+# Playwright's wait_for_function does NOT await a promise: `async () => (await import('/js/app.js')).S.sel === id` is a Promise, which is
+# truthy, so the wait returned at once and the test went on racing the page. This runs such a predicate to completion instead.
+ASYNC_UNTIL_JS = """async ([src, arg, timeoutMs]) => {
+  const pred = (0, eval)('(' + src + ')'), t0 = performance.now();
+  while (performance.now() - t0 < timeoutMs) {
+    try { if (await pred(arg)) return true; } catch (e) { /* the module or the state is not there yet */ }
+    await new Promise((r) => setTimeout(r, 50));
+  }
+  return false;
+}"""
+
+
+def until(page, predicate_js: str, arg=None, timeout_ms: float = 30000) -> None:
+    """Wait for a (possibly async) JS predicate to hold; raises AssertionError on timeout, like a failed assertion."""
+    if not page.evaluate(ASYNC_UNTIL_JS, [predicate_js, arg, timeout_ms]):
+        raise AssertionError(f"timed out after {timeout_ms:g} ms waiting for: {predicate_js.strip()[:240]}")
+
+
+def _await_async_predicates() -> None:
+    """Make Page.wait_for_function await an `async` predicate (see ASYNC_UNTIL_JS) for every test in the suite."""
+    try:
+        from playwright.sync_api import Page
+    except ImportError:
+        return
+    original = Page.wait_for_function
+    if getattr(original, "_awaits_async", False):
+        return
+
+    def wait_for_function(self, expression, *, arg=None, timeout=None, polling=None):
+        if isinstance(expression, str) and expression.lstrip().startswith("async"):
+            return until(self, expression, arg, 30000 if timeout is None else timeout)
+        return original(self, expression, arg=arg, timeout=timeout, polling=polling)
+    wait_for_function._awaits_async = True
+    wait_for_function.__doc__ = original.__doc__
+    Page.wait_for_function = wait_for_function
+
+
+_await_async_predicates()
+
+
+def frames(page, n: int = 3) -> None:
+    """Wait for n animation frames: what a handler scheduled with requestAnimationFrame (the windowed card list after a scroll or a resize) has run."""
+    page.evaluate("(n) => new Promise((resolve) => { const step = () => (--n > 0 ? requestAnimationFrame(step) : resolve()); requestAnimationFrame(step); })", n)
+
+
+def poll(fn, page, timeout: float = 10.0, interval_ms: int = 50):
+    """Call fn() until it returns something truthy or `timeout` seconds pass; returns the last value (the caller asserts on it).
+    For conditions that live outside the page (a file the local API writes) where a fixed sleep would stand in for them. The
+    wait between tries is `page.wait_for_timeout`, not time.sleep: Playwright's sync API only serves the page's route handlers,
+    events and downloads while the test is inside one of its calls."""
+    import time
+    end = time.monotonic() + timeout
+    while True:
+        try:
+            v = fn()
+        except (OSError, ValueError, KeyError, IndexError):   # the file is not there yet, or half written
+            v = None
+        if v or time.monotonic() >= end:
+            return v
+        page.wait_for_timeout(interval_ms)
+
+
+def map_opened(page, timeout_ms: int = 15000) -> None:
+    """Wait until the map module has finished opening (the style and sources are loaded), then until the page is quiet.
+    Without WebGL the map never reports loaded, so the wait gives up after `timeout_ms` and the caller goes on."""
+    from playwright.sync_api import TimeoutError as PlaywrightTimeout
+    try:
+        page.wait_for_function("() => !!window.__asMap && window.__asMap.loaded()", timeout=timeout_ms)
+    except PlaywrightTimeout:
+        pass
+    settled(page, 20000, ticks=4)
 
 
 # ------------------------------------------------------------------ parallel runs

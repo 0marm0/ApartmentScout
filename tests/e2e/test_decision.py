@@ -11,6 +11,7 @@ import re
 from pathlib import Path
 
 import pytest
+from conftest import frames, poll
 
 pytestmark = pytest.mark.e2e
 
@@ -126,6 +127,11 @@ def compare_ids(s) -> list[str]:
     return state(s, "(m) => m.S.compare")
 
 
+def wait_compare(s, expected: list[str]) -> None:
+    """Wait until the compare list is `expected` (a drop lands on the next tick); the assertion that follows still checks it."""
+    s.page.wait_for_function("async (want) => JSON.stringify((await import('/js/app.js')).S.compare) === JSON.stringify(want)", arg=expected, timeout=10000)
+
+
 def test_tray_collects_dragged_homes_and_reorders_them(open_page) -> None:
     s = open_page("#map")
     s.page.wait_for_selector("#tray .tray-pill", state="visible", timeout=SLOW)
@@ -133,22 +139,22 @@ def test_tray_collects_dragged_homes_and_reorders_them(open_page) -> None:
     ids = s.page.eval_on_selector_all("#cards .card", "cs => cs.slice(0, 4).map(c => c.dataset.id)")
     for i in range(3):
         s.page.drag_and_drop(f"#cards .card:nth-child({i + 1} of .card)", "#tray")
-        s.page.wait_for_timeout(250)
+        wait_compare(s, ids[: i + 1])
     assert compare_ids(s) == ids[:3]
     assert s.page.locator("#tray .td-slot.filled").count() == 3
     assert s.page.locator("#cmpCount").inner_text() == "3"
     # drop the fourth on slot A: it goes first, the others shift
     s.page.drag_and_drop("#cards .card:nth-child(4 of .card)", "#tray .td-slot[data-slot='0']")
-    s.page.wait_for_timeout(250)
+    wait_compare(s, [ids[3], ids[0], ids[1], ids[2]])
     assert compare_ids(s) == [ids[3], ids[0], ids[1], ids[2]]
     # drag slot D onto slot A: reorder, no duplicate
     s.page.drag_and_drop("#tray .td-slot[data-slot='3'] .ts-main", "#tray .td-slot[data-slot='0']")
-    s.page.wait_for_timeout(250)
+    wait_compare(s, [ids[2], ids[3], ids[0], ids[1]])
     assert compare_ids(s) == [ids[2], ids[3], ids[0], ids[1]]
     # a fifth home replaces the one under the drop
     s.page.drag_and_drop("#cards .card:nth-child(5 of .card)", "#tray .td-slot[data-slot='1']")
-    s.page.wait_for_timeout(250)
     five = s.page.eval_on_selector_all("#cards .card", "cs => cs[4].dataset.id")
+    s.page.wait_for_function("async (f) => (await import('/js/app.js')).S.compare[1] === f", arg=five, timeout=10000)
     got = compare_ids(s)
     assert got[1] == five and len(got) == 4 and ids[3] not in got
     # keyboard reorder and remove
@@ -171,7 +177,7 @@ def test_tray_takes_a_dragged_map_tag_and_a_table_row(open_page, webgl) -> None:
     tag = s.page.locator(".price-tag[data-id]:visible").first
     tag_id, before = tag.get_attribute("data-id"), tag.bounding_box()
     s.page.drag_and_drop(".price-tag[data-id]:visible >> nth=0", "#tray")
-    s.page.wait_for_timeout(300)
+    wait_compare(s, [tag_id])
     assert compare_ids(s) == [tag_id]
     s.page.wait_for_selector(f'.price-tag[data-id="{tag_id}"]:visible', timeout=SLOW)   # tags are redrawn after the drop
     after = s.page.locator(f'.price-tag[data-id="{tag_id}"]:visible').first.bounding_box()
@@ -180,7 +186,7 @@ def test_tray_takes_a_dragged_map_tag_and_a_table_row(open_page, webgl) -> None:
     s.page.wait_for_selector("#table tbody tr.r[data-id]", timeout=SLOW)
     row_id = s.page.locator("#table tbody tr.r[data-id]").nth(2).get_attribute("data-id")
     s.page.drag_and_drop("#table tbody tr.r[data-id] >> nth=2", "#tray")
-    s.page.wait_for_timeout(300)
+    wait_compare(s, [tag_id, row_id])
     assert compare_ids(s) == [tag_id, row_id]
     assert not s.take()
 
@@ -231,13 +237,17 @@ def test_trade_off_pad_writes_the_slider_weights_and_reranks_live(open_page) -> 
     cards = lambda: s.page.eval_on_selector_all("#cards .card", "cs => cs.slice(0, 12).map(c => c.dataset.id)")  # noqa: E731
     order0 = cards()
     s.page.locator(".tp-svg").scroll_into_view_if_needed()
-    s.page.wait_for_timeout(150)
+    frames(s.page)
     svg, dot = s.page.locator(".tp-svg").bounding_box(), s.page.locator(".tp-dot .core").bounding_box()
     s.page.mouse.move(dot["x"] + dot["width"] / 2, dot["y"] + dot["height"] / 2)
     s.page.mouse.down()
     s.page.mouse.move(svg["x"] + svg["width"] * 0.17, svg["y"] + svg["height"] * 0.85, steps=10)   # toward Commute
     s.page.mouse.up()
-    s.page.wait_for_timeout(900)
+    # the pad writes the weights and the list is re-ranked by them (in the worker): wait for the cards to be in the order the weights say
+    s.page.wait_for_function("""async (c0) => { const m = await import('/js/app.js'), t = await import('/js/features/tradeoff-model.js');
+      const want = t.rankIds(m.filtered(), m.S.weights, m.DIMS.map(([k]) => k)).slice(0, 12);
+      const dom = [...document.querySelectorAll('#cards .card')].slice(0, 12).map((c) => c.dataset.id);
+      return m.S.weights.commute > c0 && JSON.stringify(want) === JSON.stringify(dom); }""", arg=before["commute"], timeout=15000)
     after = weights(s)
     # the group's weight is conserved, the others untouched, and the shift is toward commute
     grp = ["cost", "commute", "space"]
@@ -259,7 +269,7 @@ def test_trade_off_pad_keyboard_presets_and_sliders_switch(open_page) -> None:
     w0 = weights(s)
     s.page.focus(".tp-dot")
     s.page.keyboard.press("ArrowUp")                 # one notch to Cost, taken from the other two
-    s.page.wait_for_timeout(100)
+    s.page.wait_for_function("async (c) => (await import('/js/app.js')).S.weights.cost === c", arg=w0["cost"] + 1, timeout=5000)
     w1 = weights(s)
     assert w1["cost"] == w0["cost"] + 1 and w1["commute"] + w1["space"] == w0["commute"] + w0["space"] - 1
     # a preset ghost previews the top ten and applies on click, through the rail's own select
@@ -390,13 +400,13 @@ def test_planner_reorders_by_drag_and_by_keyboard(open_page) -> None:
     s.page.mouse.down()
     s.page.mouse.move(g["x"] + 4, last_card["y"] + last_card["height"] + 10, steps=14)
     s.page.mouse.up()
-    s.page.wait_for_timeout(300)
+    poll(lambda: [x["key"] for x in entries(s)][-1] == before[0], s.page, timeout=5)   # the dragged stop has moved to the end
     after = [x["key"] for x in entries(s)]
     assert after[-1] == before[0] and after[:-1] == before[1:]
     # keyboard: the up arrow on a grip moves that stop earlier
     s.page.locator(".tp2-item .tp2-grip").nth(2).focus()
     s.page.keyboard.press("ArrowUp")
-    s.page.wait_for_timeout(200)
+    poll(lambda: [x["key"] for x in entries(s)][1] == after[2], s.page, timeout=5)
     again = [x["key"] for x in entries(s)]
     assert again[1] == after[2] and again[2] == after[1]
     assert not s.take()
@@ -413,7 +423,7 @@ def test_planner_buffer_shifts_later_stops_and_a_missed_booking_is_flagged(open_
     s.page.locator("#tourPlanner [data-f=start]").fill("10:00")
     key = s.page.locator(".tp2-item").nth(1).get_attribute("data-key")
     s.page.locator(f".tp2-item[data-key=\"{key}\"] [data-booked]").fill("10:05")
-    s.page.wait_for_timeout(300)
+    s.page.wait_for_selector(".tp2-chip.bad", timeout=5000)
     assert s.page.locator(".tp2-chip.bad").count() >= 1 and "Late by" in s.page.locator("#tourPlanner").inner_text()
     assert not s.take()
 

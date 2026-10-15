@@ -13,6 +13,9 @@ import subprocess
 from pathlib import Path
 
 import pytest
+from conftest import block_foreign
+from conftest import frames, settled
+from playwright.sync_api import TimeoutError as PlaywrightTimeout
 
 pytestmark = pytest.mark.e2e
 
@@ -33,7 +36,7 @@ def open_page(open_page):
     def _open(path: str = "#map", **kw):
         s = open_page(path, **kw)
         s.page.wait_for_function("() => document.querySelector('#cards .card') && document.querySelector('#rail [data-w]')", timeout=T)
-        s.page.wait_for_timeout(250)
+        frames(s.page)
         return s
     return _open
 
@@ -46,7 +49,7 @@ def open_motion(browser, base_url: str):
     def _open(path: str = "", width: int = 1440, height: int = 900, data: dict | None = None, theme: str = "dark"):
         ctx = browser.new_context(viewport={"width": width, "height": height}, color_scheme=theme, device_scale_factor=1, reduced_motion="no-preference")
         contexts.append(ctx)
-        ctx.route("**/*", lambda r: r.continue_() if r.request.url.startswith((base_url, "data:", "blob:")) else r.abort())
+        block_foreign(ctx, base_url)
         def serve(body):
             return lambda r: r.fulfill(status=200, content_type="application/json", body=json.dumps(body))
         for url, body in (data or {}).items():
@@ -138,7 +141,7 @@ def test_chip_row_scrolls_sideways_on_a_phone(open_page) -> None:
     p.evaluate("""async () => { const m = await import('/js/app.js');
       m.setFilter('toggles', ['in_unit_wd', 'elevator', 'doorman', 'gym', 'floor10']); m.setFilter('savedOnly', true); }""")
     p.wait_for_selector("#filterChips.has", timeout=T)
-    p.wait_for_timeout(400)
+    settled(p, 20000, ticks=3)
     box = p.evaluate("() => { const s = document.getElementById('fchipScroll'); const cs = getComputedStyle(s); return { sw: s.scrollWidth, cw: s.clientWidth, wrap: cs.flexWrap, ox: cs.overflowX }; }")
     assert box["wrap"] == "nowrap" and box["ox"] == "auto" and box["sw"] > box["cw"], box
     # every chip is a finger-sized target and nothing makes the page itself scroll sideways
@@ -241,7 +244,7 @@ def test_collapsed_sections_work_on_a_phone(open_page) -> None:
     p.locator("#filtersBtn").click()
     p.wait_for_function("() => document.body.classList.contains('rail-open')", timeout=T)
     p.locator("#sec-tg-weights").click()
-    p.wait_for_timeout(400)
+    p.wait_for_function("() => document.getElementById('sec-tg-weights').getAttribute('aria-expanded') === 'false'", timeout=T)
     assert p.locator("#sec-tg-weights").get_attribute("aria-expanded") == "false"
     assert p.locator('.sec[data-sec="weights"] .sec-sum').inner_text().strip()
     assert p.evaluate("() => document.documentElement.scrollWidth <= innerWidth + 1")
@@ -268,7 +271,7 @@ def test_scrolling_renders_the_right_cards_to_the_end(open_page) -> None:
     total = p.evaluate("async () => (await import('/js/app.js')).filtered().length")
     for frac in (0.25, 0.5, 0.75, 1.0):
         p.evaluate("(f) => { const h = document.getElementById('cards'); h.scrollTop = (h.scrollHeight - h.clientHeight) * f; }", frac)
-        p.wait_for_timeout(250)
+        frames(p)
         got = p.evaluate("""() => { const h = document.getElementById('cards'), hr = h.getBoundingClientRect();
           return [...h.querySelectorAll('.card')].filter((c) => { const r = c.getBoundingClientRect(); return r.bottom > hr.top + 4 && r.top < hr.bottom - 4; }).map((c) => +c.getAttribute('aria-posinset')); }""")
         assert got and got == list(range(got[0], got[-1] + 1)), (frac, got)      # a gap-free run of visible cards
@@ -287,7 +290,7 @@ def test_j_k_and_arrow_keys_walk_the_whole_list(open_page) -> None:
     for _ in range(30):                                   # past the rendered window
         p.keyboard.press("j")
     p.wait_for_function("async (id) => (await import('/js/app.js')).S.sel === id", arg=first_ids[29], timeout=T)
-    p.wait_for_timeout(500)
+    p.wait_for_function("() => { const c = document.querySelector('#cards .card.sel'); if (!c) return false; const r = c.getBoundingClientRect(), h = document.getElementById('cards').getBoundingClientRect(); return r.bottom > h.top && r.top < h.bottom; }", timeout=T)   # the list has scrolled to it
     assert p.evaluate("() => { const c = document.querySelector('#cards .card.sel'); const r = c.getBoundingClientRect(), h = document.getElementById('cards').getBoundingClientRect(); return r.bottom > h.top && r.top < h.bottom; }")
     p.keyboard.press("k")
     p.wait_for_function("async (id) => (await import('/js/app.js')).S.sel === id", arg=first_ids[28], timeout=T)
@@ -311,7 +314,7 @@ def test_opening_a_listing_scrolls_an_unrendered_card_into_view(open_page) -> No
     lid = p.evaluate("async () => (await import('/js/features/card-list.js')).cardIds()[200]")
     p.evaluate("async (id) => (await import('/js/app.js')).openDrawer(id, { instant: true })", lid)
     p.wait_for_selector(f'#cards .card[data-id="{lid}"]', timeout=T)
-    p.wait_for_timeout(300)
+    p.wait_for_function("(id) => { const c = document.querySelector(`#cards .card[data-id=\"${id}\"]`); if (!c) return false; const r = c.getBoundingClientRect(), h = document.getElementById('cards').getBoundingClientRect(); return r.top >= h.top - 2 && r.bottom <= h.bottom + 2; }", arg=lid, timeout=T)   # scrolled into view
     assert p.evaluate("(id) => { const c = document.querySelector(`#cards .card[data-id=\"${id}\"]`), r = c.getBoundingClientRect(), h = document.getElementById('cards').getBoundingClientRect(); return r.top >= h.top - 2 && r.bottom <= h.bottom + 2; }", lid)
     assert p.locator(f'#cards .card[data-id="{lid}"]').evaluate("c => c.classList.contains('sel')")
     assert not s.take()
@@ -322,16 +325,18 @@ def test_a_resize_across_a_breakpoint_keeps_the_window_and_the_scroll_height_rig
     p = s.page
     total = p.evaluate("async () => (await import('/js/app.js')).filtered().length")
     p.evaluate("() => { document.getElementById('cards').scrollTop = 9000; }")
-    p.wait_for_timeout(300)
+    frames(p)   # the windowed list re-renders on the next frame after a scroll
     p.set_viewport_size({"width": 1100, "height": 760})          # below 1180 px the rail becomes a sheet and the column changes width
-    p.wait_for_timeout(700)
+    p.wait_for_function("() => document.getElementById('cards').clientWidth > 0 && innerWidth === 1100", timeout=T)
+    frames(p, 4)   # the resize observer relays the list out on the next frame
+    settled(p, 20000, ticks=3)
     got = p.evaluate("""() => { const c = document.getElementById('cards'), hr = c.getBoundingClientRect();
       return [...c.querySelectorAll('.card')].filter((e) => { const r = e.getBoundingClientRect(); return r.bottom > hr.top + 4 && r.top < hr.bottom - 4; }).map((e) => +e.getAttribute('aria-posinset')); }""")
     assert got and got == list(range(got[0], got[-1] + 1)) and len(got) >= 5, got
     p.evaluate("() => { const c = document.getElementById('cards'); c.scrollTop = c.scrollHeight; }")
-    p.wait_for_timeout(400)
+    frames(p)
     p.evaluate("() => { const c = document.getElementById('cards'); c.scrollTop = c.scrollHeight; }")
-    p.wait_for_timeout(300)
+    frames(p)
     last = p.evaluate("() => { const c = document.getElementById('cards'), hr = c.getBoundingClientRect(); const e = [...c.querySelectorAll('.card')].pop(); return [+e.getAttribute('aria-posinset'), e.getBoundingClientRect().bottom <= hr.bottom + 1]; }")
     assert last == [total, True], last
     assert not s.take()
@@ -341,12 +346,14 @@ def test_changing_density_keeps_the_card_you_were_looking_at(open_page) -> None:
     s = open_page("#map")
     p = s.page
     p.evaluate("() => { document.getElementById('cards').scrollTop = 6000; }")
-    p.wait_for_timeout(300)
+    frames(p)   # the windowed list re-renders on the next frame after a scroll
     top = lambda: p.evaluate("""() => { const c = document.getElementById('cards'), hr = c.getBoundingClientRect();
       const e = [...c.querySelectorAll('.card')].find((x) => x.getBoundingClientRect().bottom > hr.top + 20); return +e.getAttribute('aria-posinset'); }""")  # noqa: E731
     before = top()
     p.evaluate("async () => (await import('/js/features/density.js')).setDensity('compact')")
-    p.wait_for_timeout(700)
+    p.wait_for_function("() => document.documentElement.dataset.density === 'compact'", timeout=T)
+    frames(p, 4)
+    settled(p, 20000, ticks=3)
     assert abs(top() - before) <= 1, (before, top())
     assert not s.take()
 
@@ -357,7 +364,7 @@ def test_cards_do_not_shift_when_the_window_moves(open_page, density: str) -> No
     s = open_page(f"?density={density}#map")
     p = s.page
     p.evaluate("() => { document.getElementById('cards').scrollTop = 3000; }")
-    p.wait_for_timeout(300)
+    frames(p)   # the windowed list re-renders on the next frame after a scroll
     drift = p.evaluate("""async () => {
       const h = document.getElementById('cards'), raf = () => new Promise((r) => requestAnimationFrame(r));
       const pick = h.querySelectorAll('.card')[6], id = pick.dataset.id, out = [];
@@ -380,9 +387,10 @@ def test_a_list_that_shrinks_while_scrolled_far_down_is_not_left_blank(open_page
     s = open_page("#map")
     p = s.page
     p.evaluate("() => { document.getElementById('cards').scrollTop = 6000; }")
-    p.wait_for_timeout(300)
+    frames(p)   # the windowed list re-renders on the next frame after a scroll
     p.evaluate("async () => (await import('/js/app.js')).setFilter('q', 'paramount')")
-    p.wait_for_timeout(500)
+    frames(p, 4)
+    settled(p, 20000, ticks=3)
     visible = p.evaluate("""() => { const h = document.getElementById('cards'), hr = h.getBoundingClientRect();
       return [...h.querySelectorAll('.card')].filter((c) => { const r = c.getBoundingClientRect(); return r.bottom > hr.top && r.top < hr.bottom; }).length; }""")
     assert visible >= 1
@@ -391,7 +399,7 @@ def test_a_list_that_shrinks_while_scrolled_far_down_is_not_left_blank(open_page
 
 def test_a_saved_tier_that_the_search_no_longer_has_does_not_break_the_page(browser, base_url: str) -> None:
     ctx = browser.new_context(viewport={"width": 1440, "height": 900}, reduced_motion="reduce")
-    ctx.route("**/*", lambda r: r.continue_() if r.request.url.startswith((base_url, "data:", "blob:")) else r.abort())
+    block_foreign(ctx, base_url)
     ctx.add_init_script("localStorage.setItem('as:filters2', JSON.stringify({ q: '', tiers: [7], over: false, maxCommute: 75, toggles: [], status: ['new'], savedOnly: false }))")
     page = ctx.new_page()
     errors: list[str] = []
@@ -423,7 +431,7 @@ def test_closing_the_drawer_returns_focus_to_a_card_that_was_scrolled_away(open_
     p.wait_for_selector("#drawer.open", timeout=T)
     p.locator("#drawer .d-scroll").focus() if p.locator("#drawer .d-scroll[tabindex]").count() else p.locator("#dClose").focus()
     p.evaluate("() => { document.getElementById('cards').scrollTop = 20000; }")
-    p.wait_for_timeout(300)
+    p.wait_for_selector(f'#cards .card[data-id="{lid}"]', state="detached", timeout=T)   # the window moved on, so that card is not in the DOM
     assert p.locator(f'#cards .card[data-id="{lid}"]').count() == 0
     p.locator("#dClose").click()
     p.wait_for_function("(id) => document.activeElement?.dataset?.id === id", arg=lid, timeout=T)
@@ -455,11 +463,11 @@ def test_buildings_view_is_windowed_too(open_page) -> None:
     info = p.evaluate("() => { const h = document.getElementById('cards'); return { n: h.querySelectorAll('.vgroup').length, more: h.querySelectorAll('.units-more').length, set: +h.querySelector('.card').getAttribute('aria-setsize'), sh: h.scrollHeight }; }")
     assert info["n"] < 30 and info["more"] >= 1 and info["set"] > 50, info
     p.evaluate("() => { const h = document.getElementById('cards'); h.scrollTop = h.scrollHeight; }")
-    p.wait_for_timeout(300)
+    p.wait_for_function("(set) => [...document.querySelectorAll('#cards .card')].some((c) => +c.getAttribute('aria-posinset') === set)", arg=info["set"], timeout=T)
     assert p.evaluate("(set) => [...document.querySelectorAll('#cards .card')].some((c) => +c.getAttribute('aria-posinset') === set)", info["set"])
     # the unit rows inside a building still open their listing
     p.evaluate("() => { document.getElementById('cards').scrollTop = 0; }")
-    p.wait_for_timeout(200)
+    frames(p)
     row = p.locator("#cards .unit-row").first
     uid = row.get_attribute("data-open")
     row.click()
@@ -556,12 +564,13 @@ def test_shortlist_table_shows_the_same_deltas(open_page) -> None:
 def test_a_list_reordered_by_filters_keeps_every_card_correct(open_motion) -> None:
     p, errors = open_motion("")
     p.evaluate("async () => { const m = await import('/js/app.js'); m.setFilter('toggles', ['gym']); }")
-    p.wait_for_timeout(700)
+    p.wait_for_function("""async () => { const ids = (await import('/js/features/card-list.js')).cardIds().slice(0, 8), dom = [...document.querySelectorAll('#cards .card')].slice(0, 8).map((c) => c.dataset.id);
+      return ids.length === 8 && JSON.stringify(ids) === JSON.stringify(dom); }""", timeout=T)
     ids = p.evaluate("async () => (await import('/js/features/card-list.js')).cardIds().slice(0, 8)")
     dom = p.eval_on_selector_all("#cards .card", "cs => cs.slice(0, 8).map((c) => c.dataset.id)")
     assert ids == dom
     # no card is left mid-slide: transforms are gone once the animations finish
-    p.wait_for_timeout(700)
+    p.wait_for_function("() => [...document.querySelectorAll('#cards .card')].every((c) => c.getAnimations().length === 0)", timeout=T)
     assert p.evaluate("() => [...document.querySelectorAll('#cards .card')].every((c) => c.getAnimations().length === 0)")
     assert not errors
 
@@ -578,7 +587,7 @@ def test_density_setting_in_the_menu_changes_cards_rail_and_tables_and_is_rememb
     assert p.evaluate("() => document.documentElement.dataset.density") == "compact"
     assert p.locator('button[data-density="compact"]').get_attribute("aria-checked") == "true"
     assert p.locator("#appMenu").is_visible()                                       # the menu stays open, like the theme switch
-    p.wait_for_timeout(500)
+    p.wait_for_function("(h) => document.querySelector('#cards .card').offsetHeight <= h - 12", arg=h_comfy, timeout=T)   # the cards have re-laid out at the compact height
     h_compact = p.evaluate("() => document.querySelector('#cards .card').offsetHeight")
     assert h_compact <= h_comfy - 12, (h_comfy, h_compact)
     assert p.evaluate("() => document.getElementById('rail').scrollHeight") < rail_comfy
@@ -615,7 +624,7 @@ def test_compact_cards_fit_a_phone_and_the_windowing_still_lines_up(open_page) -
     s = open_page("?density=compact#map", width=390, height=844)
     p = s.page
     p.evaluate("() => { const h = document.getElementById('cards'); h.scrollTop = 4000; }")
-    p.wait_for_timeout(300)
+    frames(p)
     got = p.evaluate("""() => { const h = document.getElementById('cards'), hr = h.getBoundingClientRect();
       return [...h.querySelectorAll('.card')].filter((c) => { const r = c.getBoundingClientRect(); return r.bottom > hr.top + 4 && r.top < hr.bottom - 4; }).map((c) => +c.getAttribute('aria-posinset')); }""")
     assert got and got == list(range(got[0], got[-1] + 1))
@@ -672,7 +681,7 @@ def test_no_history_means_no_sparklines_and_no_chips(open_page) -> None:
     s.page.wait_for_selector("#cards .card", timeout=30000)
     assert s.page.locator("#cards .ph, #cards .ph-d").count() == 0
     s.page.evaluate("() => { const h = document.getElementById('cards'); h.scrollTop = 6000; }")
-    s.page.wait_for_timeout(300)
+    frames(s.page)
     assert s.page.locator("#cards .ph, #cards .ph-d").count() == 0
     assert not s.take()
 
@@ -720,7 +729,7 @@ def test_dragging_a_slider_with_the_worker_reranks_and_stays_consistent(open_pag
     before = order()
     p.evaluate("""async () => { const raf = () => new Promise((r) => requestAnimationFrame(r)); const el = document.querySelector('[data-w="quiet"]');
       for (let i = 0; i <= 40; i++) { el.value = String(i); el.dispatchEvent(new Event('input', { bubbles: true })); await raf(); } }""")
-    p.wait_for_timeout(700)
+    p.wait_for_function("(b) => JSON.stringify([...document.querySelectorAll('#cards .card')].slice(0, 10).map((c) => c.dataset.id)) !== JSON.stringify(b)", arg=before, timeout=T)
     assert order() != before
     # the cards on screen are in the order the scores say, and the KPI strip is up to date
     ok = p.evaluate("""async () => { const a = await import('/js/app.js'); const ids = a.sorted(a.filtered()).slice(0, 10).map((L) => L.id);
@@ -803,7 +812,7 @@ def test_the_standalone_file_runs_the_worker_from_file_url(browser, tmp_path: Pa
     monkeypatch.setattr(cli, "DASH", work)
     out = cli.standalone(work / "data", tmp_path / "search.html")
     ctx = browser.new_context(viewport={"width": 1440, "height": 900}, reduced_motion="reduce")
-    ctx.route("**/*", lambda rt: rt.continue_() if rt.request.url.startswith(("file://", "data:", "blob:")) else rt.abort())
+    block_foreign(ctx, "file://")
     page = ctx.new_page()
     errors: list[str] = []
     page.on("pageerror", lambda e: errors.append(str(e)))
@@ -812,7 +821,10 @@ def test_the_standalone_file_runs_the_worker_from_file_url(browser, tmp_path: Pa
     page.wait_for_function("() => document.querySelector('#cards .card')", timeout=T)
     # the worker starts shortly after the first paint; either it runs (preferred) or scoring says it fell back, never a hang
     page.wait_for_function("() => ['worker', 'sync'].includes(document.documentElement.dataset.scoring)", timeout=T)
-    page.wait_for_timeout(1500)
+    try:   # the blob worker takes over from the synchronous scorer a moment later; if it never does, `mode` says so below
+        page.wait_for_function("() => document.documentElement.dataset.scoring === 'worker'", timeout=15000)
+    except PlaywrightTimeout:
+        pass
     mode = page.evaluate("() => document.documentElement.dataset.scoring")
     before = page.eval_on_selector_all("#cards .card", "cs => cs.slice(0, 10).map(c => c.dataset.id)")
     page.evaluate("() => { const el = document.querySelector('[data-w=\"quiet\"]'); el.value = '40'; el.dispatchEvent(new Event('input', { bubbles: true })); }")

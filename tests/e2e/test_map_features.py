@@ -4,6 +4,7 @@ interaction comes from local data. Needs WebGL, otherwise skipped."""
 from __future__ import annotations
 
 import pytest
+from conftest import settled
 
 pytestmark = pytest.mark.e2e
 
@@ -112,7 +113,7 @@ def test_starred_lens_chip_filters_the_map_and_brackets_step_through_stars(open_
     assert len(set(seen[:3])) == 3 and seen[3] == seen[0]       # a ring: the fourth press wraps to the first
     assert not pg.evaluate("() => document.getElementById('drawer').classList.contains('open')")
     pg.keyboard.press("[")
-    pg.wait_for_timeout(400)
+    pg.wait_for_function("(t) => document.querySelector('#mapCard .mc-t')?.textContent.trim() === t", arg=seen[2], timeout=5000)
     assert pg.evaluate("() => document.querySelector('#mapCard .mc-t').textContent.trim()") == seen[2]
     # with the drawer open the brackets move the drawer between stars
     pg.locator("#mapCard .btn.primary").click()
@@ -186,7 +187,9 @@ def test_split_view_follows_the_table_and_links_rows_and_pins(open_page, webgl: 
     # ready = overlays and route layers exist (the offline fallback swaps the style once, so wait for the final one)
     ready = "() => { const m = window.__asSplitMap; return !!(m && m.getLayer('route-ride') && m.getSource('sp-pins') && m.getSource('sp-pins')._data.features.length > 0); }"
     pg.wait_for_function(ready, timeout=30000)
-    pg.wait_for_timeout(800)
+    # the blocked tiles walk the basemap down vector -> raster -> offline, a style swap each; the last one is when the attribution says so
+    pg.wait_for_function("() => document.getElementById('splitAttrib')?.textContent.includes('Basemap offline')", timeout=30000)
+    settled(pg, 30000, ticks=4)
     pg.wait_for_function(ready, timeout=30000)
     assert btn.get_attribute("aria-pressed") == "true"
     if width > 760:   # about a third of the stage
@@ -200,7 +203,7 @@ def test_split_view_follows_the_table_and_links_rows_and_pins(open_page, webgl: 
     pg.wait_for_function(f"async () => window.__asSplitMap.getSource('sp-pins')._data.features.length === {APP}.filtered().length && {APP}.filtered().length !== {n_rows}", timeout=30000)
     assert pg.evaluate("() => window.__asSplitMap.getSource('sp-pins')._data.features.length") == pg.evaluate(f"async () => {APP}.filtered().length")
     # hovering a row pulses its pin and previews its route
-    pg.wait_for_timeout(600)
+    settled(pg, 30000, ticks=6)
     row = pg.locator("#table tbody tr.r").nth(1)
     row.hover()
     pg.wait_for_selector(".sp-pulse", state="attached", timeout=10000)   # a zero-size anchor whose rings are children

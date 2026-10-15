@@ -10,6 +10,7 @@ import zlib
 from pathlib import Path
 
 import pytest
+from conftest import block_foreign, frames, poll
 from osm_stub import stub_osm
 
 from apartmentscout import cli
@@ -79,7 +80,7 @@ def served(tmp_path: Path, browser, monkeypatch):
     threading.Thread(target=lambda: httpd.serve_forever(0.02), daemon=True).start()
     base = f"http://127.0.0.1:{state.port}"
     ctx = browser.new_context(viewport={"width": 1440, "height": 900}, reduced_motion="reduce", accept_downloads=True)
-    ctx.route("**/*", lambda r: r.continue_() if r.request.url.startswith((base, "data:", "blob:")) else r.abort())
+    block_foreign(ctx, base)
     page = ctx.new_page()
     errors: list[str] = []
     page.on("pageerror", lambda e: errors.append(str(e)))
@@ -110,7 +111,9 @@ def trace(page, file: dict, listing: str, close_to_unit: bool = True) -> None:
     page.click("[data-act=units][data-u=m]")                          # a Lisbon plan is in metres
     page.set_input_files("#trFile", files=[file])
     page.wait_for_selector("#trImg", timeout=30000)
-    page.wait_for_timeout(300)
+    page.wait_for_function("""async () => { const h = document.getElementById('trImg')?.getAttribute('href'); if (!h) return false;
+      const i = new Image(); i.src = h; try { await i.decode(); return true; } catch { return false; } }""", timeout=30000)   # the plan image has loaded
+    frames(page)
     page.click("[data-step=scale]")
     click_img(page, 40, 285); click_img(page, 360, 285)               # both ends of the printed dimension
     page.fill("#trScaleLen", "8 m")
@@ -171,7 +174,7 @@ def test_replacing_a_saved_plan_needs_a_second_click(served) -> None:
     assert json.loads((mine / "plans" / "rua-augusta-3e.json").read_text())["title"] == "Older", "the first click does not overwrite"
     page.click("[data-act=save-folder]")
     page.wait_for_function("() => location.hash.startsWith('#plan/rua-augusta-3e')", timeout=15000)
-    page.wait_for_timeout(500)
+    poll(lambda: (mine / "plans" / "rua-augusta-3e.json.bak").exists(), page, timeout=10)   # the first file is kept as .bak, then the new one is written
     assert json.loads((mine / "plans" / "rua-augusta-3e.json").read_text())["title"] != "Older"
     assert (mine / "plans" / "rua-augusta-3e.json.bak").exists()
 

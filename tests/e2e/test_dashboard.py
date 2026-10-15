@@ -11,6 +11,7 @@ import json
 from pathlib import Path
 
 import pytest
+from conftest import block_foreign
 from conftest import settled
 from playwright.sync_api import TimeoutError as PlaywrightTimeout
 
@@ -300,7 +301,7 @@ def test_accessibility_personalised(browser, base_url: str, theme: str, prefs: d
     from conftest import Session, allowed_console, build_url
     ctx = browser.new_context(viewport={"width": 1440, "height": 900}, color_scheme=theme, device_scale_factor=1, reduced_motion="reduce")
     try:
-        ctx.route("**/*", lambda r: r.continue_() if r.request.url.startswith((base_url, "data:", "blob:")) else r.abort())
+        block_foreign(ctx, base_url)
         ctx.add_init_script(f"localStorage.setItem('as:comfort', {json.dumps(json.dumps(prefs))});")
         page = ctx.new_page()
         s = Session(page, base_url)

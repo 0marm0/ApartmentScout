@@ -15,6 +15,8 @@ from pathlib import Path
 from typing import Iterator
 
 import pytest
+from conftest import block_foreign
+from conftest import settled
 
 pytestmark = pytest.mark.e2e
 
@@ -118,7 +120,7 @@ def tiers() -> Iterator[Tiers]:
 def clone_page(browser, tiers: Tiers):
     """A page on the static server, with only the two local servers reachable. Yields (page, errors)."""
     ctx = browser.new_context(viewport={"width": 1440, "height": 900}, device_scale_factor=1, reduced_motion="reduce", service_workers="block")
-    ctx.route("**/*", lambda r: r.continue_() if r.request.url.startswith((tiers.page_url, tiers.published_url.rsplit("/media/", 1)[0], "data:", "blob:")) else r.abort())
+    block_foreign(ctx, tiers.page_url, tiers.published_url.rsplit("/media/", 1)[0])
     tiers.page_log.clear()
     tiers.published_log.clear()
     tiers.published_down = False
@@ -178,7 +180,9 @@ def test_the_rest_show_one_or_two_starter_photos_and_the_published_set_fills_in(
 
 def test_cards_show_their_hero_from_the_starter_set(clone_page, tiers: Tiers) -> None:
     page, _ = clone_page
-    page.wait_for_timeout(1500)
+    page.wait_for_function("""(page) => [...document.querySelectorAll('#cards .card .media > img')].filter((i) => i.complete && i.currentSrc.startsWith(page)).length >= 5""",
+                           arg=tiers.page_url, timeout=20000)
+    settled(page, 20000, ticks=4)
     shown = page.evaluate("""(page) => [...document.querySelectorAll('#cards .card .media > img')].filter((i) => i.complete && i.currentSrc.startsWith(page)).map((i) => ({ src: i.currentSrc, ok: i.naturalWidth > 0 }))""", tiers.page_url)
     assert len(shown) >= 5
     assert all(s["ok"] for s in shown), shown
@@ -189,7 +193,7 @@ def test_cards_show_their_hero_from_the_starter_set(clone_page, tiers: Tiers) ->
 def test_a_missing_folder_is_not_asked_again_for_every_photo(clone_page, tiers: Tiers) -> None:
     page, _ = clone_page
     top, lite = _ids()
-    page.wait_for_timeout(1500)
+    page.wait_for_load_state("networkidle")   # every photo the first screen asks for has been asked for
     first = [p for p in tiers.page_log if p.startswith("/media/")]
     assert len(first) <= 40, f"{len(first)} requests for the folder that is not there"
     _drawer_sources(page, tiers, top)
