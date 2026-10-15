@@ -5,7 +5,7 @@
 .share-split .btn { height: 28px; }
 .share-main { gap: 7px; padding: 0 11px; border-radius: 9px 0 0 9px; }
 .share-main svg { width: 14px; height: 14px; }
-.share-main.empty { color: var(--ink-3); }
+.share-main.is-empty { color: var(--ink-3); }   /* not .empty: that is the empty-state panel */
 .share-more { margin-left: -1px; padding: 0 7px; border-radius: 0 9px 9px 0; }
 .share-more svg { width: 13px; height: 13px; }
 .share-more[aria-expanded="true"] { background: var(--surface-hover); border-color: var(--line-strong); }

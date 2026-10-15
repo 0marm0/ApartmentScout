@@ -75,6 +75,7 @@ function render() {
   el.hidden = !shown;
   el.dataset.n = n; el.dataset.state = expanded ? 'dock' : 'pill'; el.classList.toggle('armed', armed);
   document.body.classList.toggle('has-tray', shown && expanded);
+  document.body.classList.toggle('has-tray-pill', shown && !expanded);   // the small pill also needs the strip clear
   const slots = list.map((id, i) => slotHTML(id, i, fresh.has(id)));
   const blanks = [];
   for (let i = n; i < MAX; i++) if (armed || i === n) blanks.push(emptySlot(i, armed ? 'Drop here' : 'Drag a home here'));
@@ -218,7 +219,13 @@ export function init() {
   on('compare', render); on('weights-settled', render); on('criteria', render); on('commute', render);
   addEventListener('hashchange', () => requestAnimationFrame(render));
   addEventListener('resize', () => render());
-  const dw = $('drawer'); if (dw) new MutationObserver(place0).observe(dw, { attributes: true, attributeFilter: ['class'] });
+  const dw = $('drawer');
+  if (dw) {
+    // the drawer slides in, so measure again once it has arrived (its rect is off-stage at the moment it opens)
+    const again = () => { place0(); setTimeout(place0, 460); };
+    new MutationObserver(again).observe(dw, { attributes: true, attributeFilter: ['class'] });
+    dw.addEventListener('transitionend', (e) => { if (e.target === dw) place0(); });
+  }
   const vp = $('viewport'); if (vp && 'ResizeObserver' in window) new ResizeObserver(place0).observe(vp);
   render();
 }

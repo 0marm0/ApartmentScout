@@ -425,7 +425,7 @@ function modesHTML(L) {
   if (m.best == null) return '<div class="c-modes"><span class="faint">Commute not computed</span></div>';
   // the selected mode is outlined; the fastest is green
   const chip = (k, icon, v, label) => `<span class="mode ${m.bestMode === k ? 'best' : ''} ${m.mode === k ? 'on' : ''} ${v == null ? 'na' : ''}" title="${label}: ${v == null ? 'not computed' : Math.round(v) + ' min door to door'}">${icon}<b>${v == null ? '—' : Math.round(v)}</b></span>`;
-  return `<div class="c-modes">${chip('walk', ICONS.walk, m.walk, 'Walk')}${chip('subway', ICONS.train, m.subway, 'Subway')}${chip('bus', ICONS.bus, m.bus, 'Bus')}<span class="line-bullets">${m.mode === 'walk' ? '' : m.legs ? legBadges(m.legs, 3) : bullets(m.route, 3)}</span><span class="to">min to ${esc(d.name)}</span></div>`;
+  return `<div class="c-modes">${chip('walk', ICONS.walk, m.walk, 'Walk')}${chip('subway', ICONS.train, m.subway, 'Subway')}${chip('bus', ICONS.bus, m.bus, 'Bus')}<span class="line-bullets">${m.mode === 'walk' ? '' : m.legs ? legBadges(m.legs, 3) : bullets(m.route, 3)}</span><span class="to" title="minutes to ${esc(d.name)}">${allDests().length > 1 ? `min to ${esc(d.name)}` : 'min'}</span></div>`;
 }
 function mediaHTML(L, im) {
   const fx = cardMediaHTML(L, im); if (fx) return fx;   // features/media.js: ordered photo, blur-up preview, count by group
