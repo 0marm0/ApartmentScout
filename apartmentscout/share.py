@@ -364,8 +364,10 @@ def chosen_ids(picks: dict[str, dict], known: set[str]) -> tuple[list[str], list
 def build_payload(listings: list[dict], crit: dict, picks: dict[str, dict], *, weights: dict | None = None, include_notes: bool = False,
                   view: str = "cards", title: str | None = None, root: Path | None = None, with_photos: bool = True,
                   photo_budget_kb: float | None = None, transit_features: list[dict] | None = None, generated: str | None = None,
-                  template: str | None = None) -> dict:
+                  template: str | None = None, findings: dict[str, dict] | None = None, trail: list[dict] | None = None,
+                  tour_photos: bool = False) -> dict:
     import datetime as dt
+    from . import tours as tours_mod   # tour findings and the decision trail ride along when there are any
     template = template or load_template()
     schema = load_schema(template)
     dims = dim_list(crit)
@@ -376,9 +378,16 @@ def build_payload(listings: list[dict], crit: dict, picks: dict[str, dict], *, w
     d0 = dests[0] if dests else None
     chosen = sorted((byid[i] for i in ids), key=lambda L: order_key(L, w, dims))
     homes = []
+    extras = tours_mod.share_extras(byid, [L["id"] for L in chosen], findings or {}, trail or [], notes=include_notes, photos=tour_photos,
+                                    root=root, cfg=schema.get("tour_photos")) if (findings or trail) else {}
     for L in chosen:
         h = prune_home(L, schema, d0.get("name") if d0 else None, picks.get(L["id"]), include_notes)
         h["reasons"] = reasons_for(L, w, dims)
+        x = extras.get(L["id"]) or {}
+        if x.get("tour"):
+            h["tour"] = pick_keys(x["tour"], schema["tour"])
+        if x.get("trail"):
+            h["trail"] = [pick_keys(t, schema["trail"]) for t in x["trail"]]
         homes.append(h)
     dest = {"name": d0["name"], "lat": d0.get("lat"), "lon": d0.get("lon"), "arrive_by": d0.get("arrive_by")} if d0 and d0.get("lat") is not None else None
     pts = [(h["lon"], h["lat"]) for h in homes if h.get("lat") is not None and h.get("lon") is not None] + ([(dest["lon"], dest["lat"])] if dest else [])

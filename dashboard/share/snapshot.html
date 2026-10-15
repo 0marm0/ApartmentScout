@@ -244,6 +244,22 @@ body[data-view="memo"] .cards-view, body[data-view="cards"] .memo-view { display
   a { color: inherit; }
   .legal { margin-bottom: 0; }
 }
+/* tour findings and the decision trail (added from the renter's visit notes) */
+.tour-wrap { padding-top: 14px; display: grid; gap: 16px 28px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.tour-wrap .sec.wide { grid-column: 1 / -1; }
+.tour-d { margin: 0 0 8px; font-size: 12px; color: var(--ink3); }
+.tchk { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 6px; }
+.tchk li { display: grid; gap: 3px 10px; grid-template-columns: auto minmax(0, 1fr); align-items: baseline; padding: 7px 10px; border-radius: 10px; background: var(--s2); border: 1px solid var(--line); font-size: 12.5px; break-inside: avoid; }
+.tchk b { font-weight: 600; } .tchk small { display: block; color: var(--ink3); font-size: 11.5px; }
+.tph { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.tph figure { margin: 0; width: 138px; } .tph img { display: block; width: 100%; height: 100px; object-fit: cover; border-radius: 8px; background: var(--s3); }
+.tph figcaption { margin-top: 3px; font-size: 11px; color: var(--ink3); }
+.trl { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.trl li { display: grid; grid-template-columns: 86px minmax(0, 1fr); gap: 10px; font-size: 12.5px; break-inside: avoid; }
+.trl time { color: var(--ink3); font-variant-numeric: tabular-nums; }
+.trl q { display: block; margin-top: 2px; color: var(--ink2); quotes: none; border-left: 2px solid var(--accent-line); padding-left: 8px; }
+@media (max-width: 760px) { .tour-wrap { grid-template-columns: 1fr; } .trl li { grid-template-columns: 1fr; gap: 0; } }
+@media print { .tour-wrap { display: block; } .tour-wrap .sec { margin-bottom: 8px; } .tph img { height: 70px; } .tph figure { width: 100px; } }
 </style>
 </head>
 <body data-view="cards">
@@ -277,6 +293,9 @@ body[data-view="memo"] .cards-view, body[data-view="cards"] .memo-view { display
   "commute_mode": ["minutes", "m", "route", "transfers", "ride_min", "walk_min", "wait_min", "legs"],
   "commute_leg": ["mode", "min", "m", "from", "to", "route", "board", "alight", "wait", "at"],
   "pick": ["tier", "note"],
+  "tour": ["observed", "visited_at", "rooms", "ceiling", "water", "noise", "signal", "closets", "laundry", "smells", "light", "view", "checks", "note", "photos"],
+  "trail": ["at", "kind", "text", "why"],
+  "tour_photos": { "max_per_home": 4, "thumb_px": 560, "quality": 0.74, "budget_kb": 600 },
   "photos": { "max_per_home": 3, "thumb_px": 560, "quality": 0.74, "budget_kb": 900 },
   "map": { "max_points": 3500, "min_spacing_m": 30, "decimals": 4, "pad": 0.2 },
   "text_max": { "notes": 1200, "summary": 600, "questions": 600, "evidence": 420, "flag": 220, "pick_note": 2000 }
@@ -365,6 +384,7 @@ const gateText = (g) => {
   if (k === 'fails') return [`Fails: ${String(v || '').replaceAll('_', ' ')}`, 'bad'];
   if (k === 'unverified') return [{ fees: 'Fees unknown', lease_term: 'Lease term unknown' }[v] || `Unconfirmed: ${String(v || '').replaceAll('_', ' ').replaceAll(',', ', ')}`, 'warn'];
   if (k === 'unknown_cost') return ['Cost unknown', 'bad'];
+  if (k === 'contradicted') return [`Differs on tour: ${({ in_unit_wd: 'in-unit W/D', doorman: 'doorman', sqft: 'size', exposure: 'exposure' })[v] || String(v || '').replaceAll('_', ' ')}`, 'warn'];
   return [({ price_dispute: 'Price claims disagree', concession: 'Concession may not apply', move_date: 'Available after your window', stale: 'Not rechecked recently' })[k] || String(g).replaceAll('_', ' '), 'warn'];
 };
 const amen = (h) => {
@@ -418,6 +438,38 @@ function lightRows(h) {
   if (s.daylight_factor_est != null) rows.push(['Daylight factor', `≈ ${s.daylight_factor_est}%`, 'estimated, not measured']);
   return rows;
 }
+const LAUNDRY_L = { in_unit: 'In the unit', on_floor: 'On the floor', building: 'In the building', none: 'None' };
+const SMELL_L = { none: 'Nothing odd', smoke: 'Smoke', damp: 'Damp or mildew', pets: 'Pets', cooking: 'Cooking', sewage: 'Drains', chemical: 'Paint or chemicals' };
+const feetIn = (x) => { let f = Math.floor(x), i = Math.round((x - f) * 12); if (i === 12) { f++; i = 0; } return i ? `${f}' ${i}"` : `${f}'`; };
+function tourRows(t) {
+  const rows = [], rooms = (t.rooms || []).filter((r) => r.w && r.l);
+  if (t.rooms?.length) rows.push(['Rooms measured', rooms.length ? rooms.map((r) => `${esc(r.name)} ${feetIn(r.w)} × ${feetIn(r.l)}`).join('<br>') : t.rooms.map((r) => esc(r.name)).join(', '), rooms.length ? `${rooms.reduce((a, r) => a + Math.round(r.w * r.l), 0)} ft² in all, walls and closets not counted` : '']);
+  if (t.ceiling != null) rows.push(['Ceiling height', feetIn(t.ceiling), '']);
+  if (t.water != null) rows.push(['Water pressure', `${t.water} of 5`, '']);
+  if (t.noise) rows.push(['Noise at the window', [t.noise.rating != null ? `${t.noise.rating} of 5` : '', t.noise.db != null ? `${t.noise.db} dB` : ''].filter(Boolean).join(' · '), '1 quiet, 5 loud; a dB reading is the renter\'s own meter']);
+  if (t.signal != null) rows.push(['Cell signal', `${t.signal} bar${t.signal === 1 ? '' : 's'}`, '']);
+  if (t.closets != null) rows.push(['Closets', String(t.closets), '']);
+  if (t.laundry) rows.push(['Laundry', esc(LAUNDRY_L[t.laundry] || t.laundry), '']);
+  if (t.smells?.length) rows.push(['Smells', t.smells.map((k) => esc(SMELL_L[k] || k)).join(', '), '']);
+  if (t.light) rows.push(['Light at the visit', [t.light.rating != null ? `${t.light.rating} of 5` : '', t.light.time ? `at ${esc(t.light.time)}` : '', t.light.facing ? `window faces ${esc(t.light.facing)}` : ''].filter(Boolean).join(' · '), '']);
+  if (t.view) rows.push(['What the window sees', esc(t.view), '']);
+  return rows;
+}
+function tourHTML(h) {
+  const t = h.tour; if (!t) return '';
+  const rows = tourRows(t), P = (t.photos || []).filter((p) => src(p.src));
+  const chk = (t.checks || []).map((c) => {
+    const lab = c.kind === 'matches' ? ['good', 'Matches the listing'] : c.kind === 'contradicts' ? (c.promoted ? ['warn', 'Differs, used as a fact'] : ['bad', 'Differs, not used in the ranking']) : c.kind === 'adds' ? (c.promoted ? ['warn', 'New, used as a fact'] : ['warn', 'New, not used in the ranking']) : ['', 'Not sure'];
+    const body = c.kind === 'contradicts' ? `Found ${esc(c.observed)}; the listing says ${esc(c.listed)}` : c.kind === 'adds' ? `Found ${esc(c.observed)}; the listing is silent` : c.kind === 'matches' ? `Listing: ${esc(c.listed)}` : c.listed ? `Listing: ${esc(c.listed)}` : 'The listing is silent';
+    return `<li><span class="chip ${lab[0]}">${lab[1]}</span><span><b>${esc(c.label)}</b><small>${body}</small></span></li>`;
+  }).join('');
+  return `<p class="tour-d">Observed on ${esc(day(t.observed) || 'an undated visit')}. These are the renter's own observations on the visit, kept beside the listing's facts.</p>${rows.length ? rowsHTML(rows) : ''}${chk ? `<ul class="tchk">${chk}</ul>` : ''}${P.length ? `<div class="tph">${P.map((p, j) => `<figure data-ph>${photoTag(p, `Visit photo ${j + 1}${p.caption ? ': ' + p.caption : ''}`, false)}${p.caption ? `<figcaption>${esc(p.caption)}</figcaption>` : ''}</figure>`).join('')}</div>` : ''}${t.note ? `<div class="mynote" style="margin-top:10px">${esc(t.note)}</div>` : ''}`;
+}
+function trailHTML(h) {
+  const T = h.trail; if (!T?.length) return '';
+  return `<ol class="trl">${T.map((x) => `<li><time datetime="${esc(x.at)}">${esc(day(x.at))}</time><span>${esc(x.text)}${x.why ? `<q>${esc(x.why)}</q>` : ''}</span></li>`).join('')}</ol>`;
+}
+const tourBlock = (h) => (h.tour || h.trail?.length ? `<div class="tour-wrap">${h.tour ? `<div class="sec wide"><h4>On the visit</h4>${tourHTML(h)}</div>` : ''}${h.trail?.length ? `<div class="sec wide"><h4>Decision trail</h4>${trailHTML(h)}</div>` : ''}</div>` : '');
 const sunBars = (h) => { const a = h.site?.sun_hours; if (!a) return ''; const mx = Math.max(9, ...a); return `<div class="sun" role="img" aria-label="Hours of direct sun by month, January to December">${a.map((v, i) => `<div title="${'JFMAMJJASOND'[i]}: ${v.toFixed(1)} h"><i style="height:${Math.max(6, (v / mx) * 100)}%"></i>${'JFMAMJJASOND'[i]}</div>`).join('')}</div>`; };
 const dots = (n) => { const k = Math.max(0, Math.min(5, Math.round(n))); return `<span class="dots" aria-label="${k} out of 5">${'●'.repeat(k)}<i>${'●'.repeat(5 - k)}</i></span>`; };
 function gradeHTML(h) {
@@ -486,9 +538,9 @@ function cardHTML(h, i) {
       <div class="facts">${facts.join('')}</div>
       ${commuteLine(h)}
       <div class="why"><h4>Why it ranks #${i + 1}</h4>${reasonsHTML(h, 4)}</div>
-      <details class="more"><summary>Money, light, building and open questions</summary>
+      <details class="more"><summary>Money, light, building, open questions and the visit</summary>
         <div class="tables"><div class="sec"><h4>Money</h4>${rowsHTML(moneyRows(h))}</div><div class="sec"><h4>Light and view</h4>${rowsHTML(lightRows(h))}${sunBars(h)}</div>
-          <div class="sec"><h4>Building and interior</h4>${gradeHTML(h)}</div><div class="sec"><h4>Open questions</h4>${openQuestions(h).length ? `<ul class="q">${openQuestions(h).map((x) => `<li>${esc(x)}</li>`).join('')}</ul>` : '<p class="unk">None recorded.</p>'}${h.pick?.note ? `<h4 style="margin-top:14px">Notes</h4><div class="mynote">${esc(h.pick.note)}</div>` : ''}</div></div></details>
+          <div class="sec"><h4>Building and interior</h4>${gradeHTML(h)}</div><div class="sec"><h4>Open questions</h4>${openQuestions(h).length ? `<ul class="q">${openQuestions(h).map((x) => `<li>${esc(x)}</li>`).join('')}</ul>` : '<p class="unk">None recorded.</p>'}${h.pick?.note ? `<h4 style="margin-top:14px">Notes</h4><div class="mynote">${esc(h.pick.note)}</div>` : ''}</div></div>${tourBlock(h)}</details>
       <div class="foot"><span>Checked ${esc(h.checked ? dayShort(h.checked) || h.checked : 'unknown')}</span>${s.confidence != null ? `<span>${s.confidence}% of the weight rests on known facts</span>` : ''}${link ? `<a href="${esc(link)}" target="_blank" rel="noopener noreferrer">Original listing ↗</a>` : ''}</div>
     </div></article>`;
 }
@@ -531,8 +583,10 @@ function memoHome(h, i) {
         ${dest ? `<div class="m-sec"><h4>Commute to ${esc(dest.name)}</h4>${rowsHTML(comRows)}${legs}${c?.modes.some(([, v]) => v.est) ? '<p style="font-size:11.5px;color:var(--ink3);margin-top:6px">* estimated from the straight-line distance</p>' : ''}</div>` : ''}</div>
       <div><div class="m-sec"><h4>Light and view</h4>${rowsHTML(lightRows(h))}${sunBars(h)}</div><div class="m-sec"><h4>Building and interior</h4>${gradeHTML(h)}</div>
         <div class="m-sec"><h4>Why it ranks #${i + 1}</h4>${reasonsHTML(h, 6)}</div></div></div>
+    ${h.tour ? `<div class="m-sec" style="margin-top:16px"><h4>On the visit</h4>${tourHTML(h)}</div>` : ''}
     <div class="m-sec" style="margin-top:16px"><h4>Open questions</h4>${oq.length ? `<ul class="q">${oq.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>` : '<p class="unk">None recorded.</p>'}</div>
     ${h.pick?.note ? `<div class="m-sec"><h4>Your notes</h4><div class="mynote">${esc(h.pick.note)}</div></div>` : ''}
+    ${h.trail?.length ? `<div class="m-sec"><h4>Decision trail</h4>${trailHTML(h)}</div>` : ''}
     <p style="margin-top:12px;font-size:12px;color:var(--ink3)">Checked ${esc(h.checked ? dayShort(h.checked) || h.checked : 'unknown')}${s.confidence != null ? ` · ${s.confidence}% of the weight rests on known facts${s.range && s.range[0] !== s.range[1] ? `; could land ${Math.round(s.range[0])}–${Math.round(s.range[1])}` : ''}` : ''}${link ? ` · <a href="${esc(link)}" rel="noopener noreferrer">${esc(link.replace(/^https?:\/\//, '').slice(0, 70))}</a>` : ''}</p></section>`;
 }
 function memoHTML() {
