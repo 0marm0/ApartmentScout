@@ -86,7 +86,7 @@ apartmentscout site <listing-id> --floor 12 --charts   # one home's 3D site mode
 apartmentscout export --xlsx my-search.xlsx            # workbook with live weights and ranks
 apartmentscout handoff pack out.zip --to codex         # hand the search to another agent
 apartmentscout share --picks picks.json --out shortlist.html   # a read-only page (or --memo) of your saved picks
-apartmentscout build --standalone my-search.html       # one self-contained file you can double-click (run scripts/bundle.sh once; needs Node.js)
+apartmentscout build --standalone my-search.html       # one self-contained file you can double-click (after editing dashboard/js, run scripts/bundle.sh first; needs Node.js)
 ```
 
 Requires Python 3.10+. Everything built in uses free public data: NYC Open Data, the US Census geocoder,
