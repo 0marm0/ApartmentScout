@@ -77,7 +77,9 @@ def _check_search(raw: dict[str, Any], r: Report) -> None:
     if city is not None and (not isinstance(city, str) or not re.fullmatch(r"[a-z0-9_-]+", city)):
         r.errors.append("search.city: use a lowercase city id such as nyc, or generic.")
     elif isinstance(city, str) and city not in known_cities():
-        r.warnings.append(f"search.city: no profile for {city!r} in config/cities (known: {', '.join(known_cities())}); it will run as generic.")
+        r.warnings.append(f"search.city: {s.get('city_name') or city} has no profile in config/cities (known: {', '.join(known_cities())}), so "
+                          "it runs on OpenStreetMap and the generic modules; building records and a noise layer are not built in "
+                          "(docs/guides/new-city.md).")
     tz = s.get("timezone")
     if tz is not None:
         try:
@@ -214,10 +216,65 @@ def _check_commute(raw: dict[str, Any], r: Report) -> None:
         r.errors.append("commute.transit: must be a mapping (feeds, service_date, ...).")
     elif isinstance(tr, dict):
         feeds = tr.get("feeds")
-        if feeds is not None and (not isinstance(feeds, list) or not all(isinstance(f, dict) and f.get("url") for f in feeds)):
-            r.errors.append("commute.transit.feeds: a list of {name, url} entries.")
+        if feeds is not None and (not isinstance(feeds, list) or not all(isinstance(f, dict) and (f.get("url") or f.get("path")) for f in feeds)):
+            r.errors.append("commute.transit.feeds: a list of {name, url} entries (or {name, path} for a zip on this computer).")
         if tr.get("service_date") is not None and _date(tr["service_date"]) is None:
             r.errors.append("commute.transit.service_date: use YYYY-MM-DD.")
+
+
+_PLACEHOLDER = re.compile(r"\b1 main st\b.*\banytown\b", re.I)
+_TEMPLATE_CENTER = (40.7549, -73.984)   # the template's Times Square default
+
+
+def _km(a: tuple[float, float], b: tuple[float, float]) -> float:
+    import math
+    p = math.pi / 180
+    h = math.sin((b[0] - a[0]) * p / 2) ** 2 + math.cos(a[0] * p) * math.cos(b[0] * p) * math.sin((b[1] - a[1]) * p / 2) ** 2
+    return 12742 * math.asin(math.sqrt(h))
+
+
+def _check_place(raw: dict[str, Any], r: Report) -> None:
+    """Warnings for a search that still carries New York defaults or template placeholders in another city, and for settings
+    that quietly degrade the result (no transit feeds, a service date that has passed). [onboarding]"""
+    s = raw.get("search") if isinstance(raw.get("search"), dict) else {}
+    c = raw.get("commute") if isinstance(raw.get("commute"), dict) else {}
+    dests = [d for d in c.get("destinations") or [] if isinstance(d, dict)]
+    pts = [(d["lat"], d["lon"]) for d in dests if _num(d.get("lat")) is not None and _num(d.get("lon")) is not None]
+    mc = s.get("map_center")
+    center = (mc[0], mc[1]) if isinstance(mc, (list, tuple)) and len(mc) == 2 and all(_num(x) is not None for x in mc) else None
+    city = s.get("city")
+    for d in dests:
+        if _PLACEHOLDER.search(str(d.get("address") or "")):
+            r.warnings.append(f"commute.destinations ({d.get('name')}): the address is the template's placeholder; put in a real address.")
+    anchor = pts[0] if pts else center
+    if anchor and s.get("timezone"):
+        from .cities import tz_for
+        guess = tz_for(*anchor)
+        if guess and guess != s["timezone"] and _utc_offset_differs(guess, str(s["timezone"])):
+            r.warnings.append(f"search.timezone is {s['timezone']} but your {'destination' if pts else 'map centre'} looks like {guess}; "
+                              "sun hours and arrive-by times use this zone (apartmentscout city \"<your city>\" sets it).")
+    if pts and center:
+        far = _km(center, pts[0])
+        if far > 150:
+            hint = " (the template's New York default)" if center == _TEMPLATE_CENTER else ""
+            r.warnings.append(f"search.map_center{hint} is {far:,.0f} km from your first destination, so the map will open in the wrong place; "
+                              "set it to your city or delete the line.")
+    elif center == _TEMPLATE_CENTER and city not in (None, "nyc"):
+        r.warnings.append("search.map_center is still the template's New York default; set it to your city or delete the line.")
+    tr = c.get("transit") if isinstance(c.get("transit"), dict) else {}
+    if not (tr.get("feeds") or []) and dests:
+        r.warnings.append("commute.transit.feeds is empty: commute times will be walking only. Add your agency's GTFS zip "
+                          "(apartmentscout city --starter, or --feed URL).")
+
+
+def _utc_offset_differs(a: str, b: str) -> bool:
+    """True unless the two zones have the same offset in January and July (Chicago and Winnipeg agree; New York and Chicago do not)."""
+    try:
+        from zoneinfo import ZoneInfo
+        return any(dt.datetime(2026, m, 15, 12, tzinfo=ZoneInfo(a)).utcoffset() != dt.datetime(2026, m, 15, 12, tzinfo=ZoneInfo(b)).utcoffset()
+                   for m in (1, 7))
+    except Exception:  # noqa: BLE001 - an unreadable zone is reported by _check_search
+        return False
 
 
 def _check_scoring(raw: dict[str, Any], r: Report) -> None:
@@ -262,7 +319,7 @@ def check_text(text: str) -> Report:
     if not isinstance(raw, dict):
         r.errors.append("criteria.yaml must be a mapping of sections (search, budget, unit, ...).")
         return r
-    for fn in (_check_search, _check_budget, _check_unit, _check_amenities, _check_commute, _check_scoring):
+    for fn in (_check_search, _check_budget, _check_unit, _check_amenities, _check_commute, _check_scoring, _check_place):
         fn(raw, r)
     known = {"search", "budget", "unit", "must_have", "strongly_prefer", "nice_to_have", "commute", "scoring", "weights",
              "favorites_first", "landmarks", "watchlist", "building_ratings", "monitor"}

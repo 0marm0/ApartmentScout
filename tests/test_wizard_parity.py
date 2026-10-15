@@ -134,3 +134,31 @@ def test_edit_mode_keeps_transit_and_unknown_keys(js) -> None:
     want = resolve_scoring({**orig, "weights": {**orig["weights"], "cost": 33}})[0]
     assert resolve_scoring({"scoring": got["scoring"], "weights": got["weights"]})[0] == want
     assert got["search"]["name"] == orig["search"]["name"]
+
+
+def test_the_steps_after_the_questions_match_the_questionnaire(js) -> None:
+    """The wizard's review lists the same next steps, in the same words, as config/intake.yaml (`after`)."""
+    after = load_intake()["after"]
+    assert [(a["id"], a["title"]) for a in js["after"]] == [(a["id"], a["title"]) for a in after]
+    assert [a["command"] for a in js["after"]] == [a["command"] for a in after]
+    assert [" ".join(a["why"].split()) for a in js["after"]] == [" ".join(a["why"].split()) for a in after], \
+        "the wizard's wording of a next step differs from config/intake.yaml; regenerate the NEXT_STEPS block from it"
+
+
+def test_city_ids_are_made_the_same_way_in_both_languages(js) -> None:
+    from apartmentscout.cities import slugify_city
+    for text, slug in js["slugs"]:
+        assert slugify_city(text) == slug, text
+
+
+def test_a_city_without_a_profile_is_written_with_its_name_and_feeds(js) -> None:
+    case = next(c for c in js["cases"] if c["name"] == "custom-city")
+    s = case["criteria"]["search"]
+    assert (s["city"], s["city_name"], s["timezone"]) == ("chicago", "Chicago, Illinois", "America/Chicago")
+    feeds = case["criteria"]["commute"]["transit"]["feeds"]
+    assert feeds[0] == {"name": "CTA", "url": "https://www.transitchicago.com/downloads/sch_data/google_transit.zip"}
+    assert feeds[1] == {"name": "Local", "path": "/data/gtfs.zip", "mode": "rail"}, "a file location is written as `path`, not `url`"
+    assert feeds[2]["name"] == "METRO", "an unnamed feed is named after its host"
+    rep = check_text(case["yaml"])
+    assert rep.ok, rep.errors
+    assert not any("timezone" in w or "New York" in w or "map_center" in w for w in rep.warnings), rep.warnings

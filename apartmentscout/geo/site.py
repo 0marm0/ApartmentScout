@@ -167,7 +167,11 @@ def _make_site(L, crit, cache_dir, floor, bearing, t, radius, streets, future, r
                slab_height, floor_height, say, components=True, overrides=None, green=True, face_index=None,
                eye_height=None, water=True):
     city = crit["search"].get("city")
-    tz = crit["search"].get("timezone") or "America/New_York"
+    tz = crit["search"].get("timezone")
+    if not tz:   # [onboarding] a search that never set a time zone is not assumed to be in New York: use the place's own
+        from ..cities import tz_for
+        tz = tz_for(L["lat"], L["lon"]) or "America/New_York"
+        say(f"  no search.timezone set: using {tz} for the sun times; set search.timezone in criteria.yaml to be sure")
     year = year or dt.date.today().year
     T: dict[str, float] = {}
     c0 = time.perf_counter()

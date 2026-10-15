@@ -73,13 +73,26 @@ def _find(listings, key):
 
 
 # --------------------------------------------------------------------------- commands
-def cmd_init(args, input_fn=None):
+def cmd_init(args, input_fn=None, online=None):
     """Create a search folder: the commented template, a criteria file you wrote or downloaded (--criteria), or the
-    answers to the intake questionnaire (--interactive; falls back to the template when stdin is not a terminal)."""
-    from .intake import Quit, init_search, interview, render_criteria
+    answers to the intake questionnaire (--interactive; falls back to the template when stdin is not a terminal).
+
+    A city without a profile is looked up on OpenStreetMap (name, time zone, map centre) unless --no-lookup; `online`
+    replaces the lookups (tests). [onboarding]"""
+    from . import cities as C
+    from .intake import Quit, init_search, interview, live_online, render_criteria
     root = Path(args.path).resolve()
     if (root / "criteria.yaml").exists() and not args.force:
         sys.exit(f"{root} already has a criteria.yaml (use --force to overwrite).")
+    if online is None and not getattr(args, "no_lookup", False) and (args.interactive or args.city):
+        online = live_online()
+    info = None
+    if args.city and args.city != "generic":
+        info = C.from_profile(args.city) if C.load_profile(args.city) else (online.resolve_city(args.city) if online else None)
+        if info is None:
+            log(f"Could not look up {args.city!r} (offline, or no match): the template keeps its New York time zone and map "
+                f"centre, marked for you to change. `apartmentscout city \"{args.city}\" --search {root}` sets them once you "
+                "are online.")
     text = None
     if args.criteria:
         try:
@@ -92,20 +105,55 @@ def cmd_init(args, input_fn=None):
                 "Edit criteria.yaml, or answer config/intake.yaml's questions with your agent.")
         else:
             try:
-                answers = interview(input_fn or input, log)
+                answers = interview(input_fn or input, log, online=online, city=info or args.city)
             except (Quit, KeyboardInterrupt):
                 sys.exit("\nStopped before the end of the questions; nothing was written.")
-            if args.city:
-                answers.setdefault("search", {})["city"] = args.city
             text = render_criteria(answers, "Written by apartmentscout init --interactive.")
     try:
-        city = init_search(root, args.city, text, force=args.force)
+        used = init_search(root, (info.id if info is not None else args.city), text, force=args.force, info=info)
     except ValueError as e:
         sys.exit(f"criteria.yaml has problems, nothing was written:\n{e}")
-    log(f"Created {root} (city: {city})\n  1. {'Review' if text else 'Edit'} criteria.yaml (budget, must-haves, commute addresses);"
-        f" `apartmentscout criteria --check {root / 'criteria.yaml'}` validates it.\n"
-        f"  2. Add listings: `apartmentscout import listings.csv` or ask your agent to research them.\n"
-        f"  3. `apartmentscout all --search {root}` then `apartmentscout serve --search {root}`.")
+    _init_summary(root, used, info, bool(text))
+
+
+def _shown(p: Path) -> str:
+    """A path as the renter would type it: relative to the current folder when it is inside it."""
+    try:
+        return os.path.relpath(p, Path.cwd()) if p.is_relative_to(Path.cwd()) else str(p)
+    except OSError:
+        return str(p)
+
+
+def _init_summary(root: Path, city: str, info, wrote_answers: bool) -> None:
+    """What was created, what the city has and lacks, and the steps that follow (config/intake.yaml, `after`)."""
+    from . import cities as C
+    from .criteria_check import check_file
+    from .intake import next_steps
+    try:
+        crit = Workspace(root).criteria()
+    except Exception:  # noqa: BLE001 - the summary is a courtesy; the search folder is already written
+        crit = {}
+    transit = (crit.get("commute") or {}).get("transit") or {}
+    feeds = transit.get("feeds") or []
+    shown = (crit.get("search") or {}).get("city_name") or city
+    here = _shown(root)
+    log(f"Created {here} (city: {shown})")
+    if info is None and city not in (None, "generic") and C.load_profile(city):
+        info = C.from_profile(city)
+    if info is not None:
+        for line in C.coverage_notes(info, feeds).missing:
+            log(f"  Note: {line}")
+    elif not feeds:
+        log("  Note: no city is set and no transit feeds are configured, so commute times will be walking only. "
+            "`apartmentscout city \"<your city>\"` sets the city, time zone and map centre.")
+    for w in check_file(root / "criteria.yaml").warnings:
+        if not w.startswith(("search.city:", "commute.transit.feeds")):
+            log(f"  Check: {w}")
+    log(f"\nNext, in order ({'review' if wrote_answers else 'edit'} {here}/criteria.yaml first; "
+        f"`apartmentscout criteria --check {here}/criteria.yaml` validates it):")
+    for i, st in enumerate(next_steps(here), 1):
+        log(f"  {i}. {st['title']}: {st['command']}")
+    log("Each step is explained in docs/guides/getting-started.md; your agent can run them from AGENTS.md.")
 
 
 def cmd_import(args):
@@ -727,12 +775,14 @@ def main(argv=None):
 
     s = sub.add_parser("init", help="create a new search folder")
     s.add_argument("path")
-    s.add_argument("--city", default=None, help="nyc enables NYC Open Data modules")
+    s.add_argument("--city", default=None, help="the city, for example \"Chicago, IL\" (looked up for its time zone and map "
+                   "centre) or nyc, which also switches on the NYC Open Data modules")
     s.add_argument("--force", action="store_true")
     s.add_argument("--criteria", metavar="FILE", help="start from this criteria.yaml (for example one downloaded from "
                    "the dashboard's New search wizard); it is validated and the city's transit feeds are added if missing")
     s.add_argument("--interactive", action="store_true", help="answer the intake questionnaire (config/intake.yaml) "
                    "on the terminal; without a terminal this writes the template")
+    s.add_argument("--no-lookup", action="store_true", help="do not look the city, addresses or transit feeds up on the network")
     s.set_defaults(fn=cmd_init)
     s = add("import", cmd_import, "import listings from CSV or JSON")
     s.add_argument("file")
