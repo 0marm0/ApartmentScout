@@ -7,6 +7,7 @@ import { S, on, emit, store, loadJSON, hooks, SORTS, EXTRA_FILTERS, DIMS, openDr
 import { $, esc } from '../util.js';
 import { state as visitState } from './visit.js';
 import { addDrawerTop } from './drawer-slots.js';
+import { decorateRail } from './rail-sections.js';
 import { parseRanks, chooseBaseline, latestRun, movers, change, significant, standing, summary, headline, cardNote, arrowText, runLabel, signedPts, dayLabel, MOVE_MIN } from './moves-model.js';
 
 let model = null, base = null, why = '', now = null, changes = new Map(), only = false, since = null;
@@ -97,6 +98,7 @@ function mountRail() {
     <p class="mv-hint">Ranks now against ${esc(sinceLabel())} (${esc(whyText())}). ${changes.size} home${changes.size === 1 ? '' : 's'} moved at least ${MOVE_MIN} places in the top quarter.</p>`;
   const wts = [...R.children].find((x) => x.querySelector?.('.weights'));
   R.insertBefore(sec, wts || null);
+  decorateRail(R);   // a collapsible section like its neighbours (a no-op for the ones already done)
 }
 
 function choose(value) {
@@ -123,7 +125,8 @@ async function load() {
   if (!base) return;
   const sel = $('sortSel');
   if (sel && ![...sel.options].some((o) => o.value === 'moved')) sel.add(new Option('Biggest rank moves', 'moved'));
-  emit('filters');
+  emit('filters', { quiet: true });   // the cards pick up their notes; the rail is not rebuilt under a hand that is using it
+  mountRail();
 }
 
 export function init() {
