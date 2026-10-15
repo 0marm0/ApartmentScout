@@ -1,68 +1,125 @@
 {
-  "schema": 1,
-  "kind": "apartmentscout-furniture",
-  "name": "Your furniture",
-  "source": "The furniture kit from the renter's earlier layout studios: the Fit check (three plans), Room to live (two plans) and the Apartment layout studio (Emerald Green 1211), plus the queen-bed and 55-inch TV study for Emerald Green 1211. No saved positions survived from those tools (they kept drags in the browser only), so sizes come from the tools' kit and positions are placed here with the studio's fit checks.",
-  "pieces": [
-    {
-      "id": "bed", "ref": "queen-bed", "label": "Queen bed", "room": "bedroom",
-      "w": 64, "d": 84, "h": 40,
-      "note": "Mattress 60 x 80 in on a 64 x 84 in frame with a 40 in headboard.",
-      "source": "Fit check; Room to live uses a 62 x 84 in frame; the TV study uses a 60 x 80 in mattress."
-    },
-    {
-      "id": "nightstand-1", "ref": "nightstand", "label": "Nightstand", "room": "bedroom",
-      "w": 18, "d": 16, "h": 24,
-      "note": "18 x 16 x 24 in.",
-      "source": "Fit check (two nightstands)."
-    },
-    {
-      "id": "nightstand-2", "ref": "nightstand", "label": "Nightstand", "room": "bedroom",
-      "w": 18, "d": 16, "h": 24,
-      "note": "The second nightstand; the Apartment layout studio kept it hidden by default.",
-      "source": "Fit check (two nightstands)."
-    },
-    {
-      "id": "dresser", "ref": "dresser", "label": "Dresser, 4 drawers", "room": "bedroom",
-      "w": 27.6, "d": 19.7, "h": 38.6,
-      "note": "IKEA Storklinta, 70 x 50 x 98 cm.",
-      "source": "Fit check."
-    },
-    {
-      "id": "desk", "ref": "desk", "label": "Desk and chair", "room": "bedroom",
-      "w": 60, "d": 24, "h": 30,
-      "note": "60 x 24 in, 30 in tall, with a chair; adjustable from 36 to 84 in long.",
-      "source": "Fit check; Room to live uses 72 x 24 in, the Apartment layout studio 54 x 24 in."
-    },
-    {
-      "id": "futon", "ref": "futon", "label": "Futon, 3 seats", "room": "living",
-      "w": 80, "d": 36, "h": 34,
-      "note": "80 x 36 in as a sofa; opens to about 80 x 56 in as a bed.",
-      "source": "Fit check; Room to live checks an IKEA Nyhamn, 78.75 x 38.25 in."
-    },
-    {
-      "id": "coffee", "ref": "coffee-table", "label": "Coffee table", "room": "living",
-      "w": 44, "d": 24, "h": 17,
-      "note": "Standard coffee table, 44 x 24 x 17 in.",
-      "source": "Fit check."
-    },
-    {
-      "id": "tv-bed", "ref": "tv-55", "label": "55-inch TV, bedroom", "room": "bedroom",
-      "w": 48.4, "d": 3.5, "h": 27.8, "elev": 32,
-      "note": "Wall-mounted, 48.4 x 27.8 in, centre about 46 in off the floor. The Emerald Green study weighs an LG 55 in (48.1 in wide) against a 48 in (42.2 in wide).",
-      "source": "Fit check; Room to live (Samsung 55 in spec); Emerald Green 1211 bedroom TV study."
-    },
-    {
-      "id": "tv", "ref": "tv-55", "label": "55-inch TV, living room", "room": "living",
-      "w": 48.4, "d": 3.5, "h": 27.8, "elev": 32,
-      "note": "Wall-mounted, 48.4 x 27.8 in, centre about 46 in off the floor.",
-      "source": "Fit check; Room to live."
-    },
-    {
-      "id": "dining", "ref": "dining-4", "label": "Dining table, 4 seats", "room": "living",
-      "w": 48, "d": 30, "h": 30,
-      "note": "48 x 30 in rectangle with four chairs.",
-      "source": "Fit check; Room to live."
-    }
-  ]
+ "schema": 1,
+ "kind": "apartmentscout-furniture",
+ "name": "Your furniture",
+ "source": "The furniture kit from the renter's earlier layout studios: the Fit check (three plans), Room to live (two plans) and the Apartment layout studio (Emerald Green 1211), plus the queen-bed and 55-inch TV study for Emerald Green 1211. No saved positions survived from those tools (they kept drags in the browser only), so sizes come from the tools' kit and positions are placed here with the studio's fit checks.",
+ "pieces": [
+  {
+   "id": "bed",
+   "ref": "queen-bed",
+   "label": "Queen bed",
+   "room": "bedroom",
+   "w": 64,
+   "d": 84,
+   "h": 40,
+   "note": "Mattress 60 x 80 in on a 64 x 84 in frame with a 40 in headboard.",
+   "source": "Fit check; Room to live uses a 62 x 84 in frame; the TV study uses a 60 x 80 in mattress."
+  },
+  {
+   "id": "nightstand-1",
+   "ref": "nightstand",
+   "label": "Nightstand",
+   "room": "bedroom",
+   "w": 18,
+   "d": 16,
+   "h": 24,
+   "note": "18 x 16 x 24 in.",
+   "source": "Fit check (two nightstands)."
+  },
+  {
+   "id": "nightstand-2",
+   "ref": "nightstand",
+   "label": "Nightstand",
+   "room": "bedroom",
+   "w": 18,
+   "d": 16,
+   "h": 24,
+   "note": "The second nightstand; the Apartment layout studio kept it hidden by default.",
+   "source": "Fit check (two nightstands)."
+  },
+  {
+   "id": "dresser",
+   "ref": "dresser",
+   "label": "Dresser, 4 drawers",
+   "room": "bedroom",
+   "w": 27.6,
+   "d": 19.7,
+   "h": 38.6,
+   "note": "IKEA Storklinta, 70 x 50 x 98 cm.",
+   "source": "Fit check."
+  },
+  {
+   "id": "desk",
+   "ref": "desk",
+   "label": "Desk and chair",
+   "room": "bedroom",
+   "w": 60,
+   "d": 24,
+   "h": 30,
+   "note": "60 x 24 in, 30 in tall, with a chair; adjustable from 36 to 84 in long.",
+   "source": "Fit check; Room to live uses 72 x 24 in, the Apartment layout studio 54 x 24 in."
+  },
+  {
+   "id": "futon",
+   "ref": "futon",
+   "label": "Futon, 3 seats",
+   "room": "living",
+   "w": 80,
+   "d": 36,
+   "h": 34,
+   "note": "80 x 36 in as a sofa; opens to about 80 x 56 in as a bed.",
+   "source": "Fit check; Room to live checks an IKEA Nyhamn, 78.75 x 38.25 in."
+  },
+  {
+   "id": "coffee",
+   "ref": "coffee-table",
+   "label": "Coffee table",
+   "room": "living",
+   "w": 44,
+   "d": 24,
+   "h": 17,
+   "note": "Standard coffee table, 44 x 24 x 17 in.",
+   "source": "Fit check."
+  },
+  {
+   "id": "tv-bed",
+   "ref": "tv-55",
+   "label": "55-inch TV, bedroom",
+   "room": "bedroom",
+   "w": 48.4,
+   "d": 3.5,
+   "h": 27.8,
+   "elev": 32,
+   "note": "Wall-mounted, 48.4 x 27.8 in, centre about 46 in off the floor. The Emerald Green study weighs an LG 55 in (48.1 in wide) against a 48 in (42.2 in wide).",
+   "source": "Fit check; Room to live (Samsung 55 in spec); Emerald Green 1211 bedroom TV study."
+  },
+  {
+   "id": "tv",
+   "ref": "tv-55",
+   "label": "55-inch TV, living room",
+   "room": "living",
+   "w": 48.4,
+   "d": 3.5,
+   "h": 27.8,
+   "elev": 32,
+   "note": "Wall-mounted, 48.4 x 27.8 in, centre about 46 in off the floor.",
+   "source": "Fit check; Room to live."
+  },
+  {
+   "id": "dining",
+   "ref": "dining-4",
+   "label": "Dining table, 4 seats",
+   "room": "living",
+   "w": 48,
+   "d": 30,
+   "h": 30,
+   "note": "48 x 30 in rectangle with four chairs.",
+   "source": "Fit check; Room to live."
+  }
+ ],
+ "confirmed": {
+  "by": "renter",
+  "date": "2026-10-15",
+  "note": "The renter confirmed these are their own pieces."
+ }
 }
