@@ -209,6 +209,57 @@ times); **Copy plan** puts the day on the clipboard as text. Walking uses the da
 walk to its station from its commute route, a 4 min wait and a straight-line ride at 25 km/h; the faster of walking and that is
 used unless you fix the mode on the hop.
 
+### Tour findings and decision history
+
+Code: `features/tour-findings.js` (wiring), `tour-sheet.js` (the sheet), `findings-model.js` and `decisions-model.js` (pure rules, with
+node tests), `findings-store.js` (storage), `decision-trail.js` (the recorder); Python mirror: `apartmentscout/tours.py`.
+
+**Visit notes.** The drawer has a *Visit and decisions* section (a *Visit* tab) and every Tours card has *Start visit notes*; both open
+the visit sheet, also at `?visit=<listing-id>` (handy for a link sent to your phone). It is built for one hand on a phone: a full-height
+sheet, every control at least 44 px, steppers and short fields with the right keyboard, ratings as rows of five big buttons, and the
+camera and **Done** in a bar at the bottom where a thumb rests. On a desktop it is a panel at the right. Each change is saved the moment
+you make it. It asks for:
+
+| Section | What you record |
+|---|---|
+| Rooms and ceilings | Rooms with width and length (type `13.5`, `13'6"` or `4.1 m`, or step by half a foot; the area adds up beside the listing's size), ceiling height |
+| Home | Water pressure and cell signal bars (rated on the spot), closets, laundry (in the unit, on the floor, in the building, none), smells |
+| Noise and light | Noise at the window (1 silent to 5 loud) with an optional dB reading you type from a meter app, light 1 to 5 with the time (filled in for you) and which of eight compass points the window faces, and what it looks onto |
+| Does it match the listing? | W/D in the unit, doorman, size and which way the windows face: **Matches**, **Differs** (then what you found) or **Not sure**. Where the listing says nothing it reads **I saw it** |
+| Photos and a note | Photos from the camera or library (shrunk to 1600 px and saved as WebP, metadata dropped), a caption each, and a free note |
+
+**Findings sit beside the listing's facts and never overwrite them.** The drawer shows what you found labelled "observed on <date>"
+next to what the listing says. A finding that differs from the listing is surfaced, not scored: the home gets a
+`contradicted:<field>` gate (shown as "Differs on tour: in-unit W/D" and, for the card, a "differs on tour" badge), a line in *Why it
+ranks here* and in the reasons, and no score or rank changes. **Use as a fact** (one click, in the drawer or in the sheet) promotes it:
+it writes a dated, sourced claim (`field`, `value`, `source: "renter, observed on a tour"`, `observed_at`), the browser re-evaluates the
+home with that fact (a must-have that is now missing fails its gate, the amenities and size parts move), and the listing's own facts
+stay as published. A toast and an *Undo* button on the finding reverse it, and changing the finding it came from withdraws it. The
+browser re-evaluates amenities and bare reported sizes itself; a promoted exposure refreshes the light score when you run
+`apartmentscout score`, which reads the same promoted facts (see [data model](data-model.md#tour-findings)), so both sides agree.
+
+**Where it is kept.** Text goes to this browser's local storage; photos to IndexedDB (every call is guarded: private windows and
+blocked site data fall back to "kept in this browser"). When the page is served by `apartmentscout serve` the same findings are also
+written to `<search>/tours/<id>/findings.json` and the photos to `<search>/tours/<id>/photos/`, through the local API below; a visit
+saved there is read back after a cleared browser, and photos kept in the browser while the API was away move into the folder later.
+The bundled example is read-only, so its visits stay in the browser. A visit that only lives in a browser and the picks backup reaches
+the scorer with `apartmentscout tours-import picks.json` (the newer version of each visit wins; photos are not part of a backup).
+
+**Decision history.** Every star, tier, status (the new *Your status* menu in the drawer), note, tour time and promoted finding is
+recorded with the time it happened. After a tier, status or promotion change a small prompt offers a reason (`Esc` or *Skip* leaves it
+blank; any entry in the drawer's *Decision history* can be given one later). Rapid edits of one note fold into a single revision.
+The trail is exported and imported with **Back up picks** (`findings` and `history` next to `picks`; photos stay where they were
+taken), and importing the same backup twice adds nothing.
+
+**Memo and share page.** *Share shortlist*, the decision memo and `apartmentscout share` include each home's visit (measurements,
+ratings, the four checks with *used as a fact* or *not used in the ranking*) and its decision trail. The free note, your reasons and
+the text of a note appear only with *Include my notes*. Visit photos have their own opt-in (*Include my visit photos*, or
+`apartmentscout share --tour-photos`): up to four embedded thumbnails per home inside a 600 KB budget.
+
+```bash
+apartmentscout share --picks picks.json --out memo.html --memo --notes --tour-photos
+```
+
 ## Undo
 
 Every change to your picks (star, tier, note, tour time), Compare list, filters, ranking weights and commute lens is
@@ -384,6 +435,15 @@ landmarks, custom presets) is carried over, but comments in the old file are not
 | `POST /api/validate` | Validate YAML text without writing |
 | `POST /api/searches`, `POST /api/searches/activate` | Create a search folder from criteria, or switch the dashboard to one |
 | `POST /api/rescore`, `GET /api/jobs/<id>` | Score and rebuild in a background thread; poll for progress |
+| `GET /api/tours`, `GET /api/tours/<id>` | Every saved visit, or one |
+| `POST /api/tours/<id>` | Validate and write `<search>/tours/<id>/findings.json` (`{"findings": {...}}`) |
+| `POST /api/tours/<id>/photos`, `POST /api/tours/<id>/photos/delete` | Add a photo (a raw image body) or delete one (`{"photo": "<id>"}`) |
+
+The tour calls pass the same guards. On top of those: a listing id must be a plain slug (never a path) and its folder must resolve
+directly inside `<search>/tours/` and not be a symlink; a photo body is at most 12 MB, an image Pillow can decode within 60 megapixels
+(JPEG, PNG or WebP), at most 40 photos per home and 400 MB for the folder, and is rotated by its EXIF orientation, shrunk to 1600 px
+and stored as WebP **without any metadata**, never as the bytes the browser sent; the only `GET` outside `/api/` for tours is
+`/tours/<id>/photos/<name>.webp`; a bundled example search is read-only (403) and photos need Pillow (`pip install 'apartmentscout[images]'`).
 
 `--no-api` serves the files only; `--searches-dir DIR` (or `$APARTMENTSCOUT_SEARCHES`) says where new searches go
 (default: the folder holding the open search when it is called `searches`, else `./searches`).
@@ -417,6 +477,7 @@ URL options:
 | `?density=compact` / `comfortable` | Start in a density (the settings menu remembers the renter's choice) |
 | `?worker=0` | Re-score on the main thread instead of in a Web Worker (for comparing or debugging) |
 | `?open=<listing-id>` | Open a listing in the drawer |
+| `?visit=<listing-id>` | Open the visit notes sheet for a listing (the link to send to your phone) |
 | `?new=1` / `?wizard=edit` | Open the New search wizard (or edit the open search); `&step=3` picks the step |
 | Unit 3D: `?date=2026-12-21&min=750&floor=21&mode=window` | Date, minutes after midnight, floor and camera (`orbit`, `window`, `inside`, `plan`, `top`) |
 | Floor plan: `?date=2026-06-21&pmin=1020` | Date and minutes after midnight for the sun |

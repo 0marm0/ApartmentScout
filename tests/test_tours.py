@@ -260,6 +260,31 @@ def test_findings_round_trip_and_ids_cannot_escape(tmp_path: Path) -> None:
     assert tours.read_findings(tmp_path, "fx-a") == {"v": 1, "note": "kept"}
 
 
+def test_tours_import_reads_a_backup_into_the_folder_and_newer_wins(tmp_path: Path, capsys) -> None:
+    from apartmentscout.cli import main
+    root = tmp_path / "search"
+    root.mkdir()
+    shutil.copy(ROOT / "examples" / "nyc-2026" / "criteria.yaml", root / "criteria.yaml")
+    (root / "listings.json").write_text("[]")
+    old = {**CASES["findings"]["fx-a"], "updated": "2026-10-14T10:00:00Z", "water": 1}
+    tours.write_findings(root, "fx-a", {**old, "photos": [{"id": "abc123def4", "store": "disk"}]})
+    newer = {**CASES["findings"]["fx-a"], "updated": "2026-10-14T12:00:00Z", "water": 5}
+    backup = tmp_path / "picks.json"
+    backup.write_text(json.dumps({"picks": {}, "findings": {"fx-a": newer, "fx-b": CASES["findings"]["fx-b"], "../evil": newer, "blank": {"observed": "2026-10-14"}}}))
+    main(["tours-import", str(backup), "--search", str(root), "--dry-run"])
+    assert tours.read_findings(root, "fx-a")["water"] == 1 and tours.read_findings(root, "fx-b") is None
+    main(["tours-import", str(backup), "--search", str(root)])
+    out = capsys.readouterr().out
+    assert tours.read_findings(root, "fx-a")["water"] == 5 and tours.read_findings(root, "fx-a")["photos"][0]["id"] == "abc123def4", "the folder's own photos stay"
+    assert tours.read_findings(root, "fx-b") and not (root / "tours" / "blank").exists() and not (tmp_path / "evil").exists() and "skipped 1" in out
+    main(["tours-import", str(backup), "--search", str(root)])
+    assert "2 already up to date" in capsys.readouterr().out
+    older = {**newer, "updated": "2026-10-14T09:00:00Z", "water": 2}
+    backup.write_text(json.dumps({"findings": {"fx-a": older}}))
+    main(["tours-import", str(backup), "--search", str(root)])
+    assert tours.read_findings(root, "fx-a")["water"] == 5, "an older backup never replaces a newer visit"
+
+
 def test_newest_prefers_the_later_update() -> None:
     a, b = {"updated": "2026-10-14T10:00:00Z", "note": "a"}, {"updated": "2026-10-14T11:00:00Z", "note": "b"}
     assert tours.newest(a, b) is b and tours.newest(b, a) is b and tours.newest(None, a) is a and tours.newest({"note": "x"}, a) is a

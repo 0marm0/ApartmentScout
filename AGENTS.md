@@ -79,6 +79,7 @@ apartmentscout site <id> --floor 12 --charts      # 3D site model, sun and view 
 apartmentscout score                              # score and rank
 apartmentscout report                             # shortlist.md
 apartmentscout share --picks picks.json --out shortlist.html   # read-only shortlist page; --memo for the decision memo
+apartmentscout tours-import picks.json            # visit findings from a picks backup into tours/ (score reads promoted facts)
 apartmentscout build && apartmentscout serve      # dashboard at http://127.0.0.1:8765
 apartmentscout all                                # geocode, commute, layers, score, build
 ```
