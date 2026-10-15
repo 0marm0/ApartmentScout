@@ -119,7 +119,7 @@ export function openCompareBoard(ctx) {
     const stage = stages.size ? new UnitStage(Object.assign(document.createElement('canvas'), {}), host, $('cbLab')) : new UnitStage(cv, host, $('cbLab'));
     if (stages.size) host.appendChild(stage.cv);
     stage.opts.streets = true;
-    stage.build({ B, T, ti: env.ti, streets: Array.isArray(ctx.site.streets) ? ctx.site.streets : [], future: ctx.FUT, green: ctx.site.green || null, lm: [], ownLabel: ctx.ownLabel });
+    stage.build({ B, T, ti: env.ti, meta: ctx.site.bmeta, streets: Array.isArray(ctx.site.streets) ? ctx.site.streets : [], future: ctx.FUT, green: ctx.site.green || null, lm: [], ownLabel: ctx.ownLabel });
     stage.opts.labels = false; stage.setFloorH(env.geo.fhEst);
     stage.resize(); stages.set(key, stage); return stage;
   }

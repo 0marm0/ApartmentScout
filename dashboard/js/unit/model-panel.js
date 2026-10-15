@@ -17,7 +17,7 @@ import { calSummary, describeCal, exportCalibration, parseCalibration, normalise
 import { validateParts, podiumTower, getAssumedParts, isAssumed, assumedBuildings } from './parts.js';
 import { buildModelProject, parseModelProject, sha256Hex, bytesToBase64, MAX_PROJECT_BYTES } from './model-project.js';
 
-const KIND = { podium: 'Podium', tower: 'Tower', setback: 'Setback', bulkhead: 'Bulkhead' };
+const KIND = { podium: 'Podium', tower: 'Tower', setback: 'Setback', bulkhead: 'Bulkhead', spire: 'Spire' };
 const when = (iso) => { try { return new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }); } catch { return ''; } };
 const round1 = (v) => Math.round(v * 10) / 10;
 

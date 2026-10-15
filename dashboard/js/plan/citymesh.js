@@ -2,6 +2,7 @@
 // frame (metres, x = plan x, z = -plan y, y up from the apartment floor). Placement comes from plan/city.js.
 import * as THREE from 'three';
 import { buildContext } from '../unit/context3d.js';   // [city context] ground plate, water, parks and trees
+import { buildBuildings, defaultColorFor } from '../city3d/buildings.js';   // [buildings3d] the same building meshes as Unit 3D
 import { loadTreeLayers } from '../unit/treelayers.js';   // [park trees] the street / park tree choice made in Unit 3D
 
 const M = 0.0254;
@@ -30,7 +31,18 @@ export function cityGroup(ctx, opts = {}) {
   };
   const ground = -ctx.slab;
   let n = 0;
-  for (let i = 0; i < ctx.B.length; i++) {
+  // [buildings3d] the shared building meshes (facades, parapets, roof shapes, spires) from the same prepared buildings and parts; the
+  // prism loop below stays as the fallback when they cannot be built
+  const rich = (() => {
+    try {
+      const mat4 = new THREE.Matrix4().makeTranslation(0, ground, 0).multiply(siteToPlan(ctx));
+      const bb = buildBuildings(null, { B: ctx.B, meta: ctx.meta || [], center: ctx.anchor, radius: R, nearR: R + 40, skip: new Set([ctx.ti]), matrix: mat4, shadows: false, light: !!opts.light,
+        quality: { visual: !!opts.visual, phone: !!opts.phone }, colorFor: defaultColorFor({ light: !!opts.light, low: col.low, high: col.high, roof: col.roof }) });
+      g.add(bb); g.userData.buildings = bb.userData; n = bb.userData.info.buildings;
+      return true;
+    } catch (e) { console.warn('rich buildings unavailable in the studio, drawing prisms', e); return false; }
+  })();
+  for (let i = 0; !rich && i < ctx.B.length; i++) {
     const b = ctx.B[i]; if (i === ctx.ti) continue;
     const cx = (b.bb[0] + b.bb[2]) / 2, cy = (b.bb[1] + b.bb[3]) / 2;
     if (Math.hypot(cx - ctx.anchor[0], cy - ctx.anchor[1]) > R) continue;
@@ -44,7 +56,7 @@ export function cityGroup(ctx, opts = {}) {
     }
     n++;
   }
-  if (P.length) {
+  if (P.length && !rich) {
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(P), 3));
     geo.setAttribute('normal', new THREE.BufferAttribute(new Float32Array(N), 3));

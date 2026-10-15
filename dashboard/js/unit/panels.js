@@ -53,16 +53,16 @@ export function sortRows(rows, key, dir) {
 export function neighboursTable(rows, sort, HS, GS) {
   const th = NB_COLS.map(([k, t]) => `<th class="${['h', 'dist', 'brg'].includes(k) ? 'num' : ''}" aria-sort="${sort.key === k ? (sort.dir > 0 ? 'ascending' : 'descending') : 'none'}"><button type="button" data-sort="${k}">${t}${sort.key === k ? `<i>${sort.dir > 0 ? '↑' : '↓'}</i>` : ''}</button></th>`).join('');
   const tr = rows.map((r) => {
-    const src = [HS[r.hsrc] || r.hsrc, GS[r.geom] ? `outline ${GS[r.geom].toLowerCase()}` : ''].filter(Boolean).join(' · ');
+    const src = [`${HS[r.hsrc] || r.hsrc}${r.hconf ? ` (${r.hconf})` : ''}`, GS[r.geom] ? `outline ${GS[r.geom].toLowerCase()}` : '', r.nparts ? `${r.nparts} part${r.nparts > 1 ? 's' : ''}` : ''].filter(Boolean).join(' · ');   // [buildings3d] height confidence and parts
     return `<tr data-bi="${r.bi}"${r.sel ? ' class="on"' : ''}><td><b>${esc(r.name)}</b><small>${esc(src || '—')}${r.stale ? ` · <span class="warnline">height edited ${esc(r.edited)}</span>` : ''}</small></td><td class="num">${Math.round(r.h)} m<small>${Math.round(r.h * 3.281)} ft${r.floors ? ' · ' + esc(r.floors) + ' fl' : ''}</small></td><td class="num">${fmtDist(r.dist)}</td><td class="num">${Math.round(r.brg)}° ${compass(r.brg)}</td><td><span class="u-vw ${r.view.replace(' ', '-')}">${r.view}</span></td></tr>`;
   }).join('');
   return `<div class="u-nb-wrap"><table class="mini u-nb"><thead><tr>${th}</tr></thead><tbody>${tr}</tbody></table></div>`;
 }
 const csvCell = (v) => { const s = v == null ? '' : String(v); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
 export function neighboursCSV(rows) {
-  const cols = ['index', 'name', 'address', 'bin', 'bbl', 'roof_m', 'roof_ft', 'floors', 'ground_m', 'distance_m', 'bearing_deg', 'from_window', 'height_src', 'geom_src', 'data_src', 'year', 'edited', 'proposed'];
+  const cols = ['index', 'id', 'name', 'address', 'bin', 'bbl', 'class', 'roof_m', 'roof_ft', 'floors', 'ground_m', 'distance_m', 'bearing_deg', 'from_window', 'height_src', 'height_conf', 'parts', 'geom_src', 'data_src', 'year', 'edited', 'proposed'];   // [buildings3d] id, class, height confidence, parts
   const lines = [cols.join(',')];
-  for (const r of rows) lines.push([r.bi, r.lmName || '', r.address || '', r.bin || '', r.bbl || '', r.h.toFixed(1), Math.round(r.h * 3.281), r.floors || '', (r.g ?? 0).toFixed(1), r.dist.toFixed(1), r.brg.toFixed(1), r.view, r.hsrc || '', r.geom || '', r.src || '', r.year || '', r.edited || '', r.future ? 'yes' : ''].map(csvCell).join(','));
+  for (const r of rows) lines.push([r.bi, r.bid || '', r.lmName || '', r.address || '', r.bin || '', r.bbl || '', r.cls || '', r.h.toFixed(1), Math.round(r.h * 3.281), r.floors || '', (r.g ?? 0).toFixed(1), r.dist.toFixed(1), r.brg.toFixed(1), r.view, r.hsrc || '', r.hconf || '', r.nparts || '', r.geom || '', r.src || '', r.year || '', r.edited || '', r.future ? 'yes' : ''].map(csvCell).join(','));
   return lines.join('\n') + '\n';
 }
 

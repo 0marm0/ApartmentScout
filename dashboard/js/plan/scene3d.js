@@ -160,7 +160,7 @@ let city = null;
 export function setCity(group) {
   if (city) { scene.remove(city); city.traverse((o) => { o.geometry?.dispose(); o.material?.dispose?.(); }); }
   city = group || null;
-  if (city) scene.add(city);
+  if (city) { scene.add(city); city.userData.buildings?.setQuality({ visual: cityVisual }); applyMood(); }
   cam.far = city ? 1200 : 400; cam.updateProjectionMatrix();
   const gr = shell?.getObjectByName('ground'); if (gr) gr.visible = !city; // the floor-level ground would hide the street
   controls.maxDistance = city ? 240 : 60;
@@ -174,6 +174,9 @@ export function setCity(group) {
   dirty = true;
 }
 export const hasCity = () => !!city;
+/** [buildings3d] Visual render quality for the city's facades (mullions, glass reflection); Fast keeps them simple. */
+let cityVisual = false;
+export function cityQuality(visual) { cityVisual = !!visual; city?.userData.buildings?.setQuality({ visual: cityVisual }); dirty = true; }
 export function setLighting(options = {}) {
   if (Number.isFinite(options.ambient)) lighting.ambient = Math.max(0, Math.min(2, options.ambient));
   // glazing x blinds preview: scales the direct-sun patches only (plan/light.js glazingScale)
@@ -377,6 +380,7 @@ function applyMood() {
   amb.intensity = (day ? 0.4 : eve ? 0.18 : 0.1) * lighting.ambient;
   const sky = day ? 2.4 : eve ? 0.7 : 0;
   for (const L of glow?.children || []) { L.intensity = sky * lighting.sky * (shadeState[L.userData.win] ? 0.55 : 1); L.color.set(eve ? 0xb9c4e0 : 0xdfe9f5); }
+  city?.userData.buildings?.setNight(night ? 1 : eve ? 0.45 : 0);   // [buildings3d] lit windows follow the mood
   const lampOn = !day;
   for (const [, g] of groups) {
     const l = g.userData.lamp; if (!l) continue;
