@@ -22,7 +22,7 @@ drawn and the six panels stack. The "Open the live demo" button is in the nav, t
 
 ```bash
 pip install Pillow                       # the screenshots are converted to WebP
-NO_MEDIA=1 scripts/build_site.sh _site   # leave out NO_MEDIA to copy the 400 MB of example photos; needs Node for esbuild
+NO_MEDIA=1 scripts/build_site.sh _site   # the starter photos only; leave out NO_MEDIA for the full 400 MB set (scripts/fetch_media.sh); needs Node for esbuild
 python -m http.server 8000 --directory _site --bind 127.0.0.1
 ```
 

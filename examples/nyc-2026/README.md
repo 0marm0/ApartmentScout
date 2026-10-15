@@ -19,6 +19,7 @@ Grand Central, arriving by 9:00.
 | `research/*.md` | Deep-dive notes: Emerald Green #1211 (due diligence, noise ledger, orientation audit, sound check) and Henry Hall (due diligence, reviews, 311). |
 | `research/charts/` | Sun-path and sun-by-floor charts. |
 | `sites/` | 3D site models for 8 finalists. |
+| `media-lite/` | The starter photos (34 MB): a full gallery for the top twelve homes, one or two photos for every other home, every floor plan. The full 5,595-photo set is published with the demo (`search.media_base_url` in `criteria.yaml`); `scripts/fetch_media.sh` puts it in `media/` for offline use. See the [data model](../../docs/guides/data-model.md#where-a-saved-photo-comes-from-media-media-lite-media_base_url). |
 | `plans/emerald-green-1211.json` | An approximate floor plan drawn from the listing's room sizes. |
 
 Rebuild everything from this folder:
