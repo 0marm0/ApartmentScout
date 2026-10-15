@@ -16,7 +16,9 @@ let state = { phase: 'idle', where: 'device', error: '' };   // idle | saving | 
 export const apiExpected = () => !!token() && location.protocol.startsWith('http');
 /** Visits written in this browser that the search folder has not received yet (the API was away). */
 export const pending = () => [...unsent];
-function markSent(id) { if (unsent.delete(id)) store.set(key + ':unsent', [...unsent]); }
+/** Own key, not `findings:...`: the storage guard reads anything under that name as the visits' object. */
+const unsentKey = () => key.replace(/^findings:/, 'findings-unsent:');
+function markSent(id) { if (unsent.delete(id)) store.set(unsentKey(), [...unsent]); }
 export const searchKey = () => `findings:${S.crit0?.search?.name || S.base}`;
 export const onChange = (fn) => { listeners.add(fn); return () => listeners.delete(fn); };
 const notify = (id) => listeners.forEach((fn) => { try { fn(id); } catch (e) { console.warn('findings listener failed', e); } });
@@ -104,7 +106,7 @@ export function update(id, fn) {
   const fresh = cur.observed ? {} : { observed: `${day.getFullYear()}-${p(day.getMonth() + 1)}-${p(day.getDate())}`, visited_at: `${day.getFullYear()}-${p(day.getMonth() + 1)}-${p(day.getDate())}T${p(day.getHours())}:${p(day.getMinutes())}` };
   const next = normalize({ ...fresh, ...fn(cur), updated: nowZ(), v: VERSION });
   recs = { ...recs, [id]: next };
-  if (apiExpected()) { unsent.add(id); store.set(key + ':unsent', [...unsent]); }
+  if (apiExpected()) { unsent.add(id); store.set(unsentKey(), [...unsent]); }
   persist();
   notify(id);
   setState({ phase: 'saving', where: mode.server ? 'folder' : 'device', error: '' });
@@ -242,7 +244,7 @@ export async function init() {
   recs = {};
   for (const [id, f] of Object.entries(local)) { const n = normalize(f); if (Object.keys(n).length > 1) recs[id] = n; }
   unsent.clear();
-  for (const id of store.get(key + ':unsent', []) || []) if (typeof id === 'string' && recs[id]) unsent.add(id);
+  for (const id of store.get(unsentKey(), []) || []) if (typeof id === 'string' && recs[id]) unsent.add(id);
   await connect();
   persist();
   ready = true;

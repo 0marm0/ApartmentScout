@@ -326,14 +326,44 @@ def test_answers_made_while_the_api_is_unreachable_wait_then_reach_the_search_fo
         page.wait_for_function("() => /1 home waiting to sync/.test(document.querySelector('.tday-status')?.textContent || '')", timeout=10000)
         assert findings(page, ids[0])["signal"] == 3
         assert "signal" not in json.loads((root / "tours" / ids[0] / "findings.json").read_text())
-        pending = page.evaluate("() => JSON.parse(localStorage.getItem('as:findings:' + document.title.split(' · ')[0] + ':unsent') || '[]')")
+        pending = page.evaluate("() => JSON.parse(localStorage.getItem('as:findings-unsent:' + document.title.split(' · ')[0]) || '[]')")
         assert pending == [ids[0]]
         # back online: it is sent, the folder has it, and the status says so
         ctx.set_offline(False)
         page.evaluate("() => dispatchEvent(new Event('online'))")
         page.wait_for_function("() => document.querySelector('.tday-status')?.textContent.includes('Saved to your search folder')", timeout=25000)
         assert json.loads((root / "tours" / ids[0] / "findings.json").read_text())["signal"] == 3
-        assert page.evaluate("() => JSON.parse(localStorage.getItem('as:findings:' + document.title.split(' · ')[0] + ':unsent') || '[]')") == []
+        assert page.evaluate("() => JSON.parse(localStorage.getItem('as:findings-unsent:' + document.title.split(' · ')[0]) || '[]')") == []
         assert [e for e in errors if "Failed to fetch" not in e and "ERR_INTERNET_DISCONNECTED" not in e] == []
+    finally:
+        ctx.close()
+
+
+def test_the_queue_survives_a_reload_while_the_api_is_away_and_sync_now_sends_it(browser, served_search) -> None:
+    root, base = served_search
+    ids = (HOMES[2]["id"], HOMES[3]["id"])
+    ctx, page, errors = phone(browser, base, ids=ids)
+    try:
+        open_day(page)
+        page.wait_for_function("() => document.querySelector('#tourDay .tday-status')?.textContent.includes('search folder')", timeout=10000)
+        open_unit(page, ids[0])
+        # the server is away, the page itself still loads (a keepalive fetch, which the page sends as it unloads, cannot be routed away)
+        away = "(() => { const f = window.fetch.bind(window); window.fetch = (u, o) => (localStorage.getItem('apiAway') && String(u).startsWith('/api/') ? Promise.reject(new TypeError('Failed to fetch')) : f(u, o)); })();"
+        ctx.add_init_script(away)
+        page.evaluate(away)
+        page.evaluate("() => localStorage.setItem('apiAway', '1')")
+        ans(page, "water", 2)
+        page.wait_for_function("() => /waiting to sync/.test(document.querySelector('.tday-status')?.textContent || '')", timeout=10000)
+        page.wait_for_timeout(300)
+        page.reload()
+        page.wait_for_function("() => document.querySelector('#cards .card')", timeout=SLOW)
+        open_day(page)
+        page.wait_for_function("() => /1 home waiting to sync/.test(document.querySelector('#tourDay .tday-status')?.textContent || '')", timeout=10000)
+        assert findings(page, ids[0])["water"] == 2, "the answer is still on the phone"
+        assert not (root / "tours" / ids[0] / "findings.json").exists() or "water" not in json.loads((root / "tours" / ids[0] / "findings.json").read_text())
+        page.evaluate("() => localStorage.removeItem('apiAway')")
+        page.locator("[data-sync]").click()
+        page.wait_for_function("() => document.querySelector('#tourDay .tday-status')?.textContent.includes('Saved to your search folder')", timeout=25000)
+        assert json.loads((root / "tours" / ids[0] / "findings.json").read_text())["water"] == 2
     finally:
         ctx.close()

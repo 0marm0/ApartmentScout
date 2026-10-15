@@ -260,7 +260,7 @@ def test_tour_day_opens_offline_from_the_installed_copy_and_keeps_what_is_answer
         page.locator(f"#tourDay [data-open='{ids[0]}']").click()
         page.locator(f"#tourDay [data-ans='water'][data-v='4']").click()
         page.locator("#tourDay textarea[data-note]").fill("noted offline")
-        page.wait_for_function("(id) => { const s = Object.keys(localStorage).find((k) => k.startsWith('as:findings:') && !k.endsWith(':unsent')); const r = s && JSON.parse(localStorage.getItem(s))[id]; return r && r.water === 4 && r.note === 'noted offline'; }", arg=ids[0], timeout=10000)
+        page.wait_for_function("(id) => { const s = Object.keys(localStorage).find((k) => k.startsWith('as:findings:')); const r = s && JSON.parse(localStorage.getItem(s))[id]; return r && r.water === 4 && r.note === 'noted offline'; }", arg=ids[0], timeout=10000)
     finally:
         page.context.set_offline(False)
     assert errors == [], errors
