@@ -72,15 +72,16 @@ def test_menu_keyboard_navigation(open_page) -> None:
     active = lambda: pg.evaluate("() => document.activeElement.id || document.activeElement.dataset.themeMode || document.activeElement.dataset.accent || ''")  # noqa: E731
     pg.focus("#menuBtn"); pg.keyboard.press("Enter")
     pg.wait_for_selector("#appMenu:not([hidden])")
-    assert active() == "mnEdit" and pg.get_attribute("#menuBtn", "aria-expanded") == "true"
+    assert active() == "mnNews" and pg.get_attribute("#menuBtn", "aria-expanded") == "true"   # What's new is the first row
     # roving focus: exactly one item is in the tab order
     assert pg.evaluate("() => [...document.querySelectorAll('#appMenu button[role^=menuitem]')].filter((b) => b.tabIndex === 0).length") == 1
+    pg.keyboard.press("ArrowDown"); assert active() == "mnEdit"
     pg.keyboard.press("ArrowDown"); assert active() == "mnSearch"
     pg.keyboard.press("ArrowDown"); assert active() == "mnNew"       # Switch search is hidden without the API
     pg.keyboard.press("ArrowUp"); assert active() == "mnSearch"
     pg.keyboard.press("End")
     assert active() == "mnTour", "End goes to the last row"
-    pg.keyboard.press("Home"); assert active() == "mnEdit"
+    pg.keyboard.press("Home"); assert active() == "mnNews"
     # a segmented group is one stop: down lands on its checked option, left and right move inside it
     pg.focus("[data-theme-mode=dark]")
     pg.keyboard.press("ArrowRight"); assert active() == "light"
