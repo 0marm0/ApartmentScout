@@ -11,6 +11,7 @@ import { RectAreaLightUniformsLib } from 'three/addons/lights/RectAreaLightUnifo
 import { MAT, LAMP_K } from './catalog.js';
 import { axes, footprint, toWorld, swingPoly } from './checks.js';
 import { pointInPoly, fmtIn } from './model.js';
+import { walkSpace, ease as walkEase } from './walkcore.js';   // [walk] where a person can stand, and the way around the furniture
 import { applySurfaceTint, setSurfaceState } from './surfaces3d.js';   // [feature J] reflectance -> colours
 import { applyFinishes, doorColour, fixtureFinish, backsplashMeshes, TOP_T } from './finishes3d.js';   // [finishes] the unit's own paint, cabinets, counters and doors
 import * as I3 from './interior3d.js';   // [interior] reveals, sills, casings, framed glass, door frames, baseboards, ceiling trims, floor finishes
@@ -19,7 +20,8 @@ import * as F3 from './furniture3d.js';   // [interior] low-poly furniture model
 import * as R3F from '../room3d/furniture.js';   // [room3d] the shared, refined furniture models (tried first)
 import { roomQuality, onRoomQuality, furnitureQuality, quality } from '../room3d/quality.js';
 import { ROOM_HEX } from '../room3d/palette.js';   // [room3d] one paint and floor for both engines
-import { roomLightState, moodFor, applyRoomLight, windowGlowLights } from '../room3d/lighting.js';   // [room3d] one light for both engines
+import { roomLamps } from '../room3d/roomlamps.js';   // [daycycle] a warm ceiling light for the evening when no lamp is placed
+import { roomLightState, applyRoomLight, windowGlowLights } from '../room3d/lighting.js';   // [room3d] one light for both engines
 
 export const M = 0.0254;
 const DEG = Math.PI / 180;
@@ -27,12 +29,12 @@ const W = (x, y, h = 0) => new THREE.Vector3(x * M, h * M, -y * M);
 const CUT = { full: null, cut: 36, outline: 1.5 };
 
 let renderer, scene, cam, controls, canvas, stage, sunL, hemi, amb;
-let shell, proxies, furn, overlay, labels, glow;
+let shell, proxies, furn, overlay, labels, glow, lampsG, assumedLamps = null;
 let model = null, colors = null, wallMode = 'cut', dirty = true;
 const groups = new Map();
 const rig = { mode: 'orbit', view: 'bird', pos: new THREE.Vector3(), yaw: 0, pitch: 0, prevWall: null, fov: 70 };
 // lighting mood: 'auto' follows the sun (day when it is up, night when it is down)
-const mood = { want: 'auto', sunUp: true, now: 'day' };
+const mood = { want: 'auto', sunUp: true, now: 'day', altDeg: 45 };
 let glide = null, tourS = null;
 
 export const markDirty = () => { dirty = true; };
@@ -135,8 +137,8 @@ export function init(canvasEl, stageEl, onChange) {
   sunL = new THREE.DirectionalLight(0xfff1d6, 6); sunL.castShadow = true; sunL.shadow.mapSize.set(2048, 2048);
   sunL.shadow.bias = -0.0004; sunL.shadow.normalBias = 0.025; sunL.shadow.radius = 3;
   scene.add(sunL); scene.add(sunL.target);
-  for (const n of ['shell', 'proxies', 'furn', 'overlay', 'labels', 'glow']) { const g = new THREE.Group(); g.name = n; scene.add(g); }
-  [shell, proxies, furn, overlay, labels, glow] = ['shell', 'proxies', 'furn', 'overlay', 'labels', 'glow'].map((n) => scene.getObjectByName(n));
+  for (const n of ['shell', 'proxies', 'furn', 'overlay', 'labels', 'glow', 'assumed room lights']) { const g = new THREE.Group(); g.name = n; scene.add(g); }
+  [shell, proxies, furn, overlay, labels, glow, lampsG] = ['shell', 'proxies', 'furn', 'overlay', 'labels', 'glow', 'assumed room lights'].map((n) => scene.getObjectByName(n));
   for (const o of SKY.objects()) { o.visible = false; scene.add(o); }   // [interior] sky dome and sun glow, shown in eye-level views
   new ResizeObserver(resize).observe(stage);
 }
@@ -194,13 +196,24 @@ export function setCity(group) {
   dirty = true;
 }
 /** [city3d] the city outside follows the sun (the water's light) and the mood (lit windows after dusk, as Unit 3D's). */
-function syncCity(now) {
+function syncCity(now, st) {
   const api = city?.userData.api; if (!api || !sunL) return;
   const v = sunL.position.clone().sub(sunL.target.position).normalize();
   api.setSun(v, Math.asin(Math.max(-1, Math.min(1, v.y))) / DEG);
-  api.setNight(now === 'night' ? 1 : now === 'evening' ? 0.5 : 0);
+  // [daycycle] on Auto the lit windows come with the dusk continuously (as Unit 3D's); a picked mood is that mood, and Night is deep night (the late hour)
+  api.setNight(mood.want === 'auto' && st ? Math.max(Math.max(0, Math.min(1, (3 - mood.altDeg) / 9)) * 0.75, st.lamps >= 1 ? 1 : st.lamps * 0.667) : now === 'night' ? 1 : now === 'evening' ? 0.5 : 0);
+  api.setLate?.(now === 'night' && mood.want !== 'auto' ? 0.85 : mood.want === 'auto' ? lateWant : now === 'evening' ? 0.2 : 0);
   api.setQuality(quality.city);   // [quality] the mode and the step-down's level, as the shared city takes them
+  if (seasonWant && api.setSeason(seasonWant)) dirty = true;   // [season] leaves, autumn colour or bare branches (a picture)
 }
+let seasonWant = null, lateWant = 0;
+/** [daycycle] how late the evening is (0 early .. 1 deep night): fewer offices lit, fewer homes lit. Set from the clock by the studio. */
+export function setLate(v) { lateWant = Math.max(0, Math.min(1, +v || 0)); const api = city?.userData.api; api?.setLate?.(mood.want === 'auto' ? lateWant : mood.now === 'night' ? 0.85 : mood.now === 'evening' ? 0.2 : 0); }
+/** [season] The tree season ({leaf, autumn}, city3d/season.js) for the city outside; a picture only. Applied now and to any city built later. */
+export function setSeason(s) { seasonWant = s ? { leaf: s.leaf, autumn: s.autumn } : null; const api = city?.userData.api; if (api && seasonWant && api.setSeason(seasonWant)) dirty = true; }
+let lampsHooks = () => false;
+/** [daycycle] the Light tab says whether it has luminaires placed (then the assumed ceiling lights stay off): fn() -> boolean */
+export function setRealLampsProbe(fn) { lampsHooks = typeof fn === 'function' ? fn : () => false; }
 export const hasCity = () => !!city;
 /** [city3d] the city outside's handle (setSun, setNight, setQuality, anchorsOf) or null. */
 export const cityApi = () => city?.userData.api || null;
@@ -379,6 +392,7 @@ function frameLights() {
 function buildGlow() {
   clear(glow);
   for (const L of windowGlowLights(model, (p) => model.rooms.some((r) => pointInPoly(p, r.poly)))) glow.add(L);   // [room3d]
+  clear(lampsG); assumedLamps = roomLamps(model, (p) => [p[0] * M, -p[1] * M], { limit: 4 }); lampsG.add(assumedLamps.group);   // [daycycle]
   applyMood();
 }
 /** dir: unit vector toward the sun in plan terms {x, y, up}; on: direct sun reaches the unit. */
@@ -387,7 +401,7 @@ export function setSun(dir, on, up) {
   const v = new THREE.Vector3(dir.x, dir.up, -dir.y).normalize();
   sunL.position.copy(sunL.target.position).addScaledVector(v, 60);
   sunL.userData.on = on; sunL.userData.up = Math.max(0, dir.up);
-  mood.sunUp = !!up; mood.alt = Math.max(0, dir.up);
+  mood.sunUp = !!up; mood.alt = Math.max(0, dir.up); mood.altDeg = (Math.asin(Math.max(-1, Math.min(1, dir.up))) * 180) / Math.PI;   // (altDeg keeps its sign: the continuous light follows it)
   applyMood();
 }
 /** 'auto' | 'day' | 'evening' | 'night'. Evening and night switch the lamps on. */
@@ -397,22 +411,25 @@ function applyMood() {
   if (!sunL || !colors) return;
   const now = mood.want === 'auto' ? (mood.sunUp ? (mood.alt < 0.12 ? 'evening' : 'day') : 'night') : mood.want;
   mood.now = now;
-  syncCity(now);
-  const day = now === 'day', eve = now === 'evening', night = now === 'night';
-  // [room3d] the room's light is one definition for both engines (room3d/lighting.js)
-  const st = roomLightState({ mood: now, sunOn: !!sunL.userData.on && mood.sunUp, sinAlt: sunL.userData.up || 0, quality: roomQuality(), envLight: quality.has('environment'), tone: quality.settings.tone, scale: { ambient: lighting.ambient, sun: lighting.sun, sky: lighting.sky } });
+  const day = now === 'day', eve = now === 'evening';
+  // [room3d] the room's light is one definition for both engines (room3d/lighting.js); [daycycle] on Auto it follows the sun's altitude continuously
+  const st = roomLightState({ mood: mood.want === 'auto' ? 'auto' : now, alt: mood.altDeg, sunOn: !!sunL.userData.on && mood.sunUp, sinAlt: sunL.userData.up || 0, quality: roomQuality(), envLight: quality.has('environment'), tone: quality.settings.tone, scale: { ambient: lighting.ambient, sun: lighting.sun, sky: lighting.sky } });
+  syncCity(now, st);
   applyRoomLight({ sunL, hemi, amb, glow, renderer }, st, (i) => !!shadeState[i]);
   glow.visible = quality.has('windowGlow');   // [quality] the window glow lights are real lights: the step-down's level 4 takes them out of every shader
-  const lampOn = !day;
+  const lampOn = st.lamps > 0; let realLamps = false;
   for (const [, g] of groups) {
     const l = g.userData.lamp; if (!l) continue;
-    l.light.intensity = lampOn ? l.cd * (night ? 1 : 0.75) : 0; l.light.visible = lampOn;
-    if (l.shade) { l.shade.material.emissiveIntensity = lampOn ? (night ? 1.4 : 1) : 0; }
+    l.light.intensity = lampOn ? l.cd * st.lamps : 0; l.light.visible = lampOn;
+    if (l.shade) { l.shade.material.emissiveIntensity = lampOn ? (st.lamps >= 1 ? 1.4 : 1) : 0; }
+    if (g.visible) realLamps = true;
   }
+  // [daycycle] a placed luminaire (the Light tab) is a real lamp too: it puts the assumed ceiling lights out
+  assumedLamps?.set(st.lamps, { real: realLamps || lampsHooks(), lensRoot: shell });
   // from inside, the windows look out at a sky (and the haze fades the far city into it); from above, the backdrop stays the dashboard's
   if (scene) {
     if (rig.mode === 'eye') {
-      const sd = sunL.position.clone().sub(sunL.target.position), haze = SKY.setMood(now, sd, mood.sunUp);
+      const sd = sunL.position.clone().sub(sunL.target.position), haze = SKY.setMood(mood.want === 'auto' ? 'auto' : now, sd, mood.sunUp);
       SKY.show(true); scene.background = haze.color; scene.fog = new THREE.Fog(haze.color, haze.near, haze.far);
     } else {
       SKY.show(false); scene.fog = null;
@@ -699,7 +716,7 @@ export function setView(v, eye, o = {}) {
     applyMood(); return;
   }
   if (rig.mode === 'eye' && rig.prevWall && rig.prevWall !== wallMode) setWallMode(rig.prevWall);
-  rig.mode = 'orbit'; controls.enabled = true;
+  rig.mode = 'orbit'; controls.enabled = true; if (marker) marker.visible = false;
   const vf = 42 * DEG, hf = 2 * Math.atan(Math.tan(vf / 2) * (cam.aspect || 1.6)), f = Math.min(vf, hf);
   const dist = (span * 0.72) / Math.tan(f / 2);
   const tgt = new THREE.Vector3(cx * M, 0, -cy * M);
@@ -718,40 +735,37 @@ function applyEye() {
   cam.lookAt(rig.pos.x + Math.sin(rig.yaw) * cp, rig.pos.y + Math.sin(rig.pitch), rig.pos.z - Math.cos(rig.yaw) * cp); dirty = true;
 }
 export function look(dx, dy) { if (rig.mode !== 'eye') return; glide = null; tourS = null; rig.yaw += dx * 0.005; rig.pitch = Math.max(-1.2, Math.min(1.2, rig.pitch - dy * 0.005)); applyEye(); }
-/** Can a person stand here (plan inches)? Inside a room or a doorway, and not inside furniture lower than 30 in. */
-export function canStand(x, y) {
-  if (!model) return false;
-  const inside = model.rooms.some((q) => pointInPoly([x, y], q.poly)) || model.doorways.some((d) => Math.hypot(x - d.mid[0], y - d.mid[1]) < d.len / 2 + 6);
-  if (!inside) return false;
-  for (const it of lastItems) {
-    if (it.hidden || it.flat || it.elev >= 30 || it.h < 8) continue;
-    const fp = footprint({ ...it, w: it.w + 8, d: it.d + 8 });
-    if (pointInPoly([x, y], fp)) return false;
-  }
-  return true;
+/** The walkable floor for the furniture as it stands (plan/walkcore.js), rebuilt only when a piece moves or the plan changes. */
+let walker = null, walkKey = '';
+export function walkFloor() {
+  if (!model) return null;
+  const key = `${model.id}|${model.rooms.length}|${lastItems.map((it) => `${it.id}:${Math.round(it.x * 2)},${Math.round(it.y * 2)},${Math.round(it.rot)},${it.w}x${it.d},${it.hidden ? 1 : 0}`).join(';')}`;
+  if (!walker || key !== walkKey) { walker = walkSpace(model, lastItems); walkKey = key; }
+  return walker;
 }
-/** Walk forward (inches, negative = back), turn and strafe; stays inside the rooms and out of the furniture. */
+/** Can a person stand here (plan inches)? On the floor of a room or in a doorway, a person's width from the walls, and not in furniture lower than 30 in. */
+export function canStand(x, y) { const w = walkFloor(); return !!w && w.canStand(x, y); }
+/** Walk forward (inches, negative = back), turn and strafe; slides along walls and furniture and never passes through them. */
 export function walk(fwd, turn = 0, strafe = 0) {
   if (rig.mode !== 'eye') return;
   glide = null; tourS = null;
   rig.yaw += turn;
-  const f = [Math.sin(rig.yaw), Math.cos(rig.yaw)], r = [f[1], -f[0]];
-  const x = rig.pos.x / M, y = -rig.pos.z / M, dx = f[0] * fwd + r[0] * strafe, dy = f[1] * fwd + r[1] * strafe;
-  // slide along obstacles: try the full step, then each axis
-  for (const [sx, sy] of [[dx, dy], [dx, 0], [0, dy]]) { if ((sx || sy) && canStand(x + sx, y + sy)) { rig.pos.x = (x + sx) * M; rig.pos.z = -(y + sy) * M; break; } }
+  const f = [Math.sin(rig.yaw), Math.cos(rig.yaw)], r = [f[1], -f[0]], w = walkFloor();
+  const from = [rig.pos.x / M, -rig.pos.z / M], dx = f[0] * fwd + r[0] * strafe, dy = f[1] * fwd + r[1] * strafe;
+  if (w && (dx || dy)) { const [x, y] = w.step(from, dx, dy); rig.pos.x = x * M; rig.pos.z = -y * M; }
   applyEye();
 }
 export const eyeState = () => ({ at: [rig.pos.x / M, -rig.pos.z / M], yaw: rig.yaw });
 
 /** Guided walk at eye height along a plan path (inches), about 2.5 ft a second; looks ahead along the path. */
-export function tour(path, { speed = 30, h = 63, onEnd } = {}) {
+export function tour(path, { speed = 30, h = 63, onEnd, smooth = false, endDir = null, endPitch = null, fov = 70 } = {}) {
   if (!model || !path || path.length < 2) return false;
   const pts = path.map(([x, y]) => new THREE.Vector2(x, y)), lens = [0];
   for (let i = 1; i < pts.length; i++) lens.push(lens[i - 1] + pts[i].distanceTo(pts[i - 1]));
   if (rig.mode !== 'eye') rig.prevWall = wallMode;
   rig.mode = 'eye'; rig.view = 'tour'; controls.enabled = false; if (wallMode !== 'full') setWallMode('full');
-  glide = null; tourS = { pts, lens, total: lens[lens.length - 1], t0: performance.now() + 200, speed, h, onEnd };
-  rig.fov = 70; cam.fov = 70; cam.updateProjectionMatrix(); applyMood(); stepTour(performance.now()); return true;
+  glide = null; tourS = { pts, lens, total: lens[lens.length - 1], t0: performance.now() + (smooth ? 0 : 200), speed, h, onEnd, smooth, endDir, endPitch };
+  rig.fov = fov; cam.fov = fov; cam.updateProjectionMatrix(); applyMood(); stepTour(performance.now()); return true;
 }
 export const touring = () => !!tourS;
 export function stopTour() { tourS = null; }
@@ -760,12 +774,43 @@ function at(s, d) {
   const a = s.pts[i - 1], b = s.pts[i], t = (d - s.lens[i - 1]) / Math.max(1e-6, s.lens[i] - s.lens[i - 1]); return a.clone().lerp(b, Math.max(0, Math.min(1, t)));
 }
 function stepTour(now) {
-  const s = tourS, d = Math.max(0, (now - s.t0) / 1000) * s.speed, p = at(s, d), ahead = at(s, d + 36);
-  const v = ahead.clone().sub(p); if (v.lengthSq() > 1) { const want = Math.atan2(v.x, v.y); let dy = want - rig.yaw; while (dy > Math.PI) dy -= 2 * Math.PI; while (dy < -Math.PI) dy += 2 * Math.PI; rig.yaw += dy * 0.12; }
-  rig.pitch += (-0.1 - rig.pitch) * 0.1;
+  const s = tourS, el = Math.max(0, (now - s.t0) / 1000);
+  // a click-to-walk glide eases in and out over a time set by the pace; a guided walk keeps its steady pace
+  const dur = s.smooth ? s.total / s.speed + 0.7 : 0, u = s.smooth ? Math.min(1, el / dur) : 0;
+  const d = s.smooth ? s.total * walkEase(u) : el * s.speed, p = at(s, d), ahead = at(s, d + 36);
+  const v = ahead.clone().sub(p);
+  let want = v.lengthSq() > 1 ? Math.atan2(v.x, v.y) : rig.yaw, pitchTo = -0.1;
+  if (s.endDir) {   // arriving: turn to face where the walk was meant to end (out of the window)
+    const w = s.smooth ? Math.max(0, Math.min(1, (u - 0.55) / 0.4)) : d >= s.total ? 1 : 0, ew = Math.atan2(s.endDir[0], s.endDir[1]);
+    let da = ew - want; while (da > Math.PI) da -= 2 * Math.PI; while (da < -Math.PI) da += 2 * Math.PI;
+    want += da * (w * w * (3 - 2 * w)); if (s.endPitch != null) pitchTo = -0.1 + (s.endPitch + 0.1) * w;
+  }
+  let dy = want - rig.yaw; while (dy > Math.PI) dy -= 2 * Math.PI; while (dy < -Math.PI) dy += 2 * Math.PI;
+  rig.yaw += dy * (s.smooth ? 0.16 : 0.12);
+  rig.pitch += (pitchTo - rig.pitch) * 0.1;
   rig.pos.copy(W(p.x, p.y, s.h)); applyEye();
-  if (d >= s.total) { tourS = null; s.onEnd?.(); }
+  if (d >= s.total - 1e-6 && (!s.smooth || u >= 1)) { if (s.endDir) { rig.yaw = Math.atan2(s.endDir[0], s.endDir[1]); if (s.endPitch != null) rig.pitch = s.endPitch; applyEye(); } tourS = null; s.onEnd?.(); }
 }
+
+// ------------------------------------------------------------------ walk marker and rays
+let marker = null;
+/** A subtle ring on the floor where a click would take you (plan inches), or null to hide it. Only drawn at eye level. */
+export function setMarker(p) {
+  if (!scene) return;
+  if (!marker) {
+    marker = new THREE.Group(); marker.name = 'walk-marker'; marker.renderOrder = 9;
+    const mat = (o) => new THREE.MeshBasicMaterial({ color: 0x8b93ff, transparent: true, opacity: o, depthTest: false, depthWrite: false });
+    const ring = new THREE.Mesh(new THREE.RingGeometry(6 * M, 8 * M, 40), mat(0.62)), dot = new THREE.Mesh(new THREE.CircleGeometry(1.6 * M, 16), mat(0.75));
+    for (const m of [ring, dot]) { m.rotation.x = -Math.PI / 2; m.renderOrder = 9; marker.add(m); }
+    scene.add(marker);
+  }
+  const on = !!p && rig.mode === 'eye';
+  if (marker.visible !== on) dirty = true;
+  marker.visible = on;
+  if (on) { marker.position.set(p[0] * M, 0.012, -p[1] * M); dirty = true; }
+}
+/** The ray under a pointer as {o, d}: origin and direction in the plan frame (inches) with a third component up. For window picks. */
+export function rayPlan(e) { setRay(e); const o = ray.ray.origin, d = ray.ray.direction; return { o: [o.x / M, -o.z / M, o.y / M], d: [d.x, -d.z, d.y] }; }
 
 // ------------------------------------------------------------------ export
 /** PNG of the current view; `scale` > 1 renders off-screen at that multiple of the canvas size (max 4096 px wide). */

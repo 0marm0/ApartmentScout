@@ -8,6 +8,7 @@ import json
 from pathlib import Path
 
 import pytest
+from conftest import look_click, look_open
 
 pytestmark = pytest.mark.e2e
 
@@ -97,7 +98,7 @@ def test_the_studio_draws_every_piece_in_the_renters_colours_and_the_tvs_on_thei
     tv, futon, tvb, bed = by["tv"], by["futon"], by["tv-bed"], by["bed"]
     assert tv["elev"] == 32 and tvb["elev"] == 32
     # each TV faces the seating it serves: the living-room one the futon, the bedroom one the bed
-    assert tv["x"] < futon["x"] - 40 and tvb["x"] > bed["x"] + 40
+    assert tv["x"] < futon["x"] - 40 and tvb["x"] < bed["x"] - 40
     assert not s.take()
 
 
@@ -130,7 +131,7 @@ def test_a_colour_edited_in_furniture_json_needs_no_code(open_page, webgl: bool)
     _studio(s)
     mats = pg.evaluate(SCENE_JS)["desk"]["mats"]
     assert any(_rgb(m["color"])[1] > _rgb(m["color"])[0] * 1.3 and _rgb(m["color"])[1] > _rgb(m["color"])[2] for m in mats), "the desk is green now"
-    row = pg.evaluate("() => [...document.querySelectorAll('#psTab .iv-row')].find((r) => /Desk/.test(r.textContent)).textContent")
+    row = pg.evaluate("() => [...document.querySelectorAll('#psTab .iv-row')].find((r) => /Desk/.test(r.textContent)).querySelector('.iv-look').textContent")
     assert "metal" in row and "assumed" not in row, "the furniture list says what it is made of and that it comes from the renter"
     assert not s.take()
 
@@ -149,12 +150,12 @@ def test_from_the_sofa_you_see_the_tv_and_from_the_desk_your_monitor(open_page, 
       const f = new THREE.Frustum().setFromProjectionMatrix(new THREE.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse));
       const g = U.stage.interior.furniture.group.children.find((c) => c.userData.itemId === id); return f.intersectsBox(new THREE.Box3().setFromObject(g)); }"""
     for chip, view, target in (("Sofa", "seat:sofa", "tv"), ("Bed", "seat:bed", "tv-bed"), ("Desk", "seat:desk", "desk")):
-        pg.click(f"#uLook .lk-chip:text-is('{chip}')")
+        look_click(pg, f"#uLook .lk-chip:text-is('{chip}')")
         pg.wait_for_function("(k) => window.__unit3d.curView && window.__unit3d.curView.key === k", arg=view)
         pg.wait_for_timeout(2500)
         assert pg.evaluate(in_view, target), f"{chip}: the {target} is in front of you"
     # the window view stays one click away
-    pg.click("#uLook .lk-chip:text-is('Sofa, window')")
+    look_click(pg, "#uLook .lk-chip:text-is('Sofa, window')")
     pg.wait_for_function("() => window.__unit3d.curView.key === 'seat:sofa-window'")
     assert not s.take()
 
@@ -177,7 +178,7 @@ def test_selecting_a_piece_shows_one_toolbar_in_the_plan_and_one_in_3d(open_page
     for host in ("#p2dWrap", "#pstage"):
         bar = pg.locator(f"{host} .selbar")
         assert [b.get_attribute("data-act") for b in bar.locator(".sb-b").all()] == ["rot", "free", "move", "del", "done"]
-        assert "Desk and chair" in bar.locator(".sb-name").text_content()
+        assert "Desk, chair and monitor" in bar.locator(".sb-name").text_content()
         box, pane = bar.bounding_box(), pg.locator(host).bounding_box()
         assert pane["x"] <= box["x"] and box["x"] + box["width"] <= pane["x"] + pane["width"] + 1, f"{host}: the toolbar stays inside its pane"
         assert all(b.bounding_box()["height"] >= 40 for b in bar.locator(".sb-b").all()), "tap targets are at least 40 px"

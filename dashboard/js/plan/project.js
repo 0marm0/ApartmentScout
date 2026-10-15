@@ -18,16 +18,17 @@ const FIELDS = {
   open_walls: 'x1 y1 x2 y2 a b',
   fixtures: 'kind label x y w h poly height elev reserve doors front note est',
   keepout: 'name x y w h poly grade',
-  layouts: 'id name note items',
+  layouts: 'id name note items replaces',
+  replaced: 'id x y rot',
   provenance: 'match floor_band checked printed estimated bedroom_door_drawn wd_drawn trace',
   trace: 'by tool mode date image page image_px origin_px scale anchors length check confidence bearing label changes',
   trace_check: 'anchors length measured error_pct',
   trace_bearing: 'method faces wall',
-  layout: 'schema kind plan units items saved',
-  item: 'id ref x y rot w d h elev variant label hidden product',
+  layout: 'schema kind plan units items saved ver removed',
+  item: 'id ref x y rot w d h elev variant label hidden placed product',
   lighting: 'directSun ambient glazing blinds daylight luminaires',   // [feature J] daylight, luminaires
   inventory: 'schema kind name source pieces',   // [furniture]
-  piece: 'id ref label room w d h elev variant product look note source',
+  piece: 'id ref label room w d h elev variant product look set assumed note source',
 };
 const fin = (v) => typeof v === 'number' && Number.isFinite(v);
 const own = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
@@ -150,6 +151,10 @@ function validatePlan(p) {
     p.layouts.forEach((l) => {
       object(l, 'layouts');
       for (const q of ['id', 'name', 'note']) if (own(l, q)) text(l[q], q);
+      if (own(l, 'replaces')) {   // [placement] where an earlier default put each piece, in the plan's units: a saved layout still holding those is an untouched copy of it
+        array(l.replaces, 'replaces', 20);
+        l.replaces.forEach((set) => { array(set, 'replaces set', 150); set.forEach((q) => { object(q, 'replaced'); if (typeof q.id !== 'string' || !ID.test(q.id) || ![q.x, q.y].every(fin) || (own(q, 'rot') && !fin(q.rot))) fail('replaces entries need an id, x and y'); length(q.x, 'replaces.x', k); length(q.y, 'replaces.y', k); }); });
+      }
       array(l.items, 'preset items', 150);
       l.items.forEach((i, j) => {
         object(i, 'item');
@@ -200,10 +205,10 @@ export function parseProject(input, { planId = null } = {}) {
 }
 
 /** Build a validated portable object; throws on invalid geometry or layout. */
-export function serialiseProject(rawPlan, items, lighting = {}, inventory = null) {
+export function serialiseProject(rawPlan, items, lighting = {}, inventory = null, { removed = [] } = {}) {
   // Validate original numbers before serialiseLayout rounds them (NaN must never become null).
   jsonTree({ plan: rawPlan, items, lighting, inventory });
-  const r = parseProject({ schema: 1, kind: 'apartmentscout-project', plan: rawPlan, layout: serialiseLayout(rawPlan.id, items), lighting, ...(inventory?.pieces?.length ? { inventory } : {}) });
+  const r = parseProject({ schema: 1, kind: 'apartmentscout-project', plan: rawPlan, layout: serialiseLayout(rawPlan.id, items, { removed }), lighting, ...(inventory?.pieces?.length ? { inventory } : {}) });
   if (!r.ok) fail(r.error);
   return r.project;
 }

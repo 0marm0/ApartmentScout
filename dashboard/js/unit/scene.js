@@ -15,7 +15,7 @@ import { contextLabels } from './context-core.js';
 import { palette, skyAt, SKY_VS, SKY_FS, glowTexture } from '../city3d/look.js';   // [city3d] the shared look of the city: palette, sky keyframes and dome, sun glow
 import { decorate } from '../city3d/facade.js';   // [city3d] the shared facade shader
 import { RectAreaLightUniformsLib } from 'three/addons/lights/RectAreaLightUniformsLib.js';
-import { roomLightState, moodFor, applyRoomLight } from '../room3d/lighting.js';   // [room3d] the room's own light, shared with the studio
+import { roomLightState, applyRoomLight } from '../room3d/lighting.js';   // [room3d] the room's own light, shared with the studio
 import { roomQuality, quality } from '../room3d/quality.js';
 import { createSky, applySky } from '../city3d/sky.js';   // [city3d] the shared sky
 import { createCity } from '../city3d/city.js';   // [city3d] THE city: buildings, outlines, context and ground, shared with the studio
@@ -91,6 +91,8 @@ export class UnitStage {
     // [city3d] ground, buildings, roof and footprint outlines: the city both engines share (city3d/city.js), in the site frame, near ones casting shadows
     const C = this.cityObj = createCity({ B, T, ti: data.ti, meta: data.meta, green: data.green, water: data.water, streets: data.streets }, { pal, center: this.cxy, quality: this.quality, castShadow: true, facU: this.facU });
     Object.assign(this, { groundMat: C.groundMat, groundBase: C.groundBase, bMat: C.bMat, vrange: C.vrange, city: C.meshes, edgeMat: C.edgeMat, edgeIdx: C.edgeIdx, edges: C.edges, outlineMat: C.outlineMat, outlines: C.outlines });
+    if (this.late != null) C.setLate(this.late);
+    if (this.season) C.season = { ...this.season };   // [season] the trees keep their leaves (or none) across a rebuild
     scene.add(C.group);
 
     // target building in the accent, with solid / faint / hidden display
@@ -164,6 +166,10 @@ export class UnitStage {
   }
   /** The plate stands in for the base ground where it is on; the base drops under the water so the plate's holes show it. */
   syncGroundBase() { if (this.cityObj) { this.cityObj.layers = { ...this.cityObj.layers, water: this.opts.water }; this.cityObj.syncGroundBase(); } }
+  /** [daycycle] How late the evening is, 0 (early) to 1 (deep night): fewer offices and homes stay lit. Remembered across a rebuild. */
+  setLate(v) { if (v === this.late) return; this.late = v; this.cityObj?.setLate(v); this.dirty = true; }
+  /** [season] The tree season ({leaf, autumn}, city3d/season.js): leaves on, autumn colour or bare branches. A picture only: the numbers never count a tree. */
+  setSeason(s) { if (!s) return; this.season = { leaf: s.leaf, autumn: s.autumn }; if (this.cityObj?.setSeason(this.season)) this.dirty = true; }
   /** [city context] Render quality from unit/quality3d.js: tree shadows (Visual) and the water's sky reflection and sun glint. */
   setContextQuality(q) { this.quality = { ...q, visual: !!q.visual, phone: !!q.phone }; this.ctx?.setQuality(this.quality); if (this.facU.uQual) this.facU.uQual.value = (q.fullFacades ?? q.visual) ? 1 : 0; this.dirty = true; }   // [massing] Visual: full facades
   distTo(b) { return Math.hypot((b.bb[0] + b.bb[2]) / 2 - this.cxy[0], (b.bb[1] + b.bb[3]) / 2 - this.cxy[1]); }
@@ -439,7 +445,7 @@ export class UnitStage {
     this.hemi.color.copy(mix(pal.white, tint, 0.3)); this.hemi.groundColor.copy(mix(pal.white, tint, 0.3)).multiplyScalar(0.45);
     this.hemi.intensity = up ? pal.hemiNight + (pal.hemiDay - pal.hemiNight) * Math.min(1, (s.alt + 2) / 14) : pal.hemiNight * (s.alt > -8 ? 1 : 0.85);
     // lit windows fade in through dusk
-    this.facU.uNight.value = Math.max(0, Math.min(1, (3 - s.alt) / 9)) * (pal.light ? 0.75 : 1);
+    this.cityObj.setNight(Math.max(0, Math.min(1, (3 - s.alt) / 9)) * (pal.light ? 0.75 : 1));   // [daycycle] the lit windows, the lamps, the dark ground
     this.applyRoomLook();   // [room3d]
     this.dirty = true;
   }
@@ -459,20 +465,29 @@ export class UnitStage {
       if (r.toneMapping !== this.baseTone.mapping) r.toneMapping = this.baseTone.mapping;
       r.toneMappingExposure = this.baseTone.exposure;
       for (const L of this.interior?.glow?.children || []) L.intensity = 0;
+      this.interior?.lamps?.set(0);
       if (this.interior?.glow) this.interior.glow.visible = false;   // a light that is off still costs every lit pixel: only the room's own cameras have the window glow
       return;
     }
     const s = this.lastSun, up = s.alt > 0, sin = Math.max(0, Math.sin(s.alt * DEG));
-    const st = this.roomState = roomLightState({ mood: moodFor(this.moodWant || 'auto', up, sin), sunOn: up, sinAlt: sin, quality: roomQuality(), envLight: quality.has('environment'), tone: quality.settings.tone, scale: this.roomScale });
+    // [daycycle] 'auto' follows the sun's altitude continuously (no jump where the sun crosses a threshold, so playing the day is smooth); a fixed mood is that mood
+    const st = this.roomState = roomLightState({ mood: this.moodWant || 'auto', alt: s.alt, sunOn: up, sinAlt: sin, quality: roomQuality(), envLight: quality.has('environment'), tone: quality.settings.tone, scale: this.roomScale });
     applyRoomLight({ sunL: this.sunL, hemi: this.hemi, amb: this.amb, glow: this.interior?.glow, renderer: r }, st);
     if (this.interior?.glow) this.interior.glow.visible = quality.has('windowGlow');   // [quality] the step-down's level 4 takes the window glow lights out
     // lamps from the layout (floor and table lamps, pendants) come on after dark, like the studio's
+    let real = false;
     for (const g of this.interior?.furniture?.group.children || []) {
       const l = g.userData.lamp; if (!l) continue;
-      l.light.intensity = st.lamps ? l.cd * st.lamps : 0; l.light.visible = st.lamps > 0;
+      l.light.intensity = st.lamps ? l.cd * st.lamps : 0; l.light.visible = st.lamps > 0; real = true;
       if (l.shade) l.shade.material.emissiveIntensity = st.lamps ? (st.lamps === 1 ? 1.4 : 1) : 0;
     }
-    this.facU.uNight.value = st.lamps === 1 ? 1 : st.lamps ? Math.max(this.facU.uNight.value, 0.5) : this.facU.uNight.value;
+    const al = this.interior?.lamps;
+    if (al && !al.warm && al.count && !real) {   // the first time: compile the shaders with the assumed lights on, so a loop crossing dusk or dawn does not stall on a recompile
+      al.warm = true; al.set(1, { lensRoot: this.interior.group });
+      try { this.renderer.compile(this.scene, this.activeCam()); } catch { /* a missing context: the first frame compiles instead */ }
+    }
+    al?.set(st.lamps, { real, lensRoot: this.interior.group });   // [daycycle] no lamp placed: a warm ceiling light stands in
+    this.cityObj.setNight(Math.max(this.facU.uNight.value, st.lamps >= 1 ? 1 : st.lamps * 0.667));
   }
   /** w: {x,y,z,fx,fy}, az: window bearing; floorZ / cmpZ: slab heights; fh floor height. */
   setWindow(w, az, floorZ, cmpZ, fh, label, panes = [0]) {
@@ -684,6 +699,7 @@ export class UnitStage {
       if (k >= 1) this.tween = null; this.dirty = true;
     }
     if (this.inTween) this.stepInTween();   // [interior] the Inside camera gliding to another room
+    if (this.walker && this.mode === 'in' && this.walker.update()) this.dirty = true;   // [walk] a glide to a clicked spot, or held keys
     if (this.mode === 'orbit' || this.mode === 'top') { if (this.controls.update()) this.dirty = true; }
     if (this.mode === 'plan') { if (this.planControls.update()) this.dirty = true; }
     if (!this.dirty && !force) return false;

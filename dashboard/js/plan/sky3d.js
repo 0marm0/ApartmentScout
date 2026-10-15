@@ -15,6 +15,7 @@ export function objects() { ensure(); return sky.objects; }
 
 /** The altitude (degrees) the sky is painted for under a lighting mood, given the real sun altitude. */
 export function moodAltitude(mood, alt) {
+  if (mood === 'auto') return Math.max(-12, Math.min(90, alt));   // [daycycle] the real sun: the sky goes through dawn, golden hour and dusk without a jump
   if (mood === 'night') return -12;
   if (mood === 'evening') return Math.max(-1, Math.min(alt, 4));
   return Math.max(alt, 25);   // 'day': the real sun when it is high, else a clear day
@@ -32,7 +33,7 @@ export function setMood(mood, sunDir, sunUp = true) {
   sky.U.gnd.value.copy(pal.ground);
   const { hor } = applySky(sky, pal, { alt, az }, sunVector(az, Math.max(real, -5)), new THREE.Vector3());
   sky.glow.userData.dir = d; sky.disc.userData.dir = d;
-  const lit = sunUp && mood !== 'night' && real > -1.5;
+  const lit = sunUp && mood !== 'night' && real > -1.5;   // ('auto' lights the disc and the glow by the real sun)
   sky.disc.userData.lit = lit; sky.disc.visible = sky.glow.visible = lit && sky.dome.visible;
   lastKey = mood;
   return { color: hor.clone(), near: FOG.near, far: FOG.far };

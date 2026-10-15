@@ -62,6 +62,36 @@ export function useOf(cls) {
   return COMMERCIAL.has(c) && c !== 'S' ? 'office' : RESIDENTIAL.has(c) || c === 'S' ? 'residential' : 'other';
 }
 
+/** The facade attribute code of a use, written next to the style in aFb.x (style + 0.1 * code): 1 office, 2 residential, 3 other. 0 (no code) reads as other. */
+export const USE_CODE = { office: 1, residential: 2, other: 3 };
+
+/**
+ * The lit windows after dark, as numbers both the shader and the tests read. `late` runs from 0 (early evening) to 1 (deep night): how many windows are
+ * lit falls with it, and a window that is off stays off for the rest of the night (its hash is fixed), so scrubbing time never flickers.
+ *   office       whole floors are lit together (a share of floors, then most windows on a lit floor), cool white, falling to a few cleaners' floors late
+ *   residential  single windows, warm (amber and warm white, a few cool and a few TV-blue), falling to about a third of the early share
+ *   other        shops, hotels and the rest: like homes, but fewer
+ * A look, not data: it says nothing about who is home or which floors a firm rents.
+ */
+export const NIGHT_RULES = {
+  office: { floors: [0.55, 0.07], windows: [0.85, 0.5] },
+  residential: { windows: [0.36, 0.13] },
+  other: { windows: [0.24, 0.09] },
+};
+const lerp = (a, b, t) => a + (b - a) * Math.max(0, Math.min(1, t));
+/** Is a window lit? `use` 'office' | 'residential' | 'other'; hashW / hashF in [0, 1): the window's and its floor's fixed hashes. The twin of the shader's rule. */
+export function windowLit(use, late, hashW, hashF) {
+  if (use === 'office') return hashF < lerp(...NIGHT_RULES.office.floors, late) && hashW < lerp(...NIGHT_RULES.office.windows, late);
+  return hashW < lerp(...(NIGHT_RULES[use] || NIGHT_RULES.other).windows, late);
+}
+/** The share of windows lit at `late` on average, per use (what far buildings show as a faint scatter). */
+export function litShare(use, late) {
+  if (use === 'office') return lerp(...NIGHT_RULES.office.floors, late) * lerp(...NIGHT_RULES.office.windows, late);
+  return lerp(...(NIGHT_RULES[use] || NIGHT_RULES.other).windows, late);
+}
+/** How late the evening is (0 early .. 1 deep night) at a clock time in minutes: 0 until 19:00, 1 from 23:30. */
+export const lateAt = (min) => { const t = Math.max(0, Math.min(1, (min - 1140) / 270)); return t * t * (3 - 2 * t); };
+
 /**
  * The facade a building gets. `m` is the site file's bmeta entry ({cls, year, floors, ...}); `h` the roof height in metres;
  * `mat` an OpenStreetMap building:material of one of its parts ('glass', 'brick', 'stone', 'concrete', 'metal', 'plaster').
@@ -151,9 +181,17 @@ export const VERT_MAIN = 'vFa = aFa; vFb = aFb; vWN2 = normalize(mat3(modelMatri
  * tint jitter). Uniforms: uNight 0..1, uQual 0 (Fast) | 1 (Visual), uTintMix 0..1 (0 under the Heights
  * layer), uSty / uSty2 / uTint / uGlass per style, uLitCol, uSkyCol (the glass's sky).
  */
+const f3 = (n) => (+n).toFixed(3);
+/** How much of its daylight colour a wall keeps in the dead of night (the city is lit by its windows and lamps, not by the room's sky light). */
+export const NIGHT_DIM = 0.3;
+const NIGHT_DEFS = [
+  ['OFF_F0', NIGHT_RULES.office.floors[0]], ['OFF_F1', NIGHT_RULES.office.floors[1]], ['OFF_W0', NIGHT_RULES.office.windows[0]], ['OFF_W1', NIGHT_RULES.office.windows[1]],
+  ['RES_W0', NIGHT_RULES.residential.windows[0]], ['RES_W1', NIGHT_RULES.residential.windows[1]], ['OTH_W0', NIGHT_RULES.other.windows[0]], ['OTH_W1', NIGHT_RULES.other.windows[1]], ['NIGHT_DIM', NIGHT_DIM],
+].map(([k, v]) => `#define ${k} ${f3(v)}`).join('\n');
 export const FRAG_PARS = `
+${NIGHT_DEFS}
 varying vec4 vFa; varying vec4 vFb; varying vec3 vWN2; varying vec3 vWP2;
-uniform float uNight; uniform float uQual; uniform float uTintMix; uniform vec3 uLitCol; uniform vec3 uSkyCol;
+uniform float uNight; uniform float uLate; uniform float uQual; uniform float uTintMix; uniform vec3 uLitCol; uniform vec3 uSkyCol;
 uniform vec4 uSty[5]; uniform vec4 uSty2[5]; uniform vec3 uTint[20]; uniform vec3 uGlass[20];
 float fHash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
 float fBox(float x, float a, float b, float w) { return smoothstep(a - w, a + w, x) * (1.0 - smoothstep(b - w, b + w, x)); }
@@ -165,6 +203,7 @@ export const FRAG_COLOR = `
   fLit = 0.0; fGlass = 0.0; fGlassCol = uLitCol * vec3(1.0, 0.82, 0.55);
   int kind = int(vFb.z + 0.5);
   int st = int(vFb.x + 0.5);
+  int useK = int(fract(vFb.x) * 10.0 + 0.5);   // 1 office | 2 residential | 3 other (0: none written)
   bool wall = kind == 0 && st < 9;
   float isWallN = 1.0 - smoothstep(0.35, 0.6, abs(normalize(vWN2).y));
   float vM = vFa.y;
@@ -180,7 +219,7 @@ export const FRAG_COLOR = `
     base = mix(base, tint, uTintMix * 0.75 * sc);
     diffuseColor.rgb = base * ao * (1.0 - 0.18 * sc);
     float seedF = fHash(floor(vWP2.xz * 0.21) + floor(vM / 3.2));
-    fLit = sc * step(0.7, seedF) * 0.09 * uNight;
+    fLit = sc * step(0.7 + 0.2 * uLate, seedF) * 0.09 * uNight;
   } else if (wall) {
     vec4 s1 = uSty[st], s2 = uSty2[st];
     float nB = max(vFa.z, 1.0);
@@ -226,9 +265,10 @@ export const FRAG_COLOR = `
     // glass: a sky-tinted dark blue, lighter higher up and toward the top of each pane, with a faint diagonal reflection
     vec3 gcol = uGlass[st * 4 + pi];
     float up = clamp(vM / 260.0, 0.0, 1.0);
-    gcol = mix(gcol, uSkyCol * 0.5, (0.12 + 0.28 * up) * s2.x * mix(0.4, 1.0, uQual)) * (0.9 + 0.2 * rnd);
+    vec3 skyCol = uSkyCol * (1.0 - 0.85 * uNight);   // the glass mirrors a sky: a dark one after dusk
+    gcol = mix(gcol, skyCol * 0.5, (0.12 + 0.28 * up) * s2.x * mix(0.4, 1.0, uQual)) * (0.9 + 0.2 * rnd);
     gcol *= mix(1.0, 1.0 + 0.45 * (1.0 - clamp((f.y - sill) / max(wh, 0.1), 0.0, 1.0)) - 0.2, vis * s2.x);
-    gcol += uSkyCol * 0.07 * smoothstep(0.4, 0.5, fract(f.x * 0.8 + f.y * 0.6 + seed * 3.0)) * s2.x * vis;
+    gcol += skyCol * 0.07 * smoothstep(0.4, 0.5, fract(f.x * 0.8 + f.y * 0.6 + seed * 3.0)) * s2.x * vis;
     gcol = mix(gcol, wallCol * 0.5, rim * 0.6 * vis);
     // some windows have blinds or curtains drawn: a pale, flat patch instead of dark glass (a look: it says nothing about who is home)
     float blind = step(0.8, fHash(floor(cell) + 21.7 + seed * 5.0)) * (st >= 1 ? 1.0 : 0.6) * (1.0 - far);
@@ -236,23 +276,30 @@ export const FRAG_COLOR = `
     vec3 col = mix(wallCol, gcol, open);
     diffuseColor.rgb = col * ao;
     fGlass = open * s2.x * (1.0 - far);
-    // lit windows at night: offices light whole floors, homes light single windows; far cells average out
-    float lit;
-    if (s2.w > 0.5) lit = step(fHash(vec2(floor(cell.y), seed * 53.0)), 0.42) * step(fHash(floor(cell) + 3.7), 0.8);
-    else lit = step(rnd, s2.y);
-    lit = mix(lit * win, s2.y * ww * wh * (s2.w > 0.5 ? 0.5 : 1.0), far);
-    float warm = fHash(floor(cell) + 9.1);
-    vec3 lc = mix(uLitCol * vec3(1.0, 0.82, 0.55), vec3(0.78, 0.86, 1.0), step(0.78, warm) * 0.8);
-    fLit = lit * (uQual > 0.5 ? 1.0 : 0.8);
+    // lit windows at night, by use and by the hour (uLate 0 early evening .. 1 deep night; the numbers are NIGHT_RULES in facade-rules.js): offices light whole
+    // floors, cool and fewer late; homes light single windows, warm, a few TV-blue, fewer late. Fixed hashes: a window that goes off stays off, so nothing flickers
+    float hW = fHash(floor(cell) + vec2(seed * 31.0, 7.7)), hF = fHash(vec2(floor(cell.y) + 0.5, seed * 53.0));
+    float pOff = mix(OFF_F0, OFF_F1, uLate), pOffW = mix(OFF_W0, OFF_W1, uLate), pRes = mix(RES_W0, RES_W1, uLate), pOth = mix(OTH_W0, OTH_W1, uLate);
+    float lit, avg;
+    if (useK == 1) { lit = step(hF, pOff) * step(hW, pOffW); avg = pOff * pOffW; }
+    else if (useK == 2) { lit = step(hW, pRes); avg = pRes; }
+    else { lit = step(hW, pOth); avg = pOth; }
+    lit = mix(lit * win, avg * ww * wh * (useK == 1 ? 0.8 : 1.0), far);
+    float hC = fHash(floor(cell) + vec2(19.3, seed * 11.0)), hI = fHash(floor(cell) + vec2(41.7, 5.1));
+    vec3 amber = uLitCol * vec3(1.0, 0.72, 0.38), warmW = vec3(1.0, 0.82, 0.56), coolW = vec3(0.78, 0.89, 1.0), tvB = vec3(0.45, 0.60, 1.0);
+    vec3 lc = useK == 1 ? (hC < 0.62 ? coolW : (hC < 0.9 ? vec3(1.0, 0.96, 0.86) : warmW)) : (hC < 0.55 ? amber : (hC < 0.85 ? warmW : (hC < 0.95 ? coolW : tvB * 0.8)));
+    lc *= 0.62 + 0.55 * hI;
+    fLit = lit * (uQual > 0.5 ? 1.0 : 0.85);
     fGlassCol = lc;
   } else {
     // roofs, parapets and bulkheads: plain surfaces, tar and gravel on top
     float gr = fHash(floor(vWP2.xz * 1.7));
     diffuseColor.rgb = base * (kind == 1 ? (0.9 + 0.2 * gr * uQual) : 1.0) * mix(1.0, ao, isWallN);
   }
+  diffuseColor.rgb *= mix(1.0, NIGHT_DIM, uNight);   // the walls and roofs go dark after dusk: only the windows, the lamps and the sky light the city
 }
 `;
 
 /** After roughness / metalness: windows mirror the sky (Visual lights them with the scene's environment). */
 export const FRAG_ROUGH = 'roughnessFactor = mix(roughnessFactor, 0.12, fGlass * uQual); metalnessFactor = mix(metalnessFactor, 0.55, fGlass * uQual);';
-export const FRAG_EMISSIVE = 'totalEmissiveRadiance += fGlassCol * fLit * uNight * 0.95;';
+export const FRAG_EMISSIVE = 'totalEmissiveRadiance += fGlassCol * fLit * uNight * 0.7;';

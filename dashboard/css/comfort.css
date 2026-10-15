@@ -20,9 +20,7 @@
   --topbar-h: calc(48px * var(--ts)); --stats-h: calc(28px * var(--ts)); --subnav-h: calc(38px * var(--ts));
 }
 
-/* with larger type the one-line rows that were sized for the default scale wrap instead of cutting words off */
-:root[data-text="l"] .c-price, :root[data-text="xl"] .c-price { flex-wrap: wrap; row-gap: 0; white-space: normal; }
-:root[data-text="xl"] .c-modes, :root[data-text="xl"] .c-badges { flex-wrap: wrap; }
+/* with larger type the card rows scale with --ts (their heights are calc(Npx * var(--ts, 1))), and the items that no longer fit drop out whole */
 
 /* ------------------------------------------------------------------ reduced transparency
    The same fallbacks glass.css applies for prefers-reduced-transparency, driven by the attribute so the settings

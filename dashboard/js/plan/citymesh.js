@@ -35,9 +35,10 @@ export function cityGroup(ctx, opts = {}) {
   const pal = opts.pal || palette({ daylight: !!opts.daylight });   // [daylight] the eye-level views look out at a bright day
   const q = opts.quality ? legacyQuality(opts.quality) : Q.city;
   const frame = planFrameOf(ctx);
-  const C = createCity({ B: ctx.B, T: ctx.T, ti: ctx.ti, meta: ctx.meta, green: ctx.green, water: ctx.water, streets: ctx.streets }, { pal, center: [(ctx.T.bb[0] + ctx.T.bb[2]) / 2, (ctx.T.bb[1] + ctx.T.bb[3]) / 2], frame, quality: q, castShadow: false });   // (the same centre as Unit 3D's: the same trees, the same near and far buildings));
+  const C = createCity({ B: ctx.B, T: ctx.T, ti: ctx.ti, meta: ctx.meta, green: ctx.green, water: ctx.water, streets: ctx.streets }, { pal, season: opts.season, center: [(ctx.T.bb[0] + ctx.T.bb[2]) / 2, (ctx.T.bb[1] + ctx.T.bb[3]) / 2], frame, quality: q, castShadow: false });   // (the same centre as Unit 3D's: the same trees, the same near and far buildings));
   C.facU.uFloorH.value = Math.max(2.4, +ctx.fh || 3.2);
   C.facU.uToSite = { value: new THREE.Matrix4().copy(C.bakeM).invert() };   // the facade windows are laid out in the site frame, as in Unit 3D
+  if (opts.season) C.season = { ...opts.season };
   if (opts.trees !== false) C.buildContext(); else C.syncGroundBase();
   const g = C.group; g.name = 'city';
   // this building below the apartment (its own floors above are left out so the plan stays visible), in the city's own material
@@ -50,9 +51,13 @@ export function cityGroup(ctx, opts = {}) {
   g.userData.count = C.near.length + C.far.length;
   g.userData.api = {
     city: C,
-    setSun(dir, alt) { C.ctx?.setSun({ dir, alt }); C.facU.uNight.value = nightAmount(alt, pal); },
-    setNight(v) { C.facU.uNight.value = v; },
-    setQuality(qq) { C.quality = typeof qq === 'object' && qq ? qq : legacyQuality(qq); C.ctx?.setQuality(C.quality); C.facU.uQual.value = (C.quality.fullFacades ?? C.quality.visual) ? 1 : 0; },   // [massing] Visual: full facades
+    setSun(dir, alt) { C.ctx?.setSun({ dir, alt }); C.setNight(nightAmount(alt, pal)); },
+    setNight(v) { C.setNight(v); },
+    /** [daycycle] how late the evening is, 0 (early) to 1 (deep night): fewer windows stay lit */
+    setLate(v) { C.setLate(v); },
+    /** [season] the tree season {leaf, autumn} (city3d/season.js), a picture only; true when the trees changed */
+    setSeason(s) { return C.setSeason(s); },
+    setQuality(qq) { C.quality = typeof qq === 'object' && qq ? qq : legacyQuality(qq); C.ctx?.setQuality(C.quality); C.facU.uQual.value = (C.quality.fullFacades ?? C.quality.visual) ? 1 : 0; C.setNightFeatures?.(); },   // [massing] Visual: full facades
     /** building id -> its first vertex (world position in the plan frame), for alignment checks */
     anchorsOf(ids) {
       const out = {}; const v = new THREE.Vector3();
