@@ -9,6 +9,7 @@ from __future__ import annotations
 import datetime as dt
 import re
 from collections.abc import Callable
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -155,13 +156,19 @@ def render_criteria(c: dict[str, Any], note: str = "") -> str:
 
 
 # --------------------------------------------------------------------------- creating a search folder
-def _fill_city_defaults(c: dict[str, Any], city: str | None) -> bool:
-    """Timezone and transit feeds from the city profile when the file has none. True when anything was added."""
+def _fill_city_defaults(c: dict[str, Any], city: str | None, info: Any = None) -> bool:
+    """Timezone and transit feeds from the city profile (and, for a looked-up city without one, its name, time zone and map
+    centre) when the file has none. True when anything was added."""
     prof, changed = city_profile(city), False
     s = c.setdefault("search", {})
     if city and s.get("city") != city:
         s["city"] = city
         changed = True
+    if info is not None and not prof:
+        for k, v in (("city_name", info.name if info.id != "generic" else None), ("timezone", info.timezone), ("map_center", info.center)):
+            if v and not s.get(k):
+                s[k] = v
+                changed = True
     if prof.get("timezone") and not s.get("timezone"):
         s["timezone"] = prof["timezone"]
         changed = True
@@ -172,14 +179,37 @@ def _fill_city_defaults(c: dict[str, Any], city: str | None) -> bool:
     return changed
 
 
-def template_text(city: str | None) -> str:
-    """The commented template with the city profile's timezone and transit feeds filled in (what `init` has always written)."""
+def _next_service_day(today: dt.date) -> dt.date:
+    """A Tuesday-to-Thursday at least a week away: a normal weekday for the transit router."""
+    d = today + dt.timedelta(days=7)
+    while d.weekday() not in (1, 2, 3):
+        d += dt.timedelta(days=1)
+    return d
+
+
+def template_text(city: str | None, info: Any = None, today: dt.date | None = None) -> str:
+    """The commented template with dates counted from today, the city profile's timezone and transit feeds filled in, and,
+    for a city without a profile that was looked up (``info``, a cities.CityInfo), its name, time zone and map centre.
+    Nothing in a new search should still say New York unless the search is there."""
+    today = today or dt.date.today()
     text = TEMPLATE_PATH.read_text(encoding="utf-8")
+    text = text.replace("earliest: 2026-11-01", f"earliest: {today + dt.timedelta(days=14)}")
+    text = text.replace("latest: 2026-12-01", f"latest: {today + dt.timedelta(days=60)}")
+    text = text.replace("service_date: 2026-11-04", f"service_date: {_next_service_day(today)}")
     if city:
         text = text.replace("city: generic", f"city: {city}")
         prof = city_profile(city)
-        if prof.get("timezone"):
-            text = text.replace("timezone: America/New_York", f"timezone: {prof['timezone']}")
+        tz = prof.get("timezone") or (info.timezone if info is not None else None)
+        if tz:
+            text = text.replace("timezone: America/New_York", f"timezone: {tz}")
+        elif not prof:
+            text = text.replace("timezone: America/New_York # IANA zone for sun times",
+                                "timezone: America/New_York # TEMPLATE DEFAULT: set your own IANA zone (apartmentscout city \"<city>\" does it)")
+        center = prof.get("center") or (info.center if info is not None else None)
+        if center:
+            text = text.replace("map_center: [40.7549, -73.9840]", f"map_center: [{center[0]}, {center[1]}]")
+        if info is not None and not prof and info.name:
+            text = text.replace(f"  city: {city}", f"  city: {city}\n  city_name: {yaml.safe_dump(info.name, width=10_000).split(chr(10))[0]}", 1)
         if prof.get("transit_feeds"):
             # each feed whole (name, url, mode, exclude_routes, map_lines ...), one flow mapping per line
             feeds = "\n".join("      - " + yaml.safe_dump(dict(f), default_flow_style=True, sort_keys=False,
@@ -189,7 +219,8 @@ def template_text(city: str | None) -> str:
     return text
 
 
-def init_search(root: Path, city: str | None = None, criteria_text: str | None = None, force: bool = False) -> str:
+def init_search(root: Path, city: str | None = None, criteria_text: str | None = None, force: bool = False,
+                info: Any = None) -> str:
     """Create a search folder (criteria.yaml, research/, plans/, listings.json, listings.template.csv).
 
     Without `criteria_text` the commented template is used. With it, the text is validated first (ValueError listing
@@ -199,14 +230,14 @@ def init_search(root: Path, city: str | None = None, criteria_text: str | None =
     if (root / "criteria.yaml").exists() and not force:
         raise FileExistsError(f"{root} already has a criteria.yaml (use --force to overwrite).")
     if criteria_text is None:
-        text, used = template_text(city), city
+        text, used = template_text(city, info), city
     else:
         rep = check_text(criteria_text)
         if not rep.ok:
             raise ValueError("\n".join(rep.errors))
         c = yaml.safe_load(criteria_text) or {}
         used = city or (c.get("search") or {}).get("city")
-        text = render_criteria(c, "Written by apartmentscout init.") if _fill_city_defaults(c, used) else criteria_text
+        text = render_criteria(c, "Written by apartmentscout init.") if _fill_city_defaults(c, used, info) else criteria_text
     root.mkdir(parents=True, exist_ok=True)
     (root / "criteria.yaml").write_text(text, encoding="utf-8")
     (root / "research").mkdir(exist_ok=True)
@@ -242,15 +273,46 @@ def _pairs(s: str) -> list[tuple[str, str]]:
     return out
 
 
+@dataclass
+class Online:
+    """What the interview may look up on the network. Each is injected so tests and offline runs never reach it; without an
+    ``Online`` the interview asks everything and looks nothing up. [onboarding]"""
+    resolve_city: Callable[[str], Any]                  # name -> cities.CityInfo | None
+    geocode: Callable[[str, Any], dict | None]          # (address, CityInfo | None) -> {lat, lon, label} | None
+    check_feed: Callable[[str], Any]                    # url -> cities.FeedCheck
+
+
+def live_online() -> Online:
+    """The real lookups: OpenStreetMap Nominatim for the city, the geocoder chain for addresses, a first-bytes check for feeds."""
+    from . import cities as C
+    from .geocode import Geocoder
+
+    def geocode(address: str, info: Any) -> dict | None:
+        g = Geocoder(None, info.id if info is not None and info.profile else None)
+        tries = [address]
+        if info is not None and info.name and C._norm(info.name.split(",")[0]) not in C._norm(address):
+            tries.insert(0, f"{address}, {info.name}")
+        for t in tries:
+            res = g.geocode(t)
+            if res:
+                return res
+        return None
+
+    return Online(C.resolve_city, geocode, C.check_feed)
+
+
 class Interview:
     """Asks the questionnaire through `ask`/`say` callables, so tests (and notebooks) can script it."""
 
     def __init__(self, ask: Callable[[str], str], say: Callable[[str], None], today: dt.date | None = None,
-                 intake: dict[str, Any] | None = None) -> None:
+                 intake: dict[str, Any] | None = None, online: Online | None = None, city: Any = None) -> None:
         self.ask_fn, self.say, self.today = ask, say, today or dt.date.today()
         self.intake = intake or load_intake()
         self.amen = {a["key"]: a["label"] for a in self.intake["amenities"]}
         self.a: dict[str, Any] = {}
+        self.online = online
+        self.city_info: Any = None   # cities.CityInfo once the renter has named a city
+        self.preset_city = city      # a CityInfo or name given on the command line (--city): the question is not asked
 
     # -- primitives
     def prompt(self, q: dict[str, Any], default_text: str, hint: str = "") -> str:
@@ -330,13 +392,75 @@ class Interview:
 
     def latlon(self, q: dict[str, Any], default: Any) -> list[float] | None:
         def parse(s: str) -> list[float] | None:
-            if not s or s in ("-", "skip"):
+            if not s:
                 return default
+            if s in ("-", "skip"):
+                return None
             lat, lon = (float(x) for x in re.split(r"[,\s]+", s.strip(), maxsplit=1))
             if abs(lat) > 90 or abs(lon) > 180:
                 raise ValueError("latitude is within 90 and longitude within 180")
             return [lat, lon]
-        return self.loop(q, "skip", parse)
+        return self.loop(q, f"{default[0]:g}, {default[1]:g}" if default else "skip", parse,
+                         "Enter latitude, longitude; - to leave it out." if default else "")
+
+    def timezone(self, q: dict[str, Any], info: Any) -> str:
+        """The IANA zone: the city's (profile or lookup) as the default, checked, with the template default only as a last resort."""
+        from . import cities as C
+        known = info.timezone or city_profile(info.id).get("timezone")
+        default = known or q["default"]
+
+        def parse(s: str) -> str:
+            if not s:
+                return default
+            if not C.valid_timezone(s):
+                raise ValueError("use an IANA name such as America/Chicago or Europe/Lisbon")
+            return s
+        hint = "" if known else (f"I could not tell the zone for {info.name}. " if info.id != "generic" else "") + \
+            "Use an IANA name such as America/Chicago, Europe/Lisbon or Asia/Tokyo."
+        return self.loop(q, default, parse, hint)
+
+    def preset(self, given: Any) -> Any:
+        """The city named with --city: no question, just a line saying what was understood."""
+        from . import cities as C
+        if isinstance(given, C.CityInfo):
+            info = given
+        elif given == "generic":
+            info = C.CityInfo(id="generic", name="generic", lat=None, lon=None, timezone=None)
+        elif C.load_profile(given):
+            info = C.from_profile(given)
+        else:
+            info = (self.online.resolve_city(given) if self.online else None) or C.typed_city(str(given))
+        self.say(f"\nCity: {info.name}" + (f" (time zone {info.timezone})" if info.timezone else ""))
+        return info
+
+    def city(self, q: dict[str, Any], profiles: list[str]) -> Any:
+        """The city question: a profile id, its number in the list, `generic`, or any city name (looked up). Returns a
+        cities.CityInfo (id ``generic`` when the renter has not decided)."""
+        from . import cities as C
+        generic = C.CityInfo(id="generic", name="generic", lat=None, lon=None, timezone=None)
+        options = ", ".join(f"{i + 1}={c}" for i, c in enumerate(profiles))
+        hint = f"Profiles with built-in open data: {options}. Or type any city name; Enter keeps generic."
+        while True:
+            raw = self.prompt(q, "generic", hint)
+            if raw in ("", "generic", "0"):
+                return generic
+            if raw.isdigit() and 1 <= int(raw) <= len(profiles):
+                raw = profiles[int(raw) - 1]
+            info = C.from_profile(raw) if raw in profiles else (self.online.resolve_city(raw) if self.online else None)
+            if info is None and self.online is None:
+                info = C.typed_city(raw)   # nothing to look it up with: keep the name, ask for the time zone next
+                self.say(f"  Keeping {info.name!r} as the city name (no lookup here), so I will ask for its time zone.")
+                return info
+            if info is None:
+                self.say(f"  I could not find {raw!r} (no match, or the network is unavailable). Try \"City, State\" or "
+                         "\"City, Country\", or press Enter to decide later.")
+                continue
+            self.say(f"  Found {info.name}" + (f"; time zone {info.timezone}" if info.timezone else "; time zone not recognised")
+                     + (f"; the map opens at {info.center[0]:g}, {info.center[1]:g}" if info.center else "")
+                     + ("; a city profile with open data is built in" if info.profile else
+                        "; no built-in city data, so buildings and heights come from OpenStreetMap"))
+            if self.boolean({**q, "ask": "Is that the right city?", "why": ""}, True):
+                return info
 
     def tiers(self, q: dict[str, Any], default: list[dict[str, Any]]) -> list[dict[str, Any]]:
         d = ", ".join(f"{t['name']}={t['max']:g}" for t in default)
@@ -405,6 +529,7 @@ class Interview:
             addr = self.loop(item["address"], "", lambda s: s)
             if addr:
                 d["address"] = addr
+                d.update(self._locate(addr, item["address"]))
             d["arrive_by"] = self.loop(item["arrive_by"], item["arrive_by"]["default"], lambda s: self._time(s, item["arrive_by"]["default"]))
             d["max_minutes"] = self.number(item["max_minutes"], item["max_minutes"]["default"], integer=True)
             d["weight"] = self.number(item["weight"], item["weight"]["default"])
@@ -416,6 +541,66 @@ class Interview:
                 d["name"] += f" {len(out) + 1}"
             out.append(d)
         return out
+
+    def _locate(self, addr: str, q: dict[str, Any]) -> dict[str, Any]:
+        """Find an address on the map and let the renter confirm it: {"lat", "lon"} or nothing. Without a lookup, nothing:
+        `apartmentscout geocode` finds it later and saves it."""
+        if self.online is None:
+            return {}
+        for _ in range(3):
+            res = self.online.geocode(addr, self.city_info)
+            if not res:
+                self.say("  I could not find that address on the map; it is kept as typed and `apartmentscout geocode` will "
+                         "try again. Adding the city and state helps.")
+                return {}
+            lat, lon = round(float(res["lat"]), 6), round(float(res["lon"]), 6)
+            self.say(f"  Found: {res.get('label') or addr} ({lat}, {lon})")
+            if self.boolean({**q, "ask": "Is that the place?", "why": ""}, True):
+                return {"lat": lat, "lon": lon}
+            addr = self.loop(q, "", lambda s: s)
+            if not addr:
+                return {}
+        return {}
+
+    def transit_feeds(self, q: dict[str, Any], info: Any) -> list[dict[str, Any]]:
+        """Which GTFS feeds the commute uses: the city profile's (added by init), a starter feed, or ones the renter pastes."""
+        from . import cities as C
+        if info is not None and info.profile:
+            n = len(C.starter_feeds(info))
+            self.say(f"\nTransit: the {info.name} profile brings its {n} timetable feed{'s' if n != 1 else ''}; nothing to add.")
+            return []
+        feeds: list[dict[str, Any]] = []
+        starters = C.starter_feeds(info) if info is not None else []
+        if starters:
+            self.say("\nTransit: starter timetable feeds for this city (each was fetched and checked when it was added):")
+            for f in starters:
+                self.say(f"    {f['name']}: {f['url']}")
+            if self.boolean({**q, "ask": "Use these?", "why": ""}, True):
+                feeds += [dict(f) for f in starters]
+        elif info is not None and info.id != "generic":
+            self.say("\nTransit: no starter feed is listed for this city. Find your transit agency's GTFS zip at:")
+            for label, url in C.search_links(info):
+                self.say(f"    {label}" + (f": {url}" if url else ""))
+        item = {f["id"]: f for f in q["item"]}
+        while len(feeds) < 6:
+            again = bool(feeds)
+            url = self.loop({**q, "ask": "Another feed? Paste its address, or press Enter to continue." if again else q["ask"],
+                             "why": "" if again else q.get("why", "")}, "skip", lambda s: s.strip())
+            if url in ("", "skip", "-"):
+                break
+            chk = self.online.check_feed(url) if self.online else None
+            if chk is not None and not chk.ok:
+                self.say(f"  {chk.detail}. Check the address and try again, or press Enter to skip.")
+                continue
+            if chk is not None:
+                self.say(f"  {chk.detail}" + (f", {chk.size_mb} MB" if chk.size_mb else ""))
+            default_name = C.feed_entry(url)["name"]
+            name = self.loop(item["name"], default_name, lambda s, d=default_name: s or d)
+            feeds.append(C.feed_entry(url, name))
+        if not feeds:
+            self.say("  No transit feed: commute times will be walking only until you add one "
+                     "(`apartmentscout city --feed URL`, or `--starter` where one is listed).")
+        return feeds
 
     @staticmethod
     def _time(s: str, default: str) -> str:
@@ -458,9 +643,11 @@ class Interview:
         head("basics")
         b = qs["basics"]
         search: dict[str, Any] = {"name": self.text(b["name"], b["name"]["default"])}
-        search["city"] = self.choice(b["city"], "generic", cities)
-        prof = city_profile(search["city"])
-        search["timezone"] = self.text(b["timezone"], prof.get("timezone") or b["timezone"]["default"])
+        info = self.city_info = self.preset(self.preset_city) if self.preset_city else self.city(b["city"], [c for c in cities if c != "generic"])
+        search["city"] = info.id
+        if info.id != "generic" and not info.profile:
+            search["city_name"] = info.name
+        search["timezone"] = self.timezone(b["timezone"], info)
         mi = {"earliest": self.date(b["move_in_earliest"], b["move_in_earliest"]["default"]),
               "latest": self.date(b["move_in_latest"], b["move_in_latest"]["default"])}
         if mi["earliest"] and mi["latest"] and mi["latest"] < mi["earliest"]:
@@ -469,12 +656,15 @@ class Interview:
         if self.boolean(b["move_in_hard"], False):
             mi["hard"] = True
         search["move_in"] = {k: (v.isoformat() if isinstance(v, dt.date) else v) for k, v in mi.items() if v is not None}
-        if (mc := self.latlon(b["map_center"], None)):
+        if (mc := self.latlon(b["map_center"], info.center)):
             search["map_center"] = mc
         c["search"] = search
 
         head("places")
         c["commute"] = {"destinations": self.destinations(qs["places"]["destinations"])}
+        feeds = self.transit_feeds(qs["places"]["transit_feeds"], info)
+        if feeds:
+            c["commute"]["transit"] = {"feeds": feeds}
 
         head("money")
         m = qs["money"]
@@ -527,5 +717,12 @@ class Interview:
         return c
 
 
-def interview(ask: Callable[[str], str] = input, say: Callable[[str], None] = print, today: dt.date | None = None) -> dict[str, Any]:
-    return Interview(ask, say, today).run()
+def interview(ask: Callable[[str], str] = input, say: Callable[[str], None] = print, today: dt.date | None = None,
+              online: Online | None = None, city: Any = None) -> dict[str, Any]:
+    return Interview(ask, say, today, online=online, city=city).run()
+
+
+def next_steps(search: str, intake: dict[str, Any] | None = None) -> list[dict[str, str]]:
+    """The questionnaire's `after` list with {search} filled in: id, title, command and why for each step."""
+    return [{k: " ".join(str(v).split()).replace("{search}", search) for k, v in a.items()}
+            for a in (intake or load_intake()).get("after") or []]

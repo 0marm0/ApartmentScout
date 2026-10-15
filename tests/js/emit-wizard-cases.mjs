@@ -3,7 +3,7 @@
 import fs from 'node:fs';
 import {
   STEPS, TASTE, CITIES, AMENITIES, FALLBACK_DIMS, FALLBACK_PRESETS, SIZE_PRESETS, contextOf, blankDraft, draftFromCriteria, draftToCriteria,
-  toCriteriaYAML, applyTaste, selectPreset,
+  toCriteriaYAML, applyTaste, selectPreset, NEXT_STEPS, slugCity,
 } from '../../dashboard/js/wizard-model.js';
 
 const CRIT = JSON.parse(fs.readFileSync(new URL('../../dashboard/data/criteria.json', import.meta.url), 'utf8'));
@@ -43,7 +43,14 @@ d = blankDraft(ctx, { today: TODAY });
 d.name = 'No destinations'; d.destinations = []; d.budget.hard_max = ''; d.move_in = { earliest: '', latest: '', hard: false };
 add('no-destinations', d);
 
+d = blankDraft(ctx, { today: TODAY });
+d.name = 'Chicago 1BR'; d.city = 'chicago'; d.city_name = 'Chicago, Illinois'; d.timezone = 'America/Chicago'; d.map_center = [41.87556, -87.62442];
+d.destinations = [{ name: 'Work', address: '233 S Wacker Dr', lat: 41.87892, lon: -87.636602, arrive_by: '09:00', max_minutes: 35, weight: 1, mode: 'best' }];
+d.feeds = [{ name: 'CTA', url: 'https://www.transitchicago.com/downloads/sch_data/google_transit.zip' }, { name: 'Local', url: '/data/gtfs.zip', mode: 'rail' }, { name: '', url: 'https://metro.example/gtfs.zip' }];
+add('custom-city', d);
+
 console.log(JSON.stringify({
+  after: NEXT_STEPS, slugs: ['São Paulo, Brazil', 'St. Louis, MO', 'Chicago, IL', 'New  York', '  Lisbon  '].map((t) => [t, slugCity(t)]),
   steps: STEPS.map((s) => ({ id: s.id, fields: s.fields })),
   taste: TASTE, cities: CITIES, amenities: AMENITIES, dims: FALLBACK_DIMS, presets: FALLBACK_PRESETS, sizePresets: SIZE_PRESETS,
   defaults: (() => { const b = blankDraft(ctx, { today: TODAY }); return { budget: b.budget, unit: b.unit, must_have: b.must_have, strongly_prefer: b.strongly_prefer, nice_to_have: b.nice_to_have, preset: b.preset, move_in: b.move_in, dest: b.destinations[0] }; })(),

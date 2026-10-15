@@ -17,7 +17,7 @@ const TITLES = Object.fromEntries([...M.STEPS, M.REVIEW].map((s) => [s.id, s.tit
 const clone = (o) => JSON.parse(JSON.stringify(o));
 const NUMERIC = new Set(['lat', 'lon', 'max_minutes', 'weight']);
 
-let W = null, root = null, lastFocus = null, saveTimer = 0, savedTimer = 0, hideTimer = 0;
+let W = null, root = null, lastFocus = null, saveTimer = 0, savedTimer = 0, hideTimer = 0, lastAddrIndex = 0;
 
 // ------------------------------------------------------------------ opening
 const draftKey = (mode) => `wizard:${mode}${mode === 'edit' ? ':' + (S.crit0.search?.name || '') : ''}`;
@@ -198,6 +198,10 @@ function clearDraft() { store.set(draftKey(W.mode), null); }
 function setField(code, raw) {
   const d = W.draft; let m;
   if (code === 'name') d.name = raw;
+  else if (code === 'city_name') {   // [onboarding] a city without a profile: the typed name decides the id
+    d.city_name = raw; d.lookup = null;
+    d.city = M.slugCity(raw) || 'generic';
+  } else if ((m = code.match(/^feed\.(\d+)\.(name|url)$/))) { const f = d.feeds[+m[1]]; if (f) { f[m[2]] = raw; f.check = ''; } }
   else if (code === 'timezone') d.timezone = raw.trim();
   else if ((m = code.match(/^move_in\.(earliest|latest)$/))) d.move_in[m[1]] = raw;
   else if ((m = code.match(/^map\.(lat|lon)$/))) {
@@ -285,11 +289,13 @@ function onClick(e) {
   const b = e.target.closest('button, [data-toggle], [data-copy]');
   if (!b || !root.contains(b)) return;
   const d = b.dataset, D = W.draft;
+  if (d.act === 'findaddr') lastAddrIndex = +d.i;
   if (d.act) return act(d.act);
   if (d.goto) return go(ORDER.indexOf(d.goto));
   if (d.copy) return copy(d.copy);
   if (d.set) { setChoice(d.set, d.v); W.touched.add(d.set); scheduleSave(); render(); return; }
   if (d.city) { pickCity(d.city); return; }
+  if (d.starter !== undefined) { const f = (D.lookup?.starter_feeds || []).filter((x) => !(D.feeds || []).some((y) => y.url === x.url))[+d.starter]; if (f) { D.feeds.push({ name: f.name, url: f.url, ...(f.mode ? { mode: f.mode } : {}) }); scheduleSave(); render(); } return; }
   if (d.place) { const p = M.PLACES.find((x) => x[0] === d.place); D.map_center = [p[1], p[2]]; D.timezone = p[3]; if (!D.name.trim()) D.name = `${p[0]} apartment search`; scheduleSave(); render(); return; }
   if (d.window) { const [a, c] = d.window.split(',').map(Number), t = M.todayISO(); D.move_in.earliest = M.addDays(t, a); D.move_in.latest = M.addDays(t, c); scheduleSave(); render(); return; }
   if (d.toggle) { D.move_in.hard = !D.move_in.hard; scheduleSave(); render(); return; }
@@ -302,12 +308,55 @@ function onClick(e) {
   if (d.pick) { pickOnMap(d.pick, +d.i); return; }
   if (d.clearpin !== undefined) { const p = D.destinations[+d.clearpin]; p.lat = p.lon = null; scheduleSave(); render(); return; }
 }
+// [onboarding] look the typed city up (the local server asks OpenStreetMap) and fill the time zone, the map centre and the known feeds
+async function findCity() {
+  const D = W.draft, q = String(D.city_name || '').trim();
+  if (!q) { toast('Type a city first'); $('f-city_name')?.focus(); return; }
+  W.finding = 'city'; render();
+  try {
+    const r = await API.findCity(q);
+    const prof = W.ctx.cities.find((c) => c.id === r.id && c.id !== 'generic');
+    if (prof) { W.finding = null; D.lookup = null; D.city_name = ''; pickCity(prof.id); toast(`${prof.name} has a built-in profile`); return; }
+    D.city = r.id; D.city_name = r.name; D.lookup = { name: r.name, timezone: r.timezone, osm: r.osm, missing: r.missing || [], starter_feeds: r.starter_feeds || [] };
+    if (r.timezone) D.timezone = r.timezone;
+    if (r.center) { D.map_center = [...r.center]; D.map_zoom = r.zoom || 12.5; }
+    scheduleSave();
+  } catch (e) { D.lookup = { error: e.message }; }
+  W.finding = null; render();
+}
+async function findAddr(i) {
+  const D = W.draft, p = D.destinations[i];
+  if (!p || !String(p.address || '').trim()) { toast('Type the address first'); return; }
+  W.finding = `dest.${i}`; render();
+  try {
+    const r = await API.findAddress(p.address, D.city_name || D.city);
+    p.lat = r.lat; p.lon = r.lon; scheduleSave(); toast(`Found: ${r.label}`);
+  } catch (e) { toast(e.message); }
+  W.finding = null; render();
+}
+async function addFeed() {
+  const D = W.draft, el = $('wzFeedUrl'), url = (el?.value || '').trim();
+  if (!url) { toast('Paste the address of the GTFS zip first'); el?.focus(); return; }
+  if (!/^(https?:\/\/\S+|[/~]\S*)$/i.test(url)) { toast('Use a web address (https://...) or the location of a zip on this computer'); return; }
+  let check = '';
+  if (W.api) {
+    try {
+      const r = await API.checkFeed(url);
+      if (!r.ok) { toast(r.detail); return; }
+      check = r.checked ? `${r.detail}${r.size_mb ? `, ${r.size_mb} MB` : ''}` : r.detail;
+    } catch { /* unreachable: keep it as typed */ }
+  }
+  D.feeds.push({ name: M.feedName(url), url, check }); scheduleSave(); render();
+}
 function pickCity(id) {
   const D = W.draft, prev = W.ctx.cities.find((c) => c.id === D.city), c = W.ctx.cities.find((x) => x.id === id);
   if (!c) return;
+  const custom = !prev;   // [onboarding] D.city is a city without a profile (typed by the renter), not one of the cards
+  if (id === 'generic' && (custom || D.city === 'generic')) { scheduleSave(); render(); $('f-city_name')?.focus(); return; }   // "Another city" while already on one: keep it
   const same = (a, b) => a && b && Math.abs(a[0] - b[0]) < 1e-3 && Math.abs(a[1] - b[1]) < 1e-3;
-  if (!D.timezone || D.timezone === prev?.timezone) D.timezone = c.timezone || '';
-  if (!D.map_center || same(D.map_center, prev?.center)) { D.map_center = c.center ? [...c.center] : null; D.map_zoom = c.zoom || 12.5; }
+  if (!D.timezone || D.timezone === prev?.timezone || custom) D.timezone = c.timezone || '';
+  if (!D.map_center || same(D.map_center, prev?.center) || custom) { D.map_center = c.center ? [...c.center] : null; D.map_zoom = c.zoom || 12.5; }
+  if (id !== 'generic') { D.city_name = ''; D.lookup = null; D.feeds = []; }
   D.city = id;
   scheduleSave(); render();
 }
@@ -327,6 +376,7 @@ function add(what) {
 function del(what, i) {
   const D = W.draft;
   if (what === 'dest') D.destinations.splice(i, 1);
+  else if (what === 'feed') D.feeds.splice(i, 1);
   else if (what === 'tier') D.budget.tiers.splice(i, 1);
   else if (what === 'rating') D.building_ratings.splice(i, 1);
   scheduleSave(); render();
@@ -372,6 +422,9 @@ async function act(a) {
   if (a === 'rescore') return rescore();
   if (a === 'reload') { location.reload(); return; }
   if (a === 'open-new') return openNew();
+  if (a === 'findcity') return findCity();
+  if (a === 'addfeed') return addFeed();
+  if (a === 'findaddr') return findAddr(lastAddrIndex);
 }
 const blocked = () => {
   const all = errs();

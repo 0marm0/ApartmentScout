@@ -66,6 +66,13 @@ def test_search_fields_are_set_in_place() -> None:
     assert "# a comment that must survive" in out
 
 
+def test_a_key_is_added_after_a_block_mapping_that_ends_the_search_block() -> None:
+    text = "search:\n  name: X\n  move_in:\n    earliest: 2026-11-01\n    latest: 2026-12-01\nbudget:\n  hard_max: 3000\n"
+    out = set_search_fields(text, {"city_name": "Chicago, Illinois"})
+    assert out is not None and yaml.safe_load(out)["search"]["city_name"] == "Chicago, Illinois"
+    assert yaml.safe_load(out)["budget"] == {"hard_max": 3000} and "move_in" in yaml.safe_load(out)["search"]
+
+
 def _search(tmp_path: Path, city: str = "chicago") -> Path:
     root = tmp_path / "s"
     init_search(root, city, BLOCK_CRITERIA)

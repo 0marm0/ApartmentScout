@@ -301,3 +301,20 @@
   .onb-steps li::before { grid-row: 1 / span 2; margin: 1px 0 0; }
   .onb-acts .btn { flex: 1; justify-content: center; }
 }
+
+/* [onboarding] a city without a profile: its name box and lookup result; transit feeds; the steps after the questions */
+.wz-citybox { margin-top: 12px; }
+.wz-find { display: flex; align-items: center; gap: 8px; }
+.wz-find input { flex: 1; min-width: 0; }
+.wz-found a { color: var(--accent); }
+.wz-miss { margin: 4px 0 0; padding-left: 18px; color: var(--ink-3); font-size: var(--fs-xs); }
+.wz-miss li { margin: 2px 0; }
+.wz-feed { display: grid; grid-template-columns: minmax(110px, 1fr) minmax(180px, 3fr) auto; gap: 8px; align-items: start; margin-bottom: 8px; }
+.wz-feed .wz-field { margin: 0; }
+.wz-feed .icon-btn { margin-top: 22px; }
+.wz-fill #wzFeedUrl { flex: 1; width: auto; min-width: 200px; }
+.wz-warnline { color: var(--warn, var(--ink-2)); }
+.wz-next { margin: 8px 0 0; padding-left: 20px; display: flex; flex-direction: column; gap: 10px; }
+.wz-next li p { margin: 2px 0 4px; }
+.wz-next code { display: block; overflow-x: auto; white-space: pre; font-family: var(--font-mono); font-size: var(--fs-xs); background: var(--surface-3); padding: 4px 8px; border-radius: 6px; color: var(--ink-2); }
+@media (max-width: 640px) { .wz-feed { grid-template-columns: 1fr auto; } .wz-feed .wz-field:nth-child(2) { grid-column: 1 / -1; order: 3; } }

@@ -10,7 +10,7 @@ export { BASES, COMMUTE_MODES };
 // ------------------------------------------------------------------ the steps (ids and fields follow config/intake.yaml)
 export const STEPS = [
   { id: 'basics', title: 'Basics', blurb: 'Name the search, pick the city and the move-in window.', fields: ['name', 'city', 'timezone', 'move_in_earliest', 'move_in_latest', 'move_in_hard', 'map_center'] },
-  { id: 'places', title: 'Places', blurb: 'Every place you travel to regularly, with arrive-by time, limit and weight.', fields: ['destinations'] },
+  { id: 'places', title: 'Places', blurb: 'Every place you travel to regularly, with arrive-by time, limit and weight.', fields: ['destinations', 'transit_feeds'] },
   { id: 'money', title: 'Money', blurb: 'What you can pay, judged on monthly cost.', fields: ['budget_basis', 'budget_tiers', 'hard_max'] },
   { id: 'home', title: 'Home', blurb: 'Bedrooms and the sizes that would feel small, good and great.', fields: ['min_beds', 'sqft_floor', 'sqft_good', 'sqft_great'] },
   { id: 'amenities', title: 'Amenities', blurb: 'Deal-breakers, strong preferences and nice-to-haves.', fields: ['must_have', 'strongly_prefer', 'nice_to_have'] },
@@ -18,6 +18,18 @@ export const STEPS = [
   { id: 'weights', title: 'Weights', blurb: 'What matters most when units are ranked. Only the ratios count.', fields: ['preset', 'weights'] },
 ];
 export const REVIEW = { id: 'review', title: 'Review', blurb: 'Check the file, then save it or take it to the command line.' };
+/** What happens after the questions: a copy of config/intake.yaml's `after` list (tests/test_wizard_parity.py checks the ids, titles, commands
+ *  and wording match, so edit the YAML and paste the change here). `{search}` is the search folder. */
+export const NEXT_STEPS = [
+  { id: "listings", title: "Add listings", command: "apartmentscout import listings.csv --search {search}", why: "Fill {search}/listings.template.csv (one row per unit) and import it, paste listings to your agent, or edit listings.json. Add the home's full street address: everything below keys off it." },
+  { id: "place", title: "Place the homes and time the commutes", command: "apartmentscout geocode --search {search} && apartmentscout commute --search {search}", why: "Finds coordinates for every listing and destination (and saves the destinations' into criteria.yaml), then routes the trips. With transit feeds you get walk, subway, bus and best-of-transit minutes and a heat map; without them, walking only, and the command says so." },
+  { id: "surroundings", title: "Fetch the buildings around each home", command: "apartmentscout surroundings --search {search}", why: "Downloads the footprints and heights of the buildings within about 600 m of every shortlisted home (OpenStreetMap, plus the city's open data where its profile has it), the parks, trees, water and streets, and builds the 3D site model that Unit 3D, the sun hours and the view use. Add --all for every listing; `--status` shows which homes are covered and how many buildings had to use a default height. About a minute per home." },
+  { id: "floor_plans", title: "Add floor plans", command: "apartmentscout plans --search {search}", why: "Open the Floor plan tab, choose \"New plan from image\", and trace a PNG, JPEG or PDF plan from the listing (two printed dimensions give the scale), or give room sizes to your agent (the floor-plan-model skill). \"Save to the search folder\" puts it at {search}/plans/<listing-id>.json. The 3D apartment, the sun patches through the windows and the furniture fit checks all use it. `apartmentscout plans` lists which of your homes have one." },
+  { id: "view", title: "Score, build and look", command: "apartmentscout all --search {search} && apartmentscout serve --search {search}", why: "Ranks every listing on your criteria and opens the dashboard on your own data." },
+];
+export const nextSteps = (search) => NEXT_STEPS.map((n) => ({ ...n, command: n.command.replaceAll('{search}', search), why: n.why.replaceAll('{search}', search) }));
+/** The city id for a typed name, as apartmentscout/cities.py slugify_city makes it: 'São Paulo, Brazil' -> 'sao-paulo'. */
+export const slugCity = (s) => String(s ?? '').split(',')[0].normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40).replace(/-+$/, '');
 
 export const AMENITIES = Object.entries(AMENITY_NAMES).map(([key, label]) => ({ key, label }));
 export const TASTE_LEVELS = ['Not important', 'Somewhat', 'Very', 'Essential'];
@@ -51,7 +63,7 @@ export const CITIES = [
     feeds: [{ name: 'NYC Subway', url: 'https://rrgtfsfeeds.s3.amazonaws.com/gtfs_subway.zip', mode: 'subway' },
       { name: 'NYC Bus Manhattan', url: 'https://rrgtfsfeeds.s3.amazonaws.com/gtfs_m.zip', mode: 'bus' },
       { name: 'MTA Bus Company', url: 'https://rrgtfsfeeds.s3.amazonaws.com/gtfs_busco.zip', mode: 'bus', exclude_routes: ['^(BxM|BM|QM|SIM|X)[0-9]'] }] },
-  { id: 'generic', name: 'Another city', timezone: '', center: null, zoom: 12.5, note: 'Runs on the generic modules. Add your transit agency\'s GTFS feeds to criteria.yaml afterwards.', feeds: [] },
+  { id: 'generic', name: 'Another city', timezone: '', center: null, zoom: 12.5, note: 'Any other city: buildings, heights, streets and parks come from OpenStreetMap. Name it below; add its transit feed in the Places step.', feeds: [] },
 ];
 /** Quick starts for "Another city": fills the map centre and time zone. Nothing else is stored. */
 export const PLACES = [
@@ -93,7 +105,9 @@ export function blankDraft(ctx = contextOf(), { city = 'generic', today = todayI
   const c = ctx.cities.find((x) => x.id === city) || ctx.cities.find((x) => x.id === 'generic') || CITIES[1];
   const preset = 'balanced';
   return {
-    name: '', city: c.id, timezone: c.timezone || '', map_center: c.center ? [...c.center] : null, map_zoom: c.zoom || 12.5,
+    name: '', city: c.id, city_name: '', timezone: c.timezone || '', map_center: c.center ? [...c.center] : null, map_zoom: c.zoom || 12.5,
+    lookup: null,   // what the server's city lookup found (notes, starter feeds); only shown, never written
+    feeds: [],      // transit feeds for a city without a profile: [{name, url, mode?}]
     move_in: { earliest: addDays(today, 14), latest: addDays(today, 60), hard: false },
     destinations: [blankDest(1)],
     budget: { basis: 'monthly_cost', tiers: [{ name: 'Target', max: 3000 }, { name: 'Stretch', max: 3300 }], hard_max: 3500 },
@@ -111,7 +125,7 @@ export function blankDraft(ctx = contextOf(), { city = 'generic', today = todayI
 export function draftFromCriteria(crit = {}, ctx = contextOf(crit)) {
   const s = crit.search || {}, b = crit.budget || {}, u = crit.unit || {}, mi = s.move_in || {}, sc = crit.scoring || {};
   const base = blankDraft(ctx, { city: s.city || 'generic' });
-  const known = ['name', 'city', 'timezone', 'move_in', 'map_center', 'map_zoom'];
+  const known = ['name', 'city', 'city_name', 'timezone', 'move_in', 'map_center', 'map_zoom'];
   const preset = sc.preset && ctx.presets[sc.preset] ? sc.preset : 'balanced';
   const custom = Object.fromEntries(Object.entries(sc.presets || {}).filter(([k]) => !FALLBACK_PRESETS[k]));
   const weights = presetWeights(ctx, preset);
@@ -122,7 +136,7 @@ export function draftFromCriteria(crit = {}, ctx = contextOf(crit)) {
   if (Object.keys(custom).length) scoringExtras.presets = custom;
   return {
     ...base,
-    name: s.name || '', city: s.city || 'generic', timezone: s.timezone || '', map_center: s.map_center ? [...s.map_center] : null, map_zoom: s.map_zoom ?? 12.5,
+    name: s.name || '', city: s.city || 'generic', city_name: s.city_name || '', timezone: s.timezone || '', map_center: s.map_center ? [...s.map_center] : null, map_zoom: s.map_zoom ?? 12.5,
     move_in: { earliest: mi.earliest || '', latest: mi.latest || '', hard: !!mi.hard },
     destinations: (crit.commute?.destinations || []).map((d) => {
       const { name, address, lat, lon, arrive_by, max_minutes, weight, mode, _stale, ...rest } = d;
@@ -193,10 +207,13 @@ export const tiersFromTarget = (target) => {
 
 // ------------------------------------------------------------------ draft -> criteria
 const fix = (v) => (v == null || v === '' || Number.isNaN(+v) ? null : +(+v).toFixed(6));
+/** A name for a feed address: the site's first label in capitals ('https://www.transitchicago.com/x.zip' -> 'TRANSITCHICAGO'). */
+export const feedName = (u) => String(u).replace(/^https?:\/\/(www\.)?/i, '').split('/')[0].split('.')[0].toUpperCase() || 'Transit';
 /** The criteria mapping the draft describes (what criteria.yaml holds; weights are only the overrides of the preset). */
 export function draftToCriteria(d, ctx = contextOf()) {
   const x = d.extras || {};
   const search = { name: String(d.name || '').trim(), city: d.city || 'generic' };
+  if (String(d.city_name || '').trim() && search.city !== 'generic' && !ctx.cities.some((c) => c.id === search.city)) search.city_name = String(d.city_name).trim();
   if (d.timezone) search.timezone = d.timezone;
   const mi = {};
   if (d.move_in.earliest) mi.earliest = d.move_in.earliest;
@@ -221,6 +238,15 @@ export function draftToCriteria(d, ctx = contextOf()) {
   if (!commute.transit && d.city) {
     const feeds = ctx.cities.find((c) => c.id === d.city)?.feeds;
     if (feeds?.length) commute.transit = { feeds: clone(feeds) };
+  }
+  // a city without a profile: the feeds the renter chose or pasted in the Places step
+  if (!commute.transit && (d.feeds || []).some((f) => String(f.url || '').trim())) {
+    commute.transit = { feeds: d.feeds.filter((f) => String(f.url || '').trim()).map((f) => {
+      const u = String(f.url).trim(), o = { name: String(f.name || '').trim() || feedName(u) };
+      o[/^https?:\/\//i.test(u) ? 'url' : 'path'] = u;
+      if (f.mode) o.mode = f.mode;
+      return o;
+    }) };
   }
   const out = { search, budget, unit: Object.fromEntries(Object.entries(d.unit).map(([k, v]) => [k, +v])),
     must_have: [...d.must_have], strongly_prefer: [...d.strongly_prefer], nice_to_have: [...d.nice_to_have], commute };
@@ -274,8 +300,9 @@ export function dumpYAML(obj, ind = 0) {
 export function criteriaToYAML(c, note = 'Written by the dashboard\'s New search wizard') {
   const s = c.search, L = [`# ApartmentScout criteria${s.name ? ' for ' + s.name : ''}.`, `# ${note.replace(/\.$/, '')}. Edit freely, then check it: apartmentscout criteria --check criteria.yaml`, ''];
   const sec = (lines) => { L.push(...lines, ''); };
-  const { name, city, timezone, move_in, map_center, map_zoom, ...restSearch } = s;
+  const { name, city, city_name, timezone, move_in, map_center, map_zoom, ...restSearch } = s;
   const sl = ['search:', `  name: ${quoted(name)}`, `  city: ${scalar(city)}`];
+  if (city_name) sl.push(`  city_name: ${quoted(city_name)}`);
   if (timezone) sl.push(`  timezone: ${scalar(timezone)}`);
   if (move_in) sl.push('  move_in:', ...Object.entries(move_in).map(([k, v]) => `    ${k}: ${scalar(v)}`));
   if (map_center) sl.push(`  map_center: [${map_center.join(', ')}]`);
@@ -323,7 +350,7 @@ export function validateDraft(d, ctx = contextOf(), { needFolder = false, existi
   const e = [], add = (step, field, msg) => e.push({ step, field, msg });
   if (!String(d.name || '').trim()) add('basics', 'name', 'Give the search a name.');
   else if (String(d.name).trim().length > 80) add('basics', 'name', 'Keep the name under 80 characters.');
-  if (!ctx.cities.some((c) => c.id === d.city)) add('basics', 'city', 'Pick a city.');
+  if (!ctx.cities.some((c) => c.id === d.city) && !(String(d.city_name || '').trim() && /^[a-z0-9_-]+$/.test(d.city || ''))) add('basics', 'city', 'Pick a city, or type its name.');
   if (d.timezone && !/^[A-Za-z]+(\/[A-Za-z0-9_+-]+)+$/.test(d.timezone) && d.timezone !== 'UTC') add('basics', 'timezone', 'Use an IANA zone such as America/Chicago.');
   const { earliest, latest } = d.move_in;
   if (earliest && parseDay(earliest) == null) add('basics', 'move_in.earliest', 'Use a date like 2026-12-01.');
@@ -348,6 +375,11 @@ export function validateDraft(d, ctx = contextOf(), { needFolder = false, existi
     if (!(num(p.weight) >= 0)) add('places', f('weight'), 'Weight cannot be negative.');
   });
   if (d.destinations.length > 4) add('places', 'destinations', 'Four places is the most the dashboard shows.');
+  (d.feeds || []).forEach((f, i) => {
+    const u = String(f.url || '').trim();
+    if (!u) add('places', `feed.${i}.url`, 'Paste the address of the GTFS zip, or remove this feed.');
+    else if (!/^(https?:\/\/\S+|[/~]\S*)$/i.test(u)) add('places', `feed.${i}.url`, 'Use a web address (https://...) or the location of a zip on this computer.');
+  });
   const b = d.budget, tiers = b.tiers;
   if (!tiers.length) add('money', 'tiers', 'Add at least one budget tier.');
   tiers.forEach((t, i) => {
@@ -397,8 +429,8 @@ const joinNames = (keys) => keys.map((k) => AMENITY_NAMES[k] || k.replaceAll('_'
 export function stepSummary(id, d, ctx = contextOf()) {
   const filled = d.destinations.filter((p) => String(p.name).trim());
   switch (id) {
-    case 'basics': return [d.name.trim() || 'Unnamed', ctx.cities.find((c) => c.id === d.city)?.name].filter(Boolean).join(' · ');
-    case 'places': return filled.length ? filled.map((p) => p.name).join(', ') : 'No destinations';
+    case 'basics': return [d.name.trim() || 'Unnamed', ctx.cities.find((c) => c.id === d.city)?.name || d.city_name].filter(Boolean).join(' · ');
+    case 'places': return (filled.length ? filled.map((p) => p.name).join(', ') : 'No destinations') + ((d.feeds || []).length ? ` · ${(d.feeds || []).length} transit feed${(d.feeds || []).length === 1 ? '' : 's'}` : '');
     case 'money': return `${d.budget.tiers.map((t) => usd(+t.max || 0)).join(' / ')}${d.budget.hard_max ? ` · cap ${usd(+d.budget.hard_max)}` : ''}`;
     case 'home': return `${+d.unit.min_beds === 0 ? 'Studio' : d.unit.min_beds + '+ bd'} · ${d.unit.sqft_floor}-${d.unit.sqft_great} ft²`;
     case 'amenities': return `${d.must_have.length} must · ${d.strongly_prefer.length} strong · ${d.nice_to_have.length} nice`;
@@ -422,7 +454,7 @@ export function diffAgainst(crit0, d, ctx = contextOf(crit0)) {
   if (!crit0?.search) return [];
   const a = draftFromCriteria(crit0, ctx), out = [];
   if (a.name !== d.name.trim()) out.push(`Name: ${a.name || 'unnamed'} → ${d.name.trim() || 'unnamed'}`);
-  if (a.city !== d.city) out.push(`City: ${a.city} → ${d.city}`);
+  if (a.city !== d.city) out.push(`City: ${a.city_name || a.city} → ${d.city_name || d.city}`);
   if ((a.timezone || '') !== (d.timezone || '')) out.push(`Time zone: ${a.timezone || 'none'} → ${d.timezone || 'none'}`);
   out.push(...diffProfile(draftToProfile(a), draftToProfile(d)));
   const sa = weightShares(a.weights, ctx), sb = weightShares(d.weights, ctx), lab = (k) => (ctx.dims.find((x) => x[0] === k) || [k, k])[1];
@@ -440,7 +472,9 @@ export function cliCommands(d, { file = '~/Downloads/criteria.yaml', path } = {}
     path: at,
     oneStep: [`apartmentscout init ${at}${withCity} --criteria ${file}`, `apartmentscout criteria --check ${at}/criteria.yaml`],
     twoStep: [`apartmentscout init ${at}${withCity}`, `cp ${file} ${at}/criteria.yaml`, `apartmentscout criteria --check ${at}/criteria.yaml`],
-    then: [`apartmentscout import listings.csv --search ${at}   # or ask your agent to find listings`, `apartmentscout all --search ${at}`, `apartmentscout serve --search ${at}`],
+    then: [`apartmentscout import listings.csv --search ${at}   # or ask your agent to find listings`, `apartmentscout all --search ${at}`,
+      `apartmentscout surroundings --search ${at}   # the buildings around each shortlisted home`, `apartmentscout plans --search ${at}   # which homes have a floor plan, and how to add one`,
+      `apartmentscout serve --search ${at}`],
     steps: [`apartmentscout geocode --search ${at}`, `apartmentscout commute --search ${at}`, `apartmentscout score --search ${at}`, `apartmentscout build --search ${at}`],
   };
 }

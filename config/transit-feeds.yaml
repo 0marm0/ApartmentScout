@@ -1,0 +1,33 @@
+# Starter GTFS feeds for cities that have no profile in config/cities/. `apartmentscout init --interactive` and
+# `apartmentscout city` offer the ones for your city; you can always give your own with `--feed URL`.
+#
+# These are suggestions, not a promise: each URL was fetched on the date below and returned a zip. Agencies move their
+# feeds, so if one stops working, search for the agency's current "GTFS" page (see the links `apartmentscout city` prints).
+# Each feed is the agency's own static timetable; no key is needed. Large feeds (a big city's bus network) take a minute
+# to download once and are cached under <search>/cache/gtfs/.
+#
+# Keyed by the city id `apartmentscout city` derives (lowercase, hyphens). `states` limits an entry to a state or region
+# when the city name is shared (Portland, Oregon and Portland, Maine). The mode of each route comes from its GTFS
+# route_type, so no `mode:` is set here.
+checked: 2026-10-15
+cities:
+  boston:
+    - {name: MBTA, url: "https://cdn.mbta.com/MBTA_GTFS.zip"}
+  chicago:
+    - {name: CTA, url: "https://www.transitchicago.com/downloads/sch_data/google_transit.zip"}
+  san-francisco:
+    - {name: BART, url: "https://www.bart.gov/dev/schedules/google_transit.zip"}
+  seattle:
+    - {name: King County Metro, url: "https://metro.kingcounty.gov/GTFS/google_transit.zip"}
+    - {name: Sound Transit Link and Sounder, url: "https://www.soundtransit.org/GTFS-rail/40_gtfs.zip"}
+  portland:
+    states: [Oregon]
+    feeds:
+      - {name: TriMet, url: "https://developer.trimet.org/schedule/gtfs.zip"}
+  los-angeles:
+    - {name: LA Metro Rail, url: "https://gitlab.com/LACMTA/gtfs_rail/raw/master/gtfs_rail.zip"}
+    - {name: LA Metro Bus, url: "https://gitlab.com/LACMTA/gtfs_bus/raw/master/gtfs_bus.zip"}
+  denver:
+    - {name: RTD, url: "https://www.rtd-denver.com/files/gtfs/google_transit.zip"}
+  minneapolis:
+    - {name: Metro Transit, url: "https://svc.metrotransit.org/mtgtfs/gtfs.zip"}
