@@ -23,20 +23,31 @@ export const STYLE_PARAMS = [
   { win: [0.97, 0.80, 0.08, 3], opt: [0.92, 0.30, 0.10, 1], bay: 4.5 },   // curtain (glass office or hotel)
   { win: [0.86, 0.74, 0.14, 2], opt: [0.84, 0.30, 0.12, 0], bay: 3.6 },   // glass (residential tower)
 ];
-/** Four wall palettes per style as sRGB 0..255 [wall, window glass]; a building picks one by its seed, so a block is not one colour. */
+/**
+ * Four wall palettes per style as sRGB 0..255 [wall, window glass]; a building picks one by its seed, so a block is not one colour. Read from
+ * the renter's own video of the view from the 25th floor and from the city's mix: the post-war towers of Murray Hill and Kips Bay are mostly cream,
+ * buff and tan brick with a few red-brown ones (not a block of terracotta), the pre-war walk-ups and hotels are red-brown brick and limestone,
+ * the 1980s-2010s towers are dark bronze, grey-green and blue-grey glass, the mid-century offices pale metal and concrete. Muted on purpose:
+ * the sun and the sky do the saturating.
+ */
 export const PALETTES = [
-  [[[152, 92, 72], [34, 40, 52]], [[196, 186, 160], [38, 44, 56]], [[170, 140, 100], [36, 42, 52]], [[150, 150, 148], [40, 46, 58]]],
-  [[[180, 150, 112], [36, 44, 58]], [[140, 80, 64], [34, 40, 52]], [[170, 170, 165], [40, 50, 62]], [[120, 92, 76], [34, 42, 54]]],
-  [[[150, 158, 165], [36, 54, 72]], [[200, 200, 196], [40, 58, 76]], [[96, 88, 80], [44, 56, 66]], [[120, 138, 152], [34, 56, 78]]],
-  [[[88, 118, 140], [30, 62, 90]], [[84, 120, 116], [28, 74, 72]], [[118, 104, 84], [70, 62, 48]], [[128, 136, 144], [56, 70, 84]]],
-  [[[110, 132, 150], [34, 64, 92]], [[120, 126, 132], [46, 60, 74]], [[138, 130, 122], [52, 62, 70]], [[92, 108, 128], [30, 52, 84]]],
+  [[[160, 108, 86], [32, 38, 50]], [[198, 184, 154], [36, 42, 54]], [[172, 140, 106], [34, 40, 50]], [[142, 134, 124], [38, 44, 56]]],        // masonry: brick, limestone, brownstone, grey stone
+  [[[212, 196, 156], [34, 42, 56]], [[192, 168, 126], [36, 44, 58]], [[200, 198, 188], [40, 50, 62]], [[158, 106, 86], [34, 40, 52]]],        // punched: cream, buff, pale concrete, a red-brown one
+  [[[156, 162, 166], [38, 56, 72]], [[206, 204, 196], [42, 58, 76]], [[112, 106, 98], [44, 56, 66]], [[132, 144, 154], [36, 56, 78]]],        // ribbon: pale metal, white concrete, bronze, steel blue
+  [[[78, 98, 116], [22, 38, 56]], [[74, 98, 94], [24, 50, 50]], [[104, 92, 76], [52, 46, 36]], [[116, 124, 130], [38, 50, 62]]],              // curtain: dark blue, grey-green, bronze, silver glass
+  [[[116, 134, 150], [30, 54, 80]], [[128, 134, 140], [44, 58, 72]], [[150, 142, 130], [50, 60, 68]], [[96, 110, 130], [26, 46, 76]]],        // glass residential: blue-grey, silver, champagne, deep blue
 ];
 const lin = (v) => Math.pow(v / 255, 2.2);
 /** Flat [style * 4 + palette] arrays of linear [r, g, b], for the shader's uTint / uGlass. */
 export const TINTS = PALETTES.flatMap((st) => st.map(([w]) => w.map(lin)));
 export const GLASS = PALETTES.flatMap((st) => st.map(([, g]) => g.map(lin)));
 /** The palette (0..3) a building gets. */
-export const paletteOf = (seed) => Math.floor((((seed * 37.17) % 1) + 1) % 1 * 4) % 4;
+export const paletteOf = (seed, style = -1) => {
+  const t = (((seed * 37.17) % 1) + 1) % 1;
+  // post-war residential (punched windows) is mostly cream and buff brick: red-brown is the minority (about one in eight), as on the east side's 1960s-80s towers
+  if (style === 1) return t < 0.36 ? 0 : t < 0.68 ? 1 : t < 0.88 ? 2 : 3;
+  return Math.floor(t * 4) % 4;
+};
 
 const hash01 = (s) => { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return ((h >>> 0) % 100000) / 100000; };
 /** A stable 0..1 number for a building id (its seed for window patterns, roof furniture and tank choices). */
@@ -201,6 +212,12 @@ export const FRAG_COLOR = `
     vec2 gp = vec2(vFa.x * nB * 3.2, vM * 3.6);
     wallCol *= 1.0 + ((fHash(floor(gp) + seed * 7.0) - 0.5) * 0.09 + (st < 2 ? smoothstep(0.86, 1.0, fract(gp.y)) * -0.05 : 0.0)) * vis;
     wallCol *= 1.0 + (rnd - 0.5) * 0.06 * vis;
+    // brick coursing (a joint every 7.6 cm, only where a course is wider than a pixel or two), rain streaks below the sills and a slightly dirtier foot
+    float cy = vM / 0.0762, courseFade = 1.0 - smoothstep(0.12, 0.4, fwidth(cy));
+    float cf = fract(cy);
+    wallCol *= 1.0 - (st < 2 ? 0.075 : st < 3 ? 0.03 : 0.0) * courseFade * vis * (1.0 - smoothstep(0.0, 0.2, min(cf, 1.0 - cf)));
+    float streak = smoothstep(0.55, 1.0, fHash(vec2(floor(cell.x) + 3.0, seed * 29.0))) * (1.0 - smoothstep(0.0, sill + 0.02, f.y));
+    wallCol *= 1.0 - 0.1 * streak * vis * (1.0 - win);
     // window frame, sill and lintel on punched styles: a dark rim inside the opening and a lighter stone sill under it
     float inner = fBox(f.x, 0.5 - ww * 0.5 + 0.045, 0.5 + ww * 0.5 - 0.045, fw.x * 0.7) * fBox(f.y, sill + 0.05, sill + wh - 0.05, fw.y * 0.7);
     float rim = (win - inner) * step(float(st), 1.5);
@@ -213,6 +230,9 @@ export const FRAG_COLOR = `
     gcol *= mix(1.0, 1.0 + 0.45 * (1.0 - clamp((f.y - sill) / max(wh, 0.1), 0.0, 1.0)) - 0.2, vis * s2.x);
     gcol += uSkyCol * 0.07 * smoothstep(0.4, 0.5, fract(f.x * 0.8 + f.y * 0.6 + seed * 3.0)) * s2.x * vis;
     gcol = mix(gcol, wallCol * 0.5, rim * 0.6 * vis);
+    // some windows have blinds or curtains drawn: a pale, flat patch instead of dark glass (a look: it says nothing about who is home)
+    float blind = step(0.8, fHash(floor(cell) + 21.7 + seed * 5.0)) * (st >= 1 ? 1.0 : 0.6) * (1.0 - far);
+    gcol = mix(gcol, vec3(0.5, 0.46, 0.38) * (0.8 + 0.4 * fHash(floor(cell) + 7.7)), blind * 0.78 * mix(0.55, 1.0, uQual) * (1.0 - uNight));
     vec3 col = mix(wallCol, gcol, open);
     diffuseColor.rgb = col * ao;
     fGlass = open * s2.x * (1.0 - far);

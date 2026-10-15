@@ -122,7 +122,17 @@ function decorFor(e) {
   const hh = Math.min(5.5, 2.6 + Math.log10(Math.max(e.roof, 10)) * 1.2 * (0.8 + 0.4 * ((s * 5) % 1)));
   const rot = Math.atan2(q.p[3] - q.p[1], q.p[2] - q.p[0]);   // along the first wall
   if (!hasBulk && (e.roof > 90 || (s * 19) % 1 < 0.72) && inRing(q.p, rx, ry)) out.push({ kind: 'box', x: rx, y: ry, w, d, rot, z0: q.top, z1: q.top + hh });
-  const yr = +e.meta.year || 2000, tank = yr < 1945 && e.roof >= 18 && e.roof <= 95 && ((s * 11) % 1) < 0.65;
+  // air handlers and exhaust fans: low boxes scattered round the middle (one on a small roof, up to four on a wide one), only where they sit on the roof
+  const rf = (k) => (((s * (k * 7.31 + 1.7)) % 1) + 1) % 1, co = Math.cos(rot), si = Math.sin(rot), span = Math.sqrt(q.area);
+  const nUnits = q.area < 250 ? 1 : q.area < 700 ? 2 : q.area < 1600 ? 3 : 4;
+  for (let k = 0; k < nUnits; k++) {
+    const u = (rf(k + 3) - 0.5) * span * 0.62, v = (rf(k + 11) - 0.5) * span * 0.62, uw = 0.7 + rf(k + 17) * 1.1, ud = 0.6 + rf(k + 23) * 0.8;
+    const x = rx + co * u - si * v, y = ry + si * u + co * v;
+    if ([[uw, ud], [-uw, ud], [uw, -ud], [-uw, -ud]].every(([a, c]) => inRing(q.p, x + co * a - si * c, y + si * a + co * c)) && Math.hypot(x - rx, y - ry) > Math.max(w, d) * 0.75 + Math.max(uw, ud)) {
+      out.push({ kind: 'box', x, y, w: uw * 2, d: ud * 2, rot, z0: q.top, z1: q.top + 0.9 + rf(k + 29) * 1.0 });
+    }
+  }
+  const yr = +e.meta.year || 2000, pTank = yr < 1945 ? 0.7 : yr < 1975 ? 0.4 : 0, tank = pTank > 0 && e.roof >= 18 && e.roof <= 100 && ((s * 11) % 1) < pTank;
   if (tank) {
     const ang = rot + 1.2, k = Math.sqrt(q.area) * 0.3;
     const tx = rx + Math.cos(ang) * k, ty = ry + Math.sin(ang) * k;
