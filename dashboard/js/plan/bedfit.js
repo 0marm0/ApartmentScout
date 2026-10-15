@@ -15,7 +15,9 @@
 // (plan/placement.js's rule for the renter's own bed).
 import { pointInPoly, segDist } from './model.js';
 import { axes, toWorld, partPolys, obstacles, evaluate, measureZone, zoneGeom, swingPoly, doorwayPoly, doorName, rayPoly, satDepth, findSpot, roomOf, worst } from './checks.js';
-import { CLEARANCE } from './catalog.js';
+import { CLEARANCE, resolve } from './catalog.js';
+import { applyInventory } from './placement.js';
+import { applyChoice } from './choices.js';
 import { dimsOf } from './bedspec.js';
 
 const inch = (v) => `${Math.round(v)} in`;
@@ -180,4 +182,21 @@ export function bestAlternative(model, items, id = 'bed-latitude') {
   if (!spot) return null;
   const moved = { ...bed, hidden: false, x: spot.x, y: spot.y, rot: spot.rot }, report = bedFit(model, [...others, moved], id);
   return report && { spot, item: moved, report };
+}
+
+/**
+ * The report for the bed as the layout holds it, whatever the renter is looking at: the storage bed is shown (the pieces it replaces hidden), every
+ * other piece stays where it is, and the questions are answered for where the layout puts it. When it does not fit, the best other place in the room
+ * comes with its own answers; the default orientation is never changed.
+ * @param {object} model normalised plan
+ * @param {object[]} items the layout's items (not yet joined to the inventory)
+ * @param {object} inv the inventory
+ */
+export function reportFor(model, items, inv, { group = 'bed', choice = 'storage', id = 'bed-latitude' } = {}) {
+  const shown = applyInventory(applyChoice(items, inv, group, choice), inv).map((x) => resolve(x)).filter(Boolean), rep = bedFit(model, shown, id);
+  if (!rep) return null;
+  if (rep.fits) return { ...rep, alternative: null };
+  const alt = bestAlternative(model, shown, id);
+  const text = alt ? `The best other place in this room is ${alt.report.wall.name}: ${alt.report.summary}` : 'No other wall in this room takes it either, so it would not fit this room as drawn.';
+  return { ...rep, alternative: { text, spot: alt?.spot || null, report: alt?.report || null } };
 }

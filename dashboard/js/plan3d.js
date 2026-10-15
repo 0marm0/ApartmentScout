@@ -67,6 +67,9 @@ import { mountStudioMeasure } from './measure/studio-hook.js';   // [measure] th
 import { isMetricSearch } from './measure/core.js';
 import { parsePiece, fitReport, pieceFromItem, withPiece, roomKindAt } from './plan/tryfit.js';   // [fit] does it fit?
 import { tryFitHTML, fitCardHTML, parseNote } from './plan/tryfit-ui.js';
+import { choiceState, applyChoice } from './plan/choices.js';   // [bed option] my bed / the storage bed / no bed, saved with the layout
+import { reportFor } from './plan/bedfit.js';
+import { mountBedControl } from './plan/bed-ui.js';
 
 const st = {
   id: null, date: '', min: 720, playing: false, site: null, mode: 'both', view: 'bird', wall: 'cut', tab: 'furniture',
@@ -211,7 +214,7 @@ export async function show(id) {
   id = chooseHome({ want: id, current: st.id, saved: store.get(SAVED_KEY, null), preferred: S.manifest.default_listing, ids });
   if (asked) store.set(SAVED_KEY, asked);
   $('planSel').value = id;
-  if (id !== st.id) await load(id);
+  if (id !== st.id) await load(id); else syncFromStore();   // [bed option] a choice made in Unit 3D is picked up when the studio comes back
   G3.resize(); G3.markDirty();
   if (!loop) { loop = true; requestAnimationFrame(frame); }
   if (wantCompare && model) openCompare();
@@ -251,7 +254,7 @@ async function load(id) {
       }
     }
   }
-  if (!ready) { G3.init($('pgl'), $('pstage'), () => {}); P2.mount($('p2d'), { item: (i) => R.find((x) => x.id === i), select, move: dragTo, commit: () => commit(), locked: () => !!MEAS?.two.active }); bind3D(); mountBars(); ready = true; mountMeasure(); LX.attach3D(); Q3.mount({ stage: $('pstage'), model: () => model, toast, store }); mountDock($('pstage'), { min: 300, max: 1230, step: 5, get: () => st.min, set: (v) => { pausePlay(false); st.min = v; const t = $('pTime'); if (t) t.value = String(v); refreshSun(); }, text: () => fmtT(st.min), playing: () => !!st.playing, toggle: () => togglePlay('day') }); }   // [phone]
+  if (!ready) { G3.init($('pgl'), $('pstage'), () => {}); P2.mount($('p2d'), { item: (i) => R.find((x) => x.id === i), select, move: dragTo, commit: () => commit(), locked: () => !!MEAS?.two.active }); bind3D(); mountBars(); mountBedUI(); ready = true; mountMeasure(); LX.attach3D(); Q3.mount({ stage: $('pstage'), model: () => model, toast, store }); mountDock($('pstage'), { min: 300, max: 1230, step: 5, get: () => st.min, set: (v) => { pausePlay(false); st.min = v; const t = $('pTime'); if (t) t.value = String(v); refreshSun(); }, text: () => fmtT(st.min), playing: () => !!st.playing, toggle: () => togglePlay('day') }); }   // [phone]
   G3.setModel(model); G3.setWallMode(st.wall);
   P2.setModel(model); LX.reattach2D(); Q3.modelChanged(); if (st.mode !== '2d') Q3.opened();   // [feature J] [quality]
   st.city = !!store.get(`plan-city.${S.base}`, false); applyCity();
@@ -269,6 +272,7 @@ async function load(id) {
   undo.length = 0; redo.length = 0; sel = null; cancelCompare(); $('psCompare').hidden = true; st.routeKey = null; st.finder = null; routesRes = null;
   G3.setMood(st.mood);
   st.activePreset = lay.source === 'default' ? model.layouts[0]?.id || null : null;
+  stamp = layoutStamp();
   if (lay.changed) persist();   // [placement] a layout that was filled in or brought up to date is saved, so it stays as shown
   head(); setMode(st.mode); setWall(st.wall, true); G3.setView(st.view === 'top' ? 'top' : 'bird'); markCams();
   recompute({ all: true }); sunPanel(); refreshSun();
@@ -339,7 +343,7 @@ const lightingApi = {
 const snapshot = () => JSON.stringify({items,removed:[...removed],plan:rawPlan,siteProfile:siteProf?Array.from(siteProf):null,lighting:lightingOf()});
 function checkpoint() { undo.push(snapshot()); if (undo.length > 80) undo.shift(); redo.length = 0; markUndo(); }
 function persist() {
-  store.set(key(st.id), serialiseLayout(st.id, items, { removed: [...removed] }));
+  store.set(key(st.id), serialiseLayout(st.id, items, { removed: [...removed] })); stamp = layoutStamp();
   if(projectLibrary[st.id]) {
     const project=serialiseProject(rawPlan,items,lightingOf(),inventory,{removed:[...removed]});
     try{saveProjectLibrary(Object.assign(Object.create(null),projectLibrary,{[st.id]:project}));}
@@ -347,6 +351,41 @@ function persist() {
   }
 }
 function commit() { persist(); markUndo(); recompute({ panels: true }); }
+
+// [bed option] The Bed control, in the 2D plan and in the 3D view: my bed, the storage bed the renter may buy, or no bed. The choice is each piece's own `hidden`
+// mark (plan/choices.js), so it is saved with the layout, undone with it and read by Unit 3D; switching never moves a piece.
+let bedUIs = [], bedCache = { key: '', rep: null }, stamp = '';
+const layoutStamp = () => { try { return JSON.stringify(store.get(key(st.id), null)); } catch { return ''; } };
+const bedState = () => (inventory && model ? choiceState(items, inventory) : null);
+function bedReport() {
+  if (!inventory || !model) return null;
+  const k = `${model.id}|${items.map((x) => `${x.id}:${x.x},${x.y},${x.rot},${x.w || ''},${x.d || ''}`).join(';')}`;
+  if (bedCache.key !== k) bedCache = { key: k, rep: reportFor(model, items, inventory) };
+  return bedCache.rep;
+}
+function setBed(choice) {
+  if (!inventory) return;
+  const next = applyChoice(items, inventory, 'bed', choice);
+  if (next.every((x, i) => x === items[i])) return;
+  checkpoint(); items = next;
+  if (sel && !items.some((x) => x.id === sel && !x.hidden)) sel = null;
+  commit();
+}
+function mountBedUI() {
+  const o = { state: bedState, report: bedReport, piece: () => inventory?.pieces.find((p) => p.id === 'bed-latitude') || null, choose: setBed };
+  bedUIs = [mountBedControl($('p2dWrap'), { ...o, where: 'in-p2d' }), mountBedControl($('pstage'), { ...o, where: 'in-p3d' })];
+}
+/** The saved layout changed behind this view's back (the Bed control in Unit 3D wrote it): take it up. */
+function syncFromStore() {
+  if (!model || layoutStamp() === stamp) return false;
+  const savedV = savedLayoutFor(store, S.base, st.id);
+  if (!savedV?.ok) return false;
+  const lay = resolveLayout({ model, inventory, saved: savedV });
+  items = lay.items; removed = new Set(lay.removed); stamp = layoutStamp();
+  if (sel && !items.some((x) => x.id === sel)) sel = null;
+  recompute({ all: true });
+  return true;
+}
 function markUndo() { $('psUndo').disabled = !undo.length; $('psRedo').disabled = !redo.length; }
 function doUndo(back = true) {
   const from = back ? undo : redo, to = back ? redo : undo; if (!from.length) return;
@@ -380,7 +419,7 @@ function recompute(opts = {}) {
   inspector();
   if (opts.panels !== false) tab();
   tabCounts(); lookChips();   // [interior]
-  ensureBars();
+  ensureBars(); bedUIs.forEach((b) => b.update());   // [bed option]
   MEAS?.changed();   // [measure]
   fitCard();   // [fit]
 }

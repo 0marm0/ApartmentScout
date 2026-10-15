@@ -3,6 +3,7 @@
 // SVG y = -plan y. Colours come from CSS classes in css/views/plan.css (design tokens only).
 import { esc } from '../util.js';
 import { piecePoly, swingPoly, doorwayPoly, footprint } from './checks.js';
+import { dimsOf } from './bedspec.js';
 import { fmtIn } from './model.js';
 import { chairSpots } from './scene3d.js';
 
@@ -87,7 +88,13 @@ function glyph(it) {
   const R = (cls, X, Y, W, H, rx = 1.5) => `<rect class="${cls}" x="${r1(X)}" y="${r1(Y)}" width="${r1(Math.max(0.5, W))}" height="${r1(Math.max(0.5, H))}" rx="${rx}"/>`;
   const L = (x1, y1, x2, y2) => `<line class="g-ln" x1="${r1(x1)}" y1="${r1(y1)}" x2="${r1(x2)}" y2="${r1(y2)}"/>`;
   let o = '';
-  if (k === 'bed') {
+  if (k === 'bed' && it.parts?.length && it.spec) {   // [bed option] a bed with towers: the headboard unit, the two floating nightstands, the platform with its mattress, pillows and side drawers
+    const g = dimsOf(it.spec), hw = g.W / 2, fw = g.frame.w / 2, Y = (sv) => y + sv, tw = g.head.towerW;
+    const drw = [-1, 1].map((sx) => [...Array(g.drawers.perSide)].map((_, i) => R('g-drw', sx < 0 ? -fw : fw - 2, Y(g.D - (i + 1) * g.drawers.l + 0.5), 2, g.drawers.l - 1, 0.5)).join('')).join('');
+    o = R('g-base', -fw, Y(g.head.depth), 2 * fw, g.D - g.head.depth, 2) + R('g-lt', -g.mattress.w / 2, Y(3.3), g.mattress.w, g.mattress.d, 3) + drw
+      + R('g-lt', -g.mattress.w / 2 + 3, Y(g.head.depth + 2), g.mattress.w / 2 - 4, 16, 4) + R('g-lt', 1, Y(g.head.depth + 2), g.mattress.w / 2 - 4, 16, 4)
+      + R('g-dk', -(hw - tw), Y(0), 2 * (hw - tw), g.head.depth, 1) + [-1, 1].map((sx) => R('g-dk', sx < 0 ? -hw : hw - tw, Y(0), tw, g.head.towerDepth, 1) + R('g-base', sx < 0 ? -hw : hw - tw, Y(g.head.towerDepth), tw, g.stand.d - g.head.towerDepth, 2) + L(sx < 0 ? -hw + 1.5 : hw - tw + 1.5, Y(g.stand.d - 2.5), sx < 0 ? -hw + tw - 1.5 : hw - 1.5, Y(g.stand.d - 2.5))).join('');
+  } else if (k === 'bed') {
     const drawers = it.base.storage ? (it.variant === 'foot' ? ['foot'] : it.variant === 'left' ? ['left'] : it.variant === 'right' ? ['right'] : ['left', 'right']) : [];
     const dm = drawers.map((sd) => sd === 'foot' ? R('g-drw', x + 4, d / 2 - 2, w - 8, 2, 0.5) : R('g-drw', sd === 'left' ? x : x + w - 2, y + 12, 2, d - 18, 0.5)).join('');
     const mw = Math.min(it.base.mattress?.[0] || w - 4, w - 2), pw = mw / 2 - 5;

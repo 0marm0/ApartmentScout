@@ -29,13 +29,13 @@
   {
    "id": "bed-latitude",
    "ref": "queen-storage-bed-towers",
-   "label": "Latitude Run storage bed (Brown Oak)",
+   "label": "Latitude Run bed",
    "room": "bedroom",
    "w": 94,
    "d": 83.3,
    "h": 47.4,
    "look": {
-    "color": "#8f7258",
+    "color": "#876f5c",
     "material": "wood",
     "finish": "satin",
     "basis": "manufacturer",

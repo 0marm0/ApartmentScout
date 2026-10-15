@@ -17,6 +17,7 @@ import { decorate } from '../city3d/facade.js';   // [city3d] the shared facade 
 import { RectAreaLightUniformsLib } from 'three/addons/lights/RectAreaLightUniformsLib.js';
 import { roomLightState, applyRoomLight } from '../room3d/lighting.js';   // [room3d] the room's own light, shared with the studio
 import { roomQuality, quality } from '../room3d/quality.js';
+import { setLeds } from '../room3d/furniture.js';   // [bed option] the furniture's own LEDs glow after dark
 import { createSky, applySky } from '../city3d/sky.js';   // [city3d] the shared sky
 import { createCity } from '../city3d/city.js';   // [city3d] THE city: buildings, outlines, context and ground, shared with the studio
 import { shapeOf, prism, prismsOf, solidGeo, heightColor, mergeBuildings, edgeGeo, outlineGeo } from '../city3d/buildings.js';   // [city3d] THE building mesher
@@ -466,6 +467,7 @@ export class UnitStage {
       r.toneMappingExposure = this.baseTone.exposure;
       for (const L of this.interior?.glow?.children || []) L.intensity = 0;
       this.interior?.lamps?.set(0);
+      for (const g of this.interior?.furniture?.group.children || []) setLeds(g, 0);
       if (this.interior?.glow) this.interior.glow.visible = false;   // a light that is off still costs every lit pixel: only the room's own cameras have the window glow
       return;
     }
@@ -477,6 +479,7 @@ export class UnitStage {
     // lamps from the layout (floor and table lamps, pendants) come on after dark, like the studio's
     let real = false;
     for (const g of this.interior?.furniture?.group.children || []) {
+      setLeds(g, st.lamps);
       const l = g.userData.lamp; if (!l) continue;
       l.light.intensity = st.lamps ? l.cd * st.lamps : 0; l.light.visible = st.lamps > 0; real = true;
       if (l.shade) l.shade.material.emissiveIntensity = st.lamps ? (st.lamps === 1 ? 1.4 : 1) : 0;
@@ -544,6 +547,13 @@ export class UnitStage {
 
   // ---------------------------------------------------------------- the apartment inside the city
   /** info: buildInterior() result, or null to remove it. */
+  /** [bed option] Replace the furniture in place (another bed): the walls, the camera and the city stay as they are. */
+  setFurniture(F) {
+    const I = this.interior; if (!I) return;
+    if (I.furniture?.group) { I.group.remove(I.furniture.group); disposeTree(I.furniture.group); }
+    I.furniture = F || null; if (F) I.group.add(F.group);
+    this.applyRoomLook(); this.dirty = true;
+  }
   setInterior(info) {
     if (this.interior) { this.scene.remove(this.interior.group); disposeTree(this.interior.group); }
     this.interior = info || null;
