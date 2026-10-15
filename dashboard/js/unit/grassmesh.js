@@ -43,8 +43,12 @@ const GRASS = `#include <color_fragment>
   float dist = length(vViewPosition);
   float near = 1.0 - smoothstep(55.0, 280.0, dist);              // the fine detail fades with distance (no shimmer)
   vec2 p = vGW.xz;
-  float n1 = gn(p / 28.0), n2 = gn(p / 7.0 + 17.0), n3 = gn(p / 1.7 + 5.0), n4 = gn(p / 0.4 + 9.0);
-  float tone = 1.0 + uPatch * ((n1 - 0.5) * 1.8 + (n2 - 0.5) * 0.9) + near * uFine * ((n3 - 0.5) * 1.2 + (n4 - 0.5) * 0.9);
+  float n1 = gn(p / 28.0), n2 = gn(p / 7.0 + 17.0);
+  float tone = 1.0 + uPatch * ((n1 - 0.5) * 1.8 + (n2 - 0.5) * 0.9);
+  if (uFine > 0.0 && near > 0.0) {                                 // (off in the lighter levels: two noise reads fewer on every grass pixel)
+    float n3 = gn(p / 1.7 + 5.0), n4 = gn(p / 0.4 + 9.0);
+    tone += near * uFine * ((n3 - 0.5) * 1.2 + (n4 - 0.5) * 0.9);
+  }
   diffuseColor.rgb *= tone;
   diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * vec3(1.13, 1.03, 0.7), uHue * smoothstep(0.52, 0.85, n1) * 0.75);   // sun-bleached patches
   if (uStripe > 0.0) {
@@ -65,7 +69,8 @@ function layerMaterial(name, layer) {
     shader.vertexShader = VS(shader.vertexShader);
     shader.fragmentShader = shader.fragmentShader.replace('#include <common>', '#include <common>' + NOISE).replace('#include <color_fragment>', GRASS);
   };
-  mat.customProgramCacheKey = () => 'grass-v1';
+  mat.customProgramCacheKey = () => 'grass-v2';
+  mat.userData.u = u; mat.userData.fine = st.fine;
   return mat;
 }
 
@@ -79,6 +84,8 @@ export function grassGroup(polys, opts = {}) {
   const g = new THREE.Group(); g.name = 'green';
   const plan = grassPlan(polys), tmp = new THREE.Color();
   g.userData = { polys: plan.reduce((a, l) => a + l.polys.length, 0), layers: plan.map((l) => l.name) };
+  /** Metre- and blade-scale variation on or off (the step-down's lighter levels turn it off); the shader skips its two noise reads when off. */
+  g.userData.setDetail = (on) => g.traverse((m) => { const mt = m.material; if (mt?.userData?.u) mt.userData.u.uFine.value = on ? mt.userData.fine : 0; });
   for (const { name, layer, polys: list } of plan) {
     const P = [], C = [];
     for (const p of list) {

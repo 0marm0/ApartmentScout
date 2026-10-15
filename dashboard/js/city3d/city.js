@@ -10,6 +10,7 @@ import { loadTreeLayers } from '../unit/treelayers.js';
 import { decorate, facadeExtras } from './facade.js';
 import { mergeBuildings, edgeGeo, outlineGeo } from './buildings.js';
 import { nightLights } from './nightlights.js';
+import { quality } from '../room3d/quality.js';   // [quality] the night lamps, their halo and the sky's stars sit behind quality.has('nightLights' | 'nightGlow' | 'skyDetail')
 
 export const CITY_RADIUS_M = 640;     // trees, parks and grass are drawn within this many metres of the building
 export const NEAR_M = 900;            // buildings closer than this cast shadows (Unit 3D); farther ones are a second, cheaper mesh
@@ -34,7 +35,7 @@ export function buildCityContext(data, o) {
   const f = o.frame || {}, q = o.quality || {}, pal = o.pal;
   return buildContext({ green: data.green, water: data.water, streets: data.streets }, {
     B: data.B, place: f.place, matrix: f.matrix, center: o.center, radius: o.radius ?? CITY_RADIUS_M, y0: f.y0 ?? 0,
-    ground: pal.ground, light: pal.light, blue: pal.blue, visual: !!q.visual, phone: !!q.phone, season: o.season,
+    ground: pal.ground, light: pal.light, blue: pal.blue, visual: !!q.visual, phone: !!q.phone, quality: q, season: o.season,
     layers: { green: true, water: true, ...loadTreeLayers(), ...(o.layers || {}) },
   });
 }
@@ -72,7 +73,7 @@ export function createCity(data, o) {
   const bMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9, metalness: 0 });
   facU.uLitCol.value.copy(pal.lit);
   decorate(bMat, facU, 'unit-city');
-  facU.uQual.value = o.quality?.visual ? 1 : 0;   // Fast: grid, tint and lights; Visual: the full facades
+  facU.uQual.value = (o.quality?.fullFacades ?? o.quality?.visual) ? 1 : 0;   // Fast: grid, tint and lights; Visual: the full facades (the step-down's level 4 goes back to the grid)
   const vrange = new Map(), meshes = [];
   for (const [idx, cast, name] of [[near, !!o.castShadow, 'neighbours'], [far, false, 'neighbours-far']]) {
     const { geometry, starts, ids, H, ranges } = mergeBuildings(B, idx, { pal, matrix: bakeM, near: idx === near });
@@ -107,7 +108,7 @@ export function createCity(data, o) {
       if (c.lights) { group.remove(c.lights.group); c.lights.dispose(); c.lights = null; }
       if (!(data.streets || []).length && !data.water) return null;
       c.lights = nightLights({ streets: data.streets, water: data.water }, { center: o.center, radius: CITY_RADIUS_M, place, y0, phone: !!c.quality?.phone, uNight: facU.uNight });
-      c.lights.group.visible = facU.uNight.value > 0.01; group.add(c.lights.group);
+      c.setNightFeatures(); group.add(c.lights.group);
       return c.lights;
     },
     /**
@@ -118,7 +119,12 @@ export function createCity(data, o) {
       facU.uNight.value = v;
       const dim = 1 - (1 - NIGHT_WORLD_DIM) * Math.max(0, Math.min(1, v));
       if (Math.abs(dim - c.dim) > 0.004) { c.dim = dim; groundMat.color.copy(c.pal.ground).multiplyScalar(dim); c.ctx?.setDim?.(dim); }
-      if (c.lights) c.lights.group.visible = v > 0.01;
+      c.setNightFeatures();
+    },
+    /** The lamps show only at night and only where the quality level allows them (`nightLights`); their halo is `nightGlow`. Lit windows are shader-only and stay. */
+    setNightFeatures() {
+      if (!c.lights) return;
+      c.lights.group.visible = facU.uNight.value > 0.01 && quality.has('nightLights'); c.lights.setGlow(quality.has('nightGlow'));
     },
     /** How late the evening is, 0 (early) to 1 (deep night): fewer windows stay lit (city3d/facade-rules.js lateAt, NIGHT_RULES). */
     setLate(v) { facU.uLate.value = Math.max(0, Math.min(1, +v || 0)); },
@@ -131,7 +137,8 @@ export function createCity(data, o) {
     setPalette(p) {
       c.pal = p; groundMat.color.copy(p.ground).multiplyScalar(c.dim); edgeMat.color.copy(p.edge); edgeMat.opacity = p.edgeOp; outlineMat.color.copy(p.outline); outlineMat.opacity = p.outlineOp; facU.uLitCol.value.copy(p.lit);
     },
-    dispose() { c.lights?.dispose(); group.traverse((m) => { m.geometry?.dispose?.(); }); bMat.dispose(); groundMat.dispose(); edgeMat.dispose(); outlineMat.dispose(); c.ctx?.dispose(); c.ctx = null; },
+    dispose() { unsub(); c.lights?.dispose(); group.traverse((m) => { m.geometry?.dispose?.(); }); bMat.dispose(); groundMat.dispose(); edgeMat.dispose(); outlineMat.dispose(); c.ctx?.dispose(); c.ctx = null; },
   };
+  const unsub = quality.onChange(() => c.setNightFeatures());
   return c;
 }
