@@ -3,9 +3,8 @@
 // builds one self-contained HTML document from dashboard/report/report.html and opens it in a new tab, where Print gives the PDF, or
 // downloads it. Nothing is uploaded; the renter's notes and visit photos stay out unless ticked. The payload is built by report-model.js
 // (pure); this file does what needs the page: the template, the font, thumbnails, the 3D stills and the sheet.
-import { S, on, store, byId, download, isSaved, pick, score } from '../app.js';
+import { S, on, store, byId, download, isSaved, pick, score, loadJSON } from '../app.js';
 import { $, esc, toast } from '../util.js';
-import { loadJSON } from '../app.js';
 import { thumb, name as nameHTML } from '../views/table-kit.js';
 import { parseSchema, inlinePayload, inlineFonts, buildReport, fileName } from './report-model.js';
 import { resolvePhotos } from './share.js';

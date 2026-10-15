@@ -94,6 +94,8 @@ html.mv-open-html { overflow: hidden; }
   .mv-m { grid-column: 2; }
   .mv-step::before { top: 36px; }
   .mv-add { grid-template-columns: 1fr 1fr; } .mv-add input[type="text"] { grid-column: 1 / -1; }
+  .mv-bar { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .mv-bar .btn { min-height: 42px; padding-inline: 8px; } .mv-bar .btn.primary { grid-column: 1 / -1; }
 }
 @media (prefers-reduced-motion: reduce) { .mv, .mv-panel, .mv-bar-p i { transition: none; } .mv-panel { transform: none; } }
 html[data-motion="reduced"] .mv, html[data-motion="reduced"] .mv-panel, html[data-motion="reduced"] .mv-bar-p i { transition: none; }

@@ -132,6 +132,21 @@ def test_the_report_has_a_page_per_part_prints_at_paper_size_and_has_no_broken_i
     assert not errs and not s.take()
 
 
+def test_open_report_shows_it_in_a_new_tab_ready_to_print(open_page) -> None:
+    s = open_compare(open_page)
+    s.page.click("#cmpReport")
+    s.page.wait_for_selector("#reportSheet.on", timeout=SLOW)
+    s.page.locator("#reportSheet [data-opt=stills]").uncheck()
+    with s.page.context.expect_page(timeout=SLOW) as tab:
+        s.page.click("#rpOpen")
+    page = tab.value
+    page.wait_for_function("document.body.dataset.ready === '1'", timeout=SLOW)
+    assert page.url.startswith("blob:") and page.evaluate("window.__report.pages") == len(IDS) + 3
+    assert page.locator("#print").is_visible() and page.title().startswith("Decision report:")
+    s.page.wait_for_selector("#reportSheet", state="detached", timeout=SLOW)      # the sheet closes once the report is open
+    assert not s.take()
+
+
 def test_the_paper_size_switches_to_a4_and_back(open_page, browser, tmp_path: Path) -> None:
     s = open_compare(open_page)
     out = download_report(s, tmp_path, stills=False, photos=False, paper="a4")

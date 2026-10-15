@@ -148,6 +148,8 @@ def build_payload(listings: list[dict], crit: dict, ids: list[str], *, picks: di
     homes = []
     for L in chosen:
         h = sh.prune_home(L, schema, None, picks.get(L["id"]), include_notes)
+        if isinstance(h.get("score"), dict) and isinstance(h["score"].get("cost"), dict):
+            h["score"]["cost"] = sh.pick_keys(h["score"]["cost"], schema["cost"])   # the money model reduced to what the page reads
         h["reasons"] = sh.reasons_for(L, w, dims)
         fit = sh.weighted_score(L, w, dims)
         if fit is not None:

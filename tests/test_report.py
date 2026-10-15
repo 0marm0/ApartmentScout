@@ -113,6 +113,13 @@ def test_the_page_is_self_contained_and_escapes_what_it_embeds(search) -> None:
     assert "</script><script>alert" not in out and "<\\/script>" in out
 
 
+def test_the_standalone_dashboard_carries_the_template_for_its_button(tmp_path: Path) -> None:
+    from apartmentscout import cli
+    page = cli.standalone(DATA, tmp_path / "dash.html").read_text(encoding="utf-8")
+    block = re.search(r'<script type="application/json" data-as="report/report.html">(.*?)</script>', page, re.S)
+    assert block and json.loads(block.group(1)) == rd.load_template()   # the Make a report button reads it from here when opened as a file
+
+
 def test_the_font_is_the_dashboards_geist() -> None:
     css = rd.font_css()
     m = re.search(r'base64,([A-Za-z0-9+/=]+)"\)', css)

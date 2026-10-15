@@ -208,7 +208,12 @@ table.cmp { width: 100%; border-collapse: collapse; table-layout: fixed; font-si
 .sign { margin-top: auto; display: flex; gap: 26px; padding-top: 12px; flex: none; }
 .sign div { flex: 1; border-top: 1px solid var(--line2); padding-top: 4px; font-size: 7pt; color: var(--ink3); }
 
+.tools .short { display: none; }
 @media screen and (max-width: 900px) { .tools .meta { display: none; } }
+@media screen and (max-width: 640px) {
+  .tools { gap: 8px; padding: 8px 10px; font-size: 12px; } .tools .bt, .tools .pl { display: none; } .tools .long { display: none; } .tools .short { display: inline; }
+  .tools .btn { padding: 0 12px; } .tools select { max-width: 112px; }
+}
 @media screen { .sheet { border-radius: 2px; } }
 @media print {
   html, body { background: #fff; }
@@ -221,28 +226,29 @@ table.cmp { width: 100%; border-collapse: collapse; table-layout: fixed; font-si
 </head>
 <body>
 <header class="tools" id="tools">
-  <span class="brand"><svg viewBox="10 10 80 88" aria-hidden="true"><path d="M50 95C50 95 15.5 57.5 15.5 40A34.5 34.5 0 1 1 84.5 40C84.5 57.5 50 95 50 95ZM75 40A25 25 0 1 1 25 40A25 25 0 1 1 75 40Z" fill="#12865f" fill-rule="evenodd"/><path d="M49.25 29L50 16.5L50.75 29ZM48 29H52V36.6H48ZM46 36.6H54V39.2H46ZM44 39.2H56V42.2H44ZM42 42.2H58V47.8H42ZM40 47.8H60V70H40Z" fill="currentColor"/></svg>Decision report</span>
+  <span class="brand"><svg viewBox="10 10 80 88" aria-hidden="true"><path d="M50 95C50 95 15.5 57.5 15.5 40A34.5 34.5 0 1 1 84.5 40C84.5 57.5 50 95 50 95ZM75 40A25 25 0 1 1 25 40A25 25 0 1 1 75 40Z" fill="#12865f" fill-rule="evenodd"/><path d="M49.25 29L50 16.5L50.75 29ZM48 29H52V36.6H48ZM46 36.6H54V39.2H46ZM44 39.2H56V42.2H44ZM42 42.2H58V47.8H42ZM40 47.8H60V70H40Z" fill="currentColor"/></svg><span class="bt">Decision report</span></span>
   <span class="meta" id="meta"></span>
   <span class="sp"></span>
-  <label id="notesTog" hidden><input type="checkbox" id="notes" checked> Show my notes</label>
-  <label>Paper <select id="paper" aria-label="Paper size"><option value="letter">US Letter</option><option value="a4">A4</option></select></label>
-  <button type="button" class="btn primary" id="print"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4.5 6V2h7v4M4.5 12H3a1 1 0 01-1-1V7a1 1 0 011-1h10a1 1 0 011 1v4a1 1 0 01-1 1h-1.5M4.5 9.5h7V14h-7z"/></svg>Print or save as PDF</button>
+  <label id="notesTog" hidden><input type="checkbox" id="notes" checked> <span>Show my notes</span></label>
+  <label><span class="pl">Paper</span> <select id="paper" aria-label="Paper size"><option value="letter">US Letter</option><option value="a4">A4</option></select></label>
+  <button type="button" class="btn primary" id="print"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4.5 6V2h7v4M4.5 12H3a1 1 0 01-1-1V7a1 1 0 011-1h10a1 1 0 011 1v4a1 1 0 01-1 1h-1.5M4.5 9.5h7V14h-7z"/></svg><span class="long">Print or save as PDF</span><span class="short">Print</span></button>
 </header>
 <main class="desk" id="desk"><noscript><p>This report is drawn by a small script on the page. Turn JavaScript on to read it.</p></noscript></main>
 
 <script type="application/json" id="as-schema">
 {
   "version": 1,
-  "listing": ["id", "building", "unit", "address", "neighborhood", "lat", "lon", "beds", "baths", "sqft", "size", "floor", "floor_inferred", "exposure", "available", "checked", "status", "price", "amenities", "score", "site", "records", "reviews", "photo_review", "building_facts", "notes", "links"],
-  "price": ["gross", "net_effective", "free_months", "lease_months", "fees_monthly", "fees_one_time", "broker_fee", "application_fee", "deposit"],
+  "listing": ["id", "building", "unit", "address", "neighborhood", "beds", "baths", "sqft", "size", "floor", "floor_inferred", "exposure", "available", "price", "amenities", "score", "site", "records", "reviews", "photo_review", "building_facts"],
+  "price": ["gross", "free_months", "lease_months"],
   "size": ["sqft", "basis", "range"],
-  "score": ["version", "overall", "confidence", "range", "parts", "budget_tier", "monthly_cost", "gates", "tags", "ppsf", "cost", "flags", "rank"],
-  "site": ["floor", "bearing", "sun_hours", "sun_hours_expected", "sun_year", "skyline_ahead_deg", "open_sky_share", "sky_view", "daylight_factor_est"],
+  "score": ["overall", "confidence", "range", "parts", "budget_tier", "monthly_cost", "gates", "ppsf", "cost", "flags"],
+  "cost": ["fees_estimate", "rent", "move_in_min", "move_in_unknown", "unknown"],
+  "site": ["sun_hours", "open_sky_share"],
   "records": ["risk_score", "noise_score", "flags"],
-  "reviews": ["summary", "questions", "risk", "ratings"],
-  "photo_review": ["interior", "kitchen", "renovation", "appliances", "floors", "windows", "natural_light", "view", "view_note", "building_luxury", "scope", "confidence"],
-  "building_facts": ["year_built", "floors", "source"],
-  "links": ["listing"],
+  "reviews": ["ratings"],
+  "photo_review": ["interior", "renovation", "view", "view_note"],
+  "building_facts": ["year_built"],
+  "links": [],
   "commute_modes": ["walk", "subway", "bus", "transit"],
   "commute": ["minutes", "mode", "route", "modes"],
   "commute_mode": ["minutes", "route", "transfers", "ride_min", "walk_min"],
@@ -254,7 +260,7 @@ table.cmp { width: 100%; border-collapse: collapse; table-layout: fixed; font-si
   "tour_photos": { "max_per_home": 4, "thumb_px": 520, "quality": 0.76, "budget_kb": 520 },
   "photos": { "max_per_home": 1, "thumb_px": 1100, "quality": 0.8, "budget_kb": 1500 },
   "map": { "max_points": 3500, "min_spacing_m": 30, "decimals": 4, "pad": 0.2 },
-  "text_max": { "notes": 700, "summary": 420, "questions": 420, "evidence": 300, "flag": 160, "pick_note": 600, "question": 260, "tour_note": 600 },
+  "text_max": { "notes": 700, "summary": 420, "questions": 420, "evidence": 300, "flag": 160, "pick_note": 600, "question": 260 },
   "max_homes": 4
 }
 </script>
@@ -586,7 +592,8 @@ function home(i, n, total, rec) {
   const stillNote = still ? ['floor ' + (still.floor != null ? still.floor : Math.round(h.floor || 0)), still.face != null ? 'faces ' + R.compass(still.face) : '', still.when || ''].filter(Boolean).join(' · ') : '';
   const dim = (P.weights || []).filter((w) => w.w > 0);
   const bars = dim.map((w) => { const v = R.parts(h)[w.k]; return `<li class="${v == null ? 'unk' : ''}"><span>${esc(w.label)} <small>${w.pct}%</small></span><span class="tr"><i style="width:${v == null ? 0 : Math.max(2, Math.min(100, v))}%"></i></span><span class="nv">${v == null ? '?' : Math.round(v)}</span></li>`; }).join('');
-  const un = R.unknownsFor(h).slice(0, hasTour ? 3 : 4), qs = (h.questions || []).slice(0, hasTour ? 3 : 4);
+  const note = !!(h.pick && h.pick.note);   // a note takes a few lines of the right-hand column: one question fewer
+  const un = R.unknownsFor(h).slice(0, hasTour ? 3 : 4), qs = (h.questions || []).slice(0, (hasTour ? 3 : 4) - (note ? 1 : 0));
   const flagList = (h.records && h.records.flags || []).slice(0, 2);
   const gl = (s.gates || []).map((g) => `<span class="pill ${g === 'over_budget' || g.startsWith('fails') ? 'bad' : 'warn'}">${esc(R.GATE(g))}</span>`).join('');
   const sunTxt = sun && sun.length >= 12 ? `${sun[11].toFixed(1)} h Dec · ${sun[5].toFixed(1)} h Jun` : null;
@@ -626,19 +633,34 @@ function checklistPage(n, total) {
 }
 
 // ---------------------------------------------------------------- the page
-function paper(kind) {
+function paper(kind, again) {
   const a4 = kind === 'a4', root = document.documentElement;
   root.style.setProperty('--pw', a4 ? '210mm' : '8.5in'); root.style.setProperty('--ph', a4 ? '297mm' : '11in');
   let st = document.getElementById('as-page'); if (!st) { st = document.createElement('style'); st.id = 'as-page'; document.head.appendChild(st); }
   st.textContent = `@page { size: ${a4 ? 'A4' : 'letter'}; margin: 0; }`;
   document.getElementById('paper').value = a4 ? 'a4' : 'letter';
   fit();
+  if (again) { render(); trim(); }   // drawn afresh, so a line trimmed for one paper size comes back for the other; at start the fonts are not ready yet, and boot() trims once they are
   if (window.__report) window.__report.overflow = checkOverflow();   // the sheets changed size: look again for clipped content
 }
 function fit() {
   const sheet = document.querySelector('.sheet'); if (!sheet) return;
   const w = sheet.offsetWidth || 816, avail = Math.max(280, window.innerWidth - 24);
   desk.style.setProperty('--scale', String(Math.min(1, avail / w)));
+}
+/** A home page whose columns would run past the sheet gives up its last open question, then its last unknown, then its last records flag,
+ *  until it fits: the checklist page still asks every question, so nothing is lost, and a page never prints clipped. */
+function trim() {
+  document.querySelectorAll('.sheet[data-kind=home] .cols').forEach((cols) => {
+    for (const sel of ['.bl.ask li', '.bl.warn li']) {
+      let guard = 12;
+      while (cols.scrollHeight > cols.clientHeight + 1 && guard-- > 0) {
+        const items = cols.querySelectorAll(sel);
+        if (items.length <= 1) break;
+        items[items.length - 1].remove();
+      }
+    }
+  });
 }
 function checkOverflow() {
   const bad = [];
@@ -661,9 +683,6 @@ function render() {
   desk.innerHTML = `<div class="fit" id="fit">${pages.join('')}</div>`;
   document.title = `Decision report: ${H.map((h) => R.name(h)).join(' vs ')}`;
   document.getElementById('meta').textContent = `${H.length} homes · ${dateLabel(P.generated)}`;
-  const tog = document.getElementById('notes');
-  if (P.notes) { document.getElementById('notesTog').hidden = false; tog.addEventListener('change', () => document.body.classList.toggle('hide-notes', !tog.checked)); }
-  document.body.classList.toggle('hide-notes', !P.notes);
   // a photo that cannot be read leaves its frame with a plain label instead of a broken-image icon
   desk.querySelectorAll('img').forEach((im) => {
     const bad = () => { const f = im.closest('.photo, .cb'); if (f) { im.replaceWith(Object.assign(document.createElement('div'), { className: 'ph', textContent: 'Photo unavailable' })); } else im.remove(); };
@@ -672,11 +691,14 @@ function render() {
 }
 function boot() {
   render();
-  paper(new URLSearchParams(location.search).get('paper') || P?.paper || 'letter');
-  document.getElementById('paper').addEventListener('change', (e) => paper(e.target.value));
+  const tog = document.getElementById('notes');
+  if (P && P.notes) { document.getElementById('notesTog').hidden = false; tog.addEventListener('change', () => document.body.classList.toggle('hide-notes', !tog.checked)); }
+  document.body.classList.toggle('hide-notes', !(P && P.notes));
+  paper(new URLSearchParams(location.search).get('paper') || (P && P.paper) || 'letter');
+  document.getElementById('paper').addEventListener('change', (e) => paper(e.target.value, true));
   document.getElementById('print').addEventListener('click', () => window.print());
   addEventListener('resize', fit);
-  const done = () => { window.__report = { ready: true, pages: document.querySelectorAll('.sheet').length, overflow: checkOverflow(), homes: P ? P.homes.length : 0 }; document.body.dataset.ready = '1'; };
+  const done = () => { trim(); window.__report = { ready: true, pages: document.querySelectorAll('.sheet').length, overflow: checkOverflow(), homes: P ? P.homes.length : 0 }; document.body.dataset.ready = '1'; };
   const imgs = [...document.images];
   Promise.all(imgs.map((im) => (im.complete ? 0 : new Promise((r) => { im.addEventListener('load', r); im.addEventListener('error', r); })))).then(() => (document.fonts && document.fonts.ready ? document.fonts.ready : 0)).then(() => requestAnimationFrame(done));
   if (location.hash === '#print') setTimeout(() => window.print(), 600);
