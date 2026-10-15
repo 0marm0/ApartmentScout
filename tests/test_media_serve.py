@@ -90,6 +90,16 @@ def test_media_is_served_from_the_full_set_first(photo_server) -> None:
     assert _get(port, "/media/a-1/both.webp")[::2] == (200, b"FULL-WINS")
 
 
+def test_scripts_and_data_are_revalidated_photos_keep_default_caching(photo_server) -> None:
+    """After an update the browser must not mix a cached old module with new ones: code and data say no-cache."""
+    port, _ = photo_server
+    for path in ("/js/app.js", "/css/app.css", "/dist/app.bundle.js", "/index.html"):
+        status, headers, _ = _get(port, path)
+        assert status == 200 and headers.get("cache-control") in ("no-cache", "no-store"), path
+    status, headers, _ = _get(port, "/media/a-1/media.webp")
+    assert status == 200 and "cache-control" not in headers
+
+
 def test_media_falls_back_to_the_starter_set(photo_server) -> None:
     port, _ = photo_server
     status, headers, body = _get(port, "/media/a-1/media-lite.webp")
