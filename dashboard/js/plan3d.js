@@ -33,6 +33,7 @@ import { placePlan, windowSkylines, windowBlocked, windowMinutes, windowWithheld
 import { effectiveComponents } from './unit/parts.js';   // [model project] source parts + the assumed override, same as Unit 3D
 import { resolveCal, geoFromSite, measuredFromSite } from './unit/calibration.js';   // [model project] measured vs estimated height
 import { getPin, pinOption } from './unit/anchor.js';   // [model project] the window pinned in Unit 3D
+import { facingSummary } from './plan/facing.js';   // [model project] host facade bearing, bays as a range
 import { anchorNoteHTML } from './plan/anchor-note.js';   // [model project] where the plan sits, source vs assumed
 import { cityGroup } from './plan/citymesh.js';
 import { accessRoutes, entryPoint } from './plan/route.js';
@@ -235,7 +236,7 @@ function head() {
   $('psTitle').innerHTML = `${esc(model.title || (L ? label(L) : st.id))} <span>floor plan</span>`;
   const pv = model.provenance, est = model.fixtures.filter((f) => f.est).length;
   const match = { 'exact-unit': 'Exact unit plan', 'line-tier': 'Same line, other floor', representative: 'Representative plan', 'stated-dims': 'Drawn from stated room sizes', 'photo-estimate': 'Estimated from photos' }[pv.match];
-  $('psSub').innerHTML = `${match ? `<span class="pill accent">${esc(match)}</span> ` : ''}${Math.round(model.area)} ft² of rooms drawn${model.up_bearing != null ? ` · windows face ${Math.round(model.windows[0]?.bearing ?? model.up_bearing)}° ${compass(model.windows[0]?.bearing ?? model.up_bearing)}` : ''}${model.floor ? ` · floor ${model.floor}` : ''}${est ? ` · <span class="warnline">${est} fixture${est > 1 ? 's' : ''} estimated</span>` : ''}`;
+  $('psSub').innerHTML = `${match ? `<span class="pill accent">${esc(match)}</span> ` : ''}${Math.round(model.area)} ft² of rooms drawn${facingSummary(model, onSite?.az ?? model.up_bearing).text ? ` · ${facingSummary(model, onSite?.az ?? model.up_bearing).text}` : ''}${model.floor ? ` · floor ${model.floor}` : ''}${est ? ` · <span class="warnline">${est} fixture${est > 1 ? 's' : ''} estimated</span>` : ''}`;
   const n = $('psNorth'); if (n) { n.hidden = model.up_bearing == null; n.style.setProperty('--rot', `${-(model.up_bearing || 0)}deg`); }
 }
 
