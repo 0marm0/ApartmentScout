@@ -7,6 +7,7 @@ from __future__ import annotations
 import base64
 import hashlib
 import json
+import re
 from pathlib import Path
 
 import pytest
@@ -270,7 +271,7 @@ def test_model_project_exports_and_restores_offline_in_a_fresh_browser(open_page
     b.page.set_input_files("input[data-act=project-import]", str(f))
     b.page.wait_for_selector("[data-act=project-restore]")
     review = b.page.locator("#mpImport").inner_text()
-    assert "1,0" in review.replace("\n", " ") and "10 pieces" in review and "Measured slab height 80.5 m" in review
+    assert re.search(r"\b\d,\d{3}\b", review) and "10 pieces" in review and "Measured slab height 80.5 m" in review   # thousands of buildings (3,427)
     b.page.click("[data-act=project-restore]")
     _unit_ready(b, new)
     got = b.page.evaluate("() => ({floor: window.__unit3d.st.floor, mode: window.__unit3d.st.mode, cal: window.__unit3d.cal.state, slab: window.__unit3d.cal.slabAt(window.__unit3d.st.floor), plan: window.__unit3d.planInfo.source, furn: !!window.__unit3d.stage.interior.furniture, n: window.__unit3d.B.length})")
