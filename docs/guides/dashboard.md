@@ -581,6 +581,28 @@ background and only takes over when you choose Reload; the first install takes o
 `localStorage` and are kept. Tests: `tests/e2e/test_pwa.py` (manifest, installability under `/ApartmentScout/demo/`, offline reload,
 the update prompt, the photo cap, and the places the worker must stay out of) and `tests/js/pwa.test.mjs`.
 
+## When the page will not start
+
+Stale or hand-edited browser state must never leave a blank page.
+
+- **Saved state is checked on read.** Every `as:*` value comes back through `store.get`, which passes it to `cleanStored()`
+  (`js/state-guard.js`, pure and unit-tested in `tests/js/state-guard.test.mjs`). The shape is compared with the default the caller
+  passes, or with a per-key rule for the keys that default to `null` (picks drop bad entries and bad fields, filters keep only known
+  fields, weights keep finite numbers, `commute:` / `criteria:` / `findings:` need objects, and so on). A bad value is the default;
+  nothing else is touched. The comfort, density and office-pin readers do their own normalising.
+- **A watchdog runs before anything else.** The classic inline script at the top of `index.html` (so it also runs when a module fails
+  to load, in the split build and in the standalone file) shows a full-page card, *Something stopped ApartmentScout from starting*,
+  when a script does not load or fails to parse, when `boot()` throws (`window.__asBoot.fail`), when an uncaught error is followed
+  by 2.5 s without a first render, or when nothing has drawn in 12 s. `app.js` marks the first render with `<html data-boot="ready">`;
+  from then on the watchdog is silent, and a card shown for a slow start disappears if the app does finish.
+- **The card offers two ways out.** *Reload*, and *Reset this browser's settings (keeps your saved picks)*, which removes every `as:*`
+  key except `picks`, `findings:`, `trail:`, `tourplan:` and the floor-plan work (`plan.`, `plan-projects.`, `plan-tracer-draft.`,
+  `plan-scenario:`, `compare-specs:`), unregisters the service worker, deletes its caches and reloads. *Technical details* holds the
+  error text. `window.__AS_BOOT_MS` shortens the 12 s limit (used by the tests).
+
+Tests: `tests/e2e/test_boot_recovery.py` (corrupt values for every kind of key, a script that does not load, a start that never
+finishes, a slow start that recovers, and the reset keeping picks).
+
 ## Speed: the published build and the budget
 
 The source tree loads about 110 module files. `scripts/optimize_site.py` (run by `scripts/build_site.sh`, which `pages.yml` calls)
