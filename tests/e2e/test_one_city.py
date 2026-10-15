@@ -8,7 +8,7 @@ from __future__ import annotations
 import math
 
 import pytest
-from conftest import look_click, look_open, settled
+from conftest import camera_still as _camera_still, look_click, look_open
 
 pytestmark = pytest.mark.e2e
 
@@ -19,22 +19,6 @@ DATE = "2026-06-21"
 def _need_webgl(webgl: bool) -> None:
     if not webgl:
         pytest.skip("no WebGL in this browser (SwiftShader unavailable)")
-
-
-# Resolves when the camera has not moved for six frames running: the glide to a chip is over (what a fixed sleep stood in for).
-CAMERA_STILL_JS = """async (getCam) => {
-  const get = await (async () => { if (getCam === 'studio') { const G3 = await import('/js/plan/scene3d.js'); return () => G3.getCamera(); } return () => window.__unit3d.stage.winCam; })();
-  let last = null, still = 0;
-  return await new Promise((resolve) => { const t0 = performance.now(); const tick = () => {
-    const c = get(), p = [...c.position.toArray(), c.fov, ...(c.getWorldDirection ? c.getWorldDirection(new c.position.constructor()).toArray() : [])];
-    still = last && p.every((v, i) => Math.abs(v - last[i]) < 1e-6) ? still + 1 : 0; last = p;
-    if (still >= 6 || performance.now() - t0 > 20000) resolve(still >= 6); else requestAnimationFrame(tick); }; tick(); });
-}"""
-
-
-def _camera_still(pg, engine: str) -> None:
-    assert pg.evaluate(CAMERA_STILL_JS, engine), f"the {engine} camera never came to rest"
-    settled(pg, 20000, ticks=3)
 
 
 def _studio(s, chip: str = "room:Living", extra: str = "") -> None:
