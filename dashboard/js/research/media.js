@@ -3,7 +3,7 @@
 // (unit, same line, building, floor plans, street) and opened in the full-screen lightbox (features/lightbox.js).
 // Images keep referrerpolicy="no-referrer"; every URL went through safeUrl() in features/photos.js.
 import { openDrawer, label, store } from '../app.js';
-import { esc, aerialHTML, aerialSource } from '../util.js';
+import { esc, aerialHTML, aerialSource, mediaSrc } from '../util.js';
 import { mediaGroups, MEDIA_SCOPES } from './model.js';
 import { empty, IC } from './ui.js';
 import { groupInfo, countsOf, countParts, captionText } from '../features/photos.js';
@@ -24,7 +24,7 @@ function tileHTML(it, i, named = false) {
   const cap = captionText(it);
   return `<figure class="rgt g-${it.group}${it.flagged ? ' marked' : ''}" style="--ar:${ar.toFixed(3)}" data-url="${esc(it.url)}">
     <button type="button" class="rgt-b" data-i="${i}" aria-label="${esc(info.long)} photo, ${esc(label(L))}${it.flagged ? ', carries a broker mark' : ''}. Open full screen"${cap ? ` title="${esc(cap)}"` : ''}>
-      <img src="${esc(it.url)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" data-lq="${esc(it.keys.join('|'))}">
+      <img src="${esc(mediaSrc(it.url))}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" data-lq="${esc(it.keys.join('|'))}">
       <span class="rgt-tag">${esc(info.label)}</span>${it.flagged ? `<span class="rgt-mark" title="Carries a broker mark (${esc((it.why || []).join(', ') || 'watermark')}); shown last">Marked</span>` : ''}${it.shared > 1 ? `<span class="rgt-shared">${it.shared} units</span>` : ''}
       ${cap ? `<span class="rgt-cap">${esc(cap)}</span>` : ''}</button>
     ${named ? `<figcaption><button type="button" class="rmt-name" data-open="${esc(L.id)}">${esc(label(L))}</button></figcaption>` : ''}
@@ -107,10 +107,9 @@ export function render(el) {
   const arm = () => el.querySelectorAll('.rgt-b img[data-lq]').forEach((img) => armImage(img, img.parentElement));
   arm(); whenPreviewsReady(arm);
   el.querySelectorAll('.rgt img').forEach((img) => {
-    const fig = img.closest('.rgt'), it = seq[+img.closest('.rgt-b').dataset.i];
+    const fig = img.closest('.rgt');
     img.addEventListener('load', () => { if (img.naturalWidth) fig.style.setProperty('--ar', clampAr(img.naturalWidth / img.naturalHeight).toFixed(3)); });
-    img.addEventListener('error', () => {
-      if (it?.remote && !img.dataset.fb) { img.dataset.fb = '1'; img.src = it.remote; return; }
+    img.addEventListener('error', () => {   // after the whole photo chain failed (features/media-chain.js)
       broken.add(fig.dataset.url); fig.remove();
       el.querySelectorAll('.mg').forEach((g) => { if (!g.querySelector('.rgt')) g.remove(); });
     });
