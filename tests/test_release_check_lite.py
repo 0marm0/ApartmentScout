@@ -53,3 +53,15 @@ def test_starter_set_fails_when_it_outgrows_its_limit(tmp_path: Path, monkeypatc
 
 def test_the_full_set_folder_must_be_ignored() -> None:
     assert "examples/nyc-2026/media/" in rc.MUST_IGNORE
+
+
+def test_a_single_file_build_may_keep_photo_paths_under_the_policy_but_never_embed_jpeg_data(tmp_path: Path) -> None:
+    (tmp_path / "dist").mkdir()
+    (tmp_path / "dist/one.html").write_text('<script>{"photos_local":["media/a/p.webp"]}</script>')
+    (tmp_path / "dist/jpeg.html").write_text('<img src="data:image/jpeg;base64,AAAA">')
+    _policy(tmp_path, True)
+    ok = levels(rc.check_photos(tmp_path, ["dist/one.html"]), "FAIL")
+    assert not ok
+    assert any("jpeg.html: embeds" in m for m in levels(rc.check_photos(tmp_path, ["dist/jpeg.html"]), "FAIL"))
+    _policy(tmp_path, False)
+    assert any("one.html: embeds" in m for m in levels(rc.check_photos(tmp_path, ["dist/one.html"]), "FAIL"))

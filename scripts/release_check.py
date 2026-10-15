@@ -314,7 +314,9 @@ def check_photos(repo: Path, files: list[str]) -> list[Finding]:
                              else Finding("FAIL", "photos", p))
         elif ext == ".html":
             text = (repo / rel).read_text(encoding="utf-8", errors="replace")
-            if '"photos_local"' in text or "data:image/jpeg" in text:
+            # saved photo paths (not the photos) are what a single-file build keeps so it can fetch them from the published copy;
+            # like the paths in listings.json they need the owner's photo policy. Embedded JPEG data never passes.
+            if ('"photos_local"' in text and not allow_media) or "data:image/jpeg" in text:
                 found.append(Finding("FAIL", "photos", f"{rel}: embeds local photo paths or JPEG data"))
     if lite_n:
         mb = lite_bytes / 1e6

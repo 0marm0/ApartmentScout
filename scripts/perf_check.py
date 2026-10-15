@@ -204,6 +204,8 @@ def main() -> int:
     results: dict[str, dict] = {}
     fails: list[str] = []
     media = ROOT / "examples" / "nyc-2026" / "media"
+    if not media.is_dir():   # a checkout without the full set (it is in a release): the starter set answers /media/ too
+        media = ROOT / "examples" / "nyc-2026" / "media-lite"
     with sync_playwright() as pw:
         browser = pw.chromium.launch(args=GPU_ARGS)
         targets: list[tuple[str, str, str | None, Site | None, Path | None]] = []

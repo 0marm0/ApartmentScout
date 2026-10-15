@@ -7,7 +7,8 @@
 For published images shoot from a clean snapshot of the committed dashboard, not from a working tree with edits:
 
     git archive HEAD dashboard | tar -x -C /tmp/snap
-    ln -s "$PWD/examples/nyc-2026/media" /tmp/snap/dashboard/media      # the example's saved listing photos
+    ln -s "$PWD/examples/nyc-2026/media-lite" /tmp/snap/dashboard/media-lite   # the example's starter photos (the page tries media/ first,
+                                                                                # then media-lite/); link the full set as .../media instead if you have it
     python scripts/screenshots.py --root /tmp/snap/dashboard --out /tmp/shots
 
 Each shot has one size, so the images sit together: desktop 1600 x 1000, phone 390 x 844 (1.5x), and for the 3D views the stage
