@@ -92,7 +92,7 @@ test('the notice to the current landlord appears only with a current end date an
   const st = { current_end: '2026-12-15', notice_days: 60 };
   const tl = timeline({ start: '2026-12-01', today: TODAY, state: st });
   assert.equal(dateOf(tl, 'notice'), '2026-10-16'); assert.equal(tl.notice_on, '2026-10-16');   // Oct 16 = Dec 15 minus 60 days, a Friday
-  const late = timeline({ start: '2026-12-01', today: TODAY, state: { current_end: '2026-11-10' } });   // the notice date has passed: it is today
+  const late = timeline({ start: '2026-12-01', today: TODAY, state: { current_end: '2026-11-01' } });   // the notice date (Oct 2) has passed: it is today
   assert.equal(dateOf(late, 'notice'), TODAY); assert.ok(byId(late, 'notice').squeezed);
 });
 test('done steps keep their day, moved steps keep the renter\'s date, and overdue means past and not done', () => {

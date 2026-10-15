@@ -620,6 +620,7 @@ def standalone(data_dir: Path, dest: Path) -> Path:
     for f in sorted(data_dir.rglob("*.json")):
         data["data/" + f.relative_to(data_dir).as_posix()] = json.loads(f.read_text())
     data["share/snapshot.html"] = (DASH / "share" / "snapshot.html").read_text()   # the Share button's template (features/share.js)
+    data["report/report.html"] = (DASH / "report" / "report.html").read_text()   # the Make a report button's template (features/report.js)
     no_media = not (dest.parent / "media").is_dir()
     manifest = data.get("data/manifest.json")
     if no_media and isinstance(manifest, dict) and manifest.get("media_base_url") and isinstance(data.get("data/listings.json"), list):
