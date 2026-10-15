@@ -5,7 +5,7 @@
 // side sheet, the saved plan, and the exports (an .ics calendar file and a list for Reminders). Nothing is booked, sent or paid here.
 //
 // Saved plan: this browser's local storage under `moveplan:<search name>` and the top-level `moveplan` object of a picks backup.
-import { S, on, store, byId, download, hooks, openDrawer, isSaved, pick, label as homeLabel } from '../app.js';
+import { S, on, store, byId, download, hooks, openDrawer, isSaved, pick, label as homeLabel, reloaders } from '../app.js';
 import { $, esc, toast } from '../util.js';
 import { addDrawerTop } from './drawer-slots.js';
 import * as M from './move-model.js';
@@ -249,6 +249,7 @@ export function init() {
   if (started) return;
   started = true;
   load();
+  reloaders.moveplan = () => { load(); refreshDrawer(); if (root) render(); };   // the sync layer wrote the plan
   addDrawerTop('move', drawerHTML, 45);
   const ex = hooks.exportExtra, im = hooks.importExtra;
   hooks.exportExtra = () => ({ ...(ex?.() || {}), ...(M.hasPlan(plan) ? { [M.KEY]: plan } : {}) });

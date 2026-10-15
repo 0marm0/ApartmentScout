@@ -25,7 +25,9 @@ management behaviour and lease terms.
 6. **No contact without permission.** Draft emails and questions for leasing offices; never send
    them yourself unless the renter explicitly asks.
 7. **Privacy.** Keep the renter's identity, income and documents out of the repository. Search
-   folders under `searches/` are git-ignored by default.
+   folders under `searches/` are git-ignored by default. Device sync (`docs/guides/sync.md`) uses a GitHub token
+   that the renter pastes into the dashboard's Sync panel themselves: never ask for it, store it, print it or
+   write it into a file; it lives only in that browser.
 
 ## Repository map
 

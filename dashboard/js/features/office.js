@@ -10,7 +10,7 @@
 //
 // Rules for the draft are in office-model.js (mirrors apartmentscout/office_questions.py); reply parsing is in office-answer.js. This
 // file only wires them. It adds itself to the drawer and the building views by watching them, so it needs no change to their code.
-import { S, on, byId, store, loadJSON, pick, setPick } from '../app.js';
+import { S, on, byId, store, loadJSON, pick, setPick, reloaders } from '../app.js';
 import { $, esc, toast } from '../util.js';
 import { watch, reducedMotion } from './dom.js';
 import * as M from './office-model.js';
@@ -361,6 +361,7 @@ export async function init() {
   started = true;
   loadAnswers();
   if (!(await loadDoc())) return;
+  reloaders.office = () => { loadAnswers(); refreshLists(true); };   // the sync layer wrote the answers
   document.addEventListener('click', (e) => {   // capture: a building row would otherwise toggle open under the click
     const b = e.target.closest?.('[data-office-unit]'); if (!b || root?.contains(b)) return;
     e.preventDefault(); e.stopPropagation();
