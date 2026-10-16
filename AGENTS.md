@@ -75,9 +75,9 @@ apartmentscout import listings.csv                # add or update listings from 
 apartmentscout city                               # this search's city, time zone, map centre, feeds and what the city lacks
 apartmentscout city "Chicago, IL" --starter       # set the city; add the starter transit feed (or --feed URL, checked before it is written)
 apartmentscout geocode                            # coordinates for listings and destinations (saved into criteria.yaml; NYC also gets BBL/BIN)
-apartmentscout commute                            # transit commute grid + per-listing times, every destination (--dest NAME: just some)
+apartmentscout commute                            # transit commute grid + per-listing times, every destination (--dest NAME: just some); also midday, the way home at 18:00 and 22:00, Saturday (--no-times skips, --times-only adds only those)
 apartmentscout places                             # street, park and neighbourhood geometry for place filters (east of 3rd Ave, near a park)
-apartmentscout layers                             # NYC: 311 noise density layer
+apartmentscout layers                             # NYC: 311 noise density layer, and noise by hour of the day (--no-hours skips, --hours-only does only that)
 apartmentscout dossier [id ...]                   # NYC public records (default: shortlist)
 apartmentscout surroundings                       # buildings, parks and streets around the shortlist (--all, --status, --rebuild ID, --refresh)
 apartmentscout site <id> --floor 12 --charts      # one home's 3D site model, sun and view study (surroundings runs this for many)
