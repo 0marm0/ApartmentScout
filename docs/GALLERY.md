@@ -69,7 +69,7 @@ Put finalists side by side, in a table or in 3D, trade the weights against each 
 
 The 3D tab holds Unit 3D (the building in its real city, with sun and shadows) and the Floor plan studio. Both draw the same room
 and the same city, and a piece you place in one stays there in the other. The Paramount Tower 25E views use the renter's own
-furniture (a black leather futon, a 71 in brown desk with a 32 in monitor and a rolling task chair, a black IKEA MALM chest, a grey
+furniture (a black leather futon, a 71 in brown desk with a 32 in monitor and a rolling task chair, a dark brown IKEA STORKLINTA dresser, a grey
 upholstered queen bed, two wall-mounted 55 in TVs), finishes read from the unit's photos (a basket-weave parquet floor) and a
 facade bearing measured from their photos.
 
