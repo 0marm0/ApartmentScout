@@ -27,7 +27,7 @@
 .nh-sp.pk { stroke: var(--accent); }
 .nh-clock:hover .nh-sp:not(.pk) { stroke: color-mix(in srgb, var(--ink-2) 80%, transparent); }
 .nh-t { font: 500 9.5px var(--font-sans); fill: var(--ink-3); }
-.nh-c1 { font: 650 12px var(--font-sans); fill: var(--ink); }
+.nh-c1 { font: 650 11px var(--font-sans); fill: var(--ink); }
 .nh-c2 { font: 500 9.5px var(--font-sans); fill: var(--ink-3); letter-spacing: .04em; text-transform: uppercase; }
 .nh-text { min-width: 0; display: grid; gap: 8px; align-content: center; }
 .nh-h { margin: 0; font-size: var(--fs-md); font-weight: 600; line-height: 1.3; color: var(--ink); }

@@ -26,6 +26,8 @@ export function phrase(slot, dest) {
   if (!slot) return '';
   return `${slot.kind === 'depart' ? 'leave' : 'arrive'} ${clock(timeOf(slot, dest))}${DAY[slot.day] ? ' ' + DAY[slot.day] : ''}`;
 }
+/** One word for a slot: 'Morning peak' -> 'Morning', 'Late evening, home' -> 'Late'. */
+export const shortName = (slot) => String(slot?.label || slot?.id || '').split(/[ ,]/)[0];
 /** A short chip label: '9:00', '18:00 home', 'Sat 11:00'. */
 export function chip(slot, dest) {
   if (!slot) return '';
@@ -66,7 +68,7 @@ export function scoredMinutes(entry, crit) {
 export function summary(entry, mode, slots, dest) {
   const t = timesFor(entry, mode);
   if (!t || !slots.length) return null;
-  const rows = slots.map((s, i) => ({ slot: s, id: s.id, minutes: Number.isFinite(t[i]) ? t[i] : null, phrase: phrase(s, dest) }));
+  const rows = slots.map((s, i) => ({ slot: s, id: s.id, minutes: Number.isFinite(t[i]) ? t[i] : null, phrase: phrase(s, dest), ing: phrase(s, dest).replace(/^leave/, 'leaving').replace(/^arrive/, 'arriving') }));
   const have = rows.filter((r) => r.minutes != null);
   if (have.length < 2) return null;
   const fast = have.reduce((a, b) => (b.minutes < a.minutes ? b : a)), slow = have.reduce((a, b) => (b.minutes > a.minutes ? b : a));
@@ -75,7 +77,7 @@ export function summary(entry, mode, slots, dest) {
     rows, fast, slow, spread,
     text: have.map((r) => `${Math.round(r.minutes)} min to ${r.slot.kind === 'depart' ? 'leave at' : 'arrive at'} ${clock(timeOf(r.slot, dest))}${DAY[r.slot.day] ? ' ' + DAY[r.slot.day] : ''}`).join(', '),
     verdict: spread < 3 ? 'About the same at every time of day.'
-      : `Fastest ${fast.phrase} (${Math.round(fast.minutes)} min), slowest ${slow.phrase} (${Math.round(slow.minutes)} min).`,
+      : `Fastest ${fast.ing} (${Math.round(fast.minutes)} min), slowest ${slow.ing} (${Math.round(slow.minutes)} min).`,
   };
 }
 

@@ -14,7 +14,7 @@ export const SHIFT_H = 5;
 /** Phrases for the kinds of source, in the order of the layer's groups (noise_hours.GROUPS). */
 export const GROUP_PHRASE = {
   bars: 'bars, clubs and restaurants', street: 'street crowds and music', home: 'neighbours (music, banging, voices)',
-  vehicle: 'traffic, horns and helicopters', build: 'construction', equip: 'alarms, dogs and building equipment',
+  vehicle: 'vehicles (horns, car stereos, helicopters)', build: 'construction', equip: 'alarms, dogs and building equipment',
 };
 export const BUCKET_START = [2, 6, 10, 14, 18, 22];   // noise_hours.BUCKETS: four hours each, from 2 am
 
@@ -162,7 +162,7 @@ export function describe(profile) {
  *  `pk` (loudest hours) is drawn in the accent colour. `values` is series(). Returns the markup of one <svg>. */
 const xml = (t) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;" }[c]));
 export function clockSVG(values, pk, { size = 190, titles = null } = {}) {
-  const c = size / 2, r0 = size * 0.2, rmax = size * 0.36, max = Math.max(...values, 1e-9);
+  const c = size / 2, r0 = size * 0.25, rmax = size * 0.385, max = Math.max(...values, 1e-9);
   const inWin = (h) => pk && Array.from({ length: pk.width }, (_, i) => (pk.start + i) % 24).includes(h);
   const pt = (h, r) => { const a = ((h + 0.5) / 24) * 2 * Math.PI - Math.PI / 2; return [c + Math.cos(a) * r, c + Math.sin(a) * r]; };
   const spokes = values.map((v, h) => {
@@ -170,7 +170,7 @@ export function clockSVG(values, pk, { size = 190, titles = null } = {}) {
     return `<line class="nh-sp${inWin(h) ? ' pk' : ''}" x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke-width="${(size * 0.027).toFixed(1)}" stroke-linecap="round"><title>${xml(titles ? titles[h] : hourLabel(h))}</title></line>`;
   }).join('');
   const lab = [[0, '12 am'], [6, '6 am'], [12, '12 pm'], [18, '6 pm']].map(([h, t]) => {
-    const a = (h / 24) * 2 * Math.PI - Math.PI / 2, x = c + Math.cos(a) * (rmax + size * 0.075), y = c + Math.sin(a) * (rmax + size * 0.075);
+    const a = (h / 24) * 2 * Math.PI - Math.PI / 2, x = c + Math.cos(a) * (rmax + size * 0.07), y = c + Math.sin(a) * (rmax + size * 0.07);
     return `<text class="nh-t" x="${x.toFixed(1)}" y="${(y + 3.5).toFixed(1)}" text-anchor="middle">${t}</text>`;
   }).join('');
   return `<svg class="nh-clock" viewBox="0 0 ${size} ${size}" role="img" aria-label="Complaints by hour of the day, midnight at the top">
