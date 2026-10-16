@@ -52,6 +52,11 @@
       "material": "fabric",
       "finish": "sheen"
      },
+     "bedding": {
+      "color": "#1e1e20",
+      "material": "fabric",
+      "finish": "matte"
+     },
      "metal": {
       "color": "#1b1b1d",
       "material": "metal",

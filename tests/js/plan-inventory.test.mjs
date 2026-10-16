@@ -81,11 +81,11 @@ for (const id of ['paramount-tower-25e', 'emerald-green-1211']) {
 test('fitInventory places the pieces in a plan that has no layout and says what it could not', () => {
   const m = normalisePlan(plan('paramount-tower-9j')), r = fitInventory(m, inv(), { step: 10 });
   assert.equal(r.id, 'your-furniture');
-  assert.equal(r.items.length + r.missing.length, 9, 'the default kit: the storage bed (its own nightstands) stands in for the grey bed and its two; the sim rig is off and the paintings are hung by hand');
+  assert.equal(r.items.length + r.missing.length, 11, 'the renter\'s own pieces: not the candidate bed, not the sim rig (hidden by default), not the paintings (hung by hand)');
   for (const it of r.items) assert.ok(it.w && it.d, 'sizes travel with the item');
-  assert.match(r.note, /^Your 9 pieces/);
+  assert.match(r.note, /^Your 11 pieces/);
   const kit = kitFromInventory(inv());
-  assert.equal(kit.find((k) => k.id === 'bed-latitude').roomKind, 'bedroom');
+  assert.equal(kit.find((k) => k.id === 'bed').roomKind, 'bedroom');
   assert.ok(!kit.some((k) => k.art), 'a painting is not auto-placed');
   assert.equal(kit.find((k) => k.id === 'futon').roomKind, 'living');
 });
