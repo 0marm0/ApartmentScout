@@ -9,6 +9,10 @@ description: Work out what noise a specific unit will actually hear - 311 compla
    at the lot) and `construction`. For more, query 311 within 250 m over 3 years (see
    `apartmentscout/records/nyc.py` for the query pattern). Other cities: the 311 or service
    request dataset, or police noise calls.
+   The dashboard already draws the by-hour picture: `apartmentscout layers` writes `layers/noise-hours.json` (the map's hour
+   slider and the drawer's clock around a home) and adds `by_week` and `by_hour_group` to each dossier's `noise_311` (the clock at the
+   address). Read the headline ("Loudest Fri–Sat 11 pm–2 am: mostly bars, clubs and restaurants") as where to look first, and say
+   it is complaints, not decibels. A request logged after midnight counts toward the evening before.
 2. **Separate the sources**: construction (permits tell you when it ends), nightlife and street
    (music, talking, horns: hour-of-day peak 10 pm to 2 am), building mechanical (HVAC, alarms),
    neighbours (residential music/banging logged at the building), trucks and refuse collection.

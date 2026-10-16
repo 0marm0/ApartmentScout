@@ -89,6 +89,53 @@
    "walk_speed_kmh": 4.8,
    "max_walk_to_station_m": 1200,
    "service_date": "2026-10-14"
+  },
+  "times": {
+   "slots": [
+    {
+     "id": "am",
+     "label": "Morning peak",
+     "kind": "arrive",
+     "time": null,
+     "day": "weekday"
+    },
+    {
+     "id": "mid",
+     "label": "Midday",
+     "kind": "arrive",
+     "time": "13:00",
+     "day": "weekday"
+    },
+    {
+     "id": "pm",
+     "label": "Evening peak, home",
+     "kind": "depart",
+     "time": "18:00",
+     "day": "weekday"
+    },
+    {
+     "id": "late",
+     "label": "Late evening, home",
+     "kind": "depart",
+     "time": "22:00",
+     "day": "weekday"
+    },
+    {
+     "id": "wknd",
+     "label": "Weekend",
+     "kind": "arrive",
+     "time": "11:00",
+     "day": "saturday"
+    }
+   ],
+   "score": "am",
+   "weights": {
+    "am": 3.0,
+    "mid": 1.0,
+    "pm": 3.0,
+    "late": 1.0,
+    "wknd": 1.0
+   }
   }
  },
  "scoring": {

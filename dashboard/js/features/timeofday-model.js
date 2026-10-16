@@ -92,8 +92,8 @@ export async function inflate(b64) {
   if (typeof DecompressionStream === 'function') {
     return new Uint8Array(await new Response(new Blob([bin]).stream().pipeThrough(new DecompressionStream('deflate'))).arrayBuffer());
   }
-  const { inflateSync } = await import('node:zlib');
-  return new Uint8Array(inflateSync(bin));
+  const node = 'node:zlib';   // node:test only; not a literal, so the bundler leaves it alone
+  return new Uint8Array((await import(node)).inflateSync(bin));
 }
 
 export const SENTINEL = -128;

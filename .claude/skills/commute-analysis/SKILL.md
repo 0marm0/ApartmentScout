@@ -33,6 +33,14 @@ description: Set up commute destinations and transit feeds, compute door-to-door
    add a destination later and `apartmentscout commute --dest "Partner"` routes only that one and leaves
    the others' grids and times alone. `apartmentscout build` then writes the combined surfaces
    (`layers/commute-combined-<mode>.json`) from the grids on disk.
+   **Times of day.** The same run also routes midday (arrive 13:00), the evening way home (leave 18:00), a late return
+   (leave 22:00) and a Saturday morning (arrive 11:00), for every destination: `commute.times` in criteria.yaml names the slots
+   (kind `arrive` = home to the destination by a time, `depart` = the way back). Each listing gets
+   `commute.<dest>.times.transit|subway|bus` (a list in slot order) and the map gets `layers/commute-<dest>-times.json`
+   (whole-minute differences from the arrive_by grid). `apartmentscout commute --times-only` adds them to an existing run
+   without touching the arrive_by layers; `--no-times` skips them. The dashboard's legend and drawer show them; the score keeps
+   reading the arrive_by trip unless the renter sets `commute.times.score` (a slot id, or `weighted`). Tell a renter who
+   works late, or comes home after 10 pm, to look at the evening and late bars: a bus that is 25 minutes at 9:00 can be 50 at 10 pm.
 4. **Check**: compare three or four listings against a live trip planner at the arrive-by time,
    per mode. The model is schedule-based, averages five arrival times to include waiting, adds a
    street-to-vehicle time per mode at both ends (subway 2 min, bus 0.5) and walks at 4.8 km/h.

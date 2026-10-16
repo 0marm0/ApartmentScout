@@ -340,6 +340,12 @@ def run_times(ws, listings: list[dict], crit: dict, log=print, layers_dir: Path 
             except Exception as e:  # noqa: BLE001 - as run.py: any failure falls back to the grid metric
                 graph = False
                 log(f"  walking: street network unavailable ({e}); using the grid metric")
+        made_with, now_with = base.get("walk_model") or "grid", "network" if graph else "grid"
+        if made_with != now_with:   # minutes made with another walking model would not be comparable with the arrive_by ones
+            log(f"  {d['name']}: the arrive_by layer was made with the {made_with} walking model and this run has the {now_with} one "
+                f"({'the street network could not be loaded; try again' if made_with == 'network' else 'run `apartmentscout commute` again'}); "
+                "time of day skipped so the numbers stay comparable")
+            continue
         fld = stamp = None
         if graph:
             from .netroute import NetField

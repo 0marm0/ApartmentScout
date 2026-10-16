@@ -160,13 +160,14 @@ export function describe(profile) {
 // ------------------------------------------------------------------ the clock
 /** SVG of a 24-hour clock (midnight at the top, clockwise): a spoke per hour, longer = more complaints per night; the window
  *  `pk` (loudest hours) is drawn in the accent colour. `values` is series(). Returns the markup of one <svg>. */
+const xml = (t) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;" }[c]));
 export function clockSVG(values, pk, { size = 190, titles = null } = {}) {
   const c = size / 2, r0 = size * 0.2, rmax = size * 0.36, max = Math.max(...values, 1e-9);
   const inWin = (h) => pk && Array.from({ length: pk.width }, (_, i) => (pk.start + i) % 24).includes(h);
   const pt = (h, r) => { const a = ((h + 0.5) / 24) * 2 * Math.PI - Math.PI / 2; return [c + Math.cos(a) * r, c + Math.sin(a) * r]; };
   const spokes = values.map((v, h) => {
     const len = (v / max) ** 0.8 * (rmax - r0), [x1, y1] = pt(h, r0), [x2, y2] = pt(h, r0 + Math.max(len, 1.5));
-    return `<line class="nh-sp${inWin(h) ? ' pk' : ''}" x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke-width="${(size * 0.027).toFixed(1)}" stroke-linecap="round"><title>${titles ? titles[h] : hourLabel(h)}</title></line>`;
+    return `<line class="nh-sp${inWin(h) ? ' pk' : ''}" x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke-width="${(size * 0.027).toFixed(1)}" stroke-linecap="round"><title>${xml(titles ? titles[h] : hourLabel(h))}</title></line>`;
   }).join('');
   const lab = [[0, '12 am'], [6, '6 am'], [12, '12 pm'], [18, '6 pm']].map(([h, t]) => {
     const a = (h / 24) * 2 * Math.PI - Math.PI / 2, x = c + Math.cos(a) * (rmax + size * 0.075), y = c + Math.sin(a) * (rmax + size * 0.075);
