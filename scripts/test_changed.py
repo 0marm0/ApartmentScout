@@ -115,6 +115,8 @@ E2E_RULES: list[tuple[str, tuple[str, ...]]] = [
     ("dashboard/js/views/*", ("dashboard",)),
     ("dashboard/js/enhance.js", ("dashboard", "shell_extras")),
     ("dashboard/js/state-guard.js", ("boot_recovery",)),
+    ("dashboard/js/sync/*", ("device_sync", "tour_findings", "menu_nav")),
+    ("dashboard/css/sync.css", ("device_sync",)),
     ("dashboard/js/pwa*.js", ("pwa", "boot_recovery")),
     ("dashboard/js/perf/*", ("pwa", "boot_recovery", "dashboard")),
     ("dashboard/sw.js", ("pwa",)),
