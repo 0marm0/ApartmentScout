@@ -56,6 +56,8 @@ export function walkSpace(model, items, { radius = WALK_R } = {}) {
     G, radius,
     /** Can a person stand at this plan point? */
     canStand(x, y) { const k = idx(x, y); return k >= 0 && !!ok[k]; },
+    /** Inches from a plan point to the nearest wall or furniture edge (0 outside the floor). A camera tour keeps to the roomy middle with it. */
+    clearance(x, y) { const k = idx(x, y); return k >= 0 ? clr[k] : 0; },
     /** The nearest standable point within `max` inches (the point itself when it is standable), or null. */
     snap(x, y, max = 36) {
       const k0 = idx(x, y);

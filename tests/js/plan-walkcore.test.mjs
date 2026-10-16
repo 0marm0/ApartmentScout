@@ -16,6 +16,13 @@ const items = applyInventory(resolveLayout({ model: m, inventory: inv, saved: nu
 const sp = walkSpace(m, items);
 const DOOR = [133, 14];   // just inside the front door
 
+test('clearance says how far a point is from the nearest wall or piece (0 off the floor), for the camera tour to keep to the roomy middle', () => {
+  assert.equal(sp.clearance(500, 500), 0, 'outside');
+  assert.ok(sp.clearance(60, 250) > 20, 'open living-room floor');
+  assert.ok(sp.clearance(150, 300) < sp.clearance(60, 250) && sp.clearance(150, 300) >= 9, 'closer to the wall, still standable');
+  assert.ok(sp.clearance(168, 300) < 9 && !sp.canStand(168, 300), 'under a person’s radius is not standable');
+});
+
 test('eye height is about 1.6 m', () => { assert.ok(Math.abs(EYE_IN * 0.0254 - 1.6) < 0.01); });
 
 test('a person can stand on open floor, not inside a bed, a desk, a counter or a wall, and not in the gap between a wall and its first inches', () => {
