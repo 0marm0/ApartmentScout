@@ -5,7 +5,7 @@
 //
 // The photos of the paintings are the renter's own and the works may be under copyright, so they are never in the repository: the
 // local `apartmentscout serve` lists what is in dashboard/data-private/art/ (git-ignored) in its session answer (`art`), and the page
-// loads `data-private/art/<key>-2x.jpg` (an upscaled copy) or `<key>.jpg` (or .jpeg, .png, .webp) from there. A triptych is best as one
+// loads `data-private/art/<key>-hq.jpg` (a high-quality scan), `<key>-2x.jpg` (an upscaled copy) or `<key>.jpg` (or .jpeg, .png, .webp) from there. A triptych is best as one
 // file per panel, left to right, `<key>-1` ... `<key>-3` (central-park-1.jpg ...); one image of all three side by side, cropped tightly to
 // their outer edges, also works (the builder crops it to the row's shape and cuts out the gaps). Without a file (the public demo, anyone else) each piece gets a painterly placeholder in the same palette, drawn here.
 // Pure helpers (panelLayout, coverCrop, artSources) run in Node; textures are made only in a browser.
@@ -16,10 +16,13 @@ const TAU = Math.PI * 2;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 export const ART_DIR = 'data-private/art';
 const EXT = /\.(jpe?g|png|webp)$/i;
-const LIMITS = { maxTexture: 8192, anisotropy: 16 };
-/** The renderer's own limits (its max texture size and anisotropy); three.js also clamps anisotropy itself. */
+const phone = () => typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches && typeof screen !== 'undefined' && Math.min(screen.width, screen.height) < 820;
+export const artTextureCap = (gpuMax, isPhone) => Math.min(isPhone ? 2048 : 4096, gpuMax > 0 ? gpuMax : 4096);
+const LIMITS = { maxTexture: 4096, anisotropy: 16 };
+/** The renderer's own limits: a picture is drawn at most 4096 px on its long side (2048 on a phone, never past the GPU's max texture
+ *  size), with the GPU's full anisotropy (three.js clamps it too). */
 export function setArtLimits({ maxTexture, anisotropy } = {}) {
-  if (maxTexture > 0) LIMITS.maxTexture = Math.min(8192, maxTexture);
+  LIMITS.maxTexture = artTextureCap(maxTexture, phone());
   if (anisotropy > 0) LIMITS.anisotropy = anisotropy;
 }
 
@@ -53,7 +56,7 @@ export function coverCrop(iw, ih, aspect) {
 export function artSources(key, names, panels = 1) {
   const files = (names || []).filter((n) => typeof n === 'string' && EXT.test(n) && !/[\\/]/.test(n));
   const stem = (n) => n.replace(EXT, '').toLowerCase();
-  const pick = (base) => files.find((n) => stem(n) === `${base}-2x`) || files.find((n) => stem(n) === base) || null;   // an upscaled -2x copy first
+  const pick = (base) => ['-hq', '-2x', ''].map((sfx) => files.find((n) => stem(n) === `${base}${sfx}`)).find(Boolean) || null;   // a high-quality scan (-hq), then an upscaled copy (-2x), then the photo
   const per = panels > 1 ? Array.from({ length: panels }, (_, i) => pick(`${key}-${i + 1}`)) : null;
   if (per && per.every(Boolean)) return { panels: per.map((n) => `${ART_DIR}/${encodeURIComponent(n)}`) };
   const whole = pick(key);
@@ -78,6 +81,8 @@ function slice(src, p) {
 }
 /** A map and a normal map for each panel, from one canvas per panel. `inW` is a panel's width in inches (for the weave's scale). */
 const texSet = (canvases, inW) => canvases.map((c) => ({ map: texOf(c), normal: texOf(normalFrom(c, inW), true), w: c.width, h: c.height }));
+/** The same, one panel a task, so a triptych's three normal maps do not hold up a frame together. */
+async function texSetSoon(canvases, inW) { const out = []; for (const c of canvases) { await new Promise((r) => setTimeout(r, 0)); out.push(...texSet([c], inW)); } return out; }
 
 /** The placeholder textures of `key` (drawn once per page and shape). */
 function placeholder(key, panels, w, h) {
@@ -91,21 +96,27 @@ function placeholder(key, panels, w, h) {
   PLACE.set(id, set); return set;
 }
 
-let listing;
+let listing, known = null;   // `known`: the listing once it has arrived (a build then skips the placeholder of a picture that will load)
 /** The private art files the local server can see, or [] (a static copy of the dashboard has no local API, so nothing is asked for). */
 function privateNames() {
-  listing ||= Promise.resolve().then(() => getSession()).then((s) => (Array.isArray(s?.art) ? s.art : []), () => []);
+  listing ||= Promise.resolve().then(() => getSession()).then((s) => (known = Array.isArray(s?.art) ? s.art : []), () => (known = []));
   return listing;
 }
+if (browser()) privateNames();   // early, so the first build already knows which pictures are on this computer
 async function loadImage(url) {
   const img = new Image(); img.decoding = 'async'; img.src = url;
   await img.decode(); return img;
 }
 /** Draw `img` cropped to `aspect` at its own resolution (at most the GPU's texture limit). */
 function cropped(img, aspect) {
-  const k = coverCrop(img.naturalWidth, img.naturalHeight, aspect), s = Math.min(1, LIMITS.maxTexture / Math.max(k.sw, k.sh));
-  const c = canvasOf(k.sw * s, k.sh * s); const g = c.getContext('2d'); g.imageSmoothingQuality = 'high';
-  g.drawImage(img, k.sx, k.sy, k.sw, k.sh, 0, 0, c.width, c.height); return c;
+  const k = coverCrop(img.naturalWidth, img.naturalHeight, aspect); let s = Math.min(1, LIMITS.maxTexture / Math.max(k.sw, k.sh));
+  let src = img, sx = k.sx, sy = k.sy, sw = k.sw, sh = k.sh;
+  while (sw * s < sw / 2.2) {   // a large scan comes down in halves, so the filtering stays clean (no shimmer in fine brushwork)
+    const h = canvasOf(sw / 2, sh / 2), hg = h.getContext('2d'); hg.imageSmoothingQuality = 'high'; hg.drawImage(src, sx, sy, sw, sh, 0, 0, h.width, h.height);
+    src = h; sx = 0; sy = 0; s *= sw / h.width; sw = h.width; sh = h.height;
+  }
+  const c = canvasOf(sw * s, sh * s), g = c.getContext('2d'); g.imageSmoothingQuality = 'high';
+  g.drawImage(src, sx, sy, sw, sh, 0, 0, c.width, c.height); return c;
 }
 /** The renter's own picture of `key` as textures per panel, or null when there is none (then the placeholder stays). */
 function realSet(key, panels, w, h) {
@@ -114,9 +125,9 @@ function realSet(key, panels, w, h) {
   const p = browser() ? privateNames().then(async (names) => {
     const src = artSources(key, names, panels.length);
     if (!src) return null;
-    if (src.panels) { const imgs = await Promise.all(src.panels.map(loadImage)); return texSet(imgs.map((im, i) => cropped(im, panels[i].w / h)), panels[0].w); }
+    if (src.panels) { const imgs = await Promise.all(src.panels.map(loadImage)); return texSetSoon(imgs.map((im, i) => cropped(im, panels[i].w / h)), panels[0].w); }
     const whole = cropped(await loadImage(src.whole), w / h);
-    return texSet(panels.length > 1 ? panels.map((q) => slice(whole, q)) : [whole], panels[0].w);
+    return texSetSoon(panels.length > 1 ? panels.map((q) => slice(whole, q)) : [whole], panels[0].w);
   }).catch((err) => { if (typeof console !== 'undefined') console.warn('[room3d] painting image not used', key, err?.message || err); return null; }) : Promise.resolve(null);
   REAL.set(id, p); return p;
 }
@@ -166,14 +177,17 @@ function wrapGeo(w, h, t) {
   g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(N, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(U, 2)); g.setIndex(idx);
   return g;
 }
-/** A soft shadow line round a canvas on the wall: darkest just under and right of the edge, gone about an inch out. Shared. */
-let shadowTex;
-function shadowMap() {
-  if (shadowTex !== undefined) return shadowTex;
-  if (!browser()) return (shadowTex = null);
-  const S = 256, c = canvasOf(S, S), g = c.getContext('2d'), m = 40;
-  g.fillStyle = '#000'; g.fillRect(0, 0, S, S); g.filter = 'blur(14px)'; g.fillStyle = '#fff'; g.fillRect(m, m, S - 2 * m, S - 2 * m);   // alphaMap reads green
-  shadowTex = new THREE.CanvasTexture(c); shadowTex.userData.shared = true; return shadowTex;
+/** A soft shadow line round a `w` x `h` canvas on the wall (its plane is SHADOW_M inches bigger all round): darkest at the canvas's
+ *  edge, gone about an inch out. White on black, as an alphaMap reads green. One per canvas shape, shared. */
+const SHADOW_M = 2, SHADOWS = new Map();
+function shadowMap(w, h) {
+  const key = `${w.toFixed(1)}|${h.toFixed(1)}`;
+  if (SHADOWS.has(key)) return SHADOWS.get(key);
+  if (!browser()) { SHADOWS.set(key, null); return null; }
+  const k = 8, c = canvasOf((w + 2 * SHADOW_M) * k, (h + 2 * SHADOW_M) * k), g = c.getContext('2d');
+  g.fillStyle = '#000'; g.fillRect(0, 0, c.width, c.height); g.filter = `blur(${0.45 * k}px)`; g.fillStyle = '#fff';
+  g.fillRect((SHADOW_M - 0.15) * k, (SHADOW_M - 0.15) * k, (w + 0.3) * k, (h + 0.3) * k);
+  const t = new THREE.CanvasTexture(c); t.userData.shared = true; SHADOWS.set(key, t); return t;
 }
 
 /**
@@ -184,22 +198,22 @@ function shadowMap() {
 export function paintingInto(it, K) {
   const key = it.art, d = it.d || 1.5, t = clamp(it.spec?.canvas?.depth ?? d, 0.5, 4), e = it.elev || 0, back = -d / 2;
   const panels = panelLayout(it.spec, it.w, it.h), cy = e + it.h / 2, fast = K.fast;
-  const ph = placeholder(key, panels, it.w, it.h);
-  const shadow = K.mat('art-shadow', () => new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: shadowMap() ? 0.5 : 0, depthWrite: false, toneMapped: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2, ...(shadowMap() ? { alphaMap: shadowMap() } : {}) }));
+  const ph = known && artSources(key, known, panels.length) ? null : placeholder(key, panels, it.w, it.h), wait = new THREE.Color(it.look?.color || 0x8fa7a8).getHex();   // the renter's photo is coming: its main colour until then
   const mats = panels.map((p, i) => {
-    const tx = ph?.[i], o = { roughness: 0.6, ...(tx ? { map: tx.map, normalMap: tx.normal, normalScale: new THREE.Vector2(0.45, 0.45) } : {}) };
-    const m = fast ? K.ctx.std(tx ? 0xffffff : 0x8fa7a8, o) : new THREE.MeshPhysicalMaterial({ color: tx ? 0xffffff : 0x8fa7a8, ...o, metalness: 0, specularIntensity: 0.45, clearcoat: 0.12, clearcoatRoughness: 0.55 });   // a matte varnish: a faint, broad sheen
+    const tx = ph?.[i], o = { roughness: 0.6, ...(tx ? { map: tx.map, normalMap: tx.normal, normalScale: new THREE.Vector2(0.25, 0.25) } : {}) };
+    const m = fast ? K.ctx.std(tx ? 0xffffff : wait, o) : new THREE.MeshPhysicalMaterial({ color: tx ? 0xffffff : wait, ...o, metalness: 0, specularIntensity: 0.45, clearcoat: 0.12, clearcoatRoughness: 0.55 });   // a matte varnish: a faint, broad sheen
     m.userData.painting = key; return m;
   });
   panels.forEach((p, i) => {
     const mesh = K.add(K.geo(`art|${p.w.toFixed(2)}|${it.h.toFixed(2)}|${t}`, () => wrapGeo(p.w, it.h, t)), mats[i], p.x, cy, back + t / 2);
     mesh.name = `canvas-${i + 1}`;
-    const m = 1.4, sh = K.add(K.geo(`art-sh|${p.w.toFixed(2)}|${it.h.toFixed(2)}`, () => new THREE.PlaneGeometry(p.w + 2 * m * 1.45, it.h + 2 * m * 1.45)), shadow, p.x + 0.25, cy - 0.45, back + 0.06, { cast: false });
+    const am = shadowMap(p.w, it.h), shadow = K.mat(`art-shadow|${p.w.toFixed(1)}|${it.h.toFixed(1)}`, () => new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: am ? 0.38 : 0, depthWrite: false, toneMapped: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2, ...(am ? { alphaMap: am } : {}) }));
+    const sh = K.add(K.geo(`art-sh|${p.w.toFixed(2)}|${it.h.toFixed(2)}`, () => new THREE.PlaneGeometry(p.w + 2 * SHADOW_M, it.h + 2 * SHADOW_M)), shadow, p.x + 0.2, cy - 0.35, back + 0.06, { cast: false });   // lit from above: a little low and to one side
     sh.receiveShadow = false; sh.renderOrder = 1; sh.name = 'art-shadow';
   });
   realSet(key, panels, it.w, it.h).then((set) => {
     if (!set) return;
-    mats.forEach((m, i) => { if (!set[i]) return; m.map = set[i].map; m.normalMap = set[i].normal; m.color.set(0xffffff); m.needsUpdate = true; m.userData.real = true; });
+    mats.forEach((m, i) => { if (!set[i]) return; m.map = set[i].map; m.normalMap = set[i].normal; m.normalScale = new THREE.Vector2(0.45, 0.45); m.color.set(0xffffff); m.needsUpdate = true; m.userData.real = true; });
     if (typeof window !== 'undefined' && window.dispatchEvent) window.dispatchEvent(new Event('as-art-ready'));
   });
 }
@@ -277,10 +291,10 @@ function park(g, W, H, r) {
     g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = 0.35; g.fillStyle = '#f4efe2'; g.fillRect(t.x * W, t.top * H, t.w * W * 0.28, (base - t.top) * H);   // the lit side
   }
   done(g);
-  wash(g, W, (base - 0.02) * H, (base + 0.02) * H, [[0, '#bda98c'], [1, '#9b8a73']]);   // Central Park South along the edge
+  field(b, r, W, H, { y0: base - 0.035, y1: base + 0.01, n: 2600, len: 0.006, wid: 0.01, pal: [0xbda98c, 0x9b8a73, 0xd8cbb4, 0x7d7064, 0xa9b2b8], ang: () => Math.PI / 2 });   // Central Park South along the edge
   wash(g, W, base * H, H, [[0, '#4d6f43'], [0.5, '#3e6b39'], [1, '#2f5a2f']]);
   const canopy = [0x2f5a2f, 0x3f7a3a, 0x5e9a4a, 0x8bb35a, 0x2a4a33, 0x6f8f3f, 0x9fbf6a];
-  const lake = (x, y) => { const cy = 0.66 + 0.06 * Math.sin(x * 7.5 + 0.6) + 0.03 * Math.sin(x * 19), hw = 0.05 + 0.035 * Math.sin(x * 5 + 1.3); return x > 0.12 && x < 0.86 && Math.abs(y - cy) < hw; };
+  const lake = (x, y) => { const cy = 0.67 + 0.05 * Math.sin(x * 6.5 + 0.6) + 0.02 * Math.sin(x * 17), edge = Math.min(1, (x - 0.1) / 0.08, (0.88 - x) / 0.08), hw = (0.07 + 0.045 * Math.sin(x * 5 + 1.3)) * Math.max(0, edge); return Math.abs(y - cy) < hw; };
   for (let i = 0; i < 26000; i++) {   // the canopy: round dabs, smaller toward the skyline
     const x = r(), y = base + 0.01 + r() * (1 - base); if (lake(x, y)) continue;
     const sz = 0.004 + (y - base) * 0.014; b(x * W, y * H, sz * W * 1.4, sz * W, r() * TAU, canopy, 0.9, 20);
@@ -290,9 +304,9 @@ function park(g, W, H, r) {
     b(x * W, y * H, 0.016 * W, 0.004 * W, 0.08 + (r() - 0.5) * 0.2, [0x3d6f8f, 0x4f84a3, 0x6f9fb8, 0x2f5a74, 0xa9c4d2], 0.9);
   }
   g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = 0.8; g.strokeStyle = '#d8cfb5'; g.lineCap = 'round';
-  for (let k = 0; k < 7; k++) {   // paths and drives, pale and winding
-    g.lineWidth = W * (0.0012 + r() * 0.0014); g.beginPath(); let x = r() * W, y = (base + 0.03) * H; g.moveTo(x, y);
-    for (let s = 0; s < 14; s++) { x += (r() - 0.5) * W * 0.07; y += H * 0.045; if (lake(x / W, y / H)) break; g.lineTo(x, y); } g.stroke();
+  for (let k = 0; k < 6; k++) {   // paths and drives, pale and gently winding
+    g.lineWidth = W * (0.0012 + r() * 0.0012); g.beginPath(); let x = r() * W, y = (base + 0.03) * H, a = (r() - 0.5) * 0.8; g.moveTo(x, y);
+    for (let s = 0; s < 60; s++) { a += (r() - 0.5) * 0.25; x += Math.sin(a) * H * 0.012; y += Math.cos(a) * H * 0.012; if (lake(x / W, y / H) || y > H) break; g.lineTo(x, y); } g.stroke();
   }
   g.globalAlpha = 1; g.fillStyle = '#efe7d4'; g.fillRect(0.47 * W, 0.645 * H, 0.03 * W, 0.006 * H);   // a bridge over the Lake
   done(g);
@@ -321,7 +335,8 @@ function redBoats(g, W, H, r) {
     field(b, r, W, H, { x0: x / W - 0.02, x1: x / W + 0.02, y0: hz + 0.05, y1: hz + 0.16, n: 60, len: 0.004, wid: 0.016, pal: [0xe9e6dc, 0x9fb4cc], ang: () => Math.PI / 2, a: 0.6 }); }
   // the red-orange boat on the right, its mast and its long broken reflection
   const bx = 0.72 * W, by = 0.62 * H, s = 0.11 * W;
-  for (let k = 0; k < 520; k++) { const y = by + 0.02 * H + r() * 0.3 * H, sp = s * (0.5 - 0.25 * (y - by) / (0.3 * H)); b(bx + (r() - 0.5) * 2 * sp, y, W * 0.022, W * 0.006, (r() - 0.5) * 0.2, [0xe0532a, 0xf07a3a, 0xd2452a, 0xf4a05a], 0.85); }
+  for (let k = 0; k < 260; k++) { const y = by + 0.03 * H + r() * 0.3 * H, sp = s * (0.32 - 0.18 * (y - by) / (0.3 * H)); b(bx + (r() - 0.5) * 2 * sp, y, W * 0.02, W * 0.005, (r() - 0.5) * 0.15, [0xe0532a, 0xf07a3a, 0xd2452a, 0xf4a05a], 0.7); }
+  field(b, r, W, H, { x0: (bx - s * 0.4) / W, x1: (bx + s * 0.4) / W, y0: (by + 0.04 * H) / H, y1: (by + 0.32 * H) / H, n: 160, len: 0.026, wid: 0.004, pal: [0x5b86b8, 0x8fb0d6, 0xd6e2ee], a: 0.8 });   // ripples break it up
   g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = 1; g.fillStyle = '#d9472a'; g.beginPath(); g.moveTo(bx - s * 0.55, by - s * 0.12); g.lineTo(bx + s * 0.6, by - s * 0.16); g.lineTo(bx + s * 0.42, by + s * 0.08); g.lineTo(bx - s * 0.42, by + s * 0.08); g.closePath(); g.fill();
   field(b, r, W, H, { x0: (bx - s * 0.5) / W, x1: (bx + s * 0.5) / W, y0: (by - s * 0.13) / H, y1: (by + s * 0.07) / H, n: 200, len: 0.014, wid: 0.004, pal: [0xe0532a, 0xf07a3a, 0xf6b06a, 0xb93a22] });
   g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = 1; g.strokeStyle = '#4a3a2c'; g.lineWidth = Math.max(2, W * 0.0026); g.beginPath(); g.moveTo(bx, by - s * 0.12); g.lineTo(bx - W * 0.004, 0.14 * H); g.stroke();

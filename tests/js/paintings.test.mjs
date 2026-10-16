@@ -55,6 +55,8 @@ test('the private image is chosen only from the files the local server lists, el
   const names = ['central-park-1.jpg', 'central-park-2.jpg', 'central-park-3.jpg', 'seascape.jpg', 'seascape-2x.jpg', 'notes.txt', '../monet-red-boats.jpg'];
   assert.deepEqual(P.artSources('central-park', names, 3), { panels: [1, 2, 3].map((i) => `data-private/art/central-park-${i}.jpg`) });
   assert.deepEqual(P.artSources('seascape', names), { whole: 'data-private/art/seascape-2x.jpg' }, 'the upscaled copy first');
+  assert.deepEqual(P.artSources('seascape', [...names, 'seascape-hq.jpg']), { whole: 'data-private/art/seascape-hq.jpg' }, 'a high-quality scan beats both');
+  assert.deepEqual([P.artTextureCap(16384, false), P.artTextureCap(16384, true), P.artTextureCap(2048, false)], [4096, 2048, 2048], 'drawn at most 4096 px (2048 on a phone, never past the GPU)');
   assert.equal(P.artSources('monet-red-boats', names), null, 'a name with a path is ignored');
   assert.equal(P.artSources('seascape', []), null);
   // without a browser the builder still hangs every canvas flush on the wall (no textures, no throw)
