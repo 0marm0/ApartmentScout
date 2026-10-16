@@ -13,6 +13,7 @@ import { MAT } from '../plan/catalog.js';
 import { dimsOf } from '../plan/bedspec.js';   // the storage bed with towers: the maker's dimensions by part
 import { tubesOf } from '../plan/rigspec.js';   // the sim rig's tubes (the same numbers the fit checks and the 2D plan read)
 import { lookOf, partLook } from '../plan/looks.js';   // the renter's colour, material and finish for each piece (furniture.json `look`)
+import { paintingInto } from './paintings.js';   // the renter's paintings: gallery-wrapped canvases with their own photo or a painterly stand-in
 
 const TAU = Math.PI * 2, IN = 0.0254, COLOR_CHAIR = 0x35383d;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -690,8 +691,8 @@ function towerBed(it, K) {
   if (f) box(-fw + 0.3, fw - 0.3, g.slat - 0.5, g.slat, dep, g.D - 0.8, slatM);
   else { const n = 14, sl = (g.D - 0.8 - dep) / n; for (let i = 0; i < n; i++) box(-fw + 0.3, fw - 0.3, g.slat - 0.5, g.slat, dep + sl * i + 0.2, dep + sl * (i + 1) - 0.4, slatM); }
 
-  // ---- mattress and bedding: generic whites, the renter's own are not known
-  const mw = g.mattress.w, md = g.mattress.d, mT = g.mattress.h, mTop = g.mattressTop, sheet = K.fabric(MAT.pillow), tick = K.fabric(0xece8e0), duvetM = K.fabric(0xeae7e0, { side: THREE.DoubleSide }), foldM = K.fabric(0xf0eee8);
+  // ---- mattress and bedding: the renter's comforter when furniture.json gives one (look.parts.bedding), else generic whites
+  const mw = g.mattress.w, md = g.mattress.d, mT = g.mattress.h, mTop = g.mattressTop, sheet = K.fabric(MAT.pillow), tick = K.fabric(0xece8e0), bc = K.part('bedding', {}).color, duvetM = K.quilted(bc ?? 0xeae7e0), foldM = K.fabric(bc ?? 0xf0eee8);   // the renter's black quilted comforter (look.parts.bedding), as bed() draws it, else plain whites
   const headZ = -hd + dep + 1.2, footZ = -hd + g.D, mzc = -hd + 3.3 + md / 2;
   K.add(K.soft(mw, mT, md, { r: 2.2 }), tick, 0, g.slat, mzc);
   if (!f) K.add(K.soft(mw + 0.4, 0.5, md + 0.4, { r: 2.4, s: 1 }), K.fabric(0xc9c3b8), 0, mTop - 2.45, mzc, { cast: false });
@@ -1279,16 +1280,16 @@ function simRig(it, K) {
 }
 
 // ------------------------------------------------------------------ entry
-const BUILD = { sofa: seating, chair: seating, bed, nightstand, dresser, wardrobe, bookcase, table, 'table-low': coffeeTable, desk, simrig: simRig, taskchair: (it, K) => taskChair(K, 0, 0, 0), tv, rug, plant };
+const BUILD = { sofa: seating, chair: seating, bed, nightstand, dresser, wardrobe, bookcase, table, 'table-low': coffeeTable, desk, simrig: simRig, taskchair: (it, K) => taskChair(K, 0, 0, 0), tv, rug, plant, art: (it, K) => paintingInto(it, K) };
 
 /**
  * Draw the resolved item `it` into ctx.s and return true, or return false for kinds this module leaves to plan/furniture3d.js
- * (lamps, art, AC units, radiators). `ctx` = {s, std(color, opts), fabric(color, opts), quality: 'fast' | 'visual', texture}.
+ * (lamps, generic wall art, AC units, radiators); a painting (kind art with an `art` key, room3d/paintings.js) is drawn here. `ctx` = {s, std(color, opts), fabric(color, opts), quality: 'fast' | 'visual', texture}.
  * A piece that throws is cleared and handed back (false) so the older model draws it instead.
  */
 export function build(it, ctx) {
   const fn = it && BUILD[it.kind];
-  if (!fn || !ctx?.s || !(it.w > 0) || !(it.d > 0) || !(it.h > 0)) return false;
+  if (!fn || !ctx?.s || !(it.w > 0) || !(it.d > 0) || !(it.h > 0) || (it.kind === 'art' && !it.art)) return false;
   const before = ctx.s.children.length;
   try { fn(it, kit(it, ctx)); return true; } catch (err) {
     while (ctx.s.children.length > before) { const o = ctx.s.children[ctx.s.children.length - 1]; ctx.s.remove(o); o.traverse((x) => x.geometry?.dispose()); }

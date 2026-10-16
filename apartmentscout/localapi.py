@@ -156,7 +156,17 @@ class ServeState:
                 "tours": {"save": bool(ws and not self.read_only), "photos": bool(ws and not self.read_only and pillow_available()),
                           "max_photo_bytes": MAX_PHOTO_BYTES},
                 "search": {"folder": ws.root.name, "name": name, "path": self.display(ws.root)} if ws else None,
-                "searches_dir": self.display(self.searches_dir), "searches": self.searches(), "cities": self.cities()}
+                "searches_dir": self.display(self.searches_dir), "searches": self.searches(), "cities": self.cities(),
+                "art": self.private_art()}
+
+    def private_art(self) -> list[str]:
+        """The renter's own painting images in dashboard/data-private/art/ (kept out of the repository), by file name, so the 3D
+        views ask only for pictures that exist (room3d/paintings.js); a hosted copy of the dashboard has no API and shows painted stand-ins."""
+        d = self.dash / "data-private" / "art"
+        try:
+            return sorted(p.name for p in d.iterdir() if p.is_file() and p.suffix.lower() in {".jpg", ".jpeg", ".png", ".webp"})[:60]
+        except OSError:
+            return []
 
     # -- [onboarding] lookups for the wizard: a city by name, an address on the map, a transit feed address
     def find_city(self, query: str) -> dict[str, Any]:

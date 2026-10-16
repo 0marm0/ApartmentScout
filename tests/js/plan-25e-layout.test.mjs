@@ -12,6 +12,7 @@ import { validateInventory } from '../../dashboard/js/plan/inventory.js';
 import { resolve } from '../../dashboard/js/plan/catalog.js';
 import { evaluate, axes, footprint, toWorld, piecePoly, satDepth, partPolys, overlaps, swingPoly, doorwayPoly } from '../../dashboard/js/plan/checks.js';
 import { accessRoutes } from '../../dashboard/js/plan/route.js';
+import { applyChoice } from '../../dashboard/js/plan/choices.js';
 import { applyInventory, resolveLayout } from '../../dashboard/js/plan/placement.js';
 import { windowGroups } from '../../dashboard/js/plan/viewpoints.js';
 import { pointInPoly } from '../../dashboard/js/plan/model.js';
@@ -81,7 +82,8 @@ test('the bed\'s headboard is on a side wall, the windows are on the right of a 
   for (const w of m.windows) { const seg = [[w.a[0], w.a[1]], [w.b[0], w.b[1]]]; assert.ok(![0, 0.25, 0.5, 0.75, 1].some((t) => pointInPoly([seg[0][0] + (seg[1][0] - seg[0][0]) * t, seg[0][1] + (seg[1][1] - seg[0][1]) * t], fp)), 'no window behind the bed'); }
 });
 
-test('a nightstand either side of the bed against the same wall, and the bed clear', () => {
+test('with "My bed" chosen: a nightstand either side of the bed against the same wall, and the bed clear (the storage bed, the default, has its own)', () => {
+  const mine = applyInventory(applyChoice(resolveLayout({ model: m, inventory: inv, saved: null }).items, inv, 'bed', 'mine'), inv).map((x) => resolve(x)), by = Object.fromEntries(mine.map((i) => [i.id, i])), ev = evaluate(m, mine);
   const bed = by.bed, right = personRight(bed), n1 = by['nightstand-1'], n2 = by['nightstand-2'];
   const side = (n) => dot(sub([n.x, n.y], [bed.x, bed.y]), right);
   assert.ok(side(n1) * side(n2) < 0, 'one on each side of the bed');

@@ -52,6 +52,11 @@
       "material": "fabric",
       "finish": "sheen"
      },
+     "bedding": {
+      "color": "#1e1e20",
+      "material": "fabric",
+      "finish": "matte"
+     },
      "metal": {
       "color": "#1b1b1d",
       "material": "metal",
@@ -629,6 +634,121 @@
    ],
    "note": "GT mode by default (the back more upright); the Formula variant reclines the whole seat and lowers the wheel deck. Footprint = the conservative planning envelope 195 x 85 x 130 cm, above every published figure. The side view follows the maker's GT and Formula drawings; seat, wheel-deck and pedal-plate sizes are not published and are drawn by eye. The pedal end slides under the desk.",
    "source": "Renter: product choice, photo, under-desk use. Maker support: GT 175x75x127 cm, Formula 164x75x94 cm; product-space graphic 185x85x125 cm; reseller drawings GT 185.3 cm and Formula 192.4 cm long; folded frame 75x40x87 cm. Envelope: planning value. Fanatec base and wheel sizes: approximate."
+  },
+  {
+   "id": "central-park-triptych",
+   "ref": "canvas-painting",
+   "label": "Central Park triptych",
+   "room": "living",
+   "w": 76,
+   "d": 1.5,
+   "h": 36,
+   "elev": 44,
+   "art": "central-park",
+   "look": {
+    "color": "#5d8a52",
+    "material": "fabric",
+    "finish": "matte",
+    "basis": "renter",
+    "assumed": [
+     "finish"
+    ],
+    "note": "Three stretched canvases that together make one aerial view of Central Park's Lake and the Midtown skyline; the picture is the renter's photo when it is on this computer, otherwise a painted stand-in in its colours."
+   },
+   "spec": {
+    "canvas": {
+     "panels": 3,
+     "panel_w": 24,
+     "gap": 2,
+     "depth": 1.5
+    }
+   },
+   "spec_basis": {
+    "canvas.panel_w": "assumed",
+    "canvas.gap": "assumed",
+    "canvas.depth": "assumed"
+   },
+   "assumed": [
+    "w",
+    "h",
+    "elev"
+   ],
+   "note": "Three portrait canvases, 24 x 36 in each (assumed), hung 2 in apart: 76 x 36 in overall, centred over the futon about 8 in above its back.",
+   "source": "The renter's own paintings (they sent photos of them on 2026-10-16). Their sizes were not given: the canvas sizes, the 1.5 in gallery-wrap depth and the hanging height are assumptions to correct."
+  },
+  {
+   "id": "seascape",
+   "ref": "canvas-painting",
+   "label": "Seascape with a sailboat",
+   "room": "bedroom",
+   "w": 30,
+   "d": 1.5,
+   "h": 25,
+   "elev": 56,
+   "art": "seascape",
+   "look": {
+    "color": "#2c7a7b",
+    "material": "fabric",
+    "finish": "matte",
+    "basis": "renter",
+    "assumed": [
+     "finish"
+    ],
+    "note": "A Van Gogh-style seascape: a sailboat on rolling blue-green waves under white clouds, on one landscape canvas."
+   },
+   "spec": {
+    "canvas": {
+     "panels": 1,
+     "depth": 1.5
+    }
+   },
+   "spec_basis": {
+    "canvas.depth": "assumed"
+   },
+   "assumed": [
+    "w",
+    "h",
+    "elev"
+   ],
+   "note": "One landscape canvas, 30 x 25 in (assumed, 6:5 like the picture), over the bed's headboard.",
+   "source": "The renter's own paintings (they sent photos of them on 2026-10-16). Their sizes were not given: the canvas sizes, the 1.5 in gallery-wrap depth and the hanging height are assumptions to correct."
+  },
+  {
+   "id": "monet-red-boats",
+   "ref": "canvas-painting",
+   "label": "Monet, Red Boats, Argenteuil",
+   "room": "living",
+   "w": 36,
+   "d": 1.5,
+   "h": 26,
+   "elev": 44,
+   "art": "monet-red-boats",
+   "look": {
+    "color": "#6f97c4",
+    "material": "fabric",
+    "finish": "matte",
+    "basis": "renter",
+    "assumed": [
+     "finish"
+    ],
+    "note": "A print of Claude Monet's Red Boats, Argenteuil (1875): a sunny river with a red-orange sailboat, moored masts, poplars and a red-roofed house."
+   },
+   "spec": {
+    "canvas": {
+     "panels": 1,
+     "depth": 1.5
+    }
+   },
+   "spec_basis": {
+    "canvas.depth": "assumed"
+   },
+   "assumed": [
+    "w",
+    "h",
+    "elev"
+   ],
+   "note": "One landscape canvas, 36 x 26 in (assumed, about 4:3 like the picture), on the living room's left wall by the dining table, its centre at eye level (57 in).",
+   "source": "The renter's own paintings (they sent photos of them on 2026-10-16). Their sizes were not given: the canvas sizes, the 1.5 in gallery-wrap depth and the hanging height are assumptions to correct."
   }
  ],
  "options": {
