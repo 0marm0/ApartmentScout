@@ -86,13 +86,13 @@ test('the catalogue and the renter\'s data agree: the storage bed is a bed with 
 test('the Bed control shows exactly the pieces its choice lists: the storage bed brings its own nightstands, "My bed" and "No bed" keep the separate ones', () => {
   const items = raw();
   assert.equal(defaultChoice(inv()), 'storage');
-  assert.deepEqual(ids(items), ['bed-latitude', 'coffee', 'desk', 'desk-chair', 'dining', 'dresser', 'futon', 'tv', 'tv-bed'], 'the storage bed is what loads, with its own nightstands (the office chair is shown by default, the sim rig hidden)');
+  assert.deepEqual(ids(items), ['bed-latitude', 'central-park-triptych', 'coffee', 'desk', 'desk-chair', 'dining', 'dresser', 'futon', 'monet-red-boats', 'seascape', 'tv', 'tv-bed'], 'the storage bed is what loads, with its own nightstands (the office chair and the three paintings are shown by default, the sim rig hidden)');
   assert.deepEqual(choiceState(items, inv()), { group: 'bed', label: 'Bed', available: true, current: 'storage', exact: true, choices: [{ id: 'mine', label: 'My bed' }, { id: 'storage', label: 'Latitude Run storage bed' }, { id: 'none', label: 'No bed' }] });
   const mine = applyChoice(items, inv(), 'bed', 'mine');
-  assert.deepEqual(ids(mine), ['bed', 'coffee', 'desk', 'desk-chair', 'dining', 'dresser', 'futon', 'nightstand-1', 'nightstand-2', 'tv', 'tv-bed'], 'my bed brings the separate nightstands back');
+  assert.deepEqual(ids(mine), ['bed', 'central-park-triptych', 'coffee', 'desk', 'desk-chair', 'dining', 'dresser', 'futon', 'monet-red-boats', 'nightstand-1', 'nightstand-2', 'seascape', 'tv', 'tv-bed'], 'my bed brings the separate nightstands back');
   assert.equal(choiceState(mine, inv()).current, 'mine');
   const none = applyChoice(mine, inv(), 'bed', 'none');
-  assert.deepEqual(ids(none), ['coffee', 'desk', 'desk-chair', 'dining', 'dresser', 'futon', 'nightstand-1', 'nightstand-2', 'tv', 'tv-bed'], 'no bed: both beds hidden, the nightstands stand on their own');
+  assert.deepEqual(ids(none), ['central-park-triptych', 'coffee', 'desk', 'desk-chair', 'dining', 'dresser', 'futon', 'monet-red-boats', 'nightstand-1', 'nightstand-2', 'seascape', 'tv', 'tv-bed'], 'no bed: both beds hidden, the nightstands stand on their own');
   assert.equal(choiceState(none, inv()).current, 'none');
   assert.deepEqual(ids(applyChoice(none, inv(), 'bed', 'storage')), ids(items), 'and back: nothing is lost on the way');
   assert.ok(applyChoice(items, inv(), 'bed', 'storage').every((x, i) => x === items[i]), 'choosing what is shown changes nothing (every piece comes back as the same object)');

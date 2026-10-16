@@ -78,7 +78,7 @@ test('every piece exports as a valid USDZ: a stored zip, model.usda first, 64-by
     assert.match(u.model, /preliminary:anchoring:type = "plane"/); assert.match(u.model, /preliminary:planeAnchoring:alignment = "horizontal"/);
     assert.ok(Object.keys(u.geoms).length >= 2, `${p.id}: geometry files`);
     for (const g2 of Object.values(u.geoms)) assert.match(g2, /point3f\[\] points = \[/);
-    assert.ok(root.userData.ar.triangles > 100 && root.userData.ar.meshes > 3, `${p.id}: drawn with real geometry`);
+    if (!p.art) assert.ok(root.userData.ar.triangles > 100 && root.userData.ar.meshes > 3, `${p.id}: drawn with real geometry`);   // a painting is a few flat canvases
   }
 });
 
