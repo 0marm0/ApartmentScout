@@ -1271,11 +1271,11 @@
   {
    "file": "docs/images/walkthrough.webp",
    "publication_status": "public",
-   "sha256": "80148f2a1fc4699af045fd348c027eb12cddc23de6287f74a264b6af86acfdb9",
-   "bytes": 2930860,
-   "width": 820,
-   "height": 512,
-   "note": "README walk-through recorded from the public example by scripts/record_walkthrough.py on a clean snapshot, 2026-10-15"
+   "sha256": "f5076cd048fbbd8a3d1d3855e2b9d36aaa79ebb235024fb3f05302284a4f7f9d",
+   "bytes": 7038562,
+   "width": 760,
+   "height": 428,
+   "note": "README walk-through (about 70 s: map, noise, plain-words search, trade-off pad, 3D map, Unit 3D, match a photo, floor-plan studio, decision report, move planner, a phone) recorded from the public example by scripts/record_walkthrough.py on a clean snapshot, 2026-10-16; docs/images/walkthrough.mp4 is the same recording at full quality"
   }
  ],
  "policy": {
