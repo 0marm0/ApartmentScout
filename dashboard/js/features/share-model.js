@@ -60,7 +60,7 @@ export function pruneHome(L, schema, destName, pick, includeNotes) {
   const h = pickKeys(L, schema.listing);
   for (const k of ['price', 'score', 'size', 'site', 'records', 'reviews', 'photo_review', 'building_facts', 'links']) if (k in h) h[k] = pickKeys(h[k], schema[k]);
   h.notes = h.notes ? cut(h.notes, tm.notes) : null;
-  if (h.reviews) { h.reviews.summary = cut(h.reviews.summary, tm.summary); h.reviews.questions = cut(h.reviews.questions, tm.questions); }
+  if (h.reviews) for (const k of ['summary', 'questions']) if (h.reviews[k] != null) h.reviews[k] = cut(h.reviews[k], tm[k]);   // only what the listing has, like share.py
   if (h.photo_review?.evidence) h.photo_review.evidence = cut(h.photo_review.evidence, tm.evidence);
   if (h.records?.flags) h.records.flags = h.records.flags.slice(0, 5).map((f) => cut(f, tm.flag));
   if (h.links) h.links = Object.fromEntries(Object.entries(h.links).filter(([, v]) => typeof v === 'string' && /^https?:\/\//.test(v)));

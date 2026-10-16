@@ -54,7 +54,7 @@ Five steps, in the order a search goes. The [gallery](docs/GALLERY.md) shows eve
 <tr><th colspan="2" align="left">4. Decide</th></tr>
 <tr>
 <td valign="top"><img src="docs/images/phone-tour-day.png" alt="Tour day on a phone: three homes in time order with directions and the minutes to the next stop" width="260"><br><b>Tour day, on your phone</b><br>Today's tours in order with directions and leave-by times, a one-hand checklist at each home (light, noise, water, signal), and a noise check that keeps one number and no audio. The answers flow into the visit notes and the score.</td>
-<td valign="top"><img src="docs/images/decide-office-questions.png" alt="A drafted email to a building's leasing office with a checklist of questions and why each is asked"><br><b>Questions for the leasing office</b><br>Drafts built from what the score is unsure about, a checkbox per question and the evidence behind it. Copy it or open it in your mail app: nothing is sent from the page. Then a tour planner, a share page and a decision memo.</td>
+<td valign="top"><img src="docs/images/decide-office-questions.png" alt="A drafted email to a building's leasing office with a checklist of questions and why each is asked"><br><b>Questions for the leasing office</b><br>Drafts built from what the score is unsure about, a checkbox per question and the evidence behind it. Copy it or open it in your mail app: nothing is sent from the page. Then a tour planner, a share page, a decision memo, a typeset decision report for two to four homes (print it or `apartmentscout report --homes ... --out report.pdf`) and a move planner with a calendar file.</td>
 </tr>
 <tr><th colspan="2" align="left">5. Set up</th></tr>
 <tr>
@@ -153,10 +153,10 @@ included example, a Manhattan one-bedroom search from fall 2026, and every capti
 
 | | |
 |---|---|
-| Start | [Getting started](docs/guides/getting-started.md) · [The dashboard](docs/guides/dashboard.md) · [Other cities](docs/guides/new-city.md) |
+| Start | [Getting started](docs/guides/getting-started.md) · [The dashboard](docs/guides/dashboard.md) · [Sync between devices](docs/guides/sync.md) · [Other cities](docs/guides/new-city.md) |
 | How it is computed | [Methodology](docs/guides/methodology.md) · [Data model](docs/guides/data-model.md) · [Research quality](docs/guides/research-quality.md) · [Leasing-office questions](docs/guides/leasing-office-questions.md) |
 | 3D and photos | [Floor plans](docs/guides/floor-plans.md) · [Photos](docs/guides/photos.md) |
-| Agents | [AGENTS.md](AGENTS.md) · [Skills](.claude/skills) · [Agent handoff](docs/guides/agents-handoff.md) · [Monitoring](docs/guides/monitoring.md) |
+| Agents | [AGENTS.md](AGENTS.md) · [Skills](.claude/skills) · [Agent handoff](docs/guides/agents-handoff.md) · [Monitoring](docs/guides/monitoring.md) · [Alerts on your phone](docs/guides/alerts.md) |
 | Project | [Roadmap](docs/ROADMAP.md) · [Release checklist](docs/RELEASE_CHECKLIST.md) · [Design system](docs/design/design-system.md) |
 
 More commands, once you have finalists:
@@ -204,6 +204,11 @@ guide](docs/guides/dashboard.md#install-it-and-use-it-offline).
   without your say-so.
 - 311 calls, complaints and reviews are reports, not findings, and the dashboard says so. Commute, sun, money and score numbers
   are estimates, and coverage is of the listings you captured, not a market census. Check the important ones in person.
+- Sync between your devices is off until you turn it on. It then sends your picks, notes, numbers, tour findings, floor plan work
+  and (optionally) small copies of tour photos to **a secret gist in your own GitHub account** (unlisted, so anyone with its link
+  can read it) or to a file you move by hand, and nowhere else: no server of ours, no telemetry. The GitHub token stays in the
+  browser on the device and is sent only to `api.github.com`. What exactly is synced, where it goes and how to set it up on an
+  iPhone: [the sync guide](docs/guides/sync.md).
 - Anything you publish (a Pages site, a standalone file, a workbook) shows your listings and notes to whoever has it. Run
   `python scripts/release_check.py` before you publish.
 

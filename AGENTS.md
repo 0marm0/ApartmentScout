@@ -25,7 +25,9 @@ management behaviour and lease terms.
 6. **No contact without permission.** Draft emails and questions for leasing offices; never send
    them yourself unless the renter explicitly asks.
 7. **Privacy.** Keep the renter's identity, income and documents out of the repository. Search
-   folders under `searches/` are git-ignored by default.
+   folders under `searches/` are git-ignored by default. Device sync (`docs/guides/sync.md`) uses a GitHub token
+   that the renter pastes into the dashboard's Sync panel themselves: never ask for it, store it, print it or
+   write it into a file; it lives only in that browser.
 
 ## Repository map
 
@@ -86,11 +88,13 @@ apartmentscout finishes                           # fill each plan's floor, wall
 apartmentscout viewcal import FILE                # a photo match exported from Unit 3D (Match a photo); `viewcal list`; `site <id>` then uses it
 apartmentscout score                              # score and rank
 apartmentscout report                             # shortlist.md
+apartmentscout report --homes ID ID --out report.pdf   # the decision report for 2 to 4 homes: cover, side-by-side table, a page per home, checklist (PDF through a headless browser, else HTML)
 apartmentscout questions --building knox --units 6B 7BA   # draft the leasing-office questions per building (never sends)
 apartmentscout share --picks picks.json --out shortlist.html   # read-only shortlist page; --memo for the decision memo
 apartmentscout tours-import picks.json            # visit findings from a picks backup into tours/ (score reads promoted facts)
 apartmentscout build && apartmentscout serve      # dashboard at http://127.0.0.1:8765
 apartmentscout monitor --dry-run                  # plan a re-check of the watchlist; drop --dry-run to fetch allowed pages and write a digest
+apartmentscout alerts                             # what changed since the last run (new homes that fit, price drops, gone, rank jumps); --no-save to peek; docs/guides/alerts.md
 apartmentscout all                                # geocode, commute, layers, score, build
 ```
 
