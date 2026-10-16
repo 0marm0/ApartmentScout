@@ -48,6 +48,6 @@
   .bed-ctl.in-p2d, .bed-ctl.in-p3d { max-width: calc(100% - 16px); }
   .bed-ctl { padding: 2px; gap: var(--s-1); }
   .bd-seg button, .bd-fit { height: 24px; }
-  .bd-l { display: none; }
+  .bd-bar:not(.bd-rig) .bd-l { display: none; }   /* the rig and chair rows keep their name: two Shown / Hidden rows are ambiguous without it */
 }
 @media (prefers-reduced-motion: reduce) { .bd-seg button, .bd-fit { transition: none; } }
