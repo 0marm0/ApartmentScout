@@ -212,7 +212,7 @@ export async function refreshData() {
     reg?.update?.().catch(() => {});
     let fresh = false;
     try {
-      const r = await fetch(`${S.base}/manifest.json`, { cache: 'reload' });   // 'reload' goes past the worker and the HTTP cache
+      const r = await fetch(`${S.base}/manifest.json?_fresh=${Date.now()}`, { cache: 'reload' });   // ?_fresh sends it past the worker, 'reload' past the HTTP cache
       if (r.ok) { const m = await r.json(); fresh = !!m.generated && m.generated !== S.manifest?.generated; }
     } catch { return 'offline'; }
     await new Promise((res) => setTimeout(res, reg ? 600 : 0));   // a moment for the worker to say whether a new build is installing

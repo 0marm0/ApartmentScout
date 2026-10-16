@@ -10,6 +10,7 @@ import { swipeToDismiss } from './sheet-dismiss.js';
 const SHARE = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 10V2.2M5 5l3-3 3 3M3.4 8.4v4.2a1 1 0 001 1h7.2a1 1 0 001-1V8.4"/></svg>';
 const PLUS = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><rect x="2" y="2" width="12" height="12" rx="3"/><path d="M8 5v6M5 8h6"/></svg>';
 const KEY = 'install-guide';
+const ICON = new URL('assets/pwa/icon-192.png', document.baseURI).href;
 const env = () => ({ browser: N.iosBrowser(navigator.userAgent, navigator.platform, navigator.maxTouchPoints), standalone: matchMedia('(display-mode: standalone)').matches || navigator.standalone === true });
 const forced = () => new URLSearchParams(location.search).get('installguide') === '1';
 let el = null, opener = null, inerted = [];
@@ -43,7 +44,7 @@ function pic(kind, browser) {
     <rect class="row" x="14" y="10" width="272" height="88" rx="12"/>
     <text class="tx" x="30" y="30">Cancel</text><text class="tx b" x="150" y="30" text-anchor="middle">Add to Home Screen</text>
     <rect class="hl" x="236" y="16" width="42" height="20" rx="10"/><text class="tx a" x="257" y="30" text-anchor="middle">Add</text>
-    <image href="assets/pwa/icon-192.png" x="30" y="46" width="40" height="40"/><rect x="30" y="46" width="40" height="40" rx="9" class="ln" style="fill:none"/>
+    <image href="${ICON}" x="30" y="46" width="40" height="40"/><rect x="30" y="46" width="40" height="40" rx="9" class="ln" style="fill:none"/>
     <text class="tx b" x="84" y="62">ApartmentScout</text><text class="tx" x="84" y="78">Opens full screen, like an app</text></svg>`;
 }
 
@@ -53,7 +54,7 @@ function html(browser) {
   return `<div class="ig-scrim" data-ig-close></div>
   <section class="ig-card" role="dialog" aria-modal="true" aria-labelledby="igT" aria-describedby="igS">
     <button type="button" class="ig-grab" data-ig-close aria-label="Close the install guide"><i aria-hidden="true"></i></button>
-    <header class="ig-head"><img class="ig-icon" src="assets/pwa/icon-192.png" width="56" height="56" alt="">
+    <header class="ig-head"><img class="ig-icon" src="${ICON}" width="56" height="56" alt="">
       <div><h2 id="igT" tabindex="-1">Install ApartmentScout</h2><p id="igS">Add it to your home screen: it opens full screen, loads fast and works without a connection.</p></div></header>
     ${warn}
     <ol class="ig-steps">
