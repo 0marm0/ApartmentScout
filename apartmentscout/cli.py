@@ -766,13 +766,11 @@ def _export(ws: Workspace, out: Path):
     (out / "listings.json").write_text(json.dumps(slim, separators=(",", ":"), ensure_ascii=False))
     previews = build_sidecar(slim, ws.root / "media", out, cache_path=ws.cache_dir / "lqip.json", log=log,   # blur-up previews: the full set,
                              fallback=[ws.root / "media-lite"])                                                  # else the last sidecar, else the starter set
-    crit_out = crit
+    times_blk = None
     if any(e.get("times") for L in Ls for e in (L.get("commute") or {}).values() if isinstance(e, dict)):
-        from .commute.slots import export_block   # the time-of-day slots in force, for the selector and the drawer
-        blk = export_block(crit)
-        if blk:
-            crit_out = {**crit, "commute": {**(crit.get("commute") or {}), "times": blk}}
-    (out / "criteria.json").write_text(json.dumps(crit_out, default=str, indent=1))
+        from .commute.slots import export_block   # the time-of-day slots in force, for the selector and the drawer (manifest.commute_times)
+        times_blk = export_block(crit)
+    (out / "criteria.json").write_text(json.dumps(crit, default=str, indent=1))
     for sub in ("layers", "sites", "plans", "view-calibrations"):
         src = ws.root / sub
         dst = out / sub
@@ -810,6 +808,8 @@ def _export(ws: Workspace, out: Path):
     base = media_base_url(crit)   # where photos missing from media/ and media-lite/ can be fetched (apartmentscout/mediabase.py)
     if base:
         manifest["media_base_url"] = base
+    if times_blk:
+        manifest["commute_times"] = times_blk
     dl = crit["search"].get("default_listing")   # the home the 3D views open when nothing else is chosen (a renter's own pick still wins)
     if isinstance(dl, str) and dl in {L.get("id") for L in Ls}:
         manifest["default_listing"] = dl

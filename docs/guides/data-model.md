@@ -344,7 +344,7 @@ and without a `media/` folder beside the file, they are re-keyed by each photo's
 | `modes.<m>.legs` | The median trip: `walk` (`min`, `m` metres, `to`, `from`), rides (`mode`, `route`, `from`, `to`, `board`/`alight` clock times, `min`, `wait` before boarding after a change), `transfer` (`min`, `m`, `at`, `to` when it changes stop). Walking minutes include street-to-platform time. |
 | `modes.<m>.legs_arrive_by` | The arrival time that trip was planned for (arrive_by minus one of the offsets). |
 | `transfers`, `ride_min`, `walk_min`, `wait_min` | Totals over the legs. |
-| `times.<m>` | Minutes at the other times of day, one list per mode (`transit` = best of any transit, `subway`, `bus`), in the order of `commute.times.slots` (criteria.json carries the slots in force): `[18.4, 17.9, 22.1, 37.5, 24.0]` for the morning peak, midday, the evening way home, late evening and a Saturday morning. The slot that is the arrive_by trip equals `minutes`. `null` = no answer then (no service, or 120 minutes or more). Walking is the same at every hour and has no list. |
+| `times.<m>` | Minutes at the other times of day, one list per mode (`transit` = best of any transit, `subway`, `bus`), in the order of `commute.times.slots` (`manifest.commute_times.slots` carries the slots in force): `[18.4, 17.9, 22.1, 37.5, 24.0]` for the morning peak, midday, the evening way home, late evening and a Saturday morning. The slot that is the arrive_by trip equals `minutes`. `null` = no answer then (no service, or 120 minutes or more). Walking is the same at every hour and has no list. |
 
 Route text reads `walk N min to <stop>`, `<route> to <stop>` for subway and rail, `bus <route> to
 <stop>` and `ferry <route> to <stop>`, joined by ` → `.

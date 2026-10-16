@@ -4,14 +4,14 @@
 // evening, a weekend morning. A listing carries them as short lists in slot order,
 //   L.commute[dest].times = { transit: [18, 17, 22, 37, 24], subway: [...], bus: [...] }
 // and the heat map as one whole-minute difference grid per slot and mode (layers/commute-<dest>-times.json) from the
-// arrive-by grid. The slots in force are in criteria.json: commute.times = { slots, score, weights }.
+// arrive-by grid. The slots in force are in manifest.commute_times = { slots, score, weights } (app.js lays it over crit.commute.times).
 // scoredMinutes() is the same arithmetic as commute/slots.py scored_minutes: the arrive-by trip unless the renter opted in.
 
 export const BASE = 'am';
 const MODE_KEY = { best: 'transit', transit: 'transit', subway: 'subway', bus: 'bus' };
 export const modeKey = (mode) => MODE_KEY[mode] || null;   // walk has no times: it is the same at every hour
 
-/** The slots of a search (criteria.json commute.times.slots), [] when it has none. */
+/** The slots of a search (commute.times.slots), [] when it has none. */
 export const slotsOf = (crit) => (crit?.commute?.times?.slots || []).filter((s) => s && s.id);
 export const slotById = (slots, id) => slots.find((s) => s.id === id) || null;
 const indexOf = (slots, id) => slots.findIndex((s) => s.id === id);
