@@ -27,7 +27,7 @@ test('the renter\'s pieces keep their own sizes when resolved', () => {
   const by = Object.fromEntries(inv().pieces.map((p) => [p.id, resolve(pieceItem(p))]));
   assert.deepEqual([by.bed.w, by.bed.d, by.bed.h], [64, 84, 40]);
   assert.deepEqual([by.dresser.w, by.dresser.d, by.dresser.h], [63, 18.9, 30.7]);   // the IKEA MALM 6-drawer chest
-  assert.deepEqual([by.desk.w, by.desk.d], [71, 30]);   // 180 cm long; the depth is assumed
+  assert.deepEqual([by.desk.w, by.desk.d], [89.2, 21.6]);   // the Bestier rotating desk, straight (the straight length is derived)
   assert.deepEqual([by.futon.w, by.futon.d], [80, 36]);
   assert.deepEqual([by.tv.w, by.tv.h, by.tv.elev], [48.4, 27.8, 32]);
   assert.equal(by['tv-bed'].name, '55-inch TV, bedroom');

@@ -2,7 +2,7 @@
 //   the futon's back against a solid wall, facing the living-room TV on the opposite wall;
 //   the bed's headboard on a side wall with the windows on the right of a person lying in it, the bedroom TV on the opposite wall facing the bed;
 //   nightstands either side, the MALM chest on a free wall (under the TV);
-//   the 71-inch desk with the chair behind it and room to pull it out, beside a window and not blocking it.
+//   the Bestier rotating desk (straight, about 89 in) with the chair behind its desktop and room to pull it out, beside a window and not blocking it.
 // The plan file and the furniture file are data; no placement is decided in code.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -87,17 +87,16 @@ test('a nightstand either side of the bed against the same wall, the MALM chest 
   assert.equal(ev.items.dresser.state, 'clear'); assert.equal(ev.items.bed.state, 'clear');
 });
 
-test('the desk is 71 in with the chair behind it and room to pull it out, beside a window and not blocking it', () => {
+test('the rotating desk is about 89 in straight with the chair behind its desktop and room to pull it out, beside a window and not blocking it', () => {
   const desk = by.desk, win = m.windows.filter((w) => w.room === 'Living room');
-  assert.deepEqual([desk.w, desk.d, desk.h], [71, 30, 30]);
-  assert.deepEqual(desk.set, { monitor: 32, chair: 'task' });
-  assert.deepEqual(inv.pieces.find((p) => p.id === 'desk').assumed, ['d'], 'the depth is marked assumed');
+  assert.deepEqual([desk.w, desk.d, desk.h], [89.2, 21.6, 29.1]);
+  assert.deepEqual(desk.set, { monitor: 32, chair: 'task', config: 'straight', hand: 'right' });
   assert.equal(ev.items.desk.state, 'clear', 'the chair\'s pull-out zone is free');
   const zone = ev.items.desk.zones.find((z) => /chair/i.test(z.name || '') || z.key === 'desk_chair') || ev.items.desk.zones[0];
   assert.ok(zone, 'a chair zone is measured');
   // the chair sits on the front side (-back), clear of the wall behind the desk
   const g = gapToWall(desk); assert.ok(g >= -0.5 && g <= 1.5, 'the desk\'s back is on a wall');
-  const chair = toWorld(desk, 0, -(desk.d / 2 + 11));
+  const chair = toWorld(desk, desk.seatX, -(desk.d / 2 + 11));
   assert.ok(m.rooms.some((r) => pointInPoly(chair, r.poly)), 'the chair stands in the room');
   // the window is beside it: within about a desk length, and no glass over the desktop (a sill under 30 in must not meet the desk's footprint)
   const near = win.filter((w) => len(sub(w.mid, [desk.x, desk.y])) < 110);

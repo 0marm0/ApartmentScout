@@ -179,7 +179,7 @@ def test_a_layout_saved_before_pieces_were_marked_keeps_what_the_renter_moved_an
     _studio(s)
     now = {i["id"]: i for i in pg.evaluate(STUDIO_ITEMS)}
     assert (now["desk"]["x"], now["desk"]["y"], now["desk"]["rot"]) == (140, 120, 0), "the desk the renter moved stays where they put it"
-    assert (now["desk"]["w"], now["desk"]["d"]) == (71, 30), "but it is their 71-inch desk, not the old 60 x 24 baked into the saved layout"
+    assert (now["desk"]["w"], now["desk"]["d"]) == (89.2, 21.6), "but it is their rotating desk, not the old 60 x 24 baked into the saved layout"
     for k in ("bed", "futon", "tv", "tv-bed"):
         d = DEFAULT[k]
         assert (now[k]["x"], now[k]["y"], now[k]["rot"]) == (round(d["x"], 1), round(d["y"], 1), round(d.get("rot", 0))), f"{k}: never touched, so it takes the new default"
