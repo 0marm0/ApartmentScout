@@ -39,12 +39,17 @@ test('a person can stand on open floor, not inside a bed, a desk, a counter or a
   assert.equal(sp.canStand(60, 230), true, 'a wall TV hung 32 in up is not in the way of the floor');
 });
 
-test('the desk\'s chair is in the way too', () => {
-  const desk = items.find((i) => i.id === 'desk'), extra = walkItems(items).filter((i) => i.id === 'desk#chair');
-  assert.equal(extra.length, 1);
-  assert.ok(extra[0].w >= 20 && extra[0].d >= 20);
-  assert.equal(sp.canStand(extra[0].x, extra[0].y), false);
-  assert.equal(walkItems(items.map((i) => (i.id === 'desk' ? { ...desk, set: { chair: false } } : i))).filter((i) => i.id === 'desk#chair').length, 0, 'no chair, no obstacle');
+test('the office chair is a piece of its own and a walker pushes it aside; a desk set that still carries a chair keeps its implied one in the way', () => {
+  const desk = items.find((i) => i.id === 'desk'), chair = items.find((i) => i.id === 'desk-chair');
+  assert.equal(desk.set.chair, false, 'the desk set no longer carries the chair');
+  assert.equal(walkItems(items).filter((i) => i.id === 'desk#chair').length, 0, 'so no second, implied chair');
+  assert.ok(chair && chair.kind === 'taskchair', 'the chair is its own piece');
+  assert.equal(walkItems(items).filter((i) => i.id === 'desk-chair').length, 1, 'it is still among the pieces the walk space is built from');
+  assert.equal(sp.canStand(chair.x, chair.y), true, 'a rolling chair is pushed aside: it never closes the floor (routes and walking share this rule)');
+  const legacy = walkItems(items.filter((i) => i.id !== 'desk-chair').map((i) => (i.id === 'desk' ? { ...desk, set: { chair: 'task' } } : i))).filter((i) => i.id === 'desk#chair');
+  assert.equal(legacy.length, 1, 'a desk set that still carries a chair keeps its implied one');
+  assert.ok(legacy[0].w >= 20 && legacy[0].d >= 20);
+  assert.equal(walkSpace(m, [...items.filter((i) => i.id !== 'desk-chair'), ...legacy]).canStand(legacy[0].x, legacy[0].y), false, 'and that implied (set) chair blocks standing');
 });
 
 test('the way from the front door to the desk goes around the furniture, through no wall, in straight runs', () => {

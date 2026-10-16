@@ -114,9 +114,9 @@ test('the furniture row says sizes and the futon\'s look come from the renter, a
   const row = A.accuracyRows({ site: {}, furniture: meta }).find((r) => r.key === 'furniture');
   assert.equal(row.state, 'confirmed');
   assert.match(row.text, /Sizes are real, from you/);
-  assert.match(row.text, /9 of 11 from you \(the futon is black leather\)/);
+  assert.match(row.text, /10 of 12 from you \(the futon is black leather\)/);
   assert.match(row.text, /2 pieces have only a stand-in look/);
-  assert.match(row.text, /chair/); assert.match(row.text, /frame/);   // details the renter has not said yet: the futon's frame and the desk chair
+  assert.match(row.text, /chair/); assert.match(row.text, /frame/);   // details the renter has not said yet: the futon's frame and the dining chairs
   const none = A.accuracyRows({ site: {}, furniture: { ...meta, looks: null } }).find((r) => r.key === 'furniture');
   assert.match(none.text, /every look is a stand-in/);
 });
