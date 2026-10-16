@@ -32,7 +32,7 @@
    "label": "Latitude Run bed",
    "room": "bedroom",
    "w": 94,
-   "d": 83.3,
+   "d": 83.46,
    "h": 47.4,
    "look": {
     "color": "#7f6c5b",
@@ -56,7 +56,7 @@
    "spec": {
     "overall": {
      "w": 94,
-     "d": 83.3,
+     "d": 83.46,
      "h": 47.4
     },
     "headboard": {
@@ -107,7 +107,7 @@
    },
    "spec_basis": {
     "overall.w": "spec",
-    "overall.d": "spec",
+    "overall.d": "spec (the table says 83.46 in; the dimension drawing says 83.3 in: the larger is used so fit checks stay on the safe side)",
     "overall.h": "spec",
     "headboard.depth": "diagram",
     "headboard.tower_w": "diagram",
