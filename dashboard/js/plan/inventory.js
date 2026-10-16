@@ -242,7 +242,12 @@ export function placedIds(inv, items) {
   return new Set(inv.pieces.filter((p) => have.has(p.id)).map((p) => p.id));
 }
 
-/** True when an option group's default choice leaves this piece out (the candidate bed): auto-fitting must not place it beside the renter's own. */
+/**
+ * True when the auto-placer must leave a piece out: a candidate purchase (the storage bed, not owned) is never fitted beside the renter's own pieces,
+ * and neither is a piece a Shown / Hidden switch leaves hidden by default (the sim rig). The renter's own bed is always fitted, though the storage
+ * bed is the default choice of the Bed control: a plan without the storage bed has only the bed the renter owns.
+ */
 export function offByDefault(inv, id) {
-  return Object.values(inv?.options || {}).some((g) => g.choices.some((c) => c.pieces.includes(id)) && !g.choices.find((c) => c.id === g.default)?.pieces.includes(id));
+  if (inv?.pieces?.find((p) => p.id === id)?.candidate) return true;
+  return Object.values(inv?.options || {}).some((g) => g.choices.some((c) => !c.pieces.length) && g.choices.some((c) => c.pieces.includes(id)) && !g.choices.find((c) => c.id === g.default)?.pieces.includes(id));
 }

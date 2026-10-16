@@ -80,4 +80,6 @@ def test_the_storage_bed_is_recorded_as_a_candidate_with_the_makers_dimensions_a
     assert group["default"] == "storage" and [x["id"] for x in group["choices"]] == ["mine", "storage", "none"]
     plan = json.loads((EXAMPLE / "plans" / "paramount-tower-25e.json").read_text())
     item = {i["id"]: i for i in plan["layouts"][0]["items"]}["bed-latitude"]
-    assert not item.get("hidden") and item["placed"] is True, "in the layout and shown: the 25E default"
+    assert "hidden" not in item and item["placed"] is True, "the storage bed is the default: shown, placed"
+    own = {i["id"]: i for i in plan["layouts"][0]["items"]}
+    assert all(own[k]["hidden"] is True for k in ("bed", "nightstand-1", "nightstand-2")), "their own bed and its nightstands wait until chosen"
