@@ -256,7 +256,7 @@ def test_a_page_outside_the_cached_shell_is_not_served_the_dashboard(open_app, s
 
 
 # ------------------------------------------------------------------ update prompt
-def test_a_new_deploy_shows_the_update_prompt_and_reload_switches_version(open_app, site: Path, server) -> None:
+def test_a_new_deploy_is_offered_while_open_and_taken_at_the_next_open(open_app, site: Path, server) -> None:
     demo = site / "ApartmentScout" / "demo"
     old = json.loads((demo / "precache.json").read_text())["build"]
     page, errors = open_app()
@@ -275,17 +275,27 @@ def test_a_new_deploy_shows_the_update_prompt_and_reload_switches_version(open_a
         # Later dismisses it without switching
         page.locator("#pwaUpdate [data-pwa=later]").click()
         assert page.locator("#pwaUpdate").count() == 0
-        # the worker is still waiting, so the next visit offers it again
+        # the worker is still waiting, so the next open switches to it at once (one reload), with no prompt
+        page.evaluate("() => { window.__marker = 1; }")
         page.reload()
+        page.wait_for_function("() => window.__marker === undefined", timeout=30000)
+        page.wait_for_selector("#cards .card", timeout=30000)
+        page.wait_for_function("async () => (await caches.keys()).includes('as-shell-' + %r)" % new, timeout=30000)
+        st2 = settle(page)
+        assert st2["build"] == new and page.locator("#pwaUpdate").count() == 0
+        names = page.evaluate("async () => (await caches.keys())")
+        assert f"as-shell-{new}" in names and f"as-shell-{old}" not in names, names
+        # a deploy that arrives while the app is open is still offered, and Reload switches to it
+        newer = "feedface0002"
+        (demo / "sw.js").write_text(sw_before.replace(f"'{old}'", f"'{newer}'"))
+        (demo / "precache.json").write_text(pre_before.replace(old, newer))
+        page.evaluate("async () => { const r = await navigator.serviceWorker.getRegistration(); await r.update(); }")
         page.wait_for_selector("#pwaUpdate", timeout=20000)
         page.evaluate("() => { window.__marker = 1; }")
         page.locator("#pwaUpdate [data-pwa=reload]").click()
         page.wait_for_function("() => window.__marker === undefined", timeout=30000)   # a new document: the page reloaded itself
         page.wait_for_selector("#cards .card", timeout=30000)
-        st2 = settle(page)
-        assert st2["build"] == new
-        names = page.evaluate("async () => (await caches.keys())")
-        assert f"as-shell-{new}" in names and f"as-shell-{old}" not in names, names
+        assert settle(page)["build"] == newer
         assert errors == [], errors
     finally:
         (demo / "sw.js").write_text(sw_before)
