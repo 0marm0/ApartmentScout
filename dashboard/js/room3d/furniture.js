@@ -955,12 +955,47 @@ function monitor(K, x, y, z, diag) {
   const sc = new THREE.Mesh(K.geo(`scr|${diag}`, () => new THREE.PlaneGeometry(sw - 2 * bez, sh - 2 * bez)), screen); sc.position.set(0, sh / 2 + 0.25, 0.64); pivot.add(sc);
 }
 /**
+ * The Bestier rotating desk (plan/deskspec.js has the numbers): a slab top on one full-depth panel leg and an S-shaped two-tier shelf unit
+ * (three boards, an end panel on each tier at opposite ends, silver cylindrical posts at the open corners) that swings out under the
+ * desk's inner end: straight (the renter's way) or as an L. The boards are laminate with a printed wood grain, crisp-edged. The monitor,
+ * keyboard and the task chair stand at the desktop clear of the shelf (`it.deskGeo.seatX`); a few things sit on the shelf in Visual.
+ */
+function rotatingDesk(it, K) {
+  const G = it.deskGeo, f = K.fast, set = it.set || {}, H = G.h;
+  const spec = K.spec({ color: it.base?.color ?? 0x3a271d, material: 'laminate', finish: 'satin' });
+  const board = K.skin(spec), panel = K.skin(shade(spec, 0.96));
+  const post = K.skin(K.part('posts', { color: 0xbfc3c8, material: 'metal', finish: 'satin' }));
+  for (const b of G.boxes) {
+    const w = b.x1 - b.x0, h = b.y1 - b.y0, d = b.z1 - b.z0, m = b.id === 'desktop' || b.id.startsWith('shelf-') ? board : panel;
+    K.add(K.board(w, h, d, 0.06), m, (b.x0 + b.x1) / 2, b.y0, (b.z0 + b.z1) / 2);
+  }
+  for (const p of G.posts) K.add(K.geo(`rd-post|${p.r}|${(p.y1 - p.y0).toFixed(2)}`, () => legGeo(p.r, p.r, p.y1 - p.y0, f ? 6 : 10)), post, p.x, p.y0, p.z);
+  // on the desktop: a monitor, a keyboard and a mouse on a mat, in front of the chair
+  const sx = G.seatX, dk = G.desk, kz = Math.min(dk.z1 - 6.5, dk.z0 + 16.5);
+  const mon = set.monitor === false ? null : (set.monitor || 24);
+  if (mon) monitor(K, sx, H, dk.z0 + 7.2, mon);
+  const keys = K.mat('keys', () => { const t = keysTex(); return K.ctx.std(t ? 0xffffff : 0xd0d3d6, { roughness: 0.5, metalness: 0.2, ...(t ? { map: t } : {}) }); });
+  K.add(K.board(Math.min(28, G.usable.x1 - G.usable.x0 - 6), 0.16, 11, 0.07), K.fabric(0x1f2124), sx, H, kz + 0.4, { cast: false });
+  K.add(K.soft(15.5, 0.55, 5, { r: 0.22, s: 1, uv: 'top' }), keys, sx - 1.5, H + 0.16, kz);
+  K.add(f ? K.board(2.4, 1.1, 4, 0.5) : K.soft(2.4, 1.1, 4, { r: 1.0, s: 1, puff: { py: 0.3 } }), K.paint(0xe6e7e8, 0.35), sx + 11.2, H + 0.16, kz, { cast: false });
+  if (!f) {   // a few things on the shelf, as in the renter's photos: books in the top tier and a round speaker on the top board
+    const mid = G.boxes.find((b) => b.id === 'shelf-middle'), top = G.boxes.find((b) => b.id === 'shelf-top'), sh = G.shelf;
+    const alongX = sh.x1 - sh.x0 > sh.z1 - sh.z0, far = alongX ? Math.sign((sh.x0 + sh.x1) / 2 - G.pivot.x) : Math.sign((sh.z0 + sh.z1) / 2 - G.pivot.z);
+    const at = (r, k) => (alongX ? [(r.x0 + r.x1) / 2 + far * k, (r.z0 + r.z1) / 2] : [(r.x0 + r.x1) / 2, (r.z0 + r.z1) / 2 + far * k]);
+    const [bx, bz] = at(mid, -4), [px, pz] = at(top, 6);
+    decorBooks(K, bx, mid.y1, bz, 3, alongX ? 0.05 : 1.6, 5);
+    K.add(K.geo('rd-speaker', () => lathe([[0, 0], [3.1, 0], [3.5, 0.5], [3.5, 3.2], [2.7, 4.2], [0, 4.4]], 18)), K.paint(0x3a3c40, 0.7), px, top.y1, pz);
+  }
+  if (set.chair !== false) taskChair(K, sx, dk.z1 + 12, Math.PI + 0.1);
+}
+/**
  * A work desk with a solid top, four square legs, an apron with a shallow centre drawer, a low stretcher each side, a modesty panel
  * behind and a steel cable tray under the top. A monitor (`it.set.monitor`, a diagonal in inches, default 24; false for none) and a
  * keyboard and mouse on a desk mat stand on it, and a rolling task chair (`it.set.chair`, 'task' by default; false for none) at
  * the front. The back (the wall side) is -z.
  */
 function desk(it, K) {
+  if (it.deskGeo) return rotatingDesk(it, K);
   const { w, d, h } = it, hw = w / 2, hd = d / 2, f = K.fast, spec = K.spec({ color: it.base?.color ?? MAT.oak, material: 'wood', finish: 'satin' });
   const topM = K.skin(spec), legM = K.skin(K.part('legs', shade(spec, 0.9))), apronM = K.skin(shade(spec, 0.93)), dark = K.metal(0x1d1f22, 0.45, f ? 0.2 : 0.5);
   const tT = 1.5, under = h - tT, leg = 3, lx = hw - 2.6 - leg / 2, lz = hd - 2.2 - leg / 2, apH = 4, set = it.set || {};
