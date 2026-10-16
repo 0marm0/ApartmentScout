@@ -26,7 +26,7 @@ test('the example furniture file is valid, sourced, and carries no personal path
 test('the renter\'s pieces keep their own sizes when resolved', () => {
   const by = Object.fromEntries(inv().pieces.map((p) => [p.id, resolve(pieceItem(p))]));
   assert.deepEqual([by.bed.w, by.bed.d, by.bed.h], [64, 84, 40]);
-  assert.deepEqual([by.dresser.w, by.dresser.d, by.dresser.h], [63, 18.9, 30.7]);   // the IKEA MALM 6-drawer chest
+  assert.deepEqual([by.dresser.w, by.dresser.d, by.dresser.h], [27.6, 18.9, 47.2]);   // the IKEA STORKLINTA 6-drawer dresser, 70 x 48 x 120 cm
   assert.deepEqual([by.desk.w, by.desk.d], [71, 30]);   // 180 cm long; the depth is assumed
   assert.deepEqual([by.futon.w, by.futon.d], [80, 36]);
   assert.deepEqual([by.tv.w, by.tv.h, by.tv.elev], [48.4, 27.8, 32]);

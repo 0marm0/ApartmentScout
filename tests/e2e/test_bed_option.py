@@ -145,7 +145,7 @@ def test_the_fit_card_answers_each_question_for_the_94_inch_unit_in_plain_words(
     pop.wait_for(state="visible")
     rows = {k: pop.locator(f"[data-bed-row='{k}']").inner_text() for k in ("wall", "walk", "drawers", "doors", "windows", "heat")}
     assert "22 in to spare on the left" in rows["wall"] and "8 in to spare on the right" in rows["wall"] and "94 in headboard unit" in rows["wall"]
-    assert "32 in" in rows["walk"] and "IKEA MALM 6-drawer chest" in rows["walk"]
+    assert "51 in" in rows["walk"] and "to a wall" in rows["walk"]
     assert "pull out 17 in" in rows["drawers"] and "about 31 in" in rows["drawers"] and "left side" in rows["drawers"] and "right side" in rows["drawers"]
     assert "closet door" in rows["doors"] and "bedroom door" in rows["doors"]
     assert "window on the right starts 8 in past the right tower" in rows["windows"]

@@ -156,7 +156,7 @@
     "status": "candidate purchase, not owned",
     "materials": "Solid and manufactured wood (oak), velvet upholstery, plug-in power; two built-in USB-C and USB charging ports and a reading light in each tower.",
     "weight_capacity_lb": 1000,
-    "note": "Read by the renter from the product page's Specifications table, its dimension drawing and its product photos; the page itself was not fetched by the studio. The table and the drawing differ by under 1 in on the frame (61.42 W x 83.46 L x 47.24 H for the frame alone, 60.5 x 83.3 x 47.4 on the drawing); the model uses the drawing's figures. The 13 in is the whole side of the oak box from the floor (its front is two 11.8 in drawer fronts on about 1.2 in black feet); the 4.5 in floor clearance is read as the clearance under the inner black metal frame, not the gap under the oak. The 13.8 in on the drawing is the height of the nightstand's underside above the floor (its top, 22 in, is level with the mattress top). The rail, panel, band and cubby sizes are measured from the front photo against the 94 in width (about 1 in either way); the 12 in mattress is chosen inside the maker's 10 to 15 in. Prices are deliberately not recorded."
+    "note": "Read by the renter from the product page's Specifications table, its dimension drawing and its product photos; the page itself was not fetched by the studio. The table and the drawing differ by under 1 in on the frame (61.42 W x 83.46 L x 47.2 H for the frame alone, 60.5 x 83.3 x 47.4 on the drawing); the model uses the drawing's figures. The 13 in is the whole side of the oak box from the floor (its front is two 11.8 in drawer fronts on about 1.2 in black feet); the 4.5 in floor clearance is read as the clearance under the inner black metal frame, not the gap under the oak. The 13.8 in on the drawing is the height of the nightstand's underside above the floor (its top, 22 in, is level with the mattress top). The rail, panel, band and cubby sizes are measured from the front photo against the 94 in width (about 1 in either way); the 12 in mattress is chosen inside the maker's 10 to 15 in. Prices are deliberately not recorded."
    },
    "note": "A bed you may buy, modelled to the maker's dimensions. It comes with its own nightstands, so the separate ones are hidden while it is shown.",
    "source": "manufacturer"
@@ -207,25 +207,24 @@
   },
   {
    "id": "dresser",
-   "ref": "dresser-malm-6",
-   "label": "IKEA MALM 6-drawer chest",
+   "ref": "dresser-storklinta-6",
+   "label": "IKEA STORKLINTA 6-drawer dresser",
    "room": "bedroom",
-   "w": 63,
+   "w": 27.6,
    "d": 18.9,
-   "h": 30.7,
+   "h": 47.2,
    "look": {
-    "color": "#2b221d",
+    "color": "#3a2b22",
     "material": "laminate",
     "finish": "matte",
     "basis": "renter",
     "assumed": [
-     "finish",
-     "material"
+     "finish"
     ],
-    "note": "IKEA MALM in black-brown, the renter's own. The colour and the model are the renter's; the exact finish is a stand-in."
+    "note": "IKEA's dark brown oak effect, a printed oak-grain foil. The renter sees it as near black in their room, so it is drawn a little dark; the exact finish is a stand-in."
    },
-   "note": "IKEA MALM 6-drawer chest (the wide one), 160 x 48 x 78 cm: two columns of three flat drawers, the recessed top edge of each front is the pull, black-brown.",
-   "source": "Renter, 2026-10-15: IKEA MALM 6-drawer chest, black. Replaces the earlier Storklinta size used by the Fit check."
+   "note": "IKEA STORKLINTA 6-drawer dresser, dark brown oak effect, 70 x 48 x 120 cm: two small drawers side by side on top, then four full-width ones (inside 61 x 40 x 16 cm), slab fronts with no handles, a thin top, a recessed plinth on small feet. Tall and narrow, with a wall anchor.",
+   "source": "manufacturer: IKEA US article 705.592.78, https://www.ikea.com/us/en/p/storklinta-6-drawer-dresser-dark-brown-oak-effect-anchor-unlock-function-70559278/ (product page measurements and drawing). Renter, 2026-10-15: this is their dresser, not the MALM."
   },
   {
    "id": "desk",
