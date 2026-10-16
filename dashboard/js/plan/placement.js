@@ -19,6 +19,7 @@ import { fitInventory, kitFromInventory } from './inventory.js';
 import { suggestLayout } from './suggest.js';
 import { resolve } from './catalog.js';
 import { validateLayout } from './layout.js';
+import { followAttached } from './attach.js';
 
 const SIZE_KEYS = ['w', 'd', 'h', 'elev'];
 const near = (a, b, eps = 0.6) => Math.abs(a - b) <= eps;
@@ -51,16 +52,6 @@ export function defaultLayout(model, inventory) {
   } catch { return null; }
 }
 
-/** A shown sim rig seats the renter where the desk chair would stand, so the desk draws no chair while the rig is shown (`chairAside`; the layout is untouched). */
-function chairAside(items) {
-  const on = items.some((x) => x.ref === 'sim-rig' && !x.hidden);
-  return items.map((x) => {
-    if (x.ref !== 'desk' || !!x.chairAside === on) return x;
-    const o = { ...x }; if (on) o.chairAside = true; else delete o.chairAside;
-    return o;
-  });
-}
-
 /**
  * Fill an item's missing size, label, variant, product, look and desk set from the renter's piece with the same id and ref. An item
  * that names its own variant or product keeps its own size (the piece's size is for the model it is). Returns new items.
@@ -79,7 +70,7 @@ export function applyInventory(items, inventory) {
     if (p.assumed && !o.assumed) o.assumed = p.assumed;
     return o;
   });
-  return chairAside(applyLooks(out, inventory));
+  return applyLooks(out, inventory);
 }
 
 /** An item as a default layout holds it, without the sizes and label the inventory supplies (the inventory is the one place for those). */
@@ -137,7 +128,9 @@ export function resolveLayout({ model, inventory = null, saved = null }) {
       }
     }
   }
-  return { items: out, source: 'saved', changed, filled, followed, removed: [...removed], legacy };
+  const moved = followAttached(lay.items, out);   // an attached piece (the office chair) goes with its desk when the desk followed the default and the piece did not
+  if (moved !== out) changed = true;
+  return { items: moved, source: 'saved', changed, filled, followed, removed: [...removed], legacy };
 }
 
 /** `a` and `b` place every piece at the same spot (position to a tenth of an inch, rotation to a degree). */

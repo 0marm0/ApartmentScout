@@ -6,12 +6,12 @@ import { esc } from '../util.js';
 const GRADE = { clear: ['good', 'Fits'], tight: ['warn', 'Tight'], blocked: ['bad', 'Blocked'] };
 const SHORT = { mine: 'My bed', storage: 'Storage bed', none: 'No bed' };
 
-/** The sim rig's Shown / Hidden buttons (`rig` = plan/choices.js choiceState(items, inv, 'sim')), or ''. */
-export function rigControlHTML(rig) {
+/** A piece's Shown / Hidden buttons (`rig` = plan/choices.js choiceState(items, inv, 'sim' or 'chair'); `attr` the data attribute the buttons carry), or ''. */
+export function rigControlHTML(rig, attr = 'data-rig-choice', fallback = 'Sim rig') {
   if (!rig?.available) return '';
-  const label = rig.label || 'Sim rig';
+  const label = rig.label || fallback;
   return `<span class="bd-l" aria-hidden="true">${esc(label)}</span>
-    <div class="bd-seg" role="radiogroup" aria-label="${esc(label)}">${rig.choices.map((c) => `<button type="button" role="radio" class="${rig.current === c.id ? 'on' : ''}" aria-checked="${rig.current === c.id}" data-rig-choice="${esc(c.id)}" title="${esc(c.label)}">${esc(c.label)}</button>`).join('')}</div>`;
+    <div class="bd-seg" role="radiogroup" aria-label="${esc(label)}">${rig.choices.map((c) => `<button type="button" role="radio" class="${rig.current === c.id ? 'on' : ''}" aria-checked="${rig.current === c.id}" ${attr}="${esc(c.id)}" title="${esc(c.label)}">${esc(c.label)}</button>`).join('')}</div>`;
 }
 
 /** The button row. `state` is plan/choices.js choiceState(); `fit` the fit report's grade (or null). */
@@ -37,7 +37,7 @@ export function bedFitHTML(rep, piece) {
 /**
  * Put the control into `host` (a stage element with a `position: relative` box) and keep it in step with the state.
  * @param {HTMLElement} host
- * @param {{where?: string, state: () => object|null, report: () => object|null, piece: () => object|null, choose: (id: string) => void, rig?: {state: () => object|null, choose: (id: string) => void}}} o   `rig`: the sim rig's Shown / Hidden row, when the layout holds one
+ * @param {{where?: string, state: () => object|null, report: () => object|null, piece: () => object|null, choose: (id: string) => void, rig?: {state: () => object|null, choose: (id: string) => void}, chair?: {state: () => object|null, choose: (id: string) => void}}} o   `rig` and `chair`: the sim rig's and the office chair's Shown / Hidden rows, when the layout holds them
  * @returns {{el: HTMLElement, update: () => void, close: () => void}}
  */
 export function mountBedControl(host, o) {
@@ -46,17 +46,21 @@ export function mountBedControl(host, o) {
   const pop = document.createElement('div'); pop.className = 'bd-pop'; pop.hidden = true; pop.setAttribute('role', 'region'); pop.setAttribute('aria-label', 'Does the storage bed fit?');
   const bar = document.createElement('div'); bar.className = 'bd-bar';
   const rigBar = document.createElement('div'); rigBar.className = 'bd-bar bd-rig'; rigBar.setAttribute('data-rig-ctl', '');
-  el.append(bar, rigBar, pop); host.append(el);
+  const chairBar = document.createElement('div'); chairBar.className = 'bd-bar bd-rig'; chairBar.setAttribute('data-chair-ctl', '');
+  el.append(bar, rigBar, chairBar, pop); host.append(el);
   let open = false, cache = null, barSig = '';
   const verdict = () => { try { cache = o.report(); } catch { cache = null; } return cache; };
-  let rigSig = '';
+  let rigSig = '', chairSig = '';
   function render() {
-    const st = o.state(), rg = o.rig?.state?.() || null, hasBed = !!st?.available, hasRig = !!rg?.available;
-    el.hidden = !hasBed && !hasRig;
+    const st = o.state(), rg = o.rig?.state?.() || null, ch = o.chair?.state?.() || null, hasBed = !!st?.available, hasRig = !!rg?.available, hasChair = !!ch?.available;
+    el.hidden = !hasBed && !hasRig && !hasChair;
     if (el.hidden) return;
     const rs = hasRig ? JSON.stringify([rg.current, rg.choices.map((c) => c.id)]) : '';
     if (rs !== rigSig) { rigBar.innerHTML = rigControlHTML(rg); rigSig = rs; }
     rigBar.hidden = !hasRig;
+    const cs = hasChair ? JSON.stringify([ch.current, ch.choices.map((c) => c.id)]) : '';
+    if (cs !== chairSig) { chairBar.innerHTML = rigControlHTML(ch, 'data-chair-choice', 'Office chair'); chairSig = cs; }
+    chairBar.hidden = !hasChair;
     if (!hasBed) { if (barSig !== '') { bar.innerHTML = ''; barSig = ''; } bar.hidden = true; pop.hidden = true; return; }
     bar.hidden = false;
     const grade = verdict()?.grade ?? null, sig = JSON.stringify([st.current, st.exact, grade, st.choices.map((c) => c.id)]);
@@ -73,6 +77,8 @@ export function mountBedControl(host, o) {
   el.addEventListener('click', (e) => {
     const r = e.target.closest('[data-rig-choice]');
     if (r) { o.rig?.choose(r.dataset.rigChoice); return; }
+    const q = e.target.closest('[data-chair-choice]');
+    if (q) { o.chair?.choose(q.dataset.chairChoice); return; }
     const c = e.target.closest('[data-bed-choice]'), f = e.target.closest('[data-bed-fit]');
     if (c) { o.choose(c.dataset.bedChoice); return; }
     if (f) setOpen(!open);

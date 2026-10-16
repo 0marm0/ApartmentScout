@@ -31,7 +31,7 @@ def test_build_copies_furniture_json_and_flags_it_in_the_manifest(tmp_path: Path
 
 def test_the_shipped_example_furniture_is_committed_with_the_dashboard_data_and_is_public() -> None:
     f = json.loads((EXAMPLE / "furniture.json").read_text())
-    assert f["kind"] == "apartmentscout-furniture" and f["schema"] == 1 and len(f["pieces"]) == 12   # the renter's ten pieces, the candidate storage bed and the sim rig
+    assert f["kind"] == "apartmentscout-furniture" and f["schema"] == 1 and len(f["pieces"]) == 13   # the renter's eleven pieces (the office chair is one), the candidate storage bed and the sim rig
     assert (ROOT / "dashboard" / "data" / "furniture.json").read_text() == (EXAMPLE / "furniture.json").read_text()
     assert json.loads((ROOT / "dashboard" / "data" / "manifest.json").read_text())["furniture"] is True
     assert "/Users/" not in json.dumps(f) and all(p.get("source") for p in f["pieces"])
@@ -44,11 +44,12 @@ def test_the_shipped_example_furniture_is_committed_with_the_dashboard_data_and_
 
 def test_the_renters_answers_are_in_the_furniture_file_and_the_25e_default_layout_is_data() -> None:
     f = {p["id"]: p for p in json.loads((EXAMPLE / "furniture.json").read_text())["pieces"]}
-    desk = f["desk"]   # the Bestier rotating desk, used straight: 51.8 + 46.9 in less the overlap, a task chair and a 32-inch monitor
+    desk = f["desk"]   # the Bestier rotating desk, used straight: 51.8 + 46.9 in less the overlap, a 32-inch monitor (the task chair is its own piece, desk-chair)
     assert (desk["w"], desk["d"], desk["h"]) == (89.2, 21.6, 29.1) and desk["variant"] == "rotating"
-    assert desk["set"]["monitor"] == 32 and desk["set"]["chair"] == "task" and desk["set"]["config"] == "straight"
+    assert desk["set"]["monitor"] == 32 and desk["set"]["chair"] is False and desk["set"]["config"] == "straight"
     assert desk["look"]["material"] == "laminate" and desk["look"]["basis"] == "renter" and desk["look"]["parts"]["posts"]["color"] == "silver"
-    assert desk["look"]["parts"]["chair"]["color"] == "black" and "chair" in desk["look"]["assumed"]
+    chair = f["desk-chair"]   # the rolling office chair is a piece of its own: renter basis for owning it, black assumed
+    assert chair["ref"] == "task-chair" and chair["look"]["basis"] == "renter" and chair["look"]["color"] == "black" and "color" in chair["look"]["assumed"]
     chest = f["dresser"]   # IKEA STORKLINTA 6-drawer, the tall one (the renter corrected it from a MALM)
     assert chest["ref"] == "dresser-storklinta-6" and (chest["w"], chest["d"], chest["h"]) == (27.6, 18.9, 47.2) and chest["look"]["basis"] == "renter"
     assert "705.592.78" in chest["source"] and chest["source"].startswith("manufacturer")

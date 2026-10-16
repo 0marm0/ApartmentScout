@@ -53,7 +53,8 @@ export function grid(model, items, skip = null) {
   const obs = [];
   for (const p of model.pieces) if (p.z0 < LOW) obs.push({ poly: piecePoly(p), label: p.kind === 'sill' ? 'the window wall' : 'a wall', type: 'wall' });
   for (const f of model.fixtures) if (f.elev < LOW) obs.push({ poly: f.poly, label: (f.label || f.kind).toLowerCase(), type: 'fixture' });
-  for (const it of items) if (!it.hidden && !it.flat && it.id !== skip) for (const p of partPolys(walkPrint(it))) if (p.z0 < LOW) obs.push({ poly: p.poly, label: (it.name || it.ref || 'furniture').toLowerCase(), type: 'item', id: it.id });   // [bed option] each solid part at its own height
+  // a rolling office chair is pushed aside: it never closes a route
+  for (const it of items) if (!it.hidden && !it.flat && it.id !== skip && it.kind !== 'taskchair') for (const p of partPolys(walkPrint(it))) if (p.z0 < LOW) obs.push({ poly: p.poly, label: (it.name || it.ref || 'furniture').toLowerCase(), type: 'item', id: it.id });   // [bed option] each solid part at its own height
   obs.forEach((o, oi) => fill(o.poly, (k) => { free[k] = 0; owner[k] = oi; }));
   return { x0, y0, nx, ny, free, door, near, owner, obs, cx, cy };
 }
