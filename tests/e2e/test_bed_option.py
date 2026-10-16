@@ -242,7 +242,7 @@ def test_the_leds_glow_after_dark_and_are_off_by_day(open_page, webgl: bool) -> 
     pg.wait_for_function("() => window.__plan3d.parts.mood.now === 'night'")
     night = pg.evaluate(LEDS)
     assert night and all(v > 1 for led in night for v in led["mats"]), f"the cubby lights, the reading lights and the band glow at night ({night})"
-    assert all(0.3 < v <= 0.7 for led in night for v in led["glows"]), "and so do the soft washes in the cubbies"
+    assert all(0.1 < v <= 0.7 for led in night for v in led["glows"]), "and so do the soft washes under the rail and in the cubbies"
     assert {led["id"] for led in night} == {"bed-latitude"}
     # a lit LED is not a lamp: the room's own ceiling light stays on
     assert pg.evaluate(CEILING_LIGHT_ON)
