@@ -81,7 +81,7 @@ test('every hidden, removed or never-placed piece is listed with a Show / Add ba
   const { selbarHTML } = await import('../../dashboard/js/plan/selbar.js');
   assert.equal(inv.options.sim.default, 'hidden'); assert.equal(base.find((x) => x.id === 'sim-rig').hidden, true, 'the rig loads hidden');
   const off = offPieces(base, inv);
-  assert.deepEqual(off.map((q) => [q.id, q.name, q.why]), [['sim-rig', 'Sim rig', 'hidden']], 'the default lists the rig, not the candidate bed');
+  assert.deepEqual(off.map((q) => [q.id, q.name, q.why]), [['sim-rig', 'Sim rig', 'hidden']], 'the default lists the rig, not the beds (the Bed control has them)');
   assert.ok(offControlHTML(off).includes('data-show-piece="sim-rig"') && offControlHTML(off).includes('<b>Show</b> Sim rig'));
   // an older build saved the rig removed (not hidden), or never held it, or hid the office chair: each has the way back
   const saved = (items, removed) => resolveLayout({ model: m, inventory: inv, saved: validateLayout(serialiseLayout('paramount-tower-25e', items, { removed }), { planId: 'paramount-tower-25e', lenient: true }) }).items;
