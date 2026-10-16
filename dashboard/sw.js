@@ -222,60 +222,6 @@ async function assets(request) {
   }
 }
 
-const withTimeout = (p, ms) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), ms))]);
-
-/** OpenFreeMap tiles: the network first, the saved pack when the network fails or is slow. Only a tile that is already saved is refreshed,
- *  and the TileJSON and the label glyphs (small, needed to draw anything) are kept; the worker never saves other tiles by itself. */
-async function packTile(request, url) {
-  const cache = await caches.open(TILES), key = normalizeTileUrl(request.url);
-  const saved = await cache.match(key);
-  const small = url.pathname === '/planet' || url.pathname.startsWith('/fonts/');
-  try {
-    const res = await (saved ? withTimeout(fetch(request), TILE_SAVED_TIMEOUT_MS) : fetch(request));
-    if (res.ok && (saved || small)) cache.put(key, res.clone()).catch(() => {});
-    return res;
-  } catch (err) {
-    if (saved) return saved;
-    throw err;
-  }
-}
-
-let viewedIndex = null, viewedTimer = 0;
-async function loadViewedIndex() {
-  if (!viewedIndex) viewedIndex = await (async () => { const c = await caches.open(META), r = await c.match(new URL('__tile_index__', SCOPE).href); return r ? r.json() : {}; })().catch(() => ({}));
-  return viewedIndex;
-}
-function persistViewedSoon() {
-  clearTimeout(viewedTimer);
-  viewedTimer = setTimeout(async () => {
-    const c = await caches.open(META);
-    await c.put(new URL('__tile_index__', SCOPE).href, new Response(JSON.stringify(viewedIndex || {}), { headers: { 'content-type': 'application/json' } })).catch(() => {});
-  }, 1500);
-}
-/** Raster tiles from a provider whose terms do not allow saving an area: only what the renter looks at, newest kept, capped. */
-async function viewedTile(request) {
-  const cache = await caches.open(TILES_VIEWED);
-  try {
-    const res = await fetch(request);
-    if (res.ok && res.status === 200) {
-      const size = Number(res.headers.get('content-length')) || 0;
-      const copy = res.clone();
-      (async () => {
-        await cache.put(request.url, copy);
-        const index = await loadViewedIndex();
-        index[request.url] = [size || (await (await cache.match(request.url)).clone().blob()).size, Date.now()];
-        for (const key of planEviction(index, TILE_VIEW_CAP_BYTES, request.url).drop) { await cache.delete(key); delete index[key]; }
-        persistViewedSoon();
-      })().catch(() => {});
-    }
-    return res;
-  } catch (err) {
-    const hit = await cache.match(request.url);
-    if (hit) return hit;
-    throw err;
-  }
-}
-
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   event.waitUntil((async () => {
@@ -288,105 +234,6 @@ self.addEventListener('notificationclick', (event) => {
   })());
 });
 
-self.addEventListener('fetch', (event) => {
-  const req = event.request;
-  if (req.method !== 'GET' || req.headers.has('range')) return;
-  const url = new URL(req.url);
-  if (url.hostname === TILE_HOST) { event.respondWith(packTile(req, url)); return; }
-  if (VIEWED_HOSTS.includes(url.hostname)) { event.respondWith(viewedTile(req)); return; }
-  if (url.searchParams.has('_fresh')) return;   // an explicit "ask the network" (the pull-to-refresh check marks its request); everything else is served as before
-  if (url.origin !== new URL(SCOPE).origin || !url.href.startsWith(SCOPE) || isBypass(url) || isPhoto(url)) continue;
-      if (await cache.match(url.href)) continue;
-      const r = await fetch(url.href);
-      if (r.ok && r.type === 'basic') await cache.put(url.href, r);
-    } catch { /* a file that cannot be fetched now is fetched when it is needed */ }
-  }
-}
-
-async function readIndex() {
-  const c = await caches.open(META);
-  const r = await c.match(PHOTO_INDEX);
-  return r ? r.json() : {};
-}
-async function writeIndex(index) {
-  const c = await caches.open(META);
-  await c.put(PHOTO_INDEX, new Response(JSON.stringify(index), { headers: { 'content-type': 'application/json' } }));
-}
-
-async function status() {
-  const index = await readIndex();
-  const meta = await loadMeta();
-  return { build: BUILD, built: BUILT, shell: meta ? (meta.shell || []).length : 0, photoBytes: Object.values(index).reduce((n, e) => n + e[0], 0), photoCount: Object.keys(index).length, photoCap };
-}
-
-async function cachePhoto(request, response) {
-  const size = Number(response.headers.get('content-length')) || (await response.clone().blob()).size;
-  const cache = await caches.open(PHOTOS);
-  await cache.put(request, response);
-  const index = await readIndex();
-  index[request.url] = [size, Date.now()];
-  const { drop } = planEviction(index, photoCap, request.url);
-  for (const key of drop) { await cache.delete(key); delete index[key]; }
-  await writeIndex(index);
-}
-
-async function photo(request) {
-  const cache = await caches.open(PHOTOS);
-  const hit = await cache.match(request);
-  if (hit) return hit;
-  const res = await fetch(request);
-  if (res.ok && res.type === 'basic' && res.status === 200) await cachePhoto(request, res.clone()).catch(() => {});
-  return res;
-}
-
-/** The dashboard's own page (the scope URL or its index.html): the one navigation served from the cache. */
-function isHome(url) {
-  return url.origin + url.pathname === SCOPE || url.origin + url.pathname === new URL('index.html', SCOPE).href;
-}
-
-async function navigate(request) {
-  const url = new URL(request.url);
-  const meta = await loadMeta();
-  const shell = await caches.open(SHELL);
-  const cached = async () => (isHome(url)
-    ? (await shell.match(request, { ignoreSearch: true })) || (await shell.match(SCOPE)) || (await shell.match(new URL('index.html', SCOPE).href))
-    : null);
-  if (BUILT && meta) {
-    // a built copy is one consistent version (the page and the hashed files it names): serve it, and let the worker
-    // update check offer the next version. Only a page the cache does not hold goes to the network.
-    return (await cached()) || fetch(request);
-  }
-  try {
-    const net = await Promise.race([fetch(request), new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), NAV_TIMEOUT_MS))]);
-    if (net.ok && net.type === 'basic' && isHome(url)) shell.put(SCOPE, net.clone()).catch(() => {});
-    return net;
-  } catch {
-    return (await cached()) || Response.error();
-  }
-}
-
-async function assets(request) {
-  const meta = await loadMeta();
-  const shell = await caches.open(SHELL), runtime = await caches.open(RUNTIME);
-  if (BUILT && meta) {
-    const hit = (await shell.match(request, { ignoreSearch: true })) || (await runtime.match(request, { ignoreSearch: true }));
-    if (hit) return hit;
-    const res = await fetch(request);
-    if (res.ok && res.type === 'basic') runtime.put(request, res.clone()).catch(() => {});
-    return res;
-  }
-  // not a built copy: never let a cached file hide a newer one
-  try {
-    const res = await fetch(request);
-    if (res.ok && res.type === 'basic') shell.put(request, res.clone()).catch(() => {});
-    return res;
-  } catch {
-    const hit = await shell.match(request, { ignoreSearch: true });
-    if (hit) return hit;
-    throw new Error('offline and not cached');
-  }
-}
-
 const withTimeout = (p, ms) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), ms))]);
 
 /** OpenFreeMap tiles: the network first, the saved pack when the network fails or is slow. Only a tile that is already saved is refreshed,
@@ -447,9 +294,7 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(req.url);
   if (url.hostname === TILE_HOST) { event.respondWith(packTile(req, url)); return; }
   if (VIEWED_HOSTS.includes(url.hostname)) { event.respondWith(viewedTile(req)); return; }
-  // an explicit "ask the network" (the pull-to-refresh check) skips the worker; a page navigation never does (the browser's own reload button asks with
-  // cache 'reload' too, and a reload with no connection must still open the saved copy)
-  if (req.mode !== 'navigate' && (req.cache === 'reload' || req.cache === 'no-store')) return;
+  if (url.searchParams.has('_fresh')) return;   // an explicit "ask the network" (the pull-to-refresh check marks its request); everything else is served as before
   if (url.origin !== new URL(SCOPE).origin || !url.href.startsWith(SCOPE) || isBypass(url)) return;
   if (req.mode === 'navigate') event.respondWith(navigate(req));
   else if (isPhoto(url)) event.respondWith(photo(req));
