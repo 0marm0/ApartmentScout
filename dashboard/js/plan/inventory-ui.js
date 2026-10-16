@@ -25,7 +25,7 @@ export function inventoryHTML(inv, { held = new Set(), hidden = new Set(), remov
     if (on && hidden.has(p.id)) return `<span class="pill">${p.candidate ? 'Candidate, hidden' : 'Hidden'}</span><button type="button" class="btn iv-add" data-inv-show="${esc(p.id)}" title="Show ${esc(p.label || p.ref)} again, where it was">Show</button>`;
     if (p.candidate && !on && !removed.has(p.id)) return '<span class="pill warn" title="A bed you may buy, not one you own: switch to it with the Bed control">Candidate</span>';
     if (p.candidate && on) return '<span class="pill warn" title="A bed you may buy, not one you own: switch to it with the Bed control">Candidate</span>';
-    if (on) return '<span class="pill good">In this layout</span>';
+    if (on) return `<span class="pill good">In this layout</span><button type="button" class="btn ghost iv-add" data-inv-hide="${esc(p.id)}" title="Hide ${esc(p.label || p.ref)} from the layout; Show brings it back">Hide</button>`;
     const back = removed.has(p.id);
     return `<button type="button" class="btn ghost iv-add" data-inv-add="${esc(p.id)}" title="${back ? 'Put it back where it was' : 'Place it in the layout'}">${back ? 'Add back' : 'Add'}</button>`;
   };
@@ -34,7 +34,7 @@ export function inventoryHTML(inv, { held = new Set(), hidden = new Set(), remov
     const looks = p.look ? ` · <span class="iv-look ${basis}" title="${mine ? 'The colour and material come from you' : basis === 'manufacturer' ? 'Read from the maker\'s pictures' : 'A stand-in look: tell us the real one'}">${esc(describeLook({ color: p.candidate ? p.candidate.colour : p.look.color, material: p.look.material }))}${mine ? '' : basis === 'manufacturer' ? ' (maker\'s pictures)' : ' (assumed)'}</span>` : '';
     return `<li class="iv-row${on ? ' on' : ''}"><span class="ps-sw" style="--c:${hex(lk?.color ?? c.color)}"></span>
       <span class="iv-t"><b>${esc(p.label || c.name || p.ref)}</b><small>${esc(sizeOf(p))}${p.assumed?.length ? ` <span class="iv-assumed" title="You did not give this size: it is a stand-in until you do">(${esc(p.assumed.map((k) => ({ w: 'width', d: 'depth', h: 'height', elev: 'height off the floor' }[k] || k)).join(', '))} assumed)</span>` : ''}${looks}${p.note ? ` · ${esc(p.note)}` : ''}</small></span>
-      ${act(p, on)}</li>`;
+      <span class="iv-end">${act(p, on)}</span></li>`;
   }).join('');
   return `<section class="iv" aria-label="Your furniture">
     <h3 class="label">${esc(inv.name || 'Your furniture')} <span>${n} piece${n === 1 ? '' : 's'}, real sizes</span></h3>

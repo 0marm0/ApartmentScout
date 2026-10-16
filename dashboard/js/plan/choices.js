@@ -56,3 +56,26 @@ export function applyChoice(items, inv, groupId, choiceId) {
 
 /** The default choice of a group, for a layout that has never been touched. */
 export const defaultChoice = (inv, groupId = 'bed') => groupsOf(inv).find((x) => x.id === groupId)?.default ?? null;
+
+/** A short name for a piece's list and buttons: "Sim rig, Next Level Racing F-GT Lite (GT) with Fanatec wheel" -> "Sim rig", "Office chair (rolling task chair)" -> "Office chair". */
+export const shortName = (label) => String(label || '').replace(/\s*\([^)]*\)/g, '').split(',')[0].trim() || 'piece';
+
+/**
+ * The renter's pieces the layout is not showing, each with the way back: `hidden` (in the layout, hidden: Show), `removed` (taken out by hand: Add back)
+ * or `absent` (a layout that never held it: Add). One list for every view that can hide furniture (the studio's 2D plan and 3D view, Unit 3D's Inside
+ * view), so a piece hidden through any path (a switch, the Hide button, an older build's saved layout) can always be brought back. A candidate purchase
+ * is not the renter's piece and is not listed (the Bed control has it).
+ * @returns {{id: string, name: string, why: 'hidden'|'removed'|'absent'}[]}
+ */
+export function offPieces(items, inv, { removed = [] } = {}) {
+  const by = new Map((items || []).map((it) => [it.id, it])), gone = new Set(removed), out = [], own = new Set((inv?.pieces || []).map((p) => p.id));
+  const nameOf = (id, it) => shortName(inv?.pieces?.find((p) => p.id === id)?.label || it?.label || it?.ref || id);
+  for (const p of inv?.pieces || []) {
+    if (p.candidate) continue;
+    const it = by.get(p.id);
+    if (!it) out.push({ id: p.id, name: nameOf(p.id, null), why: gone.has(p.id) ? 'removed' : 'absent' });
+    else if (it.hidden) out.push({ id: p.id, name: nameOf(p.id, it), why: 'hidden' });
+  }
+  for (const it of items || []) if (it.hidden && !own.has(it.id)) out.push({ id: it.id, name: nameOf(it.from || it.id, it), why: 'hidden' });   // a piece the renter added from the catalogue (or a copy) and hid
+  return out;
+}
