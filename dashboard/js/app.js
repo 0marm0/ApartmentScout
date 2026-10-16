@@ -721,7 +721,7 @@ function drawerChrome(dw) {
 export function openDrawer(id, opt = {}) {
   const L = byId(id); if (!L) return;
   if (mediaTransition(id, opt, () => openDrawer(id, { ...opt, noVT: true }))) return;   // card photo grows into the hero
-  const prevSel = S.sel;
+  const prevSel = S.sel, reshown = prevSel === id && $('drawer').classList.contains('open');   // the open card drawn again (a late module, a save): not a new opening
   S.sel = id;
   const s = L.score || {}, p = L.price || {}, am = L.amenities || {}, rv = L.reviews || {}, rec = L.records || {};
   const im = imagesOf(L), t = tierIndex(L), d = dest();
@@ -794,7 +794,7 @@ ${whySection(L)}
   if (keep) dw.querySelector('.d-scroll').scrollTop = keep.y;
   $('drawer').classList.add('open');
   document.querySelectorAll('.card').forEach((c) => c.classList.toggle('sel', c.dataset.id === id));
-  revealCard(id, !!opt.instant);   // scrolls the windowed list, also to a card that is not rendered yet
+  if (!reshown) revealCard(id, !!opt.instant);   // scrolls the windowed list, also to a card that is not rendered yet; a redraw of the open card must not undo where the renter scrolled it
   emit('select', { id, fly: opt.fly });
 }
 export function closeDrawer() {
