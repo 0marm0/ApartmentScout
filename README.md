@@ -40,7 +40,7 @@ The main things it does: rank homes on a commute map, stand inside the exact uni
 <td colspan="2" valign="top" align="center"><a href="docs/images/hero-map.png"><img src="docs/images/hero-map.png" alt="The map with ranked cards on the left and Paramount Tower 25E open in the drawer"></a><br><sub><b>The map, the ranked list and commute times, with a home open</b></sub></td>
 </tr>
 <tr>
-<td width="50%" valign="top" align="center"><a href="docs/images/inside-unit-3d.png"><img src="docs/images/inside-unit-3d.png" alt="Unit 3D opening inside Paramount Tower 25E: the desk, monitor and office chair by the bay window, the futon in the corner"></a><br><sub><b>Inside the exact unit, with your own furniture</b></sub></td>
+<td width="50%" valign="top" align="center"><a href="docs/images/inside-living-room.png"><img src="docs/images/inside-living-room.png" alt="Looking down the living room of Paramount Tower 25E toward the bay: the wall-mounted TV, the desk and office chair, the futon, the dining table, two paintings and the towers through the windows"></a><br><sub><b>Inside the exact unit: your own furniture, paintings and the view</b></sub></td>
 <td width="50%" valign="top" align="center"><a href="docs/images/inside-skyline-dusk.png"><img src="docs/images/inside-skyline-dusk.png" alt="The Midtown skyline at dusk from Unit 3D"></a><br><sub><b>The real city around it, at dusk</b></sub></td>
 </tr>
 <tr>
@@ -66,16 +66,19 @@ Unit 3D puts you in the exact unit with the furniture you own and the real city 
 
 <table>
 <tr>
-<td width="50%" valign="top" align="center"><a href="docs/images/inside-furniture.png"><img src="docs/images/inside-furniture.png" alt="Looking down the living room: a black leather futon, a wall-mounted TV, a coffee table and a dining table on a basket-weave parquet floor"></a><br><sub><b>Your own furniture, at real sizes</b></sub></td>
-<td width="50%" valign="top" align="center"><a href="docs/images/inside-bay.png"><img src="docs/images/inside-bay.png" alt="Inside the bedroom corner, looking out of the angled windows at towers, a park and the river"></a><br><sub><b>Through the angled windows</b></sub></td>
+<td width="50%" valign="top" align="center"><a href="docs/images/inside-furniture.png"><img src="docs/images/inside-furniture.png" alt="The bedroom seen from its door: the brown storage bed with black quilted bedding, the wall-mounted TV, a painting over the bed and the corner windows with towers, a park and the river"></a><br><sub><b>The bedroom from its door: your bed, TV and the view</b></sub></td>
+<td width="50%" valign="top" align="center"><a href="docs/images/inside-unit-3d.png"><img src="docs/images/inside-unit-3d.png" alt="Unit 3D inside Paramount Tower 25E: the desk, monitor and office chair by the bay window, a painting, the TV and the dining table"></a><br><sub><b>Your desk and chair by the window</b></sub></td>
 </tr>
 <tr>
-<td width="50%" valign="top" align="center"><a href="docs/images/inside-bedroom.png"><img src="docs/images/inside-bedroom.png" alt="In the bedroom: the corner window with the sun on the floor, a black chest with a TV on the wall"></a><br><sub><b>The bedroom</b></sub></td>
+<td width="50%" valign="top" align="center"><a href="docs/images/inside-bay.png"><img src="docs/images/inside-bay.png" alt="The bedroom bay at wide angle, looking out of the angled windows at towers, a park and the river with the bed's headboard at the edge"></a><br><sub><b>Through the angled windows</b></sub></td>
+<td width="50%" valign="top" align="center"><a href="docs/images/inside-bedroom.png"><img src="docs/images/inside-bedroom.png" alt="The bedroom from the window end: the whole bed, the seascape painting over it, the dresser and the window"></a><br><sub><b>The bedroom</b></sub></td>
+</tr>
+<tr>
 <td width="50%" valign="top" align="center"><a href="docs/images/inside-night-window.png"><img src="docs/images/inside-night-window.png" alt="Standing at the window at night: lit windows in the towers, street lamps along the river road"></a><br><sub><b>The night city</b></sub></td>
+<td width="50%" valign="top" align="center"><a href="docs/images/inside-fits.png"><img src="docs/images/inside-fits.png" alt="Does it fit? A bookshelf dropped into the living room with the space around it on each side"></a><br><sub><b>Does it fit?</b></sub></td>
 </tr>
 <tr>
-<td width="50%" valign="top" align="center"><a href="docs/images/inside-fits.png"><img src="docs/images/inside-fits.png" alt="Does it fit? A bookshelf dropped into the living room with the space around it on each side"></a><br><sub><b>Does it fit?</b></sub></td>
-<td width="50%" valign="top" align="center"><a href="docs/images/inside-match-photo.png"><img src="docs/images/inside-match-photo.png" alt="Match a photo: a listing photo laid over the 3D view while a landmark is marked"></a><br><sub><b>Match a listing photo</b></sub></td>
+<td colspan="2" valign="top" align="center"><a href="docs/images/inside-match-photo.png"><img src="docs/images/inside-match-photo.png" alt="Match a photo: a listing photo laid over the 3D view while a landmark is marked"></a><br><sub><b>Match a listing photo</b></sub></td>
 </tr>
 </table>
 
