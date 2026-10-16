@@ -116,8 +116,24 @@ def fx() -> dict:
     return json.loads(FIXTURE.read_text())
 
 
+def _close(a, b, path="") -> list[str]:
+    """Differences between two JSON trees, allowing floating-point noise between Python versions (1e-9 relative)."""
+    if isinstance(a, dict) and isinstance(b, dict):
+        if a.keys() != b.keys():
+            return [f"{path}: keys {sorted(a)} != {sorted(b)}"]
+        return [d for k in a for d in _close(a[k], b[k], f"{path}.{k}")]
+    if isinstance(a, list) and isinstance(b, list):
+        if len(a) != len(b):
+            return [f"{path}: length {len(a)} != {len(b)}"]
+        return [d for i, (x, y) in enumerate(zip(a, b)) for d in _close(x, y, f"{path}[{i}]")]
+    if isinstance(a, float) or isinstance(b, float):
+        return [] if a == pytest.approx(b, rel=1e-9, abs=1e-9) else [f"{path}: {a} != {b}"]
+    return [] if a == b else [f"{path}: {a!r} != {b!r}"]
+
+
 def test_fixture_is_current(fx):
-    assert json.loads(json.dumps(build_fixture())) == fx, "run: .venv/bin/python tests/test_daylight.py"
+    diffs = _close(json.loads(json.dumps(build_fixture())), fx)
+    assert not diffs, "run: .venv/bin/python tests/test_daylight.py\n" + "\n".join(diffs[:10])
 
 
 # ------------------------------------------------------------------------------------------------ physics

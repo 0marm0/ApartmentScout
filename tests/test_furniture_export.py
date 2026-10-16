@@ -44,9 +44,10 @@ def test_the_shipped_example_furniture_is_committed_with_the_dashboard_data_and_
 
 def test_the_renters_answers_are_in_the_furniture_file_and_the_25e_default_layout_is_data() -> None:
     f = {p["id"]: p for p in json.loads((EXAMPLE / "furniture.json").read_text())["pieces"]}
-    desk = f["desk"]   # about 180 cm, brown wood, depth not known (so assumed), a task chair and a 32-inch monitor
-    assert (desk["w"], desk["d"], desk["h"]) == (71, 30, 30) and desk["assumed"] == ["d"] and desk["set"] == {"monitor": 32, "chair": "task"}
-    assert desk["look"]["color"] == "brown" and desk["look"]["material"] == "wood" and desk["look"]["basis"] == "renter"
+    desk = f["desk"]   # the Bestier rotating desk, used straight: 51.8 + 46.9 in less the overlap, a task chair and a 32-inch monitor
+    assert (desk["w"], desk["d"], desk["h"]) == (89.2, 21.6, 29.1) and desk["variant"] == "rotating"
+    assert desk["set"]["monitor"] == 32 and desk["set"]["chair"] == "task" and desk["set"]["config"] == "straight"
+    assert desk["look"]["material"] == "laminate" and desk["look"]["basis"] == "renter" and desk["look"]["parts"]["posts"]["color"] == "silver"
     assert desk["look"]["parts"]["chair"]["color"] == "black" and "chair" in desk["look"]["assumed"]
     chest = f["dresser"]   # IKEA STORKLINTA 6-drawer, the tall one (the renter corrected it from a MALM)
     assert chest["ref"] == "dresser-storklinta-6" and (chest["w"], chest["d"], chest["h"]) == (27.6, 18.9, 47.2) and chest["look"]["basis"] == "renter"
