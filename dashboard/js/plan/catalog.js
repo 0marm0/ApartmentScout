@@ -102,6 +102,11 @@ export const CATALOG = {
     src: 'IKEA MALM 6-drawer chest, 160 x 48 x 78 cm (63 x 18.9 x 30.7 in): two columns of three flat drawers, a recessed edge along the top of each front as the pull, no knobs.',
     zones: [Z('front', 'drawers', { mode: 'full', name: 'Drawers' })],
   },
+  'dresser-storklinta-6': {
+    name: 'STORKLINTA 6-drawer dresser', cat: 'storage', kind: 'dresser', style: 'storklinta', w: 27.6, d: 18.9, h: 47.2, color: 0x3a2b22,
+    src: 'IKEA STORKLINTA 6-drawer dresser, dark brown oak effect, 70 x 48 x 120 cm (27.6 x 18.9 x 47.2 in): two small drawers side by side on top, then four full-width ones; slab fronts with no handles (a shadow gap above each front is the grip).',
+    zones: [Z('front', 'drawers', { mode: 'full', name: 'Drawers' })],
+  },
   'dresser-wide': {
     name: 'Dresser, 6 drawers', cat: 'storage', kind: 'dresser', w: 55, d: 19, h: 31, color: MAT.oak,
     src: 'Typical wide 6-drawer dresser, about 55 x 19 x 31 in.',

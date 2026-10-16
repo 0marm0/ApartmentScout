@@ -167,14 +167,14 @@ test('the checks measure each solid part at its own height: a floating nightstan
 test('Paramount 25E: the 94 in storage bed fits the headboard wall, centred where the renter\'s bed is, with its walk, drawers, doors, window and heat', () => {
   const m = model(), items = shown(raw(), 'storage'), rep = bedFit(m, items), by = Object.fromEntries(rep.rows.map((r) => [r.key, r]));
   assert.ok(rep.fits, rep.summary);
-  assert.equal(rep.grade, 'tight', 'one question is tight: the walk past the foot of the bed');
+  assert.equal(rep.grade, 'clear', 'every question is clear: the tall dresser stands beside the foot of the bed, not in front of it');
   // the wall: 22 in to the closet-side corner (left, as you lie in it) and 8 in to the window (right)
   assert.equal(by.wall.grade, 'clear');
   assert.ok(near(by.wall.left, 22, 0.8) && near(by.wall.right, 8, 0.8), `left ${by.wall.left}, right ${by.wall.right}`);
   assert.match(by.wall.text, /Fits: the 94 in headboard unit has 22 in to spare on the left \(to the wall\) and 8 in to spare on the right \(to the window\)\./);
-  // the length against the walkway to the TV wall and the MALM chest: about 32 in, above the 30 in minimum, under the 36 in that is comfortable
-  assert.equal(by.walk.grade, 'tight'); assert.ok(near(by.walk.free, 32.25, 0.6), `${by.walk.free}`);
-  assert.match(by.walk.text, /IKEA MALM 6-drawer chest/); assert.match(by.walk.text, /fits, but under the 36 in/);
+  // the length against the walk to the TV wall: the STORKLINTA dresser is on that wall but beside the bed's foot, so the walk is the whole 51 in to the wall
+  assert.equal(by.walk.grade, 'clear'); assert.ok(near(by.walk.free, 51, 1), `${by.walk.free}`);
+  assert.match(by.walk.text, /from its foot to a wall: fits/);
   // the drawers pull out 17 in and want about 31: both sides have it (39 in on the closet side, more than 60 on the window side)
   assert.equal(by.drawers.grade, 'clear'); assert.ok(by.drawers.sides.left >= 31 && by.drawers.sides.right >= 31); assert.ok(near(by.drawers.sides.left, 38.75, 0.8), `${by.drawers.sides.left}`);
   assert.match(by.drawers.text, /pull out 17 in and want about 31 in/);
