@@ -257,7 +257,7 @@ def test_model_project_exports_and_restores_offline_in_a_fresh_browser(open_page
     assert proj["kind"] == "apartmentscout-model-project" and proj["schema"] == 1
     assert len(proj["site"]["data"]["b"]) > 1000 and proj["site"]["sha256"] and len(proj["receipts"]["datasets"]) >= 1
     assert proj["anchor"]["kind"] == "apartmentscout-model-anchor" and proj["anchor"]["datum"]["state"] == "measured"
-    assert proj["plan"]["source"] == "local scenario" and len(proj["plan"]["project"]["layout"]["items"]) == 10
+    assert proj["plan"]["source"] == "local scenario" and len(proj["plan"]["project"]["layout"]["items"]) == 11
     assert proj["calibration"]["measured"]["value_m"] == 80.5 and proj["view"]["mode"] == "in" and proj["app"]["name"] == "ApartmentScout"
     # a site this app has never heard of, restored from the file alone (no network: every outside request is blocked)
     new = "demo-import-25e"
@@ -271,7 +271,7 @@ def test_model_project_exports_and_restores_offline_in_a_fresh_browser(open_page
     b.page.set_input_files("input[data-act=project-import]", str(f))
     b.page.wait_for_selector("[data-act=project-restore]")
     review = b.page.locator("#mpImport").inner_text()
-    assert re.search(r"\b\d,\d{3}\b", review) and "10 pieces" in review and "Measured slab height 80.5 m" in review   # thousands of buildings (3,427)
+    assert re.search(r"\b\d,\d{3}\b", review) and "with 11 pieces" in review and "Measured slab height 80.5 m" in review   # thousands of buildings (3,427)
     b.page.click("[data-act=project-restore]")
     _unit_ready(b, new)
     got = b.page.evaluate("() => ({floor: window.__unit3d.st.floor, mode: window.__unit3d.st.mode, cal: window.__unit3d.cal.state, slab: window.__unit3d.cal.slabAt(window.__unit3d.st.floor), plan: window.__unit3d.planInfo.source, furn: !!window.__unit3d.stage.interior.furniture, n: window.__unit3d.B.length})")
