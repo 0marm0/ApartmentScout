@@ -44,7 +44,7 @@ jobs:
           - name: 1-of-6
             files: tests/e2e/test_dashboard.py tests/e2e/test_lightbox.py tests/e2e/test_onboarding.py tests/e2e/test_pwa.py tests/e2e/test_results_rail.py tests/e2e/test_tourday.py
           - name: 2-of-6
-            files: tests/e2e/test_device_sync.py tests/e2e/test_landing_page.py tests/e2e/test_map_clusters.py tests/e2e/test_media_tiers.py tests/e2e/test_menu_nav.py tests/e2e/test_pair3d.py tests/e2e/test_placement_walk.py
+            files: tests/e2e/test_device_sync.py tests/e2e/test_landing_page.py tests/e2e/test_map_clusters.py tests/e2e/test_media_tiers.py tests/e2e/test_menu_nav.py tests/e2e/test_pair3d.py tests/e2e/test_placement_walk.py tests/e2e/test_render.py
           - name: 3-of-6
             files: tests/e2e/test_daycycle.py tests/e2e/test_decision.py tests/e2e/test_decision_report.py tests/e2e/test_furniture_studio.py tests/e2e/test_pdf_tracer.py tests/e2e/test_places_multidest.py tests/e2e/test_wizard.py
           - name: 4-of-6
