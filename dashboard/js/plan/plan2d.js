@@ -91,7 +91,7 @@ function glyph(it) {
   if (k === 'bed' && it.parts?.length && it.spec) {   // [bed option] a bed with towers: the headboard unit, the two floating nightstands, the platform with its mattress, pillows and side drawers
     const g = dimsOf(it.spec), hw = g.W / 2, fw = g.frame.w / 2, Y = (sv) => y + sv, tw = g.head.towerW;
     const drw = [-1, 1].map((sx) => [...Array(g.drawers.perSide)].map((_, i) => R('g-drw', sx < 0 ? -fw : fw - 2, Y(g.D - (i + 1) * g.drawers.l + 0.5), 2, g.drawers.l - 1, 0.5)).join('')).join('');
-    o = R('g-base', -fw, Y(g.head.depth), 2 * fw, g.D - g.head.depth, 2) + R('g-lt', -g.mattress.w / 2, Y(3.3), g.mattress.w, g.mattress.d, 3) + drw
+    o = R('g-dk', -fw, Y(g.head.depth), 2 * fw, g.D - g.head.depth, 2) + R('g-base', -g.mattress.w / 2, Y(3.3), g.mattress.w, g.mattress.d, 3) + drw
       + R('g-lt', -g.mattress.w / 2 + 3, Y(g.head.depth + 2), g.mattress.w / 2 - 4, 16, 4) + R('g-lt', 1, Y(g.head.depth + 2), g.mattress.w / 2 - 4, 16, 4)
       + R('g-dk', -(hw - tw), Y(0), 2 * (hw - tw), g.head.depth, 1) + [-1, 1].map((sx) => R('g-dk', sx < 0 ? -hw : hw - tw, Y(0), tw, g.head.towerDepth, 1) + R('g-base', sx < 0 ? -hw : hw - tw, Y(g.head.towerDepth), tw, g.stand.d - g.head.towerDepth, 2) + L(sx < 0 ? -hw + 1.5 : hw - tw + 1.5, Y(g.stand.d - 2.5), sx < 0 ? -hw + tw - 1.5 : hw - 1.5, Y(g.stand.d - 2.5))).join('');
   } else if (k === 'bed') {

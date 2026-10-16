@@ -60,6 +60,13 @@ export function mountBedControl(host, o) {
     if (c) { o.choose(c.dataset.bedChoice); return; }
     if (f) setOpen(!open);
   });
+  el.addEventListener('keydown', (e) => {   // a radio group: the arrows move the choice
+    const k = e.key, b = e.target.closest?.('[data-bed-choice]');
+    if (b && (k === 'ArrowLeft' || k === 'ArrowRight' || k === 'ArrowUp' || k === 'ArrowDown')) {
+      const all = [...bar.querySelectorAll('[data-bed-choice]')], at = all.indexOf(b), next = all[(at + (k === 'ArrowLeft' || k === 'ArrowUp' ? -1 : 1) + all.length) % all.length];
+      e.preventDefault(); o.choose(next.dataset.bedChoice); bar.querySelector(`[data-bed-choice="${next.dataset.bedChoice}"]`)?.focus(); return;
+    }
+  });
   el.addEventListener('keydown', (e) => { if (e.key === 'Escape' && open) { e.stopPropagation(); setOpen(false); bar.querySelector('[data-bed-fit]')?.focus(); } });
   render();
   return { el, update: render, close: () => setOpen(false) };

@@ -7,7 +7,7 @@
 .ps-panes[data-mode="both"] .bed-ctl.in-p3d { top: 92px; }
 .bed-ctl.in-unit { position: relative; top: auto; left: auto; right: auto; bottom: auto; order: 5; align-self: flex-start; }
 .bd-bar { display: flex; align-items: center; gap: 4px; flex-wrap: nowrap; }
-.bd-l { font-size: var(--fs-2xs); font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--ink-3); padding: 0 4px 0 6px; flex: none; }
+.bd-l { font-size: var(--fs-2xs); font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--ink-2); padding: 0 4px 0 6px; flex: none; }
 .bd-seg { display: flex; gap: 2px; min-width: 0; }
 .bd-seg button, .bd-fit { border: 0; background: none; height: 26px; padding: 0 10px; border-radius: 7px; font: 500 var(--fs-xs) var(--font-sans, inherit); color: var(--ink-2); cursor: pointer; white-space: nowrap; transition: color var(--t-fast), background var(--t-fast); }
 .bd-seg button:hover, .bd-fit:hover { color: var(--ink); }
