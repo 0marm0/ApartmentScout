@@ -59,4 +59,6 @@ test('placeCard: always inside the viewport, even at the edges', () => {
 test('placeCard: on a phone the card docks at the bottom', () => {
   const p = placeCard({ x: 20, y: 100, w: 60, h: 40 }, { w: 300, h: 180 }, { w: 390, h: 844 });
   assert.equal(p.dock, 'bottom'); assert.equal(p.top, 844 - 180 - 12);
+  const low = placeCard({ x: 150, y: 780, w: 60, h: 50 }, { w: 300, h: 180 }, { w: 390, h: 844 });
+  assert.equal(low.dock, 'top', 'a target in the lower half (the tab bar) keeps the card off itself'); assert.equal(low.top, 12);
 });

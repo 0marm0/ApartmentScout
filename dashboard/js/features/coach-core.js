@@ -32,10 +32,13 @@ export function nextStep(index, dir, has) {
 
 /**
  * Where the card goes: `rect` is the target, `card` its size, `vp` the viewport. Prefers the right of a tall target
- * (the filter rail), else below, above, left; clamped inside the viewport with a margin. On a phone it docks at the bottom.
+ * (the filter rail), else below, above, left; clamped inside the viewport with a margin. On a phone it docks at the bottom, or at the top when the target is in the lower half.
  */
 export function placeCard(rect, card, vp, { gap = 14, margin = 12 } = {}) {
-  if (vp.w <= 760) return { dock: 'bottom', left: margin, top: Math.max(margin, vp.h - card.h - margin) };
+  if (vp.w <= 760) {   // a phone: the card takes the half of the screen the target is not in, so it never covers what it points at
+    if (rect.y + rect.h / 2 > vp.h / 2) return { dock: 'top', left: margin, top: margin };
+    return { dock: 'bottom', left: margin, top: Math.max(margin, vp.h - card.h - margin) };
+  }
   const clampX = (x) => Math.max(margin, Math.min(vp.w - card.w - margin, x));
   const clampY = (y) => Math.max(margin, Math.min(vp.h - card.h - margin, y));
   const tall = rect.h > vp.h * 0.5;
