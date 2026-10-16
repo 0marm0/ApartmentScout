@@ -544,7 +544,7 @@ canvas.plot { width: 100%; height: auto; display: block; }
   .top-actions .btn { padding: 0 10px; }
   /* drawer as a bottom sheet: a grab handle and a rounded top that clears the KPI strip */
   .drawer::before { content: ""; position: absolute; z-index: 4; top: 7px; left: 50%; width: 36px; height: 4px; margin-left: -18px; border-radius: 2px; background: rgba(255, 255, 255, .55); box-shadow: 0 0 0 1px rgba(0, 0, 0, .12); pointer-events: none; }
-  .d-actions { padding-bottom: max(12px, env(safe-area-inset-bottom)); }
+  .d-actions { padding-bottom: max(12px, var(--safe-b)); }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 
@@ -755,7 +755,7 @@ body { grid-template-columns: minmax(0, 1fr); }
   .sh-h { padding: 16px 16px 12px; } .sh-body { padding: 0 16px 16px; }
   .sh-tier { grid-template-columns: 10px minmax(0, 1fr) 118px 28px; }
   .sh-am { flex-wrap: wrap; gap: 6px; } .sh-am .seg { width: 100%; } .sh-am .seg button { flex: 1; }
-  .sh-f { padding-bottom: max(12px, env(safe-area-inset-bottom)); }
+  .sh-f { padding-bottom: max(12px, var(--safe-b)); }
   .sh-f .l { width: 100%; justify-content: space-between; }
   .sh-f .btn:not(.sm) { flex: 1; justify-content: center; }
   .cashflow { grid-template-columns: minmax(0, 1fr); }

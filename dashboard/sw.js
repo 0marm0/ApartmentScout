@@ -13,7 +13,13 @@
  *                  (sw.js is fetched uncached on every visit) finds a new deploy and the page offers a Reload button.
  *                  Without precache.json the page is network first (4 s timeout), then the cached copy.
  *   photos         Saved listing photos (media/, or the starter set media-lite/) are cached on first view in their own cache, which is not tied to a
- *                  build and is capped (PHOTO_CAP_BYTES, oldest first). Remote photos and map tiles are not touched.
+ *                  build and is capped (PHOTO_CAP_BYTES, oldest first). Remote photos are not touched.
+ *   map tiles      OpenFreeMap's tiles, its TileJSON and label glyphs (tiles.openfreemap.org) go network first (3 s when a saved copy exists), and
+ *                  fall back to the offline pack the renter saved in Tour day (js/features/offline-tiles.js writes the cache `as-tiles`; a tile is
+ *                  stored under its address without the weekly version folder). The worker only refreshes tiles that are already saved, plus the
+ *                  small TileJSON and glyph files; it never saves a tile on its own. Esri's raster basemap (server.arcgisonline.com), whose terms do
+ *                  not allow bulk saving, is kept only for what the renter looks at, in `as-tiles-viewed`, capped (TILE_VIEW_CAP_BYTES, oldest first).
+ *   explicit reload A request with ?_fresh in its address (the pull-to-refresh check for new data) skips the worker and asks the network.
  *   no precache.json (a plain copy of dashboard/ with no deploy step) the worker caches what the page asks it to
  *                  (message WARM) and serves network-first, so a stale copy never hides new data.
  *
@@ -37,6 +43,12 @@ const META = 'as-meta';
 const PHOTO_INDEX = new URL('__photo_index__', SCOPE).href;
 const NAV_TIMEOUT_MS = 4000;
 let photoCap = 50 * 1024 * 1024;          // bytes of saved listing photos kept for offline
+const TILES = 'as-tiles';                 // the saved offline pack (never deleted by an update; the page clears it)
+const TILES_VIEWED = 'as-tiles-viewed';   // raster tiles the renter looked at (Esri), capped
+const TILE_HOST = 'tiles.openfreemap.org';
+const VIEWED_HOSTS = ['server.arcgisonline.com'];
+const TILE_VIEW_CAP_BYTES = 40 * 1024 * 1024;
+const TILE_SAVED_TIMEOUT_MS = 3000;       // a saved tile answers when the network is slower than this (a tunnel, one bar)
 
 /** Oldest-first eviction plan: which keys to drop so the total stays within `cap`. Pure; exported for tests. */
 function planEviction(index, cap, incoming) {
@@ -54,6 +66,12 @@ function planEviction(index, cap, incoming) {
 /** Is this a saved listing photo (media/, or the starter set media-lite/, under the scope), the one family capped for size? */
 function isPhoto(url) {
   return (url.href.startsWith(new URL('media/', SCOPE).href) || url.href.startsWith(new URL('media-lite/', SCOPE).href)) && /\.(?:webp|jpe?g|png|avif|gif)$/i.test(url.pathname);
+}
+
+/** A map tile's address without OpenFreeMap's weekly version folder, so a saved tile answers for the same tile of a newer build.
+ *  The page has the same rule (js/features/native-core.js normalizeTileUrl); tests/js/native-core.test.mjs checks they agree. */
+function normalizeTileUrl(url) {
+  return String(url).replace(/^(https:\/\/tiles\.openfreemap\.org\/planet)\/[0-9a-z_]+\/(\d+\/\d+\/\d+\.pbf)(?=$|\?)/, '$1/$2');
 }
 
 /** Never cached: the worker itself, its manifest and the local-only API. */
@@ -216,14 +234,71 @@ self.addEventListener('notificationclick', (event) => {
   })());
 });
 
+const withTimeout = (p, ms) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), ms))]);
+
+/** OpenFreeMap tiles: the network first, the saved pack when the network fails or is slow. Only a tile that is already saved is refreshed,
+ *  and the TileJSON and the label glyphs (small, needed to draw anything) are kept; the worker never saves other tiles by itself. */
+async function packTile(request, url) {
+  const cache = await caches.open(TILES), key = normalizeTileUrl(request.url);
+  const saved = await cache.match(key);
+  const small = url.pathname === '/planet' || url.pathname.startsWith('/fonts/');
+  try {
+    const res = await (saved ? withTimeout(fetch(request), TILE_SAVED_TIMEOUT_MS) : fetch(request));
+    if (res.ok && (saved || small)) cache.put(key, res.clone()).catch(() => {});
+    return res;
+  } catch (err) {
+    if (saved) return saved;
+    throw err;
+  }
+}
+
+let viewedIndex = null, viewedTimer = 0;
+async function loadViewedIndex() {
+  if (!viewedIndex) viewedIndex = await (async () => { const c = await caches.open(META), r = await c.match(new URL('__tile_index__', SCOPE).href); return r ? r.json() : {}; })().catch(() => ({}));
+  return viewedIndex;
+}
+function persistViewedSoon() {
+  clearTimeout(viewedTimer);
+  viewedTimer = setTimeout(async () => {
+    const c = await caches.open(META);
+    await c.put(new URL('__tile_index__', SCOPE).href, new Response(JSON.stringify(viewedIndex || {}), { headers: { 'content-type': 'application/json' } })).catch(() => {});
+  }, 1500);
+}
+/** Raster tiles from a provider whose terms do not allow saving an area: only what the renter looks at, newest kept, capped. */
+async function viewedTile(request) {
+  const cache = await caches.open(TILES_VIEWED);
+  try {
+    const res = await fetch(request);
+    if (res.ok && res.status === 200) {
+      const size = Number(res.headers.get('content-length')) || 0;
+      const copy = res.clone();
+      (async () => {
+        await cache.put(request.url, copy);
+        const index = await loadViewedIndex();
+        index[request.url] = [size || (await (await cache.match(request.url)).clone().blob()).size, Date.now()];
+        for (const key of planEviction(index, TILE_VIEW_CAP_BYTES, request.url).drop) { await cache.delete(key); delete index[key]; }
+        persistViewedSoon();
+      })().catch(() => {});
+    }
+    return res;
+  } catch (err) {
+    const hit = await cache.match(request.url);
+    if (hit) return hit;
+    throw err;
+  }
+}
+
 self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET' || req.headers.has('range')) return;
   const url = new URL(req.url);
+  if (url.hostname === TILE_HOST) { event.respondWith(packTile(req, url)); return; }
+  if (VIEWED_HOSTS.includes(url.hostname)) { event.respondWith(viewedTile(req)); return; }
+  if (url.searchParams.has('_fresh')) return;   // an explicit "ask the network" (the pull-to-refresh check marks its request); everything else is served as before
   if (url.origin !== new URL(SCOPE).origin || !url.href.startsWith(SCOPE) || isBypass(url)) return;
   if (req.mode === 'navigate') event.respondWith(navigate(req));
   else if (isPhoto(url)) event.respondWith(photo(req));
   else event.respondWith(assets(req));
 });
 
-if (typeof module !== 'undefined') module.exports = { planEviction, isPhoto, isBypass };
+if (typeof module !== 'undefined') module.exports = { planEviction, isPhoto, isBypass, normalizeTileUrl };

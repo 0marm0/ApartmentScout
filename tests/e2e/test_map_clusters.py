@@ -223,7 +223,7 @@ def test_a_tap_previews_first_and_a_second_tap_opens(browser, base_url: str, web
         _wait_map_page(page)
         assert page.evaluate("() => matchMedia('(hover: none)').matches")
         f = page.evaluate("() => { const f = window.__asMap.getSource('toppins')._data.features[0]; return { id: f.id, xy: f.geometry.coordinates }; }")
-        page.evaluate("([c]) => window.__asMap.jumpTo({ center: c, zoom: 15, padding: { bottom: 300 } })", [f["xy"]])
+        page.evaluate("([c]) => window.__asMap.jumpTo({ center: c, zoom: 15, padding: { bottom: 160 } })", [f["xy"]])
         page.wait_for_function("() => window.__asMap.loaded()", timeout=10000)
         _idle(page)
         xy = _screen(page, f["xy"])

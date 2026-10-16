@@ -63,7 +63,7 @@ a.wn-row:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px;
 
 @media (max-width: 760px) {
   .wn-pop { top: auto; bottom: 0; left: 0; right: 0; width: auto; max-height: 82dvh; border-radius: var(--r-xl) var(--r-xl) 0 0; border-bottom: 0; transform-origin: 50% 100%;
-    padding-bottom: env(safe-area-inset-bottom); animation: wnSheet var(--t-base) var(--ease-out); }
+    padding-bottom: var(--safe-b); animation: wnSheet var(--t-base) var(--ease-out); }
   .wn-pop .am-grab { display: block; width: 36px; height: 4px; margin: 8px auto 0; border-radius: 2px; background: var(--line-strong); }
   .wn-h { padding-top: 8px; }
   .wn-row { padding: 11px 8px; }

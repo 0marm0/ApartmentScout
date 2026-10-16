@@ -590,6 +590,10 @@ function peek(id) {
   showCard(id);
   emit('hover', id); clearTimeout(peek.t); peek.t = setTimeout(() => emit('hover', null), 2600);   // highlights the pin and previews its route for a moment
 }
+/** [phone app] Which basemap is drawing: 'custom' (the search's own tile server), 'openfreemap', 'esri' (the raster fallback) or 'offline'.
+ *  Only OpenFreeMap's terms allow an area to be saved for offline use (features/offline-tiles.js asks). */
+export function basemapKind() { return customStyle() ? 'custom' : vector ? 'openfreemap' : offline ? 'offline' : 'esri'; }
+
 /** [features] The basemap style for the Shortlist's docked mini map: what this map shows now, or a named fallback. */
 export function basemapStyle(kind = 'auto') { return kind === 'raster' ? rasterStyle() : kind === 'offline' ? offlineStyle() : baseStyle(); }
 function hideCard(forget = false) {
@@ -894,7 +898,8 @@ async function boot() {
     heat = want ? (want.startsWith('commute') ? 'commute' : want) : hasCommute() ? 'commute' : 'none';
     const bm = new URLSearchParams(location.search).get('basemap');
     if (bm === 'raster') vector = false;
-    if (bm === 'none' || navigator.onLine === false) { offline = true; vector = false; }
+    // opened with no connection: a plain land colour, unless the renter saved the map around their tours (the worker answers the tiles from it)
+    if (bm === 'none' || (navigator.onLine === false && !store.get('offline-pack', null))) { offline = true; vector = false; }
     const c = S.crit.search?.map_center, d = dest();
     const center = c ? [c[1], c[0]] : d?.lat != null ? [d.lon, d.lat] : [-73.98, 40.75];
     map = new maplibregl.Map({ container: 'map', style: baseStyle(), center, zoom: S.crit.search?.map_zoom ? S.crit.search.map_zoom - 0.1 : 12.9,

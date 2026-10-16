@@ -85,6 +85,7 @@ export function afterDrawerMedia(dw, L, slides) {
  *  under reduced motion, or when no card photo is on screen it returns false and the drawer slides in as usual. */
 export function mediaTransition(id, opt, run) {
   if (opt?.noVT || typeof document.startViewTransition !== 'function' || reduced()) return false;
+  if (matchMedia('(max-width: 760px)').matches) return false;   // a phone's listing is a bottom sheet that springs up (features/native.js), not a morph
   const dw = $('drawer');
   if (!dw || dw.classList.contains('open')) return false;
   const well = document.querySelector(`#cards .card[data-id="${CSS.escape(id)}"] .media`);

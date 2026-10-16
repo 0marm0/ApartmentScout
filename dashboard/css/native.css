@@ -1,0 +1,194 @@
+/* ApartmentScout on a phone, as an app: the shell that does not rubber-band, touch behaviour (tap, press, 44 px targets, no input zoom),
+   the listing as a bottom sheet with three detents, a swipe between homes, pull to refresh, the long-press quick actions, the
+   "Add to Home Screen" guide, the keyboard that does not move the page, and the offline map panel in Tour day.
+   Loaded after every other stylesheet. Tokens only; every safe-area value comes from --safe-* (css/tokens.css), never env().
+   The gestures are js/features/native.js; the rules they follow are native-core.js. */
+
+/* ------------------------------------------------------------------ the shell: no bounce, no accidental zoom, dynamic viewport */
+html { overscroll-behavior: none; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body { overscroll-behavior: none; }
+@media (max-width: 760px) {
+  html, body { height: 100%; height: 100dvh; }
+  .work { grid-template-rows: 46vh minmax(0, 1fr); grid-template-rows: 46dvh minmax(0, 1fr); }
+  body:not([data-view="map"]) .work { grid-template-rows: minmax(0, 1fr); }
+  /* the top of the page clears the notch when the app draws under it (a home-screen app with a translucent status bar, or landscape) */
+  .topbar { padding-top: max(8px, var(--safe-t)); padding-left: max(var(--s-3), var(--safe-l)); padding-right: max(var(--s-3), var(--safe-r)); }
+  .topbar .nav { padding-left: max(6px, var(--safe-l)); padding-right: max(6px, var(--safe-r)); }
+  .cards { padding-left: max(var(--s-2), var(--safe-l)); padding-right: max(var(--s-2), var(--safe-r)); overscroll-behavior: contain; }
+}
+.cards, .view, .d-scroll, .tday-body, .am-body { -webkit-overflow-scrolling: touch; }
+.view { overscroll-behavior: contain; }
+
+/* ------------------------------------------------------------------ touch: tap, press, targets, inputs */
+@media (pointer: coarse) {
+  * { -webkit-tap-highlight-color: transparent; }
+  a, button, [role="button"], [role="tab"], summary, label, select, .card, .chip, .tier, .srch-row { touch-action: manipulation; }
+  .card, .media, .d-hero .track img { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+  /* a field below 16 px makes iOS zoom the page when it takes focus */
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="button"]), select, textarea { font-size: 16px !important; }
+
+  /* 44 px targets: the top bar, the buttons and the controls that sit in a row */
+  .btn, .icon-btn, .tier, .seg button, select.sel, .layer-switch button, .map-ctl button, .d-tabs a, .mn-seg button, .tday-btn, .subnav a, .am-seg button { min-height: 44px; }
+  .icon-btn, .icon-btn.sm, .topbar .icon-btn { width: 44px; height: 44px; }
+  .topbar .btn, .topbar .search-switch, .topbar .kpi-chip { height: 44px; min-height: 44px; }
+  .btn.sm { min-height: 44px; }
+  .btn, .seg button, .layer-switch button, .subnav a { padding-top: 0; padding-bottom: 0; }
+  .map-ctl button { min-width: 44px; }
+  .d-hero .hero-btns { gap: 8px; top: 48px; }   /* below the grab bar */
+  .d-hero .hero-btns button { width: 44px; height: 44px; }
+  .save::after { content: ""; position: absolute; inset: -8px; }   /* a 28 px star on the photo, a 44 px target */
+  select.sel { width: 124px; padding-left: 10px; text-overflow: ellipsis; }
+  .results-h h2 { white-space: nowrap; }
+  /* the hover row of tiny buttons on a card (compare, see inside ...) gives way to the long-press menu: a finger cannot hit 22 px */
+  .card .c-acts { display: none !important; }
+  .chip { min-height: 36px; }
+  .d-tabs a { display: inline-flex; align-items: center; }
+
+  /* a press you can feel: the control sinks and a veil lays over it; on release it springs back. No hover, no vibration. */
+  .btn, .icon-btn, .chip, .tier, .seg button, .layer-switch button, .map-ctl button, .hero-btns button, .qa, .save, .mn-seg button, .nav a, .subnav a,
+  .tday-btn, .tday-opt, .tday-ask, .srch-row, .d-tabs a, .toast-act, .am-seg button, .menu-pop > button[role="menuitem"], .qa-menu button, .ig-btn {
+    transition: transform 280ms var(--ease-spring), background-color var(--t-fast), border-color var(--t-fast), color var(--t-fast), box-shadow var(--t-fast);
+  }
+  .btn:active, .icon-btn:active, .chip:active, .tier:active, .seg button:active, .layer-switch button:active, .map-ctl button:active, .hero-btns button:active,
+  .qa:active, .save:active, .mn-seg button:active, .subnav a:active, .tday-btn:active, .tday-opt:active, .tday-ask:active, .srch-row:active, .d-tabs a:active,
+  .toast-act:active, .am-seg button:active, .menu-pop > button[role="menuitem"]:active, .qa-menu button:active, .ig-btn:active {
+    transform: scale(.955); transition-duration: 50ms; box-shadow: inset 0 0 0 999px var(--press);
+  }
+  .nav a:active { transform: scale(.92); transition-duration: 50ms; }
+  .card:active { transform: scale(.985); transition-duration: 60ms; }
+}
+:root { --press: color-mix(in srgb, var(--ink) 9%, transparent); }
+
+/* ------------------------------------------------------------------ sticky headers: the title row stays while a page scrolls */
+.results-h { position: relative; z-index: 3; }
+@media (max-width: 760px) {
+  .view-pad .page-h, .view-pad > .head:first-child { position: sticky; top: 0; z-index: 4; background: color-mix(in srgb, var(--ground) 88%, transparent);
+    -webkit-backdrop-filter: blur(14px) saturate(1.3); backdrop-filter: blur(14px) saturate(1.3); margin-left: calc(var(--s-4) * -1); margin-right: calc(var(--s-4) * -1);
+    padding: var(--s-2) var(--s-4); border-bottom: 1px solid var(--line); }
+  :root[data-transparency="reduced"] .view-pad .page-h { background: var(--ground); -webkit-backdrop-filter: none; backdrop-filter: none; }
+}
+/* the long list scrolls on the compositor: a card that is off screen is not painted, and nothing is laid out again under the finger */
+@media (max-width: 760px) {
+  .card { contain: layout paint style; }
+  .cards { scroll-behavior: auto; }
+}
+
+/* ------------------------------------------------------------------ the listing as a bottom sheet: peek, half, full
+   native.js owns the geometry (inline transform in px; --sheet-h is the sheet's full height) so the actions can stay at the bottom edge of
+   the screen while the sheet slides under them. Closed, the sheet is off screen and out of the tab order. */
+@media (max-width: 760px) {
+  .drawer { --sheet-h: 88dvh; top: auto; left: 0; right: 0; bottom: 0; width: auto; height: var(--sheet-h); border-radius: 22px 22px 0 0; border-width: 1px 0 0;
+    transform: translate3d(0, 112%, 0); will-change: transform; visibility: hidden; padding-left: var(--safe-l); padding-right: var(--safe-r);
+    transition: transform 440ms var(--ease-spring), visibility 0s linear 440ms;
+    box-shadow: inset 0 1px 0 var(--glass-hi), 0 -14px 44px rgba(0, 0, 0, .4), 0 80px 0 0 var(--surface-1); }
+  .drawer.open { visibility: visible; transition: transform 440ms var(--ease-spring), visibility 0s; }
+  .drawer.pulling, .drawer.dragging { transition: none; }
+  .drawer.settling { transition: transform var(--settle-ms, 420ms) var(--settle-ease, var(--ease-spring)), visibility 0s; }
+  .drawer::before { display: none; }
+  .drawer[data-detent="peek"] .d-scroll, .drawer[data-detent="half"] .d-scroll { overflow-y: hidden; }
+  .drawer .d-actions { will-change: transform; position: relative; z-index: 6; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none; scroll-padding-inline: 14px; }
+  .drawer .d-actions::-webkit-scrollbar { display: none; }
+  .drawer .d-actions .btn { flex: 0 0 auto; padding: 0 16px; overflow: visible; text-overflow: clip; white-space: nowrap; }
+  .sheet-grab { position: absolute; z-index: 8; top: 0; left: 50%; width: 140px; height: 44px; margin-left: -70px; border: 0; padding: 0; background: none; cursor: grab; touch-action: none; }
+  .sheet-grab i { position: absolute; left: 50%; top: 9px; width: 40px; height: 5px; margin-left: -20px; border-radius: 3px; background: rgba(255, 255, 255, .7);
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, .18), 0 1px 4px rgba(0, 0, 0, .35); transition: width var(--t-base) var(--ease-spring), background var(--t-fast); }
+  .sheet-grab:active i { width: 52px; }
+  .drawer.swap-next .d-scroll { animation: swapNext 300ms var(--ease-out) both; }
+  .drawer.swap-prev .d-scroll { animation: swapPrev 300ms var(--ease-out) both; }
+  /* the sheet's content slides with the finger; the swipe hint sits above it */
+  .drawer .d-scroll { will-change: auto; }
+  .sheet-pos { position: absolute; z-index: 7; left: 14px; top: 11px; padding: 2px 9px; border-radius: var(--r-pill); font: 600 var(--fs-2xs)/1.5 var(--font-sans); font-variant-numeric: tabular-nums;
+    color: #fff; background: rgba(10, 12, 16, .55); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); pointer-events: none; }
+}
+@keyframes swapNext { from { transform: translate3d(16%, 0, 0); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes swapPrev { from { transform: translate3d(-16%, 0, 0); opacity: 0; } to { transform: none; opacity: 1; } }
+
+/* ------------------------------------------------------------------ pull to refresh */
+.results { position: relative; }
+.ptr { position: absolute; z-index: 5; left: 50%; top: var(--ptr-top, 96px); width: 40px; height: 40px; margin-left: -20px; display: grid; place-items: center; border-radius: 50%;
+  color: var(--accent); background: var(--surface-2); border: 1px solid var(--line-strong); box-shadow: var(--shadow-2); opacity: 0; pointer-events: none;
+  transform: translate3d(0, calc(var(--ptr-y, 0px) - 52px), 0) scale(var(--ptr-s, .6)); }
+.ptr svg { width: 18px; height: 18px; transform: rotate(calc(var(--ptr-r, 0) * 1deg)); }
+.ptr.on { opacity: 1; }
+.ptr.busy { opacity: 1; transform: translate3d(0, 8px, 0) scale(1); transition: transform 260ms var(--ease-spring); }
+.ptr.busy svg { animation: ptrSpin 800ms linear infinite; }
+.ptr.out { opacity: 0; transition: opacity 220ms, transform 260ms var(--ease-out); transform: translate3d(0, -52px, 0) scale(.6); }
+.cards.pulled { transition: transform 300ms var(--ease-spring); }
+@keyframes ptrSpin { to { transform: rotate(360deg); } }
+
+/* ------------------------------------------------------------------ long-press quick actions */
+.card.lp-held { transform: scale(.975); transition: transform 240ms var(--ease-out); }
+.card.lp-lift { position: relative; z-index: 41; transform: scale(1.02); box-shadow: var(--shadow-3), 0 0 0 2px var(--accent-line); background: var(--surface-1); transition: transform 260ms var(--ease-spring), box-shadow 200ms; }
+.qa-scrim { position: fixed; z-index: 40; inset: 0; background: rgba(8, 9, 12, .42); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); animation: fadeIn 160ms ease both; }
+:root[data-theme="light"] .qa-scrim { background: rgba(20, 24, 34, .28); }
+.qa-menu { position: fixed; z-index: 42; width: min(300px, calc(100vw - 32px)); padding: 6px; border-radius: 18px; overflow: hidden;
+  background: linear-gradient(180deg, var(--glass-tint), transparent 72%), var(--glass-bg); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-line); box-shadow: inset 0 1px 0 var(--glass-hi), var(--glass-shadow); transform-origin: var(--qa-ox, 50%) var(--qa-oy, 0%); animation: qaIn 240ms var(--ease-spring) both; }
+.qa-menu button { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 48px; padding: 0 12px; border: 0; border-radius: 12px; background: none; color: var(--ink);
+  font: 500 var(--fs-lg) var(--font-sans); text-align: left; cursor: pointer; }
+.qa-menu button + button { border-top: 1px solid var(--line); border-radius: 12px; }
+.qa-menu button svg { width: 20px; height: 20px; flex: none; color: var(--ink-2); }
+.qa-menu button[aria-pressed="true"] svg { color: var(--accent); }
+.qa-menu button[aria-pressed="true"] { color: var(--accent-strong); }
+.qa-menu button:focus-visible { outline-offset: -2px; }
+@keyframes qaIn { from { opacity: 0; transform: scale(.86); } to { opacity: 1; transform: none; } }
+
+/* ------------------------------------------------------------------ the keyboard is open: the page does not move, the tab bar steps out of the way */
+@media (max-width: 760px) {
+  html.kbd-open .topbar .nav { transform: translate3d(0, 110%, 0); transition: transform 200ms var(--ease-out); pointer-events: none; }
+  html.kbd-open .tray, html.kbd-open .toast, html.kbd-open .chord-hint, html.kbd-open .pwa-update { display: none; }
+}
+
+/* ------------------------------------------------------------------ the install guide (iOS: no install prompt, so show the steps) */
+.ig { position: fixed; z-index: 130; inset: 0; display: flex; align-items: flex-end; justify-content: center; }
+.ig-scrim { position: absolute; inset: 0; background: rgba(8, 9, 12, .5); -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px); animation: fadeIn 200ms ease both; }
+.ig-card { position: relative; width: min(480px, 100%); max-height: calc(100dvh - 24px); overflow-y: auto; overscroll-behavior: contain; padding: 22px 18px calc(16px + var(--safe-b));
+  padding-left: max(18px, var(--safe-l)); padding-right: max(18px, var(--safe-r));
+  border-radius: 24px 24px 0 0; background: var(--surface-1); color: var(--ink); border: 1px solid var(--line-strong); border-bottom: 0;
+  box-shadow: inset 0 1px 0 var(--glass-hi), 0 -20px 60px rgba(0, 0, 0, .45); transform: translate3d(0, var(--ig-y, 0px), 0); animation: igUp 420ms var(--ease-spring) both; touch-action: pan-y; }
+.ig.closing .ig-card { transition: transform 260ms var(--ease-out); transform: translate3d(0, 105%, 0); }
+.ig.closing .ig-scrim { transition: opacity 240ms; opacity: 0; }
+.ig-card.dragging { animation: none; transition: none; }
+@keyframes igUp { from { transform: translate3d(0, 100%, 0); } }
+.ig-grab { position: absolute; top: 0; left: 50%; width: 120px; height: 28px; margin-left: -60px; border: 0; padding: 0; background: none; cursor: grab; touch-action: none; }
+.ig-grab i { position: absolute; left: 50%; top: 8px; width: 40px; height: 5px; margin-left: -20px; border-radius: 3px; background: var(--line-strong); }
+.ig-head { display: flex; align-items: center; gap: 14px; margin: 6px 0 14px; }
+.ig-icon { flex: none; width: 56px; height: 56px; border-radius: 14px; box-shadow: 0 0 0 1px var(--line-strong), var(--shadow-2); }
+.ig-head h2 { margin: 0; font-size: var(--fs-xl); font-weight: 650; letter-spacing: -.02em; line-height: 1.15; }
+.ig-head p { margin: 3px 0 0; font-size: var(--fs-sm); color: var(--ink-2); line-height: 1.4; }
+.ig-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.ig-step { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 2px 12px; align-items: start; padding: 10px 12px; border-radius: 16px; background: var(--surface-2); border: 1px solid var(--line); }
+.ig-n { grid-row: 1; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); font: 650 var(--fs-md) var(--font-sans); }
+.ig-step h3 { grid-column: 2; margin: 3px 0 0; font-size: var(--fs-lg); font-weight: 600; line-height: 1.3; }
+.ig-step h3 svg { display: inline-block; vertical-align: -3px; width: 18px; height: 18px; margin: 0 2px; color: var(--accent); }
+.ig-pic { grid-column: 1 / -1; margin-top: 6px; }
+.ig-pic svg { display: block; width: 100%; max-width: 330px; max-height: 104px; margin: 0 auto; border-radius: 12px; }
+.ig-head h2:focus { outline: none; }
+.ig-pic .bg { fill: var(--surface-3); } .ig-pic .bar { fill: var(--surface-1); stroke: var(--line-strong); }
+.ig-pic .ln { stroke: var(--ink-3); fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.ig-pic .hl { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1.6; }
+.ig-pic .ac { stroke: var(--accent); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.ig-pic .tx { fill: var(--ink-2); font: 500 9.5px var(--font-sans); } .ig-pic .tx.b { fill: var(--ink); font-weight: 600; } .ig-pic .tx.a { fill: var(--accent); font-weight: 650; }
+.ig-pic .row { fill: var(--surface-1); } .ig-pic .pulse { fill: none; stroke: var(--accent); stroke-width: 1.5; transform-box: fill-box; transform-origin: center; animation: igPulse 1.8s ease-out infinite; }
+@keyframes igPulse { 0% { transform: scale(.7); opacity: .9; } 100% { transform: scale(1.5); opacity: 0; } }
+.ig-foot { display: grid; gap: 8px; margin-top: 16px; }
+.ig-btn { display: flex; align-items: center; justify-content: center; min-height: 50px; border-radius: 14px; border: 1px solid var(--line-strong); background: var(--surface-2); color: var(--ink);
+  font: 600 var(--fs-lg) var(--font-sans); cursor: pointer; }
+.ig-btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.ig-btn.text { border-color: transparent; background: none; color: var(--ink-3); font-weight: 500; font-size: var(--fs-md); min-height: 44px; }
+.ig-note { margin: 12px 0 0; font-size: var(--fs-xs); color: var(--ink-3); line-height: 1.5; text-align: center; }
+.ig-warn { margin: 0 0 12px; padding: 10px 12px; border-radius: 12px; background: var(--warn-soft); color: var(--ink); font-size: var(--fs-sm); line-height: 1.45; }
+
+/* ------------------------------------------------------------------ Tour day: the offline map */
+.tday-off { display: grid; gap: 10px; padding: 14px; border-radius: var(--r-lg); background: var(--surface-2); border: 1px solid var(--line); }
+.tday-off h3 { margin: 0; font-size: var(--fs-lg); font-weight: 650; display: flex; align-items: center; gap: 8px; }
+.tday-off h3 svg { width: 18px; height: 18px; color: var(--accent); flex: none; }
+.tday-off p { margin: 0; font-size: var(--fs-sm); color: var(--ink-2); line-height: 1.5; }
+.tday-off .fine { font-size: var(--fs-xs); color: var(--ink-3); }
+.tday-off-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.tday-off-row .tday-btn { flex: 1 1 auto; justify-content: center; }
+.tday-off-stat { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: var(--fs-sm); color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.tday-off-stat b { color: var(--ink); font-weight: 650; }
+.tday-off-bar { height: 8px; border-radius: 4px; background: var(--surface-3); overflow: hidden; }
+.tday-off-bar i { display: block; height: 100%; width: 0; border-radius: 4px; background: var(--accent); transition: width 200ms var(--ease-out); }
+.tday-off.done .tday-off-bar i { background: var(--good); }
