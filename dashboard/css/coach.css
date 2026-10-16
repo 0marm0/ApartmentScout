@@ -22,5 +22,6 @@
 .coach-act { display: flex; align-items: center; gap: 6px; }
 .coach-act .sp { flex: 1; }
 .coach-act [hidden] { display: none; }
-.coach-card[data-dock="bottom"] { left: 12px !important; right: 12px; width: auto; }
+.coach-card[data-dock="bottom"], .coach-card[data-dock="top"] { left: 12px !important; right: 12px; width: auto; }
+.coach-card[data-dock="top"] { margin-top: var(--safe-t); }
 @media (max-width: 760px) { .coach-card { padding: 14px 14px 10px; } }
