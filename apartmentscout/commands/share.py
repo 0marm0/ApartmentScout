@@ -21,26 +21,36 @@ from ..quality.workspace import search_from
 FALLBACK_STATUSES = ("shortlist", "touring", "applied")
 
 
-def cmd_share(args: argparse.Namespace) -> None:
-    ws = search_from(args)
-    listings = load(ws.listings_path) if ws.listings_path.exists() else []
-    crit = ws.criteria()
+def picks_context(ws, listings: list[dict], picks_path: str | None):
+    """What a picks backup (or the search folder alone) tells a page about the renter: (picks, weights, findings, trail, from_file).
+
+    Without a file the picks are the listings whose status is shortlist, touring or applied. The visits saved in the search folder
+    (tours/<id>/findings.json) are always read; a backup's newer version of a visit wins, and its decision trail comes along."""
     weights = None
-    findings = tours.load_all(ws.root)   # the visits saved in the search folder (tours/<id>/findings.json)
+    findings = tours.load_all(ws.root)
     trail: list[dict] = []
-    if args.picks:
+    if picks_path:
         try:
-            raw = json.loads(Path(args.picks).read_text(encoding="utf-8"))
+            raw = json.loads(Path(picks_path).read_text(encoding="utf-8"))
             picks, weights = sh.read_picks(raw)
         except (OSError, ValueError) as e:
-            sys.exit(f"Cannot read {args.picks}: {e}")
+            sys.exit(f"Cannot read {picks_path}: {e}")
         if isinstance(raw, dict):   # the backup carries the visits and the decision trail too; the newer version of a visit wins
             for lid, f in (raw.get("findings") if isinstance(raw.get("findings"), dict) else {}).items():
                 if isinstance(lid, str) and tours.TOUR_ID.match(lid):
                     findings[lid] = tours.newest(findings.get(lid), tours.normalize({**(f if isinstance(f, dict) else {}), "photos": findings.get(lid, {}).get("photos", [])}))
             trail = tours.clean_trail(raw.get("history"))
-    else:
-        picks = {L["id"]: {"saved": True} for L in listings if (L.get("status") or "new") in FALLBACK_STATUSES}
+        return picks, weights, findings, trail, True
+    picks = {L["id"]: {"saved": True} for L in listings if (L.get("status") or "new") in FALLBACK_STATUSES}
+    return picks, weights, findings, trail, False
+
+
+def cmd_share(args: argparse.Namespace) -> None:
+    ws = search_from(args)
+    listings = load(ws.listings_path) if ws.listings_path.exists() else []
+    crit = ws.criteria()
+    picks, weights, findings, trail, from_file = picks_context(ws, listings, args.picks)
+    if not from_file:
         print(f"No --picks file: using the {len(picks)} listings whose status is {', '.join(FALLBACK_STATUSES)}.")
     ids, missing = sh.chosen_ids(picks, {L["id"] for L in listings if L.get("id")})
     if missing:
