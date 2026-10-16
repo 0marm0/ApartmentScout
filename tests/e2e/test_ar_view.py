@@ -117,7 +117,7 @@ def test_the_ar_model_is_true_scale_visual_whatever_the_screen_draws(browser, ba
         assert abs(info["bed"]["size"][0] - 64 * IN) < 0.02 and abs(info["bed"]["size"][1] - 40 * IN) < 0.02, "the queen frame is 64 in wide and 40 in tall with its headboard"
         assert abs(info["tv"]["size"][0] - 48.4 * IN) < 0.02 and abs(info["tv"]["min"][1] - 32 * IN) < 0.03, "a 55-inch TV 32 in off the floor"
         assert abs(info["desk"]["size"][0] - 71 * IN) < 0.03
-        assert abs(info["futon"]["size"][0] - 80 * IN) < 0.06
+        assert abs(info["futon"]["size"][0] - 73.2 * IN) < 0.06
         assert info["room"]["tris"] <= 40000, f"the whole room: {info['room']['tris']} triangles"
         for pid, v in info.items():
             if pid == "room":

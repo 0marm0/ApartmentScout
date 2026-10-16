@@ -62,7 +62,7 @@
       {"id": "nightstand-2", "ref": "nightstand", "x": 1.5, "y": 19.37, "rot": 270, "w": 18, "d": 16, "h": 24, "label": "Nightstand"},
       {"id": "dresser", "ref": "dresser-storklinta-6", "x": 12.41, "y": 11.6, "rot": 270, "w": 27.6, "d": 18.9, "h": 47.2, "label": "IKEA STORKLINTA 6-drawer dresser"},
       {"id": "tv-bed", "ref": "tv-55", "x": 10.65, "y": 15.9, "rot": 90, "w": 48.4, "d": 3.5, "h": 27.8, "elev": 32, "label": "55-inch TV, bedroom"},
-      {"id": "futon", "ref": "futon", "x": 20.1, "y": 15.5, "rot": 90, "w": 80, "d": 36, "h": 34, "label": "Futon, 3 seats"},
+      {"id": "futon", "ref": "futon", "x": 20.2, "y": 15.5, "rot": 90, "w": 73.2, "d": 33.5, "h": 35.4, "label": "Futon, Serta Billie-Loren"},
       {"id": "coffee", "ref": "coffee-table", "x": 16.75, "y": 15.5, "rot": 90, "w": 44, "d": 24, "h": 17, "label": "Coffee table"},
       {"id": "tv", "ref": "tv-55", "x": 11.75, "y": 15.5, "rot": 270, "w": 48.4, "d": 3.5, "h": 27.8, "elev": 32, "label": "55-inch TV, living room"},
       {"id": "dining", "ref": "dining-4", "x": 19.5, "y": 8.0, "rot": 0, "w": 48, "d": 30, "h": 30, "label": "Dining table, 4 seats"},

@@ -54,6 +54,13 @@ test('the futon stands with its back flat against a solid wall in the living roo
   assert.equal(ev.items.futon.state, 'clear');
 });
 
+test('the futon keeps its place: only its size changed (73.2 x 33.5 in), the back is still flush with the partition at x = 169 in', () => {
+  const f = by.futon;
+  assert.deepEqual([f.w, f.d, f.h, f.y, f.rot], [73.2, 33.5, 35.4, 230, 90]);
+  assert.ok(Math.abs(f.x + f.d / 2 - 169) < 0.05, `the back face is at x = ${f.x + f.d / 2}`);
+  assert.equal(ev.items.futon.state, 'clear');
+});
+
 test('the bed\'s headboard is on a side wall, the windows are on the right of a person lying in it, and the TV on the opposite wall faces the bed', () => {
   const bed = by.bed, tv = by['tv-bed'], bedroom = m.rooms.find((r) => r.kind === 'bedroom');
   const g = gapToWall(bed); assert.ok(g >= -0.5 && g <= 2, `the headboard is ${g} in from a solid wall`);

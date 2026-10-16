@@ -28,7 +28,9 @@ const ID = /^[A-Za-z0-9_-]{1,40}$/;
 const ROOM_KINDS = ['living', 'bedroom', 'dining', 'office', 'kitchen', 'other'];
 const fin = (v) => typeof v === 'number' && Number.isFinite(v);
 const plain = (v, max) => typeof v === 'string' && v.length <= max && !/[<>\u0000-\u001f]/.test(v);
-const SPEC_BASES = ['spec', 'diagram', 'measured', 'assumed'];
+const SPEC_BASES = ['spec', 'diagram', 'measured', 'assumed', 'listing'];   // 'listing' = a retailer's listing, not checked against this exact variant
+const STATE_KEYS = ['sofa', 'lounger', 'bed'];
+const PRODUCT_TEXT = { name: 160, brand: 60, retailer: 60, model: 40, variant: 60, bought: 20, colour: 40, material: 60, look_basis: 60, dims_basis: 120 };
 const KEY = /^[a-z][a-z0-9_]{0,23}$/;
 
 /** A bed's `spec`: a few named groups of numbers (inches, or counts). Returns the clean spec or an error string. */
@@ -65,6 +67,26 @@ function validateCandidate(c) {
   for (const [k, max] of Object.entries(CANDIDATE_TEXT)) if (c[k] != null) { if (!plain(c[k], max)) return `candidate.${k} must be plain text up to ${max} characters`; out[k] = c[k]; }
   if (c.url != null) { if (!(plain(c.url, 600) && /^https:\/\/[^\s]+$/.test(c.url))) return 'candidate.url must be an https address'; out.url = c.url; }
   if (c.weight_capacity_lb != null) { if (!fin(c.weight_capacity_lb) || c.weight_capacity_lb <= 0 || c.weight_capacity_lb > 5000) return 'candidate.weight_capacity_lb must be a number of pounds'; out.weight_capacity_lb = c.weight_capacity_lb; }
+  return out;
+}
+/** A piece's `states` (a sofa bed: the sizes it has upright, as a lounger and opened as a bed). Returns the clean states or an error string. */
+function validateStates(st) {
+  if (!st || typeof st !== 'object' || Array.isArray(st)) return 'states must be an object';
+  const out = {};
+  for (const [k, v] of Object.entries(st)) {
+    if (!STATE_KEYS.includes(k)) return `states: unknown state "${String(k).slice(0, 20)}"`;
+    if (!v || typeof v !== 'object' || Array.isArray(v)) return `states.${k} must be an object`;
+    out[k] = {};
+    for (const a of ['w', 'd', 'h']) if (v[a] != null) { if (!fin(v[a]) || v[a] < 1 || v[a] > 300) return `states.${k}.${a} must be between 1 and 300 in`; out[k][a] = Math.round(v[a] * 10) / 10; }
+  }
+  return out;
+}
+/** A piece's `product_info`: which product the renter has (plain text fields only; a price is dropped). */
+function validateProductInfo(c) {
+  if (!c || typeof c !== 'object' || Array.isArray(c)) return 'product_info must be an object';
+  const out = {};
+  for (const [k, max] of Object.entries(PRODUCT_TEXT)) if (c[k] != null) { if (!plain(c[k], max)) return `product_info.${k} must be plain text up to ${max} characters`; out[k] = c[k]; }
+  if (c.url != null) { if (!(plain(c.url, 600) && /^https:\/\/[^\s]+$/.test(c.url))) return 'product_info.url must be an https address'; out.url = c.url; }
   return out;
 }
 /** The top-level `options`: groups of pieces to switch between. Returns the clean options or an error string. */
@@ -132,6 +154,9 @@ export function validateInventory(obj, { catalog = CATALOG } = {}) {
     let spec = null, basis = null, candidate = null;
     if (p.spec != null) { spec = validateSpec(p.spec); if (typeof spec === 'string') return fail(`${at}: ${spec}`); }
     if (p.spec_basis != null) { if (!spec) return fail(`${at}: spec_basis needs a spec`); basis = validateBasis(p.spec_basis, spec); if (typeof basis === 'string') return fail(`${at}: ${basis}`); }
+    let states = null, info = null;
+    if (p.states != null) { states = validateStates(p.states); if (typeof states === 'string') return fail(`${at}: ${states}`); }
+    if (p.product_info != null) { info = validateProductInfo(p.product_info); if (typeof info === 'string') return fail(`${at}: ${info}`); }
     if (p.candidate != null) { candidate = validateCandidate(p.candidate); if (typeof candidate === 'string') return fail(`${at}: ${candidate}`); }
     if (p.assumed != null && !(Array.isArray(p.assumed) && p.assumed.length <= 6 && p.assumed.every((x) => ['w', 'd', 'h', 'elev'].includes(x)))) return fail(`${at}: assumed must list sizes among w, d, h, elev`);
     const clean = { id: p.id, ref: p.ref };
@@ -139,6 +164,8 @@ export function validateInventory(obj, { catalog = CATALOG } = {}) {
     if (p.set != null) clean.set = validateSet(p.set, c);
     if (spec) clean.spec = spec;
     if (basis) clean.spec_basis = basis;
+    if (states) clean.states = states;
+    if (info) clean.product_info = info;
     if (candidate) clean.candidate = candidate;
     if (p.assumed?.length) clean.assumed = [...new Set(p.assumed)];
     if (p.look != null) { const lk = validateLook(p.look, `${at}: look`); if (!lk.ok) return fail(lk.error); clean.look = lk.look; }
@@ -173,6 +200,7 @@ export function pieceItem(p, pos = { x: 0, y: 0, rot: 0 }) {
   if (p.label) o.label = p.label;
   if (p.set) o.set = p.set;
   if (p.spec) o.spec = p.spec;
+  if (p.states) o.states = p.states;
   if (p.assumed) o.assumed = p.assumed;
   if (p.look) o.look = p.look;
   return o;
