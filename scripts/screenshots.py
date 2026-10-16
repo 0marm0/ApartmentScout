@@ -148,14 +148,14 @@ SHOTS = [
      [("seed", {"list:split": True, **STARS}), ("click", "[data-tier='2']", 500), ("click", "[data-tier='1']", 500), ("click", "[data-tg=gym]", 500),
       ("wait", 6000), ("hover", "#view-list tbody tr >> nth=2", 2500)], 9000, None),
     # ---- See inside (the 3D tab: Unit 3D and the Floor plan)
-    ("inside-unit-3d", f"?{PARAMOUNT}", DESK, [], 11000, None),
+    ("inside-unit-3d", f"?{PARAMOUNT}", DESK, [("look", "room:Bedroom:0", 3000), ("eval", "(() => { const u = __unit3d; u.stage.look.fov = 80; return u.walk.goTo([115, 160], { dir: -32, pitch: 1 }); })()"), ("wait", 8000)], 11000, None),   # from the living room's back corner: the desk, chair and monitor at the bay, the TV, a painting, the dining table
     ("inside-orbit-day", "?date=2026-10-15&min=780&mode=orbit#unit/paramount-tower-25e", STAGE, [], 11000, "#stage"),
     ("inside-orbit-night", "?date=2026-10-15&min=1230&mode=orbit#unit/paramount-tower-25e", STAGE, [], 11000, "#stage"),
     ("inside-skyline-dusk", "?date=2026-10-15&min=1110&mode=orbit#unit/paramount-tower-25e", STAGE, [cam(500, 330, -150, -500, 120, 250, ray=False), ("wait", 2500)], 11000, "#stage"),
-    ("inside-bay", "?date=2026-10-15&min=690&mode=in#unit/paramount-tower-25e", STAGE, [("look", "corner:Bedroom:0", 3500)], 11000, "#stage"),
+    ("inside-bay", "?date=2026-10-15&min=690&mode=in#unit/paramount-tower-25e", STAGE, [("look", "room:Bedroom:0", 3000), ("eval", "__unit3d.stage.look.fov = 80"), ("wait", 1500)], 11000, "#stage"),   # the bedroom bay at wide angle: the headboard, the radiator cover and the whole view
     ("inside-furniture", "?date=2026-10-15&min=690&mode=in#unit/paramount-tower-25e", STAGE, [("look", "room:Bedroom:0", 3000), ("eval", "(() => { const u = __unit3d; u.stage.look.fov = 80; return u.walk.goTo([200, 162], { dir: 20, pitch: 1 }); })()"), ("wait", 7000)], 11000, "#stage"),   # from the bedroom door: the bed, the TV on the left, the windows ahead
     ("inside-living-room", "?date=2026-10-15&min=690&mode=in#unit/paramount-tower-25e", STAGE, [("look", "room:Bedroom:0", 3000), ("eval", "(() => { const u = __unit3d; u.stage.look.fov = 80; return u.walk.goTo([138, 118], { dir: 350, pitch: 1 }); })()"), ("wait", 7000)], 11000, "#stage"),   # from the back of the living room: TV, desk, futon, dining table and the windows
-    ("inside-bedroom", "?date=2026-10-15&min=690&mode=in#unit/paramount-tower-25e", STAGE, [("look", "corner:Bedroom:0", 2500), ("drag", "#stage", 300, 500, 1300, 480, 2500)], 11000, "#stage"),
+    ("inside-bedroom", "?date=2026-10-15&min=690&mode=in#unit/paramount-tower-25e", STAGE, [("look", "room:Bedroom:0", 3000), ("eval", "(() => { const u = __unit3d; u.stage.look.fov = 80; return u.walk.goTo([195, 332], { dir: 150, pitch: 1 }); })()"), ("wait", 8000)], 11000, "#stage"),   # from the window end of the bedroom: the whole bed, the painting over it, the dresser and the window
     ("inside-walk-window", "?date=2026-10-15&min=690&mode=in#unit/paramount-tower-25e", STAGE, [("look", "seat:sofa", 2500), ("walk_window", 2500)], 11000, "#stage"),
     ("inside-night-window", "?date=2026-10-15&min=1230&mode=in#unit/paramount-tower-25e", STAGE, [("look", "seat:sofa", 2500), ("walk_window", 2500)], 11000, "#stage"),
     ("inside-play-year", "?date=2026-11-24&min=780&mode=in#unit/paramount-tower-25e", DESK, [("look", "bay:Living room:1", 2500), ("click", "#uPlayBar [data-pb=year]", 1800)], 11000, None),
