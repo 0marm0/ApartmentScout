@@ -1,0 +1,710 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<meta name="color-scheme" content="light">
+<title>Decision report · ApartmentScout</title>
+<!--
+  ApartmentScout decision report: ONE template for the dashboard's "Make a report" button (dashboard/js/features/report.js and
+  report-model.js) and for `apartmentscout report --homes` (apartmentscout/report_doc.py). A builder fills the as-data block with a
+  payload shaped by the as-schema block (and puts the Geist font into the as-fonts block); the scripts at the bottom draw the pages
+  from it: a cover with the recommendation, a side-by-side table, one page per home, and a final checklist. Nothing is fetched at
+  view time. The pages are US Letter or A4 sheets: on screen they sit on a desk, in print each is one page (Save as PDF).
+  The `as-core` script holds every rule (which home leads and why, the table cells, what is still unknown, the checklist); it has no
+  DOM so tests/js/report.test.mjs runs it under Node.
+-->
+<style id="as-fonts">/*as-fonts*/</style>
+<style>
+:root {
+  --font: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --ink: #12151c; --ink2: #3e4553; --ink3: #626a7a; --ink4: #9aa1ae;
+  --line: #e4e6eb; --line2: #cdd1d9; --paper: #ffffff; --desk: #e7e8ec; --tint: #f6f6f3; --tint2: #eff0f3;
+  --accent: #4b55e6; --accent-ink: #3a43d0; --accent-soft: #eceefd;
+  --good: #0c7a4c; --good-soft: #e3f3ea; --warn: #8a5603; --warn-soft: #fbf0d9; --bad: #b4381f; --bad-soft: #fbe8e3; --sun: #c98a0a;
+  --pw: 8.5in; --ph: 11in; --pad-x: .55in; --pad-y: .5in;
+  --scale: 1;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--desk); color: var(--ink); font: 400 9.5pt/1.45 var(--font); font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased;
+  -webkit-print-color-adjust: exact; print-color-adjust: exact; font-feature-settings: "tnum" 1, "ss01" 1; }
+h1, h2, h3, h4, p, ul, ol, figure { margin: 0; }
+ul, ol { padding: 0; list-style: none; }
+img { display: block; }
+a { color: var(--accent-ink); text-decoration: none; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* ---- the screen toolbar (never printed) */
+.tools { position: sticky; top: 0; z-index: 10; display: flex; align-items: center; gap: 12px; padding: 9px 16px; background: rgba(255,255,255,.92); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); border-bottom: 1px solid var(--line); font-size: 12.5px; }
+.tools [hidden] { display: none !important; }
+.tools .brand { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; letter-spacing: -.01em; }
+.tools .brand svg { width: 18px; height: 18px; }
+.tools .sp { flex: 1; }
+.tools .meta { color: var(--ink3); }
+.tools label { display: inline-flex; align-items: center; gap: 7px; cursor: pointer; color: var(--ink2); }
+.tools select, .tools button { font: 500 12.5px var(--font); }
+.tools select { height: 30px; padding: 0 8px; border: 1px solid var(--line2); border-radius: 8px; background: #fff; color: var(--ink); }
+.btn { display: inline-flex; align-items: center; gap: 7px; height: 32px; padding: 0 14px; border-radius: 9px; border: 1px solid var(--line2); background: #fff; color: var(--ink); cursor: pointer; }
+.btn.primary { background: var(--accent); border-color: transparent; color: #fff; }
+.btn svg { width: 14px; height: 14px; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+.desk { padding: 22px 12px 60px; display: flex; flex-direction: column; align-items: center; gap: 22px; }
+.fit { zoom: var(--scale); }
+
+/* ---- a sheet is one page */
+.sheet { position: relative; width: var(--pw); height: var(--ph); background: var(--paper); box-shadow: 0 1px 2px rgba(20,24,34,.08), 0 14px 40px rgba(20,24,34,.12); overflow: hidden;
+  padding: var(--pad-y) var(--pad-x) .42in; display: flex; flex-direction: column; break-after: page; page-break-after: always; }
+.sheet:last-child { break-after: auto; page-break-after: auto; }
+.run { display: flex; align-items: center; gap: 10px; height: .22in; flex: none; font-size: 7pt; letter-spacing: .08em; text-transform: uppercase; color: var(--ink3); border-bottom: 1px solid var(--line); padding-bottom: 5px; margin-bottom: 14px; }
+.run b { font-weight: 600; color: var(--ink2); letter-spacing: .08em; }
+.run .sp { flex: 1; }
+.run .mark { width: 11px; height: 12px; }
+.foot { position: absolute; left: var(--pad-x); right: var(--pad-x); bottom: .22in; display: flex; gap: 12px; font-size: 6.8pt; color: var(--ink3); border-top: 1px solid var(--line); padding-top: 5px; }
+.foot .sp { flex: 1; }
+.fill { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+
+.eyebrow { font-size: 7.4pt; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--accent-ink); }
+.k { font-size: 7pt; font-weight: 600; letter-spacing: .09em; text-transform: uppercase; color: var(--ink3); }
+.h2 { font-size: 7.6pt; font-weight: 650; letter-spacing: .09em; text-transform: uppercase; color: var(--ink2); padding-bottom: 5px; border-bottom: 1px solid var(--line2); margin-bottom: 7px; display: flex; align-items: baseline; gap: 8px; }
+.h2 small { font-weight: 500; letter-spacing: 0; text-transform: none; color: var(--ink3); font-size: 7.4pt; }
+.muted { color: var(--ink3); }
+.unk { color: var(--ink3); font-style: normal; }
+.pill { display: inline-flex; align-items: center; height: 15px; padding: 0 7px; border-radius: 99px; background: var(--tint2); color: var(--ink2); font-size: 7pt; font-weight: 600; white-space: nowrap; }
+.pill.good { background: var(--good-soft); color: var(--good); } .pill.warn { background: var(--warn-soft); color: var(--warn); } .pill.bad { background: var(--bad-soft); color: var(--bad); } .pill.accent { background: var(--accent-soft); color: var(--accent-ink); }
+.clamp2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.clamp3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.photo { position: relative; background: var(--tint2); overflow: hidden; border-radius: 8px; }
+.photo img { width: 100%; height: 100%; object-fit: cover; }
+.photo .cap { position: absolute; left: 6px; bottom: 5px; max-width: 90%; padding: 1px 6px; border-radius: 4px; background: rgba(12,14,20,.62); color: #fff; font-size: 6.4pt; }
+.ph { display: grid; place-items: center; width: 100%; height: 100%; color: var(--ink3); font-size: 7.6pt; text-align: center; padding: 8px; background: repeating-linear-gradient(135deg, var(--tint2) 0 8px, var(--tint) 8px 16px); }
+
+/* ---- cover */
+.cover .top { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 14px; }
+.cover .t { flex: 1; min-width: 0; }
+.cover h1 { font-size: 31pt; line-height: 1.04; letter-spacing: -.03em; font-weight: 650; margin: 5px 0 4px; }
+.cover .addr { color: var(--ink2); font-size: 10.5pt; }
+.cover .verdict { font-size: 12.6pt; line-height: 1.38; letter-spacing: -.01em; color: var(--ink); margin: 12px 0 0; max-width: 6.6in; font-weight: 450; }
+.cover .hero { flex: 1 1 2.4in; min-height: 2.4in; max-height: 4.1in; margin-top: 14px; border-radius: 10px; }
+.ring { position: relative; flex: none; }
+.ring svg { display: block; transform: rotate(-90deg); }
+.ring b { position: absolute; inset: 0; display: grid; place-items: center; font-weight: 650; letter-spacing: 0; }
+.why { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 14px; flex: none; }
+.why > div { border: 1px solid var(--line); border-radius: 9px; padding: 9px 11px 10px; background: var(--tint); }
+.why .n { display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 50%; background: var(--accent); color: #fff; font-size: 7.4pt; font-weight: 650; margin-right: 6px; }
+.why h3 { font-size: 9.6pt; font-weight: 650; letter-spacing: -.01em; display: flex; align-items: center; }
+.why .d { font-size: 7.6pt; color: var(--good); font-weight: 650; margin: 3px 0 2px; }
+.why p { font-size: 8.2pt; color: var(--ink2); line-height: 1.4; }
+.rank { margin-top: 14px; flex: none; }
+.rank li { display: grid; grid-template-columns: 24px minmax(0, 1.5fr) 38px minmax(0, 1fr) minmax(0, 1.35fr); gap: 10px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--line); }
+.rank li:last-child { border-bottom: 0; }
+.rank .let { width: 22px; height: 22px; border-radius: 6px; background: var(--ink); color: #fff; display: grid; place-items: center; font-weight: 650; font-size: 9pt; }
+.rank li.lead .let { background: var(--accent); }
+.rank .nm b { font-weight: 650; display: block; font-size: 9.4pt; letter-spacing: -.01em; }
+.rank .nm span { color: var(--ink3); font-size: 7.6pt; }
+.rank .mo b { font-weight: 650; font-size: 10pt; } .rank .mo span { display: block; color: var(--ink3); font-size: 7.2pt; }
+.rank .vd { font-size: 7.8pt; color: var(--ink2); line-height: 1.35; }
+.watch { margin-top: 14px; border-left: 3px solid var(--warn); background: var(--warn-soft); border-radius: 0 8px 8px 0; padding: 8px 12px 9px; flex: none; }
+.watch h3 { font-size: 7.6pt; font-weight: 650; letter-spacing: .09em; text-transform: uppercase; color: var(--warn); margin-bottom: 3px; }
+.watch li { font-size: 8.3pt; color: var(--ink2); padding-left: 11px; position: relative; line-height: 1.4; }
+.watch li::before { content: ""; position: absolute; left: 1px; top: .62em; width: 4px; height: 4px; border-radius: 50%; background: var(--warn); }
+.cover .small { margin-top: 8px; font-size: 7.4pt; color: var(--ink3); flex: none; }
+
+/* ---- the table */
+.pg-title { display: flex; align-items: baseline; gap: 12px; margin-bottom: 10px; flex: none; }
+.pg-title h2 { font-size: 20pt; letter-spacing: -.025em; font-weight: 650; }
+.pg-title p { color: var(--ink3); font-size: 8.4pt; flex: 1; text-align: right; }
+table.cmp { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 8.5pt; }
+.cmp col.lab { width: 1.72in; }
+.cmp th, .cmp td { padding: 2.9px 8px 2.9px 0; vertical-align: top; text-align: left; border-bottom: 1px solid var(--line); }
+.cmp thead th { border-bottom: 1.5px solid var(--ink); padding-bottom: 7px; vertical-align: top; }
+.cmp .hd { display: block; }
+.cmp .hd .photo { height: .68in; margin-bottom: 5px; border-radius: 6px; }
+.cmp .hd .nm { display: flex; align-items: center; gap: 6px; font-weight: 650; font-size: 8.8pt; line-height: 1.2; letter-spacing: -.01em; }
+.cmp .hd .let { flex: none; width: 17px; height: 17px; border-radius: 5px; background: var(--ink); color: #fff; display: grid; place-items: center; font-size: 8pt; }
+.cmp .hd .lead .let, .cmp .hd.lead .let { background: var(--accent); }
+.cmp .hd small { display: block; color: var(--ink3); font-weight: 400; font-size: 7.2pt; margin: 2px 0 0 23px; }
+.cmp tr.sec td { padding: 7px 0 2px; border-bottom: 0; font-size: 7pt; font-weight: 650; letter-spacing: .1em; text-transform: uppercase; color: var(--accent-ink); }
+.cmp td.l { color: var(--ink2); font-weight: 500; padding-right: 10px; }
+.cmp td.l small { display: block; color: var(--ink3); font-weight: 400; font-size: 6.8pt; line-height: 1.25; }
+.cmp td .v { font-weight: 600; font-size: 8.8pt; letter-spacing: -.005em; }
+.cmp td .s { display: block; color: var(--ink3); font-size: 6.9pt; line-height: 1.25; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cmp td .v { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cmp td { padding-right: 7px; }
+.cmp td .v.wrap { white-space: normal; line-height: 1.25; }
+.cmp.n4 { font-size: 8pt; } .cmp.n4 td .v { font-size: 8.4pt; } .cmp.n4 td .s { font-size: 6.5pt; } .cmp.n4 col.lab { width: 1.5in; } .cmp.n4 .hd .photo { height: .46in; } .cmp.n4 .hd .nm { font-size: 8.2pt; }
+.cmp td.best { background: linear-gradient(0deg, var(--good-soft), var(--good-soft)); box-shadow: -6px 0 0 var(--good-soft); }
+.cmp td.best .v { color: var(--good); }
+.cmp td .v.bad { color: var(--bad); } .cmp td .v.warn { color: var(--warn); }
+.keyline { display: flex; gap: 14px; align-items: center; font-size: 7.2pt; color: var(--ink3); margin-top: 8px; flex: none; }
+.keyline i { display: inline-block; width: 12px; height: 9px; border-radius: 2px; background: var(--good-soft); border: 1px solid #b9dfca; margin-right: 5px; vertical-align: -1px; }
+
+/* ---- a home */
+.hm .head { display: flex; align-items: flex-start; gap: 12px; flex: none; }
+.hm .head .t { flex: 1; min-width: 0; }
+.hm .tags { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 5px; align-items: center; }
+.hm .let { width: 20px; height: 20px; border-radius: 6px; background: var(--ink); color: #fff; display: inline-grid; place-items: center; font-weight: 650; font-size: 9pt; }
+.hm .let.lead { background: var(--accent); }
+.hm h2 { font-size: 19pt; line-height: 1.08; letter-spacing: -.025em; font-weight: 650; }
+.hm .addr { color: var(--ink2); font-size: 9pt; margin-top: 2px; }
+.hm .hero { height: 2.46in; margin-top: 10px; flex: none; }
+.hm.tour .hero { height: 1.78in; }
+.hm .vis { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; height: 2.02in; flex: none; }
+.hm.tour .vis { height: 1.8in; }
+.card { border: 1px solid var(--line); border-radius: 8px; overflow: hidden; position: relative; background: var(--tint); display: flex; flex-direction: column; min-width: 0; }
+.card .ct span:first-child { white-space: nowrap; }
+.card .ct span:last-child { text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; letter-spacing: .04em; }
+.card .ct { font-size: 6.8pt; font-weight: 650; letter-spacing: .09em; text-transform: uppercase; color: var(--ink3); padding: 6px 9px 0; flex: none; display: flex; justify-content: space-between; gap: 6px; }
+.card .cb { flex: 1; min-height: 0; position: relative; }
+.card .cb svg, .card .cb img { position: absolute; inset: 0; width: 100%; height: 100%; }
+.card .cb img { object-fit: cover; }
+.card .cn { flex: none; padding: 4px 9px 6px; font-size: 6.9pt; color: var(--ink3); line-height: 1.3; }
+.card.still { background: #dfe7f5; } .card.still .ct { color: var(--ink2); background: rgba(255,255,255,.55); padding-bottom: 5px; }
+.card .sun { position: absolute; right: 7px; bottom: 6px; background: rgba(255,255,255,.88); border-radius: 6px; padding: 3px 6px 3px; font-size: 6.4pt; color: var(--ink2); }
+.card .sun svg { position: static; width: 70px; height: 20px; display: block; }
+.strip { display: grid; grid-template-columns: repeat(4, 1fr); border: 1px solid var(--line); border-radius: 8px; margin-top: 10px; flex: none; }
+.strip > div { padding: 6px 10px 7px; border-right: 1px solid var(--line); min-width: 0; }
+.strip > div:last-child { border-right: 0; }
+.strip b { display: block; font-size: 13pt; font-weight: 650; letter-spacing: -.02em; line-height: 1.15; margin-top: 1px; }
+.strip span { color: var(--ink3); font-size: 7pt; display: block; line-height: 1.3; }
+.cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 11px; flex: 1; min-height: 0; overflow: hidden; }
+.cols > div { min-width: 0; }
+.bars li { display: grid; grid-template-columns: .98in 1fr 26px; gap: 7px; align-items: center; font-size: 7.8pt; height: 14px; }
+.bars .tr { height: 5px; border-radius: 3px; background: var(--tint2); position: relative; overflow: hidden; }
+.bars .tr i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 3px; background: var(--accent); }
+.bars li.unk .tr { background: repeating-linear-gradient(90deg, var(--line2) 0 3px, transparent 3px 6px); }
+.bars .nv { text-align: right; font-weight: 600; color: var(--ink2); }
+.bars small { color: var(--ink4); font-size: 6.5pt; }
+.bl li { position: relative; padding-left: 11px; margin-bottom: 3px; font-size: 8pt; line-height: 1.38; color: var(--ink2); }
+.bl li::before { content: ""; position: absolute; left: 1px; top: .6em; width: 4px; height: 4px; border-radius: 50%; background: var(--ink4); }
+.bl.warn li::before { background: var(--warn); }
+.bl.ask li::before { background: none; border: 1px solid var(--accent); width: 5px; height: 5px; border-radius: 1.5px; top: .5em; }
+.bl li b { color: var(--ink); font-weight: 600; }
+.sub-h { font-size: 7pt; font-weight: 650; letter-spacing: .09em; text-transform: uppercase; color: var(--ink3); margin: 8px 0 4px; }
+.sub-h:first-child { margin-top: 0; }
+.tourbox { margin-top: 9px; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px 9px; background: #fff; flex: none; }
+.tourbox .th { display: flex; align-items: baseline; gap: 8px; margin-bottom: 5px; }
+.tourbox .th b { font-size: 7.4pt; font-weight: 650; letter-spacing: .09em; text-transform: uppercase; color: var(--ink2); }
+.tourbox .th span { color: var(--ink3); font-size: 7.4pt; }
+.facts { display: flex; flex-wrap: wrap; gap: 4px 5px; }
+.facts .f { display: inline-flex; gap: 5px; align-items: baseline; height: 17px; padding: 0 7px; border-radius: 5px; background: var(--tint2); font-size: 7.4pt; color: var(--ink2); }
+.facts .f b { font-weight: 650; color: var(--ink); } .facts .f.bad { background: var(--bad-soft); color: var(--bad); } .facts .f.good { background: var(--good-soft); color: var(--good); } .facts .f.warn { background: var(--warn-soft); color: var(--warn); }
+.tnote { margin-top: 5px; font-size: 8pt; color: var(--ink2); line-height: 1.4; }
+.tphotos { display: flex; gap: 6px; margin-top: 6px; }
+.tphotos figure { width: .98in; }
+.tphotos .photo { height: .62in; border-radius: 5px; }
+.tphotos figcaption { font-size: 6.4pt; color: var(--ink3); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hide-notes .note { display: none !important; }
+
+/* ---- the checklist */
+.ck { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; flex: 1; min-height: 0; overflow: hidden; align-content: start; }
+.ck section { margin-bottom: 14px; break-inside: avoid; }
+.ck h3 { font-size: 7.8pt; font-weight: 650; letter-spacing: .09em; text-transform: uppercase; color: var(--ink2); padding-bottom: 5px; border-bottom: 1.5px solid var(--ink); margin-bottom: 4px; }
+.ck h3 small { text-transform: none; letter-spacing: 0; font-weight: 500; color: var(--ink3); font-size: 7.6pt; margin-left: 5px; }
+.ck li { display: grid; grid-template-columns: 13px 1fr; gap: 8px; padding: 5px 0; border-bottom: 1px solid var(--line); font-size: 8.5pt; line-height: 1.38; }
+.ck li .box { width: 11px; height: 11px; border: 1.2px solid var(--ink3); border-radius: 3px; margin-top: 2px; }
+.ck li small { display: block; color: var(--ink3); font-size: 7.1pt; line-height: 1.3; margin-top: 1px; }
+.sign { margin-top: auto; display: flex; gap: 26px; padding-top: 12px; flex: none; }
+.sign div { flex: 1; border-top: 1px solid var(--line2); padding-top: 4px; font-size: 7pt; color: var(--ink3); }
+
+.tools .short { display: none; }
+@media screen and (max-width: 900px) { .tools .meta { display: none; } }
+@media screen and (max-width: 640px) {
+  .tools { gap: 8px; padding: 8px 10px; font-size: 12px; } .tools .bt, .tools .pl { display: none; } .tools .long { display: none; } .tools .short { display: inline; }
+  .tools .btn { padding: 0 12px; } .tools select { max-width: 112px; }
+}
+@media screen { .sheet { border-radius: 2px; } }
+@media print {
+  html, body { background: #fff; }
+  .tools { display: none !important; }
+  .desk { padding: 0; gap: 0; display: block; }
+  .fit { zoom: 1 !important; }
+  .sheet { box-shadow: none; border-radius: 0; margin: 0; }
+}
+</style>
+</head>
+<body>
+<header class="tools" id="tools">
+  <span class="brand"><svg viewBox="10 10 80 88" aria-hidden="true"><path d="M50 95C50 95 15.5 57.5 15.5 40A34.5 34.5 0 1 1 84.5 40C84.5 57.5 50 95 50 95ZM75 40A25 25 0 1 1 25 40A25 25 0 1 1 75 40Z" fill="#12865f" fill-rule="evenodd"/><path d="M49.25 29L50 16.5L50.75 29ZM48 29H52V36.6H48ZM46 36.6H54V39.2H46ZM44 39.2H56V42.2H44ZM42 42.2H58V47.8H42ZM40 47.8H60V70H40Z" fill="currentColor"/></svg><span class="bt">Decision report</span></span>
+  <span class="meta" id="meta"></span>
+  <span class="sp"></span>
+  <label id="notesTog" hidden><input type="checkbox" id="notes" checked> <span>Show my notes</span></label>
+  <label><span class="pl">Paper</span> <select id="paper" aria-label="Paper size"><option value="letter">US Letter</option><option value="a4">A4</option></select></label>
+  <button type="button" class="btn primary" id="print"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4.5 6V2h7v4M4.5 12H3a1 1 0 01-1-1V7a1 1 0 011-1h10a1 1 0 011 1v4a1 1 0 01-1 1h-1.5M4.5 9.5h7V14h-7z"/></svg><span class="long">Print or save as PDF</span><span class="short">Print</span></button>
+</header>
+<main class="desk" id="desk"><noscript><p>This report is drawn by a small script on the page. Turn JavaScript on to read it.</p></noscript></main>
+
+<script type="application/json" id="as-schema">
+{
+  "version": 1,
+  "listing": ["id", "building", "unit", "address", "neighborhood", "beds", "baths", "sqft", "size", "floor", "floor_inferred", "exposure", "available", "price", "amenities", "score", "site", "records", "reviews", "photo_review", "building_facts"],
+  "price": ["gross", "free_months", "lease_months"],
+  "size": ["sqft", "basis", "range"],
+  "score": ["overall", "confidence", "range", "parts", "budget_tier", "monthly_cost", "gates", "ppsf", "cost", "flags"],
+  "cost": ["fees_estimate", "rent", "move_in_min", "move_in_unknown", "unknown"],
+  "site": ["sun_hours", "open_sky_share"],
+  "records": ["risk_score", "noise_score", "flags"],
+  "reviews": ["ratings"],
+  "photo_review": ["interior", "renovation", "view", "view_note"],
+  "building_facts": ["year_built"],
+  "links": [],
+  "commute_modes": ["walk", "subway", "bus", "transit"],
+  "commute": ["minutes", "mode", "route", "modes"],
+  "commute_mode": ["minutes", "route", "transfers", "ride_min", "walk_min"],
+  "commute_leg": ["mode", "min"],
+  "pick": ["tier", "note"],
+  "tour": ["observed", "rooms", "ceiling", "water", "noise", "signal", "closets", "laundry", "smells", "light", "view", "checks", "note", "photos"],
+  "trail": ["at", "kind", "text", "why"],
+  "plan": ["units", "up_bearing", "rooms", "windows", "doors"],
+  "tour_photos": { "max_per_home": 4, "thumb_px": 520, "quality": 0.76, "budget_kb": 520 },
+  "photos": { "max_per_home": 1, "thumb_px": 1100, "quality": 0.8, "budget_kb": 1500 },
+  "map": { "max_points": 3500, "min_spacing_m": 30, "decimals": 4, "pad": 0.2 },
+  "text_max": { "notes": 700, "summary": 420, "questions": 420, "evidence": 300, "flag": 160, "pick_note": 600, "question": 260 },
+  "max_homes": 4
+}
+</script>
+<script type="application/json" id="as-data">null</script>
+
+<script id="as-core">
+(function (root) {
+'use strict';
+const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const usd = (n) => (isNum(n) ? '$' + Math.round(n).toLocaleString('en-US') : null);
+const cut = (s, n) => { s = String(s == null ? '' : s).replace(/\s+/g, ' ').trim(); return s.length > n ? s.slice(0, Math.max(0, n - 1)).trimEnd() + '…' : s; };
+const LET = ['A', 'B', 'C', 'D'];
+const COMPASS = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
+const compass = (deg) => COMPASS[Math.round((((deg % 360) + 360) % 360) / 22.5) % 16];
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const name = (h) => [h.building || h.address, h.unit].filter(Boolean).join(' ');
+const parts = (h) => (h.score && h.score.parts) || {};
+const cost = (h) => (h.score && h.score.cost) || {};
+const gates = (h) => (h.score && h.score.gates) || [];
+const failing = (h) => gates(h).filter((g) => g === 'over_budget' || g.startsWith('fails'));
+const fitOf = (h) => (isNum(h.fit) ? h.fit : h.score && isNum(h.score.overall) ? h.score.overall : null);
+
+const GATE = (g) => {
+  const [k, v] = String(g).split(':');
+  const m = { over_budget: 'Over budget', unknown_cost: 'Cost unknown', price_dispute: 'Price claims disagree', concession: 'Concession may not apply', move_date: 'Available after your window' };
+  if (k === 'unverified') return { fees: 'Fees unknown', lease_term: 'Lease term unknown', price: 'Price unverified' }[v] || 'Unconfirmed: ' + String(v || '').replace(/_/g, ' ');
+  if (k === 'fails') return 'Fails: ' + String(v || '').replace(/_/g, ' ');
+  if (k === 'contradicted') return 'Differs on tour: ' + ({ in_unit_wd: 'in-unit W/D', doorman: 'doorman', sqft: 'size', exposure: 'exposure' }[v] || String(v || '').replace(/_/g, ' '));
+  if (k === 'stale') return 'Last checked ' + String(v || '').replace('checked_', '').replace(/_/g, ' ');
+  return m[k] || String(g).replace(/_/g, ' ');
+};
+const rating = (h) => {
+  const r = ((h.reviews && h.reviews.ratings) || []).map((x) => ({ l: x.label, m: String(x.value).match(/([\d.]+)\s*\/\s*5(?:\D+(\d+))?/) })).filter((x) => x.m);
+  if (!r.length) return null;
+  const n = r.reduce((a, x) => a + (+x.m[2] || 1), 0);
+  return { v: r.reduce((a, x) => a + +x.m[1] * (+x.m[2] || 1), 0) / n, n: r.reduce((a, x) => a + (+x.m[2] || 0), 0), src: r.map((x) => x.l).join(', ') };
+};
+const SIZE_FIRM = ['reported', 'exact_plan'];
+
+// ---------------------------------------------------------------- the table
+function best(cells, dir, needAll) {
+  const vs = cells.map((c) => (c && isNum(c.v) ? c.v : null)), known = vs.filter((v) => v != null);
+  if (!dir || known.length < 2 || (needAll && known.length < cells.length)) return [];
+  const t = dir === 'min' ? Math.min(...known) : Math.max(...known);
+  if (new Set(known).size < 2) return [];
+  return vs.map((v, i) => (v === t ? i : -1)).filter((i) => i >= 0);
+}
+function rows(p) {
+  const H = p.homes, dests = (p.dests || []).map((d) => d.name);
+  const row = (label, f, o = {}) => { const cells = H.map((h) => f(h) || null); return { label, sub: o.sub || '', cells, best: best(cells, o.best, o.needAll), none: o.none || 'Unknown' }; };
+  const sun = (h, m) => (h.site && Array.isArray(h.site.sun_hours) && isNum(h.site.sun_hours[m]) ? h.site.sun_hours[m] : null);
+  const sections = [];
+  sections.push({ title: 'Money', rows: [
+    row('True monthly cost', (h) => { const v = h.score && h.score.monthly_cost; if (!isNum(v)) return null; const c = cost(h); return { v, t: usd(v), s: c.fees_estimate ? 'fees estimated' : c.rent && c.rent.basis === 'conditional' ? 'concession terms open' : isNum(h.price && h.price.gross) ? 'gross ' + usd(h.price.gross) : '' }; }, { best: 'min', sub: 'rent after free months, plus fees' }),
+    row('Move-in cost', (h) => { const c = cost(h); if (!isNum(c.move_in_min)) return null; const u = c.move_in_unknown || []; return { v: u.length ? null : c.move_in_min, t: usd(c.move_in_min), s: u.length ? '+ ' + u.map((x) => x.replace('one-time fees', 'fees')).join(', ') + ' unknown' : 'first month, deposit, fees' }; }, { best: 'min', sub: 'cash to sign and move in' }),
+    row('Renewal risk', (h) => {
+      const v = parts(h).renewal_risk; if (!isNum(v)) return null;
+      const pr = h.price || {}, lease = [isNum(pr.lease_months) ? pr.lease_months + '-month lease' : '', isNum(pr.free_months) && pr.free_months > 0 ? pr.free_months + ' free' : ''].filter(Boolean).join(', ');
+      return { v, t: v >= 85 ? 'Low' : v >= 60 ? 'Moderate' : 'High', tone: v >= 85 ? '' : v >= 60 ? 'warn' : 'bad', s: cut([lease, h.lease && h.lease.renewal].filter(Boolean).join('. '), 58) };
+    }, { best: 'max', sub: 'will the rent jump at renewal?' }),
+  ] });
+  sections.push({ title: 'Space', rows: [
+    row('Size', (h) => {
+      const v = h.sqft ?? (h.size && h.size.sqft); if (!isNum(v)) return null;
+      const firm = !h.size || SIZE_FIRM.includes(h.size.basis) || !h.size.basis, pp = h.score && h.score.ppsf && h.score.ppsf.value;
+      const lay = [isNum(h.beds) ? (h.beds === 0 ? 'studio' : h.beds + ' bd') : '', isNum(h.baths) ? h.baths + ' ba' : '', isNum(h.floor) ? 'floor ' + Math.round(h.floor) + (h.floor_inferred ? '*' : '') : ''].filter(Boolean).join(' · ');
+      return { v, t: Math.round(v).toLocaleString('en-US') + ' ft²' + (firm ? '' : ' (est.)'), s: [lay, isNum(pp) ? '$' + pp.toFixed(2) + '/ft²' : ''].filter(Boolean).join(' · ') };
+    }, { best: 'max', none: 'Not published', sub: '* floor inferred' }),
+  ] });
+  sections.push({ title: 'Light and view', rows: [
+    row('Direct sun, Dec / Jun', (h) => {
+      const d = sun(h, 11), j = sun(h, 5); if (d == null) return null;
+      const sky = h.site && h.site.open_sky_share;
+      return { v: d, t: d.toFixed(1) + ' / ' + (j == null ? '?' : j.toFixed(1)) + ' h', s: [isNum(sky) ? Math.round(sky * 100) + '% open sky' : '', h.exposure && h.exposure.length ? 'faces ' + h.exposure.join('/') : ''].filter(Boolean).join(' · ') };
+    }, { best: 'max', none: 'No light model', sub: 'hours a day, modelled, clear sky' }),
+    row('View', (h) => { const pr = h.photo_review || {}; return isNum(pr.view) ? { v: pr.view, t: pr.view + '/5', s: cut(pr.view_note, 44) } : null; }, { best: 'max', sub: 'graded from photos' }),
+  ] });
+  sections.push({ title: 'Getting around', rows: (dests.length ? dests : [null]).map((d) => row(d ? 'Commute to ' + d : 'Commute', (h) => { const c = d && h.commutes && h.commutes[d]; return c && isNum(c.minutes) ? { v: c.minutes, t: Math.round(c.minutes) + ' min', s: cut(c.route || c.mode, 44) } : null; }, { best: 'min', none: 'Not computed' })) });
+  sections.push({ title: 'Building and records', rows: [
+    row('Building quality', (h) => { const v = parts(h).building; return isNum(v) ? { v, t: Math.round(v) + '/100', s: h.building_facts && h.building_facts.year_built ? 'built ' + h.building_facts.year_built : '' } : null; }, { best: 'max' }),
+    row('Public records', (h) => { const v = h.records && h.records.risk_score; if (!isNum(v)) return null; const n = (h.records.flags || []).length; return { v, t: v + '/100', s: n ? n + ' flag' + (n === 1 ? '' : 's') : 'no flags' }; }, { best: 'max', sub: 'higher is cleaner', none: 'No record check' }),
+    row('Resident reviews', (h) => { const r = rating(h); return r ? { v: r.v, t: r.v.toFixed(1) + '/5', s: cut(r.src + (r.n ? ' · ' + r.n + ' reviews' : ''), 46) } : null; }, { best: 'max', none: 'None gathered' }),
+    row('Amenities', (h) => {
+      const a = h.amenities || {}, yes = [['doorman', 'Doorman'], ['in_unit_wd', 'W/D in unit'], ['elevator', 'Elevator'], ['gym', 'Gym'], ['dishwasher', 'Dishwasher']].filter(([k]) => a[k] === true || (k === 'doorman' && a[k] && a[k] !== 'none')).map(([, l]) => l);
+      const no = a.in_unit_wd === false ? 'no W/D in unit' : '';
+      return yes.length || no ? { t: cut(yes.slice(0, 4).join(', '), 60) || 'None confirmed', s: no, wrap: true } : null;
+    }),
+  ] });
+  const tourNoise = H.map((h) => h.tour && h.tour.noise && h.tour.noise.rating).some(isNum);
+  sections.push({ title: 'Noise and interior', rows: [
+    row('Street noise', (h) => { const v = h.records && h.records.noise_score; return isNum(v) ? { v, t: v + '/100', s: 'higher is quieter' } : null; }, { best: 'max', sub: 'from 311 records', none: 'No record check' }),
+    ...(tourNoise ? [row('Noise on your visit', (h) => { const r = h.tour && h.tour.noise && h.tour.noise.rating; return isNum(r) ? { v: r, t: ['Silent', 'Quiet', 'Some noise', 'Noisy', 'Loud'][r - 1], s: h.tour.noise.db ? h.tour.noise.db + ' dB' : '' } : null; }, { best: 'min', sub: 'at the window' })] : []),
+    row('Interior', (h) => { const v = parts(h).interior; return isNum(v) ? { v, t: Math.round(v) + '/100', s: cut(h.photo_review && h.photo_review.renovation, 30) } : null; }, { best: 'max', sub: 'from photos' }),
+  ] });
+  sections.push({ title: 'Overall', rows: [
+    row('Fit with your priorities', (h) => { const v = fitOf(h); return isNum(v) ? { v, t: Math.round(v) + '/100', s: h.score && isNum(h.score.confidence) ? h.score.confidence + '% of the weight is known' : '' } : null; }, { best: 'max' }),
+    row('Hard requirements', (h) => { const f = failing(h), u = gates(h).filter((g) => !f.includes(g)); return f.length ? { t: f.map(GATE).join('; '), tone: 'bad' } : u.length ? { t: 'Confirm', s: u.map(GATE).slice(0, 2).join('; '), tone: 'warn' } : { t: 'All met' }; }),
+  ] });
+  return sections;
+}
+
+// ---------------------------------------------------------------- what is still unknown
+const DIM_LABEL = { cost: 'cost', space: 'size', commute: 'commute', amenities: 'amenities', light_view: 'light and view', building: 'building', interior: 'interior', quiet: 'noise', move_date: 'move-in date' };
+function unknownsFor(h) {
+  const out = [], seen = new Set(), c = cost(h), g = gates(h), fl = (h.score && h.score.flags) || [];
+  const add = (t, why) => { if (!seen.has(t)) { seen.add(t); out.push({ t, why: why || '' }); } };
+  if (g.includes('unverified:price')) add('The rent is not verified from the unit page', 'The price comes from a search snippet or an undated copy.');
+  if (g.includes('price_dispute')) add('Two readings of the price disagree', 'Ask which is right and get it in writing.');
+  if (c.fees_estimate || g.includes('unverified:fees') || (c.unknown || []).includes('monthly fees')) add('Monthly fees are not documented', 'The cost uses an estimate from similar buildings.');
+  if (g.includes('unverified:lease_term') || (c.unknown || []).includes('lease term')) add('The lease length is not stated', 'Free months and one-time fees are spread over an assumed 12 months.');
+  if ((c.unknown || []).includes('free months')) add('The number of free months is open');
+  for (const u of c.move_in_unknown || []) add(u === 'deposit' ? 'The security deposit is not known' : 'Move-in and application fees are not known', 'The move-in cost is a floor until they are.');
+  if (parts(h).move_date == null && !h.available) add('When it is available', 'Unknown, counted as neutral against your move-in window.');
+  if (fl.includes('size_estimated')) add('The size is estimated from a plan', 'Not an advertised figure.');
+  if (parts(h).space == null) add('The size is not published');
+  if (fl.includes('floor_inferred')) add('The floor is inferred from the unit number');
+  if (fl.includes('exposure_assumed') || parts(h).light_view == null) add('Which way the windows face and how much sun they get', 'Assumed, not modelled from the exact unit.');
+  if (fl.includes('interior_staged')) add('Photos are staged or rendered', 'The interior grade is pulled toward neutral.');
+  const a = h.amenities || {};
+  if (a.in_unit_wd == null) add('Whether there is an in-unit washer/dryer');
+  if (a.elevator == null) add('Whether there is an elevator');
+  for (const x of g.filter((y) => y.startsWith('contradicted:'))) add(GATE(x), 'Observed on your visit; not scored until you confirm it.');
+  if (!(h.records && isNum(h.records.risk_score))) add('Public building records were not checked');
+  return out;
+}
+
+// ---------------------------------------------------------------- the recommendation
+function order(p) {
+  return p.homes.map((h, i) => ({ h, i })).sort((a, b) => (failing(a.h).length ? 1 : 0) - (failing(b.h).length ? 1 : 0) || (fitOf(b.h) ?? -1) - (fitOf(a.h) ?? -1) || a.i - b.i);
+}
+function recommend(p) {
+  const ord = order(p), L = ord[0], R = ord[1] || null, lead = L.h, w = Object.fromEntries((p.weights || []).map((x) => [x.k, x.w])), tot = (p.weights || []).reduce((a, x) => a + x.w, 0) || 1;
+  const lab = Object.fromEntries((p.weights || []).map((x) => [x.k, x.label]));
+  const margin = R && fitOf(lead) != null && fitOf(R.h) != null ? Math.round((fitOf(lead) - fitOf(R.h)) * 10) / 10 : null;
+  const reasonFor = (k) => (lead.reasons || []).find((r) => r.label === lab[k]);
+  let why = [];
+  if (R) {
+    why = Object.keys(w).filter((k) => w[k] > 0).map((k) => ({ k, pts: ((parts(lead)[k] ?? 50) - (parts(R.h)[k] ?? 50)) * w[k] / tot })).filter((x) => x.pts >= 0.3).sort((a, b) => b.pts - a.pts).slice(0, 3)
+      .map((x) => ({ label: lab[x.k] || x.k, pts: Math.round(x.pts * 10) / 10, vs: name(R.h), text: (reasonFor(x.k) && reasonFor(x.k).sentence) || '' }));
+  }
+  if (!why.length) why = (lead.reasons || []).filter((r) => r.pts > 0).slice(0, 3).map((r) => ({ label: r.label, pts: r.pts, vs: null, text: r.sentence }));
+  const facts = [];
+  const m = lead.score && lead.score.monthly_cost;
+  if (isNum(m)) facts.push(usd(m) + ' a month');
+  const d0 = (p.dests || [])[0], c0 = d0 && lead.commutes && lead.commutes[d0.name];
+  if (c0 && isNum(c0.minutes)) facts.push(Math.round(c0.minutes) + ' minutes to ' + d0.name);
+  const s12 = lead.site && Array.isArray(lead.site.sun_hours) ? lead.site.sun_hours[11] : null;
+  if (isNum(s12)) facts.push(s12.toFixed(1) + ' hours of direct sun in December');
+  const close = margin != null && margin < 3;
+  const closeBy = margin != null ? (margin < 0.5 ? 'It is a tie with ' : 'It leads ') + (margin < 0.5 ? name(R.h) : name(R.h) + ' by ' + margin.toFixed(1) + ' points') + '.' : '';
+  const headline = name(lead) + ' fits your priorities best' + (facts.length ? ': ' + facts.slice(0, 3).join(', ').replace(/, ([^,]*)$/, facts.length > 1 ? ', and $1' : ', $1') : '') + '.';
+  const watch = [];
+  if (close) watch.push('A close call: ' + closeBy.replace(/\.$/, '') + '. Small facts decide it, so settle the open questions below before you commit.');
+  if (R && lead.score && R.h.score && Array.isArray(R.h.score.range) && Array.isArray(lead.score.range) && R.h.score.range[1] > lead.score.range[0] && !close) watch.push(name(R.h) + ' could catch up: what is unknown about it could move it up to ' + Math.round(R.h.score.range[1]) + ', and ' + name(lead) + ' could land as low as ' + Math.round(lead.score.range[0]) + '.');
+  const un = unknownsFor(lead).slice(0, 3);
+  if (un.length) watch.push('Unknown for ' + name(lead) + ': ' + un.map((u) => u.t.charAt(0).toLowerCase() + u.t.slice(1)).join('; ') + '.');
+  const tourDiff = ((lead.tour && lead.tour.checks) || []).filter((c) => c.kind === 'contradicts' || c.verdict === 'differs');
+  if (tourDiff.length) watch.push('Your visit found a difference from the listing: ' + tourDiff.map((c) => String(c.label).toLowerCase()).join(', ') + '.');
+  const S = ord.find((x) => x.h.pick && x.h.pick.tier === 'S');
+  if (S && S.h !== lead) watch.push('You rated ' + name(S.h) + ' tier S, above the fit ranking: your own rating can decide this.');
+  const f = failing(lead);
+  if (f.length) watch.push(name(lead) + ' does not meet a hard requirement (' + f.map(GATE).join('; ').toLowerCase() + '); every home here does not.');
+  return { order: ord.map((x) => x.i), leader: L.i, runner: R ? R.i : null, margin, close, headline, why, watch, facts };
+}
+
+// ---------------------------------------------------------------- one line about each home, for the cover
+function verdictLine(h, isLead) {
+  const rs = (h.reasons || []).slice().sort((a, b) => b.pts - a.pts), top = rs.find((r) => r.pts > 0.3), low = rs.slice().reverse().find((r) => r.pts < -0.8);
+  const f = failing(h);
+  if (f.length) return GATE(f[0]) + '.';
+  return [top ? 'Strong on ' + top.label.toLowerCase() : '', low ? 'weaker on ' + low.label.toLowerCase() : ''].filter(Boolean).join('; ').replace(/^./, (c) => c.toUpperCase()) + (isLead ? '' : '') + '.';
+}
+
+// ---------------------------------------------------------------- the final checklist
+function checklist(p) {
+  const r = recommend(p), H = p.homes, lead = H[r.leader], groups = [];
+  const qs = (h) => (h.questions || []).map((q) => ({ t: q.text, kind: q.kind }));
+  const ask = qs(lead).slice(0, 5);
+  const un = unknownsFor(lead).filter((u) => !ask.some((q) => q.t.toLowerCase().includes(u.t.toLowerCase().slice(0, 18))));
+  groups.push({ title: 'Confirm with the leasing office', sub: name(lead), items: [...ask.map((q) => ({ t: q.t })), ...un.slice(0, Math.max(0, 6 - ask.length)).map((u) => ({ t: u.t, sub: u.why }))] });
+  const mi = p.move_in || {};
+  groups.push({ title: 'Before you sign', sub: 'every home', items: [
+    { t: 'The rent, lease length, free months and every fee on the lease match what you were quoted, in writing' },
+    { t: 'You know the cash due at signing and when each part is due', sub: isNum(cost(lead).move_in_min) ? 'Documented so far for ' + name(lead) + ': ' + usd(cost(lead).move_in_min) + '.' : '' },
+    { t: 'You know how the rent can change at renewal and how much notice each side must give' },
+    { t: 'Early-termination, sublet and guest rules are in the lease' },
+    { t: 'What the rent includes: heat, cooling, water, internet', sub: 'Ask who pays each and how it is billed.' },
+    { t: 'The start date fits your window' + (mi.earliest ? ' (' + mi.earliest + (mi.latest ? ' to ' + mi.latest : '') + ')' : ''), sub: lead.available ? 'Listed as available ' + cut(lead.available, 40) + '.' : '' },
+  ] });
+  groups.push({ title: 'Move-in day', sub: 'keep for your records', items: [
+    { t: 'Renter’s insurance bound and the proof sent to the building' },
+    { t: 'The elevator or loading time is booked and the movers’ insurance certificate is with the building' },
+    { t: 'Photograph every room and any damage before you unpack, and send the photos to the office in writing' },
+    { t: 'Keys, fobs and a copy of the signed lease in hand' },
+  ] });
+  const others = r.order.filter((i) => i !== r.leader).map((i) => ({ i, h: H[i] }));
+  for (const o of others.slice(0, 3)) {
+    const q = qs(o.h).slice(0, 3).map((x) => ({ t: x.t })), u = unknownsFor(o.h).slice(0, Math.max(1, 3 - q.length)).map((x) => ({ t: x.t, sub: x.why }));
+    const items = [...q, ...u].slice(0, 3);
+    if (items.length) groups.push({ title: 'If you choose ' + LET[o.i] + ' instead', sub: name(o.h), items });
+  }
+  return groups;
+}
+
+// ---------------------------------------------------------------- the floor plan as SVG
+const UNIT_IN = { ft: 12, in: 1, m: 39.3701 };
+const fmtIn = (inch) => { const t = Math.round(inch), f = Math.floor(t / 12), i = t % 12; return f + '′' + (i ? i + '″' : ''); };
+const KIND_FILL = { living: '#f4efe4', bedroom: '#eef1f8', kitchen: '#eef3ee', dining: '#f4efe4', bath: '#e8f0f4', hall: '#f2f2f0', closet: '#ecebe8', office: '#f1eef6', outdoor: '#e9f2e4', other: '#f1f1ee' };
+function planSvg(plan, o = {}) {
+  if (!plan || !Array.isArray(plan.rooms) || !plan.rooms.length) return '';
+  const k = UNIT_IN[plan.units || 'ft'] || 12, up = isNum(plan.up_bearing) ? plan.up_bearing : null;
+  const P = (pt) => [pt[0] * k, -pt[1] * k];
+  const polys = plan.rooms.filter((r) => Array.isArray(r.poly) && r.poly.length >= 3).map((r) => ({ r, pts: r.poly.map(P) }));
+  if (!polys.length) return '';
+  let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+  for (const { pts } of polys) for (const [x, y] of pts) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+  const pad = Math.max(x1 - x0, y1 - y0) * 0.1, W = x1 - x0 + pad * 2, Hh = y1 - y0 + pad * 2, sw = Math.max(W, Hh) / 150;
+  const num = (v) => Math.round(v * 10) / 10;
+  let s = `<svg viewBox="${num(x0 - pad)} ${num(y0 - pad)} ${num(W)} ${num(Hh)}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Floor plan">`;
+  for (const { r, pts } of polys) s += `<polygon points="${pts.map((p) => num(p[0]) + ',' + num(p[1])).join(' ')}" fill="${KIND_FILL[r.kind] || KIND_FILL.other}" stroke="#2b303b" stroke-width="${num(sw * 1.5)}" stroke-linejoin="round"/>`;
+  const seg = (e) => (Array.isArray(e.a) && Array.isArray(e.b) ? [P(e.a), P(e.b)] : [P([e.x1, e.y1]), P([e.x2, e.y2])]);
+  const ok = (e) => e && (Array.isArray(e.a) ? isNum(e.a[0]) : isNum(e.x1));
+  for (const d of plan.doors || []) if (ok(d)) { const [a, b] = seg(d); s += `<line x1="${num(a[0])}" y1="${num(a[1])}" x2="${num(b[0])}" y2="${num(b[1])}" stroke="#fff" stroke-width="${num(sw * 2.6)}" stroke-linecap="butt"/><line x1="${num(a[0])}" y1="${num(a[1])}" x2="${num(b[0])}" y2="${num(b[1])}" stroke="#a37d4a" stroke-width="${num(sw * 0.9)}" stroke-dasharray="${num(sw * 2)} ${num(sw * 1.4)}"/>`; }
+  for (const w of plan.windows || []) if (ok(w)) { const [a, b] = seg(w); s += `<line x1="${num(a[0])}" y1="${num(a[1])}" x2="${num(b[0])}" y2="${num(b[1])}" stroke="#fff" stroke-width="${num(sw * 3.4)}"/><line x1="${num(a[0])}" y1="${num(a[1])}" x2="${num(b[0])}" y2="${num(b[1])}" stroke="#3b8fe0" stroke-width="${num(sw * 2.4)}" stroke-linecap="round"/>`; }
+  const fs = sw * 5.6;
+  for (const { r, pts } of polys) {
+    const xs = pts.map((p) => p[0]), ys = pts.map((p) => p[1]), bw = Math.max(...xs) - Math.min(...xs), bh = Math.max(...ys) - Math.min(...ys), cx = (Math.max(...xs) + Math.min(...xs)) / 2, cy = (Math.max(...ys) + Math.min(...ys)) / 2;
+    if (bw < fs * 3 || bh < fs * 2.2) continue;
+    const rect = pts.length === 4 && pts.every((p, i) => { const q = pts[(i + 1) % 4]; return Math.abs(p[0] - q[0]) < 0.5 || Math.abs(p[1] - q[1]) < 0.5; });
+    s += `<text x="${num(cx)}" y="${num(cy - (rect ? fs * 0.15 : -fs * 0.3))}" text-anchor="middle" font-size="${num(fs)}" font-weight="600" fill="#2a2f3a" font-family="Geist, system-ui, sans-serif">${esc(r.name || '')}</text>`;
+    if (rect && bh > fs * 4) s += `<text x="${num(cx)}" y="${num(cy + fs * 1.25)}" text-anchor="middle" font-size="${num(fs * 0.82)}" fill="#626a7a" font-family="Geist, system-ui, sans-serif">${fmtIn(bw)} × ${fmtIn(bh)}</text>`;
+  }
+  if (up != null && o.north !== false) {
+    const ax = x1 + pad * 0.62, ay = y1 - pad * 1.5, L = sw * 9;   // a north arrow beside the bottom right corner, turned by the plan's up bearing
+    s += `<g transform="translate(${num(ax)} ${num(ay + L * 0.9)}) rotate(${num(-up)})"><path d="M0 ${num(-L * 0.9)} L${num(L * 0.28)} ${num(L * 0.35)} L0 ${num(L * 0.1)} L${num(-L * 0.28)} ${num(L * 0.35)}Z" fill="#12151c"/><text y="${num(-L * 1.12)}" text-anchor="middle" font-size="${num(sw * 5)}" font-weight="650" fill="#12151c" font-family="Geist, system-ui, sans-serif">N</text></g>`;
+  }
+  return s + '</svg>';
+}
+function sunBars(h) {
+  const v = h.site && h.site.sun_hours;
+  if (!Array.isArray(v) || v.length < 12) return '';
+  const mx = Math.max(...v.filter(isNum), 1);
+  return `<svg viewBox="0 0 84 24" aria-label="Direct sun hours by month">${v.slice(0, 12).map((x, i) => { const hh = isNum(x) ? Math.max(0.6, (x / mx) * 19) : 0; return `<rect x="${i * 7 + 0.5}" y="${22 - hh}" width="5.2" height="${hh}" rx="1" fill="${i === 11 || i === 5 ? '#c98a0a' : '#e7c777'}"/>`; }).join('')}<line x1="0" x2="84" y1="22.4" y2="22.4" stroke="#cdd1d9" stroke-width=".6"/></svg>`;
+}
+const ringSvg = (v, size, sw) => { const r = (size - sw) / 2, c = 2 * Math.PI * r, f = isNum(v) ? Math.max(0, Math.min(100, v)) / 100 : 0, col = !isNum(v) ? '#9aa1ae' : v >= 75 ? '#0c7a4c' : v >= 55 ? '#4b55e6' : '#b4381f';
+  return `<div class="ring" style="width:${size}px;height:${size}px"><svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}"><circle cx="${size / 2}" cy="${size / 2}" r="${r}" fill="none" stroke="#e4e6eb" stroke-width="${sw}"/><circle cx="${size / 2}" cy="${size / 2}" r="${r}" fill="none" stroke="${col}" stroke-width="${sw}" stroke-linecap="round" stroke-dasharray="${(c * f).toFixed(1)} ${c.toFixed(1)}"/></svg><b style="font-size:${Math.round(size * 0.3)}px">${isNum(v) ? Math.round(v) : '–'}</b></div>`; };
+
+const api = { isNum, esc, usd, cut, LET, name, compass, MONTHS, GATE, rating, rows, unknownsFor, recommend, checklist, verdictLine, planSvg, sunBars, ringSvg, failing, fitOf, parts, cost, gates, order, fmtIn };
+root.ASReport = api;
+if (typeof module !== 'undefined' && module.exports) module.exports = api;
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+</script>
+
+<script id="as-draw">
+(function () {
+'use strict';
+const R = window.ASReport, esc = R.esc;
+let P = null;
+try { P = JSON.parse(document.getElementById('as-data').textContent); } catch (e) { P = null; }
+const desk = document.getElementById('desk');
+const SAFE = /^(data:image\/(jpeg|png|webp|gif);base64,|https?:\/\/)/i;
+const src = (u) => (typeof u === 'string' && SAFE.test(u) ? u : null);
+const img = (u, alt) => { const s = src(u); return s ? `<img src="${esc(s)}" alt="${esc(alt || '')}" referrerpolicy="no-referrer" decoding="async">` : ''; };
+const photo = (u, alt, cls = '', cap = '', empty = 'No photo') => `<div class="photo ${cls}">${img(u, alt) || `<div class="ph">${esc(empty)}</div>`}${cap ? `<span class="cap">${esc(cap)}</span>` : ''}</div>`;
+const MARK = '<svg class="mark" viewBox="10 10 80 88" aria-hidden="true"><path d="M50 95C50 95 15.5 57.5 15.5 40A34.5 34.5 0 1 1 84.5 40C84.5 57.5 50 95 50 95ZM75 40A25 25 0 1 1 25 40A25 25 0 1 1 75 40Z" fill="#12865f" fill-rule="evenodd"/><path d="M49.25 29L50 16.5L50.75 29ZM48 29H52V36.6H48ZM46 36.6H54V39.2H46ZM44 39.2H56V42.2H44ZM42 42.2H58V47.8H42ZM40 47.8H60V70H40Z" fill="#12151c"/></svg>';
+const dateLabel = (iso) => { const d = new Date(String(iso) + 'T12:00:00Z'); return isNaN(d) ? String(iso || '') : d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' }); };
+
+function run(n, total, title) { return `<div class="run">${MARK}<b>Decision report</b><span>${esc(title)}</span><span class="sp"></span><span>${n} / ${total}</span></div>`; }
+function foot() { return `<div class="foot"><span>${esc(P.source || 'Made with ApartmentScout')}</span><span class="sp"></span><span>Figures as of ${esc(dateLabel(P.generated))}. A fact nobody has confirmed stays marked unknown.</span></div>`; }
+
+// ---------------------------------------------------------------- cover
+function cover(n, total, rec) {
+  const H = P.homes, lead = H[rec.leader], L = R.LET, title = P.title || (P.search && P.search.name) || 'Apartment search';
+  const rank = rec.order.map((i, k) => {
+    const h = H[i], m = h.score && h.score.monthly_cost, mi = R.cost(h).move_in_min;
+    return `<li class="${i === rec.leader ? 'lead' : ''}"><span class="let">${L[i]}</span><div class="nm"><b>${esc(R.name(h))}</b><span>${esc(h.neighborhood || h.address || '')}</span></div>${R.ringSvg(R.fitOf(h), 34, 4)}<div class="mo"><b>${m != null ? R.usd(m) : 'Unknown'}</b><span>${mi != null ? ((R.cost(h).move_in_unknown && R.cost(h).move_in_unknown.length) ? 'move in at least ' : 'move in ') + R.usd(mi) : 'move-in cost unknown'}</span></div><div class="vd">${esc(R.verdictLine(h, i === rec.leader))}</div></li>`;
+  }).join('');
+  const why = rec.why.map((w, i) => `<div><h3><span class="n">${i + 1}</span>${esc(w.label)}</h3>${w.vs ? `<div class="d">+${w.pts.toFixed(1)} points over ${esc(w.vs)}</div>` : `<div class="d">+${w.pts.toFixed(1)} points</div>`}<p class="clamp3">${esc(R.cut(w.text, 170))}</p></div>`).join('');
+  const photoSrc = lead.photos && lead.photos[0] ? lead.photos[0].src : null;
+  return `<section class="sheet cover" data-kind="cover">${run(n, total, title)}<div class="fill">
+    <div class="top"><div class="t"><div class="eyebrow">Recommended · ${H.length} homes compared</div><h1>${esc(R.name(lead))}</h1><div class="addr">${esc([lead.address, lead.neighborhood && !String(lead.address || '').includes(lead.neighborhood) ? lead.neighborhood : ''].filter(Boolean).join(' · '))}</div></div>${R.ringSvg(R.fitOf(lead), 62, 6)}</div>
+    <p class="verdict">${esc(rec.headline)}</p>
+    ${photo(photoSrc, R.name(lead), 'hero', lead.photos && lead.photos[0] && lead.photos[0].credit ? lead.photos[0].credit : '')}
+    ${rec.why.length ? `<div class="why">${why}</div>` : ''}
+    <ol class="rank" aria-label="Ranking">${rank}</ol>
+    ${rec.watch.length ? `<div class="watch"><h3>What could change this</h3><ul>${rec.watch.slice(0, 4).map((w) => `<li>${esc(w)}</li>`).join('')}</ul></div>` : ''}
+    <p class="small">This is how the homes rank on your weights (${(P.weights || []).filter((w) => w.pct > 0).map((w) => esc(w.label) + ' ' + w.pct + '%').join(', ')}). It is a recommendation, not a decision: you can weigh these facts differently.</p>
+  </div>${foot()}</section>`;
+}
+
+// ---------------------------------------------------------------- side by side
+function table(n, total, rec) {
+  const H = P.homes, L = R.LET, sections = R.rows(P);
+  const head = H.map((h, i) => `<th scope="col"><div class="hd ${i === rec.leader ? 'lead' : ''}">${photo(h.photos && h.photos[0] && h.photos[0].src, R.name(h), '', '', 'No photo')}<div class="nm"><span class="let">${L[i]}</span><span>${esc(R.name(h))}</span></div><small>${esc(h.neighborhood || '')}${i === rec.leader ? ' · recommended' : ''}</small></div></th>`).join('');
+  const body = sections.map((s) => `<tr class="sec"><td colspan="${H.length + 1}">${esc(s.title)}</td></tr>` + s.rows.map((r) => `<tr><td class="l">${esc(r.label)}${r.sub ? `<small>${esc(r.sub)}</small>` : ''}</td>${r.cells.map((c, i) => `<td class="${r.best.includes(i) ? 'best' : ''}">${c && c.t ? `<span class="v ${c.tone || ''}${c.wrap ? ' wrap' : ''}" title="${esc(c.t)}">${esc(c.t)}</span>${c.s ? `<span class="s" title="${esc(c.s)}">${esc(c.s)}</span>` : ''}` : `<span class="unk">${esc(r.none)}</span>`}</td>`).join('')}</tr>`).join('')).join('');
+  return `<section class="sheet" data-kind="table">${run(n, total, 'Side by side')}<div class="fill"><div class="pg-title"><h2>Side by side</h2><p>The best value in each row is shaded. Unknown stays unknown: it is never counted as the worst.</p></div>
+    <table class="cmp n${H.length}"><colgroup><col class="lab">${H.map(() => '<col>').join('')}</colgroup><thead><tr><td></td>${head}</tr></thead><tbody>${body}</tbody></table>
+    <div class="keyline"><span><i></i>Best in the row</span><span>Costs are per month unless a row says otherwise. Move-in cost is compared only when every deposit and fee is known.</span></div></div>${foot()}</section>`;
+}
+
+// ---------------------------------------------------------------- one home
+const TOUR_LEVEL = { water: ['Weak', 'Low', 'OK', 'Good', 'Strong'], noise: ['Silent', 'Quiet', 'Some', 'Noisy', 'Loud'], light: ['Dark', 'Dim', 'OK', 'Bright', 'Very bright'] };
+function tourBox(h) {
+  const t = h.tour; if (!t) return '';
+  const f = [];
+  const add = (k, v, tone = '') => f.push(`<span class="f ${tone}">${esc(k)} <b>${esc(v)}</b></span>`);
+  if (t.ceiling) add('Ceiling', t.ceiling + ' ft');
+  if (t.water) add('Water', TOUR_LEVEL.water[t.water - 1] || t.water + '/5', t.water <= 2 ? 'warn' : '');
+  if (t.noise && t.noise.rating) add('Noise at window', (TOUR_LEVEL.noise[t.noise.rating - 1] || t.noise.rating + '/5') + (t.noise.db ? ' · ' + t.noise.db + ' dB' : ''), t.noise.rating >= 4 ? 'bad' : t.noise.rating <= 2 ? 'good' : '');
+  if (t.light && t.light.rating) add('Light', (TOUR_LEVEL.light[t.light.rating - 1] || t.light.rating + '/5') + (t.light.facing ? ' · ' + t.light.facing : '') + (t.light.time ? ' at ' + t.light.time : ''), t.light.rating >= 4 ? 'good' : '');
+  if (t.signal != null) add('Cell signal', t.signal + '/4 bars', t.signal <= 1 ? 'warn' : '');
+  if (t.closets != null) add('Closets', String(t.closets));
+  if (t.laundry) add('Laundry', { in_unit: 'in the unit', on_floor: 'on the floor', building: 'in the building', none: 'none' }[t.laundry] || t.laundry);
+  if (t.smells && t.smells.length && !(t.smells.length === 1 && t.smells[0] === 'none')) add('Smells', t.smells.join(', '), 'warn');
+  for (const c of t.checks || []) add(c.label, c.verdict === 'match' ? 'matches the listing' : c.verdict === 'differs' ? 'differs: ' + (c.observed || 'see note') : 'unsure', c.verdict === 'differs' ? 'bad' : c.verdict === 'match' ? 'good' : 'warn');
+  const rooms = (t.rooms || []).filter((r) => r.w && r.l).slice(0, 4).map((r) => `${esc(r.name || 'Room')} ${R.fmtIn(r.w * 12)} × ${R.fmtIn(r.l * 12)}`);
+  const photos = (t.photos || []).slice(0, 4).map((p) => `<figure>${photo(p.src, p.caption || 'Photo from your visit', '', '', 'Photo')}${p.caption ? `<figcaption>${esc(p.caption)}</figcaption>` : ''}</figure>`).join('');
+  return `<div class="tourbox"><div class="th"><b>From your visit</b><span>${esc(t.observed ? dateLabel(t.observed) : '')}</span></div><div class="facts">${f.join('')}${rooms.length ? `<span class="f">Measured <b>${rooms.join(' · ')}</b></span>` : ''}</div>
+    ${t.view ? `<p class="tnote">View: ${esc(R.cut(t.view, 160))}</p>` : ''}${t.note ? `<p class="tnote note">${esc(R.cut(t.note, 360))}</p>` : ''}${photos ? `<div class="tphotos">${photos}</div>` : ''}</div>`;
+}
+function home(i, n, total, rec) {
+  const h = P.homes[i], s = h.score || {}, c = R.cost(h), isLead = i === rec.leader, L = R.LET, hasTour = !!h.tour;
+  const m = s.monthly_cost, p0 = h.photos && h.photos[0];
+  const planSvg = h.plan ? R.planSvg(h.plan) : '';
+  const hasShe = h.exposure && h.exposure.length;
+  const sun = h.site && Array.isArray(h.site.sun_hours) ? h.site.sun_hours : null;
+  const still = h.still && src(h.still.src) ? h.still : null;
+  const stillNote = still ? ['floor ' + (still.floor != null ? still.floor : Math.round(h.floor || 0)), still.face != null ? 'faces ' + R.compass(still.face) : '', still.when || ''].filter(Boolean).join(' · ') : '';
+  const dim = (P.weights || []).filter((w) => w.w > 0);
+  const bars = dim.map((w) => { const v = R.parts(h)[w.k]; return `<li class="${v == null ? 'unk' : ''}"><span>${esc(w.label)} <small>${w.pct}%</small></span><span class="tr"><i style="width:${v == null ? 0 : Math.max(2, Math.min(100, v))}%"></i></span><span class="nv">${v == null ? '?' : Math.round(v)}</span></li>`; }).join('');
+  const note = !!(h.pick && h.pick.note);   // a note takes a few lines of the right-hand column: one question fewer
+  const un = R.unknownsFor(h).slice(0, hasTour ? 3 : 4), qs = (h.questions || []).slice(0, (hasTour ? 3 : 4) - (note ? 1 : 0));
+  const flagList = (h.records && h.records.flags || []).slice(0, 2);
+  const gl = (s.gates || []).map((g) => `<span class="pill ${g === 'over_budget' || g.startsWith('fails') ? 'bad' : 'warn'}">${esc(R.GATE(g))}</span>`).join('');
+  const sunTxt = sun && sun.length >= 12 ? `${sun[11].toFixed(1)} h Dec · ${sun[5].toFixed(1)} h Jun` : null;
+  const cm = (P.dests || []).slice(0, 1).map((d) => { const x = h.commutes && h.commutes[d.name]; return x && R.isNum(x.minutes) ? { v: Math.round(x.minutes) + ' min', l: 'to ' + d.name } : null; }).filter(Boolean)[0];
+  const strip = [
+    [m != null ? R.usd(m) : 'Unknown', 'true monthly cost' + (c.fees_estimate ? ', fees estimated' : '')],
+    [R.isNum(c.move_in_min) ? R.usd(c.move_in_min) + ((c.move_in_unknown || []).length ? '+' : '') : 'Unknown', 'to move in' + ((c.move_in_unknown || []).length ? ' (' + c.move_in_unknown.join(', ') + ' unknown)' : '')],
+    [sunTxt ? sunTxt.split(' · ')[0] : 'No model', sunTxt ? 'direct sun, ' + sunTxt.split(' · ')[1].replace('Jun', 'in June') : 'direct sun not modelled'],
+    cm ? [cm.v, cm.l] : ['Not computed', 'commute'],
+  ].map(([a, b]) => `<div><b>${esc(a)}</b><span>${esc(b)}</span></div>`).join('');
+  const tier = h.pick && h.pick.tier ? `<span class="pill accent">Your tier ${esc(h.pick.tier)}</span>` : '';
+  return `<section class="sheet hm${hasTour ? ' tour' : ''}" data-kind="home" data-id="${esc(h.id)}">${run(n, total, 'Home ' + L[i] + ' of ' + P.homes.length)}<div class="fill">
+    <div class="head"><div class="t"><div class="tags"><span class="let ${isLead ? 'lead' : ''}">${L[i]}</span>${isLead ? '<span class="pill accent">Recommended</span>' : ''}${tier}${s.budget_tier ? `<span class="pill">${esc(s.budget_tier)}</span>` : ''}${gl}</div>
+      <h2>${esc(R.name(h))}</h2><div class="addr">${esc([h.address, h.neighborhood && !String(h.address || '').includes(h.neighborhood) ? h.neighborhood : ''].filter(Boolean).join(' · '))}</div></div>${R.ringSvg(R.fitOf(h), 52, 5)}</div>
+    ${photo(p0 && p0.src, R.name(h), 'hero', p0 && p0.credit ? p0.credit : '', 'No photo of this home yet')}
+    <div class="vis"><div class="card"><div class="ct"><span>Floor plan</span><span>${hasShe ? 'windows face ' + esc(h.exposure.join(' / ')) : ''}</span></div><div class="cb">${planSvg || '<div class="ph">No floor plan yet</div>'}</div></div>
+      <div class="card still"><div class="ct"><span>From the window</span><span>${esc(stillNote)}</span></div><div class="cb">${still ? img(still.src, 'A 3D view from the window of ' + R.name(h)) : '<div class="ph">No 3D model of this home yet</div>'}${sun ? `<div class="sun">${R.sunBars(h)}direct sun by month</div>` : ''}</div></div></div>
+    <div class="strip">${strip}</div>
+    <div class="cols"><div><div class="sub-h">How it scores</div><ul class="bars">${bars}</ul>${h.lease && h.lease.renewal ? `<div class="sub-h">Renewal and lease</div><p class="bl" style="font-size:8pt;color:var(--ink2);line-height:1.38">${esc(R.cut(h.lease.renewal.charAt(0).toUpperCase() + h.lease.renewal.slice(1), 170))}</p>` : ''}${flagList.length ? `<div class="sub-h">From public records</div><ul class="bl warn">${flagList.map((f) => `<li>${esc(R.cut(f, 110))}</li>`).join('')}</ul>` : ''}</div>
+      <div>${un.length ? `<div class="sub-h">Still unknown</div><ul class="bl warn">${un.map((u) => `<li><b>${esc(u.t)}.</b>${u.why ? ' ' + esc(R.cut(u.why, 90)) : ''}</li>`).join('')}</ul>` : '<div class="sub-h">Still unknown</div><p class="muted" style="font-size:8pt">Nothing that moves the score is open.</p>'}
+        ${qs.length ? `<div class="sub-h">Open with the leasing office</div><ul class="bl ask">${qs.map((q) => `<li>${esc(R.cut(q.text, 150))}</li>`).join('')}</ul>` : ''}
+        ${h.pick && h.pick.note ? `<div class="sub-h note">Your note</div><p class="tnote note">${esc(R.cut(h.pick.note, 240))}</p>` : ''}</div></div>
+    ${tourBox(h)}
+  </div>${foot()}</section>`;
+}
+
+// ---------------------------------------------------------------- checklist
+function checklistPage(n, total) {
+  const G = R.checklist(P), half = Math.ceil(G.length / 2) || 1;
+  const col = (gs) => gs.map((g) => `<section><h3>${esc(g.title)}${g.sub ? `<small>${esc(g.sub)}</small>` : ''}</h3><ul>${g.items.map((it) => `<li><span class="box"></span><span>${esc(it.t)}${it.sub ? `<small>${esc(it.sub)}</small>` : ''}</span></li>`).join('')}</ul></section>`).join('');
+  const left = [], right = [];
+  let lh = 0, rh = 0;
+  for (const g of G) { const w = 2 + g.items.length; if (lh <= rh) { left.push(g); lh += w; } else { right.push(g); rh += w; } }
+  return `<section class="sheet" data-kind="checklist">${run(n, total, 'Checklist')}<div class="fill"><div class="pg-title"><h2>Before you sign</h2><p>Tick each one off. Nothing here has been sent to anyone.</p></div>
+    <div class="ck"><div>${col(left)}</div><div>${col(right)}</div></div>
+    <div class="sign"><div>Decision</div><div>Date</div></div></div>${foot()}</section>`;
+}
+
+// ---------------------------------------------------------------- the page
+function paper(kind, again) {
+  const a4 = kind === 'a4', root = document.documentElement;
+  root.style.setProperty('--pw', a4 ? '210mm' : '8.5in'); root.style.setProperty('--ph', a4 ? '297mm' : '11in');
+  let st = document.getElementById('as-page'); if (!st) { st = document.createElement('style'); st.id = 'as-page'; document.head.appendChild(st); }
+  st.textContent = `@page { size: ${a4 ? 'A4' : 'letter'}; margin: 0; }`;
+  document.getElementById('paper').value = a4 ? 'a4' : 'letter';
+  fit();
+  if (again) { render(); trim(); }   // drawn afresh, so a line trimmed for one paper size comes back for the other; at start the fonts are not ready yet, and boot() trims once they are
+  if (window.__report) window.__report.overflow = checkOverflow();   // the sheets changed size: look again for clipped content
+}
+function fit() {
+  const sheet = document.querySelector('.sheet'); if (!sheet) return;
+  const w = sheet.offsetWidth || 816, avail = Math.max(280, window.innerWidth - 24);
+  desk.style.setProperty('--scale', String(Math.min(1, avail / w)));
+}
+/** A home page whose columns would run past the sheet gives up its last open question, then its last unknown, then its last records flag,
+ *  until it fits: the checklist page still asks every question, so nothing is lost, and a page never prints clipped. */
+function trim() {
+  document.querySelectorAll('.sheet[data-kind=home] .cols').forEach((cols) => {
+    for (const sel of ['.bl.ask li', '.bl.warn li']) {
+      let guard = 12;
+      while (cols.scrollHeight > cols.clientHeight + 1 && guard-- > 0) {
+        const items = cols.querySelectorAll(sel);
+        if (items.length <= 1) break;
+        items[items.length - 1].remove();
+      }
+    }
+  });
+}
+function checkOverflow() {
+  const bad = [];
+  document.querySelectorAll('.sheet').forEach((sh, i) => {
+    const box = sh.getBoundingClientRect(), fillEl = sh.querySelector('.fill');
+    let over = fillEl && fillEl.scrollHeight > fillEl.clientHeight + 1;
+    sh.querySelectorAll('.cols, .ck').forEach((e) => { if (e.scrollHeight > e.clientHeight + 1) over = true; });
+    const f = sh.querySelector('.foot').getBoundingClientRect();
+    sh.querySelectorAll('.fill > *').forEach((e) => { if (e.getBoundingClientRect().bottom > f.top + 1 && !e.classList.contains('foot')) over = true; });
+    if (over) bad.push(i + 1);
+    void box;
+  });
+  return bad;
+}
+function render() {
+  if (!P || !Array.isArray(P.homes) || P.homes.length < 1) { desk.innerHTML = '<p style="padding:40px">This report has no homes in it.</p>'; return; }
+  const rec = R.recommend(P), H = P.homes, total = H.length + 3;
+  const pages = [cover(1, total, rec), table(2, total, rec), ...rec.order.map((_, k) => home(rec.order[k], k + 3, total, rec)), checklistPage(total, total)];
+  // the homes keep their letters (A, B, ...) but are listed best first, so the letter says which one it is in the table
+  desk.innerHTML = `<div class="fit" id="fit">${pages.join('')}</div>`;
+  document.title = `Decision report: ${H.map((h) => R.name(h)).join(' vs ')}`;
+  document.getElementById('meta').textContent = `${H.length} homes · ${dateLabel(P.generated)}`;
+  // a photo that cannot be read leaves its frame with a plain label instead of a broken-image icon
+  desk.querySelectorAll('img').forEach((im) => {
+    const bad = () => { const f = im.closest('.photo, .cb'); if (f) { im.replaceWith(Object.assign(document.createElement('div'), { className: 'ph', textContent: 'Photo unavailable' })); } else im.remove(); };
+    im.addEventListener('error', bad); if (im.complete && im.naturalWidth === 0) bad();
+  });
+}
+function boot() {
+  render();
+  const tog = document.getElementById('notes');
+  if (P && P.notes) { document.getElementById('notesTog').hidden = false; tog.addEventListener('change', () => document.body.classList.toggle('hide-notes', !tog.checked)); }
+  document.body.classList.toggle('hide-notes', !(P && P.notes));
+  paper(new URLSearchParams(location.search).get('paper') || (P && P.paper) || 'letter');
+  document.getElementById('paper').addEventListener('change', (e) => paper(e.target.value, true));
+  document.getElementById('print').addEventListener('click', () => window.print());
+  addEventListener('resize', fit);
+  const done = () => { trim(); window.__report = { ready: true, pages: document.querySelectorAll('.sheet').length, overflow: checkOverflow(), homes: P ? P.homes.length : 0 }; document.body.dataset.ready = '1'; };
+  const imgs = [...document.images];
+  Promise.all(imgs.map((im) => (im.complete ? 0 : new Promise((r) => { im.addEventListener('load', r); im.addEventListener('error', r); })))).then(() => (document.fonts && document.fonts.ready ? document.fonts.ready : 0)).then(() => requestAnimationFrame(done));
+  if (location.hash === '#print') setTimeout(() => window.print(), 600);
+}
+boot();
+})();
+</script>
+</body>
+</html>

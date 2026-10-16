@@ -475,7 +475,7 @@ export function buildItem(it, env = {}) {
   const box = (w, h, d, color, x, y, z, o) => mk(new THREE.BoxGeometry(w, h, d), color, x, y, z, o);
   const cyl = (r, h, color, x, y, z, seg = 24, r2 = r) => mk(new THREE.CylinderGeometry(r, r2, h, seg), color, x, y, z);
   const { w, d, h, kind } = it, col = it.base?.color ?? 0x8899aa, hw = w / 2, hd = d / 2;
-  if (R3F.build(it, { s, std, fabric: fabricMat, quality: furnitureQuality(), texture }) || F3.build(it, { s, std, fabric: fabricMat })) { /* [interior] drawn by plan/furniture3d.js: rounded cushions, arms, headboards, drawers */ }
+  if (R3F.build(it, { s, std, fabric: fabricMat, quality: env.quality || furnitureQuality(), texture }) || F3.build(it, { s, std, fabric: fabricMat })) { /* [interior] drawn by plan/furniture3d.js: rounded cushions, arms, headboards, drawers */ }
   else if (kind === 'bed') {
     const [mw0, md0] = it.productInfo?.mattress || it.base.mattress || [w - 4, d - 4], mw = Math.min(mw0, w - 2), md = Math.min(md0, d - 3);
     const storage = !!it.base.storage, deck = storage ? 14 : 11;
@@ -842,6 +842,25 @@ export async function exportGLB() {
     for (const g of groups.values()) { const d = g.getObjectByName('decal'), o = g.getObjectByName('outline'); if (d) d.visible = !!d.userData.v; if (o) o.visible = !!o.userData.v; }
     dirty = true;
   }
+}
+/**
+ * [ar] The renter's pieces as a baked, true-scale model for AR Quick Look and glTF (room3d/ar-export.js): always the Visual
+ * models (whatever the screen is drawing), freshly built, one piece in its own frame or every placed piece where the layout puts it
+ * (the middle of the footprint is the origin, the floor y = 0). `ids` = the piece ids; omitted = the whole furnished room.
+ * @returns {Promise<THREE.Group>} the baked group; its userData.ar has the size in metres and the counts
+ */
+export async function arModel(ids = null) {
+  const { bakeForAR } = await import('../room3d/ar-export.js');
+  const src = new THREE.Group(); const one = ids && ids.length === 1;
+  for (const it of lastItems) {
+    if (it.hidden || (ids && !ids.includes(it.id))) continue;
+    const g = buildItem(it, { ceiling: model?.ceiling, quality: 'visual' });
+    if (!one) { g.position.copy(W(it.x, it.y)); g.rotation.y = -it.rot * DEG; }
+    src.add(g);
+  }
+  src.updateMatrixWorld(true);
+  const name = one ? (lastItems.find((q) => q.id === ids[0])?.name || ids[0]) : (model?.title || 'furnished room');
+  return bakeForAR(src, { name });
 }
 export function setRoomOf(id, room) { const g = groups.get(id); if (g) g.userData.room = room; }
 export { footprint, toWorld, axes };

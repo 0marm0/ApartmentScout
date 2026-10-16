@@ -1,0 +1,94 @@
+name: Alerts for new listings and price drops
+# A daily digest of what changed in your search, delivered as one GitHub issue per day that is assigned to you, so the GitHub
+# app on your phone sends a notification. Guide: docs/guides/alerts.md.
+#
+# OFF BY DEFAULT. Nothing below runs until the repository variable APARTMENTSCOUT_ALERTS is set to "on"
+# (Settings > Secrets and variables > Actions > Variables), so forks, the public example and this repository's own CI never open
+# an issue. Meant for a PRIVATE repository that holds your search (an issue in a public repository is public).
+#
+# Variables (all optional except the first):
+#   APARTMENTSCOUT_ALERTS            "on" to enable the workflow
+#   APARTMENTSCOUT_SEARCH            the search folder in this repository (default searches/my-search)
+#   APARTMENTSCOUT_MONITOR           "on" to re-read the allowed pages of your watchlist first (apartmentscout monitor --apply); it
+#                                    follows the same host rules as the command: allowed hosts only, a bot check ends a host
+#   APARTMENTSCOUT_ALERTS_ASSIGNEE   who gets the issue (default: the repository owner)
+#
+# Secrets: none beyond the automatic GITHUB_TOKEN. The token can write issues and read contents, nothing else.
+# The baseline the digest compares with lives in the Actions cache, so a cleared cache simply restarts it ("alerts are on" issue).
+on:
+  schedule:
+    - cron: "17 12 * * *"   # every day at 12:17 UTC (8:17 in Boston in summer time); GitHub may start it a few minutes late
+  workflow_dispatch:
+permissions:
+  contents: read
+  issues: write
+concurrency:
+  group: apartmentscout-alerts
+  cancel-in-progress: false
+jobs:
+  alerts:
+    if: ${{ vars.APARTMENTSCOUT_ALERTS == 'on' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SEARCH: ${{ vars.APARTMENTSCOUT_SEARCH || 'searches/my-search' }}
+      MONITOR: ${{ vars.APARTMENTSCOUT_MONITOR }}
+      ASSIGNEE: ${{ vars.APARTMENTSCOUT_ALERTS_ASSIGNEE || github.repository_owner }}
+      GH_TOKEN: ${{ github.token }}
+      APARTMENTSCOUT_CONTACT: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Check the search folder
+        run: |
+          if [ ! -f "$SEARCH/listings.json" ]; then
+            echo "::error::$SEARCH/listings.json is not in this repository. Commit your search folder or set APARTMENTSCOUT_SEARCH (docs/guides/alerts.md)."
+            exit 1
+          fi
+      - run: pip install -e .
+      - name: Restore the baseline
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ env.SEARCH }}/history/alerts
+          key: apartmentscout-alerts-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: apartmentscout-alerts-
+      - name: Re-read the allowed pages and re-score (only when APARTMENTSCOUT_MONITOR is on)
+        if: ${{ env.MONITOR == 'on' }}
+        run: |
+          apartmentscout monitor --search "$SEARCH" --apply
+          apartmentscout score --search "$SEARCH"
+      - name: Compute the digest
+        run: |
+          apartmentscout alerts --search "$SEARCH" --json-out alerts.json --md-out alerts.md
+          cat alerts.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Open or update today's issue
+        run: |
+          set -euo pipefail
+          title=$(jq -r .title alerts.json)
+          total=$(jq -r .total alerts.json)
+          first=$(jq -r .first_run alerts.json)
+          if [ "$total" = "0" ] && [ "$first" != "true" ]; then
+            echo "Nothing new today: no issue."
+            exit 0
+          fi
+          day=$(date -u +%F)
+          marker="<!-- apartmentscout-alerts:$day -->"
+          { echo "$marker"; cat alerts.md; } > body.md
+          gh label create apartmentscout-alerts --color 0E8A5F --description "ApartmentScout daily digest" 2>/dev/null || true
+          existing=$(gh issue list --label apartmentscout-alerts --state all --limit 30 --json number,body \
+            --jq "[.[] | select(.body | contains(\"$marker\"))][0].number // empty")
+          if [ -n "$existing" ]; then
+            gh issue edit "$existing" --title "$title" --body-file body.md
+            gh issue comment "$existing" --body "Updated: $title"
+            echo "Updated issue #$existing"
+          else
+            gh issue create --title "$title" --body-file body.md --label apartmentscout-alerts --assignee "$ASSIGNEE" ||
+              gh issue create --title "$title" --body-file body.md --label apartmentscout-alerts
+          fi
+      - name: Keep the baseline for tomorrow
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ env.SEARCH }}/history/alerts
+          key: apartmentscout-alerts-${{ github.run_id }}-${{ github.run_attempt }}
