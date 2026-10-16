@@ -70,7 +70,9 @@ def _check_looks(scene: dict) -> None:
     futon = scene["futon"]["mats"]
     leather = [m for m in futon if m["bump"]]          # the leather carries a pebbled grain
     assert leather and all(_lum(m["color"]) < 0.14 for m in leather), "the futon's mattress is black leather"
-    assert all(_lum(m["color"]) < 0.2 for m in futon), "no green fabric and no pale wooden frame: every part of the futon is dark"
+    legs = [m for m in futon if _lum(m["color"]) >= 0.2]   # the four chrome legs are the one light, neutral grey part
+    assert all(_lum(m["color"]) < 0.2 for m in futon if m not in legs), "no green fabric and no pale wooden frame: the futon is dark leather"
+    assert len(legs) <= 4 and all(max(_rgb(m["color"])) - min(_rgb(m["color"])) < 0.12 for m in legs), "the legs are silver metal, not wood"
     assert not any(m["map"] and not m["bump"] and _rgb(m["color"])[0] > _rgb(m["color"])[2] * 1.15 for m in futon), "no wooden arms on the futon"
     for pid in ("desk", "coffee", "dining"):
         wood = [m for m in scene[pid]["mats"] if m["map"]]   # wood is drawn with a grain texture
