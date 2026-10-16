@@ -31,14 +31,14 @@ def test_build_copies_furniture_json_and_flags_it_in_the_manifest(tmp_path: Path
 
 def test_the_shipped_example_furniture_is_committed_with_the_dashboard_data_and_is_public() -> None:
     f = json.loads((EXAMPLE / "furniture.json").read_text())
-    assert f["kind"] == "apartmentscout-furniture" and f["schema"] == 1 and len(f["pieces"]) == 11   # the renter's ten pieces and the candidate storage bed
+    assert f["kind"] == "apartmentscout-furniture" and f["schema"] == 1 and len(f["pieces"]) == 12   # the renter's ten pieces, the candidate storage bed and the sim rig
     assert (ROOT / "dashboard" / "data" / "furniture.json").read_text() == (EXAMPLE / "furniture.json").read_text()
     assert json.loads((ROOT / "dashboard" / "data" / "manifest.json").read_text())["furniture"] is True
     assert "/Users/" not in json.dumps(f) and all(p.get("source") for p in f["pieces"])
     for pid in ("paramount-tower-25e", "emerald-green-1211"):   # the default layout of each is the renter's own
         for base in (EXAMPLE / "plans", ROOT / "dashboard" / "data" / "plans"):
             plan = json.loads((base / f"{pid}.json").read_text())
-            owned = [p for p in f["pieces"] if not p.get("candidate")]   # only Paramount 25E holds the candidate bed (hidden until the renter switches to it)
+            owned = [p for p in f["pieces"] if not p.get("candidate") and p["id"] != "sim-rig"]   # only Paramount 25E holds the candidate bed (hidden until the renter switches to it) and the sim rig (the pedal end slides under its desk)
             assert plan["layouts"][0]["id"] == "your-furniture" and len(plan["layouts"][0]["items"]) == (len(f["pieces"]) if pid == "paramount-tower-25e" else len(owned))
 
 
