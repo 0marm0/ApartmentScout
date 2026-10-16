@@ -13,6 +13,8 @@
 // `mode: 'lane'` grades on the median free depth along the side (a nightstand at the head does not block
 // the walk along a bed); `mode: 'full'` needs the whole width free (drawers, a desk chair).
 
+import { TOWER_STYLE, partsOf, drawerRun, sleepRect, dimsOf } from './bedspec.js';
+
 export const CLEARANCE = {
   bed_side: { min: 22, preferred: 24, src: 'Neufert Architects\' Data and Time-Saver Standards: 22-24 in beside a bed to make it and get in.' },
   bed_foot: { min: 24, preferred: 30, src: 'Time-Saver Standards: about 30 in at the foot of a bed for circulation.' },
@@ -82,6 +84,12 @@ export const CATALOG = {
     src: 'Queen storage platform bed, typical 64 x 84 in frame with 4 drawers (about 16-18 in deep). Pick a product in the Shop tab for exact sizes.',
     variants: storageVariants(), drawers: { count: 4, pull: 18 },
     zones: [...BED_ZONES(), ...DRAWERS('both')], ignore: ['nightstand'], rules: ['no-window-behind'], seats: [['Bed, pillows', 0, 20], ['Bed, foot', 0, -30]],
+  },
+  'queen-storage-bed-towers': {
+    name: 'Queen storage bed with headboard towers', cat: 'sleep', kind: 'bed', storage: true, style: TOWER_STYLE, w: 94, d: 83.3, h: 47.4, mattress: [60, 80], color: MAT.oak,
+    src: 'Queen platform bed with a 94 in headboard unit, two side towers with floating nightstands and 4 side drawers: 94 x 83.3 x 47.4 in overall. The sizes come from the maker\'s spec table and drawing (furniture.json); this entry is the shape and the clearances.',
+    zones: [Z('left', 'bed_side', { group: 'either', mode: 'lane', name: 'Left side' }), Z('right', 'bed_side', { group: 'either', mode: 'lane', name: 'Right side' }), Z('front', 'bed_foot', { mode: 'lane', name: 'Foot' })],
+    ignore: ['nightstand'], rules: ['no-window-behind'], seats: [['Bed, pillows', 0, 20], ['Bed, foot', 0, -30]],
   },
   nightstand: { name: 'Nightstand', cat: 'sleep', kind: 'nightstand', w: 18, d: 16, h: 24, color: MAT.wood, src: 'Typical nightstand, 18 x 16 x 24 in.' },
   dresser: {
@@ -216,6 +224,18 @@ let PRODUCTS = Object.create(null);
 export function registerProducts(map) { PRODUCTS = Object.assign(Object.create(null), map || {}); }
 export const productOf = (item) => (item?.product && PRODUCTS[item.product]?.ref === item.ref ? PRODUCTS[item.product] : null);
 
+/**
+ * The clearance zones of a bed with towers, measured from its sleeping part (the platform, not the 94 in headboard unit): a free side to get in
+ * (one of two), the foot, and each side's drawer run, which has to be free for the drawers to pull out their full depth plus room to kneel
+ * (the maker's drawers are `drawers.pull` deep; 14 in more to stand at them gives the 31 in the renter was told).
+ */
+function towerZones(spec, d, g) {
+  const [x0, x1, y0, y1] = sleepRect(spec, d), run = drawerRun(spec, d), fw = g.frame.w, pre = Math.round(g.drawers.pull + 14), min = Math.max(CLEARANCE.drawer_pull.min, Math.round(g.drawers.pull + 4));
+  const lane = (side, name) => Z(side, 'bed_side', { group: 'either', mode: 'lane', name, at: side === 'left' ? x0 : x1, along: [y0, y1] });
+  const drw = (side) => Z(side, 'drawer_pull', { mode: 'full', name: `Drawers, ${side} side`, at: side === 'left' ? -run.at : run.at, along: run.along, min, preferred: pre, src: `The side drawers pull out ${g.drawers.pull} in (the maker's drawing); ${pre} in is that plus room to stand at them, ${min} in is the tight minimum.` });
+  return [lane('left', 'Left side'), lane('right', 'Right side'), Z('front', 'bed_foot', { mode: 'lane', name: 'Foot', width: fw }), drw('left'), drw('right')];
+}
+
 // Resolve a layout item ({ref, x, y, rot, w?, d?, h?, variant?, product?, ...}) into a full spec with sizes.
 // Precedence for sizes: the item's own w/d/h, then the chosen product, then the variant, then the catalogue.
 export function resolve(item, catalog = CATALOG) {
@@ -229,14 +249,15 @@ export function resolve(item, catalog = CATALOG) {
   const w = item.w ?? pd.w ?? v.w ?? c.w, d = item.d ?? pd.d ?? v.d ?? c.d, h = item.h ?? pd.h ?? v.h ?? c.h;
   // storage-bed drawers of a real product: the pull-out zone is the drawer depth plus about 4 in to grip (min) or 10 in to kneel (preferred)
   const pull = c.storage && p?.drawers?.pull_in;
-  const zones0 = v.zones || c.zones || [];
+  const tower = c.style === TOWER_STYLE && item.spec ? dimsOf(item.spec) : null;
+  const zones0 = tower ? towerZones(item.spec, d, tower) : v.zones || c.zones || [];
   const zones = pull ? zones0.map((z) => (z.key === 'drawer_pull' ? { ...z, min: Math.max(z.min, Math.round(pull + 4)), preferred: Math.max(z.preferred, Math.round(pull + 10)), src: `${z.src} This product's drawers are ${pull} in deep.` } : z)) : zones0;
   // zones scale with the item; a desk chair zone keeps its own width
   return {
     ...item, kind: c.kind, cat: c.cat, mount: c.mount, name: item.label || c.name, base: c, product: p ? p.id : undefined, productInfo: p,
     w, d, h, elev: item.elev ?? v.elev ?? c.elev ?? 0, rot: norm(item.rot || 0), variant: variant || undefined,
     zones, ignore: c.ignore || [], rules: c.rules || [], seats: c.seats || [], screen: c.screen,
-    flat: !!c.flat, light: c.light || null,
+    flat: !!c.flat, light: c.light || null, ...(tower ? { parts: partsOf(item.spec, w, d) } : {}),
   };
 }
 export const norm = (a) => ((a % 360) + 360) % 360;

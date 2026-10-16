@@ -89,7 +89,7 @@ test('the layout places every piece the renter owns, at their sizes, and each is
   for (const p of i.pieces) {
     const it = L0.items.find((x) => x.id === p.id);
     assert.equal(it.ref, p.ref, p.id); assert.deepEqual([it.w, it.d, it.h], [p.w, p.d, p.h], `${p.id} keeps the renter's size`);
-    assert.ok(!it.hidden, `${p.id} is not hidden`);
+    assert.ok(!it.hidden || p.candidate, `${p.id} is not hidden (the candidate bed waits until the renter switches to it)`);
     assert.ok(resolve(it), `${p.id} is a known catalogue piece (both 3D views draw it)`);
   }
   // Unit 3D reads plans/<id>.json from the dashboard's data folder: the same layout

@@ -29,7 +29,7 @@ const W = (x, y, h = 0) => new THREE.Vector3(x * M, h * M, -y * M);
 const CUT = { full: null, cut: 36, outline: 1.5 };
 
 let renderer, scene, cam, controls, canvas, stage, sunL, hemi, amb;
-let shell, proxies, furn, overlay, labels, glow, lampsG, assumedLamps = null;
+let shell, proxies, furn, overlay, labels, glow, lampsG, assumedLamps = null, ledLevel = 0;   // [bed option] ledLevel: how bright the furniture's own LEDs are now (room3d/furniture.js setLeds)
 let model = null, colors = null, wallMode = 'cut', dirty = true;
 const groups = new Map();
 const rig = { mode: 'orbit', view: 'bird', pos: new THREE.Vector3(), yaw: 0, pitch: 0, prevWall: null, fov: 70 };
@@ -422,7 +422,9 @@ function applyMood() {
   applyRoomLight({ sunL, hemi, amb, glow, renderer }, st, (i) => !!shadeState[i]);
   glow.visible = quality.has('windowGlow');   // [quality] the window glow lights are real lights: the step-down's level 4 takes them out of every shader
   const lampOn = st.lamps > 0; let realLamps = false;
+  ledLevel = st.lamps;
   for (const [, g] of groups) {
+    R3F.setLeds(g, st.lamps);   // the LEDs of a piece (a bed's cubbies and reading lights) glow after dark, and are not a lamp: the room's own ceiling light stays
     const l = g.userData.lamp; if (!l) continue;
     l.light.intensity = lampOn ? l.cd * st.lamps : 0; l.light.visible = lampOn;
     if (l.shade) { l.shade.material.emissiveIntensity = lampOn ? (st.lamps >= 1 ? 1.4 : 1) : 0; }
@@ -456,6 +458,7 @@ export function syncItem(it, rebuild = false) {
   const sig = sigOf(it);
   if (!g || g.userData.sig !== sig) { if (g) { furn.remove(g); disposeGroup(g); } g = buildItem(it, { ceiling: model?.ceiling }); g.userData.sig = sig; groups.set(it.id, g); furn.add(g); }
   g.position.copy(W(it.x, it.y)); g.rotation.y = -it.rot * DEG; g.visible = !it.hidden;
+  if (!g.userData.ledSet || g.userData.ledSet !== ledLevel) { R3F.setLeds(g, ledLevel); g.userData.ledSet = ledLevel; }
   g.name = `${it.name} (${it.ref})`; g.userData.itemId = it.id; g.userData.ref = it.ref; g.userData.product = it.product || '';
   dirty = true;
 }

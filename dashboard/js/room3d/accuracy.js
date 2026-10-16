@@ -69,10 +69,15 @@ export function accuracyRows(o) {
   rows.push(finishesRow(plan));
   // 7. furniture
   const f = o.furniture;
-  if (f && f.confirmed) rows.push({ key: 'furniture', label: 'Furniture', state: 'confirmed', text: `${esc(f.name || 'Your furniture')}${f.count ? `: ${f.count} piece${f.count === 1 ? '' : 's'}` : ''}, your own, confirmed${f.confirmed.date ? ` on ${esc(f.confirmed.date)}` : ''}. Sizes are real, from you; positions are placed with the fit checks. ${lookText(f.looks)}` });
+  if (f && f.confirmed) rows.push({ key: 'furniture', label: 'Furniture', state: 'confirmed', text: `${esc(f.name || 'Your furniture')}${f.count ? `: ${f.count} piece${f.count === 1 ? '' : 's'}` : ''}, your own, confirmed${f.confirmed.date ? ` on ${esc(f.confirmed.date)}` : ''}. Sizes are real, from you; positions are placed with the fit checks. ${lookText(f.looks)}${f.candidates?.length ? ` ${candidateText(f.candidates)}` : ''}` });
   else if (f) rows.push({ key: 'furniture', label: 'Furniture', state: 'assumed', text: `${esc(f.name || 'A starter layout')}: catalogue pieces at typical sizes, not yet confirmed as yours.` });
   else rows.push({ key: 'furniture', label: 'Furniture', state: 'assumed', text: 'No furniture layout for this unit.' });
   return rows;
+}
+
+/** A candidate purchase (a bed the renter may buy) is not one of their pieces: say so, and where its size comes from. */
+function candidateText(list) {
+  return `${list.map(esc).join(' and ')} ${list.length === 1 ? 'is a candidate purchase, not yours' : 'are candidate purchases, not yours'}: drawn only when you switch to ${list.length === 1 ? 'it' : 'them'}, from the maker's dimensions and pictures.`;
 }
 
 /** One or two sentences on the pieces' colours and materials: how many come from the renter, an example, and what is still a stand-in. */
@@ -139,7 +144,7 @@ export function accuracyChip({ host = 'unit', onOpen, openLabel = 'Open the evid
 /** How many pieces have a look from the renter, one example, and the details still guessed (from each look's `assumed` list). */
 export function looksMeta(pieces) {
   if (!Array.isArray(pieces)) return null;
-  const ok = pieces.filter((p) => p && typeof p === 'object'), sum = lookSummary({ pieces: ok }), guesses = new Set();
+  const ok = pieces.filter((p) => p && typeof p === 'object' && !p.candidate), sum = lookSummary({ pieces: ok }), guesses = new Set();   // a candidate purchase is not one of the renter's pieces
   for (const p of ok) if (lookBasis(p.look) === 'renter' && Array.isArray(p.look.assumed)) for (const g of p.look.assumed.slice(0, 6)) if (typeof g === 'string' && g.length < 24) guesses.add(g);
   const eg = ok.find((p) => p.id === 'futon' && p.look) || ok.find((p) => lookBasis(p.look) === 'renter');
   return { ...sum, example: eg ? `the ${String(eg.label || eg.id).split(',')[0].toLowerCase()} is ${describeLook({ color: eg.look.color, material: eg.look.material })}` : '', guesses: [...guesses].filter((g) => !/^(finish|shade)$/.test(g)).slice(0, 6) };
@@ -153,7 +158,7 @@ export async function loadFurnitureMeta(base, manifest) {
   if (!manifest?.furniture) return null;
   try {
     const raw = await (await fetch(`${base}/furniture.json`)).json();
-    if (raw && raw.kind === 'apartmentscout-furniture') furnitureMeta = { name: typeof raw.name === 'string' ? raw.name : 'Your furniture', source: typeof raw.source === 'string' ? raw.source : '', confirmed: raw.confirmed && typeof raw.confirmed === 'object' ? { by: String(raw.confirmed.by || ''), date: String(raw.confirmed.date || '') } : null, count: Array.isArray(raw.pieces) ? raw.pieces.length : 0, looks: looksMeta(raw.pieces) };
+    if (raw && raw.kind === 'apartmentscout-furniture') furnitureMeta = { name: typeof raw.name === 'string' ? raw.name : 'Your furniture', source: typeof raw.source === 'string' ? raw.source : '', confirmed: raw.confirmed && typeof raw.confirmed === 'object' ? { by: String(raw.confirmed.by || ''), date: String(raw.confirmed.date || '') } : null, count: Array.isArray(raw.pieces) ? raw.pieces.filter((p) => !p?.candidate).length : 0, candidates: Array.isArray(raw.pieces) ? raw.pieces.filter((p) => p?.candidate).map((p) => `the ${String(p.candidate.brand || '')} ${String(p.label || p.id).replace(/^.*? bed$/i, 'storage bed')}`.replace(/\s+/g, ' ').trim().slice(0, 60)) : [], looks: looksMeta(raw.pieces) };
   } catch { furnitureMeta = null; }
   return furnitureMeta;
 }

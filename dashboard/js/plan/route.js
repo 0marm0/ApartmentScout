@@ -9,7 +9,7 @@
 // separately), so the bottleneck is what the furniture and the room shapes leave. Widths: 36 in preferred,
 // 30 in minimum (CLEARANCE.walkway).
 import { pointInPoly, bbox } from './model.js';
-import { footprint, piecePoly } from './checks.js';
+import { footprint, piecePoly, partPolys } from './checks.js';
 import { CLEARANCE } from './catalog.js';
 
 export const CELL = 2;
@@ -53,7 +53,7 @@ export function grid(model, items, skip = null) {
   const obs = [];
   for (const p of model.pieces) if (p.z0 < LOW) obs.push({ poly: piecePoly(p), label: p.kind === 'sill' ? 'the window wall' : 'a wall', type: 'wall' });
   for (const f of model.fixtures) if (f.elev < LOW) obs.push({ poly: f.poly, label: (f.label || f.kind).toLowerCase(), type: 'fixture' });
-  for (const it of items) if (!it.hidden && !it.flat && it.elev < LOW && it.id !== skip) obs.push({ poly: footprint(walkPrint(it)), label: (it.name || it.ref || 'furniture').toLowerCase(), type: 'item', id: it.id });
+  for (const it of items) if (!it.hidden && !it.flat && it.id !== skip) for (const p of partPolys(walkPrint(it))) if (p.z0 < LOW) obs.push({ poly: p.poly, label: (it.name || it.ref || 'furniture').toLowerCase(), type: 'item', id: it.id });   // [bed option] each solid part at its own height
   obs.forEach((o, oi) => fill(o.poly, (k) => { free[k] = 0; owner[k] = oi; }));
   return { x0, y0, nx, ny, free, door, near, owner, obs, cx, cy };
 }
