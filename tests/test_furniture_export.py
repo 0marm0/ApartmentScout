@@ -31,14 +31,14 @@ def test_build_copies_furniture_json_and_flags_it_in_the_manifest(tmp_path: Path
 
 def test_the_shipped_example_furniture_is_committed_with_the_dashboard_data_and_is_public() -> None:
     f = json.loads((EXAMPLE / "furniture.json").read_text())
-    assert f["kind"] == "apartmentscout-furniture" and f["schema"] == 1 and len(f["pieces"]) == 13   # the renter's eleven pieces (the office chair is one), the candidate storage bed and the sim rig
+    assert f["kind"] == "apartmentscout-furniture" and f["schema"] == 1 and len(f["pieces"]) == 16   # the renter's eleven pieces (the office chair is one), the candidate storage bed, the sim rig and three paintings
     assert (ROOT / "dashboard" / "data" / "furniture.json").read_text() == (EXAMPLE / "furniture.json").read_text()
     assert json.loads((ROOT / "dashboard" / "data" / "manifest.json").read_text())["furniture"] is True
     assert "/Users/" not in json.dumps(f) and all(p.get("source") for p in f["pieces"])
     for pid in ("paramount-tower-25e", "emerald-green-1211"):   # the default layout of each is the renter's own
         for base in (EXAMPLE / "plans", ROOT / "dashboard" / "data" / "plans"):
             plan = json.loads((base / f"{pid}.json").read_text())
-            owned = [p for p in f["pieces"] if not p.get("candidate") and p["id"] != "sim-rig"]   # only Paramount 25E holds the candidate bed (hidden until the renter switches to it) and the sim rig (the pedal end slides under its desk)
+            owned = [p for p in f["pieces"] if not p.get("candidate") and p["id"] != "sim-rig" and not p.get("art")]   # only Paramount 25E holds the candidate bed, the sim rig (the pedal end slides under its desk) and the hung paintings
             assert plan["layouts"][0]["id"] == "your-furniture" and len(plan["layouts"][0]["items"]) == (len(f["pieces"]) if pid == "paramount-tower-25e" else len(owned))
 
 
@@ -77,7 +77,7 @@ def test_the_storage_bed_is_recorded_as_a_candidate_with_the_makers_dimensions_a
     assert "price" not in {k.lower() for k in c} and "$" not in json.dumps(bed)
     # the option group switches between the renter's bed, this one and none; nothing in it is a position
     group = f["options"]["bed"]
-    assert group["default"] == "mine" and [x["id"] for x in group["choices"]] == ["mine", "storage", "none"]
+    assert group["default"] == "storage" and [x["id"] for x in group["choices"]] == ["mine", "storage", "none"]
     plan = json.loads((EXAMPLE / "plans" / "paramount-tower-25e.json").read_text())
     item = {i["id"]: i for i in plan["layouts"][0]["items"]}["bed-latitude"]
-    assert item["hidden"] is True and item["placed"] is True, "in the layout, not shown until chosen"
+    assert not item.get("hidden") and item["placed"] is True, "in the layout and shown: the 25E default"
