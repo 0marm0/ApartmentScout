@@ -22,14 +22,18 @@ const governed = (g) => [...new Set(g.choices.flatMap((c) => c.pieces))];
  * by hand so no choice matches (the closest one is `current`).
  * @returns {{group: string, label: string, available: boolean, current: string|null, exact: boolean, choices: {id: string, label: string}[]}|null}
  */
-export function choiceState(items, inv, groupId = 'bed') {
+export function choiceState(items, inv, groupId = 'bed', { removed = [] } = {}) {
   const g = groupsOf(inv).find((x) => x.id === groupId);
   if (!g) return null;
-  const by = new Map((items || []).map((it) => [it.id, it])), ids = governed(g);
-  const available = ids.every((id) => by.has(id));
+  const by = new Map((items || []).map((it) => [it.id, it])), ids = governed(g), gone = new Set(removed), have = new Set((inv?.pieces || []).map((p) => p.id));
+  // A Shown / Hidden switch (a choice that lists no piece: the sim rig, the office chair) stays while the group exists in the inventory, whatever the
+  // layout holds: a piece the renter removed, or a layout that never held it, is brought back by choosing "Shown". Any other group (the candidate bed)
+  // needs its pieces in the layout, or removed from it by hand.
+  const toggle = g.choices.some((c) => !c.pieces.length);
+  const available = ids.every((id) => by.has(id) || (have.has(id) && (toggle || gone.has(id))));
   let best = null, bestScore = -1, exact = false;
   for (const c of g.choices) {
-    const score = ids.filter((id) => !by.get(id)?.hidden === c.pieces.includes(id)).length;
+    const score = ids.filter((id) => (by.has(id) && !by.get(id).hidden) === c.pieces.includes(id)).length;   // a piece the layout does not hold counts as hidden
     if (score > bestScore) { best = c; bestScore = score; exact = score === ids.length; }
   }
   return { group: g.id, label: g.label, available, current: available ? best?.id ?? null : null, exact, choices: g.choices.map((c) => ({ id: c.id, label: c.label })) };
