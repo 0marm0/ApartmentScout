@@ -1007,7 +1007,7 @@ function rotatingDesk(it, K) {
     decorBooks(K, bx, mid.y1, bz, 3, alongX ? 0.05 : 1.6, 5);
     K.add(K.geo('rd-speaker', () => lathe([[0, 0], [3.1, 0], [3.5, 0.5], [3.5, 3.2], [2.7, 4.2], [0, 4.4]], 18)), K.paint(0x3a3c40, 0.7), px, top.y1, pz);
   }
-  if (set.chair !== false) taskChair(K, sx, dk.z1 + 12, Math.PI + 0.1);
+  if (set.chair !== false && !it.chairAside) taskChair(K, sx, dk.z1 + 12, Math.PI + 0.1);   // a shown sim rig has its own seat here
 }
 /**
  * A work desk with a solid top, four square legs, an apron with a shallow centre drawer, a low stretcher each side, a modesty panel
@@ -1157,8 +1157,92 @@ function plant(it, K) {
   for (const m of canopy) m.scale.set(kx, 1, kz);
 }
 
+// ------------------------------------------------------------------ sim rig
+/** Carbon-fibre twill for the Formula wheel's face. */
+const carbonTex = () => canvasTex('r3-carbon', 64, 64, (g, W, H) => {
+  g.fillStyle = '#2b2d31'; g.fillRect(0, 0, W, H);
+  for (let j = 0; j < H; j += 8) for (let i = 0; i < W; i += 8) { g.fillStyle = ((i + j) / 8) % 2 ? '#3a3d42' : '#1c1d20'; g.fillRect(i, j, 8, 8); g.fillStyle = 'rgba(255,255,255,0.05)'; g.fillRect(i, j, 8, 2); }
+}, { wrap: false });
+/** The "F-GT LITE" mark on the back of the seat. */
+const logoTex = () => canvasTex('r3-fgt-logo', 256, 64, (g, W, H) => {
+  g.clearRect(0, 0, W, H); g.fillStyle = 'rgba(214,218,222,0.88)'; g.font = 'bold 34px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('F-GT LITE', W / 2, H / 2);
+}, { wrap: false });
+/**
+ * The renter's sim-racing cockpit (plan/rigspec.js has the numbers): a Next Level Racing F-GT Lite on two black tubular side rails with black-and-red
+ * round feet and end caps, a black fabric sling seat with a tall back ("F-GT LITE" on it, red rings at the harness holes), a wheel-deck post rising
+ * from the front frame to a flat plate that carries a Fanatec direct-drive base (a finned aluminium cylinder with its quick-release hub toward the
+ * driver) and a Formula wheel (a flat rectangular rim with two grips, a carbon face, buttons, two dials and a row of shift LEDs), and a low
+ * three-pedal plate at the very front, which is the end that slides under the desk. GT mode is upright; the Formula variant reclines the seat and
+ * lowers the wheel. Frame: origin at the middle of the footprint on the floor, +z the front (the pedal end), y up; rig `f` (from the front edge) is z = d / 2 - f.
+ */
+function simRig(it, K) {
+  const G = it.rigGeo, g = G.dims, f = K.fast, hd = g.d / 2, Z = (ff) => hd - ff, formula = g.mode === 'formula';
+  const frame = K.skin(K.spec({ color: 0x1b1c1f, material: 'metal', finish: 'satin' })), steel = K.metal(0x2b2d31, 0.4, f ? 0.2 : 0.5);
+  const red = K.skin(K.part('accent', { color: 0xb3202a, material: 'plastic', finish: 'satin' })), seatM = K.skin(K.part('seat', { color: 0x1b1c1e, material: 'fabric', finish: 'matte' }));
+  const baseM = K.skin(K.part('base', { color: 0x2a2c30, material: 'metal', finish: 'satin' })), wheelM = K.skin(K.part('wheel', { color: 0x17181a, material: 'plastic', finish: 'satin' }));
+  const box = (w, h, d, mat, x, y, z, o) => K.add(K.board(w, h, d, 0.2), mat, x, y, z, o);
+  const cylZ = (r, len, key) => K.geo(`rig-cz|${key}|${r}|${len}`, () => { const c = new THREE.CylinderGeometry(r, r, len, f ? 10 : 18); c.rotateX(Math.PI / 2); return c; });   // axis along z, centred
+  // the frame: two side rails on round feet with red end caps, cross members at the front and under the seat
+  const R = g.rail, railLen = g.d - 3.2;
+  for (const sx of [-1, 1]) {
+    box(R.t, R.z1 - R.z0, railLen, frame, sx * R.x, R.z0, 0);
+    for (const ff of [3, g.d - 3]) {
+      K.add(K.geo('rig-foot', () => legGeo(1.5, 1.6, R.z0, f ? 8 : 12)), frame, sx * R.x, 0, Z(ff));
+      K.add(K.geo('rig-foot-ring', () => legGeo(1.62, 1.62, 0.5, f ? 8 : 14)), red, sx * R.x, 0, Z(ff));
+    }
+    for (const ff of [1.6, g.d - 1.6]) K.add(cylZ(1.0, 0.6, 'cap'), red, sx * R.x, (R.z0 + R.z1) / 2, Z(ff));   // round red end caps
+  }
+  box(2 * R.x, g.cross.z1 - g.cross.z0, g.cross.f1 - g.cross.f0, frame, 0, g.cross.z0, Z((g.cross.f0 + g.cross.f1) / 2));
+  for (const ff of [g.seat.f0 + 3, g.seat.f1 - 3]) box(2 * R.x, 2.4, 2.6, frame, 0, R.z0, Z(ff));
+  // pedals: a low plate, a bracket at its back, three pads leaning away from the driver
+  const P = g.pedalPlate, PD = g.pedals, ang = 0.45, padLen = (PD.z1 - P.z1) / Math.cos(ang);
+  box(2 * P.x, P.z1 - P.z0, P.f1 - P.f0, steel, 0, P.z0, Z((P.f0 + P.f1) / 2));
+  box(2 * P.x, 1.6, 2.2, steel, 0, P.z1, Z(PD.f1 + 0.6));
+  box(2 * P.x - 3, P.z0 - R.z1 > 0.5 ? P.z0 - R.z1 : 0.5, 2.4, frame, 0, R.z1, Z(5));   // the plate stands on a cross tube
+  [-1, 0, 1].forEach((k, i) => { box(3.3, padLen, 0.7, i === 1 ? red : steel, k * 5.2, P.z1 + 0.4, Z(8.6), { rx: ang }); box(0.7, 3.4, 0.7, steel, k * 5.2, P.z1, Z(10.8)); });
+  // the wheel deck: a post up from the front frame and a flat plate toward the driver
+  const D = g.deck, PS = g.post;
+  box(2 * PS.x, PS.z1 - PS.z0, PS.f1 - PS.f0, frame, 0, PS.z0, Z((PS.f0 + PS.f1) / 2));
+  box(2 * D.x, D.z1 - D.z0, D.f1 - D.f0, steel, 0, D.z0, Z((D.f0 + D.f1) / 2));
+  box(2 * D.x - 0.8, 0.28, 0.5, red, 0, D.z1, Z(D.f1 - 0.4));   // a red edge on the plate
+  // the Fanatec direct-drive base: a finned aluminium cylinder, its hub and quick release toward the driver
+  const B = g.base, bz = B.z0 + B.h / 2, bl = B.f1 - B.f0, bc = Z((B.f0 + B.f1) / 2), sxk = B.w / B.h;
+  K.add(cylZ(B.h / 2, bl, 'base'), baseM, 0, bz, bc, { scale: [sxk, 1, 1] });
+  if (!f) for (let i = 0; i < 8; i++) K.add(cylZ(B.h / 2 + 0.22, 0.28, 'fin'), baseM, 0, bz, Z(B.f0 + 0.7 + (i * (bl - 1.4)) / 7), { scale: [sxk, 1, 1] });
+  K.add(cylZ(1.6, 1.4, 'hub'), baseM, 0, bz, Z(B.f1 + 0.7));
+  K.add(cylZ(1.72, 0.3, 'hubring'), red, 0, bz, Z(B.f1 + 1.1));
+  const W = g.wheel, wz = Z(W.f), t = W.t, faceZ = wz - t / 2 - 0.06;
+  K.add(cylZ(1.0, W.f - t / 2 - (B.f1 + 1.4) + 0.1, 'qr'), steel, 0, bz, Z((B.f1 + 1.4 + W.f - t / 2) / 2));
+  // the Fanatec Formula wheel: a flat rectangular rim, two grips, a carbon face with buttons, dials and a row of shift LEDs
+  K.add(f ? K.board(W.w, W.h, t, 0.4) : K.soft(W.w, W.h, t, { r: 0.45, s: 1 }), wheelM, 0, W.z - W.h / 2, wz);
+  for (const sx of [-1, 1]) K.add(f ? K.board(2.6, W.h + 0.4, t + 1.2, 0.5) : K.soft(2.6, W.h + 0.4, t + 1.2, { r: 0.9, s: 1 }), K.paint(0x0f1011, 0.85), sx * (W.w / 2 - 1.1), W.z - W.h / 2 - 0.2, wz - 0.5);
+  const carbon = K.mat('rig-carbon', () => { const tx = carbonTex(); return K.ctx.std(tx ? 0xffffff : 0x25272a, { roughness: 0.35, metalness: 0.2, ...(tx ? { map: tx } : {}) }); });
+  K.add(K.board(W.w - 5.4, W.h - 1.9, 0.12, 0.05), carbon, 0, W.z - W.h / 2 + 0.7, faceZ);
+  const led = (c) => K.mat(`rig-led|${c.toString(16)}`, () => K.ctx.std(c, { roughness: 0.4, emissive: c, emissiveIntensity: 1.4 }));
+  [0x2fd45a, 0x2fd45a, 0x2fd45a, 0xe23b3b, 0xe23b3b, 0xe23b3b, 0x3b78e8, 0x3b78e8, 0x3b78e8].forEach((c, i) => K.add(K.board(0.55, 0.3, 0.16, 0.05), led(c), (i - 4) * 0.78, W.z + W.h / 2 - 1.15, faceZ - 0.04, { cast: false }));
+  const btn = (c) => K.paint(c, 0.5), dot = K.geo('rig-btn', () => { const c = new THREE.CylinderGeometry(0.32, 0.32, 0.22, 10); c.rotateX(Math.PI / 2); return c; });
+  [[-3.1, 0.9, 0xd53a3a], [-2.1, 0.9, 0x3a74d5], [-3.1, -0.1, 0xe2c23a], [-2.1, -0.1, 0x3ab05a], [-3.1, -1.1, 0xeeeeee], [-2.1, -1.1, 0xd53a3a],
+    [2.1, 0.9, 0x3ab05a], [3.1, 0.9, 0xe2c23a], [2.1, -0.1, 0x3a74d5], [3.1, -0.1, 0xd53a3a], [2.1, -1.1, 0xeeeeee], [3.1, -1.1, 0x3a74d5]].forEach(([x, y, c]) => K.add(dot, btn(c), x, W.z + y, faceZ - 0.1, { cast: false }));
+  for (const sx of [-1, 1]) K.add(K.geo('rig-dial', () => { const c = new THREE.CylinderGeometry(0.55, 0.55, 0.4, 14); c.rotateX(Math.PI / 2); return c; }), K.metal(0xb9bdc2, 0.3, 0.5), sx * 1.15, W.z + 0.85, faceZ - 0.16, { cast: false });
+  K.add(K.board(2.2, 1.1, 0.1, 0.05), K.paint(0x123a52, 0.4), 0, W.z - 0.55, faceZ - 0.06, { cast: false });
+  // the seat: a sling on side brackets, bolsters either side, a tall back leaning on a pivot, red rings at the harness holes and the mark on the back
+  const S = g.seat, sc = (S.f0 + S.f1) / 2;
+  for (const sx of [-1, 1]) box(1.4, S.mount_z1 - S.mount_z0, S.f1 - S.f0 - 4, frame, sx * S.mount_x, S.mount_z0, Z(sc));
+  K.add(f ? K.board(2 * S.x, S.z1 - S.z0, S.f1 - S.f0, 0.8) : K.soft(2 * S.x, S.z1 - S.z0, S.f1 - S.f0, { r: 1.0, s: 1, puff: { py: 0.6 }, keepPuff: true }), seatM, 0, S.z0, Z(sc));
+  for (const sx of [-1, 1]) K.add(f ? K.board(2.6, 3.4, S.f1 - S.f0 - 2, 0.8) : K.soft(2.6, 3.4, S.f1 - S.f0 - 2, { r: 1.1, s: 1 }), seatM, sx * (S.x - 0.6), S.z1 - 0.4, Z(sc));
+  const Bk = g.back, pivot = K.group(0, Bk.z0, Z(Bk.f), 0); pivot.rotation.x = -(Bk.lean * Math.PI) / 180;
+  K.add(f ? K.board(2 * Bk.x, Bk.len, Bk.t, 0.8) : K.soft(2 * Bk.x, Bk.len, Bk.t, { r: 1.2, s: 1, k: [3, 3, 1], bendZ: 0.7, puff: { pz: 0.5 }, keepPuff: true }), seatM, 0, 0, -Bk.t / 2, { parent: pivot });
+  for (const sx of [-1, 1]) {
+    K.add(f ? K.board(2.2, Bk.len * 0.62, 3.2, 0.8) : K.soft(2.2, Bk.len * 0.62, 3.2, { r: 1.0, s: 1 }), seatM, sx * (Bk.x - 0.6), 1.2, 0.2, { parent: pivot });   // side wings
+    K.add(K.geo('rig-ring', () => new THREE.TorusGeometry(0.85, 0.2, 6, f ? 10 : 16)), red, sx * 5.2, Bk.len * 0.72, 0.1, { parent: pivot, cast: false });   // red harness-hole ring
+  }
+  K.add(f ? K.board(2 * Bk.x - 3, 3, 3.4, 0.8) : K.soft(2 * Bk.x - 3, 3, 3.4, { r: 1.1, s: 1 }), seatM, 0, Bk.len - 1.8, 0.1, { parent: pivot });   // the head rest
+  const lt = logoTex();
+  if (lt) { const m = K.ctx.std(0xffffff, { roughness: 0.9, map: lt }); m.transparent = true; const p = new THREE.Mesh(K.geo('rig-logo', () => new THREE.PlaneGeometry(8.6, 2.15)), m); p.position.set(0, Bk.len * 0.58, -Bk.t - 0.05); p.rotation.y = Math.PI; pivot.add(p); }
+}
+
 // ------------------------------------------------------------------ entry
-const BUILD = { sofa: seating, chair: seating, bed, nightstand, dresser, wardrobe, bookcase, table, 'table-low': coffeeTable, desk, tv, rug, plant };
+const BUILD = { sofa: seating, chair: seating, bed, nightstand, dresser, wardrobe, bookcase, table, 'table-low': coffeeTable, desk, simrig: simRig, tv, rug, plant };
 
 /**
  * Draw the resolved item `it` into ctx.s and return true, or return false for kinds this module leaves to plan/furniture3d.js

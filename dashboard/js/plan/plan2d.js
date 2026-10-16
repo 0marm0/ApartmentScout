@@ -4,6 +4,7 @@
 import { esc } from '../util.js';
 import { piecePoly, swingPoly, doorwayPoly, footprint } from './checks.js';
 import { dimsOf } from './bedspec.js';
+import { backTop } from './rigspec.js';
 import { fmtIn } from './model.js';
 import { chairSpots } from './scene3d.js';
 
@@ -108,9 +109,15 @@ function glyph(it) {
   } else if (k === 'desk' && it.deskGeo) {   // the rotating desk: the shelf unit (lighter), the desktop over it, the panel leg, the chair at the desktop
     const G = it.deskGeo, dk = G.desk, sh = G.shelf, lg = G.boxes.find((b) => b.id === 'leg');
     o = R('g-lt', sh.x0, sh.z0, sh.x1 - sh.x0, sh.z1 - sh.z0, 1) + L(sh.x0, (sh.z0 + sh.z1) / 2, sh.x1, (sh.z0 + sh.z1) / 2) + R('g-base', dk.x0, dk.z0, dk.x1 - dk.x0, dk.z1 - dk.z0, 1.5) + R('g-dk', lg.x0, lg.z0, lg.x1 - lg.x0, lg.z1 - lg.z0, 0.5)
-      + (it.set?.chair === false ? '' : `<circle class="g-chair" cx="${r1(G.seatX)}" cy="${r1(d / 2 + 9)}" r="9"/>`);
+      + (it.set?.chair === false || it.chairAside ? '' : `<circle class="g-chair" cx="${r1(G.seatX)}" cy="${r1(d / 2 + 9)}" r="9"/>`);
   } else if (k === 'desk') {
     o = `<circle class="g-chair" cx="0" cy="${r1(d / 2 + 9)}" r="9"/>` + R('g-base', x, y, w, d, 2) + R('g-lt', -6.5, y + d * 0.45, 13, 9, 1);
+  } else if (k === 'simrig' && it.rigGeo) {   // the sim rig: side rails, the seat and its back, the wheel deck with the wheel, the pedal plate with three pedals (the front is the pedal end, +y)
+    const g = it.rigGeo.dims, hd = g.d / 2, Y = (ff) => hd - ff, bt = backTop(g), P = g.pedalPlate, W = g.wheel;
+    o = [-1, 1].map((sx) => R('g-dk', sx * g.rail.x - g.rail.t / 2, -hd, g.rail.t, g.d, 0.8)).join('')
+      + R('g-lt', -P.x, Y(P.f1), 2 * P.x, P.f1 - P.f0, 1) + [-1, 0, 1].map((i) => R('g-dk', i * 5.2 - 1.6, Y(g.pedals.f1 - 3), 3.2, 4, 0.6)).join('')
+      + R('g-base', -g.deck.x, Y(g.deck.f1), 2 * g.deck.x, g.deck.f1 - g.deck.f0, 1) + R('g-dk', -g.base.w / 2, Y(g.base.f1), g.base.w, g.base.f1 - g.base.f0, 2) + R('g-tv', -W.w / 2, Y(W.f + W.t / 2), W.w, W.t + 0.4, 0.5)
+      + R('g-base', -g.seat.x, Y(g.seat.f1), 2 * g.seat.x, g.seat.f1 - g.seat.f0, 3) + R('g-dk', -g.back.x, Y(bt.f + g.back.t), 2 * g.back.x, bt.f + g.back.t - g.back.f, 3);
   } else if (k === 'table') {
     o = chairSpots(it).map(([cx, cz]) => R('g-chair', cx - 8.5, cz - 8.5, 17, 17, 3)).join('');
     o += it.base.round ? `<circle class="g-base" cx="0" cy="0" r="${r1(w / 2)}"/>` : R('g-base', x, y, w, d, 2);

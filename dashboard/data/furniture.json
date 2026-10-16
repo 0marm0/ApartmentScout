@@ -489,6 +489,129 @@
    },
    "note": "48 x 30 in rectangle with four chairs.",
    "source": "Fit check; Room to live."
+  },
+  {
+   "id": "sim-rig",
+   "ref": "sim-rig",
+   "label": "Sim rig, Next Level Racing F-GT Lite (GT) with Fanatec wheel",
+   "room": "living",
+   "w": 33.5,
+   "d": 76.8,
+   "h": 51.2,
+   "look": {
+    "color": "black",
+    "material": "metal",
+    "finish": "satin",
+    "basis": "renter",
+    "assumed": [
+     "finish",
+     "seat",
+     "wheel",
+     "pedals"
+    ],
+    "parts": {
+     "seat": {
+      "color": "#1b1c1e",
+      "material": "fabric",
+      "finish": "matte"
+     },
+     "accent": {
+      "color": "#b3202a",
+      "material": "plastic",
+      "finish": "satin"
+     },
+     "wheel": {
+      "color": "#17181a",
+      "material": "plastic",
+      "finish": "satin"
+     },
+     "base": {
+      "color": "#25272b",
+      "material": "metal",
+      "finish": "satin"
+     }
+    },
+    "note": "Black tubular steel frame on two side rails with black-and-red round end caps and feet, a black fabric sling seat with a tall back and red rings at the harness holes, a Fanatec direct-drive base and Formula wheel. From the renter's photo and the product photos; the finishes are stand-ins."
+   },
+   "spec": {
+    "envelope": {
+     "l": 76.8,
+     "w": 33.5,
+     "h": 51.2
+    },
+    "envelope_cm": {
+     "l": 195,
+     "w": 85,
+     "h": 130
+    },
+    "gt_support_cm": {
+     "l": 175,
+     "w": 75,
+     "h": 127
+    },
+    "formula_support_cm": {
+     "l": 164,
+     "w": 75,
+     "h": 94
+    },
+    "space_graphic_cm": {
+     "l": 185,
+     "w": 85,
+     "h": 125
+    },
+    "reseller_cm": {
+     "gt_l": 185.3,
+     "formula_l": 192.4
+    },
+    "folded_cm": {
+     "l": 75,
+     "w": 40,
+     "h": 87
+    },
+    "base_cm": {
+     "w": 15,
+     "h": 13,
+     "l": 20
+    },
+    "wheel_cm": {
+     "w": 28,
+     "h": 17
+    }
+   },
+   "spec_basis": {
+    "envelope.l": "assumed",
+    "envelope.w": "assumed",
+    "envelope.h": "assumed",
+    "envelope_cm.l": "assumed",
+    "envelope_cm.w": "assumed",
+    "envelope_cm.h": "assumed",
+    "gt_support_cm.l": "spec",
+    "gt_support_cm.w": "spec",
+    "gt_support_cm.h": "spec",
+    "formula_support_cm.l": "spec",
+    "formula_support_cm.w": "spec",
+    "formula_support_cm.h": "spec",
+    "space_graphic_cm.l": "diagram",
+    "space_graphic_cm.w": "diagram",
+    "space_graphic_cm.h": "diagram",
+    "reseller_cm.gt_l": "listing",
+    "reseller_cm.formula_l": "listing",
+    "folded_cm.l": "spec",
+    "folded_cm.w": "spec",
+    "folded_cm.h": "spec",
+    "base_cm.w": "assumed",
+    "base_cm.h": "assumed",
+    "base_cm.l": "assumed",
+    "wheel_cm.w": "assumed",
+    "wheel_cm.h": "assumed"
+   },
+   "assumed": [
+    "w",
+    "d",
+    "h"
+   ],
+   "note": "GT mode by default (upright back); a Formula mode (reclined) is a variant. Footprint = the conservative planning envelope 195 x 85 x 130 cm, above every published figure. Seat, wheel-deck and pedal-plate sizes are not published and are drawn by eye. The pedal end slides under the desk.",
+   "source": "Renter: product choice, photo, under-desk use. Maker support: GT 175x75x127 cm, Formula 164x75x94 cm; product-space graphic 185x85x125 cm; reseller drawings GT 185.3 cm and Formula 192.4 cm long; folded frame 75x40x87 cm. Envelope: planning value. Fanatec base and wheel sizes: approximate."
   }
  ],
  "options": {
@@ -519,6 +642,24 @@
       "nightstand-1",
       "nightstand-2"
      ]
+    }
+   ]
+  },
+  "sim": {
+   "label": "Sim rig",
+   "default": "hidden",
+   "choices": [
+    {
+     "id": "shown",
+     "label": "Shown",
+     "pieces": [
+      "sim-rig"
+     ]
+    },
+    {
+     "id": "hidden",
+     "label": "Hidden",
+     "pieces": []
     }
    ]
   }
