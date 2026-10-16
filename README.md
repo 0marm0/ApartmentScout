@@ -33,35 +33,30 @@ as a worked example.
 
 ## Highlights
 
-The main things it does, one picture each: find and rank homes on a commute map, stand inside the exact unit, see its sun and its city, check the building, and compare.
+The main things it does: rank homes on a commute map, stand inside the exact unit, see its sun and its city, check the building, and compare finalists.
 
 <table>
 <tr>
-<td width="50%" valign="top" align="center"><a href="docs/images/hero-map.png"><img src="docs/images/hero-map.png" alt="The map with ranked cards on the left and Paramount Tower 25E open in the drawer"></a><br><sub><b>The map, the ranked list and a home</b></sub></td>
-<td width="50%" valign="top" align="center"><a href="docs/images/find-place-search.png"><img src="docs/images/find-place-search.png" alt="The command menu previewing a plain-words search"></a><br><sub><b>Search in plain words</b></sub></td>
-</tr>
-<tr>
-<td width="50%" valign="top" align="center"><a href="docs/images/find-commute-map.png"><img src="docs/images/find-commute-map.png" alt="Door-to-door commute bands over Manhattan beside the ranked cards"></a><br><sub><b>Door to door by transit, for every listing</b></sub></td>
-<td width="50%" valign="top" align="center"><a href="docs/images/find-walk-map.png"><img src="docs/images/find-walk-map.png" alt="The commute map on foot: dashed rings at 10, 20 and 30 minutes' walk around Grand Central, the ranked cards on the left"></a><br><sub><b>Or on foot: 10, 20 and 30-minute rings</b></sub></td>
+<td colspan="2" valign="top" align="center"><a href="docs/images/hero-map.png"><img src="docs/images/hero-map.png" alt="The map with ranked cards on the left and Paramount Tower 25E open in the drawer"></a><br><sub><b>The map, the ranked list and commute times, with a home open</b></sub></td>
 </tr>
 <tr>
 <td width="50%" valign="top" align="center"><a href="docs/images/inside-unit-3d.png"><img src="docs/images/inside-unit-3d.png" alt="Unit 3D opening inside Paramount Tower 25E: the desk, monitor and office chair by the bay window, the futon in the corner"></a><br><sub><b>Inside the exact unit, with your own furniture</b></sub></td>
-<td width="50%" valign="top" align="center"><a href="docs/images/inside-walk-window.png"><img src="docs/images/inside-walk-window.png" alt="Standing at the living-room window on the 25th floor, looking out over neighbouring towers, a park and the river"></a><br><sub><b>Walk to the window and look out</b></sub></td>
-</tr>
-<tr>
-<td width="50%" valign="top" align="center"><a href="docs/images/sun-path-chart.png"><img src="docs/images/sun-path-chart.png" alt="A chart of the sun's path on December 21, March 20 and June 21 against the skyline seen from the 25E window"></a><br><sub><b>The sun's path against the skyline</b></sub></td>
-<td width="50%" valign="top" align="center"><a href="docs/images/sun-winter-shadows.png"><img src="docs/images/sun-winter-shadows.png" alt="The block around Paramount Tower at noon on December 21 with long winter shadows"></a><br><sub><b>Winter shadows over the block</b></sub></td>
+<td width="50%" valign="top" align="center"><a href="docs/images/inside-skyline-dusk.png"><img src="docs/images/inside-skyline-dusk.png" alt="The Midtown skyline at dusk from Unit 3D"></a><br><sub><b>The real city around it, at dusk</b></sub></td>
 </tr>
 <tr>
 <td colspan="2" valign="top" align="center"><a href="docs/images/sun-floor-compare.png"><img src="docs/images/sun-floor-compare.png" alt="The same window of Paramount Tower at the same moment: floor 8 in the shadow of the building across the street, floor 25 in direct sun"></a><br><sub><b>The same window at the same moment: floor 8 in shadow, floor 25 in direct sun</b></sub></td>
 </tr>
 <tr>
-<td width="50%" valign="top" align="center"><a href="docs/images/inside-skyline-dusk.png"><img src="docs/images/inside-skyline-dusk.png" alt="The Midtown skyline at dusk from Unit 3D"></a><br><sub><b>The real city around it, at dusk</b></sub></td>
+<td width="50%" valign="top" align="center"><a href="docs/images/inside-play-year.png"><img src="docs/images/inside-play-year.png" alt="The Inside view with the Play day and Play year bar at December 28, with bare branches"></a><br><sub><b>Play the day, play the year</b></sub></td>
 <td width="50%" valign="top" align="center"><a href="docs/images/city-map-3d.png"><img src="docs/images/city-map-3d.png" alt="The commute map tilted with extruded 3D buildings, price tags and subway lines"></a><br><sub><b>The map in 3D</b></sub></td>
 </tr>
 <tr>
+<td width="50%" valign="top" align="center"><a href="docs/images/find-walk-map.png"><img src="docs/images/find-walk-map.png" alt="The commute map on foot: dashed rings at 10, 20 and 30 minutes' walk around Grand Central, the ranked cards on the left"></a><br><sub><b>Commute on foot: 10, 20 and 30-minute rings</b></sub></td>
 <td width="50%" valign="top" align="center"><a href="docs/images/decide-records.png"><img src="docs/images/decide-records.png" alt="A building's public records report"></a><br><sub><b>What the city's records say about the building</b></sub></td>
-<td width="50%" valign="top" align="center"><a href="docs/images/compare-four.png"><img src="docs/images/compare-four.png" alt="Four finalists compared in lettered columns"></a><br><sub><b>Finalists side by side</b></sub></td>
+</tr>
+<tr>
+<td width="50%" valign="top" align="center"><a href="docs/images/compare-four.png"><img src="docs/images/compare-four.png" alt="Four finalists compared in lettered columns"></a><br><sub><b>Finalists row by row</b></sub></td>
+<td width="50%" valign="top" align="center"><a href="docs/images/compare-side-by-side-3d.png"><img src="docs/images/compare-side-by-side-3d.png" alt="Two homes in the same tower side by side in 3D"></a><br><sub><b>Two units side by side in 3D</b></sub></td>
 </tr>
 </table>
 
@@ -90,16 +85,15 @@ When the sun reaches the window, on which floor and in which season, and what st
 
 <table>
 <tr>
-<td width="50%" valign="top" align="center"><a href="docs/images/sun-summer-shadows.png"><img src="docs/images/sun-summer-shadows.png" alt="The same block at noon on June 21 with short summer shadows and trees in leaf"></a><br><sub><b>Summer shadows, June 21 at noon</b></sub></td>
+<td width="50%" valign="top" align="center"><a href="docs/images/sun-path-chart.png"><img src="docs/images/sun-path-chart.png" alt="A chart of the sun's path on December 21, March 20 and June 21 against the skyline seen from the 25E window"></a><br><sub><b>The sun's path against the skyline</b></sub></td>
 <td width="50%" valign="top" align="center"><a href="docs/images/inside-sun-by-floor.png"><img src="docs/images/inside-sun-by-floor.png" alt="Direct sun hours by floor and month for a facade"></a><br><sub><b>Direct sun by floor and month</b></sub></td>
 </tr>
 <tr>
-<td width="50%" valign="top" align="center"><a href="docs/images/sun-plan-view.png"><img src="docs/images/sun-plan-view.png" alt="The street plan from straight above: neighbouring roofs, their shadows and the sun's line to the window"></a><br><sub><b>From above: what stands in the way</b></sub></td>
-<td width="50%" valign="top" align="center"><a href="docs/images/inside-play-year.png"><img src="docs/images/inside-play-year.png" alt="The Inside view with the Play day and Play year bar at December 28, with bare branches"></a><br><sub><b>Play the day, play the year</b></sub></td>
+<td width="50%" valign="top" align="center"><a href="docs/images/sun-summer-shadows.png"><img src="docs/images/sun-summer-shadows.png" alt="The same block at noon on June 21 with short summer shadows and trees in leaf"></a><br><sub><b>The tower by day, with its shadows</b></sub></td>
+<td width="50%" valign="top" align="center"><a href="docs/images/inside-orbit-night.png"><img src="docs/images/inside-orbit-night.png" alt="Unit 3D at night with lit windows across the neighbourhood"></a><br><sub><b>And at night</b></sub></td>
 </tr>
 <tr>
-<td width="50%" valign="top" align="center"><a href="docs/images/inside-orbit-day.png"><img src="docs/images/inside-orbit-day.png" alt="Unit 3D by day: the tower among its neighbours with the window marked"></a><br><sub><b>The tower by day</b></sub></td>
-<td width="50%" valign="top" align="center"><a href="docs/images/inside-orbit-night.png"><img src="docs/images/inside-orbit-night.png" alt="Unit 3D at night with lit windows across the neighbourhood"></a><br><sub><b>And at night</b></sub></td>
+<td colspan="2" valign="top" align="center"><a href="docs/images/sun-plan-view.png"><img src="docs/images/sun-plan-view.png" alt="The street plan from straight above: neighbouring roofs, their shadows and the sun's line to the window"></a><br><sub><b>From above: what stands in the way of the window</b></sub></td>
 </tr>
 </table>
 
@@ -124,18 +118,17 @@ The plan in 2D and 3D side by side: furniture at real sizes, clearances, sunligh
 
 <table>
 <tr>
-<td width="50%" valign="top" align="center"><a href="docs/images/inside-floor-plan.png"><img src="docs/images/inside-floor-plan.png" alt="The floor plan studio with the 2D plan and the furnished 3D room side by side"></a><br><sub><b>Bird's eye beside the plan</b></sub></td>
-<td width="50%" valign="top" align="center"><a href="docs/images/studio-top.png"><img src="docs/images/studio-top.png" alt="The studio's Top camera beside the 2D plan with every room's dimensions and the walkway clearances"></a><br><sub><b>Top down, with every dimension</b></sub></td>
+<td width="50%" valign="top" align="center"><a href="docs/images/inside-floor-plan.png"><img src="docs/images/inside-floor-plan.png" alt="The floor plan studio with the 2D plan and the furnished 3D room side by side"></a><br><sub><b>The plan beside it in 3D, with clearances</b></sub></td>
+<td width="50%" valign="top" align="center"><a href="docs/images/studio-light.png"><img src="docs/images/studio-light.png" alt="The studio's 3D room on December 21 at 10 am with sunlight on the floor and the Light tab open"></a><br><sub><b>Sunlight on the floor</b></sub></td>
 </tr>
 <tr>
-<td width="50%" valign="top" align="center"><a href="docs/images/studio-light.png"><img src="docs/images/studio-light.png" alt="The studio's 3D room on December 21 at 10 am with sunlight on the floor and the Light tab open"></a><br><sub><b>Sunlight on the floor</b></sub></td>
-<td width="50%" valign="top" align="center"><a href="docs/images/studio-tracer.png"><img src="docs/images/studio-tracer.png" alt="New plan from image: a listing floor plan loaded for tracing, with the eight steps across the top"></a><br><sub><b>Trace a plan from an image</b></sub></td>
+<td colspan="2" valign="top" align="center"><a href="docs/images/studio-tracer.png"><img src="docs/images/studio-tracer.png" alt="New plan from image: a listing floor plan loaded for tracing, with the eight steps across the top"></a><br><sub><b>Trace a plan from a listing image</b></sub></td>
 </tr>
 </table>
 
 ## Find
 
-Each home's true monthly cost, its trip, its photos and its floor plan. [More about each picture](docs/GALLERY.md#find).
+Each home's true monthly cost, its trip and its photos. [More about each picture](docs/GALLERY.md#find).
 
 <table>
 <tr>
@@ -143,22 +136,18 @@ Each home's true monthly cost, its trip, its photos and its floor plan. [More ab
 <td width="50%" valign="top" align="center"><a href="docs/images/find-drawer-commute.png"><img src="docs/images/find-drawer-commute.png" alt="The drawer's commute section: 10 minutes by every mode, by time of day, then direct sun by month and noise by hour"></a><br><sub><b>Commute, sun and noise for one home</b></sub></td>
 </tr>
 <tr>
-<td width="50%" valign="top" align="center"><a href="docs/images/find-lightbox.png"><img src="docs/images/find-lightbox.png" alt="The photo lightbox beside the listing's floor plan"></a><br><sub><b>Photos and the floor plan</b></sub></td>
-<td width="50%" valign="top" align="center"><a href="docs/images/find-light-theme.png"><img src="docs/images/find-light-theme.png" alt="The map in the light theme with a listing open"></a><br><sub><b>The light theme</b></sub></td>
+<td colspan="2" valign="top" align="center"><a href="docs/images/find-lightbox.png"><img src="docs/images/find-lightbox.png" alt="The photo lightbox beside the listing's floor plan"></a><br><sub><b>Photos and the floor plan</b></sub></td>
 </tr>
 </table>
 
 ## Compare
 
-Two units side by side in 3D, a pad to trade cost against commute and space, and the shortlist beside its map. [More about each picture](docs/GALLERY.md#compare).
+A pad to trade cost against commute and space, and the shortlist beside its map. [More about each picture](docs/GALLERY.md#compare).
 
 <table>
 <tr>
-<td width="50%" valign="top" align="center"><a href="docs/images/compare-side-by-side-3d.png"><img src="docs/images/compare-side-by-side-3d.png" alt="Two homes in the same tower side by side in 3D"></a><br><sub><b>Two units side by side in 3D</b></sub></td>
 <td width="50%" valign="top" align="center"><a href="docs/images/compare-tradeoff-pad.png"><img src="docs/images/compare-tradeoff-pad.png" alt="The trade-off pad previewing a weight preset"></a><br><sub><b>The trade-off pad</b></sub></td>
-</tr>
-<tr>
-<td colspan="2" valign="top" align="center"><a href="docs/images/compare-split-view.png"><img src="docs/images/compare-split-view.png" alt="The shortlist table beside a docked map"></a><br><sub><b>The shortlist beside its map</b></sub></td>
+<td width="50%" valign="top" align="center"><a href="docs/images/compare-split-view.png"><img src="docs/images/compare-split-view.png" alt="The shortlist table beside a docked map"></a><br><sub><b>The shortlist beside its map</b></sub></td>
 </tr>
 </table>
 
@@ -223,19 +212,23 @@ Smaller touches on the map and in Unit 3D.
 
 <table>
 <tr>
+<td width="50%" valign="top" align="center"><a href="docs/images/find-place-search.png"><img src="docs/images/find-place-search.png" alt="The command menu previewing a plain-words search"></a><br><sub><b>Search in plain words</b></sub></td>
 <td width="50%" valign="top" align="center"><a href="docs/images/find-map-clusters.png"><img src="docs/images/find-map-clusters.png" alt="The map zoomed out: homes merged into bubbles that count them and show the lowest monthly cost"></a><br><sub><b>A calmer map: homes merge into bubbles</b></sub></td>
+</tr>
+<tr>
 <td width="50%" valign="top" align="center"><a href="docs/images/find-building-pin.png"><img src="docs/images/find-building-pin.png" alt="Hovering a building pin: View 34, 17 units from $4,310, with its best three units"></a><br><sub><b>A building is one pin</b></sub></td>
-</tr>
-<tr>
 <td width="50%" valign="top" align="center"><a href="docs/images/find-pin-preview.png"><img src="docs/images/find-pin-preview.png" alt="Hovering a pin previews the home with its photo, rank, price and score"></a><br><sub><b>Hover a pin, see the home</b></sub></td>
+</tr>
+<tr>
 <td width="50%" valign="top" align="center"><a href="docs/images/find-route-preview.png"><img src="docs/images/find-route-preview.png" alt="Hovering a home draws its subway route to Grand Central"></a><br><sub><b>Hover a card, see the trip</b></sub></td>
-</tr>
-<tr>
 <td width="50%" valign="top" align="center"><a href="docs/images/find-rank-moves.png"><img src="docs/images/find-rank-moves.png" alt="A drawer explaining why The Knox 6B fell 40 places since Oct 13"></a><br><sub><b>Why a home moved</b></sub></td>
-<td width="50%" valign="top" align="center"><a href="docs/images/find-price-drops.png"><img src="docs/images/find-price-drops.png" alt="Homes whose price fell, with the size of each drop"></a><br><sub><b>Real price history</b></sub></td>
 </tr>
 <tr>
+<td width="50%" valign="top" align="center"><a href="docs/images/find-price-drops.png"><img src="docs/images/find-price-drops.png" alt="Homes whose price fell, with the size of each drop"></a><br><sub><b>Real price history</b></sub></td>
 <td width="50%" valign="top" align="center"><a href="docs/images/find-unknowns.png"><img src="docs/images/find-unknowns.png" alt="Unknowns that move this score: an 800 square-foot size typed in shows the score and rank the home would get"></a><br><sub><b>Unknowns that move this score</b></sub></td>
+</tr>
+<tr>
+<td width="50%" valign="top" align="center"><a href="docs/images/find-light-theme.png"><img src="docs/images/find-light-theme.png" alt="The map in the light theme with a listing open"></a><br><sub><b>The map in the light theme</b></sub></td>
 <td width="50%" valign="top" align="center"><a href="docs/images/inside-measure-tape.png"><img src="docs/images/inside-measure-tape.png" alt="The measuring tape reading 5 feet 2 inches across the bay window"></a><br><sub><b>The measuring tape</b></sub></td>
 </tr>
 <tr>

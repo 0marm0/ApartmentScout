@@ -902,10 +902,10 @@
   {
    "file": "docs/images/hero-map.png",
    "publication_status": "public",
-   "sha256": "4c02f6c824275d471a61a45bf757cebd60feeae440ccb6c5b22eaaf069772a99",
-   "bytes": 418629,
-   "width": 1600,
-   "height": 1000,
+   "sha256": "23cee0580c62446730a1138ddb51ff425ae92219ba3a87adc6964955c5f7d784",
+   "bytes": 1684430,
+   "width": 2240,
+   "height": 1180,
    "note": "ApartmentScout dashboard on the public example data (shot 2026-10-15 from a clean snapshot with scripts/screenshots.py)"
   },
   {
