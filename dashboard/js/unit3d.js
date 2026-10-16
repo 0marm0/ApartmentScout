@@ -48,9 +48,9 @@ import { setLookChips, bindLookChips } from './plan/look-ui.js';
 import { askedCamera, cameraParam, openingCamera, mainViewpoint, takeSeeInside, CAMERA_KEY, SAVED_CAMERAS } from './unit/camera-pref.js';   // [camera] which camera a home opens in: Inside when it has a plan
 import { resolve as resolveItem } from './plan/catalog.js';
 import { loadInventoryFile } from './plan/inventory.js';   // [furniture] the renter's pieces: colour, material and finish
-import { resolveLayout, applyInventory, savedLayoutFor, layoutKey } from './plan/placement.js';
+import { resolveLayout, applyInventory, savedLayoutFor, layoutKey, chooseGroup } from './plan/placement.js';
 import { serialiseLayout } from './plan/layout.js';
-import { choiceState, applyChoice } from './plan/choices.js';   // [bed option] my bed / the storage bed / no bed, saved with the layout
+import { choiceState } from './plan/choices.js';   // [bed option] my bed / the storage bed / no bed, saved with the layout
 import { reportFor } from './plan/bedfit.js';
 import { mountBedControl } from './plan/bed-ui.js';
 import { createWalk, WALK_KEYS } from './unit/walk.js';   // [walk] click the floor to walk, drag to look, W S A D, go to the window   // [placement] the same rule for where each piece stands as the Floor plan studio
@@ -240,8 +240,8 @@ export function init() {
   matchUI = createMatch(matchBridge());   // [photo match]
   $('uMatch').addEventListener('click', () => matchUI.open());
   bedUI = mountBedControl($('uViews'), { where: 'in-unit', state: bedState, report: bedReport, piece: () => planInfo.inventory?.pieces.find((p) => p.id === 'bed-latitude') || null, choose: (c) => setBed(c),
-    rig: { state: () => (st.mode === 'in' && plan && planInfo.inventory && planInfo.raw ? choiceState(planInfo.raw, planInfo.inventory, 'sim') : null), choose: (c) => setBed(c, 'sim') },
-    chair: { state: () => (st.mode === 'in' && plan && planInfo.inventory && planInfo.raw ? choiceState(planInfo.raw, planInfo.inventory, 'chair') : null), choose: (c) => setBed(c, 'chair') } });   // [bed option]
+    rig: { state: () => (st.mode === 'in' && plan && planInfo.inventory && planInfo.raw ? choiceState(planInfo.raw, planInfo.inventory, 'sim', { removed: planInfo.removed || [] }) : null), choose: (c) => setBed(c, 'sim') },
+    chair: { state: () => (st.mode === 'in' && plan && planInfo.inventory && planInfo.raw ? choiceState(planInfo.raw, planInfo.inventory, 'chair', { removed: planInfo.removed || [] }) : null), choose: (c) => setBed(c, 'chair') } });   // [bed option]
   // read-only hook for headless checks (Playwright): never used by the page itself
   window.__unit3d = { st, get views() { return views; }, get curView() { return curView; }, get cam() { return stage?.winCam; }, get cal() { return CAL; }, get plan() { return plan; }, get planInfo() { return planInfo; }, get B() { return B; }, get faces() { return FACES; }, get sun() { return curSun; }, get hit() { return curHit; }, get blockers() { return blkRows; }, get neighbours() { return NBR.length; }, get interior() { return !!stage?.interior; }, get stage() { return stage; }, get walk() { return walk; }, get match() { return matchUI; }, get viewCal() { return viewCal; }, winPos: (f) => winPos(f) };
 }
@@ -413,7 +413,7 @@ async function load(id) {
 }
 /** [bed option] The saved layout as it stands in this browser, as text: when it changes behind this view's back (the studio's Bed control wrote it), the view takes it up. */
 const layoutStamp = (id) => { try { return JSON.stringify(store.get(layoutKey(S.base, id), null)); } catch { return ''; } };
-const bedState = () => (st.mode === 'in' && plan && planInfo.inventory && planInfo.raw ? choiceState(planInfo.raw, planInfo.inventory) : null);
+const bedState = () => (st.mode === 'in' && plan && planInfo.inventory && planInfo.raw ? choiceState(planInfo.raw, planInfo.inventory, 'bed', { removed: planInfo.removed || [] }) : null);
 let bedCache = { key: '', rep: null };
 function bedReport() {
   if (!plan || !planInfo.inventory || !planInfo.raw) return null;
@@ -425,8 +425,10 @@ function bedReport() {
 function setBed(choice, group = 'bed') {   // group 'sim' (the sim rig) or 'chair' (the office chair): shown or hidden, the same way (a piece's hidden mark)
   const inv = planInfo.inventory, raw = planInfo.raw;
   if (!inv || !raw || !plan) return;
-  const next = applyChoice(raw, inv, group, choice);
-  if (next.every((x, i) => x === raw[i])) return;
+  const r = chooseGroup(raw, inv, group, choice, { model: plan });   // a removed piece comes back at the plan's default spot (or is fitted)
+  if (!r.changed) return;
+  const next = r.items;
+  if (r.restored.length) planInfo.removed = (planInfo.removed || []).filter((id) => !r.restored.includes(id));
   planInfo.raw = next; planInfo.layout = { ...(planInfo.layout || {}), items: applyInventory(next, inv) }; planInfo.furniture = next.filter((x) => !x.hidden).length;
   if (planInfo.persist) { try { store.set(layoutKey(S.base, st.id), serialiseLayout(st.id, next, { removed: planInfo.removed || [] })); planInfo.stamp = layoutStamp(st.id); } catch { /* storage unavailable: the choice holds for this visit */ } }
   rebuildFurniture();
