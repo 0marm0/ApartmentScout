@@ -69,7 +69,7 @@ Put finalists side by side, in a table or in 3D, trade the weights against each 
 
 The 3D tab holds Unit 3D (the building in its real city, with sun and shadows) and the Floor plan studio. Both draw the same room
 and the same city, and a piece you place in one stays there in the other. The Paramount Tower 25E views use the renter's own
-furniture (a black leather futon, the Bestier rotating desk (dark brown, straight) with a 32 in monitor and a rolling task chair, a dark brown IKEA STORKLINTA dresser, a grey
+furniture (a black leather futon, the Bestier rotating desk (dark brown, straight) with a 32 in monitor and a rolling task chair, a black IKEA STORKLINTA dresser, a grey
 upholstered queen bed, two wall-mounted 55 in TVs), finishes read from the unit's photos (a basket-weave parquet floor) and a
 facade bearing measured from their photos.
 
@@ -159,6 +159,96 @@ Visit, plan the tours, ask the leasing office, then share a page or a memo.
 <td width="20%" valign="top" align="center"><img src="images/phone-visit-notes.png" alt="Visit notes on a phone" width="180"><br><b>Visit notes</b><br><sub>Sample notes opened with <code>?visit=&lt;listing-id&gt;</code> for one hand at the home: big steppers, rooms with their areas, and the camera in the bar below.</sub></td>
 <td width="20%" valign="top" align="center"><img src="images/phone-tour-day.png" alt="Tour day on a phone: three homes in time order" width="180"><br><b>Tour day</b><br><sub>Today's tours in time order (or shortest walk), each with Directions, the checklist progress and the minutes to the next stop; sample tours booked for the day of the shot.</sub></td>
 <td width="20%" valign="top" align="center"><img src="images/phone-tour-checklist.png" alt="The Tour day checklist for one home" width="180"><br><b>The checklist</b><br><sub>One question at a time at the home: light at the window (1 to 5) with the time saved, which way it faces, noise with the windows shut, each with why it matters to your weights. Answers flow into the visit notes and the score.</sub></td>
+</tr>
+</table>
+
+## From earlier versions
+
+Screens from earlier builds of the same dashboard: the sun studies, the floor-plan studio, the map and the research pages as they first shipped.
+
+### Sun and light
+
+<table>
+<tr>
+<td width="33%" valign="top" align="center"><a href="images/earlier/chart-sun-by-floor.png"><img src="images/earlier/chart-sun-by-floor.png" alt="Direct sun by floor and month"></a><br><sub><b>Direct sun by floor and month</b></sub></td>
+<td width="33%" valign="top" align="center"><a href="images/earlier/chart-sunpath.png"><img src="images/earlier/chart-sunpath.png" alt="Sun path against the skyline"></a><br><sub><b>Sun path against the skyline</b></sub></td>
+<td width="33%" valign="top" align="center"><a href="images/earlier/unit-sunpath.png"><img src="images/earlier/unit-sunpath.png" alt="The sun's arc over the neighbours"></a><br><sub><b>The sun's arc over the neighbours</b></sub></td>
+</tr>
+<tr>
+<td width="33%" valign="top" align="center"><a href="images/earlier/unit-floors.png"><img src="images/earlier/unit-floors.png" alt="Sun hours, every floor of a tower"></a><br><sub><b>Sun hours, every floor of a tower</b></sub></td>
+<td width="33%" valign="top" align="center"><a href="images/earlier/unit-window-12.png"><img src="images/earlier/unit-window-12.png" alt="The view from floor 12"></a><br><sub><b>The view from floor 12</b></sub></td>
+<td width="33%" valign="top" align="center"><a href="images/earlier/unit-window-21.png"><img src="images/earlier/unit-window-21.png" alt="The same window from floor 21"></a><br><sub><b>The same window from floor 21</b></sub></td>
+</tr>
+<tr>
+<td width="33%" valign="top" align="center"><a href="images/earlier/unit-maybury.png"><img src="images/earlier/unit-maybury.png" alt="Dusk from a 22nd floor"></a><br><sub><b>Dusk from a 22nd floor</b></sub></td>
+<td width="33%" valign="top" align="center"><a href="images/earlier/unit-orbit-dec.png"><img src="images/earlier/unit-orbit-dec.png" alt="Winter shadows over the block"></a><br><sub><b>Winter shadows over the block</b></sub></td>
+<td width="33%" valign="top" align="center"><a href="images/earlier/unit-plan-view.png"><img src="images/earlier/unit-plan-view.png" alt="From above: what blocks the window"></a><br><sub><b>From above: what blocks the window</b></sub></td>
+</tr>
+<tr>
+<td width="33%" valign="top" align="center"><a href="images/earlier/unit-inside.png"><img src="images/earlier/unit-inside.png" alt="Inside, looking out"></a><br><sub><b>Inside, looking out</b></sub></td>
+<td width="33%" valign="top" align="center"><a href="images/earlier/unit-light-theme.png"><img src="images/earlier/unit-light-theme.png" alt="Light and view in the light theme"></a><br><sub><b>Light and view in the light theme</b></sub></td>
+<td width="33%" valign="top" align="center"><a href="images/earlier/mobile-unit.png"><img src="images/earlier/mobile-unit.png" alt="Unit 3D on a phone"></a><br><sub><b>Unit 3D on a phone</b></sub></td>
+</tr>
+</table>
+
+### Floor-plan studio
+
+<table>
+<tr>
+<td width="33%" valign="top" align="center"><a href="images/earlier/plan-bird.png"><img src="images/earlier/plan-bird.png" alt="Bird's eye beside the plan"></a><br><sub><b>Bird's eye beside the plan</b></sub></td>
+<td width="33%" valign="top" align="center"><a href="images/earlier/plan-top.png"><img src="images/earlier/plan-top.png" alt="Top-down with clearances"></a><br><sub><b>Top-down with clearances</b></sub></td>
+<td width="33%" valign="top" align="center"><a href="images/earlier/plan-light-tab.png"><img src="images/earlier/plan-light-tab.png" alt="The light tab"></a><br><sub><b>The light tab</b></sub></td>
+</tr>
+<tr>
+<td width="33%" valign="top" align="center"><a href="images/earlier/plan-tracer.png"><img src="images/earlier/plan-tracer.png" alt="Trace a plan from an image"></a><br><sub><b>Trace a plan from an image</b></sub></td>
+</tr>
+</table>
+
+### Map, listings and photos
+
+<table>
+<tr>
+<td width="33%" valign="top" align="center"><a href="images/earlier/map-3d.png"><img src="images/earlier/map-3d.png" alt="The map in 3D"></a><br><sub><b>The map in 3D</b></sub></td>
+<td width="33%" valign="top" align="center"><a href="images/earlier/map-walk.png"><img src="images/earlier/map-walk.png" alt="Walking time to Grand Central"></a><br><sub><b>Walking time to Grand Central</b></sub></td>
+<td width="33%" valign="top" align="center"><a href="images/earlier/map-drawer-commute.png"><img src="images/earlier/map-drawer-commute.png" alt="A drawer's commute and records"></a><br><sub><b>A drawer's commute and records</b></sub></td>
+</tr>
+<tr>
+<td width="33%" valign="top" align="center"><a href="images/earlier/drawer-money.png"><img src="images/earlier/drawer-money.png" alt="What it costs, month by month"></a><br><sub><b>What it costs, month by month</b></sub></td>
+<td width="33%" valign="top" align="center"><a href="images/earlier/mobile-drawer.png"><img src="images/earlier/mobile-drawer.png" alt="A listing on a phone"></a><br><sub><b>A listing on a phone</b></sub></td>
+<td width="33%" valign="top" align="center"><a href="images/earlier/lightbox.png"><img src="images/earlier/lightbox.png" alt="The photo lightbox"></a><br><sub><b>The photo lightbox</b></sub></td>
+</tr>
+<tr>
+<td width="33%" valign="top" align="center"><a href="images/earlier/lightbox-floor-plan.png"><img src="images/earlier/lightbox-floor-plan.png" alt="Photo beside the floor plan"></a><br><sub><b>Photo beside the floor plan</b></sub></td>
+<td width="33%" valign="top" align="center"><a href="images/earlier/compare.png"><img src="images/earlier/compare.png" alt="Compare, dark"></a><br><sub><b>Compare, dark</b></sub></td>
+<td width="33%" valign="top" align="center"><a href="images/earlier/compare-light.png"><img src="images/earlier/compare-light.png" alt="Compare, light"></a><br><sub><b>Compare, light</b></sub></td>
+</tr>
+</table>
+
+### Research, tours and sharing
+
+<table>
+<tr>
+<td width="33%" valign="top" align="center"><a href="images/earlier/research.png"><img src="images/earlier/research.png" alt="The research queue"></a><br><sub><b>The research queue</b></sub></td>
+<td width="33%" valign="top" align="center"><a href="images/earlier/research-gone.png"><img src="images/earlier/research-gone.png" alt="What rented, and how fast"></a><br><sub><b>What rented, and how fast</b></sub></td>
+<td width="33%" valign="top" align="center"><a href="images/earlier/tours.png"><img src="images/earlier/tours.png" alt="Shortlist and tour board"></a><br><sub><b>Shortlist and tour board</b></sub></td>
+</tr>
+<tr>
+<td width="33%" valign="top" align="center"><a href="images/earlier/tour-day-planner.png"><img src="images/earlier/tour-day-planner.png" alt="A day of tours"></a><br><sub><b>A day of tours</b></sub></td>
+<td width="33%" valign="top" align="center"><a href="images/earlier/records.png"><img src="images/earlier/records.png" alt="Building records"></a><br><sub><b>Building records</b></sub></td>
+<td width="33%" valign="top" align="center"><a href="images/earlier/share-shortlist-page.png"><img src="images/earlier/share-shortlist-page.png" alt="A shareable shortlist page"></a><br><sub><b>A shareable shortlist page</b></sub></td>
+</tr>
+<tr>
+<td width="33%" valign="top" align="center"><a href="images/earlier/share-decision-memo.png"><img src="images/earlier/share-decision-memo.png" alt="The decision memo"></a><br><sub><b>The decision memo</b></sub></td>
+</tr>
+</table>
+
+### Setting up
+
+<table>
+<tr>
+<td width="33%" valign="top" align="center"><a href="images/earlier/wizard-basics.png"><img src="images/earlier/wizard-basics.png" alt="New search: the basics"></a><br><sub><b>New search: the basics</b></sub></td>
+<td width="33%" valign="top" align="center"><a href="images/earlier/wizard-review.png"><img src="images/earlier/wizard-review.png" alt="New search: review and save"></a><br><sub><b>New search: review and save</b></sub></td>
+<td width="33%" valign="top" align="center"><a href="images/earlier/cli.png"><img src="images/earlier/cli.png" alt="The command line"></a><br><sub><b>The command line</b></sub></td>
 </tr>
 </table>
 
