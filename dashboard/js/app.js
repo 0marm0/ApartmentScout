@@ -1,6 +1,7 @@
 // ApartmentScout dashboard core: data loading, shared state, live ranking, filters rail, result cards,
 // listing drawer, saved picks, router, theme and keyboard shortcuts. Views live in their own modules and
 // talk to the core through the exports below and the event bus (on/emit).
+import './sync/watch.js';   // [sync] hears about writes to the renter's own storage keys, so sync can time them (nothing is sent until sync is connected)
 import { $, esc, money, moneyShort, safeUrl, scoreColor, ring, unitGlyph, bullets, bullet, routeNames, ICONS, toast, LINE_COLORS, aerialHTML, imagesOf, mediaSrc, routeBadge, legBadges, miles } from './util.js';
 import { seeInsideLink, wireSeeInside } from './unit/camera-pref.js';   // [camera] "See inside": opens Unit 3D standing in the apartment
 import { COMMUTE_MODES, commuteEntry, modeMinutes, modeOptions, evaluate, applyProfile, profileOf, diffProfile, serverSteps, parseDay, cashFlow, basisLabel } from './criteria.js';
@@ -47,6 +48,9 @@ export const S = {
 };
 // [feature K] seams for tour findings and the decision trail (features/tour-findings.js, features/decision-trail.js): HTML for a
 // drawer section, a pass over the scores after criteria are (re)applied, and extra fields in the picks backup
+// [sync] a feature that keeps a copy of one of the renter's storage keys in memory registers how to read it again (reloaders.office = fn ...), so a merge
+// that wrote the key does not leave a stale copy that the next edit would write back over it (js/sync/refresh.js calls them)
+export const reloaders = {};
 export const hooks = { drawer: null, score: null, exportExtra: null, importExtra: null, card: null, drawerTop: null, score2: null };   // card/drawerTop/score2: features/moves.js and unknowns.js (rank moves, unknowns that move a score)
 export const on = (ev, fn) => ((S.listeners[ev] ||= []).push(fn));
 export const emit = (ev, x) => (S.listeners[ev] || []).forEach((f) => f(x));

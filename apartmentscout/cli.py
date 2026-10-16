@@ -11,7 +11,8 @@
     apartmentscout site <id> [--floor N]           3D site model + sun and view study
     apartmentscout score                           score and rank against criteria.yaml
     apartmentscout report                          markdown shortlist report
-    apartmentscout build                           export everything to the dashboard
+    apartmentscout report --homes ID ID --out report.pdf   the decision report for 2 to 4 homes (PDF, else HTML)
+    apartmentscout build                          export everything to the dashboard
     apartmentscout serve                           open the dashboard locally
     apartmentscout all                             geocode, commute, layers, score, build
 
@@ -592,6 +593,9 @@ def cmd_score(args):
 
 
 def cmd_report(args):
+    if args.homes:   # the decision report for 2 to 4 homes: a typeset PDF or HTML (commands/report.py)
+        from .commands.report import run
+        return run(args)
     from .report import shortlist_report
     ws = ws_from(args)
     p = shortlist_report(ws, _listings(ws), ws.criteria(), args.top)
@@ -639,6 +643,7 @@ def standalone(data_dir: Path, dest: Path) -> Path:
     for f in sorted(data_dir.rglob("*.json")):
         data["data/" + f.relative_to(data_dir).as_posix()] = json.loads(f.read_text())
     data["share/snapshot.html"] = (DASH / "share" / "snapshot.html").read_text()   # the Share button's template (features/share.js)
+    data["report/report.html"] = (DASH / "report" / "report.html").read_text()   # the Make a report button's template (features/report.js)
     no_media = not (dest.parent / "media").is_dir()
     manifest = data.get("data/manifest.json")
     if no_media and isinstance(manifest, dict) and manifest.get("media_base_url") and isinstance(data.get("data/listings.json"), list):
@@ -992,8 +997,10 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--refresh", action="store_true", help="ignore cached API responses")
     s = add("score", cmd_score, "score and rank listings")
     s.add_argument("--top", type=int, default=20)
-    s = add("report", cmd_report, "write a markdown shortlist report")
+    s = add("report", cmd_report, "write a markdown shortlist report, or with --homes a decision report (PDF or HTML) for 2 to 4 homes")
     s.add_argument("--top", type=int, default=15)
+    from .commands.report import add_arguments as report_arguments
+    report_arguments(s)
     s = add("build", cmd_build, "export data for the dashboard")
     s.add_argument("--out")
     s.add_argument("--standalone", metavar="FILE", help="also write a single self-contained HTML dashboard")

@@ -33,6 +33,16 @@ export function importEntries(list) {
   return entries.length - before;
 }
 
+/** The sync layer wrote the trail and the picks to storage (sync/sync-store.js): read the trail again and take the picks as the new baseline, so what
+ *  arrived from another device is not recorded here as a decision made on this one. Call after S.picks has been replaced. */
+export function reload() {
+  if (!key) return;
+  quiet = true; setTimeout(() => { quiet = false; }, 0);
+  entries = clean(store.get(key, []));
+  prev = clone(S.picks);
+  notify();
+}
+
 // ------------------------------------------------------------------ watching the picks
 const WORTH_ASKING = new Set(['tier', 'status', 'promote']);
 function onSaved(id) {

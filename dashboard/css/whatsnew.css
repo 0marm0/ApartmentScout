@@ -1,0 +1,73 @@
+/* ApartmentScout: the "What's new" panel (features/whatsnew.js), the dot on the menu button and the count on its menu row. Tokens only.
+   Loaded after glass.css, which gives .menu-pop its surface. A popover on a desktop, a bottom sheet on a phone. */
+
+.news-dot { position: absolute; top: 4px; right: 4px; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 2px var(--surface-2); pointer-events: none; }
+.news-dot[hidden] { display: none; }
+#menuBtn { position: relative; }
+
+.app-menu .am-n { flex: none; min-width: 20px; padding: 1px 7px; border-radius: var(--r-pill); background: color-mix(in srgb, var(--ink) 9%, transparent); color: var(--ink-2);
+  font: 600 var(--fs-xs)/1.5 var(--font-sans); text-align: center; font-variant-numeric: tabular-nums; }
+.app-menu .am-n.unseen { background: var(--accent-soft); color: var(--accent-strong); box-shadow: inset 0 0 0 1px var(--accent-line); }
+.app-menu .am-n[hidden] { display: none; }
+
+.wn-scrim { position: fixed; inset: 0; z-index: 69; background: rgba(0, 0, 0, .46); animation: amFade var(--t-base) var(--ease-out); }
+.wn-scrim[hidden] { display: none; }
+.wn-pop { position: fixed; z-index: 70; top: 56px; right: 12px; left: auto; width: min(420px, calc(100vw - 24px)); max-height: min(78vh, 640px); padding: 0; display: flex; flex-direction: column; transform-origin: 100% 0;
+  background: color-mix(in srgb, var(--surface-1) 95%, transparent); }
+.wn-pop[hidden] { display: none; }
+.wn-pop .am-grab { display: none; }
+.wn-pop:focus { outline: none; }
+.wn-h { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 14px 14px 4px 16px; }
+.wn-h > div { min-width: 0; }
+.wn-h b { display: block; font-size: var(--fs-lg, 16px); font-weight: 650; letter-spacing: var(--tracking-tight); }
+.wn-h b:focus { outline: none; }
+.wn-h span { display: block; margin-top: 2px; font-size: var(--fs-xs); color: var(--ink-3); }
+.wn-x { flex: none; width: 26px; height: 26px; }
+.wn-x svg { width: 11px; height: 11px; }
+.wn-sub { margin: 4px 16px 0; font-size: var(--fs-sm); color: var(--ink-2); line-height: 1.4; }
+.wn-body { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 2px 8px 8px; }
+.wn-empty { margin: 14px 8px 10px; font-size: var(--fs-sm); line-height: 1.5; color: var(--ink-2); }
+.wn-empty code, .wn-how code, .wn-more code { font: 500 var(--fs-xs) var(--font-mono); color: var(--ink); }
+.wn-quiet, .wn-more { margin: 8px 8px 2px; font-size: var(--fs-xs); color: var(--ink-3); line-height: 1.4; }
+
+.wn-g h4 { display: flex; align-items: center; gap: 7px; margin: 12px 8px 3px; font-size: var(--fs-2xs); font-weight: 600; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--ink-3); }
+.wn-g h4 > span { margin-left: auto; font-variant-numeric: tabular-nums; letter-spacing: 0; }
+.wn-ic { display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 50%; flex: none; background: color-mix(in srgb, var(--ink) 8%, transparent); color: var(--ink-2); }
+.wn-ic svg { width: 9px; height: 9px; }
+.wn-ic.new, .wn-ic.fits, .wn-ic.back, .wn-ic.jumps { background: var(--accent-soft); color: var(--accent-strong); }
+.wn-ic.drops { background: var(--good-soft); color: var(--good); }
+.wn-ic.rises { background: var(--warn-soft); color: var(--warn); }
+.wn-ic.gone { background: var(--bad-soft); color: var(--bad); }
+.wn-g ul { list-style: none; margin: 0; padding: 0; }
+.wn-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; padding: 7px 8px; border-radius: var(--r-md); color: var(--ink); text-decoration: none; font-size: var(--fs-sm); line-height: 1.3;
+  transition: background var(--t-fast); }
+a.wn-row:hover, a.wn-row:focus-visible { background: color-mix(in srgb, var(--ink) 7%, transparent); }
+a.wn-row:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.wn-row.static { color: var(--ink-2); }
+.wn-n { flex: 1 1 auto; min-width: 0; font-weight: 500; }
+.wn-n small { display: block; margin-top: 1px; color: var(--ink-3); font-size: var(--fs-xs); font-weight: 400; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wn-r { display: flex; flex-direction: column; align-items: flex-end; gap: 1px; flex: 0 1 auto; max-width: 58%; font-variant-numeric: tabular-nums; text-align: right; }
+.wn-r b { font-weight: 650; }
+.wn-r b.good { color: var(--good); }
+.wn-r b.warn { color: var(--warn); }
+.wn-r b.bad { color: var(--bad); }
+.wn-v { font-size: var(--fs-xs); color: var(--ink-3); }
+
+.wn-f { padding: 10px 14px 12px 16px; border-top: 1px solid var(--line); display: grid; gap: 8px; }
+.wn-dev { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.wn-dev b { font-size: var(--fs-sm); font-weight: 600; }
+.wn-dev p, .wn-how { margin: 2px 0 0; font-size: var(--fs-xs); color: var(--ink-3); line-height: 1.4; }
+.wn-how { margin: 0; }
+.wn-dev .btn { flex: none; }
+.wn-dev[data-state="blocked"] p, .wn-dev[data-state="install"] p { color: var(--ink-2); }
+
+@media (max-width: 760px) {
+  .wn-pop { top: auto; bottom: 0; left: 0; right: 0; width: auto; max-height: 82dvh; border-radius: var(--r-xl) var(--r-xl) 0 0; border-bottom: 0; transform-origin: 50% 100%;
+    padding-bottom: env(safe-area-inset-bottom); animation: wnSheet var(--t-base) var(--ease-out); }
+  .wn-pop .am-grab { display: block; width: 36px; height: 4px; margin: 8px auto 0; border-radius: 2px; background: var(--line-strong); }
+  .wn-h { padding-top: 8px; }
+  .wn-row { padding: 11px 8px; }
+  .wn-x { width: 32px; height: 32px; }
+}
+@keyframes wnSheet { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .wn-pop, .wn-scrim { animation: none; } }
