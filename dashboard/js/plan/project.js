@@ -28,7 +28,7 @@ const FIELDS = {
   item: 'id ref x y rot w d h elev variant label hidden placed product',
   lighting: 'directSun ambient glazing blinds daylight luminaires',   // [feature J] daylight, luminaires
   inventory: 'schema kind name source pieces options',   // [furniture]
-  piece: 'id ref label room w d h elev variant product look set assumed note source spec spec_basis candidate',
+  piece: 'id ref label room w d h elev variant product look set assumed note source spec spec_basis states product_info candidate',
 };
 const fin = (v) => typeof v === 'number' && Number.isFinite(v);
 const own = (o, k) => Object.prototype.hasOwnProperty.call(o, k);

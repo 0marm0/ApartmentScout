@@ -28,7 +28,7 @@ test('the renter\'s pieces keep their own sizes when resolved', () => {
   assert.deepEqual([by.bed.w, by.bed.d, by.bed.h], [64, 84, 40]);
   assert.deepEqual([by.dresser.w, by.dresser.d, by.dresser.h], [27.6, 18.9, 47.2]);   // the IKEA STORKLINTA 6-drawer dresser, 70 x 48 x 120 cm
   assert.deepEqual([by.desk.w, by.desk.d], [89.2, 21.6]);   // the Bestier rotating desk, straight (the straight length is derived)
-  assert.deepEqual([by.futon.w, by.futon.d], [80, 36]);
+  assert.deepEqual([by.futon.w, by.futon.d, by.futon.h], [73.2, 33.5, 35.4]);   // the Serta Billie-Loren, from the Wayfair listing
   assert.deepEqual([by.tv.w, by.tv.h, by.tv.elev], [48.4, 27.8, 32]);
   assert.equal(by['tv-bed'].name, '55-inch TV, bedroom');
 });
@@ -113,4 +113,17 @@ test('a complete plan project carries the renter\'s furniture, and refuses a bad
   assert.equal(parseProject(JSON.stringify(poisoned)).ok, false);
   const extra = structuredClone(project); extra.inventory.pieces[0].url = 'https://example.com';
   assert.match(parseProject(JSON.stringify(extra)).error, /unsupported field url/);
+});
+
+test('the futon is the renter\'s Serta Billie-Loren: model, dimensions with their basis, and the three states', () => {
+  const f = inv().pieces.find((p) => p.id === 'futon');
+  assert.equal(f.product_info.model, 'WADL9387'); assert.match(f.product_info.variant, /19198029.*Black Faux Leather/);
+  assert.match(f.product_info.dims_basis, /listing \(unverified for this variant\)/);
+  assert.equal(f.look.basis, 'renter'); assert.equal(f.look.material, 'leather'); assert.equal(f.look.color, 'black');
+  assert.deepEqual([f.spec.overall.w, f.spec.overall.d, f.spec.overall.h, f.spec.overall.listed_w, f.spec.seat.d, f.spec.seat.h], [73.2, 33.5, 35.4, 74, 22, 18.5]);
+  assert.ok(Object.values(f.spec_basis).every((b) => b === 'listing'), 'every dimension is marked as from the listing');
+  const as = (variant) => resolve({ ...pieceItem(f), variant, w: undefined, d: undefined, h: undefined });   // the inspector drops the sizes when the variant changes
+  assert.deepEqual([as('sofa').w, as('sofa').d, as('sofa').h], [73.2, 33.5, 35.4]);
+  assert.deepEqual([as('bed').w, as('bed').d], [73.2, 41.7], 'opened as a bed: 73.2 x 41.7 in');
+  assert.ok(as('lounger').d > 33.5 && as('lounger').d < 41.7);
 });

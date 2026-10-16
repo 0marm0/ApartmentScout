@@ -314,11 +314,43 @@
   {
    "id": "futon",
    "ref": "futon",
-   "label": "Futon, 3 seats",
+   "label": "Futon, Serta Billie-Loren",
    "room": "living",
-   "w": 80,
-   "d": 36,
-   "h": 34,
+   "w": 73.2,
+   "d": 33.5,
+   "h": 35.4,
+   "states": {
+    "sofa": {"w": 73.2, "d": 33.5, "h": 35.4},
+    "lounger": {"w": 73.2, "d": 39.9, "h": 30},
+    "bed": {"w": 73.2, "d": 41.7, "h": 18.5}
+   },
+   "product_info": {
+    "name": "Serta Billie-Loren Convertible Sleeper Sofa",
+    "brand": "Serta",
+    "retailer": "Wayfair",
+    "model": "WADL9387",
+    "variant": "19198029, Black Faux Leather",
+    "bought": "2023-08",
+    "colour": "Black",
+    "material": "Faux leather",
+    "look_basis": "renter (purchase emails)",
+    "dims_basis": "listing (unverified for this variant)"
+   },
+   "spec": {
+    "overall": {"w": 73.2, "d": 33.5, "h": 35.4, "listed_w": 74},
+    "seat": {"d": 22, "h": 18.5},
+    "bed": {"w": 73.2, "d": 41.7}
+   },
+   "spec_basis": {
+    "overall.w": "listing",
+    "overall.listed_w": "listing",
+    "overall.d": "listing",
+    "overall.h": "listing",
+    "seat.d": "listing",
+    "seat.h": "listing",
+    "bed.w": "listing",
+    "bed.d": "listing"
+   },
    "look": {
     "color": "black",
     "material": "leather",
@@ -330,15 +362,15 @@
     ],
     "parts": {
      "frame": {
-      "color": "black",
+      "color": "#7f848b",
       "material": "metal",
       "finish": "satin"
      }
     },
-    "note": "Black leather futon: a leather mattress seat and back on a frame. The renter gave black leather; the frame (black metal, no wooden arms) is a stand-in."
+    "note": "Black faux leather (the renter's purchase emails: Serta Billie-Loren, WADL9387, variant 19198029) with four splayed brushed-chrome legs as in Wayfair's product photo; the sheen is read from that photo."
    },
-   "note": "80 x 36 in as a sofa; opens to about 80 x 56 in as a bed.",
-   "source": "Fit check; Room to live checks an IKEA Nyhamn, 78.75 x 38.25 in."
+   "note": "Click-clack sofa bed: 73.2 x 33.5 x 35.4 in upright (Wayfair also lists the sofa as 74 in wide), about 73.2 x 39.9 x 30 in as a lounger (worked out from the back length, not listed), 73.2 x 41.7 in as a flat bed. Seat 22.0 in deep, 18.5 in high. No size is verified for this variant.",
+   "source": "Renter's purchase emails, Aug 2023 (Wayfair, WADL9387, variant 19198029); sizes: Wayfair listing result, basis: listing (unverified for this variant)."
   },
   {
    "id": "coffee",
