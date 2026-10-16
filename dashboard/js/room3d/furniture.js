@@ -41,13 +41,14 @@ const BOOKS = [0x7b3b2f, 0x2f4b5e, 0xc9a35a, 0x5d6e57, 0xa9b8c7, 0x3c3a36, 0xb56
 
 // ------------------------------------------------------------------ shared canvas textures (made lazily, once per page)
 const TEX = new Map();
-function canvasTex(key, w, h, draw, { repeat = null, wrap = true } = {}) {
+function canvasTex(key, w, h, draw, { repeat = null, wrap = true, rotate = 0 } = {}) {
   if (TEX.has(key)) return TEX.get(key);
   if (typeof document === 'undefined' || !document.createElement) { TEX.set(key, null); return null; }
   const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h);
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8;
   if (wrap) t.wrapS = t.wrapT = THREE.RepeatWrapping;
   if (repeat) t.repeat.set(repeat[0], repeat[1]);
+  if (rotate) { t.center.set(0.5, 0.5); t.rotation = rotate; }
   t.userData.shared = true; TEX.set(key, t); return t;
 }
 /** Wood grain, near white so it multiplies the material colour; UVs are metres, one tile is 1 m along the grain and 0.5 m across it.
@@ -588,6 +589,22 @@ const glowTex = () => canvasTex('r3-ledglow', 128, 128, (g, W, H) => {
   const k = g.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, W / 2); k.addColorStop(0, 'rgba(255,255,255,1)'); k.addColorStop(0.35, 'rgba(255,255,255,0.55)'); k.addColorStop(1, 'rgba(255,255,255,0)');
   g.clearRect(0, 0, W, H); g.fillStyle = k; g.fillRect(0, 0, W, H);
 }, { wrap: false });
+/** The wash of a strip light: bright along its top edge, fading down. */
+const washTex = () => canvasTex('r3-ledwash', 8, 128, (g, W, H) => {
+  const k = g.createLinearGradient(0, 0, 0, H); k.addColorStop(0, 'rgba(255,255,255,1)'); k.addColorStop(0.18, 'rgba(255,255,255,0.6)'); k.addColorStop(0.55, 'rgba(255,255,255,0.18)'); k.addColorStop(1, 'rgba(255,255,255,0)');
+  g.clearRect(0, 0, W, H); g.fillStyle = k; g.fillRect(0, 0, W, H);
+}, { wrap: false });
+/** Fine, straight oak grain (near white, so it multiplies the colour), the lines along u; a second copy turned a quarter for the vertical grain of the towers. */
+const oakTex = (vertical) => canvasTex(vertical ? 'r3-oak-v' : 'r3-oak-h', 512, 512, (g, W, H) => {
+  const r = rng(vertical ? 41 : 29); g.fillStyle = '#f3eee8'; g.fillRect(0, 0, W, H);
+  for (let i = 0; i < 700; i++) {
+    const y = r() * H, a = 0.02 + r() * 0.055, lw = 0.5 + r() * 1.2, amp = r() * 0.8, ph = r() * TAU;
+    g.strokeStyle = r() < 0.78 ? `rgba(96,66,42,${a})` : `rgba(255,250,242,${a * 1.1})`; g.lineWidth = lw; g.beginPath();
+    for (let x = 0; x <= W; x += 16) { const yy = y + amp * Math.sin((x / W) * TAU * 2 + ph); if (x) g.lineTo(x, yy); else g.moveTo(x, yy); }
+    g.stroke();
+  }
+  for (let i = 0; i < 40; i++) { g.fillStyle = `rgba(120,86,56,${0.01 + r() * 0.02})`; g.fillRect(0, r() * H, W, 3 + r() * 16); }
+}, { repeat: vertical ? [1, 1.25] : [1.25, 1.25], rotate: vertical ? Math.PI / 2 : 0 });
 const LED_WARM = 0xffb46b, LED_OFF = 0xf2e8d4;
 
 /**
@@ -599,93 +616,94 @@ export function setLeds(root, level = 0) {
   root?.traverse?.((o) => {
     const l = o.userData?.leds; if (!l) return;
     for (const m of l.mats) m.emissiveIntensity = lv * 1.9;
-    for (const m of l.glows) { m.opacity = lv * 0.62; m.visible = lv > 0.01; }
+    for (const m of l.glows) { m.opacity = lv * 0.62 * (m.userData.gain ?? 1); m.visible = lv > 0.01; }
     for (const mesh of l.meshes) mesh.visible = lv > 0.01;
   });
 }
 
 /**
- * The Latitude Run storage bed, drawn to the maker's dimensions (the piece's `spec`, plan/bedspec.js): a 94 in headboard unit of two side towers
- * and a centre section of two cream velvet panels, a floating nightstand with one drawer on each tower (an open cubby above it with a charging
- * port and a reading light), a 60 x 80 in platform on casters with two drawers on each side, three centre legs and a 12 in mattress with
- * generic bedding. Wall distance `s` runs from the wall (0) to the foot (83.3); z = -d/2 + s. Oak is the renter's `look` (Brown Oak); the
- * panels, the black metal and the LEDs are parts of it. The LEDs glow after dark (setLeds); nothing here changes what the room measures.
+ * The Latitude Run storage bed, drawn to the maker's dimensions (the piece's `spec`, plan/bedspec.js) and matched to its product photos: one
+ * continuous oak top rail over the full 94 in; between the towers two off-white padded panels under the rail, a wood band below them and a thin
+ * warm LED strip under the rail; two towers each with an open cubby (a raised floor step, a dark oak back) under a lid that carries a recessed black
+ * plate with a swing-arm reading spotlight; a floating nightstand (one flat slab drawer, no handle) on a closed oak box that stands less deep; and an
+ * oak box platform on black feet with two flat drawer fronts a side and a two-panel foot, on a 12 in mattress with plain bedding. Grain runs along
+ * the rails and fronts and up the towers. Wall distance `s` runs from the wall (0) to the foot (83.3); z = -d/2 + s. The LEDs glow after dark
+ * (setLeds); nothing here changes what the room measures.
  */
 function towerBed(it, K) {
-  const g = dimsOf(it.spec), { w, d } = it, hd = d / 2, f = K.fast, hw = g.W / 2, fw = g.frame.w / 2, H = g.H, tw = g.head.towerW, t = 0.9;
-  const spec = K.spec({ color: 0x876f5c, material: 'wood', finish: 'satin' }), oak = K.skin(spec), oakInner = K.skin(shade(spec, 0.74)), oakFront = K.skin(shade(spec, 1.05)), carcass = K.skin(shade(spec, 0.5));
-  const slatM = K.wood(0xc8ad88, 0.7), metal = K.skin(K.part('metal', { color: 0x1b1b1d, material: 'metal', finish: 'satin' })), dark = K.paint(0x0b0908, 0.95), groove = K.paint(0x2a1f16, 0.9);
-  const pspec = K.part('panels', { color: 0xece3d0, material: 'fabric', finish: 'sheen' });
-  const velvet = K.mat('velvet', () => {   // short pile with a soft sheen: Visual lets the light slide across the nap, Fast keeps the colour and a low gloss
-    if (f) return K.ctx.std(pspec.color, { roughness: 0.78 });
-    return new THREE.MeshPhysicalMaterial({ color: pspec.color, roughness: 0.82, sheen: 1, sheenRoughness: 0.32, sheenColor: mix(pspec.color, 0xffffff, 0.45) });
+  const g = dimsOf(it.spec), { d } = it, hd = d / 2, f = K.fast, hw = g.W / 2, fw = g.frame.w / 2, H = g.H, tw = g.head.towerW, t = 0.9, cw = hw - tw;
+  const spec = K.spec({ color: 0x7f6c5b, material: 'wood', finish: 'satin' }), rough = 0.6;
+  const oakMat = (k, vertical) => K.mat(`oak|${vertical ? 'v' : 'h'}|${k}`, () => { const tex = oakTex(vertical); return K.ctx.std(tone(spec.color, k * 1.06), { roughness: rough, ...(tex ? { map: tex } : {}) }); });
+  const oakH = oakMat(1, false), oakV = oakMat(1, true), inV = oakMat(0.58, true), inH = oakMat(0.58, false), dark = K.paint(0x120d09, 0.95);
+  const slatM = K.wood(0xc8ad88, 0.7), black = K.skin(K.part('metal', { color: 0x1b1b1d, material: 'metal', finish: 'satin' })), plateM = K.paint(0x222224, 0.55);
+  const pspec = K.part('panels', { color: 0xece8e0, material: 'fabric', finish: 'sheen' });
+  const velvet = K.mat('velvet', () => {   // a fine, short pile: Visual lets the light slide across the nap, Fast keeps the colour and a low gloss
+    if (f) return K.ctx.std(pspec.color, { roughness: 0.8 });
+    return new THREE.MeshPhysicalMaterial({ color: pspec.color, roughness: 0.85, sheen: 1, sheenRoughness: 0.35, sheenColor: mix(pspec.color, 0xffffff, 0.4) });
   });
-  const ledMat = () => K.ctx.std(LED_OFF, { roughness: 0.5, emissive: LED_WARM, emissiveIntensity: 0 });
   const mats = [], glows = [], meshes = [];
-  const led = () => { const m = ledMat(); mats.push(m); return m; };
-  const glowMat = () => { const m = new THREE.MeshBasicMaterial({ map: glowTex(), color: LED_WARM, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, visible: false }); glows.push(m); return m; };
+  const led = () => { const m = K.ctx.std(LED_OFF, { roughness: 0.5, emissive: LED_WARM, emissiveIntensity: 0 }); mats.push(m); return m; };
+  const glowMat = (tex, gain = 1) => { const m = new THREE.MeshBasicMaterial({ map: tex, color: LED_WARM, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, visible: false }); m.userData.gain = gain; glows.push(m); return m; };
   // a box from wall distance s0..s1, across x0..x1, up y0..y1
   const box = (x0, x1, y0, y1, s0, s1, mat, o = {}) => K.add(K.board(x1 - x0, y1 - y0, s1 - s0, o.r ?? 0.2, o.plain ?? true), mat, (x0 + x1) / 2, y0, -hd + (s0 + s1) / 2, { cast: o.cast });
   const quad = (wd, ht, mat, x, y, z, horizontal = false) => { const gm = K.geo(`q|${wd.toFixed(1)}|${ht.toFixed(1)}|${horizontal}`, () => { const p = new THREE.PlaneGeometry(wd, ht); if (horizontal) p.rotateX(-Math.PI / 2); return p; }); const m = K.add(gm, mat, x, y, z, { cast: false }); m.renderOrder = 3; meshes.push(m); return m; };
-  const glowM = glowMat(), lamps = [];
+  const cubbyGlow = glowMat(glowTex(), 0.3), washM = glowMat(washTex(), 0.8), poolM = glowMat(glowTex(), 0.35);
 
-  // ---- the two towers, each: a solid foot up to the nightstand, the floating nightstand with its drawer, an open cubby and a lid
-  const nB = g.stand.bottom, nT = nB + g.stand.h, lidB = H - g.head.lid, td = g.head.towerDepth, sd = g.stand.d;
+  // ---- the two towers: a closed oak box to the floor, the floating nightstand, an open cubby and the lid with its reading light
+  const nB = g.stand.bottom, nT = nB + g.stand.h, rail = g.head.rail, lidB = H - rail, td = g.head.towerDepth, bd = g.head.baseDepth, sd = g.stand.d, step = g.head.step;
   for (const sx of [-1, 1]) {
-    const x0 = sx < 0 ? -hw : hw - tw, x1 = x0 + tw, cx = (x0 + x1) / 2;
-    box(x0, x1, 0, nB, 0, td, carcass);                                        // the tower continues to the floor under the nightstand
-    box(x0, x1, nB, nT, 0, sd - 0.5, oak);                                     // the nightstand body, floating: 17 in out from the wall
-    box(x0 + 0.5, x1 - 0.5, nB + 0.55, nT - 0.55, sd - 0.5, sd, oakFront, { plain: f, r: 0.12 });   // the drawer front
-    box(cx - 3.2, cx + 3.2, nT - 1.45, nT - 1.05, sd - 0.02, sd + 0.04, groove, { cast: false });       // its finger groove
-    box(x0, x1, nT, lidB, 0, t, oakInner);                                     // the cubby: back, two sides, and the lid above
-    for (const wx of [x0, x1 - t]) box(wx, wx + t, nT, lidB, 0, td, wx === x0 ? (sx < 0 ? oak : oakInner) : (sx < 0 ? oakInner : oak));
-    box(x0, x1, lidB, H, 0, td, oak, { plain: f, r: 0.3 });
-    if (!f) { box(cx - 2.4, cx + 2.4, nT, nT + 0.12, 11.2, 12.6, dark, { cast: false }); for (const px of [cx - 1.1, cx + 1.1]) box(px - 0.45, px + 0.45, nT + 0.12, nT + 0.16, 11.6, 12.2, metal, { cast: false }); }   // the charging panel on the cubby floor: one black plate with two ports
-    // the reading light: an arm and a head under the lid, its face warm
-    box(cx - 0.35, cx + 0.35, lidB - 2.4, lidB, td - 2.2, td - 1.5, metal, { cast: false });
-    box(cx - 1.9, cx + 1.9, lidB - 2.9, lidB - 2.4, td - 3.4, td - 0.9, metal, { cast: false });
-    const lm = K.add(K.board(3.2, 0.16, 1.9, 0, true), led(), cx, lidB - 3.0, -hd + td - 2.15, { cast: false }); void lm;
-    box(x0 + 1, x1 - 1, lidB - 0.3, lidB, td - 0.9, td - 0.4, led(), { cast: false });   // an LED line along the cubby's ceiling
-    quad(tw - 2 * t - 0.6, lidB - nT - 0.8, glowM, cx, (nT + lidB) / 2, -hd + t + 0.06);          // the cubby's back wall, washed warm
-    quad(14, 11, glowM, cx, nT + 0.06, -hd + td + 4.2, true);                                      // the pool of the reading light on the nightstand top
-    lamps.push(cx);
-  }
-
-  // ---- the centre section: a wood panel from the mattress top up, a band, two cream velvet pads and a top rail
-  const mTop = g.mattressTop, bandT = mTop + g.head.band, railB = H - g.head.rail, dep = g.head.depth;
-  box(-(hw - tw), hw - tw, mTop, H, 0, dep, oak, { plain: f, r: 0.3 });
-  const padW = (2 * fw - 1.6 - 0.6) / 2, padH = railB - bandT - 0.4, padD = 2.2;
-  const padG = K.soft(padW, padH, padD, { r: 0.9, s: 1, k: [4, 4, 1], kf: [1, 1, 1], puff: { pz: 0.9, py: 0.15, ny: 0.15 }, pow: 0.7 });
-  for (const sx of [-1, 1]) K.add(padG, velvet, sx * (padW / 2 + 0.3), bandT + 0.2, -hd + dep + padD / 2 - 1.0);
-  box(-fw + 1, fw - 1, mTop - 0.25, mTop, dep - 1.0, dep - 0.45, led(), { cast: false });          // a hidden LED line under the band
-  for (const px of [-14, 14]) box(px - 0.5, px + 0.5, g.slat, mTop, 0.9, 1.9, metal, { cast: false });   // the black posts behind the mattress
-
-  // ---- the platform: side carcass with drawer fronts, a low foot rail, the slats, three centre legs and casters
-  const cl = g.frame.clear, rim = g.rim, dl = g.drawers.l, fh = g.drawers.h, y0 = cl + (g.frame.rail - fh) / 2;
-  for (const sx of [-1, 1]) {
-    const cx0 = sx < 0 ? -fw : fw - 0.8, cx1 = cx0 + 0.8;
-    box(cx0, cx1, cl, rim, dep, g.D, carcass);
-    const fx0 = sx < 0 ? -fw - 0.0 : fw - 0.3, fx1 = fx0 + 0.3;
-    for (let k = 0; k < g.drawers.perSide; k++) {
-      const s1 = g.D - k * dl, s0 = s1 - dl + 0.3;
-      box(fx0, fx1, y0, y0 + fh, s0, s1, oakFront, { plain: f, r: 0.12 });
-      box(sx < 0 ? fx0 - 0.02 : fx1 - 0.04, sx < 0 ? fx0 + 0.04 : fx1 + 0.02, y0 + fh - 1.2, y0 + fh - 0.75, (s0 + s1) / 2 - 3.2, (s0 + s1) / 2 + 3.2, groove, { cast: false });   // the recessed pull
+    const x0 = sx < 0 ? -hw : hw - tw, x1 = x0 + tw, cx = (x0 + x1) / 2, outer = sx < 0 ? x0 : x1 - t;
+    box(x0, x1, 0, nB, 0, bd, oakV);                                                       // the closed box under the nightstand
+    box(x0 + 0.3, x1 - 0.3, nB + 0.3, nT - 0.3, 0, sd - 0.6, dark, { cast: false });       // the nightstand's carcase, seen only in the reveal gaps
+    box(x0, x1, nT - 0.9, nT, 0, sd, oakH, { plain: f, r: 0.12 });                         // its top board
+    box(x0, x1, nB, nB + 0.5, 0, sd, oakH, { plain: f, r: 0.12 });                         // its underside board
+    box(x0, x0 + 0.35, nB + 0.5, nT - 0.9, 0, sd - 0.6, oakV, { cast: false }); box(x1 - 0.35, x1, nB + 0.5, nT - 0.9, 0, sd - 0.6, oakV, { cast: false });   // and its two ends
+    box(x0 + 0.1, x1 - 0.1, nB + 0.65, nT - 1.05, sd - 0.6, sd, oakH, { plain: f, r: 0.12 });   // the one flat slab drawer front: no handle, a thin reveal all round
+    box(x0, x1, nT, nT + step, 0, td, oakH);                                               // the cubby floor, a step up from the nightstand top
+    box(x0 + t, x1 - t, nT + step, lidB, 0, 0.8, inV);                                     // the dark oak back
+    box(outer, outer + t, nT + step, lidB, 0, td, sx < 0 ? oakV : inV);                    // the outer wall, in the light, and the inner one, in shade
+    const inn = sx < 0 ? x1 - t : x0;
+    box(inn, inn + t, nT + step, lidB, 0, td, sx < 0 ? inV : oakV);
+    box(x0, x1, lidB, H, 0, td, oakH, { plain: f, r: 0.3 });                               // the lid, the top rail's own grain
+    // the recessed black plate on the lid's front, and the swing-arm spotlight folded out of its slot
+    const py = H - rail / 2, hx = cx + sx * 1.2;
+    box(cx - 2.2, cx + 2.2, py - 1, py + 1, td, td + 0.1, plateM, { cast: false });
+    box(cx - 1.7, cx + 1.7, py - 0.35, py + 0.35, td + 0.1, td + 0.14, dark, { cast: false });
+    const arm = K.add(K.geo('arm', () => new THREE.CylinderGeometry(0.36, 0.36, 3.6, 8, 1)), black, hx - sx * 1.15, py - 1.4, -hd + td + 0.6, { rz: -sx * 0.7, cast: false });
+    const lens = K.add(K.geo('lens', () => new THREE.CylinderGeometry(0.34, 0.34, 0.12, 8, 1)), led(), hx - sx * 2.3, py - 2.8, -hd + td + 0.6, { rz: -sx * 0.7, cast: false }); void arm; void lens;
+    if (sx < 0) {   // the left nightstand carries the small black charging pad and a USB block
+      box(cx - 3.2, cx + 0.4, nT, nT + 0.3, 9, 12.6, black, { cast: false });
+      box(cx + 1.4, cx + 3.6, nT, nT + 0.5, 12.2, 14.4, plateM, { cast: false });
     }
-    box(sx < 0 ? -fw : fw - 0.3, sx < 0 ? -fw + 0.3 : fw, cl + 0.6, rim - 0.6, dep, g.drawerStart - 0.1, oakFront, { plain: f, r: 0.12 });   // the fixed side panel under the nightstand
+    quad(tw - 2 * t - 0.6, lidB - nT - step - 0.8, cubbyGlow, cx, (nT + step + lidB) / 2, -hd + 0.86);   // the cubby's back wall, faintly washed
+    quad(14, 11, poolM, cx, nT + 0.06, -hd + td + 4.2, true);                              // the pool of the reading light on the nightstand top
   }
-  box(-fw, fw, cl, rim, g.D - 0.8, g.D, oak, { plain: f, r: 0.2 });                                 // the foot rail, the same height as the sides
+
+  // ---- between the towers: the top rail across the full width, the panels under it, the band below, the LED strip under the rail
+  const dep = g.head.depth, panelTop = lidB, panelBot = panelTop - g.head.panel, cb = g.centreBottom, pw = (2 * cw - 0.4 - g.head.split) / 2;
+  box(-hw, hw, lidB, H, 0, dep, oakH, { plain: f, r: 0.3 });                              // one continuous rail, 94 in
+  box(-cw, cw, cb, lidB, 0, dep - 0.8, oakH);                                              // the surround the panels are set into
+  box(-cw, cw, cb, cb + g.head.band, dep - 0.8, dep + 0.2, oakH);                          // the band under them
+  const padG = f ? K.board(pw, g.head.panel, 1.6, 0, true) : K.soft(pw, g.head.panel, 1.6, { r: 0.7, s: 1, k: [6, 6, 1], puff: { pz: 0.7, py: 0.1, ny: 0.1 }, pow: 0.7 });
+  for (const sx of [-1, 1]) K.add(padG, velvet, sx * (pw / 2 + g.head.split / 2), panelBot, -hd + dep - 0.8 + 0.8);
+  box(-cw + 0.6, cw - 0.6, lidB - 0.25, lidB, dep - 0.7, dep, led(), { cast: false });     // the thin warm strip under the rail
+  quad(2 * cw - 1.6, 6.5, washM, 0, lidB - 3.3, -hd + dep + 0.82);                            // and the light it throws down the panels
+
+  // ---- the oak box platform: two flat drawer fronts a side, a two-panel foot, black feet, the slats
+  const feet = g.frame.feet, rim = g.rim;
+  for (const sx of [-1, 1]) {
+    const x0 = sx < 0 ? -fw : fw - 0.8, x1 = x0 + 0.8;
+    box(sx < 0 ? -fw + 0.3 : fw - 0.8, sx < 0 ? -fw + 0.8 : fw - 0.3, feet, rim, dep, g.D - 0.8, dark, { cast: false });   // the shadow in the seams
+    box(x0, x1, feet, rim, dep, g.drawerStart - 0.1, oakH);                                // the fixed side, under the nightstand
+    for (let k = 0; k < g.drawers.perSide; k++) { const s1 = g.D - k * g.drawers.l; box(x0, x1, feet, rim, s1 - g.drawers.l + 0.1, s1 - 0.1, oakH); }   // the drawer fronts, flat, no handles
+  }
+  box(-fw, -0.1, feet, rim, g.D - 0.8, g.D, oakH); box(0.1, fw, feet, rim, g.D - 0.8, g.D, oakH);   // the foot: two flat panels with a seam
+  for (const sx of [-1, 1]) for (const s of [dep + 4, g.D - 4]) box(sx * (fw - 3) - 1.5, sx * (fw - 3) + 1.5, 0, feet, s - 1.5, s + 1.5, black, { cast: false });   // the black feet
   if (f) box(-fw + 0.3, fw - 0.3, g.slat - 0.5, g.slat, dep, g.D - 0.8, slatM);
   else { const n = 14, sl = (g.D - 0.8 - dep) / n; for (let i = 0; i < n; i++) box(-fw + 0.3, fw - 0.3, g.slat - 0.5, g.slat, dep + sl * i + 0.2, dep + sl * (i + 1) - 0.4, slatM); }
-  for (const s of [20, 45, 70]) box(-0.6, 0.6, 0, g.slat - 0.5, s - 0.6, s + 0.6, metal, { cast: false });   // three centre support legs
-  const casterParts = [], wheel = K.geo(`cw|${f}`, () => { const c = new THREE.CylinderGeometry(1, 1, 0.9, f ? 5 : 10, 1); c.rotateZ(Math.PI / 2); return c; }), stem = K.geo('cs', () => new THREE.CylinderGeometry(0.35, 0.35, 1, 5, 1));
-  for (const sx of [-1, 1]) for (const s of [g.drawerStart + 8, g.drawerStart + dl, g.D - 8]) {
-    casterParts.push({ g: wheel, m: mtx(sx * (fw - 2.6), g.drawers.caster / 2, -hd + s, 0, 0, 0, 1, g.drawers.caster / 2, g.drawers.caster / 2) });
-    if (!f) casterParts.push({ g: stem, m: mtx(sx * (fw - 2.6), g.drawers.caster + (cl - g.drawers.caster) / 2, -hd + s, 0, 0, 0, 1, cl - g.drawers.caster, 1) });
-  }
-  K.add(mergeParts(casterParts), metal, 0, 0, 0, { cast: false });
 
   // ---- mattress and bedding: generic whites, the renter's own are not known
-  const mw = g.mattress.w, md = g.mattress.d, mT = g.mattress.h, sheet = K.fabric(MAT.pillow), tick = K.fabric(0xece8e0), duvetM = K.fabric(0xdddad3, { side: THREE.DoubleSide }), foldM = K.fabric(0xeceae4);
+  const mw = g.mattress.w, md = g.mattress.d, mT = g.mattress.h, mTop = g.mattressTop, sheet = K.fabric(MAT.pillow), tick = K.fabric(0xece8e0), duvetM = K.fabric(0xeae7e0, { side: THREE.DoubleSide }), foldM = K.fabric(0xf0eee8);
   const headZ = -hd + dep + 1.2, footZ = -hd + g.D, mzc = -hd + 3.3 + md / 2;
   K.add(K.soft(mw, mT, md, { r: 2.2 }), tick, 0, g.slat, mzc);
   if (!f) K.add(K.soft(mw + 0.4, 0.5, md + 0.4, { r: 2.4, s: 1 }), K.fabric(0xc9c3b8), 0, mTop - 2.45, mzc, { cast: false });
@@ -694,12 +712,10 @@ function towerBed(it, K) {
   const zr = Math.max(z0 + 14, z1 - 27), ridges = f ? [] : [0, 1, 2, 3].map((i) => [(rr() - 0.5) * mw * 0.4, z0 + 6 + (i * (zr - z0 - 6)) / 3, -0.35 + rr() * 0.7, 1.8 + rr(), 0.75 + rr() * 0.3, mw * (0.2 + rr() * 0.16)]);
   const dg = K.geo('duvet', () => drapeGeo({ ax, z0, z1, top, R, dropX, dropZ: dropX, flareX: 0.5, flareZ: 0.25, fold: f ? 0.25 : 0.45, period: 11, ridges, lumps: f ? 0 : 0.35, nTopX: f ? 3 : 8, nTopZ: f ? 3 : 22, nArc: 2 + (f ? 0 : 1), nDrop: f ? 1 : 4 }));
   K.add(dg, duvetM, 0, 0, 0);
-  K.add(K.soft(2 * (ax + R) + 0.3, 2.4, 11, { r: 1.1, k: [3, 1, 1], puff: { py: 0.5, pz: 0.3 }, pow: 0.8 }), foldM, 0, top - 0.95, z0 + 4.6);
-  const pw = Math.min(26, mw / 2 - 2.5), pd = 17, pillowG = K.soft(pw, 6, pd, { r: 1.2, k: [2, 1, 2], puff: { py: 1.7, ny: 0.9 }, pow: 0.6 });
-  for (const sx of [-1, 1]) K.add(pillowG, sheet, sx * (pw / 2 + 0.6), mTop + 1.4, headZ + pd / 2 + 0.4, { rx: 0.42, ry: sx * 0.03 });
-  void lamps;
-  // the LEDs, found by the engines through the group's userData
-  const holder = K.group(); holder.userData.leds = { mats, glows, meshes };
+  K.add(f ? K.board(2 * (ax + R), 2.4, 11, 0, true) : K.soft(2 * (ax + R) + 0.3, 2.4, 11, { r: 1.1, k: [3, 1, 1], puff: { py: 0.5, pz: 0.3 }, pow: 0.8 }), foldM, 0, top - 0.95, z0 + 4.6);
+  const pw2 = Math.min(26, mw / 2 - 2.5), pd = 17, pillowG = K.soft(pw2, 6, pd, { r: 1.2, k: [2, 1, 2], puff: { py: 1.7, ny: 0.9 }, pow: 0.6 });
+  for (const sx of [-1, 1]) K.add(pillowG, sheet, sx * (pw2 / 2 + 0.6), mTop + 1.4, headZ + pd / 2 + 0.4, { rx: 0.42, ry: sx * 0.03 });
+  const holder = K.group(); holder.userData.leds = { mats, glows, meshes };   // the LEDs, found by the engines through the group's userData
 }
 
 // ------------------------------------------------------------------ nightstands, dressers, wardrobes (case goods)

@@ -35,13 +35,13 @@
    "d": 83.3,
    "h": 47.4,
    "look": {
-    "color": "#876f5c",
+    "color": "#7f6c5b",
     "material": "wood",
     "finish": "satin",
     "basis": "manufacturer",
     "parts": {
      "panels": {
-      "color": "#ece3d0",
+      "color": "#ece8e0",
       "material": "fabric",
       "finish": "sheen"
      },
@@ -51,7 +51,7 @@
       "finish": "satin"
      }
     },
-    "note": "Brown Oak: a warm mid-brown wood grain, with two cream velvet panels in the headboard and black metal for the reading lights, legs and casters, read from the maker's pictures. The shades are our reading of a product photo, not a colour sample."
+    "note": "Brown Oak: a medium warm brown oak with fine straight grain, matt to satin, darker inside the cubbies, with two warm off-white padded panels and black metal fittings. Colours sampled from the maker's photos (the wood about #937761 in light), not from a swatch."
    },
    "spec": {
     "overall": {
@@ -63,17 +63,20 @@
      "depth": 3.9,
      "tower_w": 16.7,
      "tower_depth": 6.5,
+     "base_depth": 13,
      "centre_gap": 12,
-     "band_h": 3,
-     "top_rail_h": 3,
-     "cubby_lid_h": 5.1,
-     "panel_pad": 1.2
+     "top_rail_h": 4,
+     "panel_h": 16,
+     "band_h": 4,
+     "step_h": 2.5,
+     "panel_pad": 0.8,
+     "panel_gap": 0.5
     },
     "nightstand": {
      "w": 16.7,
      "d": 17,
      "h": 8.3,
-     "bottom": 12,
+     "bottom": 13.8,
      "drawer_w": 11.3,
      "drawer_d": 13.9,
      "drawer_h": 3.4
@@ -82,7 +85,7 @@
      "w": 60.5,
      "rail_h": 13,
      "clearance": 4.5,
-     "slat_inset": 2,
+     "feet": 1.2,
      "centre_legs": 3,
      "board_t": 0.25
     },
@@ -110,22 +113,25 @@
     "headboard.tower_w": "diagram",
     "headboard.centre_gap": "diagram",
     "headboard.tower_depth": "measured",
-    "headboard.band_h": "measured",
+    "headboard.base_depth": "measured",
     "headboard.top_rail_h": "measured",
-    "headboard.cubby_lid_h": "measured",
+    "headboard.panel_h": "measured",
+    "headboard.band_h": "measured",
+    "headboard.step_h": "measured",
+    "headboard.panel_gap": "measured",
     "headboard.panel_pad": "assumed",
     "nightstand.w": "diagram",
     "nightstand.d": "diagram",
     "nightstand.h": "diagram",
+    "nightstand.bottom": "diagram",
     "nightstand.drawer_w": "diagram",
     "nightstand.drawer_d": "diagram",
     "nightstand.drawer_h": "diagram",
-    "nightstand.bottom": "measured",
     "frame.w": "diagram",
     "frame.rail_h": "spec",
     "frame.clearance": "spec",
+    "frame.feet": "measured",
     "frame.centre_legs": "spec",
-    "frame.slat_inset": "assumed",
     "frame.board_t": "assumed",
     "mattress.w": "spec",
     "mattress.d": "spec",
@@ -150,7 +156,7 @@
     "status": "candidate purchase, not owned",
     "materials": "Solid and manufactured wood (oak), velvet upholstery, plug-in power; two built-in USB-C and USB charging ports and a reading light in each tower.",
     "weight_capacity_lb": 1000,
-    "note": "Read by the renter from the product page's Specifications table and its dimension drawing; the page itself was not fetched by the studio. The drawing and the table differ by under 1 in on the frame (61.42 W x 83.46 L x 47.24 H in the table for the bed frame alone, 60.5 x 83.3 x 47.4 in on the drawing); the model uses the drawing's figures. The 13.8 in on the drawing is read as a depth along the nightstand's top, not as a height: the nightstand's underside at 12 in off the floor is measured off the drawing's proportions (about 1.5 in either way), and the 12 in mattress height is chosen inside the maker's 10 to 15 in. Prices are deliberately not recorded."
+    "note": "Read by the renter from the product page's Specifications table, its dimension drawing and its product photos; the page itself was not fetched by the studio. The table and the drawing differ by under 1 in on the frame (61.42 W x 83.46 L x 47.24 H for the frame alone, 60.5 x 83.3 x 47.4 on the drawing); the model uses the drawing's figures. The 13 in is the whole side of the oak box from the floor (its front is two 11.8 in drawer fronts on about 1.2 in black feet); the 4.5 in floor clearance is read as the clearance under the inner black metal frame, not the gap under the oak. The 13.8 in on the drawing is the height of the nightstand's underside above the floor (its top, 22 in, is level with the mattress top). The rail, panel, band and cubby sizes are measured from the front photo against the 94 in width (about 1 in either way); the 12 in mattress is chosen inside the maker's 10 to 15 in. Prices are deliberately not recorded."
    },
    "note": "A bed you may buy, modelled to the maker's dimensions. It comes with its own nightstands, so the separate ones are hidden while it is shown.",
    "source": "manufacturer"

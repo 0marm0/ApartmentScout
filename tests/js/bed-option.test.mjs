@@ -52,11 +52,12 @@ test('the storage bed is modelled to the maker\'s dimensions, which live in one 
   const dx = (p) => p.x1 - p.x0, dy = (p) => p.y1 - p.y0, dz = (p) => p.z1 - p.z0;
   assert.ok(near(dx(parts['tower-left']), 16.7, 0.01) && near(dx(parts['tower-right']), 16.7, 0.01));
   assert.ok(near(dx(parts['nightstand-left']), 16.7, 0.01) && near(dy(parts['nightstand-left']) + g.head.towerDepth, 17, 0.01), 'the nightstand is 17 in out from the wall');
-  assert.ok(near(dz(parts['nightstand-left']), 8.3, 0.01) && near(parts['nightstand-left'].z0, 12, 0.01));
+  assert.ok(near(dz(parts['nightstand-left']), 8.3, 0.01) && near(parts['nightstand-left'].z0, 13.8, 0.01), 'the nightstand floats 13.8 in up, its top level with the mattress top');
+  assert.ok(near(parts['nightstand-left'].z1, g.mattressTop, 2), 'about level with the top of the mattress, as in the maker\'s photos');
   assert.ok(near(dx(parts.frame), 60.5, 0.01) && near(dy(parts.frame) + parts.headboard.y1 - parts.headboard.y0, 83.3, 0.01), 'the platform and the panel are the 83.3 in');
-  assert.ok(near(parts.frame.z1 - parts.frame.z0, g.mattressTop - 4.5, 0.01) && near(parts.frame.z0, 4.5, 0.01), 'floor clearance 4.5 in');
+  assert.ok(near(parts.frame.z0, 1.2, 0.01) && near(g.rim, 13, 0.01), 'the oak box is 13 in from the floor, on black feet');
   assert.ok(near(parts.headboard.y1 - parts.headboard.y0, 3.9, 0.01) && near(parts.headboard.z1, 47.4, 0.01));
-  assert.ok(near(g.mattressTop - g.slat, 12, 0.01) && near(g.rim - 4.5, 13, 0.01), 'a 12 in mattress on slats inside a 13 in rail');
+  assert.ok(near(g.mattressTop - g.slat, 12, 0.01) && near(g.centreBottom - g.slat, 12, 0.01), 'a 12 in mattress on slats 12 in under the headboard\'s band: it fills the gap exactly');
   const xs = Object.values(parts).flatMap((p) => [p.x0, p.x1]), ys = Object.values(parts).flatMap((p) => [p.y0, p.y1]);
   assert.ok(near(Math.max(...xs) - Math.min(...xs), 94, 0.01) && near(Math.max(...ys) - Math.min(...ys), 83.3, 0.01), 'the parts fill exactly 94 x 83.3');
   assert.ok(Math.max(...Object.values(parts).map((p) => p.z1)) <= 47.4 + 1e-9);
@@ -66,9 +67,9 @@ test('the storage bed is modelled to the maker\'s dimensions, which live in one 
   assert.ok(near(dx(w2['tower-left']), 18, 0.01) && near(w2['nightstand-left'].y1 - w2['nightstand-left'].y0 + g.head.towerDepth, 20, 0.01));
   // the 2D plan and the checks use the same parts: the footprint of the checks' parts is the maker's outline, not a 94 x 83 block
   const pp = partPolys(it);
-  assert.equal(pp.length, 6);
+  assert.equal(pp.length, 8);
   const area = pp.reduce((a, p) => a + Math.abs(p.poly.reduce((s2, q, i) => s2 + q[0] * p.poly[(i + 1) % 4][1] - p.poly[(i + 1) % 4][0] * q[1], 0)) / 2, 0);
-  assert.ok(area < 94 * 83.3 * 0.75, 'the corners beside the foot of the bed are free');
+  assert.ok(area < 94 * 83.3 * 0.85, 'the corners beside the foot of the bed are free');
 });
 
 test('the catalogue and the renter\'s data agree: the storage bed is a bed with towers, its zones measure the platform and the drawer runs', () => {
@@ -151,11 +152,11 @@ test('a plan whose layout has no storage bed has nothing to switch to, and the b
 // ------------------------------------------------------------------ the checks see the bed's real shape
 test('the checks measure each solid part at its own height: a floating nightstand clears a low box, a tall one is a collision', () => {
   const m = model(), items = shown(raw(), 'storage'), bed = storage(items);
-  const nsRight = partPolys(bed).find((p) => p.id === 'nightstand-right'), c = nsRight.poly.reduce((a, q) => [a[0] + q[0] / 4, a[1] + q[1] / 4], [0, 0]);
-  const box = (h) => resolve({ id: 'box', ref: 'custom-box', x: c[0], y: c[1], rot: 0, w: 8, d: 8, h, placed: true });
-  const under = evaluate(m, [...items.filter((x) => x.id !== 'tv-bed'), box(8)]), through = evaluate(m, [...items.filter((x) => x.id !== 'tv-bed'), box(14)]);
-  assert.ok(!under.items['bed-latitude'].issues.some((i) => /box|piece/i.test(i.text)), 'an 8 in box fits under the nightstand (it floats from 12 in up)');
-  assert.ok(through.items['bed-latitude'].issues.some((i) => i.code === 'overlap'), 'a 14 in one runs into it');
+  const nsRight = partPolys(bed).find((p) => p.id === 'nightstand-right'), c0 = nsRight.poly.reduce((a, q) => [a[0] + q[0] / 4, a[1] + q[1] / 4], [0, 0]), c = [c0[0] - 3.75, c0[1]];   // under the front of the nightstand, in front of the closed box that stands to the floor
+  const box = (h) => resolve({ id: 'box', ref: 'custom-box', x: c[0], y: c[1], rot: 0, w: 4, d: 4, h, placed: true });
+  const under = evaluate(m, [...items.filter((x) => x.id !== 'tv-bed'), box(8)]), through = evaluate(m, [...items.filter((x) => x.id !== 'tv-bed'), box(18)]);
+  assert.ok(!under.items['bed-latitude'].issues.some((i) => /box|piece/i.test(i.text)), 'an 8 in box fits under the nightstand (it floats from 13.8 in up)');
+  assert.ok(through.items['bed-latitude'].issues.some((i) => i.code === 'overlap'), 'an 18 in one runs into it');
   // the corners beside the foot are free: a stool there is not "overlapping the bed"
   const foot = resolve({ id: 'stool', ref: 'custom-box', x: bed.x - 35, y: bed.y + (bed.rot === 90 ? 40 : 0), rot: 0, w: 10, d: 10, h: 18, placed: true });
   assert.equal(footprint(bed).length, 4, 'the outline for selection and dragging is still the 94 x 83.3 block');
