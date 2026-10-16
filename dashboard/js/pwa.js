@@ -25,9 +25,14 @@ function offerUpdate(worker) {
 }
 
 /** A newer version that was already downloaded when the app opened: switch to it now (one reload), instead of running an old
- *  copy until someone notices the prompt. Once per tab session, so a worker that fails to take over cannot loop; then the prompt. */
+ *  copy until someone notices the prompt. A switch tried in the last minute is not tried again, so a worker that fails to take
+ *  over cannot loop (the prompt shows instead). */
 function applyAtOpen(worker) {
-  try { if (sessionStorage.getItem('as:sw-applied') === '1') return false; sessionStorage.setItem('as:sw-applied', '1'); } catch { return false; }
+  try {
+    const last = Number(sessionStorage.getItem('as:sw-applied')) || 0;
+    if (Date.now() - last < 60000) return false;
+    sessionStorage.setItem('as:sw-applied', String(Date.now()));
+  } catch { return false; }
   reloadOnTakeover = true;
   worker.postMessage({ type: 'SKIP_WAITING' });
   return true;
