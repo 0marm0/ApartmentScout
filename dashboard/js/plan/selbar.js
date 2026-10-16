@@ -8,6 +8,7 @@ const ICON = {
   rot: '<path d="M13 8a5 5 0 1 1-1.9-3.9"/><path d="M13 2.6v3.1h-3.1"/>',
   free: '<circle cx="8" cy="8" r="5.6"/><path d="M8 8l3-3.2"/><path d="M8 2.4v1.4M13.6 8h-1.4M8 13.6v-1.4M2.4 8h1.4" class="tk"/>',
   move: '<path d="M8 2v12M2 8h12M8 2L6.2 3.8M8 2l1.8 1.8M8 14l-1.8-1.8M8 14l1.8-1.8M2 8l1.8-1.8M2 8l1.8 1.8M14 8l-1.8-1.8M14 8l-1.8 1.8"/>',
+  dup: '<rect x="5.2" y="5.2" width="8" height="8" rx="1.4"/><path d="M10.8 5.2V3.6a.8.8 0 0 0-.8-.8H3.6a.8.8 0 0 0-.8.8V10a.8.8 0 0 0 .8.8h1.6"/>',
   del: '<path d="M3 4.6h10M6.4 4.6V3h3.2v1.6M4.4 4.6l.6 8.2h6l.6-8.2"/>',
   done: '<path d="M4 4l8 8M12 4l-8 8"/>',
 };
@@ -21,6 +22,7 @@ export function selbarHTML() {
       ${btn('rot', 'Rotate 90°', 'Rotate 90° (R; Shift+R turns the other way)')}
       ${btn('free', 'Rotate', 'Rotate to any angle', 'aria-expanded="false" aria-haspopup="true"')}
       ${btn('move', 'Move', 'Move: drag the piece, press the arrow keys, or use the arrows here', 'aria-expanded="false" aria-haspopup="true"')}
+      ${btn('dup', 'Duplicate', 'Duplicate: a copy beside it that you can drag into another room (D)')}
       ${btn('del', 'Remove', 'Remove from the layout (Delete; Undo brings it back)')}
       <i class="sb-sep" aria-hidden="true"></i>
       ${btn('done', 'Done', 'Deselect (Esc)')}
@@ -41,7 +43,7 @@ export function selbarHTML() {
 }
 
 /**
- * Put a toolbar into `host` (a positioned pane). `on` = {rot(), free(deg, live), move(dx, dy), del(), done()}.
+ * Put a toolbar into `host` (a positioned pane). `on` = {rot(), free(deg, live), move(dx, dy), dup(), del(), done()}.
  * @returns {{el: HTMLElement, show(rect, info): void, hide(): void, closePops(): void, visible: boolean}}
  */
 export function mountSelbar(host, on) {
@@ -58,7 +60,7 @@ export function mountSelbar(host, on) {
     const b = e.target.closest('button'); if (!b) return;
     if (b.dataset.act) {
       const a = b.dataset.act;
-      if (a === 'rot') on.rot(); else if (a === 'free') toggle('free'); else if (a === 'move') toggle('move'); else if (a === 'del') on.del(); else if (a === 'done') on.done();
+      if (a === 'rot') on.rot(); else if (a === 'free') toggle('free'); else if (a === 'move') toggle('move'); else if (a === 'dup') on.dup?.(); else if (a === 'del') on.del(); else if (a === 'done') on.done();
     } else if (b.dataset.nx != null) on.move(+b.dataset.nx * step, +b.dataset.ny * step);
     else if (b.dataset.step) { step = +b.dataset.step; el.querySelectorAll('[data-step]').forEach((x) => x.classList.toggle('on', x === b)); }
     else if (b.dataset.snap != null) { const v = +b.dataset.snap; $('[data-sb=angle]').value = v; $('[data-sb=deg]').textContent = `${v}°`; on.free(v, true); on.free(v, false); }

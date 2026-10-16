@@ -483,7 +483,7 @@ const gradeRank = (g) => ['clear', 'tight', 'blocked'].indexOf(g);
 // camera moves or the plan is panned or zoomed.
 let bars = null, barLoop = 0;
 function mountBars() {
-  const on = { rot: () => rotateSel(90), free: rotateTo, move: (dx, dy) => nudge(dx, dy), del: () => removeSel(), done: () => select(null) };
+  const on = { rot: () => rotateSel(90), free: rotateTo, move: (dx, dy) => nudge(dx, dy), dup: () => duplicateSel(), del: () => removeSel(), done: () => select(null) };
   bars = { p2: mountSelbar($('p2dWrap'), on), p3: mountSelbar($('pstage'), on) };
 }
 function syncBars() {
