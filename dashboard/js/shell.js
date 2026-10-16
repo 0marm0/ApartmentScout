@@ -118,7 +118,7 @@ export function initShell() {
   // stats strip: the rest of the figures behind one button. The strip re-renders on every filter change, so the
   // popover is driven from the persistent container (one set of listeners) and re-reads its nodes each time.
   const strip = $('kpis');
-  let timer = 0;
+  let timer = 0, escaped = false;   // escaped: Escape closed the popover under a resting mouse; hovering must not reopen it until the pointer leaves
   const pop = () => strip.querySelector('.kpi-pop'), more = () => strip.querySelector('.kpi-more');
   const setKpi = (open) => {
     clearTimeout(timer);
@@ -127,11 +127,11 @@ export function initShell() {
   };
   strip.addEventListener('click', (e) => {
     if (e.target.closest('[data-open]')) { setKpi(false); return; }
-    if (e.target.closest('.kpi-more')) { e.stopPropagation(); setKpi(pop()?.hidden !== false); }
+    if (e.target.closest('.kpi-more')) { e.stopPropagation(); escaped = false; setKpi(pop()?.hidden !== false); }
   });
-  strip.addEventListener('pointerover', (e) => { if (e.pointerType === 'mouse' && e.target.closest('.kpi-wrap')) { clearTimeout(timer); timer = setTimeout(() => setKpi(true), 140); } });
-  strip.addEventListener('pointerout', (e) => { if (e.pointerType === 'mouse' && e.target.closest('.kpi-wrap') && !e.relatedTarget?.closest?.('.kpi-wrap')) { clearTimeout(timer); timer = setTimeout(() => setKpi(false), 260); } });
-  strip.addEventListener('keydown', (e) => { if (e.key === 'Escape' && pop() && !pop().hidden) { e.stopPropagation(); setKpi(false); more()?.focus(); } });
+  strip.addEventListener('pointerover', (e) => { if (e.pointerType === 'mouse' && !escaped && e.target.closest('.kpi-wrap')) { clearTimeout(timer); timer = setTimeout(() => setKpi(true), 140); } });
+  strip.addEventListener('pointerout', (e) => { if (e.pointerType === 'mouse' && e.target.closest('.kpi-wrap') && !e.relatedTarget?.closest?.('.kpi-wrap')) { escaped = false; clearTimeout(timer); timer = setTimeout(() => setKpi(false), 260); } });
+  strip.addEventListener('keydown', (e) => { if (e.key === 'Escape' && pop() && !pop().hidden) { e.stopPropagation(); escaped = true; setKpi(false); more()?.focus(); } });
   document.addEventListener('click', (e) => { if (pop() && !pop().hidden && !e.target.closest('.kpi-wrap')) setKpi(false); });
   on('saved', () => syncSubnav());
 }
