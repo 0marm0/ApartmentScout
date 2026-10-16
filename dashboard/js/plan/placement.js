@@ -66,7 +66,8 @@ export function applyInventory(items, inventory) {
     if (!own) { for (const k of SIZE_KEYS) if (o[k] == null && p[k] != null) o[k] = p[k]; if (!o.variant && p.variant) o.variant = p.variant; if (!o.product && p.product) o.product = p.product; }
     if (!o.label && p.label) o.label = p.label;
     if (p.set && !o.set) o.set = p.set;
-    if (p.spec && !o.spec) o.spec = p.spec;   // [bed option] the maker's dimensions by part (plan/bedspec.js), joined by id like the size
+    if (p.spec && !o.spec) o.spec = p.spec;
+    if (p.art && !o.art) o.art = p.art;   // a painting: which picture it shows (room3d/paintings.js)   // [bed option] the maker's dimensions by part (plan/bedspec.js), joined by id like the size
     if (p.states && !o.states) o.states = p.states;   // the piece's own sizes per state (a sofa bed: upright, lounger, bed)
     if (p.assumed && !o.assumed) o.assumed = p.assumed;
     return o;
@@ -155,7 +156,14 @@ export function resolveLayout({ model, inventory = null, saved = null }) {
     out.push(it);
   }
   if (!legacy && lay.items.length) {
-    for (const d of defItems) if (!seen.has(d.id) && !removed.has(d.id)) { out.push(fromDefault(d, by)); seen.add(d.id); filled.push(d.id); changed = true; }
+    // A piece an option group governs (the storage bed) is filled hidden when the saved layout already shows another piece of that group (the renter's own bed):
+    // the default's choice must not put a second bed beside the one the renter chose before this piece existed.
+    const heldBack = new Set();
+    for (const g of groupsOf(inventory)) {
+      const ids = [...new Set(g.choices.flatMap((c) => c.pieces))];
+      if (g.choices.every((c) => c.pieces.length) && ids.some((id) => lay.items.some((x) => x.id === id && !x.hidden))) ids.forEach((id) => heldBack.add(id));
+    }
+    for (const d of defItems) if (!seen.has(d.id) && !removed.has(d.id)) { out.push(heldBack.has(d.id) ? { ...fromDefault(d, by), hidden: true } : fromDefault(d, by)); seen.add(d.id); filled.push(d.id); changed = true; }
     if (inventory?.pieces?.length) {   // a piece of "Your furniture" that no layout holds: fitted into the free space around the others, which stay where they are
       const kit = new Map(kitFromInventory(inventory).map((q) => [q.id, q]));
       for (const piece of inventory.pieces) {

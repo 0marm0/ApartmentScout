@@ -15,7 +15,8 @@ Each shot has one size, so the images sit together: desktop 1600 x 1000, phone 3
 alone at 1560 x 954, the wide 3D pane of this window (the Unit 3D tab's stage fills the width). Dark theme except the
 `*-light*` shots. The first-run tour is switched off for every shot (the page also never starts it under automation), the pointer is
 parked in a corner so no hover card or route preview is left in the picture (except in the shots that are about a hover), and a toast
-left on screen is cleared before the picture is taken. A shot that fails is reported and the rest
+left on screen is cleared before the picture is taken. The furniture control's sim rig, office chair and hidden-pieces rows are
+left out (the sim rig is hidden in the default layout and never appears). A shot that fails is reported and the rest
 still run; the exit status is 1 if any failed.
 
 Needs: pip install playwright && playwright install chromium
@@ -48,6 +49,7 @@ OUT = ROOT / "docs" / "images"
 #   ("wait_for", css[, pause])         wait until the selector is in the page
 #   ("wait", ms)                       ("eval", js)                   ("tall", css): grow the viewport to that element's height
 #   ("download_open", css[, pause])    click a button that downloads a file, then open that file in the page
+#   ("upload", css, path[, pause])     give a file input a file from the repository (path relative to its root)
 # pre-navigation actions (run before the page loads):
 #   ("seed", {key: value})             write localStorage 'as:<key>' (JSON) unless it is already set, as the app does
 #   ("block_media",)                   hold back every listing photo so only the blurred previews show
@@ -105,8 +107,9 @@ def cam(px, py, pn, tx, ty, tn, ray=True):
 PARAMOUNT = "date=2026-10-15&min=780#unit/paramount-tower-25e"
 SHOTS = [
     # ---- the hero, and Find
-    ("hero-map", "?layer=commute&open=paramount-tower-25e#map", DESK, [], 9000, None),
+    ("hero-map", "?layer=commute&open=paramount-tower-25e#map", (2240, 1180), [], 9000, None),   # wider than DESK: the map shows around the drawer
     ("find-commute-map", "?layer=commute#map", DESK, [], 9000, None),
+    ("find-walk-map", "?layer=commute&mode=walk#map", DESK, [], 9000, None),
     ("find-route-preview", "?mode=subway#map", DESK,
      [("eval", "__asMap.jumpTo({center: [-73.9855, 40.7553], zoom: 14.3})"), ("hover", "#cards .card >> nth=1", 2500)], 9000, None),
     ("find-place-search", "#map", DESK,
@@ -126,7 +129,9 @@ SHOTS = [
      [("click", "#dTabs a[data-to=dMoved]", 1800), ("eval", "document.querySelector('#drawer .d-scroll').scrollTop -= 70")], 9000, None),
     ("find-unknowns", "?open=the-knox-6b#map", DESK,
      [("click", "#dTabs a[data-to=dUnknowns]", 1500), ("fill", "#dUnknowns [data-uk=size] input", "800", 1500)], 9000, None),
+    ("find-drawer-commute", "?open=paramount-tower-25e#map", DESK, [("click", "#dTabs a[data-to=dCommute]", 1800), ("eval", "document.querySelector('#drawer .d-scroll').scrollTop -= 50")], 9000, None),
     # ---- on a phone
+    ("phone-drawer", "?layer=commute&open=paramount-tower-25e#map", PHONE, [], 9000, None),
     ("phone-map", "?layer=commute#map", PHONE, [], 9000, None),
     ("phone-unit-3d", f"?{PARAMOUNT}", PHONE, [("eval", "document.getElementById('stage').scrollIntoView({block: 'start'})")], 10000, None),
     ("phone-visit-notes", "?visit=paramount-tower-25e#map", PHONE, [("seed", SEEDS)], 9000, None),
@@ -168,6 +173,24 @@ SHOTS = [
      [("eval", "document.getElementById('heatPanel').scrollIntoView()")], 12000, "#heatPanel"),
     ("inside-light-theme", "?theme=light&date=2026-06-21&min=1080&mode=orbit#unit/the-maybury-2204", STAGE, [], 11000, "#stage"),
     ("inside-floor-plan", "?date=2026-10-15&pmin=780#unit/paramount-tower-25e", DESK, [("click", "#subnav [data-sub=plan]", 7000)], 9000, None),
+    # ---- Sun and light (Unit 3D's sun tools on the featured unit)
+    ("sun-path-chart", "?date=2026-12-21&min=600#unit/paramount-tower-25e", (1600, 1300, 2),
+     [("eval", "document.getElementById('pathCv').closest('section').scrollIntoView()")], 12000, "section.panel:has(> #pathCv)"),
+    ("sun-low-floor", "?date=2026-03-20&min=510&mode=win&floor=8#unit/paramount-tower-25e", STAGE, [], 11000, "#stage"),
+    ("sun-high-floor", "?date=2026-03-20&min=510&mode=win&floor=25#unit/paramount-tower-25e", STAGE, [], 11000, "#stage"),
+    ("sun-winter-shadows", "?date=2026-12-21&min=720&mode=orbit#unit/paramount-tower-25e", STAGE, [], 11000, "#stage"),
+    ("sun-summer-shadows", "?date=2026-06-21&min=720&mode=orbit#unit/paramount-tower-25e", STAGE, [], 11000, "#stage"),
+    ("sun-plan-view", "?date=2026-12-21&min=600&mode=plan#unit/paramount-tower-25e", STAGE, [], 11000, "#stage"),
+    # ---- the city in 3D
+    ("city-building-models", "?date=2026-10-15&min=780&mode=orbit#unit/paramount-tower-25e", STAGE, [("click", "#uTools [data-tg=heights]", 3000)], 11000, "#stage"),
+    ("city-map-3d", "?layer=commute#map", DESK,
+     [("eval", "__asMap.jumpTo({center: [-73.9790, 40.7490], zoom: 15.3})"), ("click", "#mapCtl [data-ctl='3d']", 2500),
+      ("eval", "__asMap.jumpTo({pitch: 62, bearing: -30})"), ("wait", 4000)], 9000, None),
+    # ---- the Floor plan studio
+    ("studio-top", "#plan/paramount-tower-25e", DESK, [("click", "#psCams [data-v=top]", 3000), ("click", "#psDims [data-dm=all]", 1500)], 11000, None),
+    ("studio-light", "?date=2026-12-21&pmin=600#plan/paramount-tower-25e", DESK, [("click", "#psMode [data-m='3d']", 2500), ("click", "#psTabs [data-t=light]", 3000)], 11000, None),
+    ("studio-tracer", "#plan/paramount-tower-25e", DESK,
+     [("click", "#trNewBtn", 1500), ("upload", "#trFile", "examples/nyc-2026/media-lite/emerald-green-620/emerald-green-line-20-plan.webp", 3500)], 11000, None),
     # ---- Decide
     ("decide-visit-history", "?open=paramount-tower-25e#map", DESK,
      [("seed", SEEDS), ("click", "#dTabs a[data-to=dVisit]", 1800), ("eval", "document.querySelector('#drawer .d-scroll').scrollTop -= 50")], 9000, None),
@@ -178,6 +201,8 @@ SHOTS = [
     ("decide-tour-planner", "#list/tours", DESK, [("seed", STARS)], 6000, None),
     ("decide-records", "#research/records/emerald-green-1211", DESK, [], 4000, None),
     ("decide-research-queue", "#research/queue", DESK, [], 4000, None),
+    ("decide-tours-board", "#list/tours", DESK, [("seed", STARS), ("eval", "(() => { const b = document.querySelector('#view-tours .tb'); b.scrollIntoView({block: 'start'}); let e = b.parentElement; while (e && e.scrollHeight <= e.clientHeight) e = e.parentElement; (e || document.scrollingElement).scrollBy(0, -64); })()")], 6000, None),
+    ("decide-gone-fast", "#research/gone", DESK, [], 4000, None),
     # ---- Set up
     ("setup-wizard-city", "?new=1", DESK,
      [("type", "#f-name", "Chicago 1BR, spring 2027", 600), ("click", ".wz-city:has-text('Another city')", 600), ("type", "#f-city_name", "Chicago, IL", 900)], 7000, None),
@@ -313,6 +338,9 @@ def run_action(page, kind, args, out, name, w):
         tall = page.evaluate(f"document.querySelector({args[0]!r}).scrollHeight")
         page.set_viewport_size({"width": w, "height": min(int(tall) + 160, 6000)})
         page.wait_for_timeout(1500)
+    elif kind == "upload":
+        page.set_input_files(args[0], str(ROOT / args[1]))
+        page.wait_for_timeout(_pause(args[2:], 2500))
     elif kind == "download_open":
         with page.expect_download(timeout=60000) as dl:
             page.click(args[0])
@@ -324,12 +352,17 @@ def run_action(page, kind, args, out, name, w):
         raise SystemExit(f"unknown action {kind!r} in {name}")
 
 
+# the furniture control's sim rig, office chair and hidden-pieces rows are left out of the pictures (the bed row stays)
+HIDE = "[data-rig-ctl], [data-chair-ctl], [data-off-ctl] { display: none !important; }"
+
+
 def take(page, path: Path, sel, hovering: bool = False) -> None:
     """The picture: the whole window, an element, a fixed clip, or the top left of an element."""
     if not hovering:
         page.mouse.move(2, 2)   # a pointer left over a card or a pin would draw its route preview or a hover card into the picture
         page.wait_for_timeout(700)
     page.evaluate("(() => { const t = document.getElementById('toast'); if (t) { t.style.transition = 'none'; t.classList.remove('on'); t.style.visibility = 'hidden'; } })()")   # a toast left over from an action is not part of the picture
+    page.add_style_tag(content=HIDE)
     page.wait_for_timeout(150)
     if isinstance(sel, tuple) and sel and sel[0] == "crop":
         box = page.locator(sel[1]).bounding_box()

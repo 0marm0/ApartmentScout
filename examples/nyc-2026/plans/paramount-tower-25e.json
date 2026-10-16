@@ -177,7 +177,10 @@
     {"id": "coffee", "ref": "coffee-table", "x": 106, "y": 230, "rot": 90, "placed": true, "w": 44, "d": 24, "h": 17, "label": "Coffee table"},
     {"id": "tv", "ref": "tv-55", "x": 21.75, "y": 230, "rot": 270, "placed": true, "w": 48.4, "d": 3.5, "h": 27.8, "elev": 32, "label": "55-inch TV, living room"},
     {"id": "dining", "ref": "dining-4", "x": 84, "y": 180, "rot": 90, "placed": true, "w": 48, "d": 30, "h": 30, "label": "Dining table, 4 seats"},
-    {"id": "sim-rig", "ref": "sim-rig", "x": 62.4, "y": 327, "rot": 90, "placed": true, "hidden": true, "w": 33.5, "d": 76.8, "h": 51.2, "label": "Sim rig, Next Level Racing F-GT Lite (GT) with Fanatec wheel"}
+    {"id": "sim-rig", "ref": "sim-rig", "x": 62.4, "y": 327, "rot": 90, "placed": true, "hidden": true, "w": 33.5, "d": 76.8, "h": 51.2, "label": "Sim rig, Next Level Racing F-GT Lite (GT) with Fanatec wheel"},
+    {"id": "central-park-triptych", "ref": "canvas-painting", "x": 168.25, "y": 230, "rot": 90, "placed": true, "w": 76, "d": 1.5, "h": 36, "elev": 44, "label": "Central Park triptych"},
+    {"id": "seascape", "ref": "canvas-painting", "x": 307.75, "y": 218, "rot": 90, "placed": true, "w": 30, "d": 1.5, "h": 25, "elev": 56, "label": "Seascape with a sailboat"},
+    {"id": "monet-red-boats", "ref": "canvas-painting", "x": 20.75, "y": 160, "rot": 270, "placed": true, "w": 36, "d": 1.5, "h": 26, "elev": 44, "label": "Monet, Red Boats, Argenteuil"}
    ]
   },
   {
