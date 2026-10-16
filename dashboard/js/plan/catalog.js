@@ -121,7 +121,7 @@ export const CATALOG = {
   futon: {
     name: 'Sleeper sofa', cat: 'living', kind: 'sofa', w: 78.75, d: 38.25, h: 34, color: MAT.green,
     src: 'Sofa bed 200 x 97 cm, opens to 200 x 140 cm (78.75 x 38.25 in, open 55.1 in deep), IKEA NYHAMN-size.',
-    variants: { sofa: { label: 'As a sofa' }, bed: { label: 'Opened as a bed', d: 55.125, h: 18 } },
+    variants: { sofa: { label: 'As a sofa' }, lounger: { label: 'As a lounger', d: 47, h: 26 }, bed: { label: 'Opened as a bed', d: 55.125, h: 18 } },
     zones: [Z('front', 'sofa_legroom', { mode: 'lane', name: 'Legroom' })], ignore: ['table-low'], seats: [['Sofa', 0, -4]],
   },
   loveseat: {
@@ -243,7 +243,7 @@ export function resolve(item, catalog = CATALOG) {
   if (!c) return null;
   const p = catalog === CATALOG ? productOf(item) : null;
   const variant = item.variant || (p?.variant && c.variants?.[p.variant] ? p.variant : null);
-  const v = (variant && c.variants?.[variant]) || {};
+  const v = { ...((variant && c.variants?.[variant]) || {}), ...(variant && item.states?.[variant]) };   // a piece's own sizes per state (furniture.json `states`) beat the catalogue's generic variant
   // a variant the renter picked that differs from the product's own (a sleeper opened as a bed) beats the product's size
   const pd = p ? (item.variant && item.variant !== p.variant ? {} : p.dims || {}) : {};
   const w = item.w ?? pd.w ?? v.w ?? c.w, d = item.d ?? pd.d ?? v.d ?? c.d, h = item.h ?? pd.h ?? v.h ?? c.h;

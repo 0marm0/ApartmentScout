@@ -116,7 +116,7 @@ test('inventory sizes reach every layout: a size changed in furniture.json shows
   assert.deepEqual([out[0].w, out[0].d, out[0].h], [71, 30, 30]);
   assert.deepEqual(out[0].set, { monitor: 32, chair: 'task' });
   assert.equal(out[0].look.color, 'brown');
-  assert.equal(resolve(out[1]).d, 55.125, 'the futon opened as a bed keeps the variant\'s depth, not the sofa\'s');
+  assert.equal(resolve(out[1]).d, 41.7, 'the futon opened as a bed keeps the state\'s depth (the renter\'s sofa bed, 41.7), not the sofa\'s');
   assert.equal(applyInventory([{ id: 'desk', ref: 'desk', x: 0, y: 0, rot: 0, w: 48 }], i)[0].w, 48, 'a size on the item is the renter\'s override');
 });
 
