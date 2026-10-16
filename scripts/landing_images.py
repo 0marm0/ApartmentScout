@@ -10,7 +10,7 @@ change. Only the files the page names are written, so the published site carries
 
     <name>.webp        the screenshot at its own size (never upscaled), quality 80
     <name>-800.webp    800 px wide; a tall screenshot (a long panel) is cropped to 16:10 from the top, which is all the page shows of it
-    og.jpg             1200 x 630 social card cut from hero-map.png (WebP is not reliably accepted by link previews)
+    og.jpg             1200 x 630 social card cut from social-preview.png (hero-map.png if that is missing) (WebP is not reliably accepted by link previews)
 
 Needs Pillow (`pip install Pillow`, part of the dev extras).
 """
@@ -67,8 +67,13 @@ def main() -> int:
             p = a.out / f"{name}-{SMALL}.webp"
             s.save(p, "WEBP", quality=76, method=6)
             total += p.stat().st_size
-    card = Image.open(SRC / "hero-map.png").convert("RGB")
-    card = card.crop((0, 0, card.width, int(card.width * 630 / 1200))).resize((1200, 630), Image.LANCZOS)
+    social = SRC / "social-preview.png"   # the branded 1280 x 640 card (scripts/social_preview.py), else the hero map
+    if social.is_file():
+        card = Image.open(social).convert("RGB")
+        card = card.crop((0, 0, round(card.height * 1200 / 630), card.height)).resize((1200, 630), Image.LANCZOS)
+    else:
+        card = Image.open(SRC / "hero-map.png").convert("RGB")
+        card = card.crop((0, 0, card.width, int(card.width * 630 / 1200))).resize((1200, 630), Image.LANCZOS)
     card.save(a.out / "og.jpg", "JPEG", quality=84, optimize=True, progressive=True)
     total += (a.out / "og.jpg").stat().st_size
     print(f"landing images: {len(full)} full, {len(small)} small, og.jpg -> {a.out} ({total / 1024:.0f} KB)")

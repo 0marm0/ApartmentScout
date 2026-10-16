@@ -689,6 +689,7 @@ export class UnitStage {
   }
   activeCam() { return this.mode === 'win' || this.mode === 'in' ? this.winCam : this.mode === 'plan' ? this.planCam : this.orbitCam; }
   resize() {
+    if (this.busy) { this.resizeLater = true; return; }   // (a photo or video render owns the renderer: it resizes when it is done)
     const w = this.el.clientWidth, h = this.el.clientHeight; if (!w || !h) return;
     this.renderer.setSize(w, h, false);
     for (const c of [this.orbitCam, this.winCam]) if (c) { c.aspect = w / h; c.updateProjectionMatrix(); }
@@ -700,20 +701,11 @@ export class UnitStage {
     const v = Math.abs(f.y) > 0.97 ? new THREE.Vector3(0, 1, 0).applyQuaternion(cam.quaternion) : f;
     return ((Math.atan2(v.x, -v.z) / DEG) + 360) % 360;
   }
-  /** Render if anything changed. Returns true when a frame was drawn. */
-  frame(force = false) {
-    if (!this.scene) return false;
-    if (this.tween) {
-      const tw = this.tween, k = Math.min(1, (performance.now() - tw.start) / tw.dur), e = 1 - Math.pow(1 - k, 3);
-      tw.cam.position.lerpVectors(tw.p0, tw.p1, e); tw.ctl.target.lerpVectors(tw.t0, tw.t1, e); tw.ctl.update();
-      if (k >= 1) this.tween = null; this.dirty = true;
-    }
-    if (this.inTween) this.stepInTween();   // [interior] the Inside camera gliding to another room
-    if (this.walker && this.mode === 'in' && this.walker.update()) this.dirty = true;   // [walk] a glide to a clicked spot, or held keys
-    if (this.mode === 'orbit' || this.mode === 'top') { if (this.controls.update()) this.dirty = true; }
-    if (this.mode === 'plan') { if (this.planControls.update()) this.dirty = true; }
-    if (!this.dirty && !force) return false;
-    this.dirty = false;
+  /**
+   * Put the active camera where the current state says (the Inside camera's eye and look, the Window camera at its window), set the haze and keep the sky on the
+   * camera: everything a frame does before it draws. The photo and video renderers call it, then draw into their own targets.
+   */
+  poseCamera() {
     const cam = this.activeCam();
     // [inside] the Inside camera never stands anywhere but in the room: with no standing point yet it takes the first window's, and with no room built
     // (or no plan) it looks out of the window like the Window camera, instead of being left wherever the camera was last (the ground, with no view out)
@@ -731,6 +723,23 @@ export class UnitStage {
     const fog = this.scene.fog;
     if (this.mode === 'plan' || this.mode === 'top') { fog.near = 1e5; fog.far = 2e5; } else { fog.near = 1100; fog.far = 4200; }
     this.sky.position.copy(cam.position);
+    return cam;
+  }
+  /** Render if anything changed. Returns true when a frame was drawn. */
+  frame(force = false) {
+    if (!this.scene || this.busy) return false;   // (a photo or video render owns the renderer)
+    if (this.tween) {
+      const tw = this.tween, k = Math.min(1, (performance.now() - tw.start) / tw.dur), e = 1 - Math.pow(1 - k, 3);
+      tw.cam.position.lerpVectors(tw.p0, tw.p1, e); tw.ctl.target.lerpVectors(tw.t0, tw.t1, e); tw.ctl.update();
+      if (k >= 1) this.tween = null; this.dirty = true;
+    }
+    if (this.inTween) this.stepInTween();   // [interior] the Inside camera gliding to another room
+    if (this.walker && this.mode === 'in' && this.walker.update()) this.dirty = true;   // [walk] a glide to a clicked spot, or held keys
+    if (this.mode === 'orbit' || this.mode === 'top') { if (this.controls.update()) this.dirty = true; }
+    if (this.mode === 'plan') { if (this.planControls.update()) this.dirty = true; }
+    if (!this.dirty && !force) return false;
+    this.dirty = false;
+    const cam = this.poseCamera();
     this.renderer.render(this.scene, cam);
     this.placeLabels(cam);
     this.onCompass?.(this.compassAz(cam));

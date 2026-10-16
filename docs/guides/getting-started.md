@@ -19,7 +19,7 @@ commutes, fetch the buildings around each home, add floor plans, and open the da
 ## 1. Install
 
 ```bash
-git clone https://github.com/<you>/ApartmentScout.git
+git clone https://github.com/0marm0/ApartmentScout.git
 cd ApartmentScout
 python -m venv .venv && source .venv/bin/activate     # Windows: .venv\Scripts\activate
 pip install -e .                                      # ".[xlsx]" adds the workbook export, ".[dev]" the test tools
@@ -34,7 +34,7 @@ checkout and the tools read them from there. No API keys are needed for anything
 apartmentscout serve --search examples/nyc-2026
 ```
 
-Your browser opens the dashboard on a finished search: 732 Manhattan listings with walk, subway, bus and best-of-transit
+Your browser opens the dashboard on a finished search: 738 Manhattan listings with walk, subway, bus and best-of-transit
 commutes, a 311 noise layer, building dossiers, 3D site models and a floor plan with furniture. Press `?` for the keyboard
 shortcuts and `1` to `8` to move between views ([dashboard guide](dashboard.md)). The example is read-only.
 

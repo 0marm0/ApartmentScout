@@ -49,6 +49,7 @@ JS_DIR = TESTS / "js"
 E2E_RULES: list[tuple[str, tuple[str, ...]]] = [
     ("dashboard/js/city3d/*", ("buildings3d", "context3d", "one_city", "interior_view", "model_project", "eye_level_look", "daycycle", "quality3d", "finishes_render")),
     ("dashboard/js/room3d/*", ("bed_option", "interior_view", "one_city", "lighting", "model_project", "placement_walk", "furniture_studio", "measure", "fit_check", "pair3d", "view_match", "finishes_render", "quality3d", "eye_level_look", "daycycle")),
+    ("dashboard/js/render/*", ("render", "quality3d")),
     ("dashboard/js/plan/*", ("bed_option", "lighting", "model_project", "interior_view", "plan_upload", "pdf_tracer", "one_city", "context3d", "buildings3d", "placement_walk", "furniture_studio", "measure", "fit_check", "pair3d", "view_match", "finishes_render", "quality3d", "eye_level_look", "daycycle")),
     ("dashboard/js/plan3d.js", ("bed_option", "interior_view", "one_city", "model_project", "lighting", "context3d", "placement_walk", "furniture_studio", "measure", "fit_check", "pair3d", "view_match", "finishes_render", "quality3d", "eye_level_look", "daycycle")),
     ("dashboard/js/unit/*", ("bed_option", "model_project", "buildings3d", "context3d", "one_city", "interior_view", "lighting", "placement_walk", "furniture_studio", "measure", "fit_check", "pair3d", "view_match", "finishes_render", "quality3d", "eye_level_look", "daycycle")),
