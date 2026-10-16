@@ -1,5 +1,5 @@
 """The renter's own furniture in both 3D views, and the studio's controls for moving it: every piece drawn with its colour and material
-(a black leather futon, a brown wood desk, black chest and nightstands, a grey bed), the TVs on their walls, the two views agreeing on where
+(a black leather futon, a brown wood desk, dark brown dresser, black nightstands, a grey bed), the TVs on their walls, the two views agreeing on where
 everything is, a seat that looks at the TV, and a floating toolbar to select, rotate, move and remove a piece in the plan and the 3D view.
 Needs WebGL, otherwise skipped."""
 from __future__ import annotations
@@ -70,14 +70,19 @@ def _check_looks(scene: dict) -> None:
     futon = scene["futon"]["mats"]
     leather = [m for m in futon if m["bump"]]          # the leather carries a pebbled grain
     assert leather and all(_lum(m["color"]) < 0.14 for m in leather), "the futon's mattress is black leather"
-    assert all(_lum(m["color"]) < 0.2 for m in futon), "no green fabric and no pale wooden frame: every part of the futon is dark"
+    legs = [m for m in futon if _lum(m["color"]) >= 0.2]   # the four chrome legs are the one light, neutral grey part
+    assert all(_lum(m["color"]) < 0.2 for m in futon if m not in legs), "no green fabric and no pale wooden frame: the futon is dark leather"
+    assert len(legs) <= 4 and all(max(_rgb(m["color"])) - min(_rgb(m["color"])) < 0.12 for m in legs), "the legs are silver metal, not wood"
     assert not any(m["map"] and not m["bump"] and _rgb(m["color"])[0] > _rgb(m["color"])[2] * 1.15 for m in futon), "no wooden arms on the futon"
     for pid in ("desk", "coffee", "dining"):
         wood = [m for m in scene[pid]["mats"] if m["map"]]   # wood is drawn with a grain texture
         assert wood and any(_rgb(m["color"])[0] > _rgb(m["color"])[2] * 1.4 and 0.05 < _lum(m["color"]) < 0.45 for m in wood), f"the {pid} is brown wood"
-    for pid in ("dresser", "nightstand-1", "nightstand-2"):
+    for pid in ("nightstand-1", "nightstand-2"):
         body = scene[pid]["mats"][0]   # the first material is the carcase
         assert _lum(body["color"]) < 0.14, f"the {pid} is black"
+    chest = scene["dresser"]
+    assert _lum(chest["mats"][0]["color"]) < 0.2 and _rgb(chest["mats"][0]["color"])[0] > _rgb(chest["mats"][0]["color"])[2], "the dresser is IKEA's dark brown oak effect, close to black"
+    assert abs((chest["max"][0] - chest["min"][0]) - 27.6 * 0.0254) < 0.005 and abs((chest["max"][1] - chest["min"][1]) - 47.2 * 0.0254) < 0.005, "70 cm wide and 120 cm tall"
     assert any(0.3 < _lum(m["color"]) < 0.65 and abs(_rgb(m["color"])[0] - _rgb(m["color"])[2]) < 0.1 for m in scene["bed"]["mats"]), "the bed is upholstered in grey"
     for tv in ("tv", "tv-bed"):
         lo, hi = scene[tv]["min"], scene[tv]["max"]

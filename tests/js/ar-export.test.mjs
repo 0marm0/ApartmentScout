@@ -94,7 +94,7 @@ test('the model is at true scale: its bounds in metres are the piece size from f
     assert.ok(Math.abs((b.lo[0] + b.hi[0]) / 2) < 0.02 && Math.abs((b.lo[2] + b.hi[2]) / 2) < 0.03, `${id}: centred on the point the phone anchors`);
   }
   const mal = unpack(await AR.exportUSDZ(AR.bakeForAR(piece('dresser').g))), mb = usdaBounds(mal);
-  assert.ok(Math.abs(mb.size[0] - 1.6002) < 0.002 && Math.abs(mb.size[1] - 0.7798) < 0.002 && Math.abs(mb.size[2] - 0.48) < 0.01, 'MALM: 160 x 78 x 48 cm');
+  assert.ok(Math.abs(mb.size[0] - 0.70) < 0.002 && Math.abs(mb.size[1] - 1.20) < 0.002 && Math.abs(mb.size[2] - 0.48) < 0.01, 'STORKLINTA: 70 x 120 x 48 cm');
   const desk = usdaBounds(unpack(await AR.exportUSDZ(AR.bakeForAR(piece('desk').g))));
   assert.ok(Math.abs(desk.size[0] - 71 * IN) < 1 * IN && Math.abs(desk.lo[1]) < 0.003 && desk.size[1] > 0.95 && desk.size[1] < 1.4, `the desk set: 71 in wide, from the floor to the top of the monitor and the chair back (${desk.size.map((v) => (v / IN).toFixed(1))} in)`);
 });

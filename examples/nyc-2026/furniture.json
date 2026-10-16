@@ -207,25 +207,24 @@
   },
   {
    "id": "dresser",
-   "ref": "dresser-malm-6",
-   "label": "IKEA MALM 6-drawer chest",
+   "ref": "dresser-storklinta-6",
+   "label": "IKEA STORKLINTA 6-drawer dresser",
    "room": "bedroom",
-   "w": 63,
+   "w": 27.6,
    "d": 18.9,
-   "h": 30.7,
+   "h": 47.2,
    "look": {
-    "color": "#2b221d",
+    "color": "#3a2b22",
     "material": "laminate",
     "finish": "matte",
     "basis": "renter",
     "assumed": [
-     "finish",
-     "material"
+     "finish"
     ],
-    "note": "IKEA MALM in black-brown, the renter's own. The colour and the model are the renter's; the exact finish is a stand-in."
+    "note": "IKEA's dark brown oak effect, a printed oak-grain foil. The renter sees it as near black in their room, so it is drawn a little dark; the exact finish is a stand-in."
    },
-   "note": "IKEA MALM 6-drawer chest (the wide one), 160 x 48 x 78 cm: two columns of three flat drawers, the recessed top edge of each front is the pull, black-brown.",
-   "source": "Renter, 2026-10-15: IKEA MALM 6-drawer chest, black. Replaces the earlier Storklinta size used by the Fit check."
+   "note": "IKEA STORKLINTA 6-drawer dresser, dark brown oak effect, 70 x 48 x 120 cm: two small drawers side by side on top, then four full-width ones (inside 61 x 40 x 16 cm), slab fronts with no handles, a thin top, a recessed plinth on small feet. Tall and narrow, with a wall anchor.",
+   "source": "manufacturer: IKEA US article 705.592.78, https://www.ikea.com/us/en/p/storklinta-6-drawer-dresser-dark-brown-oak-effect-anchor-unlock-function-70559278/ (product page measurements and drawing). Renter, 2026-10-15: this is their dresser, not the MALM."
   },
   {
    "id": "desk",

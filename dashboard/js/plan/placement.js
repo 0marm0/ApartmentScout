@@ -107,7 +107,7 @@ export function resolveLayout({ model, inventory = null, saved = null }) {
     if (placed) it.placed = true; else delete it.placed;
     if (!placed) {   // not placed by the renter: it follows the plan's default layout, when there is a piece for it there
       const d = defBy.get(it.id);
-      if (d && d.ref === it.ref) {
+      if (d) {   // the default's own piece, even when it is another model now (the renter's dresser was corrected from a MALM to a STORKLINTA)
         const next = { ...fromDefault(d, by), ...(it.hidden ? { hidden: true } : {}) };
         if (!near(next.x, it.x, 0.05) || !near(next.y, it.y, 0.05) || !angNear(next.rot, it.rot)) { followed.push(it.id); changed = true; }
         it = next;
