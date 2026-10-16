@@ -6,8 +6,10 @@
 .tod-load { font-weight: 500; letter-spacing: 0; text-transform: none; color: var(--accent); animation: tod-pulse 1.1s ease-in-out infinite; }
 @keyframes tod-pulse { 50% { opacity: .35; } }
 @media (prefers-reduced-motion: reduce) { .tod-load { animation: none; } }
-.tod-seg { display: flex; flex-wrap: wrap; width: 100%; gap: 2px; }
-.tod-seg button { flex: 1 1 auto; min-width: 0; height: 26px; padding: 0 7px; font-size: var(--fs-2xs); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tod-seg { display: grid; grid-template-columns: repeat(5, 1fr); width: 100%; gap: 2px; }
+.tod-seg button { display: grid; gap: 1px; justify-items: center; min-width: 0; height: 36px; padding: 3px 2px; line-height: 1.1; }
+.tod-seg button b { font: 650 var(--fs-xs) var(--font-mono); font-variant-numeric: tabular-nums; }
+.tod-seg button small { font-size: 9.5px; font-weight: 500; opacity: .75; white-space: nowrap; }
 .tod-seg button:disabled { opacity: .4; cursor: not-allowed; }
 .tod-lg .src { margin-top: 6px; }
 .legend.min .tod-lg .src, .legend.min .tod-lg-h small { display: none; }
@@ -17,18 +19,19 @@
 .tod-h { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 8px; font-size: var(--fs-sm); }
 .tod-h b { font-weight: 600; }
 .tod-h .faint { font-size: var(--fs-xs); }
-.tod-bars { position: relative; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 6px; height: 118px; }
-.tod-b { appearance: none; position: relative; display: grid; grid-template-rows: 16px 1fr 18px; justify-items: center; padding: 0; border: 0; border-radius: var(--r-sm); background: none; color: var(--ink-2); font: inherit; cursor: pointer; min-width: 0; }
-.tod-b b { font: 650 var(--fs-xs) var(--font-mono); font-variant-numeric: tabular-nums; color: var(--ink); }
-.tod-b i { align-self: end; width: 70%; max-width: 34px; min-height: 0; border-radius: 5px 5px 2px 2px; background: color-mix(in srgb, var(--accent) 38%, var(--surface-3)); transition: background var(--t-fast), height var(--t-base) var(--ease-out); }
-.tod-b span { align-self: end; font-size: var(--fs-2xs); white-space: nowrap; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.tod-bars { position: relative; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 6px; }
+.tod-b { appearance: none; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; padding: 0; border: 0; border-radius: var(--r-sm); background: none; color: var(--ink-2); font: inherit; cursor: pointer; min-width: 0; }
+.tod-v { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; width: 100%; }
+.tod-b b { font: 650 var(--fs-xs) var(--font-mono); font-variant-numeric: tabular-nums; color: var(--ink); line-height: 18px; }
+.tod-b i { width: 70%; max-width: 34px; border-radius: 5px 5px 2px 2px; background: color-mix(in srgb, var(--accent) 38%, var(--surface-3)); transition: background var(--t-fast); }
+.tod-l { height: 20px; line-height: 20px; font-size: var(--fs-2xs); white-space: nowrap; color: var(--ink-3); font-variant-numeric: tabular-nums; }
 .tod-b:hover i { background: color-mix(in srgb, var(--accent) 62%, var(--surface-3)); }
 .tod-b.on i { background: var(--accent); }
-.tod-b.on span { color: var(--ink); font-weight: 600; }
+.tod-b.on .tod-l { color: var(--ink); font-weight: 600; }
 .tod-b.over b { color: var(--warn); }
 .tod-b.over i { background: color-mix(in srgb, var(--warn) 55%, var(--surface-3)); }
 .tod-b.over.on i { background: var(--warn); }
-.tod-b.na i { background: repeating-linear-gradient(45deg, var(--line-strong) 0 3px, transparent 3px 6px); height: 14% !important; }
+.tod-b.na i { background: repeating-linear-gradient(45deg, var(--line-strong) 0 3px, transparent 3px 6px); min-height: 10px; }
 .tod-b:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .tod-lim { position: absolute; left: 0; right: 0; height: 0; border-top: 1px dashed var(--ink-3); opacity: .7; pointer-events: none; }
 .tod-sum { margin: 10px 0 2px; font-size: var(--fs-xs); line-height: 1.45; color: var(--ink-2); }

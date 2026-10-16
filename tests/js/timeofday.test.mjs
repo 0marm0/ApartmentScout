@@ -78,7 +78,7 @@ test('the drawer summary names the numbers and the fastest and slowest times', (
   const s = summary(ENTRY, 'best', SLOTS, DEST);
   assert.equal(s.rows.length, 5); assert.equal(s.fast.id, 'am'); assert.equal(s.slow.id, 'late'); assert.equal(s.spread, 20);
   assert.equal(s.text, '20 min to arrive at 9:00, 24 min to arrive at 13:00, 30 min to leave at 18:00, 40 min to leave at 22:00');
-  assert.match(s.verdict, /Fastest arrive 9:00 \(20 min\), slowest leave 22:00 \(40 min\)/);
+  assert.match(s.verdict, /Fastest arriving 9:00 \(20 min\), slowest leaving 22:00 \(40 min\)/);
   assert.equal(summary(ENTRY, 'walk', SLOTS, DEST), null);
   assert.equal(summary({ times: { transit: [20, 20.4, 21, 21, 20] } }, 'best', SLOTS, DEST).verdict, 'About the same at every time of day.');
   assert.equal(summary({ times: { transit: [20, null, null, null, null] } }, 'best', SLOTS, DEST), null);

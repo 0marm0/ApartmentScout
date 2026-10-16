@@ -42,7 +42,7 @@ SHIFT_H = 5                       # hours after midnight that still belong to th
 CLASSES = [("sunthu", "Sun-Thu nights"), ("frisat", "Fri-Sat nights")]
 BUCKETS = ["2-6 am", "6-10 am", "10 am-2 pm", "2-6 pm", "6-10 pm", "10 pm-2 am"]
 GROUPS = [("bars", "Bars, clubs and restaurants"), ("street", "Street, crowds and parks"),
-          ("home", "Neighbours"), ("vehicle", "Traffic, horns and helicopters"),
+          ("home", "Neighbours"), ("vehicle", "Vehicles and helicopters"),
           ("build", "Construction"), ("equip", "Alarms, dogs and building equipment")]
 MIX_BLOCK = 3                     # mix cells are MIX_BLOCK x MIX_BLOCK of the hour cells
 _BUILD = ("construction", "jack", "(nc1)", "(nc2)", "nm1")

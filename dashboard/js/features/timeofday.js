@@ -100,7 +100,7 @@ const loadingNow = () => !!current && active() && !walking() && (() => {
 const missingNow = () => !!current && active() && !walking() && docs.get(dest()?.name)?.state === 'none';
 
 // ------------------------------------------------------------------ the legend
-const sub = (d) => { const s = active(); return s ? `${esc(s.label)} · ${esc(M.phrase(s, d))}` : `arrive ${esc(d?.arrive_by || '')}`; };
+const sub = (d) => { const s = active(); return s ? `${esc(M.shortName(s))} · ${esc(M.phrase(s, d))}` : `arrive ${esc(d?.arrive_by || '')}`; };
 /** The h4 subtitle in the legend and the rail: "arrive 9:00" or the slot's name and time. */
 export const headSub = (d) => sub(d);
 export const railSub = (d) => { const s = active(); return s ? `, ${esc(M.phrase(s, d))}` : (d?.arrive_by ? ', arrive ' + esc(d.arrive_by) : ''); };
@@ -115,7 +115,7 @@ export function legendHTML() {
   const off = walking();
   return `<div class="tod-lg" id="lgTime" role="group" aria-label="Time of day">
     <div class="tod-lg-h"><span>Time of day</span>${loadingNow() ? '<small class="tod-load" role="status">loading…</small>' : ''}</div>
-    <div class="seg tod-seg">${ss.map((s) => `<button type="button" data-tod="${esc(s.id)}" class="${on2(s) ? 'on' : ''}" aria-pressed="${on2(s)}" ${off ? 'disabled' : ''} title="${esc(s.label)}: ${esc(M.phrase(s, d))}">${esc(M.chip(s, d))}</button>`).join('')}</div>
+    <div class="seg tod-seg">${ss.map((s) => `<button type="button" data-tod="${esc(s.id)}" class="${on2(s) ? 'on' : ''}" aria-pressed="${on2(s)}" ${off ? 'disabled' : ''} title="${esc(s.label)}: ${esc(M.phrase(s, d))}"><b>${esc(M.clock(M.timeOf(s, d)))}</b><small>${esc(M.shortName(s))}${s.kind === 'depart' ? ' ⌂' : ''}</small></button>`).join('')}</div>
     ${off ? '<div class="src">Walking takes the same time at any hour.</div>'
       : missingNow() ? '<div class="src">The map for this time was not built: run <code>apartmentscout commute</code>. Cards and numbers still follow it.</div>'
       : cur ? `<div class="src">${esc(active().label)}: ${active().kind === 'depart' ? 'leaving the destination at that time, on the way home' : 'arriving at the destination by that time'}${active().day === 'weekday' || !active().day ? ' on a weekday' : ' on a ' + esc(active().day)}. Pins, cards and filters follow it.</div>` : ''}
@@ -126,7 +126,7 @@ export function wireLegend(root) {
 }
 
 // ------------------------------------------------------------------ the drawer
-const barH = (m, top) => Math.max(6, Math.min(100, (m / top) * 100));
+const BAR_H = 92;   // px of the bar area (value label included)
 /** "By time of day": a bar per slot for one home, in the drawer's commute mode ('transit' | 'subway' | 'bus' | 'walk'). */
 export function drawerHTML(L, d, drawerMode) {
   const ss = slots();
@@ -135,14 +135,14 @@ export function drawerHTML(L, d, drawerMode) {
   const entry = L.commute?.[d.name];
   const sm = M.summary(entry, mode, ss, d);
   if (!sm) return '';
-  const lim = d.max_minutes ?? 30, top = Math.max(lim * 1.6, ...sm.rows.map((r) => r.minutes || 0)), cur = activeId();
+  const lim = d.max_minutes ?? 30, top = Math.max(lim * 1.25, ...sm.rows.map((r) => r.minutes || 0)), cur = activeId();
   const baseId = ss.find((s) => isBase(s, d))?.id;
   const on2 = (id) => (cur ? id === cur : id === baseId);
   const on = M.scoredOn(S.crit);
   return `<div class="tod" id="dTod" role="group" aria-label="Door to door by time of day">
     <div class="tod-h"><b>By time of day</b><span class="faint">${esc(MODE_LABEL[mode].toLowerCase())}, door to door</span></div>
-    <div class="tod-bars">${sm.rows.map((r) => `<button type="button" class="tod-b${on2(r.id) ? ' on' : ''}${r.minutes != null && r.minutes > lim ? ' over' : ''}${r.minutes == null ? ' na' : ''}" data-tod="${esc(r.id)}" aria-pressed="${on2(r.id)}" title="${esc(r.slot.label)}: ${esc(r.phrase)}${r.minutes != null ? ', ' + Math.round(r.minutes) + ' min' : ': no answer'}">
-      <b>${r.minutes == null ? '–' : Math.round(r.minutes)}</b><i style="height:${r.minutes == null ? 0 : barH(r.minutes, top)}%"></i><span>${esc(M.chip(r.slot, d))}</span></button>`).join('')}<u class="tod-lim" style="bottom:calc(${barH(lim, top)}% * .62 + 32px)" title="Your ${lim}-minute limit" aria-hidden="true"></u></div>
+    <div class="tod-bars" style="height:${BAR_H + 20}px">${sm.rows.map((r) => `<button type="button" class="tod-b${on2(r.id) ? ' on' : ''}${r.minutes != null && r.minutes > lim ? ' over' : ''}${r.minutes == null ? ' na' : ''}" data-tod="${esc(r.id)}" aria-pressed="${on2(r.id)}" title="${esc(r.slot.label)}: ${esc(r.phrase)}${r.minutes != null ? ', ' + Math.round(r.minutes) + ' min' : ': no answer'}">
+      <span class="tod-v"><b>${r.minutes == null ? '–' : Math.round(r.minutes)}</b><i style="height:${r.minutes == null ? 0 : Math.max(3, Math.round((r.minutes / top) * (BAR_H - 18)))}px"></i></span><span class="tod-l">${esc(M.chip(r.slot, d))}</span></button>`).join('')}<u class="tod-lim" style="bottom:${20 + Math.round((lim / top) * (BAR_H - 18))}px" title="Your ${lim}-minute limit" aria-hidden="true"></u></div>
     <p class="tod-sum">${esc(sm.text)}.</p>
     <p class="tod-note">${esc(sm.verdict)}${on ? ` The commute score is read from ${on === 'weighted' ? 'a weighted average over the day' : 'the ' + esc(slotOf(on)?.label.toLowerCase() || on) + ' trip'}.` : ' The commute score reads the arrive-by trip.'}</p>
   </div>`;
