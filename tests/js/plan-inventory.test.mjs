@@ -65,7 +65,7 @@ for (const id of ['paramount-tower-25e', 'emerald-green-1211']) {
     assert.equal(ev.counts.blocked, 0, JSON.stringify(Object.values(ev.items).filter((r) => r.state === 'blocked').map((r) => [r.id, r.issues.map((x) => x.text)])));
     // 25E's rooms are too narrow to sit a 55-inch TV closer than 9 to 10 ft, so its two TVs read "workable", the best the room allows; every other piece is clear
     const tvTag = id === 'paramount-tower-25e' ? 'workable' : 'ideal', tight = id === 'paramount-tower-25e' ? 2 : 0;
-    assert.equal(ev.counts.clear, (id === 'paramount-tower-25e' ? 12 : 11) - tight, JSON.stringify(ev.counts));   // 25E also holds the sim rig
+    assert.equal(ev.counts.clear, 11 - tight, JSON.stringify(ev.counts));   // 25E also holds the sim rig, hidden by default: not checked
     assert.equal(ev.counts.tight, tight);
     if (tight) assert.deepEqual(Object.values(ev.items).filter((r) => r.state === 'tight').map((r) => r.id).sort(), ['tv', 'tv-bed']);
     // the living-room TV is watchable from the futon, every bed seat can see the bedroom TV

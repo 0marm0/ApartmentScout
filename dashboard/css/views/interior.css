@@ -12,6 +12,7 @@
 .iv-t b { font-size: var(--fs-sm); font-weight: var(--fw-semibold); }
 .iv-t small { font-size: var(--fs-xs); color: var(--ink-3); line-height: 1.4; }
 .iv-add { min-height: 28px; padding: 0 10px; }
+.iv-end { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
 .iv-src { margin-top: var(--s-2); font-size: var(--fs-xs); color: var(--ink-3); }
 .iv-src summary { cursor: pointer; }
 .iv-src p { margin: 6px 0 0; line-height: 1.5; }

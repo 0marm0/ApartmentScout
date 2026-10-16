@@ -74,3 +74,22 @@ test('a duplicate survives a save/load round trip (layout and project) and looks
   const items = [...base, stripped], ch = items.filter((x) => x.ref === 'task-chair');
   assert.equal(ch.length, 1, 'duplicating the desk does not duplicate the chair'); assert.equal(ch[0].attach, 'desk');
 });
+
+test('every hidden, removed or never-placed piece is listed with a Show / Add back button (also for a layout saved by an older build), and the selection bar has a Hide button', async () => {
+  const { offPieces } = await import('../../dashboard/js/plan/choices.js');
+  const { offControlHTML } = await import('../../dashboard/js/plan/bed-ui.js');
+  const { selbarHTML } = await import('../../dashboard/js/plan/selbar.js');
+  assert.equal(inv.options.sim.default, 'hidden'); assert.equal(base.find((x) => x.id === 'sim-rig').hidden, true, 'the rig loads hidden');
+  const off = offPieces(base, inv);
+  assert.deepEqual(off.map((q) => [q.id, q.name, q.why]), [['sim-rig', 'Sim rig', 'hidden']], 'the default lists the rig, not the candidate bed');
+  assert.ok(offControlHTML(off).includes('data-show-piece="sim-rig"') && offControlHTML(off).includes('<b>Show</b> Sim rig'));
+  // an older build saved the rig removed (not hidden), or never held it, or hid the office chair: each has the way back
+  const saved = (items, removed) => resolveLayout({ model: m, inventory: inv, saved: validateLayout(serialiseLayout('paramount-tower-25e', items, { removed }), { planId: 'paramount-tower-25e', lenient: true }) }).items;
+  const noRig = base.filter((x) => x.id !== 'sim-rig');
+  assert.equal(offPieces(noRig, inv, { removed: ['sim-rig'] }).find((q) => q.id === 'sim-rig').why, 'removed');
+  assert.equal(offPieces(noRig, inv).find((q) => q.id === 'sim-rig').why, 'absent');
+  const chairOff = saved(applyChoice(base, inv, 'chair', 'hidden'), []);
+  assert.deepEqual(offPieces(chairOff, inv).map((q) => q.id).sort(), ['desk-chair', 'sim-rig']);
+  assert.equal(offPieces(applyChoice(base, inv, 'sim', 'shown'), inv).length, 0, 'nothing hidden: no row');
+  assert.ok(selbarHTML().includes('data-act="hide"') && /Hide<\/span>/.test(selbarHTML()), 'the selection toolbar has an obvious Hide');
+});
