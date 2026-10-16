@@ -260,7 +260,15 @@ def test_a_new_deploy_is_offered_while_open_and_taken_at_the_next_open(open_app,
     demo = site / "ApartmentScout" / "demo"
     old = json.loads((demo / "precache.json").read_text())["build"]
     page, errors = open_app()
-    st = settle(page)
+    # a version an earlier test left waiting is taken over at open (one reload): wait until the app has settled on one
+    for _ in range(3):
+        try:
+            page.wait_for_function("async () => !(await navigator.serviceWorker.getRegistration())?.waiting", timeout=15000)
+            page.wait_for_selector("#cards .card", timeout=30000)
+            st = settle(page)
+            break
+        except Exception:   # the page navigated while we looked: look again
+            page.wait_for_load_state("load")
     assert st["build"] == old
     assert page.locator("#pwaUpdate").count() == 0
     sw_before, pre_before = (demo / "sw.js").read_text(), (demo / "precache.json").read_text()

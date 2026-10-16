@@ -19,7 +19,14 @@ function offerUpdate(worker) {
   el.addEventListener('click', (e) => {
     const act = e.target.closest('[data-pwa]')?.dataset.pwa;
     if (act === 'later') el.remove();
-    if (act === 'reload') { reloadOnTakeover = true; worker.postMessage({ type: 'SKIP_WAITING' }); el.querySelector('.pwa-msg').textContent = 'Updating…'; }
+    if (act === 'reload') {
+      reloadOnTakeover = true;
+      el.querySelector('.pwa-msg').textContent = 'Updating…';
+      // the version waiting now: a later deploy may have replaced the one this prompt was made for (that one is gone)
+      navigator.serviceWorker.getRegistration().then((r) => (r?.waiting || worker).postMessage({ type: 'SKIP_WAITING' }))
+        .catch(() => worker.postMessage({ type: 'SKIP_WAITING' }));
+      setTimeout(() => { if (reloadOnTakeover) location.reload(); }, 8000);   // never leave the renter on "Updating…"
+    }
   });
   document.body.append(el);
 }
@@ -35,6 +42,7 @@ function applyAtOpen(worker) {
   } catch { return false; }
   reloadOnTakeover = true;
   worker.postMessage({ type: 'SKIP_WAITING' });
+  setTimeout(() => { if (reloadOnTakeover) location.reload(); }, 8000);
   return true;
 }
 
