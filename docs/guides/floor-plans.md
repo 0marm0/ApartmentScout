@@ -83,8 +83,8 @@ wall, its top board just under the desktop); `"l_shape"` swings the shelf out 90
 panel leg is on. The sizes are the maker's dimension drawing (`spec_basis` `diagram`); the maker publishes no straight length, so the 89.2 in
 end to end is **derived** from the maker's L-shaped box size and product photo (`spec.straight.total`, basis `derived`: measure it and change
 that one number, the overlap and the pivot follow; `plan/deskspec.js`). Their dresser is the
-IKEA MALM 6-drawer chest in black-brown (`ref` `dresser-malm-6`, 63 x 18.9 x 30.7 in: two columns of three flat drawers with the
-recessed top edge as the pull, no knobs); both TVs are 55-inch (48.4 x 27.8 in).
+IKEA STORKLINTA 6-drawer dresser in dark brown oak effect (`ref` `dresser-storklinta-6`, 27.6 x 18.9 x 47.2 in, IKEA article 705.592.78:
+two small drawers side by side on top, then four full-width ones, slab fronts with no handles); both TVs are 55-inch (48.4 x 27.8 in).
 
 ### What a piece looks like: `look`
 
@@ -119,9 +119,12 @@ Both 3D views share one set of models (`dashboard/js/room3d/furniture.js`), draw
 - **Futon**: a thick leather mattress for the seat and one for the back, each crowned like a pillow and deep-buttoned (a covered button
   in every dimple), with a piped seam and a thread of top-stitching round the face, on a tubular black frame (rail arms with rounded
   ends, raked back stiles, a slatted deck). Opened as a bed it is one buttoned mattress across the deck.
-- **IKEA MALM 6-drawer chest**: 160 x 48 x 78 cm to the hair, full-depth side panels and a top on a recessed plinth, two columns of
-  three flat drawer fronts with a 3 mm gap, no knobs: the top edge of every front is cut back into a finger recess (a real notch, dark
-  inside), and the finish is a printed black-brown wood-grain foil, nearly matt.
+- **IKEA STORKLINTA 6-drawer dresser**: 70 x 48 x 120 cm to the hair (the maker's drawing), a thin top over full-depth side panels, a
+  recessed plinth on four small feet, two small drawers side by side on top and four full-width drawers under them, slab fronts with no
+  handles: the top edge of every front is cut back a little (the grip, seen as a shadow gap), and the finish is a printed dark brown
+  oak-grain foil, nearly matt.
+- **IKEA MALM 6-drawer chest** (`dresser-malm-6`, still in the catalogue): 160 x 48 x 78 cm, two columns of three flat drawer fronts with a
+  finger recess along the top edge of each, in a black-brown foil.
 - **Desk set**: a work desk (a solid top, four square legs, an apron with a shallow centre drawer, low stretchers, a modesty panel and a
   steel cable tray) with a mat, keyboard and mouse, a slim 32-inch monitor on a stand, and a rolling task chair: a five-star base of
   tapered spokes on twin-wheel casters, a gas lift with its ridged bellows, a waterfall seat, a curved mesh back (Visual) on a post, two
@@ -184,7 +187,7 @@ within 4 in; the arrow keys nudge it), **Remove** (Delete; Undo brings it back) 
 positions survived. The kit (queen bed, two nightstands, a dresser, a desk with a chair, a 3-seat futon, a coffee table, two
 wall-mounted 55-inch TVs and a 4-seat dining table) and its first sizes come from those tools: the Fit check, Room to live and the
 Apartment layout studio, with the TV study for Emerald Green 1211. The renter has since corrected the desk (the Bestier rotating desk, dark brown, a
-task chair, a 32-inch monitor) and the dresser (IKEA MALM, 6 drawers), and answered where things go.
+task chair, a 32-inch monitor) and the dresser (first read as an IKEA MALM, then corrected to the tall STORKLINTA 6-drawer), and answered where things go.
 
 ### A bed you may buy beside your own (option pieces and candidates)
 
@@ -224,7 +227,7 @@ grey bed:
   with its headboard against the same wall as the renter's bed and centred on it (the windows on the right as you lie in it).
 - **Fit** (`plan/bedfit.js`): the control's *Fit* button answers the questions a renter asks, in plain words with numbers: does 94 in fit that
   wall between the corners and the window ("fits: 22 in to spare on the left, 8 in on the right"), the bed's length against the walkway to
-  the TV wall and the chest, the side drawers' pull-out room on each side, every door's swing and the way in to the closet, the window
+  the TV wall, the side drawers' pull-out room on each side, every door's swing and the way in to the closet, the window
   sill and glass beside the towers, and the heating and cooling units. Left and right are the person's, lying in the bed. When the wall
   is too short the card says so ("blocks the closet door by 4 in", "the tower would stand in front of the glass"), how far to slide the
   unit along the wall to make it fit, and the best other wall with its own answers; it never moves the bed for you, and your own
@@ -253,12 +256,13 @@ may only fill pieces they have not placed.**
   preset; sizes baked into saved layouts hid a corrected size; and "Use your furniture layout" fitted everything again.
 
 **The shipped 25E layout** (`examples/nyc-2026/plans/paramount-tower-25e.json`, `layouts[0]`, data, every piece `placed`): the bed's
-headboard on the bedroom's east wall with the windows on the right of a person lying in it, the TV on the opposite wall over the
-MALM chest, a nightstand each side; the futon's back flat against the partition facing the living-room TV on the far wall; the
+headboard on the bedroom's east wall with the windows on the right of a person lying in it, the TV on the opposite wall with the
+tall STORKLINTA dresser on that same wall south of the TV (not under it: at 47 in it would hide a TV hung at 32 in; clear of the bedroom
+door, the closet door, the window and the walk), a nightstand each side; the futon's back flat against the partition facing the living-room TV on the far wall; the
 Bestier rotating desk, straight (about 89 in), on the living room's left wall with its desktop at the bay window (clear of the glass) and its shelf toward
 the TV, the chair behind the desktop with room to pull it out; the dining table lengthwise by the kitchen so the walk from the door to the desk stays 37 in wide. Nothing is blocked; the two TVs
 grade *tight* because a 55-inch TV is only "workable" at the 9 to 10 ft these rooms allow. Emerald Green 1211's layout is refitted
-with the new sizes (the 63-inch chest stands in its living room: it does not fit its narrow bedroom beside the bed).
+with the new sizes (the dresser stands against the partition in its living room: it does not fit its narrow bedroom beside the bed).
 
 ### Walking around inside
 
@@ -469,7 +473,7 @@ The catalogue lives in `dashboard/js/plan/catalog.js`, with a cited source for e
 |---|---|---|
 | `queen-bed`, `full-bed`, `king-bed` | 64 x 84, 58 x 80, 80 x 84 | 22-24 beside (one side is enough), 24-30 at the foot, no window behind the headboard |
 | `nightstand` | 18 x 16 x 24 | |
-| `dresser`, `dresser-wide`, `dresser-malm-6` | 27.6 x 19.7, 55 x 19, 63 x 18.9 (IKEA MALM) | 24-30 for the drawers |
+| `dresser`, `dresser-wide`, `dresser-malm-6`, `dresser-storklinta-6` | 27.6 x 19.7, 55 x 19, 63 x 18.9 (IKEA MALM), 27.6 x 18.9 x 47.2 (IKEA STORKLINTA) | 24-30 for the drawers |
 | `wardrobe`, `bookcase` | 39.4 x 22.9 x 79, 31.5 x 11 x 79.5 | 22-30 for wardrobe doors |
 | `sofa-3`, `futon` (variant `bed`), `loveseat`, `armchair` | 84 x 36, 78.75 x 38.25 (55.1 open), 60 x 34, 32 x 34 | 18-30 legroom, not counting a coffee table |
 | `coffee-table` (variants `s`, `m`, `l`) | 36 x 20, 44 x 24, 52 x 28 | |

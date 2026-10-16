@@ -4,12 +4,19 @@
   /* type */
   --font-sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  /* the type scale: seven text steps (2xs caption, xs label, sm secondary, md body, lg lead, xl heading, 2xl title) plus two display sizes.
+     Every stylesheet reads these; a size that is not here is either SVG text in chart units or the thumb scale below. */
   --fs-2xs: 10.5px; --fs-xs: 11.5px; --fs-sm: 12.5px; --fs-md: 13.5px; --fs-lg: 15px;
   --fs-xl: 18px; --fs-2xl: 22px; --fs-3xl: 30px; --fs-4xl: 44px;
+  --fs-input: 16px;   /* a field below 16 px makes iOS zoom the page into it */
+  /* the thumb scale: Tour day is read at arm's length on a phone, so its steps are a notch larger than the desktop ones */
+  --fs-t1: 15px; --fs-t2: 17px; --fs-t3: 20px; --fs-t4: 24px; --fs-t5: 32px;
+  --fw-regular: 400; --fw-medium: 500; --fw-semibold: 600; --fw-bold: 700;
   --lh-tight: 1.15; --lh-snug: 1.3; --lh-body: 1.5;
   --tracking-tight: -0.015em; --tracking-caps: 0.08em;
 
-  /* space (4px grid) and radius */
+  /* space (4px grid) and radius. Three working radii: --r-sm (inputs, small chips), --r-md (buttons, tiles, cards), --r-lg (panels, popovers);
+     --r-xs is for tiny inline marks, --r-xl for sheets, --r-pill for pills. */
   --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 20px; --s-6: 24px; --s-8: 32px; --s-10: 40px;
   --r-xs: 4px; --r-sm: 6px; --r-md: 10px; --r-lg: 14px; --r-xl: 20px; --r-pill: 999px;
   --r-inner: 7px;   /* a segment inside a 10px control with 3px padding: outer radius minus padding */
@@ -20,13 +27,16 @@
   --safe-b: env(safe-area-inset-bottom, 0px); --safe-l: env(safe-area-inset-left, 0px);
 
   /* layout */
-  --topbar-h: 48px; --stats-h: 28px; --subnav-h: 38px; --rail-w: 288px; --list-w: 432px; --drawer-w: 448px;
+  --sheet-gap: 10px; --topbar-h: 48px; --stats-h: 28px; --subnav-h: 38px; --rail-w: 288px; --list-w: 432px; --drawer-w: 448px;
 
   /* motion */
   --ease-out: cubic-bezier(.2, .8, .2, 1);
   --ease-in-out: cubic-bezier(.65, 0, .35, 1);
   --ease-spring: cubic-bezier(.34, 1.36, .64, 1);
-  --t-fast: 120ms; --t-base: 200ms; --t-slow: 320ms; --t-page: 420ms;
+  --t-fast: 120ms; --t-base: 200ms; --t-slow: 320ms; --t-page: 420ms;   /* hover and press / fades and popovers / sheets and slides / whole views */
+  --press-scale: .97; --disabled-opacity: .45;
+  /* focus: one ring everywhere */
+  --focus-w: 2px; --focus-off: 2px;
 
   /* fixed colours: official subway palette comes from the GTFS feed; these are the brand and data scales */
   --sun: #f5b547;
@@ -55,8 +65,10 @@
   --accent-ink: #0b0d1f;
   --accent-soft: rgba(139, 150, 255, 0.13);
   --accent-line: rgba(139, 150, 255, 0.35);
-  --good: #4fd19a; --warn: #f0b04c; --bad: #f2735f;
-  --good-soft: rgba(79, 209, 154, 0.12); --warn-soft: rgba(240, 176, 76, 0.12); --bad-soft: rgba(242, 115, 95, 0.12);
+  --good: #4fd19a; --warn: #f0b04c; --bad: #f2735f; --info: #6fb4ff;
+  --good-soft: rgba(79, 209, 154, 0.12); --warn-soft: rgba(240, 176, 76, 0.12); --bad-soft: rgba(242, 115, 95, 0.12); --info-soft: rgba(111, 180, 255, 0.12);
+  --scrim: rgba(4, 5, 8, 0.5);          /* behind a sheet or a popover */
+  --scrim-strong: rgba(4, 5, 8, 0.62);  /* behind a modal that takes the whole page */
   --fav: #ffd166;
   --shadow-1: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 1px 2px rgba(0, 0, 0, 0.4);
   --shadow-2: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 8px 24px rgba(0, 0, 0, 0.45), 0 2px 6px rgba(0, 0, 0, 0.3);
@@ -101,8 +113,10 @@
   --accent-ink: #ffffff;
   --accent-soft: rgba(75, 85, 230, 0.09);
   --accent-line: rgba(75, 85, 230, 0.32);
-  --good: #0b7549; --warn: #8f5a03; --bad: #bd3d27;
-  --good-soft: rgba(19, 148, 94, 0.09); --warn-soft: rgba(183, 116, 6, 0.09); --bad-soft: rgba(207, 70, 48, 0.09);
+  --good: #0b7549; --warn: #8f5a03; --bad: #bd3d27; --info: #1a5fb4;
+  --good-soft: rgba(19, 148, 94, 0.09); --warn-soft: rgba(183, 116, 6, 0.09); --bad-soft: rgba(207, 70, 48, 0.09); --info-soft: rgba(26, 95, 180, 0.09);
+  --scrim: rgba(20, 24, 34, 0.34);
+  --scrim-strong: rgba(20, 24, 34, 0.46);
   --fav: #e0a100;
   --shadow-1: 0 1px 2px rgba(20, 24, 34, 0.06);
   --shadow-2: 0 8px 24px rgba(20, 24, 34, 0.08), 0 2px 6px rgba(20, 24, 34, 0.05);

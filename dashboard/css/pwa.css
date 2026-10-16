@@ -6,16 +6,16 @@
   position: fixed; z-index: 120; left: 50%; transform: translateX(-50%);
   bottom: calc(18px + var(--safe-b));
   display: flex; align-items: center; gap: 10px; max-width: calc(100vw - 24px);
-  padding: 8px 8px 8px 14px; border-radius: var(--r-lg);
+  padding: var(--s-2) var(--s-2) var(--s-2) 14px; border-radius: var(--r-lg);
   background: linear-gradient(180deg, var(--glass-tint), transparent 72%), var(--glass-bg);
   -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
   border: 1px solid var(--glass-line); box-shadow: inset 0 1px 0 var(--glass-hi), var(--glass-shadow);
-  color: var(--ink); font: 500 var(--fs-sm) var(--font-sans);
+  color: var(--ink); font: var(--fw-medium) var(--fs-sm) var(--font-sans);
   animation: pwa-in var(--t-slow) var(--ease-out);
 }
 .pwa-dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
 .pwa-msg { color: var(--ink-2); line-height: 1.35; }
-.pwa-msg b { color: var(--ink); font-weight: 600; }
+.pwa-msg b { color: var(--ink); font-weight: var(--fw-semibold); }
 .pwa-update .btn { flex: none; }
 @keyframes pwa-in { from { opacity: 0; transform: translateX(-50%) translateY(10px); } }
 @media (max-width: 560px) {

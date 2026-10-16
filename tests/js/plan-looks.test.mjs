@@ -49,9 +49,9 @@ test('looks join onto layout items by piece id; an item with its own look keeps 
   assert.equal(L.applyLooks(items, { pieces: [] }), items);
 });
 
-test('the example furniture holds the renter\'s answers: black leather futon, dark brown laminate desk, black-brown MALM chest, black nightstands, grey bed', () => {
+test('the example furniture holds the renter\'s answers: black leather futon, dark brown laminate desk, dark brown STORKLINTA dresser, black nightstands, grey bed', () => {
   const want = {
-    futon: ['black', 'leather'], desk: ['#402e23', 'laminate'], dresser: ['#2b221d', 'laminate'], 'nightstand-1': ['black', 'paint'], 'nightstand-2': ['black', 'paint'],
+    futon: ['black', 'leather'], desk: ['#402e23', 'laminate'], dresser: ['#3a2b22', 'laminate'], 'nightstand-1': ['black', 'paint'], 'nightstand-2': ['black', 'paint'],
     bed: ['grey', 'fabric'], coffee: ['brown', 'wood'], dining: ['brown', 'wood'],
   };
   for (const [id, [color, material]] of Object.entries(want)) {
