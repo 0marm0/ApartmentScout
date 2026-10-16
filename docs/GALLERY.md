@@ -8,11 +8,10 @@ few in the light one.
 
 The listings, prices, commutes, records and 3D models in these pictures are the example search's own. The saved picks, the visit
 notes, the decision history and the day of tours are sample entries written for the screenshots (the script lists them). The
-furniture in the Inside views is the renter's own, from the example's plan file. Listing photos were cleared
-for use in this private repository; re-check their rights before making it public. Every image is marked `public` in
+furniture in the Inside views is the renter's own, from the example's plan file. Listing photos belong to their owners and are
+shown here as part of the worked example; Commons photos carry their licence and author. Every image is marked `public` in
 [`gallery/manifest.json`](gallery/manifest.json); see [THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md) for map and photo
-attribution. Earlier screenshots of the previous interface are kept, unused, in
-[`archive/images-2026-10-15`](archive/images-2026-10-15/README.md) until the owner decides whether to delete them.
+attribution. A short animated walk-through of the whole path is at the top of the [README](../README.md).
 
 ## Find
 

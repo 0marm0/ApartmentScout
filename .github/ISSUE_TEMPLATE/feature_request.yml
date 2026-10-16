@@ -1,0 +1,44 @@
+name: Feature request
+description: An idea that would help someone find, compare or decide on an apartment.
+title: "[feature] "
+labels: ["enhancement"]
+body:
+  - type: dropdown
+    id: stage
+    attributes:
+      label: Which part of a search is this for?
+      options:
+        - Find (listings, map, ranking, commute)
+        - Compare
+        - See inside (Unit 3D, floor plans, light and view)
+        - Decide (tours, questions, memo)
+        - Set up (cities, install, wizard)
+        - Agents (skills, handoff)
+        - Docs
+        - Something else
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do that is hard today?
+      description: Describe the renter's problem, not only the feature.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you like to see?
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives or workarounds you tried
+  - type: checkboxes
+    id: data
+    attributes:
+      label: If it needs data
+      options:
+        - label: It can use a free, public source, and I have linked it above.
+        - label: I checked that the source's terms allow this use (ApartmentScout never bypasses a site's bot protection).
