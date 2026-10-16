@@ -113,11 +113,11 @@ def test_the_ar_model_is_true_scale_visual_whatever_the_screen_draws(browser, ba
           const room = await S.arModel(null); out.room = { size: room.userData.ar.size, tris: room.userData.ar.triangles, tex: room.userData.ar.textures };
           return out; }""")
         s = info["dresser"]["size"]
-        assert abs(s[0] - 63 * IN) < 0.01 and abs(s[1] - 30.7 * IN) < 0.01 and abs(s[2] - 18.9 * IN) < 0.012, f"MALM is 160 x 78 x 48 cm ({[round(v / IN, 1) for v in s]} in)"
+        assert abs(s[0] - 27.6 * IN) < 0.01 and abs(s[1] - 47.2 * IN) < 0.01 and abs(s[2] - 18.9 * IN) < 0.012, f"STORKLINTA is 70 x 120 x 48 cm ({[round(v / IN, 1) for v in s]} in)"
         assert abs(info["bed"]["size"][0] - 64 * IN) < 0.02 and abs(info["bed"]["size"][1] - 40 * IN) < 0.02, "the queen frame is 64 in wide and 40 in tall with its headboard"
         assert abs(info["tv"]["size"][0] - 48.4 * IN) < 0.02 and abs(info["tv"]["min"][1] - 32 * IN) < 0.03, "a 55-inch TV 32 in off the floor"
         assert abs(info["desk"]["size"][0] - 71 * IN) < 0.03
-        assert abs(info["futon"]["size"][0] - 80 * IN) < 0.06
+        assert abs(info["futon"]["size"][0] - 73.2 * IN) < 0.06
         assert info["room"]["tris"] <= 40000, f"the whole room: {info['room']['tris']} triangles"
         for pid, v in info.items():
             if pid == "room":
@@ -149,8 +149,8 @@ def test_a_desktop_downloads_the_usdz_and_the_glb_instead(browser, base_url: str
         assert "def Material" in z.read("model.usda").decode()
         with pg.expect_download(timeout=90000) as g:
             pg.click("#psTab .ps-item[data-id=dresser] [data-ar-dl=glb]")
-        assert g.value.suggested_filename == "ikea-malm-6-drawer-chest.glb"
-        gp = tmp_path / "malm.glb"
+        assert g.value.suggested_filename == "ikea-storklinta-6-drawer-dresser.glb"
+        gp = tmp_path / "storklinta.glb"
         g.value.save_as(gp)
         j = _glb(gp.read_bytes())
         assert len(j["materials"]) >= 3 and len(j["meshes"]) >= 5 and j.get("images"), "materials with their textures"
