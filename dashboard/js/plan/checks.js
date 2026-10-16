@@ -257,11 +257,12 @@ export function itemIssues(model, it, obs) {
   }
   if (it.rules.includes('art-height')) {
     const c = z0 + it.h / 2, A = ART_CENTRE;
-    if (Math.abs(c - A.ideal) > A.tol) add(issue('tight', 'art-height', `Centre is ${Math.round(c)} in up; hang art with its centre about ${A.ideal} in (eye level)`));
-    // furniture standing under it: 6-12 in of wall between its top and the frame reads as one group
+    // furniture standing under it: 6-12 in of wall between its top and the frame reads as one group, and then that gap, not eye level, sets the height
     const below = obs.filter((o) => o.type === 'item' && o.id !== it.id && o.z1 <= z0 + 0.5 && o.z1 > 12 && lateralUnder(it, o.item));
+    const top = below.length ? Math.max(...below.map((o) => o.z1)) : 0, grouped = below.length && z0 - top >= A.aboveMin && z0 - top <= A.aboveMax;
+    if (!grouped && Math.abs(c - A.ideal) > A.tol) add(issue('tight', 'art-height', `Centre is ${Math.round(c)} in up; hang art with its centre about ${A.ideal} in (eye level)`));
     if (below.length) {
-      const top = Math.max(...below.map((o) => o.z1)), gap = z0 - top, name = below.find((o) => o.z1 === top).label.toLowerCase();
+      const gap = z0 - top, name = below.find((o) => o.z1 === top).label.toLowerCase();
       if (gap < A.aboveMin) add(issue('tight', 'art-above', `Only ${Math.round(gap)} in above the ${name}; leave ${A.aboveMin}-${A.aboveMax} in`));
       else if (gap > 18) add(issue('tight', 'art-above', `${Math.round(gap)} in above the ${name}, so it floats; ${A.aboveMin}-${A.aboveMax} in ties them together`));
     }

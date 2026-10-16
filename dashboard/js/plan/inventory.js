@@ -13,6 +13,8 @@
 // `set` (optional, a desk): what stands with it, `{"monitor": 32, "chair": "task"}` (a 32-inch monitor on it, a rolling task chair at it);
 // a rotating desk (variant "rotating", plan/deskspec.js) also takes `"config": "straight" | "l_shape"` and `"hand": "right" | "left"` (the side its panel leg is on).
 // `assumed` (optional): the sizes (`w`, `d`, `h`) the renter did not give, so the studio says "depth assumed".
+// `art` (optional, a painting, ref canvas-painting): which painting it is, also the name of the renter's private image (room3d/paintings.js);
+// its `spec.canvas` gives the canvas depth and, for a triptych, the number of panels and the gap between them.
 // `spec` + `spec_basis` (optional, a bed that is not a box): the maker's dimensions by part (plan/bedspec.js reads them) and where each one
 // comes from ('spec' = the retailer's specification table, 'diagram' = printed on the maker's drawing, 'measured' = measured off that
 // drawing's proportions, 'derived' = worked out from other figures, 'assumed' = our choice); `candidate` (optional): a piece the renter may buy, not one they own, with its product
@@ -162,10 +164,12 @@ export function validateInventory(obj, { catalog = CATALOG } = {}) {
     if (p.states != null) { states = validateStates(p.states); if (typeof states === 'string') return fail(`${at}: ${states}`); }
     if (p.product_info != null) { info = validateProductInfo(p.product_info); if (typeof info === 'string') return fail(`${at}: ${info}`); }
     if (p.candidate != null) { candidate = validateCandidate(p.candidate); if (typeof candidate === 'string') return fail(`${at}: ${candidate}`); }
+    if (p.art != null && !(c.kind === 'art' && typeof p.art === 'string' && /^[a-z0-9][a-z0-9-]{0,39}$/.test(p.art))) return fail(`${at}: art must be a painting key (letters, digits and -) on a piece of wall art`);
     if (p.assumed != null && !(Array.isArray(p.assumed) && p.assumed.length <= 6 && p.assumed.every((x) => ['w', 'd', 'h', 'elev'].includes(x)))) return fail(`${at}: assumed must list sizes among w, d, h, elev`);
     const clean = { id: p.id, ref: p.ref };
     for (const k of ['label', 'room', 'variant', 'product', 'note', 'source']) if (p[k]) clean[k] = p[k];
     if (p.set != null) clean.set = validateSet(p.set, c);
+    if (p.art) clean.art = p.art;
     if (spec) clean.spec = spec;
     if (basis) clean.spec_basis = basis;
     if (states) clean.states = states;
@@ -204,6 +208,7 @@ export function pieceItem(p, pos = { x: 0, y: 0, rot: 0 }) {
   if (p.label) o.label = p.label;
   if (p.set) o.set = p.set;
   if (p.spec) o.spec = p.spec;
+  if (p.art) o.art = p.art;
   if (p.states) o.states = p.states;
   if (p.assumed) o.assumed = p.assumed;
   if (p.look) o.look = p.look;
@@ -213,7 +218,7 @@ export function pieceItem(p, pos = { x: 0, y: 0, rot: 0 }) {
 /** The kit for the auto-placer: resolved items that remember the room kind they live in. */
 export const kitPiece = (p) => ({ ...resolve(pieceItem(p)), roomKind: p.room || (['sleep', 'storage'].includes(CATALOG[p.ref]?.cat) ? 'bedroom' : CATALOG[p.ref]?.cat === 'work' ? 'bedroom' : CATALOG[p.ref]?.cat === 'dining' ? 'living' : 'living') });
 export function kitFromInventory(inv) {
-  return inv.pieces.filter((p) => !offByDefault(inv, p.id)).map(kitPiece);
+  return inv.pieces.filter((p) => !offByDefault(inv, p.id) && !p.art).map(kitPiece);   // a painting is hung by hand (Add), not by the auto-placer
 }
 
 /**

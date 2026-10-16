@@ -200,6 +200,11 @@ export const CATALOG = {
     variants: { m: { label: '36 x 24 in' }, s: { label: '24 x 18 in', w: 24, h: 18, elev: 48 }, l: { label: '48 x 36 in', w: 48, h: 36, elev: 39 } },
     rules: ['solid-wall-behind', 'art-height'],
   },
+  'canvas-painting': {
+    name: 'Painting, stretched canvas', cat: 'decor', kind: 'art', mount: 'wall', w: 30, d: 1.5, h: 24, elev: 45, color: MAT.canvas,
+    src: 'A gallery-wrapped stretched canvas, about 1.5 in deep, hung flush on the wall with the picture running round its edges; one canvas or a row of them (a triptych: spec.canvas.panels and gap). Hang it with its centre about 57 in up, or 6-12 in above a sofa back or headboard.',
+    rules: ['solid-wall-behind', 'art-height'],
+  },
   'floor-lamp': { name: 'Floor lamp', cat: 'lighting', kind: 'lamp', lamp: 'floor', w: 12, d: 12, h: 60, color: MAT.metal, light: { lm: 1100, k: 2700 }, src: 'Floor lamp, about 12 in base and 60 in tall, 1100 lm warm-white (75 W equivalent) bulb.' },
   'table-lamp': { name: 'Table lamp', cat: 'lighting', kind: 'lamp', lamp: 'table', w: 10, d: 10, h: 20, elev: 24, color: MAT.brass, light: { lm: 800, k: 2700 }, src: 'Table lamp 10 in across, 20 in tall, set on a 24 in nightstand; 800 lm warm-white (60 W equivalent).' },
   pendant: { name: 'Pendant light', cat: 'lighting', kind: 'lamp', lamp: 'pendant', w: 16, d: 16, h: 12, elev: 66, color: MAT.shade, light: { lm: 1600, k: 2700 }, src: 'Pendant shade 16 in across hung about 30 in above a dining table (66 in to its bottom on an 8-9 ft ceiling); 1600 lm.' },
