@@ -85,7 +85,7 @@
         {"id": "tv", "ref": "tv-65", "x": 11.75, "y": 15.5, "rot": 270},
         {"id": "dining", "ref": "dining-4", "x": 19.5, "y": 8.0, "rot": 0},
         {"id": "desk", "ref": "desk", "x": 13.8, "y": 22.8, "rot": 0},
-        {"id": "desk-chair", "ref": "task-chair", "x": 15.68, "y": 21.07, "rot": 180, "attach": "desk"}
+        {"id": "desk-chair", "ref": "task-chair", "x": 15.68, "y": 20.6, "rot": 180, "attach": "desk"}
       ]
     },
     {

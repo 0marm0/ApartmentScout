@@ -24,7 +24,7 @@ test('with nothing saved, the plan\'s own first layout is what loads, and it is 
   const m = model(), r = resolveLayout({ model: m, inventory: inv(), saved: null });
   assert.equal(r.source, 'default');
   assert.equal(r.changed, false, 'a default alone is not written to storage');
-  assert.equal(r.items.length, 12, 'the renter\'s ten pieces, the candidate storage bed and the sim rig');
+  assert.equal(r.items.length, 13, 'the renter\'s ten pieces, their office chair, the candidate storage bed and the sim rig');
   assert.ok(r.items.every((i) => i.placed), 'the layout file says the renter placed them');
   assert.deepEqual(r.items.filter((i) => i.hidden).map((i) => i.id), ['bed-latitude'], 'the bed they may buy is in the layout but not shown: their own bed is the default');
   assert.equal(m.layouts[0].id, 'your-furniture');
@@ -59,7 +59,7 @@ test('pieces missing from a saved layout are filled from the default, except the
   const r = resolveLayout({ model: m, inventory: inv(), saved: s });
   const ids = r.items.map((i) => i.id).sort();
   assert.ok(!ids.includes('nightstand-2') && !ids.includes('coffee'), 'taken out stays out');
-  assert.equal(ids.length, 10);
+  assert.equal(ids.length, 11, 'thirteen pieces less the two taken out');
   assert.ok(r.filled.includes('desk') && r.filled.includes('futon'));
   assert.deepEqual([at(r.items, 'bed').x, at(r.items, 'bed').y], [1, 2], 'filling never moves a placed piece');
 });
@@ -114,7 +114,7 @@ test('inventory sizes reach every layout: a size changed in furniture.json shows
   const i = inv(), items = [{ id: 'desk', ref: 'desk', x: 1, y: 1, rot: 0, placed: true }, { id: 'futon', ref: 'futon', x: 2, y: 2, rot: 0, placed: true, variant: 'bed' }];
   const out = applyInventory(items, i);
   assert.deepEqual([out[0].w, out[0].d, out[0].h], [89.2, 21.6, 29.1]);
-  assert.deepEqual(out[0].set, { monitor: 32, chair: 'task', config: 'straight', hand: 'right' });
+  assert.deepEqual(out[0].set, { monitor: 32, chair: false, config: 'straight', hand: 'right' });
   assert.equal(out[0].look.color, '#402e23');
   assert.equal(resolve(out[1]).d, 41.7, 'the futon opened as a bed keeps the state\'s depth (the renter\'s sofa bed, 41.7), not the sofa\'s');
   assert.equal(applyInventory([{ id: 'desk', ref: 'desk', x: 0, y: 0, rot: 0, w: 48 }], i)[0].w, 48, 'a size on the item is the renter\'s override');
