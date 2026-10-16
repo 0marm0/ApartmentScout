@@ -4,6 +4,9 @@ Every view, the drawer, the settings sheet and the command palette open in dark 
 no page errors and no console errors other than the blocked external fetches (tiles, photos). At 390 px nothing may
 stick out past the right edge. axe-core runs on every view: critical AND serious violations fail the build, in both themes and
 in the personalised variants (other accents, high contrast, the largest text).
+
+None of these look at a picture, so the pages build every WebGL scene (the map, Unit 3D, the floor plan studio) but draw no triangles
+(`no_raster`, conftest.py): on CI's software GL each Unit 3D frame took seconds to rasterise. test_unit_3d_draws keeps the real draw.
 """
 from __future__ import annotations
 
@@ -12,10 +15,11 @@ from pathlib import Path
 
 import pytest
 from conftest import block_foreign
+from conftest import no_raster
 from conftest import settled
 from playwright.sync_api import TimeoutError as PlaywrightTimeout
 
-pytestmark = pytest.mark.e2e
+pytestmark = [pytest.mark.e2e, pytest.mark.no_raster]
 
 AXE = Path(__file__).parent / "vendor" / "axe.min.js"
 # every view: five tabs in the top bar (Unit 3D and Floor plan share Home); Tours sits under Shortlist and Records under Research (old links redirect, see below)
@@ -248,6 +252,7 @@ def test_a_planted_throw_fails_the_sweep(open_page, base_url: str) -> None:
     assert any("planted in compare.js" in e for e in s.take())
 
 
+@pytest.mark.no_raster(False)   # the one test here that rasterises Unit 3D for real
 def test_unit_3d_draws(open_page, webgl: bool) -> None:
     if not webgl:
         pytest.skip("no WebGL in this browser (SwiftShader unavailable)")
@@ -283,25 +288,51 @@ def test_the_3d_views_open_the_search_default_and_the_renters_own_choice_wins(op
     assert not s.take()
 
 
-def _axe(page) -> list[dict]:
+def _axe(page, view: str | None = None) -> list[dict]:
+    """axe-core on the whole document, or with `view` (a section name) on what the renter sees with that view in front: its section and
+    everything outside the view sections (top bar, rail, results, drawer, sheets), but not the other views' hidden sections. axe walks
+    whatever it is given, hidden or not, and the shortlist alone leaves some 20,000 nodes behind, so a scoped run takes a third of the time.
+    Rules that need the whole page (title, lang, bypass, duplicate ids) only run on the whole document: a sweep ends with one."""
     if not page.evaluate("() => typeof window.axe === 'object'"):
         page.add_script_tag(path=str(AXE))
-    res = page.evaluate("""async () => {
-      const r = await axe.run(document, { runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'] },
+    res = page.evaluate("""async (view) => {
+      let context = document;
+      if (view) {
+        const shown = document.getElementById('view-' + view), views = [...document.querySelectorAll('section.view')], include = [];
+        const walk = (el) => { for (const c of el.children) {
+          if (views.includes(c)) { if (c === shown) include.push(c); } else if (views.some((s) => c.contains(s))) walk(c); else include.push(c); } };
+        walk(document.body);
+        context = { include };
+      }
+      const r = await axe.run(context, { runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'] },
         resultTypes: ['violations'], exclude: [['.maplibregl-canvas'], ['canvas']] });
       return r.violations.map(v => ({ id: v.id, impact: v.impact, help: v.help, n: v.nodes.length,
         targets: v.nodes.slice(0, 3).map(n => n.target.join(' ')) }));
-    }""")
+    }""", view)
     return res
 
 
 def _sweep(s, views: list[str]) -> tuple[list[dict], list[dict]]:
     critical, serious = [], []
+
+    def note(where: str, found: list[dict]) -> None:
+        for x in found:
+            (critical if x["impact"] == "critical" else serious if x["impact"] == "serious" else []).append({"view": where, **x})
     for v in views:
         _show(s, v)
-        for x in _axe(s.page):
-            (critical if x["impact"] == "critical" else serious if x["impact"] == "serious" else []).append({"view": v, **x})
+        note(v, _axe(s.page, SECTION.get(v, v.split("/")[0])))
+    note(f"whole page on #{views[-1]}, every view loaded", _axe(s.page))
     return critical, serious
+
+
+def test_a_planted_axe_violation_fails_the_scoped_sweep(open_page) -> None:
+    """The harness itself: a scoped axe run sees the shown view and the shell around it, not the hidden views."""
+    s = open_page("#list")
+    _show(s, "list")
+    s.page.evaluate("""() => { for (const id of ['view-list', 'rail', 'view-compare']) {
+      const b = document.createElement('button'); b.className = 'planted'; document.getElementById(id).appendChild(b); } }""")
+    found = {x["id"]: x for x in _axe(s.page, "list")}
+    assert "button-name" in found and found["button-name"]["n"] == 2, found   # the shortlist's and the rail's, not hidden Compare's
 
 
 @pytest.mark.parametrize("theme", ["dark", "light"])
@@ -328,6 +359,7 @@ def test_accessibility_personalised(browser, base_url: str, theme: str, prefs: d
     ctx = browser.new_context(viewport={"width": 1440, "height": 900}, color_scheme=theme, device_scale_factor=1, reduced_motion="reduce")
     try:
         block_foreign(ctx, base_url)
+        no_raster(ctx)
         ctx.add_init_script(f"localStorage.setItem('as:comfort', {json.dumps(json.dumps(prefs))});")
         page = ctx.new_page()
         s = Session(page, base_url)
