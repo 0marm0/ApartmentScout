@@ -44,6 +44,9 @@ The map ranks every listing on your weights, colours the city by door-to-door ti
 <td width="50%" valign="top"><a href="images/find-map-clusters.png"><img src="images/find-map-clusters.png" alt="The map zoomed out: homes merged into bubbles that count them and show the lowest monthly cost"></a><br><b>A calmer map</b><br><sub>Zoomed out, nearby homes merge into a bubble that counts them and shows the lowest monthly cost inside ("from $3,075"); click one to zoom in and watch it split. Your starred picks and the ten best-ranked homes keep a pin of their own at any zoom.</sub></td>
 <td width="50%" valign="top"><a href="images/find-light-theme.png"><img src="images/find-light-theme.png" alt="The map in the light theme with a listing open"></a><br><b>The light theme</b><br><sub>The same map and drawer in the light theme (the menu's Theme row, or <kbd>t</kbd>). Dark is the default, and a system setting is one click away.</sub></td>
 </tr>
+<tr>
+<td colspan="2" valign="top"><img src="images/find-walk-map.png" alt="The commute map on foot with 10, 20 and 30-minute rings around Grand Central"><br><b>On foot</b><br><sub>The Walk mode of the commute panel: walking takes the same time at any hour, so the map draws dashed rings at 10, 20 and 30 minutes around Grand Central, and cards, filters and columns use walking minutes.</sub></td>
+</tr>
 </table>
 
 ## See inside
