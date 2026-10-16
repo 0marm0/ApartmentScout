@@ -13,7 +13,7 @@
    "d": 84,
    "h": 40,
    "look": {
-    "color": "grey",
+    "color": "#55565a",
     "material": "fabric",
     "finish": "matte",
     "basis": "renter",
@@ -21,7 +21,14 @@
      "finish",
      "shade"
     ],
-    "note": "Upholstered grey fabric frame and headboard. The renter gave the colour and the upholstery; the exact shade is a mid grey."
+    "note": "Upholstered grey fabric frame and headboard (the renter's colour), with the renter's black quilted comforter from their room photos.",
+    "parts": {
+     "bedding": {
+      "color": "#1e1e20",
+      "material": "fabric",
+      "finish": "matte"
+     }
+    }
    },
    "note": "Mattress 60 x 80 in on a 64 x 84 in frame with a 40 in headboard.",
    "source": "Fit check; Room to live uses a 62 x 84 in frame; the TV study uses a 60 x 80 in mattress."
@@ -214,14 +221,14 @@
    "d": 18.9,
    "h": 47.2,
    "look": {
-    "color": "#3a2b22",
+    "color": "#1b1918",
     "material": "laminate",
     "finish": "matte",
     "basis": "renter",
     "assumed": [
      "finish"
     ],
-    "note": "IKEA's dark brown oak effect, a printed oak-grain foil. The renter sees it as near black in their room, so it is drawn a little dark; the exact finish is a stand-in."
+    "note": "Black, as the renter has it (IKEA sells this STORKLINTA as dark-brown oak effect; in the renter's room it is black)."
    },
    "note": "IKEA STORKLINTA 6-drawer dresser, dark brown oak effect, 70 x 48 x 120 cm: two small drawers side by side on top, then four full-width ones (inside 61 x 40 x 16 cm), slab fronts with no handles, a thin top, a recessed plinth on small feet. Tall and narrow, with a wall anchor.",
    "source": "manufacturer: IKEA US article 705.592.78, https://www.ikea.com/us/en/p/storklinta-6-drawer-dresser-dark-brown-oak-effect-anchor-unlock-function-70559278/ (product page measurements and drawing). Renter, 2026-10-15: this is their dresser, not the MALM."
@@ -320,9 +327,21 @@
    "d": 33.5,
    "h": 35.4,
    "states": {
-    "sofa": {"w": 73.2, "d": 33.5, "h": 35.4},
-    "lounger": {"w": 73.2, "d": 39.9, "h": 30},
-    "bed": {"w": 73.2, "d": 41.7, "h": 18.5}
+    "sofa": {
+     "w": 73.2,
+     "d": 33.5,
+     "h": 35.4
+    },
+    "lounger": {
+     "w": 73.2,
+     "d": 39.9,
+     "h": 30
+    },
+    "bed": {
+     "w": 73.2,
+     "d": 41.7,
+     "h": 18.5
+    }
    },
    "product_info": {
     "name": "Serta Billie-Loren Convertible Sleeper Sofa",
@@ -337,9 +356,20 @@
     "dims_basis": "listing (unverified for this variant)"
    },
    "spec": {
-    "overall": {"w": 73.2, "d": 33.5, "h": 35.4, "listed_w": 74},
-    "seat": {"d": 22, "h": 18.5},
-    "bed": {"w": 73.2, "d": 41.7}
+    "overall": {
+     "w": 73.2,
+     "d": 33.5,
+     "h": 35.4,
+     "listed_w": 74
+    },
+    "seat": {
+     "d": 22,
+     "h": 18.5
+    },
+    "bed": {
+     "w": 73.2,
+     "d": 41.7
+    }
    },
    "spec_basis": {
     "overall.w": "listing",
