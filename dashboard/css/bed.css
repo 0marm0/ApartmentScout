@@ -1,19 +1,19 @@
 /* The "Bed" control (js/plan/bed-ui.js): My bed / Latitude Run storage bed / No bed, and the fit card for the bed you may buy.
    One component in the Floor plan studio's 2D plan and 3D view and in Unit 3D's Inside view. Tokens only. */
-.bed-ctl { display: flex; flex-direction: column; gap: 6px; padding: 4px; border-radius: var(--r-md); max-width: calc(100% - 20px); z-index: 7; }
+.bed-ctl { display: flex; flex-direction: column; gap: 6px; padding: var(--s-1); border-radius: var(--r-md); max-width: calc(100% - 20px); z-index: 7; }
 .bed-ctl[hidden] { display: none; }
 .bed-ctl.in-p2d { top: 48px; left: 10px; }
 .bed-ctl.in-p3d { right: 10px; top: 50px; align-items: flex-end; }
 .ps-panes[data-mode="both"] .bed-ctl.in-p3d { top: 92px; }
 .bed-ctl.in-unit { position: relative; top: auto; left: auto; right: auto; bottom: auto; order: 5; align-self: flex-start; }
-.bd-bar { display: flex; align-items: center; gap: 4px; flex-wrap: nowrap; }
-.bd-l { font-size: var(--fs-2xs); font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--ink-2); padding: 0 4px 0 6px; flex: none; }
+.bd-bar { display: flex; align-items: center; gap: var(--s-1); flex-wrap: nowrap; }
+.bd-l { font-size: var(--fs-2xs); font-weight: var(--fw-semibold); letter-spacing: .05em; text-transform: uppercase; color: var(--ink-2); padding: 0 var(--s-1) 0 6px; flex: none; }
 .bd-seg { display: flex; gap: 2px; min-width: 0; }
-.bd-seg button, .bd-fit { border: 0; background: none; height: 26px; padding: 0 10px; border-radius: 7px; font: 500 var(--fs-xs) var(--font-sans, inherit); color: var(--ink-2); cursor: pointer; white-space: nowrap; transition: color var(--t-fast), background var(--t-fast); }
+.bd-seg button, .bd-fit { border: 0; background: none; height: 26px; padding: 0 10px; border-radius: var(--r-sm); font: var(--fw-medium) var(--fs-xs) var(--font-sans, inherit); color: var(--ink-2); cursor: pointer; white-space: nowrap; transition: color var(--t-fast), background var(--t-fast); }
 .bd-seg button:hover, .bd-fit:hover { color: var(--ink); }
 .bd-seg button.on { background: var(--surface-3); color: var(--ink); box-shadow: var(--shadow-1); }
-.bd-seg button:focus-visible, .bd-fit:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
-.bd-fit { display: inline-flex; align-items: center; gap: 6px; border-left: 1px solid var(--line-strong); border-radius: 0 7px 7px 0; margin-left: 2px; padding-left: 10px; flex: none; }
+.bd-seg button:focus-visible, .bd-fit:focus-visible { outline: var(--focus-w) solid var(--accent); outline-offset: 1px; }
+.bd-fit { display: inline-flex; align-items: center; gap: 6px; border-left: 1px solid var(--line-strong); border-radius: 0 var(--r-sm) var(--r-sm) 0; margin-left: 2px; padding-left: 10px; flex: none; }
 .bd-fit[aria-expanded="true"] { color: var(--ink); }
 .bd-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ink-4); display: inline-block; }
 .bd-dot.g-clear { background: var(--good); }
@@ -21,31 +21,31 @@
 .bd-dot.g-blocked { background: var(--bad); }
 .bd-short { display: none; }
 
-.bd-pop { width: min(430px, calc(100vw - 48px)); max-height: min(62vh, 480px); overflow-y: auto; overscroll-behavior: contain; padding: 12px 14px; border: 1px solid var(--line-strong); border-radius: var(--r-md); background: var(--surface-1); color: var(--ink); box-shadow: var(--shadow-2, var(--shadow-1)); font-size: var(--fs-xs); line-height: var(--lh-snug, 1.4); text-align: left; }
+.bd-pop { width: min(430px, calc(100vw - 48px)); max-height: min(62vh, 480px); overflow-y: auto; overscroll-behavior: contain; padding: var(--s-3) 14px; border: 1px solid var(--line-strong); border-radius: var(--r-md); background: var(--surface-1); color: var(--ink); box-shadow: var(--shadow-2, var(--shadow-1)); font-size: var(--fs-xs); line-height: var(--lh-snug, 1.4); text-align: left; }
 .bd-pop[hidden] { display: none; }
 .bed-ctl.in-p2d .bd-pop, .bed-ctl.in-unit .bd-pop { position: absolute; top: calc(100% + 6px); left: 0; z-index: 8; }
 .bed-ctl.in-p3d .bd-pop { position: absolute; top: calc(100% + 6px); right: 0; z-index: 8; }
 .bd-card-h { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 6px; }
-.bd-card-h b { font-size: var(--fs-sm); font-weight: 600; }
-.bd-sum { margin: 0 0 8px; color: var(--ink); }
+.bd-card-h b { font-size: var(--fs-sm); font-weight: var(--fw-semibold); }
+.bd-sum { margin: 0 0 var(--s-2); color: var(--ink); }
 .bd-rows { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; }
-.bd-rows li { display: flex; gap: 8px; align-items: flex-start; color: var(--ink-2); }
+.bd-rows li { display: flex; gap: var(--s-2); align-items: flex-start; color: var(--ink-2); }
 .bd-rows li i { flex: none; width: 8px; height: 8px; margin-top: 5px; border-radius: 50%; background: var(--good); }
 .bd-rows li.g-tight i { background: var(--warn); }
 .bd-rows li.g-blocked i { background: var(--bad); }
-.bd-rows li b { display: block; color: var(--ink); font-weight: 600; }
+.bd-rows li b { display: block; color: var(--ink); font-weight: var(--fw-semibold); }
 .bd-rows li.g-blocked span { color: var(--ink); }
-.bd-alt { margin: 8px 0 0; padding: 8px 10px; border-radius: var(--r-sm); background: color-mix(in srgb, var(--warn) 12%, var(--surface-2)); color: var(--ink); }
-.bd-foot { margin: 8px 0 0; color: var(--ink-3); font-size: var(--fs-2xs); }
+.bd-alt { margin: var(--s-2) 0 0; padding: var(--s-2) 10px; border-radius: var(--r-sm); background: color-mix(in srgb, var(--warn) 12%, var(--surface-2)); color: var(--ink); }
+.bd-foot { margin: var(--s-2) 0 0; color: var(--ink-3); font-size: var(--fs-2xs); }
 .bd-foot a { color: var(--accent); }
 .bd-none { margin: 0; color: var(--ink-3); }
 
 @media (max-width: 760px) {
   .bd-long { display: none; }
   .bd-short { display: inline; }
-  .bd-seg button, .bd-fit { padding: 0 8px; }
+  .bd-seg button, .bd-fit { padding: 0 var(--s-2); }
   .bed-ctl.in-p2d, .bed-ctl.in-p3d { max-width: calc(100% - 16px); }
-  .bed-ctl { padding: 2px; gap: 4px; }
+  .bed-ctl { padding: 2px; gap: var(--s-1); }
   .bd-seg button, .bd-fit { height: 24px; }
   .bd-l { display: none; }
 }
