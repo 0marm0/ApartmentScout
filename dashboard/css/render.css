@@ -40,7 +40,7 @@
 @media (max-width: 760px) {
   .rnd-back { align-items: end; padding: 0; }
   .rnd-sheet { width: 100%; max-height: 94dvh; border-radius: var(--r-xl) var(--r-xl) 0 0; }
-  .rnd-body { padding-bottom: calc(18px + env(safe-area-inset-bottom, 0px)); }
+  .rnd-body { padding-bottom: calc(18px + var(--safe-b)); }
   .rnd-seg button small { display: none; }
   .rnd-seg[data-seg="time"] button small, .rnd-seg[data-seg="size"] button small { display: block; }
   .rnd-act .btn { flex: 1 1 40%; }
