@@ -390,16 +390,17 @@ function bedReport() {
   if (bedCache.key !== k) bedCache = { key: k, rep: reportFor(model, items, inventory) };
   return bedCache.rep;
 }
-function setBed(choice) {
+function setBed(choice, group = 'bed') {   // group 'sim': the sim rig shown or hidden, the same way (a piece's hidden mark)
   if (!inventory) return;
-  const next = applyChoice(items, inventory, 'bed', choice);
+  const next = applyChoice(items, inventory, group, choice);
   if (next.every((x, i) => x === items[i])) return;
   checkpoint(); items = next;
   if (sel && !items.some((x) => x.id === sel && !x.hidden)) sel = null;
   commit();
 }
 function mountBedUI() {
-  const o = { state: bedState, report: bedReport, piece: () => inventory?.pieces.find((p) => p.id === 'bed-latitude') || null, choose: setBed };
+  const o = { state: bedState, report: bedReport, piece: () => inventory?.pieces.find((p) => p.id === 'bed-latitude') || null, choose: (c) => setBed(c),
+    rig: { state: () => (inventory && model ? choiceState(items, inventory, 'sim') : null), choose: (c) => setBed(c, 'sim') } };
   bedUIs = [mountBedControl($('p2dWrap'), { ...o, where: 'in-p2d' }), mountBedControl($('pstage'), { ...o, where: 'in-p3d' })];
 }
 /** The saved layout changed behind this view's back (the Bed control in Unit 3D wrote it): take it up. */

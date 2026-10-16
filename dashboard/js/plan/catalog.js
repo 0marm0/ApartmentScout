@@ -15,6 +15,7 @@
 
 import { TOWER_STYLE, partsOf, drawerRun, sleepRect, dimsOf } from './bedspec.js';
 import { ROTATING_STYLE, ROTATING_VARIANT, layoutOf as deskLayout } from './deskspec.js';
+import { RIG_STYLE, layoutOf as rigLayout } from './rigspec.js';
 
 export const CLEARANCE = {
   bed_side: { min: 22, preferred: 24, src: 'Neufert Architects\' Data and Time-Saver Standards: 22-24 in beside a bed to make it and get in.' },
@@ -171,13 +172,18 @@ export const CATALOG = {
   desk: {
     name: 'Desk and chair', cat: 'work', kind: 'desk', w: 48, d: 24, h: 30, color: MAT.oak, range: { w: [36, 84], d: [18, 30] },
     src: 'Desk 48 x 24 x 30 in (adjustable range 36-84 wide, 18-30 deep); chair pull-out zone 28 in wide.',
-    zones: [Z('front', 'desk_chair', { mode: 'full', width: 28, name: 'Chair' })],
+    zones: [Z('front', 'desk_chair', { mode: 'full', width: 28, name: 'Chair' })], ignore: ['simrig'],   // the sim rig's seat is where the chair would be, so its frame in front of the desk is not a blocked chair zone
     variants: {
       [ROTATING_VARIANT]: {
         label: 'Rotating L desk with shelf (Bestier 51 in)', w: 89.2, d: 21.6, h: 29.1, style: ROTATING_STYLE,
         src: 'Bestier rotating L-shaped desk: a 51.8 x 21.6 in desk and a 46.9 x 13.4 in two-tier S shelf that pivots under its inner end (the maker\'s drawing). Straight is about 89 in end to end (derived, not published); the L is 51.8 x 46.9 in. The sizes come from the piece\'s spec in furniture.json.',
       },
     },
+  },
+  'sim-rig': {
+    name: 'Sim rig, F-GT Lite with Fanatec wheel', cat: 'work', kind: 'simrig', style: RIG_STYLE, w: 33.5, d: 76.8, h: 51.2, color: 0x1a1b1d,
+    src: 'Next Level Racing F-GT Lite (NLR-S015) in GT mode with a Fanatec direct-drive base and Formula wheel. Room-planning envelope 195 x 85 x 130 cm (76.8 x 33.5 x 51.2 in), a conservative figure above every published one (the maker lists GT 175 x 75 x 127 cm, Formula 164 x 75 x 94 cm). The seat, wheel deck and pedal plate are approximated: the maker publishes no sizes for them. The pedal end is low (under 20 in) so it may slide under a desktop (about 27 in).',
+    variants: { gt: { label: 'GT (upright seat)' }, formula: { label: 'Formula (reclined seat)', h: 37 } },
   },
   rug: {
     name: 'Rug', cat: 'decor', kind: 'rug', flat: true, w: 96, d: 60, h: 0.4, color: MAT.rug,
@@ -260,7 +266,10 @@ export function resolve(item, catalog = CATALOG) {
   const pd = p ? (item.variant && item.variant !== p.variant ? {} : p.dims || {}) : {};
   // the rotating desk's size is its geometry (spec + straight or L), so a size saved with a layout cannot disagree with the model
   const rotating = v.style === ROTATING_STYLE ? deskLayout(item.spec, { config: item.set?.config, hand: item.set?.hand }) : null;
-  const w = rotating ? rotating.w : item.w ?? pd.w ?? v.w ?? c.w, d = rotating ? rotating.d : item.d ?? pd.d ?? v.d ?? c.d, h = rotating ? rotating.h : item.h ?? pd.h ?? v.h ?? c.h;
+  const sz = (k) => item[k] ?? pd[k] ?? v[k] ?? c[k], rigW = c.style === RIG_STYLE ? sz('w') : 0, rigD = c.style === RIG_STYLE ? sz('d') : 0;
+  // the sim rig's height follows its mode (GT 51.2 in, Formula 37 in), its footprint is the planning envelope; its parts carry their own heights for the checks
+  const rig = c.style === RIG_STYLE ? rigLayout(variant === 'formula' ? 'formula' : 'gt', { w: rigW, d: rigD }) : null;
+  const w = rotating ? rotating.w : item.w ?? pd.w ?? v.w ?? c.w, d = rotating ? rotating.d : item.d ?? pd.d ?? v.d ?? c.d, h = rotating ? rotating.h : rig ? rig.h : item.h ?? pd.h ?? v.h ?? c.h;
   // storage-bed drawers of a real product: the pull-out zone is the drawer depth plus about 4 in to grip (min) or 10 in to kneel (preferred)
   const pull = c.storage && p?.drawers?.pull_in;
   const tower = c.style === TOWER_STYLE && item.spec ? dimsOf(item.spec) : null;
@@ -271,7 +280,9 @@ export function resolve(item, catalog = CATALOG) {
     ...item, kind: c.kind, cat: c.cat, mount: c.mount, name: item.label || c.name, base: c, product: p ? p.id : undefined, productInfo: p,
     w, d, h, elev: item.elev ?? v.elev ?? c.elev ?? 0, rot: norm(item.rot || 0), variant: variant || undefined,
     zones, ignore: c.ignore || [], rules: c.rules || [], seats: c.seats || [], screen: c.screen,
-    flat: !!c.flat, light: c.light || null, ...(tower ? { parts: partsOf(item.spec, w, d) } : {}), ...(rotating ? { deskGeo: rotating, seatX: rotating.seatX } : {}),
+    flat: !!c.flat, light: c.light || null, ...(tower ? { parts: partsOf(item.spec, w, d) } : {}), ...(rotating ? { deskGeo: rotating, seatX: rotating.seatX, parts: deskParts(rotating) } : {}), ...(rig ? { rigGeo: rig, parts: rig.parts } : {}),
   };
 }
+/** The rotating desk's solid boards and panels as fit-check parts (the item's frame: +y is the back, so a box's z is flipped): the desktop is a slab at 27.5 to 29.1 in, so a low piece may stand under it. */
+const deskParts = (g) => g.boxes.map((b) => ({ id: b.id, kind: 'desk', x0: b.x0, x1: b.x1, y0: -b.z1, y1: -b.z0, z0: b.y0, z1: b.y1 }));
 export const norm = (a) => ((a % 360) + 360) % 360;

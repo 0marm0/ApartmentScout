@@ -24,7 +24,7 @@ test('with nothing saved, the plan\'s own first layout is what loads, and it is 
   const m = model(), r = resolveLayout({ model: m, inventory: inv(), saved: null });
   assert.equal(r.source, 'default');
   assert.equal(r.changed, false, 'a default alone is not written to storage');
-  assert.equal(r.items.length, 11, 'the renter\'s ten pieces and the candidate storage bed');
+  assert.equal(r.items.length, 12, 'the renter\'s ten pieces, the candidate storage bed and the sim rig');
   assert.ok(r.items.every((i) => i.placed), 'the layout file says the renter placed them');
   assert.deepEqual(r.items.filter((i) => i.hidden).map((i) => i.id), ['bed-latitude'], 'the bed they may buy is in the layout but not shown: their own bed is the default');
   assert.equal(m.layouts[0].id, 'your-furniture');
@@ -59,7 +59,7 @@ test('pieces missing from a saved layout are filled from the default, except the
   const r = resolveLayout({ model: m, inventory: inv(), saved: s });
   const ids = r.items.map((i) => i.id).sort();
   assert.ok(!ids.includes('nightstand-2') && !ids.includes('coffee'), 'taken out stays out');
-  assert.equal(ids.length, 9);
+  assert.equal(ids.length, 10);
   assert.ok(r.filled.includes('desk') && r.filled.includes('futon'));
   assert.deepEqual([at(r.items, 'bed').x, at(r.items, 'bed').y], [1, 2], 'filling never moves a placed piece');
 });
