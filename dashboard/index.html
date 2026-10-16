@@ -2,7 +2,7 @@
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-visual">
 <title>ApartmentScout</title>
 <!-- [boot] watchdog: if the app has not drawn itself in ~12 s, or a script fails to load or throws before the first render, show a calm
      recovery card instead of a blank page (Reload, or Reset this browser's settings, which keeps picks, notes, tour findings and floor-plan
@@ -85,15 +85,46 @@
 })();
 </script>
 <meta name="description" content="Rank apartments on your own criteria, map door-to-door commutes, read building records and model the light from the exact unit.">
-<meta name="theme-color" content="#08090c">
+<meta name="theme-color" content="#08090c" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f4f4f1" media="(prefers-color-scheme: light)">
 <!-- [pwa] installable app: manifest and icons. js/pwa.js registers sw.js; `apartmentscout build --standalone` drops this block -->
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="32x32" href="assets/pwa/favicon-32.png">
 <link rel="icon" type="image/png" sizes="32x32" media="(prefers-color-scheme: light)" href="assets/pwa/favicon-32-light.png">
 <link rel="apple-touch-icon" href="assets/pwa/apple-touch-icon.png">
+<link rel="apple-touch-icon" sizes="120x120" href="assets/pwa/apple-touch-icon-120.png">
+<link rel="apple-touch-icon" sizes="152x152" href="assets/pwa/apple-touch-icon-152.png">
+<link rel="apple-touch-icon" sizes="167x167" href="assets/pwa/apple-touch-icon-167.png">
+<link rel="apple-touch-icon" sizes="180x180" href="assets/pwa/apple-touch-icon.png">
+<link rel="apple-touch-startup-image" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait) and (prefers-color-scheme: dark)" href="assets/pwa/splash-750x1334-dark.png">
+<link rel="apple-touch-startup-image" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait) and (prefers-color-scheme: light)" href="assets/pwa/splash-750x1334-light.png">
+<link rel="apple-touch-startup-image" media="(device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait) and (prefers-color-scheme: dark)" href="assets/pwa/splash-1242x2208-dark.png">
+<link rel="apple-touch-startup-image" media="(device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait) and (prefers-color-scheme: light)" href="assets/pwa/splash-1242x2208-light.png">
+<link rel="apple-touch-startup-image" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait) and (prefers-color-scheme: dark)" href="assets/pwa/splash-1125x2436-dark.png">
+<link rel="apple-touch-startup-image" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait) and (prefers-color-scheme: light)" href="assets/pwa/splash-1125x2436-light.png">
+<link rel="apple-touch-startup-image" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait) and (prefers-color-scheme: dark)" href="assets/pwa/splash-828x1792-dark.png">
+<link rel="apple-touch-startup-image" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait) and (prefers-color-scheme: light)" href="assets/pwa/splash-828x1792-light.png">
+<link rel="apple-touch-startup-image" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait) and (prefers-color-scheme: dark)" href="assets/pwa/splash-1242x2688-dark.png">
+<link rel="apple-touch-startup-image" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait) and (prefers-color-scheme: light)" href="assets/pwa/splash-1242x2688-light.png">
+<link rel="apple-touch-startup-image" media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait) and (prefers-color-scheme: dark)" href="assets/pwa/splash-1170x2532-dark.png">
+<link rel="apple-touch-startup-image" media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait) and (prefers-color-scheme: light)" href="assets/pwa/splash-1170x2532-light.png">
+<link rel="apple-touch-startup-image" media="(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait) and (prefers-color-scheme: dark)" href="assets/pwa/splash-1284x2778-dark.png">
+<link rel="apple-touch-startup-image" media="(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait) and (prefers-color-scheme: light)" href="assets/pwa/splash-1284x2778-light.png">
+<link rel="apple-touch-startup-image" media="(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait) and (prefers-color-scheme: dark)" href="assets/pwa/splash-1179x2556-dark.png">
+<link rel="apple-touch-startup-image" media="(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait) and (prefers-color-scheme: light)" href="assets/pwa/splash-1179x2556-light.png">
+<link rel="apple-touch-startup-image" media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait) and (prefers-color-scheme: dark)" href="assets/pwa/splash-1290x2796-dark.png">
+<link rel="apple-touch-startup-image" media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait) and (prefers-color-scheme: light)" href="assets/pwa/splash-1290x2796-light.png">
+<link rel="apple-touch-startup-image" media="(device-width: 402px) and (device-height: 874px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait) and (prefers-color-scheme: dark)" href="assets/pwa/splash-1206x2622-dark.png">
+<link rel="apple-touch-startup-image" media="(device-width: 402px) and (device-height: 874px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait) and (prefers-color-scheme: light)" href="assets/pwa/splash-1206x2622-light.png">
+<link rel="apple-touch-startup-image" media="(device-width: 420px) and (device-height: 912px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait) and (prefers-color-scheme: dark)" href="assets/pwa/splash-1260x2736-dark.png">
+<link rel="apple-touch-startup-image" media="(device-width: 420px) and (device-height: 912px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait) and (prefers-color-scheme: light)" href="assets/pwa/splash-1260x2736-light.png">
+<link rel="apple-touch-startup-image" media="(device-width: 440px) and (device-height: 956px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait) and (prefers-color-scheme: dark)" href="assets/pwa/splash-1320x2868-dark.png">
+<link rel="apple-touch-startup-image" media="(device-width: 440px) and (device-height: 956px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait) and (prefers-color-scheme: light)" href="assets/pwa/splash-1320x2868-light.png">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="ApartmentScout">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="format-detection" content="telephone=no">
 <!-- end [pwa] -->
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Cstyle%3E.tower%7Bfill:#263533%7D.ring%7Bfill:#05583f%7D%40media (prefers-color-scheme: dark)%7B.tower%7Bfill:#fff%7D.ring%7Bfill:#12865f%7D%7D%3C/style%3E%3Cdefs%3E%3CclipPath id=%22h%22%3E%3Ccircle cx=%2250%22 cy=%2240%22 r=%2225%22/%3E%3C/clipPath%3E%3C/defs%3E%3Cpath d=%22M50 95C50 95 15.5 57.5 15.5 40A34.5 34.5 0 1 1 84.5 40C84.5 57.5 50 95 50 95ZM75 40A25 25 0 1 1 25 40A25 25 0 1 1 75 40Z%22 fill=%22#05583f%22 fill-rule=%22evenodd%22 class=%22ring%22/%3E%3Cpath d=%22M49.25 29L50 16.5L50.75 29ZM48 29H52V36.6H48ZM46 36.6H54V39.2H46ZM44 39.2H56V42.2H44ZM42 42.2H58V47.8H42ZM40 47.8H60V70H40ZM45.3 41.6H46.7V70H45.3ZM49.3 41.6H50.7V70H49.3ZM53.3 41.6H54.7V70H53.3Z%22 fill=%22#263533%22 fill-rule=%22evenodd%22 clip-path=%22url(#h)%22 class=%22tower%22/%3E%3C/svg%3E">
 <link rel="stylesheet" href="vendor/fonts/geist.css">
@@ -153,6 +184,7 @@
 <link rel="stylesheet" href="css/move.css">
 <link rel="stylesheet" href="css/calm.css">
 <link rel="stylesheet" href="css/render.css">
+<link rel="stylesheet" href="css/native.css">
 <script src="vendor/maplibre-gl/maplibre-gl.js"></script>
 <script type="importmap">
 { "imports": {

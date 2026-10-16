@@ -789,12 +789,42 @@ Safari uses *Add to Home Screen*.
 What it saves: the shell and core data listed in `precache.json` (written at deploy time) go into a cache named for the build; other
 same-origin files (map layers, 3D site models, plans, dossiers) are cached the first time they are used, in a cache that belongs to the
 same build; saved listing photos (`media/` or `media-lite/`) are cached on first view in their own cache, capped at 50 MB, oldest first. Remote photos
-and map tiles are never touched, so offline the map shows its basemap note and the pins, lines and heat from the saved data. The page
+are never touched. Map tiles are handled only as described under *The phone app* below: without a saved map, offline the map shows its basemap note and the pins, lines and heat from the saved data. The page
 is served from the build's cache (so the page and the hashed files it names stay one version) and the browser's worker update check
 finds a new deploy: the dashboard then shows *A new version is ready* with **Reload** and **Later**. The new build installs in the
 background and only takes over when you choose Reload; the first install takes over at once. Your picks, weights and filters live in
 `localStorage` and are kept. Tests: `tests/e2e/test_pwa.py` (manifest, installability under `/ApartmentScout/demo/`, offline reload,
 the update prompt, the photo cap, and the places the worker must stay out of) and `tests/js/pwa.test.mjs`.
+
+## The phone app
+
+On an iPhone the hosted dashboard is meant to be used from the home screen (390 x 844 is the reference size). What makes it feel like an app:
+
+- **Install.** iOS has no install prompt, so on a return visit in Safari (or from *Add to Home Screen* in the menu) a sheet shows the three steps
+  with a picture of each; *Got it* asks again in two weeks, *Do not show this again* never does, and an installed app never sees it. The head carries
+  touch icons (120, 152, 167, 180 px), launch screens for every current iPhone in dark and light (`apple-touch-startup-image`, flat colour, from
+  `scripts/make_icons.py`), a theme colour per scheme that follows the app's own theme, and the `default` status bar style (the bar keeps the system's
+  light or dark text on the app's ground; `viewport-fit=cover` plus the `--safe-t/-r/-b/-l` tokens in `css/tokens.css` keep everything clear of the notch,
+  the Dynamic Island and the home indicator). The shell never bounces (`overscroll-behavior: none`), fills `100dvh`, and fields are 16 px so iOS does not zoom.
+- **The listing is a bottom sheet** with three detents. Drag the grab bar or the sheet itself, or flick it: peek, half, full; below peek it closes. At
+  full height its content scrolls and a pull from the top lowers it. The action buttons stay on the bottom edge while the sheet slides under them. The
+  grab bar is a button too (tap to step). Swipe sideways on the sheet (not on the photos, which scroll) for the next or previous home in the list's
+  order. The other sheets (visit notes, office questions, search settings, the menu, the install guide) close with a swipe down.
+- **Pull the results list down** from the top to check for new data and a new version (it looks at `manifest.json` past the cache; a newer deploy shows the
+  usual *new version* prompt).
+- **Rest a finger on a card** for star, compare, See inside, share and open. Share uses the system sheet (link plus name, address, monthly cost,
+  commute and score; never notes or picks) and falls back to copying the link.
+- **Touch.** Targets are 44 px (a 28 px star keeps a 44 px hit area), presses sink and spring back, motion follows *Reduce motion* and the Comfort
+  setting, and when the keyboard opens the tab bar steps aside and nothing else moves.
+
+**Offline map in Tour day.** *Save for offline* (Tour day, route screen) downloads the map tiles around today's stops, the destination and your saved homes into
+the browser (`as-tiles`), shows how many tiles and how much space they take, and has a *Clear* button. The service worker answers the map from them when
+the network is down or slow (three seconds) and keeps them under the weekly tile version folder, so a newer map build still finds them. It depends on the
+basemap's terms: OpenFreeMap allows an app to save an area for offline use (up to 3,000 tiles or 50 MB per download, four requests at a time, with a unique
+User-Agent), so the pack is capped at 1,500 tiles and 40 MB, four at a time, and says that a web page cannot set a User-Agent. Esri's raster fallback does
+not allow saving an area, so with it only the tiles you looked at are kept (`as-tiles-viewed`, 40 MB, oldest first) and the panel says so; a search with its
+own tile server is not saved. Opened with no connection, the map keeps its vector style when a pack exists. Tests: `tests/e2e/test_phone_app.py` (touch gestures on
+an iPhone-sized context), `tests/e2e/test_phone_offline.py` (the built site with a stubbed map server), `tests/js/native-core.test.mjs`, `tests/test_pwa_assets.py`.
 
 ## When the page will not start
 

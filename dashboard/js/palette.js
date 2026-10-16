@@ -1,12 +1,13 @@
 // Command palette (⌘K, Ctrl+K or "/"): jump to any listing by name, address or neighbourhood, filter the
 // results, switch view, and run the shell's actions (theme, search settings, export, shortcuts, the open
 // listing's save / compare / share). One modal; the query input keeps focus and the options are a listbox.
-import { S, on, store, openDrawer, label, cost, score, isSaved, toggleSave, toggleCompare, setFilter, openSettings, filtered, openWizard } from './app.js';
+import { S, on, store, openDrawer, label, cost, score, isSaved, toggleSave, toggleCompare, setFilter, openSettings, filtered, openWizard, byId, dest, commuteOf } from './app.js';
 import { flipTheme } from './shell.js';
 import { $, esc, money, ICONS, imagesOf, mediaSrc, scoreColor, toast } from './util.js';
 import { nlItem } from './features/nlsearch.js';   // [feature C] plain-language search row
 import { hasInterior, goSeeInside } from './unit/camera-pref.js';   // [camera] the See inside command
 import { extraActions } from './features/palette-actions.js';   // [feature C] undo, redo, tour, cheat sheet
+import { shareSummary } from './features/native-core.js';   // [phone app] the text a shared home carries
 
 const VIEWS = [['map', 'Map', 'Pins, commute surface and price tags'], ['list', 'Shortlist', 'Every home in a sortable table'], ['compare', 'Compare', 'Up to four homes side by side'],
   ['unit', 'Unit 3D', 'The unit in its block, with the sun; inside it when there is a floor plan (3D tab)'], ['plan', 'Floor plan', 'Plan studio and tracer (3D tab)'],
@@ -53,8 +54,22 @@ export async function copyText(text) {
   let ok = false; try { ok = document.execCommand('copy'); } catch { ok = false; }
   ta.remove(); return ok;
 }
+/** Share a home. On a phone the system share sheet opens (Messages, Mail, Notes, AirDrop ...) with a link and a short summary: name, place,
+ *  monthly cost, commute, score. Anywhere else, or when the sheet is not available, the link is copied. */
 export async function shareListing(id) {
-  const ok = await copyText(shareUrl(id));
+  const L = byId(id), url = shareUrl(id);
+  if (L && typeof navigator.share === 'function' && matchMedia('(pointer: coarse)').matches) {
+    const d = dest();
+    const text = shareSummary({ name: label(L), address: L.address, neighborhood: L.neighborhood, beds: L.beds ?? null, cost: cost(L), commuteMin: d ? commuteOf(L, d.name) : null, commuteTo: d?.name, score: score(L) });
+    const data = { title: label(L), text, url };
+    try {
+      if (!navigator.canShare || navigator.canShare(data)) { await navigator.share(data); return; }
+    } catch (e) {
+      if (e?.name === 'AbortError') return;   // the renter closed the sheet
+      /* any other failure: fall back to copying the link */
+    }
+  }
+  const ok = await copyText(url);
   toast(ok ? 'Link copied: it opens this home' : 'Could not copy: your browser blocked the clipboard');
 }
 

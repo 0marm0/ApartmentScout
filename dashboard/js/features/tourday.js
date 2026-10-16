@@ -7,11 +7,13 @@
 import { S, on, store, byId, dest, label, cost, reloaders } from '../app.js';
 import { esc, toast, money } from '../util.js';
 import { reducedMotion } from './dom.js';
+import { bytesLabel } from './native-core.js';
 import * as FS from './findings-store.js';
 import { assess, livePromotions, listedValue, CHECK_KEYS, CHECKS } from './findings-model.js';
 import { pristine, openVisit } from './tour-findings.js';
 import * as M from './tourday-model.js';
 import * as Noise from './tourday-noise.js';
+import * as Off from './offline-tiles.js';   // the offline map: Save for offline, its size and Clear
 
 const ICON = {
   x: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg>',
@@ -153,6 +155,7 @@ function routeHTML(entries) {
       <ol class="tday-route" aria-label="Stops in visiting order">${items}</ol>`
     : `<div class="tday-empty"><h3>No tours booked for today</h3><p>Book a time on the Tours board and it shows up here, or pick the homes you are visiting.</p></div>`}
     <button type="button" class="tday-btn wide" data-adding aria-expanded="${adding}">${adding ? 'Hide the list' : n ? 'Add a home to today' : 'Pick the homes you are visiting'}</button>${addList}
+    <section class="tday-off" data-off aria-label="Offline map">${Off.panelHTML(Off.placesFor(entries.map((e) => e.stop.id)))}</section>
     <p class="tday-fine">Walk and transit times are straight-line estimates, not schedules. Directions open in your maps app.</p>`;
 }
 function routeHead(entries) {
@@ -273,6 +276,13 @@ function patchProgress() {
   const t = root.querySelector('#tdProg'); if (t) t.innerHTML = `<b>${p.done}</b> of ${p.total} checked`;
   const b = root.querySelector('.tday-prog-bar'); if (b) { b.setAttribute('aria-valuenow', p.done); b.firstElementChild.style.width = `${p.total ? Math.round((p.done / p.total) * 100) : 0}%`; }
 }
+/** Redraw only the offline-map panel (a download reports many times a second; the rest of the screen is left alone, and so is the focus). */
+function paintOff() {
+  const box = root?.querySelector('[data-off]'); if (!box || view !== 'route') return;
+  const a = document.activeElement, keep = box.contains(a) ? ['offSave', 'offClear', 'offCancel'].find((k) => a.dataset?.[k] != null) : null;
+  box.innerHTML = Off.panelHTML(Off.placesFor(route().entries.map((e) => e.stop.id)));
+  if (keep) box.querySelector(`[data-off-${keep.slice(3).toLowerCase()}]`)?.focus({ preventScroll: true });
+}
 function paintSync() { root?.querySelectorAll('.tday-status').forEach((s) => { s.innerHTML = syncHTML(); }); }
 function paintMeter() {
   if (!root || !meas) return;
@@ -333,6 +343,13 @@ function onClick(e) {
   if (d.drop) { const id = d.drop; st.removed = [...new Set([...st.removed, id])]; st.picked = st.picked.filter((x) => x !== id); st.order = st.order.filter((x) => x !== id); save(); render(); toast('Taken off today\'s route', 2600); return; }
   if (d.adding != null) { adding = !adding; render(); return; }
   if (d.add) { st.picked = [...new Set([...st.picked, d.add])]; st.removed = st.removed.filter((x) => x !== d.add); st.order = []; adding = false; save(); render(); return; }
+  if (d.offSave != null) {
+    const places = Off.placesFor(route().entries.map((x) => x.stop.id));
+    Off.start(places).then((r) => { if (r) toast(`Saved the map: ${r.tiles} tiles, ${bytesLabel(r.bytes)}`, 3600); });
+    return;
+  }
+  if (d.offCancel != null) { Off.cancel(); return; }
+  if (d.offClear != null) { Off.clear().then(() => toast('Offline map cleared', 2400)); return; }
   if (d.sync != null) { toast('Trying the search folder…', 1800); resync(true); return; }
   if (d.rmPhoto) { const p = (rec(curId).photos || []).find((x) => x.id === d.rmPhoto); if (p) FS.deletePhoto(curId, p).then(render, (er) => toast(`Could not delete the photo: ${er.message}`, 4200)); return; }
   if (d.copySum) { copy(summaryTextOf(d.copySum)); return; }
@@ -413,6 +430,7 @@ export function open({ view: v = 'route', id = null } = {}) {
   root.addEventListener('focusout', (e) => { if (e.target.matches?.('textarea')) { runPending(); FS.flush(); } });
   try { history.pushState({ tday: view, id: curId, d: 1 }, ''); } catch { /* no history here */ }
   addEventListener('popstate', onPop); document.addEventListener('keydown', onDocKey);
+  offs.push(Off.subscribe(paintOff)); Off.refresh();
   offs.push(FS.onChange((changed) => { if (!root) return; if (changed == null) paintSync(); else renderSoon(); }));
   const tick = () => { if (FS.pending().length) resync(); else paintSync(); };
   addEventListener('online', tick); addEventListener('offline', paintSync);

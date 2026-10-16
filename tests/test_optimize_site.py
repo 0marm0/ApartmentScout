@@ -92,7 +92,7 @@ def test_service_worker_precache_and_build_marker_agree(built) -> None:
         assert u == "./" or (demo / u).is_file(), u
     # every file the page and its CSS name is precached, so the first offline load has nothing to miss
     for href in re.findall(r'(?:href|src)="((?:dist|vendor|assets)/[^"]+)"', built["html"]):
-        assert href in pre["shell"] or href == "assets/pwa/apple-touch-icon.png", href   # the home-screen icon is fetched only when saved
+        assert href in pre["shell"] or re.match(r"assets/pwa/(apple-touch-icon.*|splash-\d+x\d+-(dark|light))\.png$", href), href   # the home-screen icons and launch screens are fetched only when saved or launched
 
 
 def test_the_build_id_is_stable_for_the_same_input_and_changes_with_it(built, tmp_path: Path) -> None:

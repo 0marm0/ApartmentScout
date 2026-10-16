@@ -140,7 +140,7 @@ def test_manifest_icons_and_head_tags(site: Path) -> None:
     demo = site / "ApartmentScout" / "demo"
     html = (demo / "index.html").read_text()
     assert '<link rel="manifest" href="manifest.webmanifest">' in html
-    assert re.search(r'<meta name="theme-color" content="#[0-9a-f]{6}">', html)
+    assert re.search(r'<meta name="theme-color" content="#[0-9a-f]{6}"(?: media="\(prefers-color-scheme: (?:dark|light)\)")?>', html)
     assert 'rel="apple-touch-icon" href="assets/pwa/apple-touch-icon.png"' in html
     assert re.search(r'<meta name="as-build" content="[0-9a-f]{12}">', html), "the built page carries the build marker that turns the worker on"
     m = json.loads((demo / "manifest.webmanifest").read_text())
