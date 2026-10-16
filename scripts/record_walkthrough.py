@@ -19,6 +19,8 @@ helpers (the automatic "lighter mode" note and the bed/chair switches) are hidde
     python scripts/record_walkthrough.py --root /tmp/snap/dashboard
 
 Writes docs/images/walkthrough.webp (animated, for the README) and docs/images/walkthrough.mp4 (full quality, linked from it).
+`--art dashboard/data-private/art --out <a private folder>` makes the renter's own copy with their real paintings (the recorder
+answers the page's local-API session question with the art list, as `apartmentscout serve` does); never for docs/images.
 Needs: pip install playwright && playwright install chromium; ffmpeg and img2webp (libwebp) on the PATH.
 """
 from __future__ import annotations
@@ -28,12 +30,14 @@ import asyncio
 import base64
 import functools
 import http.server
+import json
 import shutil
 import subprocess
 import sys
 import tempfile
 import threading
 import time
+import urllib.parse
 from pathlib import Path
 
 from playwright.async_api import Page, async_playwright
@@ -55,7 +59,7 @@ HIDE = ("(() => { const add = () => { const s = document.createElement('style');
         " document.head.append(s); }; if (document.head) add(); else document.addEventListener('DOMContentLoaded', add); })()")
 # Unit 3D's inside camera: stand at a plan point (inches) and look along a heading (0 = +y), as a person walking there would
 GO = "([x, y, dir, pitch, fov]) => { __unit3d.stage.look.fov = fov; return __unit3d.walk.goTo([x, y], {dir, pitch}); }"
-LIVING = [130, 140, 342, 5, 75]   # the back of the living room: TV, desk and chair, dining table, futon, the corner window ahead
+LIVING = [95, 118, 350, 4, 85]    # the back of the living room: the Monet by the dining table, the triptych over the futon, the windows ahead
 BEDROOM = [200, 162, 8, 2, 80]    # the bedroom door: TV on the left, the bed on the right, the window corner ahead
 # a smooth scroll of whatever scrolls under the middle of the window
 SCROLL = ("(dy) => { let e = document.elementFromPoint(innerWidth / 2, innerHeight * 0.6);"
@@ -234,9 +238,29 @@ async def unit_ready(page: Page) -> None:
 
 
 async def record(root: Path, port: int, tmp: Path, args) -> Recorder:
+    art: Path | None = args.art
+
     class Quiet(http.server.SimpleHTTPRequestHandler):
         def log_message(self, *a) -> None:
             pass
+
+        # --art: answer the page's local-API session question with the art list, as `apartmentscout serve` does, and serve the files
+        def do_GET(self) -> None:
+            if art and self.path.split("?")[0] == "/api/session":
+                body = json.dumps({"api": 1, "can_save": False, "example": False, "search": None, "searches": [], "cities": [],
+                                   "art": sorted(q.name for q in art.iterdir() if q.suffix.lower() in {".jpg", ".jpeg", ".png", ".webp"})}).encode()
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+                return
+            super().do_GET()
+
+        def translate_path(self, path: str) -> str:
+            if art and path.startswith("/data-private/art/"):
+                return str(art / Path(urllib.parse.unquote(path.split("?")[0])).name)
+            return super().translate_path(path)
 
     http.server.ThreadingHTTPServer.allow_reuse_address = True
     http.server.ThreadingHTTPServer.request_queue_size = 128   # the page asks for ~110 files at once; the default backlog of 5 resets some
@@ -252,6 +276,9 @@ async def record(root: Path, port: int, tmp: Path, args) -> Recorder:
             page = await ctx.new_page()
             await page.add_init_script(NO_TOUR)
             await page.add_init_script(HIDE)
+            if art:   # the page asks the local API only when the server put a token in it
+                await page.add_init_script("(() => { const m = document.createElement('meta'); m.name = 'as-token'; m.content = 'walkthrough';"
+                                           " document.documentElement.append(m); })()")
             page.on("pageerror", lambda e: print("page error:", str(e).splitlines()[0], file=sys.stderr))
             cdp = await ctx.new_cdp_session(page)
             rec = Recorder(cdp)
@@ -496,6 +523,8 @@ def main() -> int:
     ap.add_argument("--crf", type=int, default=26, help="H.264 quality of the MP4 (lower is better and bigger)")
     ap.add_argument("--attempts", type=int, default=6, help="how many times to record again when the machine is too busy for smooth motion")
     ap.add_argument("--keep", type=Path, help="keep the encoded intermediates (joined.mp4 is the master) in this folder")
+    ap.add_argument("--art", type=Path, help="the renter's own painting images (dashboard/data-private/art): show them instead of painted "
+                    "stand-ins. Never for the README copy: those images stay out of the repository")
     ap.add_argument("--from-master", type=Path, help="skip recording: make the two outputs again from a kept joined.mp4")
     args = ap.parse_args()
     if not shutil.which("ffmpeg"):
