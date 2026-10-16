@@ -109,6 +109,7 @@ SHOTS = [
     # ---- the hero, and Find
     ("hero-map", "?layer=commute&open=paramount-tower-25e#map", DESK, [], 9000, None),
     ("find-commute-map", "?layer=commute#map", DESK, [], 9000, None),
+    ("find-walk-map", "?layer=commute&mode=walk#map", DESK, [], 9000, None),
     ("find-route-preview", "?mode=subway#map", DESK,
      [("eval", "__asMap.jumpTo({center: [-73.9855, 40.7553], zoom: 14.3})"), ("hover", "#cards .card >> nth=1", 2500)], 9000, None),
     ("find-place-search", "#map", DESK,
