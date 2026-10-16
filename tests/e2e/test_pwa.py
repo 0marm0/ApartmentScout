@@ -135,6 +135,23 @@ def settle(page) -> dict:
     return page.evaluate(STATUS_JS)
 
 
+def settle_on(page, build: str, timeout_s: float = 45) -> dict:
+    """Follow the page through the reload(s) a version switch causes until the worker in control is `build`; returns its status.
+    A navigation while we look (Execution context was destroyed) is expected: look again."""
+    import time
+    end, last = time.monotonic() + timeout_s, None
+    while time.monotonic() < end:
+        try:
+            page.wait_for_selector("#cards .card", timeout=10000)
+            last = settle(page)
+            if last["build"] == build and not page.evaluate("async () => !!(await navigator.serviceWorker.getRegistration())?.waiting"):
+                return last
+        except Exception:   # the page navigated or has not loaded yet
+            pass
+        page.wait_for_timeout(250)
+    raise AssertionError(f"the app never settled on build {build}: last status {last and last.get('build')}")
+
+
 # ------------------------------------------------------------------ manifest, icons, head tags
 def test_manifest_icons_and_head_tags(site: Path) -> None:
     demo = site / "ApartmentScout" / "demo"
@@ -284,13 +301,14 @@ def test_a_new_deploy_is_offered_while_open_and_taken_at_the_next_open(open_app,
         page.locator("#pwaUpdate [data-pwa=later]").click()
         assert page.locator("#pwaUpdate").count() == 0
         # the worker is still waiting, so the next open switches to it at once (one reload), with no prompt
-        page.evaluate("() => { window.__marker = 1; }")
+        # (a new tab session: the one-minute guard against a switch loop is keyed on sessionStorage 'as:sw-applied')
+        page.evaluate("() => { sessionStorage.removeItem('as:sw-applied'); }")
         page.reload()
-        page.wait_for_function("() => window.__marker === undefined", timeout=30000)
-        page.wait_for_selector("#cards .card", timeout=30000)
-        page.wait_for_function("async () => (await caches.keys()).includes('as-shell-' + %r)" % new, timeout=30000)
-        st2 = settle(page)
-        assert st2["build"] == new and page.locator("#pwaUpdate").count() == 0
+        st2 = settle_on(page, new)
+        assert page.evaluate("() => !!sessionStorage.getItem('as:sw-applied')"), "the open-time switch is stamped so it cannot loop"
+        assert page.locator("#pwaUpdate").count() == 0
+        # the activating worker removes the old version's caches (it may still be doing so when the page settles)
+        page.wait_for_function("async (old) => !(await caches.keys()).includes('as-shell-' + old)", arg=old, timeout=15000)
         names = page.evaluate("async () => (await caches.keys())")
         assert f"as-shell-{new}" in names and f"as-shell-{old}" not in names, names
         # a deploy that arrives while the app is open is still offered, and Reload switches to it
@@ -299,11 +317,8 @@ def test_a_new_deploy_is_offered_while_open_and_taken_at_the_next_open(open_app,
         (demo / "precache.json").write_text(pre_before.replace(old, newer))
         page.evaluate("async () => { const r = await navigator.serviceWorker.getRegistration(); await r.update(); }")
         page.wait_for_selector("#pwaUpdate", timeout=20000)
-        page.evaluate("() => { window.__marker = 1; }")
         page.locator("#pwaUpdate [data-pwa=reload]").click()
-        page.wait_for_function("() => window.__marker === undefined", timeout=30000)   # a new document: the page reloaded itself
-        page.wait_for_selector("#cards .card", timeout=30000)
-        assert settle(page)["build"] == newer
+        assert settle_on(page, newer)["build"] == newer   # the page reloaded itself onto the new version
         assert errors == [], errors
     finally:
         (demo / "sw.js").write_text(sw_before)
