@@ -866,7 +866,7 @@
   {
    "file": "docs/images/inside-bedroom.png",
    "publication_status": "public",
-   "sha256": "10ba4d0eca40ea8a7ccfed7b09ac8781b8f469cff98917fd6772afb8bf5592ba",
+   "sha256": "089dd3c79bb732b10cf2d9842d77efe2cbdd7844c7acd35ebc31ca2a79542427",
    "bytes": 408285,
    "width": 1560,
    "height": 954,
@@ -893,7 +893,7 @@
   {
    "file": "docs/images/inside-furniture.png",
    "publication_status": "public",
-   "sha256": "48482d569c0bd3ceecfbfd18a9d396ef1dd59c4c34fbb3421573b549e210a6bd",
+   "sha256": "2ccc44e7c3772537a1b4b8f7ebcbb5cf7d8d94445ec1e66107e079f7f70d634b",
    "bytes": 310603,
    "width": 1560,
    "height": 954,
@@ -1010,7 +1010,7 @@
   {
    "file": "docs/images/inside-unit-3d.png",
    "publication_status": "public",
-   "sha256": "868875ab0838576f12168a3527a723fcfcaeb325470c5dd9ca6ea4085e1df8ce",
+   "sha256": "46880883c0c483e2f2f589d036a571847f6833fbc19a9a0339cae304b0c1aad9",
    "bytes": 350248,
    "width": 1600,
    "height": 1000,
