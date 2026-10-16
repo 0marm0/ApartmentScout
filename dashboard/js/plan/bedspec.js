@@ -22,14 +22,15 @@ export function dimsOf(spec) {
   const W = num(o.w, 94), D = num(o.d, 83.3), H = num(o.h, 47.4);
   const out = {
     W, D, H,
-    head: { depth: num(h.depth, 3.9), towerW: num(h.tower_w, 16.7), towerDepth: num(h.tower_depth, 6.5), gap: num(h.centre_gap, 12), band: num(h.band_h, 3), rail: num(h.top_rail_h, 3), lid: num(h.cubby_lid_h, 5.1), pad: num(h.panel_pad, 1.2) },
-    stand: { w: num(n.w, 16.7), d: num(n.d, 17), h: num(n.h, 8.3), bottom: num(n.bottom, 12), drawerW: num(n.drawer_w, 11.3), drawerD: num(n.drawer_d, 13.9), drawerH: num(n.drawer_h, 3.4) },
-    frame: { w: num(f.w, 60.5), rail: num(f.rail_h, 13), clear: num(f.clearance, 4.5), slatInset: num(f.slat_inset, 2), legs: num(f.centre_legs, 3), board: num(f.board_t, 0.25) },
+    head: { depth: num(h.depth, 3.9), towerW: num(h.tower_w, 16.7), towerDepth: num(h.tower_depth, 6.5), baseDepth: num(h.base_depth, 13), gap: num(h.centre_gap, 12), rail: num(h.top_rail_h, 4), panel: num(h.panel_h, 16), band: num(h.band_h, 4), step: num(h.step_h, 2.5), pad: num(h.panel_pad, 0.8), split: num(h.panel_gap, 0.5) },
+    stand: { w: num(n.w, 16.7), d: num(n.d, 17), h: num(n.h, 8.3), bottom: num(n.bottom, 13.8), drawerW: num(n.drawer_w, 11.3), drawerD: num(n.drawer_d, 13.9), drawerH: num(n.drawer_h, 3.4) },
+    frame: { w: num(f.w, 60.5), rail: num(f.rail_h, 13), clear: num(f.clearance, 4.5), feet: num(f.feet, 1.2), legs: num(f.centre_legs, 3), board: num(f.board_t, 0.25) },
     mattress: { w: num(m.w, 60), d: num(m.d, 80), h: num(m.h, 12) },
     drawers: { perSide: num(dr.per_side, 2), l: num(dr.front_l, 30.7), h: num(dr.front_h, 11.8), basket: { l: num(dr.basket_l, 25.4), w: num(dr.basket_w, 17), h: num(dr.basket_h, 4.7) }, pull: num(dr.pull, 17), caster: num(dr.caster_d, 2) },
   };
-  out.rim = out.frame.clear + out.frame.rail;                        // the top of the side rails
-  out.slat = out.rim - out.frame.slatInset;                          // the top of the slats the mattress lies on
+  out.rim = out.frame.rail;                                          // the top of the oak box: the 13 in the maker's drawing gives for the whole side, from the floor
+  out.centreBottom = H - out.head.rail - out.head.panel - out.head.band;   // where the centre section of the headboard ends (the underside of its wood band)
+  out.slat = out.centreBottom - out.head.gap;                        // the slats sit 12 in under it (the maker's drawing), which a 12 in mattress fills exactly
   out.mattressTop = out.slat + out.mattress.h;
   out.drawerRun = out.drawers.perSide * out.drawers.l;               // how much of each side the drawer fronts take, from the foot end
   out.drawerStart = D - out.drawerRun;                               // wall distance where the drawer run begins (nearest the headboard)
@@ -39,14 +40,16 @@ export function dimsOf(spec) {
 /** The part rectangles of a bed with a spec, in the item's frame (+y back), or null when the item has no spec. `w`, `d` are the item's resolved size. */
 export function partsOf(spec, w, d) {
   const g = dimsOf(spec); if (!g) return null;
-  const hd = d / 2, hw = w / 2, tw = g.head.towerW, fw = g.frame.w / 2;
+  const hd = d / 2, hw = w / 2, tw = g.head.towerW, fw = g.frame.w / 2, cw = hw - tw;
   const P = (id, kind, x0, x1, s0, s1, z0, z1) => ({ id, kind, x0, x1, y0: hd - s1, y1: hd - s0, z0, z1 });
-  const out = [P('headboard', 'headboard', -fw, fw, 0, g.head.depth, g.mattressTop, g.H)];   // the centre section: from the mattress top up
+  const out = [P('headboard', 'headboard', -cw, cw, 0, g.head.depth, g.centreBottom, g.H)];   // the centre section: the band, the panels and the top rail
   for (const sx of [-1, 1]) {
-    out.push(P(sx < 0 ? 'tower-left' : 'tower-right', 'tower', sx < 0 ? -hw : hw - tw, sx < 0 ? -hw + tw : hw, 0, g.head.towerDepth, 0, g.H));
-    out.push(P(sx < 0 ? 'nightstand-left' : 'nightstand-right', 'nightstand', sx < 0 ? -hw : hw - g.stand.w, sx < 0 ? -hw + g.stand.w : hw, g.head.towerDepth, g.stand.d, g.stand.bottom, g.stand.bottom + g.stand.h));
+    const x0 = sx < 0 ? -hw : hw - tw, x1 = x0 + tw, side = sx < 0 ? 'left' : 'right';
+    out.push(P(`tower-${side}`, 'tower', x0, x1, 0, g.head.towerDepth, g.stand.bottom + g.stand.h, g.H));   // the open cubby and the rail over it
+    out.push(P(`tower-base-${side}`, 'tower', x0, x1, 0, g.head.baseDepth, 0, g.stand.bottom));           // the closed oak box down to the floor, less deep than the nightstand
+    out.push(P(`nightstand-${side}`, 'nightstand', x0, x1, g.head.towerDepth, g.stand.d, g.stand.bottom, g.stand.bottom + g.stand.h));
   }
-  out.push(P('frame', 'frame', -fw, fw, g.head.depth, g.D, g.frame.clear, g.mattressTop));   // the platform and the mattress on it
+  out.push(P('frame', 'frame', -fw, fw, g.head.depth, g.D, g.frame.feet, g.mattressTop));   // the oak box and the mattress on it
   return out;
 }
 
