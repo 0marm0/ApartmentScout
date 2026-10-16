@@ -868,6 +868,7 @@ async function boot() {
   const [listings, crit, manifest, notes] = await Promise.all([
     getJSON(`${S.base}/listings.json`, []), getJSON(`${S.base}/criteria.json`, {}), getJSON(`${S.base}/manifest.json`, {}), getJSON(`${S.base}/notes.json`, {}),
   ]);
+  if (manifest.commute_times) crit.commute = { ...(crit.commute || {}), times: manifest.commute_times };   // the time-of-day slots in force (not part of criteria.json: the wizard writes that back)
   Object.assign(S, { listings, crit, manifest, notes, crit0: crit });
   configureMedia({ base: manifest.media_base_url, local: manifest.media_local !== false });   // where photos missing here are published
   for (const L of listings) L._score0 = L.score;   // the scorer's result; a browser preview never overwrites it
