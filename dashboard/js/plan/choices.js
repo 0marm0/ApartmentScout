@@ -64,14 +64,16 @@ export const shortName = (label) => String(label || '').replace(/\s*\([^)]*\)/g,
  * The renter's pieces the layout is not showing, each with the way back: `hidden` (in the layout, hidden: Show), `removed` (taken out by hand: Add back)
  * or `absent` (a layout that never held it: Add). One list for every view that can hide furniture (the studio's 2D plan and 3D view, Unit 3D's Inside
  * view), so a piece hidden through any path (a switch, the Hide button, an older build's saved layout) can always be brought back. A candidate purchase
- * is not the renter's piece and is not listed (the Bed control has it).
+ * is not the renter's piece and is not listed, and neither are the pieces the Bed control switches as a set (their own bed and its nightstands: showing one
+ * beside the storage bed would make two beds).
  * @returns {{id: string, name: string, why: 'hidden'|'removed'|'absent'}[]}
  */
 export function offPieces(items, inv, { removed = [] } = {}) {
   const by = new Map((items || []).map((it) => [it.id, it])), gone = new Set(removed), out = [], own = new Set((inv?.pieces || []).map((p) => p.id));
   const nameOf = (id, it) => shortName(inv?.pieces?.find((p) => p.id === id)?.label || it?.label || it?.ref || id);
+  const byControl = new Set(groupsOf(inv).filter((g) => g.choices.every((c) => c.pieces.length)).flatMap(governed));   // the Bed control shows and hides these as a set
   for (const p of inv?.pieces || []) {
-    if (p.candidate) continue;
+    if (p.candidate || byControl.has(p.id)) continue;
     const it = by.get(p.id);
     if (!it) out.push({ id: p.id, name: nameOf(p.id, null), why: gone.has(p.id) ? 'removed' : 'absent' });
     else if (it.hidden) out.push({ id: p.id, name: nameOf(p.id, it), why: 'hidden' });
