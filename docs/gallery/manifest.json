@@ -650,11 +650,11 @@
   {
    "file": "docs/images/compare-side-by-side-3d.png",
    "publication_status": "public",
-   "sha256": "0c72cee2d0275bdb83e2979b0cdbb5bd990c626ea9c405845c49a31b9274cbfd",
-   "bytes": 335084,
+   "sha256": "4b4eee833a584af4bddd0fb4bc3daf99860c185a386a3170008003738e11e414",
+   "bytes": 636122,
    "width": 1600,
    "height": 1000,
-   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-15 from a clean snapshot with scripts/screenshots.py)"
+   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-16 from a clean snapshot with scripts/screenshots.py)"
   },
   {
    "file": "docs/images/compare-split-view.png",
@@ -736,321 +736,6 @@
    "width": 1600,
    "height": 1000,
    "note": "ApartmentScout dashboard on the public example data (shot 2026-10-15 from a clean snapshot with scripts/screenshots.py)"
-  },
-  {
-   "file": "docs/images/earlier/chart-sun-by-floor.png",
-   "publication_status": "public",
-   "sha256": "f1eb71e443c649946c5d621f5b3119b9d6ac85bc2dd9001c225872e74f163094",
-   "bytes": 167175,
-   "width": 1120,
-   "height": 1097,
-   "note": "Screenshot of an earlier dashboard version (removed 2026-10-15 by a re-shoot, restored 2026-10-16); OCR and visual check show no unit label of the renter."
-  },
-  {
-   "file": "docs/images/earlier/chart-sunpath.png",
-   "publication_status": "public",
-   "sha256": "8d9609dba9978244c8cd2dc2bef9b8b158174823db2c061397bec0a3d715e69b",
-   "bytes": 175070,
-   "width": 1400,
-   "height": 644,
-   "note": "Screenshot of an earlier dashboard version (removed 2026-10-15 by a re-shoot, restored 2026-10-16); OCR and visual check show no unit label of the renter."
-  },
-  {
-   "file": "docs/images/earlier/cli.png",
-   "publication_status": "public",
-   "sha256": "8f77267c7fa187cc56b52e6e58c6278ff6ba47903c07019b3e7a716eaa6753dc",
-   "bytes": 156503,
-   "width": 1650,
-   "height": 804,
-   "note": "Screenshot of an earlier dashboard version (removed 2026-10-15 by a re-shoot, restored 2026-10-16); OCR and visual check show no unit label of the renter."
-  },
-  {
-   "file": "docs/images/earlier/compare-light.png",
-   "publication_status": "public",
-   "sha256": "348e920c027bbcb46465218e936e8e975c75d676bd4c16fc1adbde86904b79fb",
-   "bytes": 346940,
-   "width": 1600,
-   "height": 1000,
-   "note": "Screenshot of an earlier dashboard version (removed 2026-10-15 by a re-shoot, restored 2026-10-16); OCR and visual check show no unit label of the renter."
-  },
-  {
-   "file": "docs/images/earlier/compare.png",
-   "publication_status": "public",
-   "sha256": "c071653e6c38628f3df21a152ec2dedfd8b62fd40e085e31bb5b5846e63a3ac6",
-   "bytes": 680002,
-   "width": 1600,
-   "height": 3658,
-   "note": "Screenshot of an earlier dashboard version (removed 2026-10-15 by a re-shoot, restored 2026-10-16); OCR and visual check show no unit label of the renter."
-  },
-  {
-   "file": "docs/images/earlier/drawer-money.png",
-   "publication_status": "public",
-   "sha256": "470a01eaa39189ef69d7980c5c359fabd3ed095451aad6ae5a9713bbcc8163b2",
-   "bytes": 101180,
-   "width": 448,
-   "height": 904,
-   "note": "Screenshot of an earlier dashboard version (removed 2026-10-15 by a re-shoot, restored 2026-10-16); OCR and visual check show no unit label of the renter."
-  },
-  {
-   "file": "docs/images/earlier/lightbox-floor-plan.png",
-   "publication_status": "public",
-   "sha256": "61be4ddc57338ab8ca022556089828b0cc21a955c18e816fb4caf5f1ecdcd7f7",
-   "bytes": 877733,
-   "width": 1600,
-   "height": 1000,
-   "note": "Screenshot of an earlier dashboard version (removed 2026-10-15 by a re-shoot, restored 2026-10-16); OCR and visual check show no unit label of the renter."
-  },
-  {
-   "file": "docs/images/earlier/lightbox.png",
-   "publication_status": "public",
-   "sha256": "bd768f87bf0a270cee93b771af866317f9ed87f20e1383cc57269c1e1529e66a",
-   "bytes": 1217091,
-   "width": 1600,
-   "height": 1000,
-   "note": "Screenshot of an earlier dashboard version (removed 2026-10-15 by a re-shoot, restored 2026-10-16); OCR and visual check show no unit label of the renter."
-  },
-  {
-   "file": "docs/images/earlier/map-3d.png",
-   "publication_status": "public",
-   "sha256": "e58c0e0e92aba6630989eb245e8fd08950b16b10dcb56cdf729511b885b3f6c6",
-   "bytes": 801656,
-   "width": 880,
-   "height": 924,
-   "note": "Screenshot of an earlier dashboard version (removed 2026-10-15 by a re-shoot, restored 2026-10-16); OCR and visual check show no unit label of the renter."
-  },
-  {
-   "file": "docs/images/earlier/map-drawer-commute.png",
-   "publication_status": "public",
-   "sha256": "7900f06eb55c7e5ea58d43c6f70ed1c54820e70ab0e109a101258b6da9074ab8",
-   "bytes": 104424,
-   "width": 448,
-   "height": 904,
-   "note": "Screenshot of an earlier dashboard version (removed 2026-10-15 by a re-shoot, restored 2026-10-16); OCR and visual check show no unit label of the renter."
-  },
-  {
-   "file": "docs/images/earlier/map-walk.png",
-   "publication_status": "public",
-   "sha256": "959c88fe2027b4718e87ef975a8bc3b0c723911181de75de6d8e60177760b885",
-   "bytes": 508877,
-   "width": 880,
-   "height": 924,
-   "note": "Screenshot of an earlier dashboard version (removed 2026-10-15 by a re-shoot, restored 2026-10-16); OCR and visual check show no unit label of the renter."
-  },
-  {
-   "file": "docs/images/earlier/mobile-drawer.png",
-   "publication_status": "public",
-   "sha256": "8be9fdea9ab4045769f72a66aef773d91c85ee740b8328353029dc9d2a114abb",
-   "bytes": 477323,
-   "width": 630,
-   "height": 1350,
-   "note": "Screenshot of an earlier dashboard version (removed 2026-10-15 by a re-shoot, restored 2026-10-16); OCR and visual check show no unit label of the renter."
-  },
-  {
-   "file": "docs/images/earlier/mobile-unit.png",
-   "publication_status": "public",
-   "sha256": "94bcff4094e97f41b8828647fdd86c1c1698de76f177d1ad6d021a4fc9b454db",
-   "bytes": 360137,
-   "width": 630,
-   "height": 1350,
-   "note": "Screenshot of an earlier dashboard version (removed 2026-10-15 by a re-shoot, restored 2026-10-16); OCR and visual check show no unit label of the renter."
-  },
-  {
-   "file": "docs/images/earlier/plan-bird.png",
-   "publication_status": "public",
-   "sha256": "d7bd6bdb3ac3055b947b06e6f036f0fb346e6e60d1624fbf547af724a4c277d9",
-   "bytes": 361120,
-   "width": 1600,
-   "height": 1000,
-   "note": "Screenshot of an earlier dashboard version (removed 2026-10-15 by a re-shoot, restored 2026-10-16); OCR and visual check show no unit label of the renter."
-  },
-  {
-   "file": "docs/images/earlier/plan-light-tab.png",
-   "publication_status": "public",
-   "sha256": "f6c25c19989da24dab47b6969d00164a2fac79ebb93b6dacc911581307b39da9",
-   "bytes": 375735,
-   "width": 1600,
-   "height": 1000,
-   "note": "Screenshot of an earlier dashboard version (removed 2026-10-15 by a re-shoot, restored 2026-10-16); OCR and visual check show no unit label of the renter."
-  },
-  {
-   "file": "docs/images/earlier/plan-top.png",
-   "publication_status": "public",
-   "sha256": "2ab1092869b2741604aaf4ef54f6dcbb758553f3ba5087a61245d65c4d8f0f5c",
-   "bytes": 102213,
-   "width": 586,
-   "height": 711,
-   "note": "Screenshot of an earlier dashboard version (removed 2026-10-15 by a re-shoot, restored 2026-10-16); OCR and visual check show no unit label of the renter."
-  },
-  {
-   "file": "docs/images/earlier/plan-tracer.png",
-   "publication_status": "public",
-   "sha256": "b4589cdb7c6fb657bcdcfa3f5a978dd4aef04747ceff96226f5c345ff2e87b68",
-   "bytes": 75858,
-   "width": 1600,
-   "height": 1000,
-   "note": "Screenshot of an earlier dashboard version (removed 2026-10-15 by a re-shoot, restored 2026-10-16); OCR and visual check show no unit label of the renter."
-  },
-  {
-   "file": "docs/images/earlier/records.png",
-   "publication_status": "public",
-   "sha256": "e5e4a6f9798f42b2e76ce24555b67dd60b0a20ec51b3c8c84b1c9a8c7dd4947e",
-   "bytes": 961605,
-   "width": 1600,
-   "height": 5117,
-   "note": "Screenshot of an earlier dashboard version (removed 2026-10-15 by a re-shoot, restored 2026-10-16); OCR and visual check show no unit label of the renter."
-  },
-  {
-   "file": "docs/images/earlier/research-gone.png",
-   "publication_status": "public",
-   "sha256": "aaf7c91a489ef042cb402593731e09eab203790a4fb1f9992375ce38a7970bb7",
-   "bytes": 105880,
-   "width": 1600,
-   "height": 1000,
-   "note": "Screenshot of an earlier dashboard version (removed 2026-10-15 by a re-shoot, restored 2026-10-16); OCR and visual check show no unit label of the renter."
-  },
-  {
-   "file": "docs/images/earlier/research.png",
-   "publication_status": "public",
-   "sha256": "9d0791750944367bec4a68ce7049e6367a09f01837c4ba5c0d845717b67f5c46",
-   "bytes": 298599,
-   "width": 1600,
-   "height": 1000,
-   "note": "Screenshot of an earlier dashboard version (removed 2026-10-15 by a re-shoot, restored 2026-10-16); OCR and visual check show no unit label of the renter."
-  },
-  {
-   "file": "docs/images/earlier/share-decision-memo.png",
-   "publication_status": "public",
-   "sha256": "48706c720f0920776c7b2af293569c707e49fd137c0e4503716f8d83fe00705a",
-   "bytes": 305044,
-   "width": 1600,
-   "height": 1000,
-   "note": "Screenshot of an earlier dashboard version (removed 2026-10-15 by a re-shoot, restored 2026-10-16); OCR and visual check show no unit label of the renter."
-  },
-  {
-   "file": "docs/images/earlier/share-shortlist-page.png",
-   "publication_status": "public",
-   "sha256": "22cfbe383b06b3c7e4bfa540aa05c2df37b2c1ca46009ae886eace3b43be1ce4",
-   "bytes": 244705,
-   "width": 1600,
-   "height": 1000,
-   "note": "Screenshot of an earlier dashboard version (removed 2026-10-15 by a re-shoot, restored 2026-10-16); OCR and visual check show no unit label of the renter."
-  },
-  {
-   "file": "docs/images/earlier/tour-day-planner.png",
-   "publication_status": "public",
-   "sha256": "81961df1b177bc6b01695c3abc860e957204bf5f3a9b980f0d707a3636424b80",
-   "bytes": 251743,
-   "width": 1600,
-   "height": 1580,
-   "note": "Screenshot of an earlier dashboard version (removed 2026-10-15 by a re-shoot, restored 2026-10-16); OCR and visual check show no unit label of the renter."
-  },
-  {
-   "file": "docs/images/earlier/tours.png",
-   "publication_status": "public",
-   "sha256": "5b7bda2be274e4e12613eae2ac7e43247b015d54bb9e455222cfebe87d45bfb5",
-   "bytes": 202284,
-   "width": 1600,
-   "height": 1000,
-   "note": "Screenshot of an earlier dashboard version (removed 2026-10-15 by a re-shoot, restored 2026-10-16); OCR and visual check show no unit label of the renter."
-  },
-  {
-   "file": "docs/images/earlier/unit-floors.png",
-   "publication_status": "public",
-   "sha256": "ae268f10b5f2489177d0ba8b7745664f861fa7975bda957332d5ed89db034863",
-   "bytes": 79161,
-   "width": 404,
-   "height": 555,
-   "note": "Screenshot of an earlier dashboard version (removed 2026-10-15 by a re-shoot, restored 2026-10-16); OCR and visual check show no unit label of the renter."
-  },
-  {
-   "file": "docs/images/earlier/unit-inside.png",
-   "publication_status": "public",
-   "sha256": "3a4f0ff3ae0d4643009a3d050b6cc16c949364b21c83b0b6b16bb70882b2a06d",
-   "bytes": 64429,
-   "width": 1140,
-   "height": 524,
-   "note": "Screenshot of an earlier dashboard version (removed 2026-10-15 by a re-shoot, restored 2026-10-16); OCR and visual check show no unit label of the renter."
-  },
-  {
-   "file": "docs/images/earlier/unit-light-theme.png",
-   "publication_status": "public",
-   "sha256": "6250eff317511c5307ee2c86bc9f599fa7f7f555e4e0863ff885c5d33f91716a",
-   "bytes": 659722,
-   "width": 1600,
-   "height": 1000,
-   "note": "Screenshot of an earlier dashboard version (removed 2026-10-15 by a re-shoot, restored 2026-10-16); OCR and visual check show no unit label of the renter."
-  },
-  {
-   "file": "docs/images/earlier/unit-maybury.png",
-   "publication_status": "public",
-   "sha256": "8d27bd066deb28440ff9d67f8fa76169957d16de60a9c49d2a55c466f1e068aa",
-   "bytes": 310626,
-   "width": 1140,
-   "height": 524,
-   "note": "Screenshot of an earlier dashboard version (removed 2026-10-15 by a re-shoot, restored 2026-10-16); OCR and visual check show no unit label of the renter."
-  },
-  {
-   "file": "docs/images/earlier/unit-orbit-dec.png",
-   "publication_status": "public",
-   "sha256": "99bf5f60f836d1f3c7786a0f7c0caddb34666d078e73072231a6459d32818f9a",
-   "bytes": 512346,
-   "width": 1140,
-   "height": 524,
-   "note": "Screenshot of an earlier dashboard version (removed 2026-10-15 by a re-shoot, restored 2026-10-16); OCR and visual check show no unit label of the renter."
-  },
-  {
-   "file": "docs/images/earlier/unit-plan-view.png",
-   "publication_status": "public",
-   "sha256": "06baadab7bd0a205339fa7ffa454c1c18f4c3d549cf2b7bf983d7f052f984b06",
-   "bytes": 345386,
-   "width": 1140,
-   "height": 524,
-   "note": "Screenshot of an earlier dashboard version (removed 2026-10-15 by a re-shoot, restored 2026-10-16); OCR and visual check show no unit label of the renter."
-  },
-  {
-   "file": "docs/images/earlier/unit-sunpath.png",
-   "publication_status": "public",
-   "sha256": "99029dafef7419f994bea2c1154ff1e8b1d8379cb49416f2044aa3d143c4039d",
-   "bytes": 29715,
-   "width": 362,
-   "height": 240,
-   "note": "Screenshot of an earlier dashboard version (removed 2026-10-15 by a re-shoot, restored 2026-10-16); OCR and visual check show no unit label of the renter."
-  },
-  {
-   "file": "docs/images/earlier/unit-window-12.png",
-   "publication_status": "public",
-   "sha256": "c099e3d55816787c038d3b2cb5cdb9348ad8f50e51b8e1ef4c417a5b32738c96",
-   "bytes": 145834,
-   "width": 1140,
-   "height": 524,
-   "note": "Screenshot of an earlier dashboard version (removed 2026-10-15 by a re-shoot, restored 2026-10-16); OCR and visual check show no unit label of the renter."
-  },
-  {
-   "file": "docs/images/earlier/unit-window-21.png",
-   "publication_status": "public",
-   "sha256": "4b0e84737ce39491b4401a9f6f1a1dad5648966ba4b1ca4a3fc44c53186f0635",
-   "bytes": 243316,
-   "width": 1140,
-   "height": 524,
-   "note": "Screenshot of an earlier dashboard version (removed 2026-10-15 by a re-shoot, restored 2026-10-16); OCR and visual check show no unit label of the renter."
-  },
-  {
-   "file": "docs/images/earlier/wizard-basics.png",
-   "publication_status": "public",
-   "sha256": "1067a92224ca08c9ca83a71f0cb5bd5e54d5272a24cb1b1a17f85b7da9606a08",
-   "bytes": 400442,
-   "width": 1600,
-   "height": 1000,
-   "note": "Screenshot of an earlier dashboard version (removed 2026-10-15 by a re-shoot, restored 2026-10-16); OCR and visual check show no unit label of the renter."
-  },
-  {
-   "file": "docs/images/earlier/wizard-review.png",
-   "publication_status": "public",
-   "sha256": "2f2757574692446cc57c3a7fc9c359743aebde053b8a2210a31f878e10275b32",
-   "bytes": 395357,
-   "width": 1600,
-   "height": 1000,
-   "note": "Screenshot of an earlier dashboard version (removed 2026-10-15 by a re-shoot, restored 2026-10-16); OCR and visual check show no unit label of the renter."
   },
   {
    "file": "docs/images/find-building-pin.png",
@@ -1172,47 +857,47 @@
   {
    "file": "docs/images/inside-bay.png",
    "publication_status": "public",
-   "sha256": "f155e6cc0d80def8753429e86fa9dd06409d55a936af7f64df0ce9d5d76e4c2b",
-   "bytes": 456505,
+   "sha256": "a5c37faee9ed54c73f436e687f2ebf7e71c3026502262cbd68cd0fb852f9efbb",
+   "bytes": 680710,
    "width": 1560,
-   "height": 954,
-   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-15 from a clean snapshot with scripts/screenshots.py)"
+   "height": 953,
+   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-16 from a clean snapshot with scripts/screenshots.py)"
   },
   {
    "file": "docs/images/inside-bedroom.png",
    "publication_status": "public",
-   "sha256": "089dd3c79bb732b10cf2d9842d77efe2cbdd7844c7acd35ebc31ca2a79542427",
-   "bytes": 408285,
+   "sha256": "a2f4bd7beb2ff2816a5083367f894b6bed156a76f31c496167bc6bfabeef6a46",
+   "bytes": 674195,
    "width": 1560,
-   "height": 954,
-   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-15 from a clean snapshot with scripts/screenshots.py)"
+   "height": 953,
+   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-16 from a clean snapshot with scripts/screenshots.py)"
   },
   {
    "file": "docs/images/inside-fits.png",
    "publication_status": "public",
-   "sha256": "4189901f36904ae022e40ca811893b933f54302d6402929b492139e00cf54b05",
-   "bytes": 330212,
+   "sha256": "bdc19586cbbca1e1466d3ca12b8700171f48e30aad5057952b7bc5abea2a1af6",
+   "bytes": 515107,
    "width": 1600,
    "height": 1240,
-   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-15 from a clean snapshot with scripts/screenshots.py)"
+   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-16 from a clean snapshot with scripts/screenshots.py)"
   },
   {
    "file": "docs/images/inside-floor-plan.png",
    "publication_status": "public",
-   "sha256": "2be2b2cfe245824d1f19bb94d3fb1bbeb166a22a0c79dfda4c36e5e2c12df558",
-   "bytes": 276419,
+   "sha256": "fdc320825341711101e68551bb8792bfed7e1fadbc48690ca83386afa4ca3913",
+   "bytes": 464634,
    "width": 1600,
    "height": 1000,
-   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-15 from a clean snapshot with scripts/screenshots.py)"
+   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-16 from a clean snapshot with scripts/screenshots.py)"
   },
   {
    "file": "docs/images/inside-furniture.png",
    "publication_status": "public",
-   "sha256": "2ccc44e7c3772537a1b4b8f7ebcbb5cf7d8d94445ec1e66107e079f7f70d634b",
-   "bytes": 310603,
+   "sha256": "dcc883963a85490a325a0ae492425b01ed3e144aa058af2478b41eb2324ddef6",
+   "bytes": 485177,
    "width": 1560,
-   "height": 954,
-   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-15 from a clean snapshot with scripts/screenshots.py)"
+   "height": 953,
+   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-16 from a clean snapshot with scripts/screenshots.py)"
   },
   {
    "file": "docs/images/inside-light-theme.png",
@@ -1226,38 +911,38 @@
   {
    "file": "docs/images/inside-match-photo.png",
    "publication_status": "public",
-   "sha256": "cda3ae14730520c354cb4cf428a1560c5785e225fc03cc8af0e8c9bdfcfd52d0",
-   "bytes": 485348,
+   "sha256": "2a6e2f29b7fc14d0ccc85c692968938e8790ac3ddd956a0e71d864a52363fdeb",
+   "bytes": 949049,
    "width": 1600,
    "height": 1000,
-   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-15 from a clean snapshot with scripts/screenshots.py)"
+   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-16 from a clean snapshot with scripts/screenshots.py)"
   },
   {
    "file": "docs/images/inside-measure-tape.png",
    "publication_status": "public",
-   "sha256": "2777007c2ca24bb9a3f481a0fe196eb22949d1631a762916b18878e4ade7ad83",
-   "bytes": 465119,
+   "sha256": "ba200341b1828b1053824414d4c8a39959c5db6214979dc31d6d66b43455aa96",
+   "bytes": 784375,
    "width": 1560,
-   "height": 954,
-   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-15 from a clean snapshot with scripts/screenshots.py)"
+   "height": 953,
+   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-16 from a clean snapshot with scripts/screenshots.py)"
   },
   {
    "file": "docs/images/inside-measured-chip.png",
    "publication_status": "public",
-   "sha256": "45eb4187b7d63afc3b4aeacf6558fe8428dbde28a49cf1a44c21ae351abab226",
-   "bytes": 426230,
+   "sha256": "ba07a589a1261548e6b6a2b12822162691c93b28d34530f64330eb1969161003",
+   "bytes": 737807,
    "width": 1560,
    "height": 954,
-   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-15 from a clean snapshot with scripts/screenshots.py)"
+   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-16 from a clean snapshot with scripts/screenshots.py)"
   },
   {
    "file": "docs/images/inside-night-window.png",
    "publication_status": "public",
-   "sha256": "cfda81a115f7b845ee11cc039945f84ec619ae50872895417ae5cc0e29c5d928",
-   "bytes": 435903,
+   "sha256": "a48ffc68ec6d0eb4ba4c87c2b4c4fd4566ee174958bec31a624d6a92a77b5207",
+   "bytes": 784333,
    "width": 1560,
-   "height": 954,
-   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-15 from a clean snapshot with scripts/screenshots.py)"
+   "height": 953,
+   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-16 from a clean snapshot with scripts/screenshots.py)"
   },
   {
    "file": "docs/images/inside-orbit-day.png",
@@ -1289,11 +974,11 @@
   {
    "file": "docs/images/inside-play-year.png",
    "publication_status": "public",
-   "sha256": "a6b3cc0dc2b1b188c76946cc37c291e9902560fb11ea91102a52de99fbcc5de7",
-   "bytes": 396509,
+   "sha256": "94c2f7a9f138cc60a217e38f6b51bee288517406fce49d8b5bcdd76273e59368",
+   "bytes": 731501,
    "width": 1600,
    "height": 1000,
-   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-15 from a clean snapshot with scripts/screenshots.py)"
+   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-16 from a clean snapshot with scripts/screenshots.py)"
   },
   {
    "file": "docs/images/inside-river.png",
@@ -1325,20 +1010,20 @@
   {
    "file": "docs/images/inside-unit-3d.png",
    "publication_status": "public",
-   "sha256": "46880883c0c483e2f2f589d036a571847f6833fbc19a9a0339cae304b0c1aad9",
-   "bytes": 350248,
+   "sha256": "280a65b41e4854319087af83d0fa30194b09ff86b1f5de1df0342d31f7e5a91d",
+   "bytes": 726165,
    "width": 1600,
    "height": 1000,
-   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-15 from a clean snapshot with scripts/screenshots.py)"
+   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-16 from a clean snapshot with scripts/screenshots.py)"
   },
   {
    "file": "docs/images/inside-walk-window.png",
    "publication_status": "public",
-   "sha256": "7922fd6ee17125b4b4a0db1e8b1ed59b374daf0d5773a782024084f60d87c935",
-   "bytes": 486324,
+   "sha256": "249bb9ee639953a9286eeb1ea494fbda57b32e960f3a8b1b8a2581ff180db6e4",
+   "bytes": 823216,
    "width": 1560,
-   "height": 954,
-   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-15 from a clean snapshot with scripts/screenshots.py)"
+   "height": 953,
+   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-16 from a clean snapshot with scripts/screenshots.py)"
   },
   {
    "file": "docs/images/phone-map.png",
@@ -1370,11 +1055,11 @@
   {
    "file": "docs/images/phone-unit-3d.png",
    "publication_status": "public",
-   "sha256": "66c987cde3a46403c537f36901de89f83e071af01351e084bb930938a490d7c6",
-   "bytes": 209254,
+   "sha256": "7615e132e2bdf878d753cb35a0dba7360f513d0a5cb1b95271d5cd798bc136cf",
+   "bytes": 355182,
    "width": 585,
    "height": 1266,
-   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-15 from a clean snapshot with scripts/screenshots.py)"
+   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-16 from a clean snapshot with scripts/screenshots.py)"
   },
   {
    "file": "docs/images/phone-visit-notes.png",
@@ -1438,6 +1123,141 @@
    "width": 820,
    "height": 512,
    "note": "README walk-through recorded from the public example by scripts/record_walkthrough.py on a clean snapshot, 2026-10-15"
+  },
+  {
+   "file": "docs/images/city-building-models.png",
+   "publication_status": "public",
+   "sha256": "a91bfb6e1a9fa3353b2a62325edd43739c13a0eeb8f2f53a93880c6817c05643",
+   "bytes": 2381771,
+   "width": 1560,
+   "height": 953,
+   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-16 from a clean snapshot with scripts/screenshots.py)"
+  },
+  {
+   "file": "docs/images/city-map-3d.png",
+   "publication_status": "public",
+   "sha256": "799ebad6cc2d22bac2f71d5338e4f6c937e29a5e93aa3c11cf2667e1e189577f",
+   "bytes": 1145432,
+   "width": 1600,
+   "height": 1000,
+   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-16 from a clean snapshot with scripts/screenshots.py)"
+  },
+  {
+   "file": "docs/images/decide-gone-fast.png",
+   "publication_status": "public",
+   "sha256": "7be7fa89b5a27d4754ed06ab11942910e917b6bd010417d42cf901b161c072ed",
+   "bytes": 174557,
+   "width": 1600,
+   "height": 1000,
+   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-16 from a clean snapshot with scripts/screenshots.py)"
+  },
+  {
+   "file": "docs/images/decide-tours-board.png",
+   "publication_status": "public",
+   "sha256": "a72f48d29b554c318f43710262ab2aec3e622099cd52bf9343c7ce49a73d7064",
+   "bytes": 202362,
+   "width": 1600,
+   "height": 1000,
+   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-16 from a clean snapshot with scripts/screenshots.py)"
+  },
+  {
+   "file": "docs/images/find-drawer-commute.png",
+   "publication_status": "public",
+   "sha256": "38d1136ce51014006eb4510723c93f8275471dc1bca1ce2d319d1aa12f55742b",
+   "bytes": 824069,
+   "width": 1600,
+   "height": 1000,
+   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-16 from a clean snapshot with scripts/screenshots.py)"
+  },
+  {
+   "file": "docs/images/phone-drawer.png",
+   "publication_status": "public",
+   "sha256": "dafe2ad090524e6da28680bdc512d21b4da90d4415ce7c6d84c678a5411bae15",
+   "bytes": 514539,
+   "width": 585,
+   "height": 1266,
+   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-16 from a clean snapshot with scripts/screenshots.py)"
+  },
+  {
+   "file": "docs/images/studio-light.png",
+   "publication_status": "public",
+   "sha256": "e0c73936fd39d64e95127d036977caa6d0ee2c53e0263dae8cda98477240a0ea",
+   "bytes": 476377,
+   "width": 1600,
+   "height": 1000,
+   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-16 from a clean snapshot with scripts/screenshots.py)"
+  },
+  {
+   "file": "docs/images/studio-top.png",
+   "publication_status": "public",
+   "sha256": "c0554cadf16cf72f4acc2e35421dde44765dbee856ee24bf2596c2412f0b60f0",
+   "bytes": 424454,
+   "width": 1600,
+   "height": 1000,
+   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-16 from a clean snapshot with scripts/screenshots.py)"
+  },
+  {
+   "file": "docs/images/studio-tracer.png",
+   "publication_status": "public",
+   "sha256": "d501e9ea3bd104b4fb78a7844bc351b93dc1d34247f4d167149a647f0f2943da",
+   "bytes": 142576,
+   "width": 1600,
+   "height": 1000,
+   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-16 from a clean snapshot with scripts/screenshots.py)"
+  },
+  {
+   "file": "docs/images/sun-high-floor.png",
+   "publication_status": "public",
+   "sha256": "f6dc4f6d21599528b9296591a6d224786d16fcaab100e2e1cd626ccb3864e91d",
+   "bytes": 801565,
+   "width": 1560,
+   "height": 953,
+   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-16 from a clean snapshot with scripts/screenshots.py)"
+  },
+  {
+   "file": "docs/images/sun-low-floor.png",
+   "publication_status": "public",
+   "sha256": "864358c6a34c132b0d3bb7d446ae717e6eb153218b5e74939253c0d6cd2a1ece",
+   "bytes": 470113,
+   "width": 1560,
+   "height": 953,
+   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-16 from a clean snapshot with scripts/screenshots.py)"
+  },
+  {
+   "file": "docs/images/sun-path-chart.png",
+   "publication_status": "public",
+   "sha256": "72c5b25867e62ec7b4cad234e7f1469f59bc6db224ad77d39aa8029d801422aa",
+   "bytes": 101965,
+   "width": 1024,
+   "height": 842,
+   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-16 from a clean snapshot with scripts/screenshots.py)"
+  },
+  {
+   "file": "docs/images/sun-plan-view.png",
+   "publication_status": "public",
+   "sha256": "d138715feea564b20370c5111225195c106b03a796a7248cfd9380d681819417",
+   "bytes": 996293,
+   "width": 1560,
+   "height": 953,
+   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-16 from a clean snapshot with scripts/screenshots.py)"
+  },
+  {
+   "file": "docs/images/sun-summer-shadows.png",
+   "publication_status": "public",
+   "sha256": "112f3702afdeaa19d50ffcda7be61d54b35c88eec49efae6beb3341fc34a4ff5",
+   "bytes": 2182664,
+   "width": 1560,
+   "height": 953,
+   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-16 from a clean snapshot with scripts/screenshots.py)"
+  },
+  {
+   "file": "docs/images/sun-winter-shadows.png",
+   "publication_status": "public",
+   "sha256": "52848acefc1c53a020c3381e196d94adc0d5b721a8fddf05d7a8b22bb383788e",
+   "bytes": 2263331,
+   "width": 1560,
+   "height": 953,
+   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-16 from a clean snapshot with scripts/screenshots.py)"
   }
  ],
  "policy": {

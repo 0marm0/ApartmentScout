@@ -23,251 +23,238 @@ inside the exact unit, with your own furniture, in the real city around it.</p>
 <sub>Map, card, drawer, then inside the unit: walk to the window and watch the day turn to night. <a href="docs/images/walkthrough.mp4">Watch it in full quality (MP4)</a>.</sub>
 </p>
 
+<table>
+<tr>
+<td width="33%" valign="top" align="center"><a href="docs/images/find-commute-map.png"><img src="docs/images/find-commute-map.png" alt="Door-to-door commute bands over Manhattan beside the ranked cards"></a><br><sub><b>Every listing, ranked, on a door-to-door commute map</b></sub></td>
+<td width="33%" valign="top" align="center"><a href="docs/images/inside-walk-window.png"><img src="docs/images/inside-walk-window.png" alt="Standing at the living-room window on the 25th floor, looking out over neighbouring towers, a park and the river"></a><br><sub><b>Stand at the window of the exact unit</b></sub></td>
+<td width="33%" valign="top" align="center"><a href="docs/images/inside-skyline-dusk.png"><img src="docs/images/inside-skyline-dusk.png" alt="The Midtown skyline at dusk from Unit 3D"></a><br><sub><b>The real city around it, at any hour</b></sub></td>
+</tr>
+</table>
+
 ApartmentScout came out of a real search for a one-bedroom in Manhattan: 738 listings in 260 buildings, and the same questions
 for every finalist. What does it cost a month once fees and free months are counted? How long is the trip door to door? What do
 the city's records say about the building? How loud is the street, and will the window see the sky or a wall? This repository
 turns that process into agent playbooks, a Python command line and a dashboard you own, for any city, with that search included
 as a worked example.
 
-## What you can do
+**Jump to:** [Find](#find) · [See inside](#see-inside) · [Sun and light](#sun-and-light) · [The city in 3D](#the-city-in-3d) · [Floor-plan studio](#floor-plan-studio) · [Compare](#compare) · [Decide](#decide) · [Set up](#set-up) · [On a phone](#on-a-phone). Every screen is from the worked example; click a picture for full size, and the [gallery](docs/GALLERY.md) has a caption for each.
 
-Five steps, in the order a search goes. [Screenshots](#screenshots) of every screen are below, and the [gallery](docs/GALLERY.md) captions each one.
+## Find
 
-| | Journey | What you get |
-|---|---|---|
-| 1 | **[Find](docs/GALLERY.md#find)** | Every listing ranked on **your weights and true monthly cost** (fees and free months counted, unknowns kept unknown). **Door-to-door commute** by walk, subway, bus or the best of them, from a built-in GTFS router. A map that merges homes into bubbles, previews a pin, and takes plain-words search ("east of 3rd ave under 5k with w/d"). Price drops, a price audit, and a plain-language reason for every rank move. |
-| 2 | **[Compare](docs/GALLERY.md#compare)** | Up to four finalists row by row, the best value marked and unknowns never counted as the worst. Two units side by side in 3D with their own direct-sun hours. A trade-off pad to drag cost against commute and space, and **unknowns that move this score**: type the real size or fee and see the rank you would get. |
-| 3 | **[See inside](docs/GALLERY.md#see-inside)** | **Unit 3D** puts you in the exact unit with the furniture you own, finishes read from the listing photos, and the real city through the glass. Walk to the window, play the day and the year (sun, shadows, seasons), see it at night, measure, test "does it fit?", match a listing photo. Floor plans traced from the listing's PDF. |
-| 4 | **[Decide](docs/GALLERY.md#decide)** | Building dossiers from public records and a 311 noise layer (New York built in). Questions for the leasing office, drafted and never sent. A phone **tour day** with directions, a one-hand checklist and a noise check that keeps one number and no audio. A tour planner, a share page, a decision memo, a typeset decision report for two to four homes, and a move planner with a calendar file. |
-| 5 | **[Set up](docs/GALLERY.md#set-up)** | Any city OpenStreetMap knows, by a wizard in the dashboard, an interview in the terminal, or your agent. Plain files in a folder you own. The dashboard installs as an app and works offline. Nine agent skills, and checksummed handoff packs between agents. |
-
-## Screenshots
-
-Every screen below is from the worked example; click a picture for full size. The [gallery](docs/GALLERY.md) has a caption for each one.
-
-### Find
-
-Rank every listing on your weights and true monthly cost, over a door-to-door commute map.
+Every listing ranked on your weights and its true monthly cost, on a door-to-door commute map; plain-words search, hover previews, and a reason for every rank. [More about each picture](docs/GALLERY.md#find).
 
 <table>
 <tr>
-<td width="33%" valign="top" align="center"><a href="docs/images/hero-map.png"><img src="docs/images/hero-map.png" alt="A listing over the commute map"></a><br><sub><b>A listing over the commute map</b></sub></td>
-<td width="33%" valign="top" align="center"><a href="docs/images/find-commute-map.png"><img src="docs/images/find-commute-map.png" alt="Door to door, by the best of transit"></a><br><sub><b>Door to door, by the best of transit</b></sub></td>
-<td width="33%" valign="top" align="center"><a href="docs/images/find-map-clusters.png"><img src="docs/images/find-map-clusters.png" alt="A calmer map"></a><br><sub><b>A calmer map</b></sub></td>
+<td colspan="3" valign="top" align="center"><a href="docs/images/hero-map.png"><img src="docs/images/hero-map.png" alt="The map with ranked cards on the left and Paramount Tower 25E open in the drawer"></a><br><sub><b>The map, the ranked list and a home</b></sub></td>
 </tr>
 <tr>
-<td width="33%" valign="top" align="center"><a href="docs/images/find-building-pin.png"><img src="docs/images/find-building-pin.png" alt="A building is one pin"></a><br><sub><b>A building is one pin</b></sub></td>
-<td width="33%" valign="top" align="center"><a href="docs/images/find-pin-preview.png"><img src="docs/images/find-pin-preview.png" alt="Hover a pin, see the home"></a><br><sub><b>Hover a pin, see the home</b></sub></td>
-<td width="33%" valign="top" align="center"><a href="docs/images/find-route-preview.png"><img src="docs/images/find-route-preview.png" alt="Hover a card, see the trip"></a><br><sub><b>Hover a card, see the trip</b></sub></td>
+<td width="33%" valign="top" align="center"><a href="docs/images/find-place-search.png"><img src="docs/images/find-place-search.png" alt="The command menu previewing a plain-words search"></a><br><sub><b>Ask in plain words</b></sub></td>
+<td width="33%" valign="top" align="center"><a href="docs/images/find-building-pin.png"><img src="docs/images/find-building-pin.png" alt="Hovering a building pin: View 34, 17 units from $4,310, with its best three units"></a><br><sub><b>A building is one pin</b></sub></td>
+<td width="33%" valign="top" align="center"><a href="docs/images/find-pin-preview.png"><img src="docs/images/find-pin-preview.png" alt="Hovering a pin previews the home with its photo, rank, price and score"></a><br><sub><b>Hover a pin, see the home</b></sub></td>
 </tr>
 <tr>
-<td width="33%" valign="top" align="center"><a href="docs/images/find-place-search.png"><img src="docs/images/find-place-search.png" alt="Ask in plain words"></a><br><sub><b>Ask in plain words</b></sub></td>
-<td width="33%" valign="top" align="center"><a href="docs/images/find-price-drops.png"><img src="docs/images/find-price-drops.png" alt="Real price history"></a><br><sub><b>Real price history</b></sub></td>
-<td width="33%" valign="top" align="center"><a href="docs/images/find-rank-moves.png"><img src="docs/images/find-rank-moves.png" alt="Why a home moved"></a><br><sub><b>Why a home moved</b></sub></td>
+<td width="33%" valign="top" align="center"><a href="docs/images/find-route-preview.png"><img src="docs/images/find-route-preview.png" alt="Hovering a home draws its subway route to Grand Central"></a><br><sub><b>Hover a card, see the trip</b></sub></td>
+<td width="33%" valign="top" align="center"><a href="docs/images/find-rank-moves.png"><img src="docs/images/find-rank-moves.png" alt="A drawer explaining why The Knox 6B fell 40 places since Oct 13"></a><br><sub><b>Why a home moved</b></sub></td>
+<td width="33%" valign="top" align="center"><a href="docs/images/find-unknowns.png"><img src="docs/images/find-unknowns.png" alt="Unknowns that move this score: an 800 square-foot size typed in shows the score and rank the home would get"></a><br><sub><b>Unknowns that move this score</b></sub></td>
 </tr>
 <tr>
-<td width="33%" valign="top" align="center"><a href="docs/images/find-unknowns.png"><img src="docs/images/find-unknowns.png" alt="Unknowns that move this score"></a><br><sub><b>Unknowns that move this score</b></sub></td>
-<td width="33%" valign="top" align="center"><a href="docs/images/find-price-audit.png"><img src="docs/images/find-price-audit.png" alt="The price audit"></a><br><sub><b>The price audit</b></sub></td>
-<td width="33%" valign="top" align="center"><a href="docs/images/find-lightbox.png"><img src="docs/images/find-lightbox.png" alt="Photos and the floor plan"></a><br><sub><b>Photos and the floor plan</b></sub></td>
+<td width="33%" valign="top" align="center"><a href="docs/images/find-price-audit.png"><img src="docs/images/find-price-audit.png" alt="A listing's money section: monthly cost, every month and at signing, marked price unverified"></a><br><sub><b>What it costs, and is the price real?</b></sub></td>
+<td width="33%" valign="top" align="center"><a href="docs/images/find-price-drops.png"><img src="docs/images/find-price-drops.png" alt="Homes whose price fell, with the size of each drop"></a><br><sub><b>Real price history</b></sub></td>
+<td width="33%" valign="top" align="center"><a href="docs/images/find-drawer-commute.png"><img src="docs/images/find-drawer-commute.png" alt="The drawer's commute section: 10 minutes by every mode, by time of day, then direct sun by month and noise by hour"></a><br><sub><b>Commute, sun and noise for one home</b></sub></td>
 </tr>
 <tr>
-<td width="33%" valign="top" align="center"><a href="docs/images/find-light-theme.png"><img src="docs/images/find-light-theme.png" alt="The light theme"></a><br><sub><b>The light theme</b></sub></td>
+<td width="33%" valign="top" align="center"><a href="docs/images/find-lightbox.png"><img src="docs/images/find-lightbox.png" alt="The photo lightbox beside the listing's floor plan"></a><br><sub><b>Photos and the floor plan</b></sub></td>
+<td width="33%" valign="top" align="center"><a href="docs/images/find-map-clusters.png"><img src="docs/images/find-map-clusters.png" alt="The map zoomed out: homes merged into bubbles that count them and show the lowest monthly cost"></a><br><sub><b>A calmer map</b></sub></td>
+<td width="33%" valign="top" align="center"><a href="docs/images/find-light-theme.png"><img src="docs/images/find-light-theme.png" alt="The map in the light theme with a listing open"></a><br><sub><b>The light theme</b></sub></td>
 </tr>
 </table>
 
-### Compare
+## See inside
 
-Finalists row by row, in 3D side by side, and a pad to trade the weights.
+Unit 3D puts you in the exact unit with the furniture you own and the real city through the glass: walk to the window, measure, test what fits. [More about each picture](docs/GALLERY.md#see-inside).
 
 <table>
 <tr>
-<td width="33%" valign="top" align="center"><a href="docs/images/compare-four.png"><img src="docs/images/compare-four.png" alt="Four finalists, row by row"></a><br><sub><b>Four finalists, row by row</b></sub></td>
-<td width="33%" valign="top" align="center"><a href="docs/images/compare-side-by-side-3d.png"><img src="docs/images/compare-side-by-side-3d.png" alt="Two units side by side in 3D"></a><br><sub><b>Two units side by side in 3D</b></sub></td>
-<td width="33%" valign="top" align="center"><a href="docs/images/compare-tradeoff-pad.png"><img src="docs/images/compare-tradeoff-pad.png" alt="The trade-off pad"></a><br><sub><b>The trade-off pad</b></sub></td>
+<td colspan="3" valign="top" align="center"><a href="docs/images/inside-unit-3d.png"><img src="docs/images/inside-unit-3d.png" alt="Unit 3D opening inside Paramount Tower 25E: the desk, monitor and office chair by the bay window, the futon in the corner"></a><br><sub><b>Unit 3D lands inside the apartment</b></sub></td>
 </tr>
 <tr>
-<td width="33%" valign="top" align="center"><a href="docs/images/compare-split-view.png"><img src="docs/images/compare-split-view.png" alt="The shortlist beside its map"></a><br><sub><b>The shortlist beside its map</b></sub></td>
+<td width="33%" valign="top" align="center"><a href="docs/images/inside-furniture.png"><img src="docs/images/inside-furniture.png" alt="Looking down the living room: a black leather futon, a wall-mounted TV, a coffee table and a dining table on a basket-weave parquet floor"></a><br><sub><b>Your own furniture</b></sub></td>
+<td width="33%" valign="top" align="center"><a href="docs/images/inside-bay.png"><img src="docs/images/inside-bay.png" alt="Inside the bedroom corner, looking out of the angled windows at towers, a park and the river"></a><br><sub><b>Through the angled windows</b></sub></td>
+<td width="33%" valign="top" align="center"><a href="docs/images/inside-bedroom.png"><img src="docs/images/inside-bedroom.png" alt="In the bedroom: the corner window with the sun on the floor, a black chest with a TV on the wall"></a><br><sub><b>The bedroom</b></sub></td>
+</tr>
+<tr>
+<td width="33%" valign="top" align="center"><a href="docs/images/inside-night-window.png"><img src="docs/images/inside-night-window.png" alt="Standing at the window at night: lit windows in the towers, street lamps along the river road"></a><br><sub><b>The night city</b></sub></td>
+<td width="33%" valign="top" align="center"><a href="docs/images/inside-measure-tape.png"><img src="docs/images/inside-measure-tape.png" alt="The measuring tape reading 5 feet 2 inches across the bay window"></a><br><sub><b>The measuring tape</b></sub></td>
+<td width="33%" valign="top" align="center"><a href="docs/images/inside-fits.png"><img src="docs/images/inside-fits.png" alt="Does it fit? A bookshelf dropped into the living room with the space around it on each side"></a><br><sub><b>Does it fit?</b></sub></td>
+</tr>
+<tr>
+<td width="50%" valign="top" align="center"><a href="docs/images/inside-match-photo.png"><img src="docs/images/inside-match-photo.png" alt="Match a photo: a listing photo laid over the 3D view while a landmark is marked"></a><br><sub><b>Match a photo</b></sub></td>
+<td width="50%" valign="top" align="center"><a href="docs/images/inside-measured-chip.png"><img src="docs/images/inside-measured-chip.png" alt="The measured vs assumed chip opened over the desk and office chair"></a><br><sub><b>Measured, sourced or assumed</b></sub></td>
 </tr>
 </table>
 
-### See inside
+## Sun and light
 
-Unit 3D: the exact unit, your own furniture, real sun and shadows, the city through the glass, the floor-plan studio.
+When the sun reaches the window, on which floor and in which season, and what stands in its way, from real building footprints and heights. [More about each picture](docs/GALLERY.md#sun-and-light).
 
 <table>
 <tr>
-<td width="33%" valign="top" align="center"><a href="docs/images/inside-unit-3d.png"><img src="docs/images/inside-unit-3d.png" alt="Unit 3D lands inside the apartment"></a><br><sub><b>Unit 3D lands inside the apartment</b></sub></td>
-<td width="33%" valign="top" align="center"><a href="docs/images/inside-furniture.png"><img src="docs/images/inside-furniture.png" alt="Your own furniture"></a><br><sub><b>Your own furniture</b></sub></td>
-<td width="33%" valign="top" align="center"><a href="docs/images/inside-walk-window.png"><img src="docs/images/inside-walk-window.png" alt="Walk to the window"></a><br><sub><b>Walk to the window</b></sub></td>
+<td width="50%" valign="top" align="center"><a href="docs/images/sun-low-floor.png"><img src="docs/images/sun-low-floor.png" alt="The view from floor 8 of Paramount Tower at 8:30 am on March 20: a neighbouring building fills the window, which is in shadow"></a><br><sub><b>Floor 8: in shadow</b></sub></td>
+<td width="50%" valign="top" align="center"><a href="docs/images/sun-high-floor.png"><img src="docs/images/sun-high-floor.png" alt="The view from floor 25 at the same moment: direct sun over the low roofs, towers, a park and the river"></a><br><sub><b>Floor 25, same moment: direct sun</b></sub></td>
 </tr>
 <tr>
-<td width="33%" valign="top" align="center"><a href="docs/images/inside-bedroom.png"><img src="docs/images/inside-bedroom.png" alt="The bedroom"></a><br><sub><b>The bedroom</b></sub></td>
-<td width="33%" valign="top" align="center"><a href="docs/images/inside-bay.png"><img src="docs/images/inside-bay.png" alt="Through the angled windows"></a><br><sub><b>Through the angled windows</b></sub></td>
-<td width="33%" valign="top" align="center"><a href="docs/images/inside-night-window.png"><img src="docs/images/inside-night-window.png" alt="The night city"></a><br><sub><b>The night city</b></sub></td>
+<td width="50%" valign="top" align="center"><a href="docs/images/sun-winter-shadows.png"><img src="docs/images/sun-winter-shadows.png" alt="The block around Paramount Tower at noon on December 21 with long winter shadows"></a><br><sub><b>December 21, noon</b></sub></td>
+<td width="50%" valign="top" align="center"><a href="docs/images/sun-summer-shadows.png"><img src="docs/images/sun-summer-shadows.png" alt="The same block at noon on June 21 with short summer shadows and trees in leaf"></a><br><sub><b>June 21, noon</b></sub></td>
 </tr>
 <tr>
-<td width="33%" valign="top" align="center"><a href="docs/images/inside-play-year.png"><img src="docs/images/inside-play-year.png" alt="Play the day, play the year"></a><br><sub><b>Play the day, play the year</b></sub></td>
-<td width="33%" valign="top" align="center"><a href="docs/images/inside-measure-tape.png"><img src="docs/images/inside-measure-tape.png" alt="The measuring tape"></a><br><sub><b>The measuring tape</b></sub></td>
-<td width="33%" valign="top" align="center"><a href="docs/images/inside-fits.png"><img src="docs/images/inside-fits.png" alt="Does it fit?"></a><br><sub><b>Does it fit?</b></sub></td>
+<td width="50%" valign="top" align="center"><a href="docs/images/sun-path-chart.png"><img src="docs/images/sun-path-chart.png" alt="A chart of the sun's path on December 21, March 20 and June 21 against the skyline seen from the 25E window"></a><br><sub><b>Sun path against the skyline</b></sub></td>
+<td width="50%" valign="top" align="center"><a href="docs/images/inside-sun-by-floor.png"><img src="docs/images/inside-sun-by-floor.png" alt="Direct sun hours by floor and month for a facade"></a><br><sub><b>Sun by floor and month</b></sub></td>
 </tr>
 <tr>
-<td width="33%" valign="top" align="center"><a href="docs/images/inside-match-photo.png"><img src="docs/images/inside-match-photo.png" alt="Match a photo"></a><br><sub><b>Match a photo</b></sub></td>
-<td width="33%" valign="top" align="center"><a href="docs/images/inside-floor-plan.png"><img src="docs/images/inside-floor-plan.png" alt="The floor plan studio"></a><br><sub><b>The floor plan studio</b></sub></td>
-<td width="33%" valign="top" align="center"><a href="docs/images/inside-measured-chip.png"><img src="docs/images/inside-measured-chip.png" alt="Measured, sourced or assumed"></a><br><sub><b>Measured, sourced or assumed</b></sub></td>
+<td width="50%" valign="top" align="center"><a href="docs/images/sun-plan-view.png"><img src="docs/images/sun-plan-view.png" alt="The street plan from straight above: neighbouring roofs, their shadows and the sun's line to the window"></a><br><sub><b>From above: what stands in the way</b></sub></td>
+<td width="50%" valign="top" align="center"><a href="docs/images/inside-play-year.png"><img src="docs/images/inside-play-year.png" alt="The Inside view with the Play day and Play year bar at December 28, with bare branches"></a><br><sub><b>Play the day, play the year</b></sub></td>
 </tr>
 <tr>
-<td width="33%" valign="top" align="center"><a href="docs/images/inside-orbit-day.png"><img src="docs/images/inside-orbit-day.png" alt="Unit 3D by day"></a><br><sub><b>Unit 3D by day</b></sub></td>
-<td width="33%" valign="top" align="center"><a href="docs/images/inside-orbit-night.png"><img src="docs/images/inside-orbit-night.png" alt="The same view at night"></a><br><sub><b>The same view at night</b></sub></td>
-<td width="33%" valign="top" align="center"><a href="docs/images/inside-skyline-dusk.png"><img src="docs/images/inside-skyline-dusk.png" alt="The skyline, drawn from its parts"></a><br><sub><b>The skyline, drawn from its parts</b></sub></td>
-</tr>
-<tr>
-<td width="33%" valign="top" align="center"><a href="docs/images/inside-sun-by-floor.png"><img src="docs/images/inside-sun-by-floor.png" alt="Sun by floor and month"></a><br><sub><b>Sun by floor and month</b></sub></td>
-<td width="33%" valign="top" align="center"><a href="docs/images/inside-park-trees.png"><img src="docs/images/inside-park-trees.png" alt="Parks and trees"></a><br><sub><b>Parks and trees</b></sub></td>
-<td width="33%" valign="top" align="center"><a href="docs/images/inside-river.png"><img src="docs/images/inside-river.png" alt="Water and permitted towers"></a><br><sub><b>Water and permitted towers</b></sub></td>
-</tr>
-<tr>
-<td width="33%" valign="top" align="center"><a href="docs/images/inside-light-theme.png"><img src="docs/images/inside-light-theme.png" alt="Unit 3D in the light theme"></a><br><sub><b>Unit 3D in the light theme</b></sub></td>
+<td width="50%" valign="top" align="center"><a href="docs/images/inside-orbit-day.png"><img src="docs/images/inside-orbit-day.png" alt="Unit 3D by day: the tower among its neighbours with the window marked"></a><br><sub><b>By day</b></sub></td>
+<td width="50%" valign="top" align="center"><a href="docs/images/inside-orbit-night.png"><img src="docs/images/inside-orbit-night.png" alt="Unit 3D at night with lit windows across the neighbourhood"></a><br><sub><b>And at night</b></sub></td>
 </tr>
 </table>
 
-### Decide
+## The city in 3D
 
-Records, questions for the leasing office, tours, a share page and a decision memo.
+Every building around the home with its height, the skyline, the water, the parks and the towers still to come. [More about each picture](docs/GALLERY.md#the-city-in-3d).
 
 <table>
 <tr>
-<td width="33%" valign="top" align="center"><a href="docs/images/decide-office-questions.png"><img src="docs/images/decide-office-questions.png" alt="Questions for the leasing office"></a><br><sub><b>Questions for the leasing office</b></sub></td>
-<td width="33%" valign="top" align="center"><a href="docs/images/decide-visit-history.png"><img src="docs/images/decide-visit-history.png" alt="Visit notes and decision history"></a><br><sub><b>Visit notes and decision history</b></sub></td>
+<td colspan="3" valign="top" align="center"><a href="docs/images/city-building-models.png"><img src="docs/images/city-building-models.png" alt="Buildings coloured by height class with roof heights labelled around Paramount Tower"></a><br><sub><b>Every building around the tower, with its height</b></sub></td>
+</tr>
+<tr>
+<td width="50%" valign="top" align="center"><a href="docs/images/city-map-3d.png"><img src="docs/images/city-map-3d.png" alt="The commute map tilted with extruded 3D buildings, price tags and subway lines"></a><br><sub><b>The map in 3D</b></sub></td>
+<td width="50%" valign="top" align="center"><a href="docs/images/inside-river.png"><img src="docs/images/inside-river.png" alt="The Hudson River and piers in Unit 3D at sunset"></a><br><sub><b>Water and permitted towers</b></sub></td>
+</tr>
+<tr>
+<td width="50%" valign="top" align="center"><a href="docs/images/inside-park-trees.png"><img src="docs/images/inside-park-trees.png" alt="A park drawn as grass and trees in Unit 3D"></a><br><sub><b>Parks and trees</b></sub></td>
+<td width="50%" valign="top" align="center"><a href="docs/images/inside-light-theme.png"><img src="docs/images/inside-light-theme.png" alt="Unit 3D in the light theme on a June evening"></a><br><sub><b>The light theme</b></sub></td>
+</tr>
+</table>
+
+## Floor-plan studio
+
+The plan in 2D and 3D side by side: furniture at real sizes, clearances, sunlight on the floor, and new plans traced from a listing image. [More about each picture](docs/GALLERY.md#floor-plan-studio).
+
+<table>
+<tr>
+<td width="50%" valign="top" align="center"><a href="docs/images/inside-floor-plan.png"><img src="docs/images/inside-floor-plan.png" alt="The floor plan studio with the 2D plan and the furnished 3D room side by side"></a><br><sub><b>Bird's eye beside the plan</b></sub></td>
+<td width="50%" valign="top" align="center"><a href="docs/images/studio-top.png"><img src="docs/images/studio-top.png" alt="The studio's Top camera beside the 2D plan with every room's dimensions and the walkway clearances"></a><br><sub><b>Top down, with every dimension</b></sub></td>
+</tr>
+<tr>
+<td width="50%" valign="top" align="center"><a href="docs/images/studio-light.png"><img src="docs/images/studio-light.png" alt="The studio's 3D room on December 21 at 10 am with sunlight on the floor and the Light tab open"></a><br><sub><b>The light tab</b></sub></td>
+<td width="50%" valign="top" align="center"><a href="docs/images/studio-tracer.png"><img src="docs/images/studio-tracer.png" alt="New plan from image: a listing floor plan loaded for tracing, with the eight steps across the top"></a><br><sub><b>Trace a plan from an image</b></sub></td>
+</tr>
+</table>
+
+## Compare
+
+Finalists row by row, two units side by side in 3D, and a pad to trade cost against commute and space. [More about each picture](docs/GALLERY.md#compare).
+
+<table>
+<tr>
+<td width="50%" valign="top" align="center"><a href="docs/images/compare-four.png"><img src="docs/images/compare-four.png" alt="Four finalists compared in lettered columns"></a><br><sub><b>Four finalists, row by row</b></sub></td>
+<td width="50%" valign="top" align="center"><a href="docs/images/compare-side-by-side-3d.png"><img src="docs/images/compare-side-by-side-3d.png" alt="Two homes in the same tower side by side in 3D"></a><br><sub><b>Two units side by side in 3D</b></sub></td>
+</tr>
+<tr>
+<td width="50%" valign="top" align="center"><a href="docs/images/compare-tradeoff-pad.png"><img src="docs/images/compare-tradeoff-pad.png" alt="The trade-off pad previewing a weight preset"></a><br><sub><b>The trade-off pad</b></sub></td>
+<td width="50%" valign="top" align="center"><a href="docs/images/compare-split-view.png"><img src="docs/images/compare-split-view.png" alt="The shortlist table beside a docked map"></a><br><sub><b>The shortlist beside its map</b></sub></td>
+</tr>
+</table>
+
+## Decide
+
+Building records, questions for the leasing office, visit notes, tours, a share page and a decision memo. [More about each picture](docs/GALLERY.md#decide).
+
+<table>
+<tr>
+<td width="33%" valign="top" align="center"><a href="docs/images/decide-records.png"><img src="docs/images/decide-records.png" alt="A building's public records report"></a><br><sub><b>Building records</b></sub></td>
+<td width="33%" valign="top" align="center"><a href="docs/images/decide-office-questions.png"><img src="docs/images/decide-office-questions.png" alt="Questions for the leasing office of The Knox"></a><br><sub><b>Questions for the leasing office</b></sub></td>
+<td width="33%" valign="top" align="center"><a href="docs/images/decide-visit-history.png"><img src="docs/images/decide-visit-history.png" alt="Visit notes in the listing drawer"></a><br><sub><b>Visit notes and history</b></sub></td>
+</tr>
+<tr>
+<td width="33%" valign="top" align="center"><a href="docs/images/decide-tours-board.png"><img src="docs/images/decide-tours-board.png" alt="The tours board: saved picks in S, A, B, C and Pass lanes with tour times and notes"></a><br><sub><b>The tours board</b></sub></td>
 <td width="33%" valign="top" align="center"><a href="docs/images/decide-tour-planner.png"><img src="docs/images/decide-tour-planner.png" alt="The tour-day planner"></a><br><sub><b>The tour-day planner</b></sub></td>
-</tr>
-<tr>
 <td width="33%" valign="top" align="center"><a href="docs/images/decide-memo.png"><img src="docs/images/decide-memo.png" alt="The decision memo"></a><br><sub><b>The decision memo</b></sub></td>
-<td width="33%" valign="top" align="center"><a href="docs/images/decide-share-page.png"><img src="docs/images/decide-share-page.png" alt="A page to send"></a><br><sub><b>A page to send</b></sub></td>
-<td width="33%" valign="top" align="center"><a href="docs/images/decide-records.png"><img src="docs/images/decide-records.png" alt="Building records"></a><br><sub><b>Building records</b></sub></td>
 </tr>
 <tr>
-<td width="33%" valign="top" align="center"><a href="docs/images/decide-research-queue.png"><img src="docs/images/decide-research-queue.png" alt="What you still don't know"></a><br><sub><b>What you still don't know</b></sub></td>
+<td width="33%" valign="top" align="center"><a href="docs/images/decide-share-page.png"><img src="docs/images/decide-share-page.png" alt="The read-only shortlist page"></a><br><sub><b>A page to send</b></sub></td>
+<td width="33%" valign="top" align="center"><a href="docs/images/decide-research-queue.png"><img src="docs/images/decide-research-queue.png" alt="The research queue"></a><br><sub><b>What you still don't know</b></sub></td>
+<td width="33%" valign="top" align="center"><a href="docs/images/decide-gone-fast.png"><img src="docs/images/decide-gone-fast.png" alt="Research, Gone fast: good units at your budget go in 5 days, a days-on-market chart and the units that went"></a><br><sub><b>What rented, and how fast</b></sub></td>
 </tr>
 </table>
 
-### Set up
+## Set up
 
-Any city: a wizard in the dashboard, an interview in the terminal, or your agent.
+Any city: a wizard in the dashboard, an interview in the terminal, or your agent. [More about each picture](docs/GALLERY.md#set-up).
 
 <table>
 <tr>
-<td width="33%" valign="top" align="center"><a href="docs/images/setup-wizard-city.png"><img src="docs/images/setup-wizard-city.png" alt="The new search wizard"></a><br><sub><b>The new search wizard</b></sub></td>
-<td width="33%" valign="top" align="center"><a href="docs/images/setup-wizard-review.png"><img src="docs/images/setup-wizard-review.png" alt="Review the criteria.yaml"></a><br><sub><b>Review the criteria.yaml</b></sub></td>
-<td width="33%" valign="top" align="center"><a href="docs/images/setup-menu.png"><img src="docs/images/setup-menu.png" alt="One menu"></a><br><sub><b>One menu</b></sub></td>
+<td width="50%" valign="top" align="center"><a href="docs/images/setup-wizard-city.png"><img src="docs/images/setup-wizard-city.png" alt="The new search wizard, step 1"></a><br><sub><b>The new search wizard</b></sub></td>
+<td width="50%" valign="top" align="center"><a href="docs/images/setup-wizard-review.png"><img src="docs/images/setup-wizard-review.png" alt="The wizard's review step"></a><br><sub><b>Review the criteria.yaml</b></sub></td>
 </tr>
 <tr>
-<td width="33%" valign="top" align="center"><a href="docs/images/setup-cli.png"><img src="docs/images/setup-cli.png" alt="The command line"></a><br><sub><b>The command line</b></sub></td>
+<td width="50%" valign="top" align="center"><a href="docs/images/setup-menu.png"><img src="docs/images/setup-menu.png" alt="The one menu at the top right"></a><br><sub><b>One menu</b></sub></td>
+<td width="50%" valign="top" align="center"><a href="docs/images/setup-cli.png"><img src="docs/images/setup-cli.png" alt="Command-line output"></a><br><sub><b>The command line</b></sub></td>
 </tr>
 </table>
 
-### On a phone
+## On a phone
 
-Installs as an app: the map, Unit 3D, visit notes and a one-hand tour day.
+Installs as an app: the map, a listing, Unit 3D, visit notes and a one-hand tour day. [More about each picture](docs/GALLERY.md#on-a-phone).
 
 <table>
 <tr>
-<td width="20%" valign="top" align="center"><a href="docs/images/phone-map.png"><img src="docs/images/phone-map.png" alt="Map and cards" width="180"></a><br><sub><b>Map and cards</b></sub></td>
-<td width="20%" valign="top" align="center"><a href="docs/images/phone-unit-3d.png"><img src="docs/images/phone-unit-3d.png" alt="Unit 3D" width="180"></a><br><sub><b>Unit 3D</b></sub></td>
-<td width="20%" valign="top" align="center"><a href="docs/images/phone-visit-notes.png"><img src="docs/images/phone-visit-notes.png" alt="Visit notes" width="180"></a><br><sub><b>Visit notes</b></sub></td>
-<td width="20%" valign="top" align="center"><a href="docs/images/phone-tour-day.png"><img src="docs/images/phone-tour-day.png" alt="Tour day" width="180"></a><br><sub><b>Tour day</b></sub></td>
-<td width="20%" valign="top" align="center"><a href="docs/images/phone-tour-checklist.png"><img src="docs/images/phone-tour-checklist.png" alt="The checklist" width="180"></a><br><sub><b>The checklist</b></sub></td>
+<td width="16%" valign="top" align="center"><a href="docs/images/phone-map.png"><img src="docs/images/phone-map.png" alt="The map and ranked cards on a phone" width="150"></a><br><sub><b>Map and cards</b></sub></td>
+<td width="16%" valign="top" align="center"><a href="docs/images/phone-drawer.png"><img src="docs/images/phone-drawer.png" alt="A listing drawer on a phone" width="150"></a><br><sub><b>A listing</b></sub></td>
+<td width="16%" valign="top" align="center"><a href="docs/images/phone-unit-3d.png"><img src="docs/images/phone-unit-3d.png" alt="Unit 3D on a phone" width="150"></a><br><sub><b>Unit 3D</b></sub></td>
+<td width="16%" valign="top" align="center"><a href="docs/images/phone-visit-notes.png"><img src="docs/images/phone-visit-notes.png" alt="Visit notes on a phone" width="150"></a><br><sub><b>Visit notes</b></sub></td>
+<td width="16%" valign="top" align="center"><a href="docs/images/phone-tour-day.png"><img src="docs/images/phone-tour-day.png" alt="Tour day on a phone: three homes in time order" width="150"></a><br><sub><b>Tour day</b></sub></td>
+<td width="16%" valign="top" align="center"><a href="docs/images/phone-tour-checklist.png"><img src="docs/images/phone-tour-checklist.png" alt="The Tour day checklist for one home" width="150"></a><br><sub><b>The checklist</b></sub></td>
 </tr>
 </table>
 
-### From earlier versions
+## Quick start
 
-Screens from earlier builds of the same dashboard: the sun studies, the floor-plan studio, the map and the research pages as they first shipped.
+**Look first.** The [live demo](https://0marm0.github.io/ApartmentScout/demo/) is the dashboard on the worked example, running in
+your browser: 738 Manhattan listings (434 active) in 260 buildings, commutes to an office near Grand Central, 16 3D site models,
+9 floor plans and 30 building dossiers. Or run it on your own machine:
 
-#### Sun and light
+```bash
+git clone --depth 1 https://github.com/0marm0/ApartmentScout.git   # --depth 1: today's files, not the whole history
+cd ApartmentScout
+python -m venv .venv && source .venv/bin/activate
+pip install -e .                                       # ".[xlsx]" adds the workbook export, ".[dev]" the test tools
+apartmentscout serve --search examples/nyc-2026
+```
 
-<table>
-<tr>
-<td width="33%" valign="top" align="center"><a href="docs/images/earlier/chart-sun-by-floor.png"><img src="docs/images/earlier/chart-sun-by-floor.png" alt="Direct sun by floor and month"></a><br><sub><b>Direct sun by floor and month</b></sub></td>
-<td width="33%" valign="top" align="center"><a href="docs/images/earlier/chart-sunpath.png"><img src="docs/images/earlier/chart-sunpath.png" alt="Sun path against the skyline"></a><br><sub><b>Sun path against the skyline</b></sub></td>
-<td width="33%" valign="top" align="center"><a href="docs/images/earlier/unit-sunpath.png"><img src="docs/images/earlier/unit-sunpath.png" alt="The sun's arc over the neighbours"></a><br><sub><b>The sun's arc over the neighbours</b></sub></td>
-</tr>
-<tr>
-<td width="33%" valign="top" align="center"><a href="docs/images/earlier/unit-floors.png"><img src="docs/images/earlier/unit-floors.png" alt="Sun hours, every floor of a tower"></a><br><sub><b>Sun hours, every floor of a tower</b></sub></td>
-<td width="33%" valign="top" align="center"><a href="docs/images/earlier/unit-window-12.png"><img src="docs/images/earlier/unit-window-12.png" alt="The view from floor 12"></a><br><sub><b>The view from floor 12</b></sub></td>
-<td width="33%" valign="top" align="center"><a href="docs/images/earlier/unit-window-21.png"><img src="docs/images/earlier/unit-window-21.png" alt="The same window from floor 21"></a><br><sub><b>The same window from floor 21</b></sub></td>
-</tr>
-<tr>
-<td width="33%" valign="top" align="center"><a href="docs/images/earlier/unit-maybury.png"><img src="docs/images/earlier/unit-maybury.png" alt="Dusk from a 22nd floor"></a><br><sub><b>Dusk from a 22nd floor</b></sub></td>
-<td width="33%" valign="top" align="center"><a href="docs/images/earlier/unit-orbit-dec.png"><img src="docs/images/earlier/unit-orbit-dec.png" alt="Winter shadows over the block"></a><br><sub><b>Winter shadows over the block</b></sub></td>
-<td width="33%" valign="top" align="center"><a href="docs/images/earlier/unit-plan-view.png"><img src="docs/images/earlier/unit-plan-view.png" alt="From above: what blocks the window"></a><br><sub><b>From above: what blocks the window</b></sub></td>
-</tr>
-<tr>
-<td width="33%" valign="top" align="center"><a href="docs/images/earlier/unit-inside.png"><img src="docs/images/earlier/unit-inside.png" alt="Inside, looking out"></a><br><sub><b>Inside, looking out</b></sub></td>
-<td width="33%" valign="top" align="center"><a href="docs/images/earlier/unit-light-theme.png"><img src="docs/images/earlier/unit-light-theme.png" alt="Light and view in the light theme"></a><br><sub><b>Light and view in the light theme</b></sub></td>
-<td width="33%" valign="top" align="center"><a href="docs/images/earlier/mobile-unit.png"><img src="docs/images/earlier/mobile-unit.png" alt="Unit 3D on a phone"></a><br><sub><b>Unit 3D on a phone</b></sub></td>
-</tr>
-</table>
+**Then your own search**, from nothing to a ranked map in about 15 minutes, in any city
+([the full walk-through](docs/guides/getting-started.md)). It asks for your **city** (looked up, so the time zone and map are
+right), your **places** (addresses are found and confirmed) and your **transit timetable** (a starter feed is offered where one has
+been checked):
 
-#### Floor-plan studio
+<!-- quickstart -->
+```bash
+apartmentscout init searches/my-search --city "Chicago, IL" --interactive
+export APARTMENTSCOUT_SEARCH=searches/my-search
+apartmentscout import searches/my-search/listings.csv   # fill the listings.template.csv that init wrote, or ask your agent
+apartmentscout validate && apartmentscout lint         # catch bad data and listing traps early
+apartmentscout all                                     # geocode, commute by mode, layers, places, score, build
+apartmentscout surroundings                            # fetch the buildings around each shortlisted home (3D, sun, view)
+apartmentscout plans                                   # floor plans: which homes have one, and how to add one
+apartmentscout serve                                   # open the dashboard on your own data
+```
 
-<table>
-<tr>
-<td width="33%" valign="top" align="center"><a href="docs/images/earlier/plan-bird.png"><img src="docs/images/earlier/plan-bird.png" alt="Bird's eye beside the plan"></a><br><sub><b>Bird's eye beside the plan</b></sub></td>
-<td width="33%" valign="top" align="center"><a href="docs/images/earlier/plan-top.png"><img src="docs/images/earlier/plan-top.png" alt="Top-down with clearances"></a><br><sub><b>Top-down with clearances</b></sub></td>
-<td width="33%" valign="top" align="center"><a href="docs/images/earlier/plan-light-tab.png"><img src="docs/images/earlier/plan-light-tab.png" alt="The light tab"></a><br><sub><b>The light tab</b></sub></td>
-</tr>
-<tr>
-<td width="33%" valign="top" align="center"><a href="docs/images/earlier/plan-tracer.png"><img src="docs/images/earlier/plan-tracer.png" alt="Trace a plan from an image"></a><br><sub><b>Trace a plan from an image</b></sub></td>
-</tr>
-</table>
-
-#### Map, listings and photos
-
-<table>
-<tr>
-<td width="33%" valign="top" align="center"><a href="docs/images/earlier/map-3d.png"><img src="docs/images/earlier/map-3d.png" alt="The map in 3D"></a><br><sub><b>The map in 3D</b></sub></td>
-<td width="33%" valign="top" align="center"><a href="docs/images/earlier/map-walk.png"><img src="docs/images/earlier/map-walk.png" alt="Walking time to Grand Central"></a><br><sub><b>Walking time to Grand Central</b></sub></td>
-<td width="33%" valign="top" align="center"><a href="docs/images/earlier/map-drawer-commute.png"><img src="docs/images/earlier/map-drawer-commute.png" alt="A drawer's commute and records"></a><br><sub><b>A drawer's commute and records</b></sub></td>
-</tr>
-<tr>
-<td width="33%" valign="top" align="center"><a href="docs/images/earlier/drawer-money.png"><img src="docs/images/earlier/drawer-money.png" alt="What it costs, month by month"></a><br><sub><b>What it costs, month by month</b></sub></td>
-<td width="33%" valign="top" align="center"><a href="docs/images/earlier/mobile-drawer.png"><img src="docs/images/earlier/mobile-drawer.png" alt="A listing on a phone"></a><br><sub><b>A listing on a phone</b></sub></td>
-<td width="33%" valign="top" align="center"><a href="docs/images/earlier/lightbox.png"><img src="docs/images/earlier/lightbox.png" alt="The photo lightbox"></a><br><sub><b>The photo lightbox</b></sub></td>
-</tr>
-<tr>
-<td width="33%" valign="top" align="center"><a href="docs/images/earlier/lightbox-floor-plan.png"><img src="docs/images/earlier/lightbox-floor-plan.png" alt="Photo beside the floor plan"></a><br><sub><b>Photo beside the floor plan</b></sub></td>
-<td width="33%" valign="top" align="center"><a href="docs/images/earlier/compare.png"><img src="docs/images/earlier/compare.png" alt="Compare, dark"></a><br><sub><b>Compare, dark</b></sub></td>
-<td width="33%" valign="top" align="center"><a href="docs/images/earlier/compare-light.png"><img src="docs/images/earlier/compare-light.png" alt="Compare, light"></a><br><sub><b>Compare, light</b></sub></td>
-</tr>
-</table>
-
-#### Research, tours and sharing
-
-<table>
-<tr>
-<td width="33%" valign="top" align="center"><a href="docs/images/earlier/research.png"><img src="docs/images/earlier/research.png" alt="The research queue"></a><br><sub><b>The research queue</b></sub></td>
-<td width="33%" valign="top" align="center"><a href="docs/images/earlier/research-gone.png"><img src="docs/images/earlier/research-gone.png" alt="What rented, and how fast"></a><br><sub><b>What rented, and how fast</b></sub></td>
-<td width="33%" valign="top" align="center"><a href="docs/images/earlier/tours.png"><img src="docs/images/earlier/tours.png" alt="Shortlist and tour board"></a><br><sub><b>Shortlist and tour board</b></sub></td>
-</tr>
-<tr>
-<td width="33%" valign="top" align="center"><a href="docs/images/earlier/tour-day-planner.png"><img src="docs/images/earlier/tour-day-planner.png" alt="A day of tours"></a><br><sub><b>A day of tours</b></sub></td>
-<td width="33%" valign="top" align="center"><a href="docs/images/earlier/records.png"><img src="docs/images/earlier/records.png" alt="Building records"></a><br><sub><b>Building records</b></sub></td>
-<td width="33%" valign="top" align="center"><a href="docs/images/earlier/share-shortlist-page.png"><img src="docs/images/earlier/share-shortlist-page.png" alt="A shareable shortlist page"></a><br><sub><b>A shareable shortlist page</b></sub></td>
-</tr>
-<tr>
-<td width="33%" valign="top" align="center"><a href="docs/images/earlier/share-decision-memo.png"><img src="docs/images/earlier/share-decision-memo.png" alt="The decision memo"></a><br><sub><b>The decision memo</b></sub></td>
-</tr>
-</table>
-
-#### Setting up
-
-<table>
-<tr>
-<td width="33%" valign="top" align="center"><a href="docs/images/earlier/wizard-basics.png"><img src="docs/images/earlier/wizard-basics.png" alt="New search: the basics"></a><br><sub><b>New search: the basics</b></sub></td>
-<td width="33%" valign="top" align="center"><a href="docs/images/earlier/wizard-review.png"><img src="docs/images/earlier/wizard-review.png" alt="New search: review and save"></a><br><sub><b>New search: review and save</b></sub></td>
-<td width="33%" valign="top" align="center"><a href="docs/images/earlier/cli.png"><img src="docs/images/earlier/cli.png" alt="The command line"></a><br><sub><b>The command line</b></sub></td>
-</tr>
-</table>
+Prefer to click? Run `apartmentscout serve`, open the menu at the top right and choose *New search*: a wizard asks the same
+questions and writes the same `criteria.yaml`. Prefer to talk? Open the repository in Claude Code, Codex or Cursor and say
+"help me find a one-bedroom near X under $Y": the agent reads [`AGENTS.md`](AGENTS.md) and interviews you. Requires Python 3.10+.
+Floor plans: [adding your floor plans](docs/guides/getting-started.md#7-adding-your-floor-plans).
 
 ## How it works
 
@@ -310,42 +297,6 @@ flowchart LR
 
 The [methodology](docs/guides/methodology.md) covers the money model, the scoring formula, the commute router and its validation,
 and the sun and skyline model, and says what each one leaves out.
-
-## Quick start
-
-**Look first.** The [live demo](https://0marm0.github.io/ApartmentScout/demo/) is the dashboard on the worked example, running in
-your browser: 738 Manhattan listings (434 active) in 260 buildings, commutes to an office near Grand Central, 16 3D site models,
-9 floor plans and 30 building dossiers. Or run it on your own machine:
-
-```bash
-git clone --depth 1 https://github.com/0marm0/ApartmentScout.git   # --depth 1: today's files, not the whole history
-cd ApartmentScout
-python -m venv .venv && source .venv/bin/activate
-pip install -e .                                       # ".[xlsx]" adds the workbook export, ".[dev]" the test tools
-apartmentscout serve --search examples/nyc-2026
-```
-
-**Then your own search**, from nothing to a ranked map in about 15 minutes, in any city
-([the full walk-through](docs/guides/getting-started.md)). It asks for your **city** (looked up, so the time zone and map are
-right), your **places** (addresses are found and confirmed) and your **transit timetable** (a starter feed is offered where one has
-been checked):
-
-<!-- quickstart -->
-```bash
-apartmentscout init searches/my-search --city "Chicago, IL" --interactive
-export APARTMENTSCOUT_SEARCH=searches/my-search
-apartmentscout import searches/my-search/listings.csv   # fill the listings.template.csv that init wrote, or ask your agent
-apartmentscout validate && apartmentscout lint         # catch bad data and listing traps early
-apartmentscout all                                     # geocode, commute by mode, layers, places, score, build
-apartmentscout surroundings                            # fetch the buildings around each shortlisted home (3D, sun, view)
-apartmentscout plans                                   # floor plans: which homes have one, and how to add one
-apartmentscout serve                                   # open the dashboard on your own data
-```
-
-Prefer to click? Run `apartmentscout serve`, open the menu at the top right and choose *New search*: a wizard asks the same
-questions and writes the same `criteria.yaml`. Prefer to talk? Open the repository in Claude Code, Codex or Cursor and say
-"help me find a one-bedroom near X under $Y": the agent reads [`AGENTS.md`](AGENTS.md) and interviews you. Requires Python 3.10+.
-Floor plans: [adding your floor plans](docs/guides/getting-started.md#7-adding-your-floor-plans).
 
 ## On your phone
 
