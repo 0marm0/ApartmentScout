@@ -5,21 +5,23 @@ Rank every listing on your own criteria and its true monthly cost, time the comm
 inside the exact unit, with your own furniture, in the real city around it.</p>
 
 <p align="center">
-<a href="LICENSE"><img alt="MIT licence" src="https://img.shields.io/badge/licence-MIT-informational"></a>
+<a href="https://github.com/0marm0/ApartmentScout/actions/workflows/tests.yml"><img alt="Tests" src="https://github.com/0marm0/ApartmentScout/actions/workflows/tests.yml/badge.svg"></a>
+<a href="https://github.com/0marm0/ApartmentScout/actions/workflows/pages.yml"><img alt="Pages deploy" src="https://github.com/0marm0/ApartmentScout/actions/workflows/pages.yml/badge.svg"></a>
+<a href="LICENSE"><img alt="MIT licence" src="https://img.shields.io/github/license/0marm0/ApartmentScout?color=informational"></a>
 <img alt="Python 3.10 or newer" src="https://img.shields.io/badge/python-3.10%2B-informational">
 <img alt="No API keys, accounts or servers" src="https://img.shields.io/badge/API%20keys-none-success">
-<img alt="Works with any coding agent" src="https://img.shields.io/badge/agents-Claude%20Code%20%C2%B7%20Codex%20%C2%B7%20Cursor-informational">
 </p>
 
 <p align="center">
-<a href="https://0marm0.github.io/ApartmentScout/demo/"><b>Try the demo</b></a> ·
-<a href="#start-your-own-search">Start your own search</a> ·
-<a href="#how-it-works">How it works</a> ·
-<a href="docs/GALLERY.md">Gallery</a> ·
-<a href="#documentation">Docs</a>
+<a href="https://0marm0.github.io/ApartmentScout/demo/"><img alt="Try the live demo" src="https://img.shields.io/badge/%E2%96%B6%20%20Try%20the%20live%20demo-12865f?style=for-the-badge"></a>
+<a href="docs/guides/iphone.md"><img alt="Install on iPhone" src="https://img.shields.io/badge/%F0%9F%93%B1%20%20Install%20on%20iPhone-2b3140?style=for-the-badge"></a>
+<a href="#quick-start"><img alt="Quick start" src="https://img.shields.io/badge/%E2%9A%A1%20%20Quick%20start-2b3140?style=for-the-badge"></a>
 </p>
 
-![The ApartmentScout dashboard: door-to-door commute bands over Manhattan, a ranked list of homes with photos and scores, and one listing open with its monthly cost](docs/images/hero-map.png)
+<p align="center">
+<a href="https://0marm0.github.io/ApartmentScout/demo/"><img src="docs/images/walkthrough.webp" width="820" alt="A 20-second walk-through: the commute map over Manhattan, a ranked card opening into its drawer, Unit 3D around Paramount Tower, then standing inside the living room, walking to the window, and the same view as the sun sets over a lit night city"></a><br>
+<sub>Map, card, drawer, then inside the unit: walk to the window and watch the day turn to night. <a href="docs/images/walkthrough.mp4">Watch it in full quality (MP4)</a>.</sub>
+</p>
 
 ApartmentScout came out of a real search for a one-bedroom in Manhattan: 738 listings in 260 buildings, and the same questions
 for every finalist. What does it cost a month once fees and free months are counted? How long is the trip door to door? What do
@@ -27,64 +29,78 @@ the city's records say about the building? How loud is the street, and will the 
 turns that process into agent playbooks, a Python command line and a dashboard you own, for any city, with that search included
 as a worked example.
 
-## What you get
+## What you can do
 
 Five steps, in the order a search goes. The [gallery](docs/GALLERY.md) shows every screen.
 
-<table>
-<tr><th colspan="2" align="left">1. Find</th></tr>
-<tr>
-<td width="50%" valign="top"><img src="docs/images/find-map-clusters.png" alt="The map zoomed out: nearby homes merged into bubbles that count homes and show the lowest monthly cost, over door-to-door commute bands"><br><b>A calmer map</b><br>Zoomed out, homes merge into bubbles that count them and show the lowest cost; a building is one pin with its units, and hovering a pin previews the home. Commute by walking, subway and bus comes from a built-in GTFS router.</td>
-<td width="50%" valign="top"><img src="docs/images/find-rank-moves.png" alt="A listing drawer explaining why a home fell 40 places since Oct 13, with the points each change moved and the unknowns that could move it back"><br><b>Why a home ranks where it does</b><br>"↓40 since Oct 13" on a card opens the reasons, dimension by dimension, in plain sentences. Fees and free months are counted, unknown fees stay unknown, and a price nobody read off the unit page says so.</td>
-</tr>
-<tr><th colspan="2" align="left">2. Compare</th></tr>
-<tr>
-<td valign="top"><img src="docs/images/compare-four.png" alt="Four finalists in lettered columns with the best value in each row marked and unknowns shown as unknown"><br><b>Finalists, row by row</b><br>Up to four homes on money, space, commute, building, light and score. The best value in each row is marked, and unknowns never count as the worst. Drag one dot to trade cost, commute and space.</td>
-<td valign="top"><img src="docs/images/compare-side-by-side-3d.png" alt="Two Paramount Tower homes side by side in 3D, the 25th floor and the 41st, with direct-sun hours for each window"><br><b>Two units side by side in 3D</b><br>The same date, time and camera in both panes, each with its own direct-sun hours. <b>Unknowns that move this score</b>: type the real size or fee and see the rank you would get.</td>
-</tr>
-<tr><th colspan="2" align="left">3. See inside</th></tr>
-<tr>
-<td valign="top"><img src="docs/images/inside-furniture.png" alt="Inside the living room: a black leather futon, a wall-mounted 55-inch TV, a desk with a monitor and a task chair, and a basket-weave parquet floor"><br><b>Your own furniture, at the real floor</b><br>Unit 3D opens inside the apartment: the futon, desk, monitor, chair, dresser, bed and TVs you actually own, finishes read from the listing photos, and the real city through the glass.</td>
-<td valign="top"><img src="docs/images/inside-walk-window.png" alt="Standing at the living-room window on the 25th floor, looking out over neighbouring towers, a park and the river"><br><b>Walk to the window</b><br>Click the floor to walk, drag to look, or choose <i>Go to the window</i>. Real footprints and heights, a natural sky, and a measuring tape, "Does it fit?" checks and match-a-photo to test what you see.</td>
-</tr>
-<tr>
-<td valign="top"><img src="docs/images/inside-orbit-night.png" alt="Unit 3D at night: facades with lit windows around Paramount Tower, the window marked, a tower under construction drawn dashed"><br><b>The city at night</b><br>Lit windows, street lamps and the buildings that will be there: towers filed or rising are drawn where they will stand.</td>
-<td valign="top"><img src="docs/images/inside-play-year.png" alt="The Inside view from the bay window with the Play day and Play year bar showing September and leaves on the trees"><br><b>Play the day, play the year</b><br>Sun, shadows and the season's trees move with the bar. Trees are context and never count as shade in the sun hours.</td>
-</tr>
-<tr><th colspan="2" align="left">4. Decide</th></tr>
-<tr>
-<td valign="top"><img src="docs/images/phone-tour-day.png" alt="Tour day on a phone: three homes in time order with directions and the minutes to the next stop" width="260"><br><b>Tour day, on your phone</b><br>Today's tours in order with directions and leave-by times, a one-hand checklist at each home (light, noise, water, signal), and a noise check that keeps one number and no audio. The answers flow into the visit notes and the score.</td>
-<td valign="top"><img src="docs/images/decide-office-questions.png" alt="A drafted email to a building's leasing office with a checklist of questions and why each is asked"><br><b>Questions for the leasing office</b><br>Drafts built from what the score is unsure about, a checkbox per question and the evidence behind it. Copy it or open it in your mail app: nothing is sent from the page. Then a tour planner, a share page and a decision memo.</td>
-</tr>
-<tr><th colspan="2" align="left">5. Set up</th></tr>
-<tr>
-<td valign="top"><img src="docs/images/setup-wizard-city.png" alt="The new search wizard on its first step, with Another city chosen and Chicago typed in"><br><b>Any city</b><br>A wizard in the dashboard, an interview in the terminal, or your agent: any city OpenStreetMap knows, with its transit feed. Everything is plain files in a folder you own.</td>
-<td valign="top"><img src="docs/images/setup-menu.png" alt="The one menu at the top right: this search, data, appearance, comfort and help"><br><b>One menu, an app</b><br>Light or dark, density, comfort settings and backups in one menu. The dashboard installs as an app and works offline.</td>
-</tr>
-</table>
+| | Journey | What you get |
+|---|---|---|
+| 1 | **[Find](docs/GALLERY.md#find)** | Every listing ranked on **your weights and true monthly cost** (fees and free months counted, unknowns kept unknown). **Door-to-door commute** by walk, subway, bus or the best of them, from a built-in GTFS router. A map that merges homes into bubbles, previews a pin, and takes plain-words search ("east of 3rd ave under 5k with w/d"). Price drops, a price audit, and a plain-language reason for every rank move. |
+| 2 | **[Compare](docs/GALLERY.md#compare)** | Up to four finalists row by row, the best value marked and unknowns never counted as the worst. Two units side by side in 3D with their own direct-sun hours. A trade-off pad to drag cost against commute and space, and **unknowns that move this score**: type the real size or fee and see the rank you would get. |
+| 3 | **[See inside](docs/GALLERY.md#see-inside)** | **Unit 3D** puts you in the exact unit with the furniture you own, finishes read from the listing photos, and the real city through the glass. Walk to the window, play the day and the year (sun, shadows, seasons), see it at night, measure, test "does it fit?", match a listing photo. Floor plans traced from the listing's PDF. |
+| 4 | **[Decide](docs/GALLERY.md#decide)** | Building dossiers from public records and a 311 noise layer (New York built in). Questions for the leasing office, drafted and never sent. A phone **tour day** with directions, a one-hand checklist and a noise check that keeps one number and no audio. A tour planner, a share page, a decision memo. |
+| 5 | **[Set up](docs/GALLERY.md#set-up)** | Any city OpenStreetMap knows, by a wizard in the dashboard, an interview in the terminal, or your agent. Plain files in a folder you own. The dashboard installs as an app and works offline. Nine agent skills, and checksummed handoff packs between agents. |
 
-More: agent playbooks for every stage, floor plans traced from a listing's PDF, a 311 noise layer and building records for New York,
-licensed building photos with credits, a workbook whose weights drive live ranks, and checksummed handoff packs between agents.
+## How it works
 
-## Try the demo
+Three parts, all yours, all plain files in a folder. No account, server or API key sits between you and your data.
 
-The [live demo](https://0marm0.github.io/ApartmentScout/demo/) is the dashboard on the worked example, running in your browser:
-738 Manhattan listings (434 active) in 260 buildings, commutes to an office near Grand Central, 16 3D site models, 9 floor plans
-and 30 building dossiers. Install it from Chrome, Edge or Safari and it keeps working offline. To run it on your own machine:
+```mermaid
+flowchart LR
+  subgraph you [You]
+    R(["Renter"])
+    AG["Your agent<br/>Claude Code · Codex · Cursor"]
+  end
+  SK[["9 skills<br/>.claude/skills"]]
+  OD[("Open data<br/>OpenStreetMap · NYC Open Data<br/>GTFS · Census · Wikimedia")]
+  CLI["apartmentscout CLI<br/>import · geocode · commute<br/>dossier · surroundings · score"]
+  SF[("Search folder<br/>criteria.yaml · listings.json<br/>research · plans · sites")]
+  B["build"]
+  DD["Dashboard data<br/>JSON"]
+  D["Static dashboard<br/>Map · Shortlist · Compare · 3D · Research"]
+  L["apartmentscout serve<br/>on your machine"]
+  P["GitHub Pages<br/>installable, offline"]
+  F["One HTML file<br/>or a read-only share page"]
+
+  R --> AG
+  R --> CLI
+  SK -. playbooks .-> AG
+  AG -->|runs| CLI
+  OD --> CLI
+  CLI <--> SF
+  SF --> B --> DD --> D
+  D --> L
+  D --> P
+  D --> F
+```
+
+| | What it does |
+|---|---|
+| **Your agent** | Open the repository in Claude Code, Codex, Cursor or any agent that reads [`AGENTS.md`](AGENTS.md). Nine [skills](.claude/skills) walk it through intake, listing sourcing, commutes, building dossiers, noise, light and view, floor plans, lease and fees, and tours. It checks its own data with `validate`, `lint` and `coverage`, and drafts messages to leasing offices without sending them. |
+| **The CLI** | Every stage is one command over files in your search folder: `geocode`, `commute`, `dossier`, `surroundings`, `score`, `build`, `export`, `share`. Repeatable, scriptable, and offline once the data is pulled. |
+| **The dashboard** | Map, Shortlist, Compare, 3D and Research in one static page with one menu. Serve it, host it on GitHub Pages, open it as a single HTML file, or install it as an app. |
+
+The [methodology](docs/guides/methodology.md) covers the money model, the scoring formula, the commute router and its validation,
+and the sun and skyline model, and says what each one leaves out.
+
+## Quick start
+
+**Look first.** The [live demo](https://0marm0.github.io/ApartmentScout/demo/) is the dashboard on the worked example, running in
+your browser: 738 Manhattan listings (434 active) in 260 buildings, commutes to an office near Grand Central, 16 3D site models,
+9 floor plans and 30 building dossiers. Or run it on your own machine:
 
 ```bash
-git clone --depth 1 https://github.com/<your-username>/ApartmentScout.git   # --depth 1: today's files, not the whole history
+git clone --depth 1 https://github.com/0marm0/ApartmentScout.git   # --depth 1: today's files, not the whole history
 cd ApartmentScout
 python -m venv .venv && source .venv/bin/activate
 pip install -e .                                       # ".[xlsx]" adds the workbook export, ".[dev]" the test tools
 apartmentscout serve --search examples/nyc-2026
 ```
 
-## Start your own search
-
-From nothing to a ranked map in about 15 minutes, in any city ([the full walk-through](docs/guides/getting-started.md)). It asks for
-your **city** (looked up, so the time zone and map are right), your **places** (addresses are found and confirmed) and your
-**transit timetable** (a starter feed is offered where one has been checked):
+**Then your own search**, from nothing to a ranked map in about 15 minutes, in any city
+([the full walk-through](docs/guides/getting-started.md)). It asks for your **city** (looked up, so the time zone and map are
+right), your **places** (addresses are found and confirmed) and your **transit timetable** (a starter feed is offered where one has
+been checked):
 
 <!-- quickstart -->
 ```bash
@@ -100,135 +116,122 @@ apartmentscout serve                                   # open the dashboard on y
 
 Prefer to click? Run `apartmentscout serve`, open the menu at the top right and choose *New search*: a wizard asks the same
 questions and writes the same `criteria.yaml`. Prefer to talk? Open the repository in Claude Code, Codex or Cursor and say
-"help me find a one-bedroom near X under $Y": the agent reads [`AGENTS.md`](AGENTS.md) and interviews you. Floor plans: in the
-**3D** tab choose *Floor plan*, then *New plan from image*, trace the listing's PNG or PDF and *Save to the search folder*
-([adding your floor plans](docs/guides/getting-started.md#7-adding-your-floor-plans)).
+"help me find a one-bedroom near X under $Y": the agent reads [`AGENTS.md`](AGENTS.md) and interviews you. Requires Python 3.10+.
+Floor plans: [adding your floor plans](docs/guides/getting-started.md#7-adding-your-floor-plans).
 
-Requires Python 3.10+. Everything built in uses free public data: NYC Open Data, the US Census geocoder, OpenStreetMap, Wikimedia
-Commons and transit agencies' GTFS feeds. Outside New York, building-records automation and the noise layer are not built in
-(`apartmentscout city` shows what your city has); [adding a city profile](docs/guides/new-city.md) is a short YAML file.
+## On your phone
 
-## How it works
+The dashboard is an installable app. On an iPhone, open the demo in Safari, tap Share, then **Add to Home Screen**: it opens
+full screen and keeps working with no signal. On tour day it gives you today's visits in order with directions, a checklist at each
+home and a noise check. The steps, what works offline and what stays on the phone are in the
+[iPhone guide](docs/guides/iphone.md).
 
-Three parts, all yours, all plain files in a folder. No account, server or API key sits between you and your data.
+## Privacy
 
-| | What it does |
-|---|---|
-| **Your agent** | Open the repository in Claude Code, Codex, Cursor or any agent that reads `AGENTS.md`. Nine skills in [`.claude/skills/`](.claude/skills) walk it through intake, listing sourcing, commutes, building dossiers, noise, light and view, floor plans, lease and fees, and tours. It checks its own data with `validate`, `lint` and `coverage`, and it drafts messages to leasing offices without sending them. |
-| **The CLI** | Every stage is one command over files in your search folder: `geocode`, `commute`, `dossier`, `surroundings`, `score`, `build`, `export`, `share`. Repeatable, scriptable, and offline once the data is pulled. |
-| **The dashboard** | Map, Shortlist, Compare, 3D and Research in one static page with one menu. Serve it, host it on GitHub Pages, open it as a single HTML file, or install it as an app. |
+- **Your search stays yours.** Searches live in `searches/`, which git ignores. Your criteria, notes, saved picks, visit answers and
+  tour-day checklist stay on your machine, and in the browser's own storage on your phone. There is no account, no analytics and no
+  ApartmentScout server.
+- **What the network sees.** Building a search reads public sources (OpenStreetMap, NYC Open Data, the US Census geocoder,
+  transit agencies' feeds, Wikimedia Commons). The dashboard's map loads tiles from OpenFreeMap and Esri imagery, like any web map.
+  The landing page loads nothing from other sites.
+- **The example data.** [`examples/nyc-2026`](examples/nyc-2026) is a real Manhattan one-bedroom search, lightly anonymised: public
+  listings, public records and open data. It contains no renter identity, income or documents. The saved picks and visit notes in the
+  gallery are sample entries. Listing photos belong to their owners; Commons building photos carry their licence and author.
+- **Sites' rules are respected.** Agents are told to use official APIs and open data, never to bypass a CAPTCHA or bot check, never
+  to log in, and never to contact a landlord without your say-so. When a portal blocks automated reading, the agent stops and asks
+  you to open the page yourself.
+- **Reports are not findings.** 311 calls, complaints and reviews are shown as reports. Commute, sun, money and score numbers are
+  estimates, and coverage is of the listings you captured, not a market census. Check the important ones in person.
+- **Publishing.** A Pages site, a standalone file or a workbook shows your listings and notes to whoever has it. Run
+  `python scripts/release_check.py` first.
 
-```mermaid
-flowchart LR
-  A[criteria.yaml<br>budget, must-haves,<br>commute, weights] --> S
-  B[listings.json<br>agent, CSV or JSON] --> Q[validate · lint]
-  Q --> G[geocode]
-  G --> C[commute<br>walk · subway · bus · best]
-  G --> R[dossier<br>city records]
-  G --> V[surroundings<br>buildings, trees, water]
-  C --> S[score<br>your weights]
-  R --> S
-  V --> S
-  S --> D[dashboard<br>Map · Shortlist · Compare · 3D · Research]
-  S --> X[export · share · handoff]
-```
+## FAQ
 
-The [methodology](docs/guides/methodology.md) covers the money model, the scoring formula, the commute router and its validation,
-and the sun and skyline model, and says what each one leaves out. The [agent guide](AGENTS.md) is the operating manual.
+<details>
+<summary><b>Does it work outside New York?</b></summary>
 
-## Gallery
+Yes. Any city OpenStreetMap knows gets the map, geocoding, walking times, 3D site models, sun and view, floor plans and ranking;
+add a transit timetable (GTFS) for commutes by subway and bus. Building-records automation and the noise layer are New York only
+for now. Elsewhere an agent researches records with the `building-dossier` skill. `apartmentscout city "Your City"` shows what your
+city has, and [adding a city profile](docs/guides/new-city.md) is a short YAML file. You can also
+[request or offer a city](https://github.com/0marm0/ApartmentScout/issues/new?template=new_city.yml).
+</details>
 
-<table>
-<tr>
-<td width="33%"><a href="docs/GALLERY.md#find"><img src="docs/images/find-map-clusters.png" alt="The map zoomed out into bubbles over commute bands"></a><br><sub><b>Find</b>: the map, the money, the reasons</sub></td>
-<td width="33%"><a href="docs/GALLERY.md#see-inside"><img src="docs/images/inside-orbit-night.png" alt="Unit 3D at night with lit windows"></a><br><sub><b>See inside</b>: Unit 3D, day and night</sub></td>
-<td width="33%"><a href="docs/GALLERY.md#decide"><img src="docs/images/decide-office-questions.png" alt="Questions for a building's leasing office"></a><br><sub><b>Decide</b>: tour day, questions, the memo</sub></td>
-</tr>
-</table>
+<details>
+<summary><b>Where does the data come from, and under what licences?</b></summary>
 
-The full gallery, [organised by the journey](docs/GALLERY.md): Find, Compare, See inside, Decide, Set up. Every image comes from the
-included example, a Manhattan one-bedroom search from fall 2026, and every caption says what the image shows.
+NYC Open Data, the US Census geocoder, OpenStreetMap (ODbL), MTA and other agencies' GTFS feeds, Esri imagery and Wikimedia
+Commons photos, with MapLibre GL, three.js, d3-contour and the Geist fonts. Each keeps its own licence and attribution; they are
+summarised in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Keep the map attribution visible on anything you publish and show the
+credit line with every Commons photo. Listings are what you or your agent capture, within each source's terms.
+</details>
+
+<details>
+<summary><b>Do I need an AI agent, an API key or an account?</b></summary>
+
+No. Everything built in uses free public data and needs no key. You can run the CLI and the dashboard by hand, or use the wizard.
+An agent (Claude Code, Codex, Cursor, anything that reads `AGENTS.md`) is optional: it does the sourcing and research legwork.
+</details>
+
+<details>
+<summary><b>Does it work offline?</b></summary>
+
+Once your data is built, yes: the CLI works on local files, and the hosted dashboard installs as an app that keeps its shell, data
+and the 3D models you have opened in the browser's cache. Map tiles and photos you have not opened need a connection. A single-file
+build (`apartmentscout build --standalone`) opens with no server at all. Details:
+[the dashboard guide](docs/guides/dashboard.md#install-it-and-use-it-offline).
+</details>
+
+<details>
+<summary><b>Does it work on a phone?</b></summary>
+
+Yes. The layout follows the screen, Unit 3D has a phone layout, and Tour day is built for one hand. Add it to your Home Screen to
+use it offline: see the [iPhone guide](docs/guides/iphone.md) (Android: Chrome's *Install app* in the dashboard's Help menu).
+</details>
+
+<details>
+<summary><b>Can it contact landlords or apply for me?</b></summary>
+
+No. It drafts questions and emails for you to copy; nothing is sent from the page or by an agent unless you explicitly ask it to.
+</details>
+
+<details>
+<summary><b>How accurate are the sun, view and commute numbers?</b></summary>
+
+They are models, and the [methodology](docs/guides/methodology.md) says what each one leaves out (trees are context and never count
+as shade; heights default where OpenStreetMap has none; a commute is a timetable estimate, not a live route). Unknowns stay
+unknown and are listed so you know what to ask or check on a visit.
+</details>
 
 ## Documentation
 
 | | |
 |---|---|
-| Start | [Getting started](docs/guides/getting-started.md) · [The dashboard](docs/guides/dashboard.md) · [Other cities](docs/guides/new-city.md) |
+| Start | [Getting started](docs/guides/getting-started.md) · [The dashboard](docs/guides/dashboard.md) · [iPhone guide](docs/guides/iphone.md) · [Other cities](docs/guides/new-city.md) |
 | How it is computed | [Methodology](docs/guides/methodology.md) · [Data model](docs/guides/data-model.md) · [Research quality](docs/guides/research-quality.md) · [Leasing-office questions](docs/guides/leasing-office-questions.md) |
-| 3D and photos | [Floor plans](docs/guides/floor-plans.md) · [Photos](docs/guides/photos.md) |
+| 3D and photos | [Floor plans](docs/guides/floor-plans.md) · [Photos](docs/guides/photos.md) · [Gallery](docs/GALLERY.md) |
 | Agents | [AGENTS.md](AGENTS.md) · [Skills](.claude/skills) · [Agent handoff](docs/guides/agents-handoff.md) · [Monitoring](docs/guides/monitoring.md) |
-| Project | [Roadmap](docs/ROADMAP.md) · [Release checklist](docs/RELEASE_CHECKLIST.md) · [Design system](docs/design/design-system.md) |
+| Project | [Roadmap](docs/ROADMAP.md) · [Release checklist](docs/RELEASE_CHECKLIST.md) · [Design system](docs/design/design-system.md) · [Third-party notices](THIRD_PARTY_NOTICES.md) |
 
-More commands, once you have finalists:
-
-```bash
-apartmentscout coverage                                # what is still unknown, and what it could swing
-apartmentscout dossier                                 # building records for your shortlist (NYC; elsewhere the building-dossier skill)
-apartmentscout photos                                  # licensed building photos with credits
-apartmentscout site <listing-id> --floor 12 --charts   # one home's 3D site model, sun and view in detail
-apartmentscout export --xlsx my-search.xlsx            # workbook with live weights and ranks
-apartmentscout share --picks picks.json --out shortlist.html   # a read-only page (or --memo) of your saved picks
-apartmentscout handoff pack out.zip --to codex         # hand the search to another agent
-apartmentscout build --standalone my-search.html       # one self-contained file (after editing dashboard/js, run scripts/bundle.sh first; needs Node.js)
-```
-
-## The example search
-
-[`examples/nyc-2026`](examples/nyc-2026) is a real search, lightly anonymised: 738 listings (434 active) in 260 Manhattan buildings
-with prices, amenities, review summaries and statuses; walk, subway, bus and best-of-transit commutes to a Midtown office near
-Grand Central on the MTA timetables; a 311 noise layer; 30 building dossiers from NYC Open Data; 16 3D site models and 9 floor
-plans with a furnished layout; and saved photos for 286 homes, with an aerial view where a home has none.
-
-**Photos.** The full set is 5,595 photos (about 400 MB), so it is not in the download. The repository carries a 34 MB starter
-set, [`examples/nyc-2026/media-lite`](examples/nyc-2026/media-lite): a real gallery (up to 30 photos) for each of the twelve
-top-ranked homes, one or two photos for every other home, and every floor plan. The [live demo](https://0marm0.github.io/ApartmentScout/demo/)
-serves all of them, and a local copy fetches the ones it lacks from there (`apartmentscout serve` redirects, a static server falls back
-in the page), so the example works with nothing extra to download. Offline, or for the full set on disk, run `scripts/fetch_media.sh`
-(it needs the GitHub CLI signed in) and delete `examples/nyc-2026/media` any time to get the space back. How the dashboard picks a
-copy: [the data model](docs/guides/data-model.md#where-a-saved-photo-comes-from-media-media-lite-media_base_url).
-
-## Host it, install it
-
-`.github/workflows/pages.yml` publishes the landing page at the site root and the dashboard, with the worked example, at `/demo/`
-on every push to `main` (turn it on under Settings, Pages, Source: GitHub Actions). The published build is bundled and split so
-the first screen loads about 80 KB of script, and CI keeps it honest with a budget (`scripts/perf_budget.json`). A single-file
-build (`build --standalone`) and `apartmentscout serve` never install a service worker. Details: [the dashboard
-guide](docs/guides/dashboard.md#install-it-and-use-it-offline).
-
-## Privacy and responsible use
-
-- Your searches live in `searches/`, which git ignores, and `apartmentscout serve` serves a private search from that search's own
-  cache, so personal criteria, notes and saved listing photos never land in tracked files.
-- Photos are a per-search choice. Commons building photos carry their licence and author; listing photos belong to their owners.
-- Agents are told to respect site terms: no CAPTCHA solving, no bypassing bot protection, no logging in or contacting landlords
-  without your say-so.
-- 311 calls, complaints and reviews are reports, not findings, and the dashboard says so. Commute, sun, money and score numbers
-  are estimates, and coverage is of the listings you captured, not a market census. Check the important ones in person.
-- Anything you publish (a Pages site, a standalone file, a workbook) shows your listings and notes to whoever has it. Run
-  `python scripts/release_check.py` before you publish.
-
-## Data and licences
-
-ApartmentScout loads MapLibre GL, three.js and the Geist fonts, bundles d3-contour, and uses OpenFreeMap and OpenStreetMap, Esri
-imagery, NYC Open Data, MTA GTFS feeds and Wikimedia Commons photos. Each keeps its own licence and attribution requirements,
-summarised in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Keep the map attribution visible on anything you publish and show
-the credit line with every Commons photo.
+The worked example, [`examples/nyc-2026`](examples/nyc-2026), has 738 listings, commutes on the MTA timetables, a 311 noise layer,
+30 building dossiers, 16 3D site models and 9 floor plans. Its photos are in two sets (a 34 MB starter set in the repository, the
+full set on demand): see [photos](docs/guides/photos.md). The site, with the demo at `/demo/`, is published by
+`.github/workflows/pages.yml` on every push to `main`.
 
 ## Contributing
 
 Issues and pull requests are welcome, especially city profiles, records modules, GTFS feed lists and better floor-plan tooling.
-Before opening a PR:
+Start with [CONTRIBUTING.md](CONTRIBUTING.md) (set-up and tests), use the [issue forms](https://github.com/0marm0/ApartmentScout/issues/new/choose)
+for a bug, a feature or a new city, and follow the [code of conduct](CODE_OF_CONDUCT.md). Before you open a pull request:
 
 ```bash
-pip install -e ".[dev]"                # pytest, playwright (screenshots), openpyxl
-pytest                                 # Python tests
-node --test tests/js                   # dashboard logic tests
-python scripts/release_check.py        # privacy, image manifest, ignore rules, photos, tests
-python scripts/screenshots.py          # if you changed the dashboard: re-shoots docs/images (shoot from a clean snapshot, see the script)
+pip install -e ".[dev]"
+python scripts/test_changed.py         # runs the unit, JavaScript and browser tests your change touches
 ```
 
-After editing `dashboard/js/`, run `scripts/bundle.sh` to refresh the bundle that standalone builds embed.
+To report a security problem privately, see [SECURITY.md](SECURITY.md). If you use the project in research, [CITATION.cff](CITATION.cff)
+has a citation.
 
 ## Licence
 
-MIT. Data from the sources above remains under its own terms; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+MIT, see [LICENSE](LICENSE). Data from the sources above remains under its own terms; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
