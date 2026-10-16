@@ -7,6 +7,7 @@
 .ps-panes[data-mode="both"] .bed-ctl.in-p3d { top: 92px; }
 .bed-ctl.in-unit { position: relative; top: auto; left: auto; right: auto; bottom: auto; order: 5; align-self: flex-start; }
 .bd-bar { display: flex; align-items: center; gap: var(--s-1); flex-wrap: nowrap; }
+.bd-bar[hidden] { display: none; }   /* the sim rig's Shown / Hidden row (bd-rig) sits under the bed row; either shows alone */
 .bd-l { font-size: var(--fs-2xs); font-weight: var(--fw-semibold); letter-spacing: .05em; text-transform: uppercase; color: var(--ink-2); padding: 0 var(--s-1) 0 6px; flex: none; }
 .bd-seg { display: flex; gap: 2px; min-width: 0; }
 .bd-seg button, .bd-fit { border: 0; background: none; height: 26px; padding: 0 10px; border-radius: var(--r-sm); font: var(--fw-medium) var(--fs-xs) var(--font-sans, inherit); color: var(--ink-2); cursor: pointer; white-space: nowrap; transition: color var(--t-fast), background var(--t-fast); }
