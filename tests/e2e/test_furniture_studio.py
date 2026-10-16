@@ -15,7 +15,7 @@ pytestmark = pytest.mark.e2e
 UNIT = "paramount-tower-25e"
 ROOT = Path(__file__).resolve().parents[2]
 INV = json.loads((ROOT / "examples" / "nyc-2026" / "furniture.json").read_text())
-IDS = [p["id"] for p in INV["pieces"]]
+IDS = [p["id"] for p in INV["pieces"] if not p.get("candidate")]   # the renter's own pieces: the candidate bed is drawn only when they switch to it (tests/e2e/test_bed_option.py)
 
 # what each placed piece is made of, as the studio's 3D scene holds it: the group's meshes, their materials and the piece's box in metres
 # what each placed piece is made of: its meshes, their materials and its box in the piece's own frame (metres, origin on the floor
@@ -91,7 +91,8 @@ def test_the_studio_draws_every_piece_in_the_renters_colours_and_the_tvs_on_thei
     s = open_page("#map")
     _studio(s)
     scene = s.page.evaluate(SCENE_JS)
-    assert sorted(scene) == sorted(IDS), "every piece of furniture.json is placed and drawn"
+    assert sorted(scene) == sorted(IDS + ["bed-latitude"]), "every piece of furniture.json is placed, and the candidate bed waits in the scene, hidden"
+    assert not scene["bed-latitude"]["visible"], "my bed is what the studio opens on"
     _check_looks(scene)
     items = s.page.evaluate("() => window.__plan3d.items.map(({id, ref, x, y, rot, w, d, h, elev}) => ({id, ref, x, y, rot, w, d, h, elev}))")
     by = {i["id"]: i for i in items}

@@ -48,7 +48,11 @@ import { setLookChips, bindLookChips } from './plan/look-ui.js';
 import { askedCamera, cameraParam, openingCamera, mainViewpoint, takeSeeInside, CAMERA_KEY, SAVED_CAMERAS } from './unit/camera-pref.js';   // [camera] which camera a home opens in: Inside when it has a plan
 import { resolve as resolveItem } from './plan/catalog.js';
 import { loadInventoryFile } from './plan/inventory.js';   // [furniture] the renter's pieces: colour, material and finish
-import { resolveLayout, applyInventory, savedLayoutFor } from './plan/placement.js';
+import { resolveLayout, applyInventory, savedLayoutFor, layoutKey } from './plan/placement.js';
+import { serialiseLayout } from './plan/layout.js';
+import { choiceState, applyChoice } from './plan/choices.js';   // [bed option] my bed / the storage bed / no bed, saved with the layout
+import { reportFor } from './plan/bedfit.js';
+import { mountBedControl } from './plan/bed-ui.js';
 import { createWalk, WALK_KEYS } from './unit/walk.js';   // [walk] click the floor to walk, drag to look, W S A D, go to the window   // [placement] the same rule for where each piece stands as the Floor plan studio
 import { stepView } from './plan/viewpoints.js';
 import { heightProvenance, confOf } from './city3d/facade-rules.js';   // [buildings3d] height source and confidence labels
@@ -83,6 +87,7 @@ let seeInsideIntent = false;   // [camera] "See inside" was pressed for the home
 const savedCamera = () => { const v = store.get(CAMERA_KEY, ''); return SAVED_CAMERAS.includes(v) ? v : null; };
 // [model project] which plan the Inside view shows: the source file or a local scenario the renter sent from the Floor plan studio
 let pendingView = null;
+let bedUI = null;   // [bed option] the Bed control over the Inside view
 let planInfo = { source: 'none', label: '', saved: null, furniture: 0, layout: null }, scenario = null, useScenario = false, hasFilePlan = false, planRaw = null, mh = null;
 let profA = null, profB = null, profF = null, statesA = null, statesB = null, blkA = null, blkRows = [], NBR = [], curSun = null, curHit = null, heat = null, heatTok = 0, loopOn = false, lastT = 0;
 const tz = () => site?.timezone || S.crit.search?.timezone || 'America/New_York';
@@ -234,6 +239,7 @@ export function init() {
   mh.mount($('modelPanel'));
   matchUI = createMatch(matchBridge());   // [photo match]
   $('uMatch').addEventListener('click', () => matchUI.open());
+  bedUI = mountBedControl($('uViews'), { where: 'in-unit', state: bedState, report: bedReport, piece: () => planInfo.inventory?.pieces.find((p) => p.id === 'bed-latitude') || null, choose: setBed });   // [bed option]
   // read-only hook for headless checks (Playwright): never used by the page itself
   window.__unit3d = { st, get views() { return views; }, get curView() { return curView; }, get cam() { return stage?.winCam; }, get cal() { return CAL; }, get plan() { return plan; }, get planInfo() { return planInfo; }, get B() { return B; }, get faces() { return FACES; }, get sun() { return curSun; }, get hit() { return curHit; }, get blockers() { return blkRows; }, get neighbours() { return NBR.length; }, get interior() { return !!stage?.interior; }, get stage() { return stage; }, get walk() { return walk; }, get match() { return matchUI; }, get viewCal() { return viewCal; }, winPos: (f) => winPos(f) };
 }
@@ -252,6 +258,7 @@ export async function show(id) {
   $('unitSel').value = id;
   seeInsideIntent = takeSeeInside(id);   // [camera] a "See inside" button, link or palette command was pressed for this home
   if (id !== st.id) await load(id);
+  else if (planInfo.inventory && layoutStamp(id) !== planInfo.stamp) { await loadPlan(id); interior = null; buildApartment(); stage.applyRoomLook?.(); stage.dirty = true; }   // [bed option] the studio changed the bed while this view was away
   else if (seeInsideIntent && plan && stage && hasWindow()) { seeInsideIntent = false; st.picked = false; goView(mainViewpoint(views)?.key); setMode('in'); revealStage(); }   // already open on this home: stand inside it
   seeInsideIntent = false;
   stage?.resize(); drawPathChart();
@@ -402,18 +409,51 @@ async function load(id) {
   if (st.mode === 'in') revealStage();
   mh?.refresh(true);
 }
+/** [bed option] The saved layout as it stands in this browser, as text: when it changes behind this view's back (the studio's Bed control wrote it), the view takes it up. */
+const layoutStamp = (id) => { try { return JSON.stringify(store.get(layoutKey(S.base, id), null)); } catch { return ''; } };
+const bedState = () => (st.mode === 'in' && plan && planInfo.inventory && planInfo.raw ? choiceState(planInfo.raw, planInfo.inventory) : null);
+let bedCache = { key: '', rep: null };
+function bedReport() {
+  if (!plan || !planInfo.inventory || !planInfo.raw) return null;
+  const k = `${st.id}|${planInfo.raw.map((x) => `${x.id}:${x.x},${x.y},${x.rot},${x.w || ''},${x.d || ''}`).join(';')}`;
+  if (bedCache.key !== k) bedCache = { key: k, rep: reportFor(plan, planInfo.raw, planInfo.inventory) };
+  return bedCache.rep;
+}
+/** [bed option] Switch the bed: the pieces' hidden marks change (nothing moves), the furniture is drawn again and, for a plan file's layout, the choice is saved where the studio saves its edits. */
+function setBed(choice) {
+  const inv = planInfo.inventory, raw = planInfo.raw;
+  if (!inv || !raw || !plan) return;
+  const next = applyChoice(raw, inv, 'bed', choice);
+  if (next.every((x, i) => x === raw[i])) return;
+  planInfo.raw = next; planInfo.layout = { ...(planInfo.layout || {}), items: applyInventory(next, inv) }; planInfo.furniture = next.filter((x) => !x.hidden).length;
+  if (planInfo.persist) { try { store.set(layoutKey(S.base, st.id), serialiseLayout(st.id, next, { removed: planInfo.removed || [] })); planInfo.stamp = layoutStamp(st.id); } catch { /* storage unavailable: the choice holds for this visit */ } }
+  rebuildFurniture();
+  bedUI?.update(); accChip(); mh?.refresh(true);
+}
+/** [bed option] Draw the layout's furniture again without touching the walls or the camera: the pieces, the seats you can look from and what blocks a walk. */
+function rebuildFurniture() {
+  if (!interior || !plan) return;
+  const items = planInfo.layout?.items?.length && st.showFurniture !== false ? planInfo.layout.items : [];
+  stage.setFurniture(items.length ? buildFurniture(items, plan, interior.frame) : null);
+  const R = items.map((x) => resolveItem(x)).filter(Boolean);
+  views = insideViews(plan, R, interior.frame);
+  if (walk) { walk.stop(); walk.release(); walk.showMarker(null); }
+  walk = createWalk({ stage, plan, items: R, frame: interior.frame, onChange: () => { syncLens(); }, onArrive: () => { markWalking(); } }); stage.walker = walk;
+  const same = views.find((v) => v.key === curView?.key); if (same) curView = same;
+  lookChips();
+}
 /** [model project] The plan for the Inside view: the renter's local scenario when they sent one on purpose (and have not switched it off), else the source file. */
 async function loadPlan(id) {
-  plan = null; planRaw = null; planInfo = { source: 'none', label: '', saved: null, furniture: 0, layout: null };
+  plan = null; planRaw = null; planInfo = { source: 'none', label: '', saved: null, furniture: 0, layout: null, raw: null, inventory: null };
   try { scenario = (await import('./plan/scenario-bridge.js')).getPlanScenario(id, { base: S.base }); } catch { scenario = null; }
   hasFilePlan = (S.manifest.plans || []).includes(id);
   let pref = null; try { pref = localStorage.getItem('as:unit-scenario-use:' + id); } catch { pref = null; }
   useScenario = !!scenario && pref !== '0';
   if (scenario && useScenario) {
-    try { plan = normalisePlan(scenario.plan); planRaw = scenario.plan; planInfo = { source: 'local scenario', label: scenario.label || 'edited plan', saved: scenario.saved, layout: scenario.layout, furniture: scenario.layout?.items?.length || 0 }; } catch { plan = null; }
+    try { plan = normalisePlan(scenario.plan); planRaw = scenario.plan; planInfo = { source: 'local scenario', label: scenario.label || 'edited plan', saved: scenario.saved, layout: scenario.layout, furniture: (scenario.layout?.items || []).filter((x) => !x.hidden).length }; } catch { plan = null; }
   }
   if (!plan && hasFilePlan) {
-    try { planRaw = await loadJSON(`${S.base}/plans/${id}.json`, null); plan = normalisePlan(planRaw); const L0 = plan.layouts[0]; planInfo = { source: 'file', label: '', saved: null, furniture: L0?.items?.length || 0, layout: L0 ? { items: L0.items } : null, layoutName: L0?.name || '' }; } catch { plan = null; planRaw = null; }
+    try { planRaw = await loadJSON(`${S.base}/plans/${id}.json`, null); plan = normalisePlan(planRaw); const L0 = plan.layouts[0]; planInfo = { source: 'file', label: '', saved: null, furniture: (L0?.items || []).filter((x) => !x.hidden).length, layout: L0 ? { items: L0.items } : null, layoutName: L0?.name || '' }; } catch { plan = null; planRaw = null; }
   }
   // [placement] where each piece stands is decided by the same rule as in the Floor plan studio (plan/placement.js): the renter's saved layout (what they
   // dragged there is final), the plan's default for what they have not placed, an automatic fit for what has no place yet; then [furniture] the renter's
@@ -424,7 +464,8 @@ async function loadPlan(id) {
     const saved = planInfo.source === 'local scenario' && scenario?.from !== 'studio' ? scenarioSaved : (live || scenarioSaved);   // a scenario sent from the studio follows the studio's live layout, not the snapshot it was sent with
     const r = resolveLayout({ model: plan, inventory: inv, saved });
     planInfo.layout = r.items.length ? { ...(planInfo.layout || {}), items: applyInventory(r.items, inv) } : null;
-    planInfo.furniture = r.items.length;
+    Object.assign(planInfo, { raw: r.items, inventory: inv, removed: r.removed, persist: planInfo.source === 'file' || scenario?.from === 'studio', stamp: layoutStamp(id) });   // [bed option] what the Bed control switches and saves
+    planInfo.furniture = r.items.filter((x) => !x.hidden).length;   // [bed option] the pieces shown, not the ones waiting hidden (a bed the renter may buy)
     if (planInfo.source === 'file') planInfo.layoutName = plan.layouts[0]?.name || (r.items.length ? 'Your furniture' : '');
   }
 }
@@ -698,7 +739,7 @@ function setMode(m, quiet = false) {
   if (!hasWindow() && (m === 'win' || m === 'in')) m = 'orbit';
   if (m === 'in' && !interior) buildApartment();
   if (m !== 'in' && walk) { walk.stop(); walk.release(); walk.showMarker(null); }   // [walk]
-  st.mode = m; stage.setMode(m); matchUI?.onMode(m);
+  st.mode = m; stage.setMode(m); matchUI?.onMode(m); bedUI?.update();
   if (!quiet) UQ.opened();   // [quality] another camera is another cost: time its first frames
   $('uModes').querySelectorAll('[data-mode]').forEach((b) => { b.disabled = !hasWindow() && (b.dataset.mode === 'win' || b.dataset.mode === 'in'); b.classList.toggle('on', b.dataset.mode === m); b.setAttribute('aria-pressed', String(b.dataset.mode === m)); });
   $('uLens').hidden = m !== 'win' && m !== 'in'; $('stage').dataset.mode = m; if ($('uLook')) $('uLook').hidden = m !== 'in' || !views.length;
@@ -750,7 +791,7 @@ function buildApartment() {
   if (curView?.win != null) st.inWin = curView.win;
   if (curView) stage.setInteriorView(curView, { animate: false });
   lookChips();
-  syncTools();
+  syncTools(); bedUI?.update();
 }
 let views = [], curView = null, walk = null;
 /** [measure] The tape: a bridge of getters (the Inside camera's plan, pieces and stage), nothing copied. */
@@ -1432,9 +1473,9 @@ let accUI = null, furnMeta = null;
 function accChip() {
   if (!site || !CAL) return;
   if (!accUI) { accUI = accuracyChip({ host: 'unit', onOpen: openEvidence, openLabel: 'Open the evidence' }); $('uViews').append(accUI.el);   /* [camera] under the camera controls, in the same column */ loadFurnitureMeta(S.base, S.manifest).then((m) => { furnMeta = m; accChip(); }); }
-  const n = planInfo.layout?.items?.length || 0;
+  const cand = new Set((planInfo.inventory?.pieces || []).filter((p) => p.candidate).map((p) => p.id)), n = (planInfo.layout?.items || []).filter((x) => !cand.has(x.id)).length;   // [bed option] a candidate purchase is not one of the renter's pieces
   accUI.update(accuracyRows({ site, plan: plan || null, cal: { state: CAL.state, fh: CAL.fh, slab: CAL.slabAt(st.floor), src: CAL.measured?.src }, floor: st.floor, facing: st.az, t: st.t, viewCal: st.src === 'photo-landmarks' ? viewCal : null,
-    furniture: n ? { name: furnMeta?.name || 'Furniture', confirmed: furnMeta?.confirmed || null, count: n, looks: furnMeta?.looks || null } : null }));
+    furniture: n ? { name: furnMeta?.name || 'Furniture', confirmed: furnMeta?.confirmed || null, count: n, looks: furnMeta?.looks || null, candidates: furnMeta?.candidates || [] } : null }));
 }
 function openEvidence() {
   const el = $('evPanel'); el?.closest('details')?.setAttribute('open', '');

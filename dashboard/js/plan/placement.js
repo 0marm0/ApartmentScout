@@ -10,6 +10,7 @@
 //   1. the renter's saved layout (browser storage, or the layout a local project carries): `placed` pieces are final;
 //   2. the plan's default layout (`model.layouts[0]`), for every piece that is not placed and every piece missing from the saved one;
 //   3. an automatic fit (plan/fit.js) for a piece of "Your furniture" that neither holds.
+// Which bed is shown (the renter's own, a candidate they may buy, none) is the pieces' own `hidden` marks (plan/choices.js), saved with the layout by this same rule; switching it never moves a piece.
 // Sizes, labels, colours and the desk set come from the inventory (furniture.json), joined by id, so a size changed there reaches every
 // layout; a size on a layout item is a deliberate override (a variant, a product, a size typed in the inspector).
 import { applyLooks } from './looks.js';
@@ -63,6 +64,7 @@ export function applyInventory(items, inventory) {
     if (!own) { for (const k of SIZE_KEYS) if (o[k] == null && p[k] != null) o[k] = p[k]; if (!o.variant && p.variant) o.variant = p.variant; if (!o.product && p.product) o.product = p.product; }
     if (!o.label && p.label) o.label = p.label;
     if (p.set && !o.set) o.set = p.set;
+    if (p.spec && !o.spec) o.spec = p.spec;   // [bed option] the maker's dimensions by part (plan/bedspec.js), joined by id like the size
     if (p.assumed && !o.assumed) o.assumed = p.assumed;
     return o;
   });

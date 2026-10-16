@@ -3,9 +3,9 @@
 // read the same answer.
 //
 // A piece's `look` (every field optional):
-//   {"color": "black" | "#14110f", "material": "leather", "finish": "sheen", "basis": "renter" | "assumed",
+//   {"color": "black" | "#14110f", "material": "leather", "finish": "sheen", "basis": "renter" | "assumed" | "manufacturer",
 //    "assumed": ["finish", "frame"], "parts": {"frame": {"color": "black", "material": "metal", "finish": "satin"}}, "note": "..."}
-// `basis` says who the look comes from: "renter" (they told us) or "assumed" (a stand-in the model chose; the default). `assumed`
+// `basis` says who the look comes from: "renter" (they told us), "manufacturer" (read from the maker's product pictures and words, for a piece they may buy) or "assumed" (a stand-in the model chose; the default). `assumed`
 // lists the fields (or part names) of a renter look that are still guesses, for example the finish. `parts` styles named parts of
 // a model (the futon's `frame`, the desk's `chair`, the dining table's `chairs`, `pulls` on a chest); a part that is not named keeps
 // the model's own default, which is always an assumption. The look rides on the layout item (`it.look`); applyLooks() joins it by
@@ -13,7 +13,7 @@
 
 export const MATERIALS = ['leather', 'fabric', 'wood', 'metal', 'paint', 'laminate', 'plastic', 'glass'];
 export const FINISHES = ['matte', 'satin', 'sheen', 'gloss'];
-export const BASES = ['renter', 'assumed'];
+export const BASES = ['renter', 'assumed', 'manufacturer'];
 
 /** Colour names a person may write instead of a hex code (sRGB, tuned to read right under the room's light). */
 export const COLOR_NAMES = {
@@ -58,7 +58,7 @@ export function validateLook(look, at = 'look') {
   let err = null; const fail = (e) => { err = e; return null; };
   if (!look || typeof look !== 'object' || Array.isArray(look)) return { ok: false, error: `${at} must be an object` };
   const o = cleanPart(look, at, fail); if (err) return { ok: false, error: err };
-  if (look.basis != null) { if (!BASES.includes(look.basis)) return { ok: false, error: `${at}.basis must be renter or assumed` }; o.basis = look.basis; }
+  if (look.basis != null) { if (!BASES.includes(look.basis)) return { ok: false, error: `${at}.basis must be renter, manufacturer or assumed` }; o.basis = look.basis; }
   if (look.assumed != null) {
     if (!Array.isArray(look.assumed) || look.assumed.length > 12 || !look.assumed.every((x) => plain(x, 30))) return { ok: false, error: `${at}.assumed must be a short list of field or part names` };
     o.assumed = [...look.assumed];
@@ -93,10 +93,11 @@ export const lookOf = (it) => resolveLook(it?.look);
 export const partLook = (it, name) => resolveLook(it?.look?.parts?.[name]);
 
 /**
- * Where a piece's look comes from, for the accuracy chip and the inventory list: 'renter' when the renter gave it, else 'assumed'.
+ * Where a piece's look comes from, for the accuracy chip and the inventory list: 'renter' when the renter gave it, 'manufacturer' when it is read from a maker's pictures, else 'assumed'.
  * With `field` (a field or part name), a renter look still says 'assumed' for the fields its `assumed` list names.
  */
 export function lookBasis(look, field = null) {
+  if (look?.basis === 'manufacturer') return 'manufacturer';
   if (!look || look.basis !== 'renter') return 'assumed';
   if (field && Array.isArray(look.assumed) && look.assumed.includes(field)) return 'assumed';
   return 'renter';
@@ -122,7 +123,7 @@ export function applyLooks(items, inv) {
 
 /** Counts of the inventory's looks by basis: how many pieces have a look from the renter, how many only a stand-in. */
 export function lookSummary(inv) {
-  const pieces = inv?.pieces || []; let renter = 0, assumed = 0;
+  const pieces = (inv?.pieces || []).filter((p) => !p.candidate); let renter = 0, assumed = 0;   // a candidate purchase is not one of the renter's pieces
   for (const p of pieces) (lookBasis(p.look) === 'renter' ? renter++ : assumed++);
   return { renter, assumed, total: pieces.length };
 }
