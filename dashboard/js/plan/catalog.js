@@ -14,6 +14,7 @@
 // the walk along a bed); `mode: 'full'` needs the whole width free (drawers, a desk chair).
 
 import { TOWER_STYLE, partsOf, drawerRun, sleepRect, dimsOf } from './bedspec.js';
+import { ROTATING_STYLE, ROTATING_VARIANT, layoutOf as deskLayout } from './deskspec.js';
 
 export const CLEARANCE = {
   bed_side: { min: 22, preferred: 24, src: 'Neufert Architects\' Data and Time-Saver Standards: 22-24 in beside a bed to make it and get in.' },
@@ -171,6 +172,12 @@ export const CATALOG = {
     name: 'Desk and chair', cat: 'work', kind: 'desk', w: 48, d: 24, h: 30, color: MAT.oak, range: { w: [36, 84], d: [18, 30] },
     src: 'Desk 48 x 24 x 30 in (adjustable range 36-84 wide, 18-30 deep); chair pull-out zone 28 in wide.',
     zones: [Z('front', 'desk_chair', { mode: 'full', width: 28, name: 'Chair' })],
+    variants: {
+      [ROTATING_VARIANT]: {
+        label: 'Rotating L desk with shelf (Bestier 51 in)', w: 89.2, d: 21.6, h: 29.1, style: ROTATING_STYLE,
+        src: 'Bestier rotating L-shaped desk: a 51.8 x 21.6 in desk and a 46.9 x 13.4 in two-tier S shelf that pivots under its inner end (the maker\'s drawing). Straight is about 89 in end to end (derived, not published); the L is 51.8 x 46.9 in. The sizes come from the piece\'s spec in furniture.json.',
+      },
+    },
   },
   rug: {
     name: 'Rug', cat: 'decor', kind: 'rug', flat: true, w: 96, d: 60, h: 0.4, color: MAT.rug,
@@ -251,18 +258,20 @@ export function resolve(item, catalog = CATALOG) {
   const v = { ...((variant && c.variants?.[variant]) || {}), ...(variant && item.states?.[variant]) };   // a piece's own sizes per state (furniture.json `states`) beat the catalogue's generic variant
   // a variant the renter picked that differs from the product's own (a sleeper opened as a bed) beats the product's size
   const pd = p ? (item.variant && item.variant !== p.variant ? {} : p.dims || {}) : {};
-  const w = item.w ?? pd.w ?? v.w ?? c.w, d = item.d ?? pd.d ?? v.d ?? c.d, h = item.h ?? pd.h ?? v.h ?? c.h;
+  // the rotating desk's size is its geometry (spec + straight or L), so a size saved with a layout cannot disagree with the model
+  const rotating = v.style === ROTATING_STYLE ? deskLayout(item.spec, { config: item.set?.config, hand: item.set?.hand }) : null;
+  const w = rotating ? rotating.w : item.w ?? pd.w ?? v.w ?? c.w, d = rotating ? rotating.d : item.d ?? pd.d ?? v.d ?? c.d, h = rotating ? rotating.h : item.h ?? pd.h ?? v.h ?? c.h;
   // storage-bed drawers of a real product: the pull-out zone is the drawer depth plus about 4 in to grip (min) or 10 in to kneel (preferred)
   const pull = c.storage && p?.drawers?.pull_in;
   const tower = c.style === TOWER_STYLE && item.spec ? dimsOf(item.spec) : null;
-  const zones0 = tower ? towerZones(item.spec, d, tower) : v.zones || c.zones || [];
+  const zones0 = tower ? towerZones(item.spec, d, tower) : rotating ? [Z('front', 'desk_chair', { mode: 'full', width: 28, name: 'Chair', along: [rotating.seatX - 14, rotating.seatX + 14] })] : v.zones || c.zones || [];
   const zones = pull ? zones0.map((z) => (z.key === 'drawer_pull' ? { ...z, min: Math.max(z.min, Math.round(pull + 4)), preferred: Math.max(z.preferred, Math.round(pull + 10)), src: `${z.src} This product's drawers are ${pull} in deep.` } : z)) : zones0;
   // zones scale with the item; a desk chair zone keeps its own width
   return {
     ...item, kind: c.kind, cat: c.cat, mount: c.mount, name: item.label || c.name, base: c, product: p ? p.id : undefined, productInfo: p,
     w, d, h, elev: item.elev ?? v.elev ?? c.elev ?? 0, rot: norm(item.rot || 0), variant: variant || undefined,
     zones, ignore: c.ignore || [], rules: c.rules || [], seats: c.seats || [], screen: c.screen,
-    flat: !!c.flat, light: c.light || null, ...(tower ? { parts: partsOf(item.spec, w, d) } : {}),
+    flat: !!c.flat, light: c.light || null, ...(tower ? { parts: partsOf(item.spec, w, d) } : {}), ...(rotating ? { deskGeo: rotating, seatX: rotating.seatX } : {}),
   };
 }
 export const norm = (a) => ((a % 360) + 360) % 360;

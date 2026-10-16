@@ -67,13 +67,22 @@ not known, 30 in is assumed; the furniture list says "(depth assumed)"). `set`, 
 it; `"monitor": false` or `"chair": false` leaves one out, and a desk with no `set` gets a 24-inch monitor and the chair.
 
 ```json
-{"id": "desk", "ref": "desk", "label": "Desk, chair and monitor", "w": 71, "d": 30, "h": 30, "assumed": ["d"],
- "set": {"monitor": 32, "chair": "task"},
- "look": {"color": "brown", "material": "wood", "basis": "renter", "assumed": ["finish", "legs", "chair", "monitor"],
+{"id": "desk", "ref": "desk", "variant": "rotating", "label": "Bestier rotating desk 51 in, chair and monitor", "w": 89.2, "d": 21.6, "h": 29.1,
+ "set": {"monitor": 32, "chair": "task", "config": "straight", "hand": "right"},
+ "spec": {"top": {"l": 51.8, "d": 21.6, "t": 1.65, "h": 29.1}, "shelf": {"l": 46.9, "d": 13.4, "h": 27.6, "t": 1.65}, "straight": {"total": 89.2}},
+ "spec_basis": {"top.l": "diagram", "shelf.l": "diagram", "straight.total": "derived"},
+ "look": {"color": "#402e23", "material": "laminate", "basis": "renter", "assumed": ["finish", "chair", "monitor"],
           "parts": {"chair": {"color": "black", "material": "fabric"}, "monitor": {"color": "black", "material": "plastic"}}}}
 ```
 
-The renter's desk is about 180 cm (71 in) long, brown wood, with an office chair on wheels and a 32-inch monitor; their dresser is the
+The renter's desk is the Bestier Rotating L-Shaped Computer Desk, 51 in (Amazon ASIN B07V9QXDSN), in dark brown wood grain with silver posts,
+with an office chair on wheels and a 32-inch monitor. It is two assemblies that pivot: a 51.8 x 21.6 in desk, 29.1 in high, on one panel leg, and
+a 46.9 x 13.4 x 27.6 in two-tier S shelf (three boards, an end panel on each tier at opposite ends, silver posts at the open corners) that
+turns about a pivot under the desk's inner end. The renter uses it straight (`"config": "straight"`, the shelf continuing the desk along the
+wall, its top board just under the desktop); `"l_shape"` swings the shelf out 90 degrees (51.8 x 46.9 in), and `"hand"` is the side the
+panel leg is on. The sizes are the maker's dimension drawing (`spec_basis` `diagram`); the maker publishes no straight length, so the 89.2 in
+end to end is **derived** from the maker's L-shaped box size and product photo (`spec.straight.total`, basis `derived`: measure it and change
+that one number, the overlap and the pivot follow; `plan/deskspec.js`). Their dresser is the
 IKEA STORKLINTA 6-drawer dresser in dark brown oak effect (`ref` `dresser-storklinta-6`, 27.6 x 18.9 x 47.2 in, IKEA article 705.592.78:
 two small drawers side by side on top, then four full-width ones, slab fronts with no handles); both TVs are 55-inch (48.4 x 27.8 in).
 
@@ -177,7 +186,7 @@ within 4 in; the arrow keys nudge it), **Remove** (Delete; Undo brings it back) 
 **Where the example's list comes from.** The earlier layout studios kept the renter's drags in the browser only, so no saved
 positions survived. The kit (queen bed, two nightstands, a dresser, a desk with a chair, a 3-seat futon, a coffee table, two
 wall-mounted 55-inch TVs and a 4-seat dining table) and its first sizes come from those tools: the Fit check, Room to live and the
-Apartment layout studio, with the TV study for Emerald Green 1211. The renter has since corrected the desk (71 in, brown wood, a
+Apartment layout studio, with the TV study for Emerald Green 1211. The renter has since corrected the desk (the Bestier rotating desk, dark brown, a
 task chair, a 32-inch monitor) and the dresser (first read as an IKEA MALM, then corrected to the tall STORKLINTA 6-drawer), and answered where things go.
 
 ### A bed you may buy beside your own (option pieces and candidates)
@@ -250,8 +259,8 @@ may only fill pieces they have not placed.**
 headboard on the bedroom's east wall with the windows on the right of a person lying in it, the TV on the opposite wall with the
 tall STORKLINTA dresser on that same wall south of the TV (not under it: at 47 in it would hide a TV hung at 32 in; clear of the bedroom
 door, the closet door, the window and the walk), a nightstand each side; the futon's back flat against the partition facing the living-room TV on the far wall; the
-71-inch desk on the living room's left wall beside the bay window (clear of the glass) with the chair behind it and room to pull it
-out; the dining table lengthwise by the kitchen so the walk from the door to the desk stays 37 in wide. Nothing is blocked; the two TVs
+Bestier rotating desk, straight (about 89 in), on the living room's left wall with its desktop at the bay window (clear of the glass) and its shelf toward
+the TV, the chair behind the desktop with room to pull it out; the dining table lengthwise by the kitchen so the walk from the door to the desk stays 37 in wide. Nothing is blocked; the two TVs
 grade *tight* because a 55-inch TV is only "workable" at the 9 to 10 ft these rooms allow. Emerald Green 1211's layout is refitted
 with the new sizes (the dresser stands against the partition in its living room: it does not fit its narrow bedroom beside the bed).
 

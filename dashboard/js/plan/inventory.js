@@ -10,17 +10,19 @@
 // studio draws and checks the piece the renter has, not a generic one. `room` is the kind of room it lived in
 // (bedroom, living, dining, office) and steers the auto-placer. `look` (optional, plan/looks.js) is the piece's colour, material and
 // finish and who it comes from (the renter or an assumption); both 3D views draw it, joined to the layout item by id.
-// `set` (optional, a desk): what stands with it, `{"monitor": 32, "chair": "task"}` (a 32-inch monitor on it, a rolling task chair at it).
+// `set` (optional, a desk): what stands with it, `{"monitor": 32, "chair": "task"}` (a 32-inch monitor on it, a rolling task chair at it);
+// a rotating desk (variant "rotating", plan/deskspec.js) also takes `"config": "straight" | "l_shape"` and `"hand": "right" | "left"` (the side its panel leg is on).
 // `assumed` (optional): the sizes (`w`, `d`, `h`) the renter did not give, so the studio says "depth assumed".
 // `spec` + `spec_basis` (optional, a bed that is not a box): the maker's dimensions by part (plan/bedspec.js reads them) and where each one
 // comes from ('spec' = the retailer's specification table, 'diagram' = printed on the maker's drawing, 'measured' = measured off that
-// drawing's proportions, 'assumed' = our choice); `candidate` (optional): a piece the renter may buy, not one they own, with its product
+// drawing's proportions, 'derived' = worked out from other figures, 'assumed' = our choice); `candidate` (optional): a piece the renter may buy, not one they own, with its product
 // name, brand, retailer, SKU, colour and page. Prices are never recorded.
 // `options` (optional, top level): groups of pieces the renter switches between, `{"bed": {"label": "Bed", "default": "mine", "choices":
 // [{"id": "mine", "label": "My bed", "pieces": ["bed", "nightstand-1"]}, ...]}}`: a choice shows exactly the pieces it lists (plan/choices.js).
 import { CATALOG, resolve } from './catalog.js';
 import { fitKit } from './fit.js';
 import { validateLook } from './looks.js';
+import { CONFIGS, HANDS } from './deskspec.js';
 
 export const MAX_PIECES = 60;
 export const MAX_INVENTORY_BYTES = 200_000;
@@ -28,7 +30,7 @@ const ID = /^[A-Za-z0-9_-]{1,40}$/;
 const ROOM_KINDS = ['living', 'bedroom', 'dining', 'office', 'kitchen', 'other'];
 const fin = (v) => typeof v === 'number' && Number.isFinite(v);
 const plain = (v, max) => typeof v === 'string' && v.length <= max && !/[<>\u0000-\u001f]/.test(v);
-const SPEC_BASES = ['spec', 'diagram', 'measured', 'assumed', 'listing'];   // 'listing' = a retailer's listing, not checked against this exact variant
+const SPEC_BASES = ['spec', 'diagram', 'measured', 'derived', 'assumed', 'listing'];   // 'listing' = a retailer's listing, not checked against this exact variant
 const STATE_KEYS = ['sofa', 'lounger', 'bed'];
 const PRODUCT_TEXT = { name: 160, brand: 60, retailer: 60, model: 40, variant: 60, bought: 20, colour: 40, material: 60, look_basis: 60, dims_basis: 120 };
 const KEY = /^[a-z][a-z0-9_]{0,23}$/;
@@ -112,7 +114,7 @@ function validateOptions(options, ids) {
   return out;
 }
 
-/** What stands with a desk: a monitor (its diagonal in inches, 13 to 60) and a chair ('task' for a rolling task chair, or false for none). Returns the clean set or an error string. */
+/** What stands with a desk: a monitor (its diagonal in inches, 13 to 60) and a chair ('task' for a rolling task chair, or false for none), and for a rotating desk its shape and handing. Returns the clean set or an error string. */
 function validateSet(set, c) {
   if (!set || typeof set !== 'object' || Array.isArray(set)) return 'set must be an object';
   if (c.kind !== 'desk') return 'set belongs to a desk';
@@ -120,6 +122,8 @@ function validateSet(set, c) {
   for (const [k, v] of Object.entries(set)) {
     if (k === 'monitor') { if (v === false) out.monitor = false; else if (fin(v) && v >= 13 && v <= 60) out.monitor = Math.round(v * 10) / 10; else return 'set.monitor must be a diagonal from 13 to 60 in, or false'; }
     else if (k === 'chair') { if (v === false || v === 'task') out.chair = v; else return 'set.chair must be "task" or false'; }
+    else if (k === 'config') { if (CONFIGS.includes(v)) out.config = v; else return `set.config must be ${CONFIGS.join(' or ')}`; }
+    else if (k === 'hand') { if (HANDS.includes(v)) out.hand = v; else return `set.hand must be ${HANDS.join(' or ')}`; }
     else return `set: unknown field "${String(k).slice(0, 20)}"`;
   }
   return out;

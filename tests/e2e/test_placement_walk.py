@@ -23,6 +23,11 @@ DEFAULT = {i["id"]: i for i in PLAN["layouts"][0]["items"]}
 KEY = f"as:plan.data.{UNIT}"
 M = 0.0254
 
+
+def _r1(v: float) -> float:
+    """Round to a tenth the way the page does (half up: 152.25 is 152.3; Python's round() would say 152.2)."""
+    return int(v * 10 + 0.5) / 10
+
 STUDIO_ITEMS = "() => window.__plan3d.items.map(({id, ref, x, y, rot, w, d, h, elev}) => ({id, ref, x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10, rot: Math.round(rot || 0), w, d, h, elev})).sort((a, b) => a.id.localeCompare(b.id))"
 UNIT_ITEMS = "() => window.__unit3d.planInfo.layout.items.map(({id, ref, x, y, rot, w, d, h, elev}) => ({id, ref, x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10, rot: Math.round(rot || 0), w, d, h, elev})).sort((a, b) => a.id.localeCompare(b.id))"
 # where the unit's drawn furniture really is, back in plan inches (so a mesh that disagrees with its item is caught)
@@ -103,7 +108,7 @@ def test_both_views_place_every_piece_identically_and_nothing_moves_on_a_reload_
     # the default is the data in the plan file: placed where it says, nothing computed in the browser
     for i in studio:
         d = DEFAULT[i["id"]]
-        assert (i["x"], i["y"], i["rot"]) == (round(d["x"], 1), round(d["y"], 1), round(d.get("rot", 0))), i["id"]
+        assert (i["x"], i["y"], i["rot"]) == (_r1(d["x"]), _r1(d["y"]), round(d.get("rot", 0))), i["id"]
     assert _stored(s.page) is None, "looking does not write a layout"
     _unit(s)
     unit = s.page.evaluate(UNIT_ITEMS)
@@ -179,10 +184,10 @@ def test_a_layout_saved_before_pieces_were_marked_keeps_what_the_renter_moved_an
     _studio(s)
     now = {i["id"]: i for i in pg.evaluate(STUDIO_ITEMS)}
     assert (now["desk"]["x"], now["desk"]["y"], now["desk"]["rot"]) == (140, 120, 0), "the desk the renter moved stays where they put it"
-    assert (now["desk"]["w"], now["desk"]["d"]) == (71, 30), "but it is their 71-inch desk, not the old 60 x 24 baked into the saved layout"
+    assert (now["desk"]["w"], now["desk"]["d"]) == (89.2, 21.6), "but it is their rotating desk, not the old 60 x 24 baked into the saved layout"
     for k in ("bed", "futon", "tv", "tv-bed"):
         d = DEFAULT[k]
-        assert (now[k]["x"], now[k]["y"], now[k]["rot"]) == (round(d["x"], 1), round(d["y"], 1), round(d.get("rot", 0))), f"{k}: never touched, so it takes the new default"
+        assert (now[k]["x"], now[k]["y"], now[k]["rot"]) == (_r1(d["x"]), _r1(d["y"]), round(d.get("rot", 0))), f"{k}: never touched, so it takes the new default"
     saved = _stored(pg)
     assert saved["ver"] == 2 and next(i for i in saved["items"] if i["id"] == "desk")["placed"] is True, "saved again in the new form, the desk marked as the renter's"
     _unit(s)

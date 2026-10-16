@@ -95,9 +95,9 @@ test('a layout saved before pieces were marked: the untouched copy of the old de
   assert.deepEqual([at(r.items, 'futon').x, at(r.items, 'futon').y], [d('futon').x, d('futon').y]);
   assert.deepEqual([at(r.items, 'desk').x, at(r.items, 'desk').y, at(r.items, 'desk').rot], [140, 100, 0], 'the desk the renter moved stays where they put it');
   assert.ok(at(r.items, 'desk').placed, 'and it is marked as the renter\'s from now on');
-  // and the stale 60 x 24 baked in by the old build is gone: the renter's desk is 71 in long
+  // and the stale 60 x 24 baked in by the old build is gone: the renter's desk is the 89 in rotating one
   const desk = applyInventory(r.items, inv()).find((x) => x.id === 'desk');
-  assert.deepEqual([desk.w, desk.d], [71, 30]);
+  assert.deepEqual([desk.w, desk.d], [89.2, 21.6]);
 });
 
 test('one unreadable piece in a saved layout does not send the others back to the default', () => {
@@ -113,9 +113,9 @@ test('one unreadable piece in a saved layout does not send the others back to th
 test('inventory sizes reach every layout: a size changed in furniture.json shows in a saved layout, a deliberate override wins', () => {
   const i = inv(), items = [{ id: 'desk', ref: 'desk', x: 1, y: 1, rot: 0, placed: true }, { id: 'futon', ref: 'futon', x: 2, y: 2, rot: 0, placed: true, variant: 'bed' }];
   const out = applyInventory(items, i);
-  assert.deepEqual([out[0].w, out[0].d, out[0].h], [71, 30, 30]);
-  assert.deepEqual(out[0].set, { monitor: 32, chair: 'task' });
-  assert.equal(out[0].look.color, 'brown');
+  assert.deepEqual([out[0].w, out[0].d, out[0].h], [89.2, 21.6, 29.1]);
+  assert.deepEqual(out[0].set, { monitor: 32, chair: 'task', config: 'straight', hand: 'right' });
+  assert.equal(out[0].look.color, '#402e23');
   assert.equal(resolve(out[1]).d, 41.7, 'the futon opened as a bed keeps the state\'s depth (the renter\'s sofa bed, 41.7), not the sofa\'s');
   assert.equal(applyInventory([{ id: 'desk', ref: 'desk', x: 0, y: 0, rot: 0, w: 48 }], i)[0].w, 48, 'a size on the item is the renter\'s override');
 });
