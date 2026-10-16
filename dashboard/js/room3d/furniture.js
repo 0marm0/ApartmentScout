@@ -690,8 +690,8 @@ function towerBed(it, K) {
   if (f) box(-fw + 0.3, fw - 0.3, g.slat - 0.5, g.slat, dep, g.D - 0.8, slatM);
   else { const n = 14, sl = (g.D - 0.8 - dep) / n; for (let i = 0; i < n; i++) box(-fw + 0.3, fw - 0.3, g.slat - 0.5, g.slat, dep + sl * i + 0.2, dep + sl * (i + 1) - 0.4, slatM); }
 
-  // ---- mattress and bedding: generic whites, the renter's own are not known
-  const mw = g.mattress.w, md = g.mattress.d, mT = g.mattress.h, mTop = g.mattressTop, sheet = K.fabric(MAT.pillow), tick = K.fabric(0xece8e0), duvetM = K.fabric(0xeae7e0, { side: THREE.DoubleSide }), foldM = K.fabric(0xf0eee8);
+  // ---- mattress and bedding: the renter's comforter when furniture.json gives one (look.parts.bedding), else generic whites
+  const mw = g.mattress.w, md = g.mattress.d, mT = g.mattress.h, mTop = g.mattressTop, sheet = K.fabric(MAT.pillow), tick = K.fabric(0xece8e0), bc = K.part('bedding', {}).color, duvetM = K.quilted(bc ?? 0xeae7e0), foldM = K.fabric(bc ?? 0xf0eee8);   // the renter's black quilted comforter (look.parts.bedding), as bed() draws it, else plain whites
   const headZ = -hd + dep + 1.2, footZ = -hd + g.D, mzc = -hd + 3.3 + md / 2;
   K.add(K.soft(mw, mT, md, { r: 2.2 }), tick, 0, g.slat, mzc);
   if (!f) K.add(K.soft(mw + 0.4, 0.5, md + 0.4, { r: 2.4, s: 1 }), K.fabric(0xc9c3b8), 0, mTop - 2.45, mzc, { cast: false });
