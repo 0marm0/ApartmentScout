@@ -7,7 +7,7 @@
 // local `apartmentscout serve` lists what is in dashboard/data-private/art/ (git-ignored) in its session answer (`art`), and the page
 // loads `data-private/art/<key>-hq.jpg` (a high-quality scan), `<key>-2x.jpg` (an upscaled copy) or `<key>.jpg` (or .jpeg, .png, .webp) from there. A triptych is best as one
 // file per panel, left to right, `<key>-1` ... `<key>-3` (central-park-1.jpg ...); one image of all three side by side, cropped tightly to
-// their outer edges, also works (the builder crops it to the row's shape and cuts out the gaps). Without a file (the public demo, anyone else) each piece gets a painterly placeholder in the same palette, drawn here.
+// their outer edges, also works (the builder crops it to the row's shape and cuts out the gaps). Without a file, a public-domain painting uses its published scan (PUBLIC_ART) and any other piece gets a painterly placeholder in the same palette, drawn here.
 // Pure helpers (panelLayout, coverCrop, artSources) run in Node; textures are made only in a browser.
 import * as THREE from 'three';
 import { getSession } from '../local-api.js';
@@ -15,6 +15,9 @@ import { getSession } from '../local-api.js';
 const TAU = Math.PI * 2;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 export const ART_DIR = 'data-private/art';
+/** Public-domain paintings published with the dashboard (museum scans, colour-matched to the renter's prints): Van Gogh's Seascape near
+ *  Les Saintes-Maries-de-la-Mer (Van Gogh Museum, 1888) and Monet's Red Boats, Argenteuil (Harvard Art Museums, 1875). A private file still wins. */
+export const PUBLIC_ART = { seascape: 'assets/art/seascape.jpg', 'monet-red-boats': 'assets/art/monet-red-boats.jpg' };
 const EXT = /\.(jpe?g|png|webp)$/i;
 const phone = () => typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches && typeof screen !== 'undefined' && Math.min(screen.width, screen.height) < 820;
 export const artTextureCap = (gpuMax, isPhone) => Math.min(isPhone ? 2048 : 4096, gpuMax > 0 ? gpuMax : 4096);
@@ -60,7 +63,8 @@ export function artSources(key, names, panels = 1) {
   const per = panels > 1 ? Array.from({ length: panels }, (_, i) => pick(`${key}-${i + 1}`)) : null;
   if (per && per.every(Boolean)) return { panels: per.map((n) => `${ART_DIR}/${encodeURIComponent(n)}`) };
   const whole = pick(key);
-  return whole ? { whole: `${ART_DIR}/${encodeURIComponent(whole)}` } : null;
+  if (whole) return { whole: `${ART_DIR}/${encodeURIComponent(whole)}` };
+  return PUBLIC_ART[key] ? { whole: PUBLIC_ART[key] } : null;   // the published public-domain scan, for everyone
 }
 
 // ------------------------------------------------------------------ textures (browser only)

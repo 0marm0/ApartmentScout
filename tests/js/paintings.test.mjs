@@ -57,8 +57,9 @@ test('the private image is chosen only from the files the local server lists, el
   assert.deepEqual(P.artSources('seascape', names), { whole: 'data-private/art/seascape-2x.jpg' }, 'the upscaled copy first');
   assert.deepEqual(P.artSources('seascape', [...names, 'seascape-hq.jpg']), { whole: 'data-private/art/seascape-hq.jpg' }, 'a high-quality scan beats both');
   assert.deepEqual([P.artTextureCap(16384, false), P.artTextureCap(16384, true), P.artTextureCap(2048, false)], [4096, 2048, 2048], 'drawn at most 4096 px (2048 on a phone, never past the GPU)');
-  assert.equal(P.artSources('monet-red-boats', names), null, 'a name with a path is ignored');
-  assert.equal(P.artSources('seascape', []), null);
+  assert.deepEqual(P.artSources('monet-red-boats', names), { whole: 'assets/art/monet-red-boats.jpg' }, 'a name with a path is ignored: the published public-domain scan is used');
+  assert.deepEqual(P.artSources('seascape', []), { whole: 'assets/art/seascape.jpg' }, 'everyone gets the public-domain scans');
+  assert.equal(P.artSources('central-park', []), null, 'a work under copyright is never published: the placeholder stays');
   // without a browser the builder still hangs every canvas flush on the wall (no textures, no throw)
   const it = resolve({ ...pieceItem(read('examples/nyc-2026/furniture.json').pieces.find((p) => p.id === 'central-park-triptych')), x: 0, y: 0 });
   const s = new THREE.Group(), std = (color, o = {}) => new THREE.MeshStandardMaterial({ color, ...o });
