@@ -110,7 +110,7 @@ test('the dresser is the IKEA STORKLINTA 6-drawer, 70 x 48 x 120 cm, and stands 
 test('the rotating desk is about 89 in straight with the chair behind its desktop and room to pull it out, beside a window and not blocking it', () => {
   const desk = by.desk, win = m.windows.filter((w) => w.room === 'Living room');
   assert.deepEqual([desk.w, desk.d, desk.h], [89.2, 21.6, 29.1]);
-  assert.deepEqual(desk.set, { monitor: 32, chair: 'task', config: 'straight', hand: 'right' });
+  assert.deepEqual(desk.set, { monitor: 32, chair: false, config: 'straight', hand: 'right' });
   assert.equal(ev.items.desk.state, 'clear', 'the chair\'s pull-out zone is free');
   const zone = ev.items.desk.zones.find((z) => /chair/i.test(z.name || '') || z.key === 'desk_chair') || ev.items.desk.zones[0];
   assert.ok(zone, 'a chair zone is measured');

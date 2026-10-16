@@ -17,7 +17,7 @@ const inv = () => { const r = validateInventory(FILE); assert.ok(r.ok, r.error);
 
 test('the example furniture file is valid, sourced, and carries no personal paths', () => {
   const v = inv();
-  assert.equal(v.pieces.length, 12, 'the renter\'s ten pieces, the candidate storage bed and the sim rig');
+  assert.equal(v.pieces.length, 13, 'the renter\'s eleven pieces (the office chair is one), the candidate storage bed and the sim rig');
   assert.ok(v.source.length > 40);
   assert.ok(!/\/Users\/|~\/|C:\\/.test(JSON.stringify(FILE)), 'no absolute paths in the file');
   for (const p of v.pieces) assert.ok(p.source, `${p.id} names where it came from`);
@@ -65,7 +65,7 @@ for (const id of ['paramount-tower-25e', 'emerald-green-1211']) {
     assert.equal(ev.counts.blocked, 0, JSON.stringify(Object.values(ev.items).filter((r) => r.state === 'blocked').map((r) => [r.id, r.issues.map((x) => x.text)])));
     // 25E's rooms are too narrow to sit a 55-inch TV closer than 9 to 10 ft, so its two TVs read "workable", the best the room allows; every other piece is clear
     const tvTag = id === 'paramount-tower-25e' ? 'workable' : 'ideal', tight = id === 'paramount-tower-25e' ? 2 : 0;
-    assert.equal(ev.counts.clear, (id === 'paramount-tower-25e' ? 11 : 10) - tight, JSON.stringify(ev.counts));   // 25E also holds the sim rig
+    assert.equal(ev.counts.clear, (id === 'paramount-tower-25e' ? 12 : 11) - tight, JSON.stringify(ev.counts));   // 25E also holds the sim rig
     assert.equal(ev.counts.tight, tight);
     if (tight) assert.deepEqual(Object.values(ev.items).filter((r) => r.state === 'tight').map((r) => r.id).sort(), ['tv', 'tv-bed']);
     // the living-room TV is watchable from the futon, every bed seat can see the bedroom TV
@@ -81,9 +81,9 @@ for (const id of ['paramount-tower-25e', 'emerald-green-1211']) {
 test('fitInventory places the pieces in a plan that has no layout and says what it could not', () => {
   const m = normalisePlan(plan('paramount-tower-9j')), r = fitInventory(m, inv(), { step: 10 });
   assert.equal(r.id, 'your-furniture');
-  assert.ok(r.items.length + r.missing.length === 10);
+  assert.ok(r.items.length + r.missing.length === 11);
   for (const it of r.items) assert.ok(it.w && it.d, 'sizes travel with the item');
-  assert.match(r.note, /^Your 10 pieces/);
+  assert.match(r.note, /^Your 11 pieces/);
   const kit = kitFromInventory(inv());
   assert.equal(kit.find((k) => k.id === 'bed').roomKind, 'bedroom');
   assert.equal(kit.find((k) => k.id === 'futon').roomKind, 'living');
@@ -94,8 +94,8 @@ test('placedIds marks the pieces a layout holds; the studio section lists them',
   assert.deepEqual([...held].sort(), ['bed', 'tv']);
   const html = inventoryHTML(v, { held, hasPreset: true, active: false });
   assert.match(html, /Use your furniture layout/);
-  assert.match(html, /2 of 11 placed/);
-  assert.equal((html.match(/data-inv-add=/g) || []).length, 9);
+  assert.match(html, /2 of 12 placed/);
+  assert.equal((html.match(/data-inv-add=/g) || []).length, 10);
   assert.match(inventoryHTML(v, { held, hasPreset: false }), /Fit your furniture here/);
   assert.equal(inventoryHTML({ pieces: [] }), '');
 });
@@ -103,7 +103,7 @@ test('placedIds marks the pieces a layout holds; the studio section lists them',
 test('a complete plan project carries the renter\'s furniture, and refuses a bad inventory', () => {
   const raw = plan('paramount-tower-25e'), m = normalisePlan(raw), v = inv();
   const project = serialiseProject(raw, m.layouts[0].items, {}, v);
-  assert.equal(project.inventory.pieces.length, 12);
+  assert.equal(project.inventory.pieces.length, 13);
   assert.ok(project.inventory.options.bed.choices.length === 3 && project.inventory.pieces.find((p) => p.id === 'bed-latitude').spec.overall.w === 94, 'the options and the maker\'s dimensions travel with the project');
   const back = parseProject(JSON.stringify(project));
   assert.ok(back.ok, back.error);

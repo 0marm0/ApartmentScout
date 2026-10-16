@@ -240,7 +240,8 @@ export function init() {
   matchUI = createMatch(matchBridge());   // [photo match]
   $('uMatch').addEventListener('click', () => matchUI.open());
   bedUI = mountBedControl($('uViews'), { where: 'in-unit', state: bedState, report: bedReport, piece: () => planInfo.inventory?.pieces.find((p) => p.id === 'bed-latitude') || null, choose: (c) => setBed(c),
-    rig: { state: () => (st.mode === 'in' && plan && planInfo.inventory && planInfo.raw ? choiceState(planInfo.raw, planInfo.inventory, 'sim') : null), choose: (c) => setBed(c, 'sim') } });   // [bed option]
+    rig: { state: () => (st.mode === 'in' && plan && planInfo.inventory && planInfo.raw ? choiceState(planInfo.raw, planInfo.inventory, 'sim') : null), choose: (c) => setBed(c, 'sim') },
+    chair: { state: () => (st.mode === 'in' && plan && planInfo.inventory && planInfo.raw ? choiceState(planInfo.raw, planInfo.inventory, 'chair') : null), choose: (c) => setBed(c, 'chair') } });   // [bed option]
   // read-only hook for headless checks (Playwright): never used by the page itself
   window.__unit3d = { st, get views() { return views; }, get curView() { return curView; }, get cam() { return stage?.winCam; }, get cal() { return CAL; }, get plan() { return plan; }, get planInfo() { return planInfo; }, get B() { return B; }, get faces() { return FACES; }, get sun() { return curSun; }, get hit() { return curHit; }, get blockers() { return blkRows; }, get neighbours() { return NBR.length; }, get interior() { return !!stage?.interior; }, get stage() { return stage; }, get walk() { return walk; }, get match() { return matchUI; }, get viewCal() { return viewCal; }, winPos: (f) => winPos(f) };
 }
@@ -421,7 +422,7 @@ function bedReport() {
   return bedCache.rep;
 }
 /** [bed option] Switch the bed: the pieces' hidden marks change (nothing moves), the furniture is drawn again and, for a plan file's layout, the choice is saved where the studio saves its edits. */
-function setBed(choice, group = 'bed') {   // group 'sim': the sim rig shown or hidden, the same way (a piece's hidden mark)
+function setBed(choice, group = 'bed') {   // group 'sim' (the sim rig) or 'chair' (the office chair): shown or hidden, the same way (a piece's hidden mark)
   const inv = planInfo.inventory, raw = planInfo.raw;
   if (!inv || !raw || !plan) return;
   const next = applyChoice(raw, inv, group, choice);

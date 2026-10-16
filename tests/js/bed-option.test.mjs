@@ -86,13 +86,13 @@ test('the catalogue and the renter\'s data agree: the storage bed is a bed with 
 test('the Bed control shows exactly the pieces its choice lists: the storage bed brings its own nightstands, "No bed" keeps the separate ones', () => {
   const items = raw();
   assert.equal(defaultChoice(inv()), 'mine');
-  assert.deepEqual(ids(items), ['bed', 'coffee', 'desk', 'dining', 'dresser', 'futon', 'nightstand-1', 'nightstand-2', 'sim-rig', 'tv', 'tv-bed'], 'my bed is what loads (the sim rig is shown by default too)');
+  assert.deepEqual(ids(items), ['bed', 'coffee', 'desk', 'desk-chair', 'dining', 'dresser', 'futon', 'nightstand-1', 'nightstand-2', 'sim-rig', 'tv', 'tv-bed'], 'my bed is what loads (the sim rig and the office chair are shown by default too)');
   assert.deepEqual(choiceState(items, inv()), { group: 'bed', label: 'Bed', available: true, current: 'mine', exact: true, choices: [{ id: 'mine', label: 'My bed' }, { id: 'storage', label: 'Latitude Run storage bed' }, { id: 'none', label: 'No bed' }] });
   const st = applyChoice(items, inv(), 'bed', 'storage');
-  assert.deepEqual(ids(st), ['bed-latitude', 'coffee', 'desk', 'dining', 'dresser', 'futon', 'sim-rig', 'tv', 'tv-bed'], 'the separate nightstands are hidden with it: it has its own');
+  assert.deepEqual(ids(st), ['bed-latitude', 'coffee', 'desk', 'desk-chair', 'dining', 'dresser', 'futon', 'sim-rig', 'tv', 'tv-bed'], 'the separate nightstands are hidden with it: it has its own');
   assert.equal(choiceState(st, inv()).current, 'storage');
   const none = applyChoice(st, inv(), 'bed', 'none');
-  assert.deepEqual(ids(none), ['coffee', 'desk', 'dining', 'dresser', 'futon', 'nightstand-1', 'nightstand-2', 'sim-rig', 'tv', 'tv-bed'], 'no bed: both beds hidden, the nightstands stand on their own');
+  assert.deepEqual(ids(none), ['coffee', 'desk', 'desk-chair', 'dining', 'dresser', 'futon', 'nightstand-1', 'nightstand-2', 'sim-rig', 'tv', 'tv-bed'], 'no bed: both beds hidden, the nightstands stand on their own');
   assert.equal(choiceState(none, inv()).current, 'none');
   assert.deepEqual(ids(applyChoice(none, inv(), 'bed', 'mine')), ids(items), 'and back: nothing is lost on the way');
   assert.ok(applyChoice(items, inv(), 'bed', 'mine').every((x, i) => x === items[i]), 'choosing what is shown changes nothing (every piece comes back as the same object)');
@@ -146,7 +146,7 @@ test('a plan whose layout has no storage bed has nothing to switch to, and the b
   assert.equal(offByDefault(inv(), 'bed-latitude'), true); assert.equal(offByDefault(inv(), 'bed'), false);
   assert.ok(!kitFromInventory(inv()).some((k) => k.id === 'bed-latitude'));
   const j = fitInventory(normalisePlan(read('examples/nyc-2026/plans/paramount-tower-9j.json')), inv(), { step: 10 });
-  assert.ok(!j.items.some((x) => x.id === 'bed-latitude') && /^Your 10 pieces/.test(j.note));
+  assert.ok(!j.items.some((x) => x.id === 'bed-latitude') && /^Your 11 pieces/.test(j.note));
 });
 
 // ------------------------------------------------------------------ the checks see the bed's real shape

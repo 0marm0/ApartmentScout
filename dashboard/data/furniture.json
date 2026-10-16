@@ -237,14 +237,14 @@
    "id": "desk",
    "ref": "desk",
    "variant": "rotating",
-   "label": "Bestier rotating desk 51 in, chair and monitor",
+   "label": "Bestier rotating desk 51 in and monitor",
    "room": "living",
    "w": 89.2,
    "d": 21.6,
    "h": 29.1,
    "set": {
     "monitor": 32,
-    "chair": "task",
+    "chair": false,
     "config": "straight",
     "hand": "right"
    },
@@ -293,7 +293,6 @@
     "basis": "renter",
     "assumed": [
      "finish",
-     "chair",
      "monitor"
     ],
     "parts": {
@@ -302,21 +301,39 @@
       "material": "metal",
       "finish": "satin"
      },
-     "chair": {
-      "color": "black",
-      "material": "fabric",
-      "finish": "matte"
-     },
      "monitor": {
       "color": "black",
       "material": "plastic",
       "finish": "satin"
      }
     },
-    "note": "Dark brown (espresso) wood-grain boards with silver cylindrical posts, from the renter's photos; it reads nearly black under their lighting. The finish, the chair's black and the monitor's casing are stand-ins."
+    "note": "Dark brown (espresso) wood-grain boards with silver cylindrical posts, from the renter's photos; it reads nearly black under their lighting. The finish and the monitor's casing are stand-ins."
    },
    "note": "Bestier Rotating L-Shaped Computer Desk 51 in with an open 2-tier shelf (Amazon ASIN B07V9QXDSN, bought 2021): a 51.8 x 21.6 in desk on one panel leg and a 46.9 x 13.4 x 27.6 in S shelf that pivots under its inner end. Used straight: about 89.2 in end to end, derived, not published (measure it; spec.straight.total). L option: set.config l_shape, 51.8 x 46.9 in.",
    "source": "Maker's dimension drawing on the Amazon listing: desk 51.8 x 21.6, height 29.1, shelf 46.9 x 13.4 x 27.6, tiers 11.3, panels 1.65 in. Derived: straight length and pivot, from the maker's L box size (51.18 x 46.85) and straight photo. Finish, posts and straight use: renter's photos."
+  },
+  {
+   "id": "desk-chair",
+   "ref": "task-chair",
+   "label": "Office chair (rolling task chair)",
+   "room": "living",
+   "w": 27,
+   "d": 27,
+   "h": 42,
+   "look": {
+    "color": "black",
+    "material": "fabric",
+    "finish": "matte",
+    "basis": "renter",
+    "assumed": [
+     "color",
+     "material",
+     "finish"
+    ],
+    "note": "The renter has a rolling office chair with wheels, the one that goes with the desk; the model is a generic task chair with a mesh back and two armrests, black as a stand-in until the renter says what it is."
+   },
+   "note": "A rolling task chair, about 27 in across at the casters and 42 in tall; its seat and arms (under 25 in) may tuck under the desktop (27.5 in), its back may not. It is its own piece: shown or hidden with the Office chair switch, and either attached to the desk (it moves and turns with it) or free to drag anywhere and to duplicate.",
+   "source": "Renter: they have a rolling office chair with wheels. Size: a typical task chair, an assumption; measure it."
   },
   {
    "id": "futon",
@@ -531,7 +548,7 @@
       "finish": "satin"
      }
     },
-    "note": "Black tubular steel frame on two side rails with black-and-red round end caps and feet, a black fabric sling seat with a tall back and red rings at the harness holes, a Fanatec direct-drive base and Formula wheel. From the renter's photo and the product photos; the finishes are stand-ins."
+    "note": "A folding tubular cockpit: black steel tubes with black-and-red pivot caps, a black fabric sling seat, a central tube to a small flat wheel deck, a black finned Fanatec base and a flat Formula wheel. From the renter's photo and the maker's drawings; finishes are stand-ins."
    },
    "spec": {
     "envelope": {
@@ -610,7 +627,7 @@
     "d",
     "h"
    ],
-   "note": "GT mode by default (upright back); a Formula mode (reclined) is a variant. Footprint = the conservative planning envelope 195 x 85 x 130 cm, above every published figure. Seat, wheel-deck and pedal-plate sizes are not published and are drawn by eye. The pedal end slides under the desk.",
+   "note": "GT mode by default (the back more upright); the Formula variant reclines the whole seat and lowers the wheel deck. Footprint = the conservative planning envelope 195 x 85 x 130 cm, above every published figure. The side view follows the maker's GT and Formula drawings; seat, wheel-deck and pedal-plate sizes are not published and are drawn by eye. The pedal end slides under the desk.",
    "source": "Renter: product choice, photo, under-desk use. Maker support: GT 175x75x127 cm, Formula 164x75x94 cm; product-space graphic 185x85x125 cm; reseller drawings GT 185.3 cm and Formula 192.4 cm long; folded frame 75x40x87 cm. Envelope: planning value. Fanatec base and wheel sizes: approximate."
   }
  ],
@@ -654,6 +671,24 @@
      "label": "Shown",
      "pieces": [
       "sim-rig"
+     ]
+    },
+    {
+     "id": "hidden",
+     "label": "Hidden",
+     "pieces": []
+    }
+   ]
+  },
+  "chair": {
+   "label": "Office chair",
+   "default": "shown",
+   "choices": [
+    {
+     "id": "shown",
+     "label": "Shown",
+     "pieces": [
+      "desk-chair"
      ]
     },
     {

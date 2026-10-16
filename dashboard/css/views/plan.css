@@ -299,6 +299,9 @@ table.mini.ps-df td.num b { font-weight: var(--fw-semibold); color: var(--ink); 
 
 .ps-prod-f { grid-column: 1 / -1; }
 .ps-prod-f select { width: 100%; }
+.ps-attach { display: flex; align-items: flex-start; gap: var(--s-2); margin: var(--s-2) 0 0; font-size: var(--fs-sm); cursor: pointer; }
+.ps-attach input { margin: 3px 0 0; }
+.ps-attach small { display: block; color: var(--ink-3); font-size: var(--fs-2xs); }
 .ps-prodline { margin: var(--s-2) 0 0; display: flex; flex-direction: column; gap: 2px; font-size: var(--fs-sm); }
 .ps-prodline a { color: var(--accent); text-decoration: none; font-weight: var(--fw-semibold); }
 .ps-prodline a:hover { text-decoration: underline; }
@@ -351,6 +354,7 @@ table.mini.ps-shop small a { font-weight: var(--fw-medium); color: var(--ink-3);
 .sb-row { display: flex; align-items: center; justify-content: center; gap: 2px; }
 .sb-sep { width: 1px; align-self: stretch; margin: var(--s-1) 3px; background: var(--line); }
 .sb-b { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-width: 44px; min-height: 44px; padding: var(--s-1) 6px; border: 0; border-radius: var(--r-md); background: none; color: var(--ink-2); font: var(--fw-medium) var(--fs-2xs) var(--font-sans); cursor: pointer; transition: color var(--t-fast), background var(--t-fast); }
+.sb-b[hidden] { display: none; }
 .sb-b:hover, .sb-b:focus-visible { color: var(--ink); background: color-mix(in srgb, var(--ink) 8%, transparent); }
 .sb-b.on { color: var(--ink); background: var(--surface-3); box-shadow: var(--shadow-1); }
 .sb-b[data-act=del]:hover { color: var(--bad); }
