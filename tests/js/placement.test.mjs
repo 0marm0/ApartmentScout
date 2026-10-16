@@ -26,7 +26,7 @@ test('with nothing saved, the plan\'s own first layout is what loads, and it is 
   assert.equal(r.changed, false, 'a default alone is not written to storage');
   assert.equal(r.items.length, 13, 'the renter\'s ten pieces, their office chair, the candidate storage bed and the sim rig');
   assert.ok(r.items.every((i) => i.placed), 'the layout file says the renter placed them');
-  assert.deepEqual(r.items.filter((i) => i.hidden).map((i) => i.id), ['bed-latitude'], 'the bed they may buy is in the layout but not shown: their own bed is the default');
+  assert.deepEqual(r.items.filter((i) => i.hidden).map((i) => i.id), ['bed-latitude', 'sim-rig'], 'the bed they may buy and the sim rig are in the layout but not shown: their own bed is the default');
   assert.equal(m.layouts[0].id, 'your-furniture');
 });
 
