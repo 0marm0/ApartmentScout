@@ -23,8 +23,9 @@
  *   no precache.json (a plain copy of dashboard/ with no deploy step) the worker caches what the page asks it to
  *                  (message WARM) and serves network-first, so a stale copy never hides new data.
  *
- * Updates: a new build installs in the background and WAITS. The page (js/pwa.js) offers a Reload button, and
- * only then sends SKIP_WAITING; the very first install activates at once. Never registered on file:// (browsers do
+ * Updates: a new build installs in the background and WAITS. If it is already waiting when the app opens, the page (js/pwa.js)
+ * switches to it at once (one reload per tab session); a build that arrives while the app is open is offered with a Reload
+ * button, and only then sends SKIP_WAITING; the very first install activates at once. Never registered on file:// (browsers do
  * not allow it) or by the local `apartmentscout serve` page (js/pwa-core.js decides).
  *
  * Messages in: SKIP_WAITING, WARM {urls}, SET_PHOTO_CAP {bytes}, STATUS (answers on the MessagePort).

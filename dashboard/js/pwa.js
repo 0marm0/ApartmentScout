@@ -24,8 +24,17 @@ function offerUpdate(worker) {
   document.body.append(el);
 }
 
+/** A newer version that was already downloaded when the app opened: switch to it now (one reload), instead of running an old
+ *  copy until someone notices the prompt. Once per tab session, so a worker that fails to take over cannot loop; then the prompt. */
+function applyAtOpen(worker) {
+  try { if (sessionStorage.getItem('as:sw-applied') === '1') return false; sessionStorage.setItem('as:sw-applied', '1'); } catch { return false; }
+  reloadOnTakeover = true;
+  worker.postMessage({ type: 'SKIP_WAITING' });
+  return true;
+}
+
 function watchUpdates(reg) {
-  const check = () => { if (reg.waiting && navigator.serviceWorker.controller) offerUpdate(reg.waiting); };
+  const check = () => { if (reg.waiting && navigator.serviceWorker.controller && !applyAtOpen(reg.waiting)) offerUpdate(reg.waiting); };
   check();
   reg.addEventListener('updatefound', () => {
     const w = reg.installing; if (!w) return;
