@@ -433,84 +433,70 @@ function sofa(it, K) {
     spots.forEach((sx, i) => K.add(pg, K.fabric(cols[i]), chair ? 0 : sx * (inner / 2 - 8.5), seatTop - 0.6, -hd + backT + backCT + 4.6, { rx: -0.2, ry: -sx * 0.32, rz: sx * 0.05 }));
   }
 }
-// A futon: a thick mattress (leather, fabric ...) folded into a seat and a back, built as rows of padded channels so the seams are real
-// grooves, on a tubular frame (black metal unless the renter says otherwise: rail arms, raked back stiles, a slatted deck). Opened
-// (variant 'bed') the mattress lies flat across a low deck. The renter's `look` colours the mattress; its `frame` part colours the metal.
+// A click-clack sofa bed, drawn after the Serta Billie-Loren (Wayfair WADL9387): a split back of two panels, each a grid of padded squares
+// (3 x 2 a half) with sewn seams between them; a flat seat in the same squares with a thin rolled front edge; slim padded side panels in
+// place of arms; a black base box with a recessed front panel; four splayed, tapered, brushed-chrome legs on a black rail. Three states by
+// the item's variant: upright (the sofa), lounger (the back half reclined) and bed (the back lies flat level with the seat). The back's
+// angle is not stored: it is solved from the depth the data gives for the state (seat 22 in deep, back about 19.7 in long, 3.2 in thick).
+// The leather (the renter's `look`) is on every padded part; the legs are the `frame` part (chrome unless the renter says otherwise).
+/** A quilted face: `cols` x `rows` padded squares w x h in the XY plane (bottom at y = 0, +z out), each a flat pillow that falls to a seam at its
+ *  border. UVs are metres, so the leather bump runs across it. Fast draws coarser pillows. */
+function quiltGeo(w, h, cols, rows, crown, fast) {
+  const e = fast ? 0.14 : 0.06, fs = fast ? [0, e, 1 - e, 1] : [0, e, 0.2, 0.5, 0.8, 1 - e, 1], per = fs.length - 1;
+  const smooth = (f) => { const t = clamp(Math.min(f, 1 - f) / e, 0, 1); return t * t * (3 - 2 * t); };
+  const nx = cols * per + 1, ny = rows * per + 1, P = new Float32Array(nx * ny * 3), U = new Float32Array(nx * ny * 2), idx = [];
+  const at = (n, i) => { const c = Math.min(n - 1, Math.floor(i / per)); return [c, fs[i - c * per]]; };
+  for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) {
+    const [cx, fu] = at(cols, i), [cy, fv] = at(rows, j), x = ((cx + fu) / cols - 0.5) * w, y = ((cy + fv) / rows) * h;
+    const bump = smooth(fu) * smooth(fv), z = crown * bump * (0.55 + 0.45 * Math.sin(Math.PI * fu) * Math.sin(Math.PI * fv));
+    const v = j * nx + i; P[v * 3] = x; P[v * 3 + 1] = y; P[v * 3 + 2] = z; U[v * 2] = x * IN; U[v * 2 + 1] = y * IN;
+  }
+  for (let j = 0; j < ny - 1; j++) for (let i = 0; i < nx - 1; i++) { const a = j * nx + i, b = a + 1, c = a + nx, d = c + 1; idx.push(a, b, c, b, d, c); }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(P, 3)); g.setAttribute('uv', new THREE.BufferAttribute(U, 2)); g.setIndex(idx); g.computeVertexNormals();
+  return g;
+}
+/** The back's angle from upright (radians) for a depth `d`: seat `seatD` plus the back's slant, `L` long and `T` thick. 90 degrees is flat. */
+function futonAngle(d, seatD, L, T) {
+  if (d >= seatD + L - 0.3) return Math.PI / 2;
+  let lo = 0, hi = Math.PI / 2;
+  for (let i = 0; i < 24; i++) { const m = (lo + hi) / 2; (seatD + L * Math.sin(m) + T * Math.cos(m) < d ? (lo = m) : (hi = m)); }
+  return (lo + hi) / 2;
+}
 function futon(it, K) {
-  const { w, d, h } = it, hw = w / 2, hd = d / 2, f = K.fast, flat = it.variant === 'bed' || d > 48;
-  const spec = K.spec({ color: it.base?.color ?? MAT.green, material: 'fabric', finish: 'matte' }), mat = K.skin(spec);
-  const fm = K.skin(K.part('frame', { color: 0x1e1f22, material: 'metal', finish: 'satin' })), cap = K.paint(0x0b0b0c, 0.7);
-  const seg = f ? 6 : 10, rr = 0.85, hx = hw - 1.5, mW = 2 * hx - 0.8;
-  const armTop = flat ? 14 : clamp(h * 0.7, 20, 25), deckY = flat ? 7 : 12.5, mt = flat ? 6 : 6.5;
-  const UP = new THREE.Vector3(0, 1, 0), tubeG = K.geo(`tube|${seg}`, () => new THREE.CylinderGeometry(1, 1, 1, seg, 1)), ballG = K.geo(`ball|${seg}`, () => new THREE.SphereGeometry(1, seg, Math.max(4, seg >> 1)));
-  const tube = (a, b, r, m = fm) => {   // a rod between two points [x, y, z]
-    const A = new THREE.Vector3(...a), B = new THREE.Vector3(...b), dir = B.clone().sub(A), L = dir.length();
-    const mesh = K.add(tubeG, m, (a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2, { scale: [r, L, r] }); mesh.quaternion.setFromUnitVectors(UP, dir.normalize()); return mesh;
-  };
-  const ball = (p, r) => K.add(ballG, fm, p[0], p[1], p[2], { scale: r });
-  const zf = hd - 1.8, zr = -hd + 1.8;
-  for (const sx of [-1, 1]) {   // each side: two posts that are the legs, an arm rail with rounded ends, a lower rail
-    const x = sx * hx;
-    tube([x, 0.5, zf], [x, armTop, zf], rr); tube([x, 0.5, zr], [x, armTop, zr], rr);
-    tube([x, armTop, zr], [x, armTop, zf], rr * 1.2); ball([x, armTop, zr], rr * 1.2); ball([x, armTop, zf], rr * 1.2);
-    tube([x, deckY - 2.2, zr], [x, deckY - 2.2, zf], rr * 0.75);
-    if (!f) for (const t of [0.34, 0.67]) tube([x, deckY - 2.2, zr + (zf - zr) * t], [x, armTop, zr + (zf - zr) * t], rr * 0.5);
-    for (const z of [zr, zf]) K.add(K.geo('cap', () => legGeo(1.0, 1.0, 0.6, seg)), cap, x, 0, z);
+  const { w, d } = it, hw = w / 2, hd = d / 2, f = K.fast, bed = it.variant === 'bed' || d > 41.5;
+  const spec = K.spec({ color: it.base?.color ?? MAT.green, material: 'fabric', finish: 'matte' });
+  // faux leather is smoother than the pebbled hide the shared material draws: the same material with a fine grain and a clearer coat
+  const skin = K.mat(`futon-skin|${hexOf(spec.color)}|${spec.material}|${spec.finish}|${f ? 1 : 2}`, () => { const m = K.skin(spec).clone(); if (spec.material === 'leather') { m.bumpScale = f ? 0.25 : 0.2; if (!f) { m.sheen = 0.14; m.clearcoat = 0.3; m.clearcoatRoughness = 0.34; } } return m; });
+  const chrome = K.skin(K.part('frame', { color: 0x7f848b, material: 'metal', finish: 'sheen' })), blackM = K.paint(0x101012, 0.5);
+  const seatTop = 18.5, legH = 8, baseTop = 14.5, armW = 2.7, gap = 0.5, T = 3.2;
+  // the seat (22 in deep; the whole depth beyond 42 in when a generic sleeper is opened) and the back (19.7 in long)
+  const seatD = d > 42 ? (d * 22) / 41.7 : 22, L = d > 42 ? d - seatD : 19.7, th = futonAngle(d, seatD, L, T), zf = hd, zs = zf - seatD;
+  // legs: four tapered chrome tubes splayed out, on two black rails under the base
+  const spl = 0.24, tilt = Math.hypot(spl * 0.8, spl * 0.7), legL = (legH - 0.85 * Math.sin(tilt)) / Math.cos(tilt), leg =   /* long enough for the foot's lowest rim to touch the floor */  K.geo(`futon-leg|${f}`, () => { const g = new THREE.CylinderGeometry(1.15, 0.85, legL, f ? 8 : 14, 1); g.translate(0, -legL / 2, 0); return g; });
+  const lx = hw - 10, zFront = zf - 5.5, zRear = bed ? -hd + 5 : zs + 4.5;
+  for (const sx of [-1, 1]) for (const [z, sz] of [[zFront, 1], [zRear, -1]]) {
+    const m = K.add(leg, chrome, sx * lx, legH, z); m.rotation.set(-sz * spl * 0.8, 0, sx * spl * 0.7, 'YXZ');   // the foot swings out to the side and to the front or back
   }
-  tube([-hx, deckY - 2.2, zf], [hx, deckY - 2.2, zf], rr * 0.75); tube([-hx, deckY - 2.2, zr], [hx, deckY - 2.2, zr], rr * 0.75);
-  const slatN = f ? 3 : 6, slatG = K.board(2 * hx, 0.5, 2.0, 0, true);   // the slatted deck under the mattress
-  for (let i = 0; i < slatN; i++) K.add(slatG, fm, 0, deckY - 1.1, zr + ((zf - zr) * (i + 0.5)) / slatN);
-  // The mattress: one thick leather pad for the seat and one for the back, each crowned like a pillow, deep-buttoned on the sitting face
-  // (a grid of dimples with a covered button in each), with a piped seam round the face and a thread of top-stitching beside it.
-  const thread = K.paint(0x57595e, 0.5), seam = K.skin(shade(spec, 0.8));
-  const pad = (w0, h0, d0, axis, nc, nr, crown) => {   // axis 1: the top face of a seat (x by z); axis 2: the front face of a back (x by y)
-    const hu = w0 / 2, hv = (axis === 1 ? d0 : h0) / 2, inset = 5, pts = [];
-    for (let j = 0; j < nr; j++) for (let i = 0; i < nc; i++) pts.push([-hu + inset + ((2 * hu - 2 * inset) * (nc === 1 ? 0.5 : i / (nc - 1))), -hv + inset + ((2 * hv - 2 * inset) * (nr === 1 ? 0.5 : j / (nr - 1)))]);
-    const dep = 0.8, rad = 2.3, kx = Math.round(w0 / 3.4), kv = Math.round((axis === 1 ? d0 : h0) / 3.4);
-    const geo = K.soft(w0, h0, d0, { r: 1.5, s: 2, drop: axis === 1 ? [3] : [5, 3], k: axis === 1 ? [kx, 1, kv] : [kx, kv, 1], kf: axis === 1 ? [8, 1, 4] : [8, 4, 1], puff: axis === 1 ? { py: crown } : { pz: crown }, pow: 0.7, keepPuff: true,
-      ...(f ? {} : { tufts: { axis, side: 1, pts, depth: dep, rad } }) });
-    return { geo, pts, hu, hv, crown, dep };
-  };
-  const dress = (P, axis, par, y0, zc, thick, depthAxis) => {   // buttons and seams on a pad placed with its bottom at y0, centre z = zc
-    if (f) return;
-    const bp = [], ball = K.geo('btn', () => new THREE.SphereGeometry(0.62, 6, 4));
-    for (const [u, v] of P.pts) {
-      const top = axis === 1 ? thick + crownAt(P.crown, u, v, P.hu, P.hv, 0.7) - P.dep + 0.28 : depthAxis / 2 + crownAt(P.crown, u, v, P.hu, P.hv, 0.7) - P.dep + 0.28;
-      bp.push({ g: ball, m: axis === 1 ? mtx(u, top, v, 0, 0, 0, 1, 0.55, 1) : mtx(u, v + P.hv, top, 0, 0, 0, 1, 1, 0.55) });
-    }
-    K.add(mergeParts(bp), mat, 0, axis === 1 ? y0 : 0, axis === 1 ? zc : 0, { parent: par, cast: false });
-    // the seam and the top-stitching: along the front edge and both sides of the face
-    const sp = [], tp = [], rod = K.geo('seamrod', () => rodGeo(0.2, 1, 6)), thr = K.geo('thread', () => rodGeo(0.07, 1, 4));
-    const W = 2 * P.hu, E = 1.5 * 0.29, line = (list, g, len, x, y, z, ry, rx) => list.push({ g, m: mtx(x, y, z, rx || 0, ry || 0, 0, len, 1, 1) });
-    if (axis === 1) {
-      const zf = P.hv - E, yy = thick - E, yt = thick + 0.02;
-      line(sp, rod, W - 3, 0, yy, zf); line(sp, rod, 2 * P.hv - 3, -P.hu + E, yy, 0, Math.PI / 2); line(sp, rod, 2 * P.hv - 3, P.hu - E, yy, 0, Math.PI / 2);
-      line(tp, thr, W - 7, 0, yt + crownAt(P.crown, 0, P.hv - 1.1, P.hu, P.hv, 0.7), P.hv - 1.1); line(tp, thr, 2 * P.hv - 7, -P.hu + 1.1, yt + crownAt(P.crown, P.hu - 1.1, 0, P.hu, P.hv, 0.7), 0, Math.PI / 2); line(tp, thr, 2 * P.hv - 7, P.hu - 1.1, yt + crownAt(P.crown, P.hu - 1.1, 0, P.hu, P.hv, 0.7), 0, Math.PI / 2);
-      K.add(mergeParts(sp), seam, 0, y0, zc, { parent: par, cast: false }); K.add(mergeParts(tp), thread, 0, y0, zc, { parent: par, cast: false });
-    } else {
-      const zt = depthAxis / 2 - E, yt = 2 * P.hv - E, vrod = K.geo('seamrodv', () => new THREE.CylinderGeometry(0.2, 0.2, 1, 6, 1, true));
-      line(sp, rod, W - 3, 0, yt, zt);
-      for (const sx of [-1, 1]) sp.push({ g: vrod, m: mtx(sx * (P.hu - E), P.hv, zt, 0, 0, 0, 1, 2 * P.hv - 3, 1) });
-      K.add(mergeParts(sp), seam, 0, 0, 0, { parent: par, cast: false });
-    }
-  };
-  if (flat) {   // opened as a bed: the mattress lies flat across the deck, buttoned all over
-    const md = d - 2.4, P = pad(mW, mt, md, 1, 6, 4, 0.9);
-    K.add(P.geo, mat, 0, deckY, 0); dress(P, 1, K.s, deckY, 0, mt, md);
-    return;
-  }
-  // the back: two raked stiles and rails carrying the back cushion
-  const by0 = deckY - 1, bz0 = -hd + 5.5, by1 = h - 1.2, bz1 = -hd + 1.4, lean = Math.atan2(bz0 - bz1, by1 - by0), bx = hx - 2.5;
-  for (const sx of [-1, 1]) tube([sx * bx, by0, bz0], [sx * bx, by1, bz1], rr * 0.9);
-  tube([-bx, by1, bz1], [bx, by1, bz1], rr); if (!f) { ball([-bx, by1, bz1], rr); ball([bx, by1, bz1], rr); }
-  tube([-bx, by0 + (by1 - by0) * 0.5, bz0 + (bz1 - bz0) * 0.5], [bx, by0 + (by1 - by0) * 0.5, bz0 + (bz1 - bz0) * 0.5], rr * 0.7);
-  // the seat: from the back stiles to the front rail
-  const zb = bz0 - 0.5, seatD = hd - 0.6 - zb, SP = pad(mW, mt, seatD, 1, 5, 3, 0.9), seatZ = zb + seatD / 2;
-  K.add(SP.geo, mat, 0, deckY, seatZ); dress(SP, 1, K.s, deckY, seatZ, mt, seatD);
-  // the back cushion leans on the stiles
-  const baseY = deckY + mt - 1.4, backLen = (h - 2.4 - baseY) / Math.cos(lean), BP = pad(mW, backLen, mt, 2, 5, 3, 0.9);
-  const bg = K.group(0, baseY, bz0 + mt / 2 + 1.0, 0); bg.rotation.x = -lean;
-  K.add(BP.geo, mat, 0, 0, 0, { parent: bg }); dress(BP, 2, bg, 0, 0, backLen, mt);
+  const rail = K.board(w - 13, 1.8, 2.6, 0.4, true);
+  K.add(rail, blackM, 0, legH - 1.8, zFront); K.add(rail, blackM, 0, legH - 1.8, zRear);
+  // the base box: a recessed front panel between two end blocks (under the back too when it lies flat)
+  const bH = baseTop - legH, bD = seatD - 3, bZ = zs + bD / 2 + 0.2, endW = 13;
+  K.add(K.soft(w - 8, bH, bD - 1.2, { r: 0.5 }), skin, 0, legH, bZ - 0.6);
+  for (const sx of [-1, 1]) K.add(K.soft(endW, bH, bD, { r: 0.7 }), skin, sx * (hw - 4 - endW / 2), legH, bZ);
+  if (bed) K.add(K.soft(w - 6.4, seatTop - T - 0.3 - legH, zs + hd - 1, { r: 0.5 }), skin, 0, legH, (zs - hd + 1) / 2);
+  // the seat: two padded halves of 3 x 2 squares, a rolled front edge, a slim padded panel at each end
+  const sw = w - 2 * armW - 0.4, halfS = (sw - gap) / 2, crownS = 1.3, plateD = seatD - 3;
+  K.add(K.soft(sw, seatTop - crownS - baseTop, seatD - 2.8, { r: 0.9 }), skin, 0, baseTop, zs + (seatD - 2.8) / 2);
+  const seatH = K.geo(`futon-seat|${halfS.toFixed(2)}|${plateD.toFixed(2)}|${f}`, () => { const g = quiltGeo(halfS, plateD, 3, 2, crownS, f); g.rotateX(-Math.PI / 2); return g; });
+  for (const sx of [-1, 1]) K.add(seatH, skin, sx * (halfS / 2 + gap / 2), seatTop - crownS, zf - 3);
+  K.add(K.soft(sw, 3.7, 3.4, { r: 1.5, s: 2 }), skin, 0, seatTop - 3.5, zf - 1.8);
+  for (const sx of [-1, 1]) K.add(K.soft(armW, seatTop + 0.2 - baseTop, seatD, { r: 1.2, s: 2 }), skin, sx * (hw - armW / 2), baseTop, zs + seatD / 2);
+  // the back: a slab with the quilted face, hinged at the seat's rear edge and leaning back by its angle (flat in the bed state)
+  const bw = w - 0.2, halfB = (bw - gap) / 2, crownB = 1.1, g = K.group(0, seatTop - 2 * Math.cos(th) - (bed ? 0.9 : 0), zs, 0);
+  g.rotation.x = -th;
+  K.add(K.soft(bw, L, T - crownB * 0.4, { r: 1.2, s: 2 }), skin, 0, 0, -(T - crownB * 0.4) / 2 - 0.05, { parent: g });
+  const backH = K.geo(`futon-back|${halfB.toFixed(2)}|${L.toFixed(2)}|${f}`, () => quiltGeo(halfB, L, 3, 2, crownB, f));
+  for (const sx of [-1, 1]) K.add(backH, skin, sx * (halfB / 2 + gap / 2), 0, 0, { parent: g });
 }
 
 // ------------------------------------------------------------------ beds

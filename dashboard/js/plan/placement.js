@@ -65,6 +65,7 @@ export function applyInventory(items, inventory) {
     if (!o.label && p.label) o.label = p.label;
     if (p.set && !o.set) o.set = p.set;
     if (p.spec && !o.spec) o.spec = p.spec;   // [bed option] the maker's dimensions by part (plan/bedspec.js), joined by id like the size
+    if (p.states && !o.states) o.states = p.states;   // the piece's own sizes per state (a sofa bed: upright, lounger, bed)
     if (p.assumed && !o.assumed) o.assumed = p.assumed;
     return o;
   });

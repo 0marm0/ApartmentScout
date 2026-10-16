@@ -172,7 +172,7 @@
     {"id": "tv-bed", "ref": "tv-55", "x": 175.75, "y": 218, "rot": 270, "placed": true, "w": 48.4, "d": 3.5, "h": 27.8, "elev": 32, "label": "55-inch TV, bedroom"},
     {"id": "dresser", "ref": "dresser-malm-6", "x": 183.5, "y": 218, "rot": 270, "placed": true, "w": 63, "d": 18.9, "h": 30.7, "label": "IKEA MALM 6-drawer chest"},
     {"id": "desk", "ref": "desk", "x": 35, "y": 313.5, "rot": 270, "placed": true, "w": 71, "d": 30, "h": 30, "label": "Desk, chair and monitor"},
-    {"id": "futon", "ref": "futon", "x": 151, "y": 230, "rot": 90, "placed": true, "w": 80, "d": 36, "h": 34, "label": "Futon, 3 seats"},
+    {"id": "futon", "ref": "futon", "x": 152.25, "y": 230, "rot": 90, "placed": true, "w": 73.2, "d": 33.5, "h": 35.4, "label": "Futon, Serta Billie-Loren"},
     {"id": "coffee", "ref": "coffee-table", "x": 106, "y": 230, "rot": 90, "placed": true, "w": 44, "d": 24, "h": 17, "label": "Coffee table"},
     {"id": "tv", "ref": "tv-55", "x": 21.75, "y": 230, "rot": 270, "placed": true, "w": 48.4, "d": 3.5, "h": 27.8, "elev": 32, "label": "55-inch TV, living room"},
     {"id": "dining", "ref": "dining-4", "x": 84, "y": 180, "rot": 90, "placed": true, "w": 48, "d": 30, "h": 30, "label": "Dining table, 4 seats"}
