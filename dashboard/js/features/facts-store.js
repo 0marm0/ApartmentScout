@@ -85,6 +85,17 @@ export function importFacts(map) {
   return n;
 }
 
+/** The sync layer wrote this search's numbers to storage (sync/sync-store.js): read them again; those that changed go to the search folder too. */
+export function reloadFromStorage() {
+  if (!key) return [];
+  const local = store.get(key, {}) || {}, next = {};
+  for (const [id, f] of Object.entries(local)) { const n = normalize(f, today()); if (Object.keys(n).length) next[id] = n; }
+  const changed = [...new Set([...Object.keys(recs), ...Object.keys(next)])].filter((id) => JSON.stringify(recs[id]) !== JSON.stringify(next[id]));
+  recs = next;
+  if (changed.length) { persist(); notify(null); if (server) for (const id of changed) push(id); }
+  return changed;
+}
+
 /** Load this search's numbers: from the browser, then merged with the search folder's when the API is there. */
 export async function init() {
   key = searchKey();

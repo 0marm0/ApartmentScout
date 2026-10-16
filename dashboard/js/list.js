@@ -226,6 +226,7 @@ export function init() {
     <div class="page-h"><div class="t"><h1>Shortlist <span id="lsCount"></span></h1>
       <p>Ranked live by your weights. Click a row for the full picture; <kbd>↑</kbd> <kbd>↓</kbd> move, <kbd>Enter</kbd> opens, <kbd>s</kbd> saves, <kbd>c</kbd> compares.</p></div>
       <div class="actions">
+        <button type="button" class="btn" id="lsReport" data-make-report="shortlist" title="A typeset decision report for two to four homes: print it or save it as a PDF">${ICONS.doc}Make a report</button>
         <div class="seg" id="lsGroup" role="group" aria-label="Group rows"><button type="button" data-g="units">Units</button><button type="button" data-g="buildings">Buildings</button></div>
         <div class="seg" id="lsDensity" role="group" aria-label="Row density">
           <button type="button" data-d="comfortable" title="Comfortable rows" aria-label="Comfortable rows"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="2.5" y="2.5" width="11" height="4" rx="1"/><rect x="2.5" y="9.5" width="11" height="4" rx="1"/></svg></button>

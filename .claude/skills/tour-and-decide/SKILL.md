@@ -50,3 +50,10 @@ Then update the listing's remaining facts yourself where the renter asks (floor,
    decision memo (`apartmentscout share --memo`) already includes each home's findings and decision trail.
 3. Present the memo to the renter and let them choose. Offer to draft the application email or
    the counter-offer (concession, lease length, fee waiver), but do not send anything.
+4. For a document worth sending or printing, offer the **decision report** for two to four finalists: the dashboard's **Make a report**
+   (Compare or Shortlist) or `apartmentscout report --homes ID ID --out report.pdf`. It opens on the recommendation and why, then a
+   side-by-side table, a page per home (photo, floor plan, a 3D view from the window, what is still unknown, the leasing-office questions
+   still open, the renter's own visit) and a checklist. The renter's notes and visit photos stay out unless they ask for `--notes` and
+   `--tour-photos`; the recommendation is the fit under the renter's weights, so say so and never present it as the decision.
+5. Once they choose, offer the **move planner** (the drawer's Move plan, or *Plan my move*): dated steps from today to the lease
+   start, the cash it takes from the cost model, and a calendar file. The renter ticks steps off; you never book, pay or send for them.

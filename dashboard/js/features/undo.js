@@ -110,6 +110,12 @@ export function redo() {
   return true;
 }
 
+/** Run `fn` (a change that came from somewhere else, such as another device through sync) without making it an undo step. */
+export function quiet(fn) {
+  const was = restoring; restoring = true;
+  try { fn(); } finally { restoring = was; base = snapshot(S); }
+}
+
 export function initUndo() {
   base = snapshot(S);
   for (const ev of ['saved', 'compare', 'filters', 'weights', 'commute']) on(ev, capture);
