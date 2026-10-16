@@ -32,7 +32,7 @@
    "label": "Latitude Run bed",
    "room": "bedroom",
    "w": 94,
-   "d": 83.46,
+   "d": 83.3,
    "h": 47.4,
    "look": {
     "color": "#7f6c5b",
@@ -56,7 +56,7 @@
    "spec": {
     "overall": {
      "w": 94,
-     "d": 83.46,
+     "d": 83.3,
      "h": 47.4
     },
     "headboard": {
@@ -107,7 +107,7 @@
    },
    "spec_basis": {
     "overall.w": "spec",
-    "overall.d": "spec (the table says 83.46 in; the dimension drawing says 83.3 in: the larger is used so fit checks stay on the safe side)",
+    "overall.d": "spec",
     "overall.h": "spec",
     "headboard.depth": "diagram",
     "headboard.tower_w": "diagram",
@@ -156,7 +156,7 @@
     "status": "candidate purchase, not owned",
     "materials": "Solid and manufactured wood (oak), velvet upholstery, plug-in power; two built-in USB-C and USB charging ports and a reading light in each tower.",
     "weight_capacity_lb": 1000,
-    "note": "Read by the renter from the product page's Specifications table, its dimension drawing and its product photos; the page itself was not fetched by the studio. The table and the drawing differ by under 1 in on the frame (61.42 W x 83.46 L x 47.2 H for the frame alone, 60.5 x 83.3 x 47.4 on the drawing); the model uses the drawing's figures. The 13 in is the whole side of the oak box from the floor (its front is two 11.8 in drawer fronts on about 1.2 in black feet); the 4.5 in floor clearance is read as the clearance under the inner black metal frame, not the gap under the oak. The 13.8 in on the drawing is the height of the nightstand's underside above the floor (its top, 22 in, is level with the mattress top). The rail, panel, band and cubby sizes are measured from the front photo against the 94 in width (about 1 in either way); the 12 in mattress is chosen inside the maker's 10 to 15 in. Prices are deliberately not recorded."
+    "note": "Read by the renter from the product page's Specifications table, its dimension drawing and its product photos; the page itself was not fetched by the studio. The table and the drawing differ by under 1 in on the frame (61.42 W x 83.46 L x 47.24 H for the frame alone, 60.5 x 83.3 x 47.4 on the drawing); the model uses the drawing's figures. The 13 in is the whole side of the oak box from the floor (its front is two 11.8 in drawer fronts on about 1.2 in black feet); the 4.5 in floor clearance is read as the clearance under the inner black metal frame, not the gap under the oak. The 13.8 in on the drawing is the height of the nightstand's underside above the floor (its top, 22 in, is level with the mattress top). The rail, panel, band and cubby sizes are measured from the front photo against the 94 in width (about 1 in either way); the 12 in mattress is chosen inside the maker's 10 to 15 in. Prices are deliberately not recorded."
    },
    "note": "A bed you may buy, modelled to the maker's dimensions. It comes with its own nightstands, so the separate ones are hidden while it is shown.",
    "source": "manufacturer"
