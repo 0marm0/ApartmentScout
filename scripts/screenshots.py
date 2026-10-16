@@ -153,7 +153,8 @@ SHOTS = [
     ("inside-orbit-night", "?date=2026-10-15&min=1230&mode=orbit#unit/paramount-tower-25e", STAGE, [], 11000, "#stage"),
     ("inside-skyline-dusk", "?date=2026-10-15&min=1110&mode=orbit#unit/paramount-tower-25e", STAGE, [cam(500, 330, -150, -500, 120, 250, ray=False), ("wait", 2500)], 11000, "#stage"),
     ("inside-bay", "?date=2026-10-15&min=690&mode=in#unit/paramount-tower-25e", STAGE, [("look", "corner:Bedroom:0", 3500)], 11000, "#stage"),
-    ("inside-furniture", "?date=2026-10-15&min=690&mode=in#unit/paramount-tower-25e", STAGE, [("look", "room:Bedroom:0", 2500), ("look", "into-room", 3500)], 11000, "#stage"),
+    ("inside-furniture", "?date=2026-10-15&min=690&mode=in#unit/paramount-tower-25e", STAGE, [("look", "room:Bedroom:0", 3000), ("eval", "(() => { const u = __unit3d; u.stage.look.fov = 80; return u.walk.goTo([200, 162], { dir: 20, pitch: 1 }); })()"), ("wait", 7000)], 11000, "#stage"),   # from the bedroom door: the bed, the TV on the left, the windows ahead
+    ("inside-living-room", "?date=2026-10-15&min=690&mode=in#unit/paramount-tower-25e", STAGE, [("look", "room:Bedroom:0", 3000), ("eval", "(() => { const u = __unit3d; u.stage.look.fov = 80; return u.walk.goTo([138, 118], { dir: 350, pitch: 1 }); })()"), ("wait", 7000)], 11000, "#stage"),   # from the back of the living room: TV, desk, futon, dining table and the windows
     ("inside-bedroom", "?date=2026-10-15&min=690&mode=in#unit/paramount-tower-25e", STAGE, [("look", "corner:Bedroom:0", 2500), ("drag", "#stage", 300, 500, 1300, 480, 2500)], 11000, "#stage"),
     ("inside-walk-window", "?date=2026-10-15&min=690&mode=in#unit/paramount-tower-25e", STAGE, [("look", "seat:sofa", 2500), ("walk_window", 2500)], 11000, "#stage"),
     ("inside-night-window", "?date=2026-10-15&min=1230&mode=in#unit/paramount-tower-25e", STAGE, [("look", "seat:sofa", 2500), ("walk_window", 2500)], 11000, "#stage"),
