@@ -62,9 +62,9 @@ test('the example furniture holds the renter\'s answers: black leather futon, da
   const f = piece('futon').look;
   assert.equal(f.parts.frame.material, 'metal'); assert.ok(f.assumed.includes('frame') && f.assumed.includes('finish'));
   assert.equal(L.lookBasis(f, 'color'), 'renter'); assert.equal(L.lookBasis(f, 'frame'), 'assumed');
-  // what the renter did not say stays an assumption: the TVs' casing, the desk chair, the dining chairs
+  // what the renter did not say stays an assumption: the TVs' casing, the office chair (its own piece now), the dining chairs
   assert.equal(L.lookBasis(piece('tv').look), 'assumed'); assert.equal(L.lookBasis(piece('tv-bed').look), 'assumed');
-  assert.ok(piece('desk').look.assumed.includes('chair')); assert.ok(piece('dining').look.assumed.includes('chairs'));
+  assert.ok(piece('desk-chair').look.assumed.includes('color')); assert.equal(L.lookBasis(piece('desk-chair').look, 'color'), 'assumed'); assert.ok(piece('dining').look.assumed.includes('chairs'));
   // every piece has a look, and every look resolves to something drawable
   for (const p of inv().pieces) { assert.ok(p.look, p.id); assert.ok(L.resolveLook(p.look)?.color != null, p.id); }
 });
