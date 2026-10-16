@@ -19,8 +19,8 @@ inside the exact unit, with your own furniture, in the real city around it.</p>
 </p>
 
 <p align="center">
-<a href="https://0marm0.github.io/ApartmentScout/demo/"><img src="docs/images/walkthrough.webp" width="820" alt="A 20-second walk-through: the commute map over Manhattan, a ranked card opening into its drawer, Unit 3D around Paramount Tower, then standing inside the living room, walking to the window, and the same view as the sun sets over a lit night city"></a><br>
-<sub>Map, card, drawer, then inside the unit: walk to the window and watch the day turn to night. <a href="docs/images/walkthrough.mp4">Watch it in full quality (MP4)</a>.</sub>
+<a href="https://0marm0.github.io/ApartmentScout/demo/"><img src="docs/images/walkthrough.webp" width="820" alt="A 70-second walk-through: the commute map over Manhattan, a card opening into its drawer with commute, light and noise by hour, the 311 noise layer through the day, a plain-words search, the trade-off pad re-ranking the list, the map in 3D, Unit 3D around Paramount Tower with the day's shadows, standing inside the living room and bedroom, a listing photo matched to the window view, the floor-plan studio, four finalists compared, the decision report and move planner, the app on a phone at a tour, and the view from the window as the sun sets over a lit night city"></a><br>
+<sub>Map, noise, plain-words search and the trade-off pad, then inside the unit, the report and move plan, a phone at the tour, and the day turning to night. <a href="docs/images/walkthrough.mp4">Watch it in full quality (MP4)</a>.</sub>
 </p>
 
 ApartmentScout came out of a real search for a one-bedroom in Manhattan: 738 listings in 260 buildings, and the same questions
