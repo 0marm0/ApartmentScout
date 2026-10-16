@@ -506,8 +506,9 @@ function bed(it, K) {
   const [mw0, md0] = it.productInfo?.mattress || it.base?.mattress || [w - 4, d - 4];
   const hbT = clamp(d * 0.04, 2.6, 3.6), mw = Math.min(mw0, w - 3), md = Math.min(md0, d - hbT - 1.5);
   const upM = K.skin(spec), upDark = K.skin(shade(spec, 0.62)), legM = K.skin(K.part('legs', { color: MAT.woodDark, material: 'wood', finish: 'satin' }));
-  // bedding is generic decor, not the renter's: plain whites, no colour accents
-  const tick = K.fabric(0xe2ddd3), sheet = K.fabric(0xe6e2da), duvetM = K.quilted(0xd3d0c9), foldM = K.fabric(0xd9d6cf), throwM = K.knit(0x8c867d), euroM = K.fabric(0xc9c2b6);
+  // bedding: the renter's duvet colour when furniture.json gives one (look.parts.bedding), else plain whites
+  const bedd = K.part('bedding', {}), bc = bedd.color;
+  const tick = K.fabric(0xe2ddd3), sheet = K.fabric(0xe6e2da), duvetM = K.quilted(bc ?? 0xd3d0c9), foldM = K.fabric(bc ?? 0xd9d6cf), throwM = K.knit(0x8c867d), euroM = K.fabric(bc ?? 0xc9c2b6);
   const legH = storage ? 2 : 4.5, deck = storage ? 14 : 11, mT = 10, headZ = -hd + hbT, footZ = headZ + md, mz = (headZ + footZ) / 2;
   const mBot = deck - 1.5, mTop = mBot + mT;
   // headboard: a panel with rounded shoulders, bevelled edges and (Visual) puffed vertical channels
