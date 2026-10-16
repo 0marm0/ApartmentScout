@@ -350,7 +350,7 @@ function initLongPress() {
     const card = e.target.closest('.card');
     if (!card || e.target.closest('button, a, input, select, textarea')) return;
     stop();
-    lp = { id: card.dataset.id, card, x: e.clientX, y: e.clientY };
+    lp = { id: card.dataset.id, card, x: e.clientX, y: e.clientY, st: host.scrollTop };
     lp.hold = setTimeout(() => { if (!calm()) card.classList.add('lp-held'); }, 140);
     lp.timer = setTimeout(() => {
       const { id, card: c } = lp; lp = null;
@@ -361,7 +361,8 @@ function initLongPress() {
   }, { passive: true });
   host.addEventListener('pointermove', (e) => { if (lp && Math.hypot(e.clientX - lp.x, e.clientY - lp.y) > N.TOUCH_SLOP) stop(); }, { passive: true });
   for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) host.addEventListener(ev, stop, { passive: true });
-  host.addEventListener('scroll', stop, { passive: true });
+  // the list settling under a resting finger (images load, the window re-measures) is not a scroll; moving it by a few pixels is
+  host.addEventListener('scroll', () => { if (lp && Math.abs(host.scrollTop - lp.st) > N.TOUCH_SLOP) stop(); }, { passive: true });
   // the finger lifting after the menu opened would otherwise open the home too
   host.addEventListener('click', (e) => { if (performance.now() < suppressUntil) { e.stopPropagation(); e.preventDefault(); } }, true);
   host.addEventListener('contextmenu', (e) => { if (coarse()) e.preventDefault(); });

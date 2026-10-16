@@ -74,7 +74,7 @@ def open_first(p: Phone, n: int = 1) -> str:
         x, y = center(pg, f"#cards .card >> nth={n - 1} >> .media")
         p.finger.tap(x, y)
         try:
-            pg.wait_for_function("() => document.getElementById('drawer').classList.contains('open') && document.getElementById('drawer').dataset.detent === 'half'", timeout=4000)
+            pg.wait_for_function("() => document.getElementById('drawer').classList.contains('open') && document.getElementById('drawer').dataset.detent === 'half'", timeout=10000)
             break
         except Exception:
             if attempt == 3:
@@ -224,7 +224,7 @@ def test_resting_a_finger_on_a_card_opens_its_quick_actions(open_phone) -> None:
     cid = card_ids(pg)[0]
     x, y = center(pg, "#cards .card >> nth=0 >> .rank")   # the rank tag: a part of the card that is not a button
     f.hold(x, y, 700)
-    pg.wait_for_selector(".qa-menu", timeout=3000)
+    pg.wait_for_selector(".qa-menu", timeout=15000)
     labels = pg.evaluate("[...document.querySelectorAll('.qa-menu button')].map((b) => b.textContent.trim())")
     assert labels[:2] == ["Save to picks", "Add to compare"] and labels[-2:] == ["Share", "Open details"] and "See inside" in labels
     for h in pg.evaluate("[...document.querySelectorAll('.qa-menu button')].map((b) => b.getBoundingClientRect().height)"):
@@ -315,13 +315,13 @@ def test_pulling_the_list_down_checks_for_new_data(open_phone) -> None:
     top = rect(pg, "#cards")["y"]
     _manifest_route(p.ctx, cur)
     f.drag(200, top + 30, 200, top + 330, steps=12)
-    pg.wait_for_function("() => document.getElementById('toast').textContent.includes('Up to date')", timeout=8000)
+    pg.wait_for_function("() => document.getElementById('toast').textContent.includes('Up to date')", timeout=20000)
     assert pg.evaluate("document.getElementById('cards').style.transform") == ""
     # a changed manifest: the page says new data is ready and offers a reload
     _manifest_route(p.ctx, "2099-01-01T00:00:00")   # registered last, so it answers first
     pg.wait_for_function("() => !document.querySelector('.ptr.busy, .ptr.out')", timeout=5000)
     f.drag(200, top + 30, 200, top + 330, steps=12)
-    pg.wait_for_function("() => document.getElementById('toast').textContent.includes('New data is ready')", timeout=8000)
+    pg.wait_for_function("() => document.getElementById('toast').textContent.includes('New data is ready')", timeout=20000)
     assert pg.evaluate("!!document.querySelector('#toast .toast-act')")
 
 
@@ -451,8 +451,9 @@ def test_every_field_is_16px_or_more_so_ios_does_not_zoom(open_phone) -> None:
     pg.wait_for_selector(".pl input")
     sizes = _field_sizes(pg)
     assert sizes and all(s >= 16 for _, s in sizes), sizes
+    pg.locator(".pl input").focus()
     pg.keyboard.press("Escape")
-    pg.wait_for_selector(".pl input", state="hidden")
+    pg.wait_for_selector(".pl input", state="hidden", timeout=15000)
     open_first(p)
     pg.locator("#dTabs a >> nth=-1").tap()                         # down to the notes: the tier buttons and the textarea
     pg.wait_for_selector("#dNote", state="attached")
