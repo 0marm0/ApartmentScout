@@ -31,7 +31,7 @@ python -m http.server 8000 --directory _site --bind 127.0.0.1
 |---|---|
 | `/` (`index.html`, `landing.css`, `landing.js`) | `landing/` |
 | `/tokens.css` | `dashboard/css/tokens.css` |
-| `/images/` | the `docs/images/*.png` screenshots the page names, as WebP at full size and at 800 px (`scripts/landing_images.py` reads the page and writes only what it names), plus `og.jpg`, the 1200 x 630 social card |
+| `/images/` | the `docs/images/*.png` screenshots the page names, as WebP at full size and at 800 px (`scripts/landing_images.py` reads the page and writes only what it names), plus `og.jpg`, the 1200 x 630 social card (cut from `social-preview.png`, made by `scripts/social_preview.py`) |
 | `/assets/` | `dashboard/assets/*.svg` (brand icon, favicon) and `dashboard/assets/pwa/` (app icons, used as favicons here too) |
 | `/fonts/` | `dashboard/vendor/fonts/` (Geist and Geist Mono, `geist.css` and the OFL licence): the page makes no request to Google Fonts |
 | `/demo/` | `dashboard/` with its example data, bundled, split and made installable by `scripts/optimize_site.py` (see the dashboard guide) |

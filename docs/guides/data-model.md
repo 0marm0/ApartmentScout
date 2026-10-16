@@ -674,6 +674,58 @@ this score* section. It never changes `listings.json`: `apartmentscout score` ap
 The dashboard computes the same re-score in the browser (`dashboard/js/features/facts-model.js`), so a typed number re-ranks the home at
 once; `tests/test_renterfacts_parity.py` keeps the two in step.
 
+## Move plan
+
+The move planner (the drawer's *Move plan* section, **Plan my move** in the menu and the command palette) keeps the renter's checklist under
+**one key**, `moveplan`. It never touches `listings.json` or any file of the search folder.
+
+| Where | Key |
+|---|---|
+| this browser | local storage `as:moveplan:<search name>` |
+| a picks backup (Back up picks / Restore picks, and any device sync that carries the backup's keys) | the top-level object `moveplan` |
+
+```json
+{"v": 1, "chosen": "paramount-tower-25e",
+ "homes": {"paramount-tower-25e": {
+   "start": "2026-12-01", "current_end": "2026-12-12", "notice_days": 30,
+   "movers": 1100, "insurance": 18, "other": 150,
+   "done": {"apply": "2026-10-15"}, "dates": {"sign": "2026-11-05"},
+   "custom": [{"id": "c1", "title": "Return the cable box", "date": "2026-11-30"}],
+   "updated": "2026-10-15"}}}
+```
+
+| Field | Meaning |
+|---|---|
+| `chosen` | the home the planner opened on last |
+| `homes.<id>.start` | the lease start the renter chose; absent means it is worked out (below) |
+| `current_end`, `notice_days` | when the current lease or stay ends (overlap rent, and the notice step) and the notice it asks for (default 30) |
+| `movers`, `insurance`, `other` | what the renter expects to pay, in dollars; the planner never guesses them |
+| `done` | step id to the day it was ticked off |
+| `dates` | step id to a day the renter moved it to |
+| `custom` | steps the renter added: `{id, title, date, done?}` (at most 30) |
+| `updated` | the day the home's plan last changed; on a backup import the newer `updated` wins, per home |
+
+Step ids: `notice` (only with `current_end`), `apply`, `approval`, `sign`, `pay`, `insurance`, `movers`, `reserve`, `coi`, `internet`,
+`utilities`, `usps`, `keys`, `move`, `condition`, `address`. Anything else in the object is dropped on load
+(`dashboard/js/features/move-model.js`, `normalize`).
+
+**Dates.** The lease start is the renter's `start`, else the later of `search.move_in.earliest` and the listing's `available`, but never
+sooner than 14 days from today (a move needs that long to arrange). The steps are placed from it, on business days (Monday to Friday; public
+holidays are not known): the application 35 days ahead, approval three business days later, signing 28 days ahead (never before approval),
+the deposit and first month the same day, movers 21 days ahead, the building's move-in reservation 14 days ahead, the movers' certificate of
+insurance 10 days ahead, internet 14, utilities 10, the USPS change of address 7, insurance 5; keys and the move on the start day; the
+condition report and address updates after it. With less time every step moves toward today but keeps its order, and a step pushed more than
+five days later than its ideal day is marked *squeezed in*. A short notice (under 14 days) and a start outside the move-in window are said
+plainly. These are defaults to plan against, not facts about any landlord.
+
+**Cash.** Read from the scorer's cost model, never recomputed: `score.cost.upfront` (`first_month`, `deposit`, `one_time_fees`,
+`other_refundable`) and `price.application_fee` / `price.broker_fee`, so the planner's *due at signing* equals `score.cost.move_in_min`. A
+value the listing does not have is named as unknown ("Not known"), never counted as zero, and the totals say they are a floor. Overlap rent is
+the new home's `paid_month` for the days `current_end` runs past the start (a day is a month divided by 30.4375); a gap is named, not priced.
+
+**Exports.** An iCalendar file (one all-day `VEVENT` for each step not yet done, with a 09:00 alert) and a Reminders list (one line per step:
+`Sign the lease (due Tue, Nov 3)`). Nothing is booked, sent or paid.
+
 ## History
 
 See [research quality](research-quality.md#history) for the rules. Files in the search folder:
@@ -828,6 +880,22 @@ longest unchecked. `note` explains how to add buildings when the list is empty.
 `changes[].type` and `field` are the history event types (`price` gross or net, `concession` free or lease months,
 `status` available, `gone`, `relist`). `skipped` lists pages not fetched and why (a portal, a host that answered with a bot
 check, no cache offline); `unreadable` lists pages that were read but gave nothing usable.
+
+`alerts.json` (dashboard export; the change digest of `apartmentscout alerts`, see [alerts](alerts.md)): the change since the saved
+baseline in `history/alerts/state.json`, else the last saved digest while it is under two weeks old, else an empty one.
+
+```json
+{"schema_version": 1, "kind": "alerts", "generated": "2026-10-15", "at": "2026-10-15T07:00:00", "search": "My search",
+ "since": "2026-10-14", "first_run": false, "pending": true, "top": 10, "id": "d39fdacbee",
+ "headline": "1 new, 2 price drops", "title": "ApartmentScout: 1 new, 2 price drops", "total": 3,
+ "counts": {"new": 1, "drops": 2}, "tracked": 434, "fitting": 302, "quiet_new": 0, "note": null,
+ "groups": {"new": [{"id": "tower-31f", "name": "The Example Tower 31F", "hood": "Chelsea", "rank": 39, "gross": 4650, "cost": 4687, "status": "new"}],
+            "drops": [{"id": "orion-23a", "name": "Orion 23A", "rank": 2, "gross": 4895, "from": 5000, "to": 4895, "delta": -105, "basis": "rent"}]}}
+```
+
+`groups` keys are `new`, `fits` (adds `why`, and `from`/`to` when the price moved), `drops`, `rises` (`basis` is `rent` or `monthly cost`),
+`gone` (`was_rank`, `removed`), `back`, `jumps` (`from`, `to` ranks) and `resolved` (`resolved`: the questions now answered); only
+groups with changes are present. `id` follows the content, not the clock; the dashboard uses it to remember what you have seen.
 
 ## Floor plan
 

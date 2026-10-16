@@ -4,7 +4,7 @@
 // visit sheet uses (findings-store.js: this browser at once, the search folder when the local API is there, queued until it is
 // reachable again); the ones the findings schema has no field for are kept here and written into the note under a marker. The rules
 // are in tourday-model.js; opening it is in tourday-entry.js.
-import { S, on, store, byId, dest, label, cost } from '../app.js';
+import { S, on, store, byId, dest, label, cost, reloaders } from '../app.js';
 import { esc, toast, money } from '../util.js';
 import { reducedMotion } from './dom.js';
 import { bytesLabel } from './native-core.js';
@@ -454,6 +454,7 @@ function renderSoon() {
   });
 }
 on('saved', () => { if (root && view === 'route') renderSoon(); });
+reloaders.tourday = () => { if (!root) return; st = M.normalizeState(store.get(key(), null), M.localDay()); renderSoon(); };   // the sync layer wrote the checklist while it is open
 export function close() {
   if (!root) return;
   runPending(); FS.flush();

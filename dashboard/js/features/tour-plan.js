@@ -3,7 +3,7 @@
 // stop, the hop between stops (walk or transit, labelled as an estimate), the viewing and a buffer per stop, flags a booked
 // time you would miss, and exports the day as an .ics file (one event per stop, with the address) or as text to paste.
 // The maths is in tour-model.js; booked times are the tour times already set on the Tours board.
-import { S, on, store, byId, dest, cost, setPick, openDrawer, label } from '../app.js';
+import { S, on, store, byId, dest, cost, setPick, openDrawer, label, reloaders } from '../app.js';
 import { $, esc, money, toast, ICONS } from '../util.js';
 import { watch } from './dom.js';
 import { groupKey } from '../views/table-kit.js';
@@ -240,6 +240,7 @@ function mount() {
 
 export function init() {
   initState();
+  reloaders.tourplan = () => { initState(); if (host?.isConnected && S.view === 'tours') render(); else dirty = true; };   // the sync layer wrote the plan
   const v = $('view-tours'); if (!v) return;
   watch(v, mount);
   const refresh = () => { if (host?.isConnected) { if (S.view === 'tours' && !drag) render(); else dirty = true; } };
