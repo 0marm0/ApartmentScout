@@ -29,14 +29,16 @@ jobs:
     # (SwiftShader WebGL; checks that need WebGL skip themselves if it is missing). Tiles and photos are blocked.
     # Software GL makes opening the map, Unit 3D and the floor plan studio block the page for seconds, so tests wait for
     # each heavy view to be drawn and the page to go quiet (conftest.settled, camera_still ...) instead of sleeping or
-    # leaning on long timeouts. Reproduce a slow runner locally with APARTMENTSCOUT_E2E_CPU_THROTTLE=6.
+    # leaning on long timeouts. 2D canvases and page tiles are drawn on the CPU (conftest.GPU_ARGS), and a test that reads no
+    # pixels can skip rasterising WebGL altogether (`@pytest.mark.no_raster`). Reproduce a slow runner locally with
+    # CI=1 APARTMENTSCOUT_E2E_CPU_THROTTLE=6.
     # The files are split over a few runners so that each shard takes about the same time (the weights are the files' serial
     # times with software GL; a new file goes into the lightest shard), and each shard runs its files in parallel with pytest-xdist:
     # one Chromium, one static server and one set of temp folders per worker (tests/e2e/conftest.py). `-n auto` is
     # three workers per four cores, 2 to 8 (tests/conftest.py). `--dist loadgroup` keeps the tests that share a module-scoped
     # fixture (a built site, a temp search) on one worker.
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 40
     strategy:
       fail-fast: false
       matrix:
@@ -64,7 +66,7 @@ jobs:
         with:
           node-version: "22"
       - run: python -m playwright install --with-deps chromium
-      - run: pytest -m e2e ${{ matrix.shard.files }} -q -rs --durations=10 -n auto --dist loadgroup   # the slowest tests show where a runner struggles
+      - run: pytest -m e2e ${{ matrix.shard.files }} -q -rs --durations=0 -n auto --dist loadgroup   # the slowest tests show where a runner struggles
         env:
           APARTMENTSCOUT_E2E: "1"
   perf:

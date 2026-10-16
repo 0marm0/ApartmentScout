@@ -41,9 +41,26 @@ ROOT = Path(__file__).resolve().parents[2]
 MODE = os.environ.get("APARTMENTSCOUT_E2E", "")
 CI = bool(os.environ.get("CI"))
 THROTTLE = float(os.environ.get("APARTMENTSCOUT_E2E_CPU_THROTTLE") or 1)
-# a real GPU on a Mac; SwiftShader elsewhere (CI), where WebGL may be missing or drop layers
+# a real GPU on a Mac; SwiftShader elsewhere (CI), where WebGL may be missing or drop layers. With SwiftShader, 2D canvases and page tiles
+# are drawn by Skia on the CPU, as Chrome does on a machine without a GPU: `--ignore-gpu-blocklist` otherwise sends them through SwiftShader
+# too, and the canvas textures Unit 3D paints and reads back (furniture fabrics, heat maps) then kept the GPU process busy for over a
+# minute per open (the renderer's next WebGL call waits behind them). WebGL itself still runs on SwiftShader.
 GPU_ARGS = (["--use-angle=metal", "--ignore-gpu-blocklist", "--enable-gpu"] if sys.platform == "darwin" and not CI
-            else ["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"])
+            else ["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist",
+                  "--disable-accelerated-2d-canvas", "--disable-gpu-rasterization"])
+
+# For tests that read no pixels (layout, console errors, axe, routing): every WebGL call runs (contexts, shaders compiled and linked,
+# buffers and textures uploaded, three's own draw bookkeeping) except the draws themselves, so SwiftShader rasterises nothing. A Unit 3D
+# frame with its 2048 px soft-shadow map over the city takes seconds to rasterise in software, and the GPU process works through the
+# queue long after the page looks idle, stalling the next view's first WebGL call. Opt in with `@pytest.mark.no_raster` (open_page reads
+# it) or `no_raster(ctx)` on a context you make yourself; never in a test that looks at a picture.
+NO_RASTER_JS = """(() => { for (const C of [self.WebGL2RenderingContext, self.WebGLRenderingContext]) { if (!C) continue;
+  for (const k of ['drawArrays', 'drawElements', 'drawArraysInstanced', 'drawElementsInstanced', 'drawRangeElements']) if (C.prototype[k]) C.prototype[k] = function () {}; } })();"""
+
+
+def no_raster(ctx) -> None:
+    """Pages of this browser context build their WebGL scenes but draw nothing (see NO_RASTER_JS)."""
+    ctx.add_init_script(NO_RASTER_JS)
 
 
 def _skip_or_fail(reason: str) -> None:
@@ -167,9 +184,12 @@ def block_foreign(ctx, *allowed: str) -> None:
 
 
 @pytest.fixture
-def open_page(browser, base_url: str):
-    """open_page(path, theme='dark', width=1440, height=900) -> Session, with the network outside base_url blocked."""
+def open_page(browser, base_url: str, request):
+    """open_page(path, theme='dark', width=1440, height=900) -> Session, with the network outside base_url blocked.
+    A test marked `no_raster` gets pages that draw no WebGL triangles (NO_RASTER_JS); `no_raster(False)` on a test undoes a module's mark."""
     contexts = []
+    mark = request.node.get_closest_marker("no_raster")
+    skip_draws = mark is not None and (not mark.args or bool(mark.args[0]))
 
     def _open(path: str = "#map", theme: str = "dark", width: int = 1440, height: int = 900) -> Session:
         ctx = browser.new_context(viewport={"width": width, "height": height}, color_scheme=theme,
@@ -177,6 +197,8 @@ def open_page(browser, base_url: str):
                                   service_workers="block")   # [pwa] only tests/e2e/test_pwa.py runs with the service worker
         contexts.append(ctx)
         block_foreign(ctx, base_url)
+        if skip_draws:
+            no_raster(ctx)
         page = ctx.new_page()
         if THROTTLE > 1:
             ctx.new_cdp_session(page).send("Emulation.setCPUThrottlingRate", {"rate": THROTTLE})
