@@ -1,34 +1,34 @@
 /* "Does it fit?" (js/plan/tryfit-ui.js): the form on the studio's Furniture tab and the answer card under the inspector. Tokens only. */
 .tf { margin: 0 0 var(--s-4); padding: 0 0 var(--s-3); border-bottom: 1px solid var(--line); }
-.tf-row { display: flex; align-items: center; gap: 8px; margin: 6px 0; }
+.tf-row { display: flex; align-items: center; gap: var(--s-2); margin: 6px 0; }
 .tf-row label { font-size: var(--fs-xs); color: var(--ink-3); flex: none; }
 .tf-row select { flex: 1 1 0; min-width: 0; }
 .tf-text { flex: 1 1 0; min-width: 0; height: 32px; padding: 0 10px; border: 1px solid var(--line-strong); border-radius: var(--r-sm); background: var(--surface-2); color: var(--ink); font: inherit; font-size: var(--fs-sm); }
-.tf-text:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.tf-text:focus-visible { outline: var(--focus-w) solid var(--accent); outline-offset: 1px; }
 .tf-row .btn { flex: none; white-space: nowrap; }
 .tf-note { margin: 2px 0 6px; font-size: var(--fs-2xs); color: var(--ink-3); min-height: 1.4em; }
 .tf-note.ok { color: var(--ink-2); }
-.tf-note.ok b { color: var(--ink); font-weight: 600; }
+.tf-note.ok b { color: var(--ink); font-weight: var(--fw-semibold); }
 .tf-note.warn { color: var(--warn); }
-.ps-fit { padding: 12px 14px; }
+.ps-fit { padding: var(--s-3) 14px; }
 .ps-fit[hidden] { display: none; }
-.tf-card { display: flex; flex-direction: column; gap: 8px; }
+.tf-card { display: flex; flex-direction: column; gap: var(--s-2); }
 .tf-h { display: flex; align-items: center; gap: 10px; }
 .tf-h .t { display: flex; flex-direction: column; min-width: 0; }
-.tf-h .t b { font-weight: 600; font-size: var(--fs-sm); }
+.tf-h .t b { font-weight: var(--fw-semibold); font-size: var(--fs-sm); }
 .tf-h .t small { color: var(--ink-3); font-size: var(--fs-2xs); font-variant-numeric: tabular-nums; }
 .tf-verdict { margin: 0; font-size: var(--fs-xs); color: var(--ink); line-height: var(--lh-snug, 1.4); }
-.tf-sub { margin: 4px 0 0; font-size: var(--fs-2xs); font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--ink-3); }
+.tf-sub { margin: var(--s-1) 0 0; font-size: var(--fs-2xs); font-weight: var(--fw-semibold); letter-spacing: .04em; text-transform: uppercase; color: var(--ink-3); }
 .tf-sides { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin: 0; padding: 0; list-style: none; }
-.tf-sides li { display: flex; flex-direction: column; gap: 1px; padding: 6px 8px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface-2); min-width: 0; }
+.tf-sides li { display: flex; flex-direction: column; gap: 1px; padding: 6px var(--s-2); border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface-2); min-width: 0; }
 .tf-sides span { font-size: var(--fs-2xs); color: var(--ink-3); }
-.tf-sides b { font-size: var(--fs-sm); font-variant-numeric: tabular-nums; font-weight: 600; }
+.tf-sides b { font-size: var(--fs-sm); font-variant-numeric: tabular-nums; font-weight: var(--fw-semibold); }
 .tf-sides small { font-size: var(--fs-2xs); color: var(--ink-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.tf-sides li.open b, .tf-sides li.flush b { color: var(--ink-2); font-weight: 500; }
+.tf-sides li.open b, .tf-sides li.flush b { color: var(--ink-2); font-weight: var(--fw-medium); }
 .tf-rows { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 5px; }
-.tf-rows li { display: flex; gap: 8px; align-items: flex-start; font-size: var(--fs-xs); color: var(--ink-2); line-height: var(--lh-snug, 1.4); }
+.tf-rows li { display: flex; gap: var(--s-2); align-items: flex-start; font-size: var(--fs-xs); color: var(--ink-2); line-height: var(--lh-snug, 1.4); }
 .tf-rows i { flex: none; width: 8px; height: 8px; margin-top: 5px; border-radius: 50%; background: var(--good); }
 .tf-rows li.g-tight i { background: var(--warn); }
 .tf-rows li.g-blocked i { background: var(--bad); }
 .tf-wait { margin: 0; font-size: var(--fs-2xs); }
-.tf-acts { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 2px; }
+.tf-acts { display: flex; align-items: center; gap: var(--s-2); flex-wrap: wrap; margin-top: 2px; }

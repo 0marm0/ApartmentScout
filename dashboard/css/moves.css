@@ -3,10 +3,10 @@
 
 /* ------------------------------------------------------------------ the note on a result card */
 .mv-note { flex: none; display: inline-flex; align-items: center; height: 18px; padding: 0 7px; margin: 0; border: 1px solid var(--line); border-radius: var(--r-pill); background: transparent;
-  color: var(--ink-3); font: 500 var(--fs-2xs)/1 var(--font-sans); font-variant-numeric: tabular-nums; white-space: nowrap; cursor: pointer;
+  color: var(--ink-3); font: var(--fw-medium) var(--fs-2xs)/1 var(--font-sans); font-variant-numeric: tabular-nums; white-space: nowrap; cursor: pointer;
   transition: background var(--t-fast), border-color var(--t-fast), color var(--t-fast); }
 .mv-note:hover { background: var(--surface-2); border-color: var(--line-strong); color: var(--ink); }
-.mv-note:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.mv-note:focus-visible { outline: var(--focus-w) solid var(--accent); outline-offset: var(--focus-off); }
 .mv-note.down { color: var(--ink-2); }
 .mv-note.up { color: var(--ink-2); }
 .mv-note.down::first-letter { color: var(--warn); }
@@ -14,48 +14,48 @@
 html[data-density="compact"] .mv-note { height: 16px; padding: 0 6px; }
 
 /* ------------------------------------------------------------------ the drawer: why it moved */
-.mv-head { margin: 0 0 10px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; font-size: var(--fs-md); line-height: 1.35; }
-.mv-head b { font-weight: 600; letter-spacing: var(--tracking-tight); }
-.mv-head small { font-size: var(--fs-xs); font-weight: 400; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.mv-head { margin: 0 0 10px; display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-1) var(--s-3); font-size: var(--fs-md); line-height: 1.35; }
+.mv-head b { font-weight: var(--fw-semibold); letter-spacing: var(--tracking-tight); }
+.mv-head small { font-size: var(--fs-xs); font-weight: var(--fw-regular); color: var(--ink-3); font-variant-numeric: tabular-nums; }
 .mv-lines { list-style: none; margin: 0; padding: 0; display: grid; gap: 1px; }
-.mv-lines li { display: grid; grid-template-columns: 44px 92px minmax(0, 1fr); gap: 8px; align-items: baseline; padding: 6px 4px; border-radius: var(--r-sm); font-size: var(--fs-xs); line-height: 1.4; color: var(--ink-2); }
+.mv-lines li { display: grid; grid-template-columns: 44px 92px minmax(0, 1fr); gap: var(--s-2); align-items: baseline; padding: 6px var(--s-1); border-radius: var(--r-sm); font-size: var(--fs-xs); line-height: 1.4; color: var(--ink-2); }
 .mv-lines li:hover { background: var(--surface-2); }
-.mv-lines b { font-variant-numeric: tabular-nums; font-weight: 650; text-align: right; }
+.mv-lines b { font-variant-numeric: tabular-nums; font-weight: var(--fw-semibold); text-align: right; }
 .mv-lines b.pos { color: var(--good); } .mv-lines b.neg { color: var(--bad); }
-.mv-l { color: var(--ink); font-weight: 500; }
+.mv-l { color: var(--ink); font-weight: var(--fw-medium); }
 .mv-t { overflow-wrap: anywhere; }
-.mv-none, .mv-extra { margin: 8px 0 0; font-size: var(--fs-xs); line-height: 1.45; color: var(--ink-3); }
-.mv-pick { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px; font-size: var(--fs-xs); color: var(--ink-3); }
+.mv-none, .mv-extra { margin: var(--s-2) 0 0; font-size: var(--fs-xs); line-height: 1.45; color: var(--ink-3); }
+.mv-pick { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); margin-top: var(--s-3); font-size: var(--fs-xs); color: var(--ink-3); }
 .mv-pick select { min-width: 0; max-width: 62%; height: 30px; }
 
 /* ------------------------------------------------------------------ the rail: rank moves */
-.mv-rail .mv-pick { margin: 0 0 8px; }
-.mv-hint { margin: 8px 0 0; font-size: var(--fs-xs); line-height: 1.45; color: var(--ink-3); }
+.mv-rail .mv-pick { margin: 0 0 var(--s-2); }
+.mv-hint { margin: var(--s-2) 0 0; font-size: var(--fs-xs); line-height: 1.45; color: var(--ink-3); }
 
 /* ------------------------------------------------------------------ the drawer: unknowns that move this score */
 .uk-lead { margin: 0 0 10px; font-size: var(--fs-sm); line-height: 1.45; color: var(--ink-2); }
-.uk-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
-.uk { padding: 10px 12px 11px; border-radius: var(--r-md); background: var(--surface-2); border: 1px solid var(--line); border-left: 3px solid var(--warn); }
+.uk-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s-2); }
+.uk { padding: 10px var(--s-3) 11px; border-radius: var(--r-md); background: var(--surface-2); border: 1px solid var(--line); border-left: 3px solid var(--warn); }
 .uk.entered { border-left-color: var(--good); }
 .uk-top { display: grid; gap: 2px; }
-.uk-ask { font-size: var(--fs-sm); font-weight: 600; letter-spacing: var(--tracking-tight); }
+.uk-ask { font-size: var(--fs-sm); font-weight: var(--fw-semibold); letter-spacing: var(--tracking-tight); }
 .uk-now { font-size: var(--fs-xs); line-height: 1.4; color: var(--ink-3); }
 .uk-span { margin: 7px 0 0; font-size: var(--fs-xs); line-height: 1.45; color: var(--ink-2); font-variant-numeric: tabular-nums; }
-.uk-span b { font-weight: 650; color: var(--ink); }
-.uk-hint { margin: 4px 0 0; font-size: var(--fs-2xs); line-height: 1.4; color: var(--ink-3); }
+.uk-span b { font-weight: var(--fw-semibold); color: var(--ink); }
+.uk-hint { margin: var(--s-1) 0 0; font-size: var(--fs-2xs); line-height: 1.4; color: var(--ink-3); }
 .uk-hint:empty { display: none; }
-.uk-form { display: flex; gap: 8px; margin-top: 9px; align-items: center; }
+.uk-form { display: flex; gap: var(--s-2); margin-top: 9px; align-items: center; }
 .uk-in { position: relative; flex: 1; min-width: 0; display: block; }
-.uk-in input { width: 100%; height: 36px; padding: 0 44px 0 10px; border-radius: var(--r-sm); border: 1px solid var(--line-strong); background: var(--surface-1); color: var(--ink); font: 500 16px/1 var(--font-sans); font-variant-numeric: tabular-nums; }
-.uk-in input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.uk-in input { width: 100%; height: 36px; padding: 0 44px 0 10px; border-radius: var(--r-sm); border: 1px solid var(--line-strong); background: var(--surface-1); color: var(--ink); font: var(--fw-medium) 16px/1 var(--font-sans); font-variant-numeric: tabular-nums; }
+.uk-in input:focus-visible { outline: var(--focus-w) solid var(--accent); outline-offset: 1px; }
 .uk-in i { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-style: normal; font-size: var(--fs-xs); color: var(--ink-3); pointer-events: none; }
 .uk-form .btn { height: 36px; flex: none; }
-.uk-yn { display: flex; gap: 8px; margin-top: 9px; flex-wrap: wrap; }
+.uk-yn { display: flex; gap: var(--s-2); margin-top: 9px; flex-wrap: wrap; }
 .uk-yn .btn { min-height: 36px; }
 .uk-live { margin: 7px 0 0; min-height: 0; font-size: var(--fs-xs); line-height: 1.45; color: var(--ink-2); font-variant-numeric: tabular-nums; }
 .uk-live:empty { display: none; }
-.uk-live b { color: var(--ink); font-weight: 650; }
-.uk-acts { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 8px; }
+.uk-live b { color: var(--ink); font-weight: var(--fw-semibold); }
+.uk-acts { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: var(--s-2); }
 .uk-baked { font-size: var(--fs-2xs); color: var(--ink-3); }
 .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 @media (max-width: 760px) {

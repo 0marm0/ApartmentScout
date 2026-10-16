@@ -4,7 +4,7 @@
 
 .app-menu { width: 316px; padding: 0; overflow: hidden; }
 .app-menu:not([hidden]) { display: flex; flex-direction: column; }
-.am-body { min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; padding: 4px 6px 6px; }
+.am-body { min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; padding: var(--s-1) 6px 6px; }
 /* opened from the search switcher on the left: the menu sits under that pill */
 .app-menu[data-from="pill"] { position: fixed; right: auto; left: var(--am-left); top: var(--am-top); transform-origin: 0 0; max-height: calc(100vh - var(--am-top) - 12px); max-height: calc(100dvh - var(--am-top) - 12px); }
 .am-grab, .am-scrim { display: none; }
@@ -17,13 +17,13 @@ body.am-open .topbar { z-index: 66; }   /* the menu lives in the top bar's stack
 
 /* sections */
 .am-sec + .am-sec { margin-top: 3px; padding-top: 1px; border-top: 1px solid var(--line); }
-.am-h { padding: 8px 8px 4px; font-size: var(--fs-2xs); font-weight: 600; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--ink-3); }
-.am-head { padding: 0 8px 6px; min-width: 0; }
-.am-head b { display: block; font-size: var(--fs-md); font-weight: 600; letter-spacing: var(--tracking-tight); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.am-h { padding: var(--s-2) var(--s-2) var(--s-1); font-size: var(--fs-2xs); font-weight: var(--fw-semibold); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--ink-3); }
+.am-head { padding: 0 var(--s-2) 6px; min-width: 0; }
+.am-head b { display: block; font-size: var(--fs-md); font-weight: var(--fw-semibold); letter-spacing: var(--tracking-tight); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .am-head small { display: block; margin-top: 1px; font-size: var(--fs-xs); color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* plain rows (these sit one level down from the menu, so the shared .menu-pop > button rules do not reach them) */
-.app-menu button[role="menuitem"] { display: flex; align-items: center; gap: 10px; width: 100%; height: 32px; padding: 0 8px; border: 0; border-radius: var(--r-md);
+.app-menu button[role="menuitem"] { display: flex; align-items: center; gap: 10px; width: 100%; height: 32px; padding: 0 var(--s-2); border: 0; border-radius: var(--r-md);
   background: none; color: var(--ink); font-size: var(--fs-sm); text-align: left; cursor: pointer; transition: background var(--t-fast), transform var(--t-fast) var(--ease-out); }
 .app-menu button[role="menuitem"] > svg:first-child { width: 15px; height: 15px; flex: none; color: var(--ink-3); transition: color var(--t-fast); }
 .app-menu button[role="menuitem"] > span { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -37,18 +37,18 @@ body.am-open .topbar { z-index: 66; }   /* the menu lives in the top bar's stack
 #mnSwitch[aria-expanded="true"] .am-chev { transform: rotate(180deg); }
 
 /* the other searches (Switch search…) */
-.am-switch { margin: 0 0 3px 18px; padding-left: 4px; border-left: 1px solid var(--line); }
+.am-switch { margin: 0 0 3px 18px; padding-left: var(--s-1); border-left: 1px solid var(--line); }
 .am-switch[hidden] { display: none; }
-.app-menu .am-it { height: auto; min-height: 38px; padding: 4px 8px; }
+.app-menu .am-it { height: auto; min-height: 38px; padding: var(--s-1) var(--s-2); }
 .am-it .t { display: grid; gap: 0; min-width: 0; line-height: 1.3; }
 .am-it .t small { color: var(--ink-3); font-size: var(--fs-xs); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* labelled choices: Theme, Accent, Density, Office pin, Text size */
-.am-row { display: grid; grid-template-columns: 74px minmax(0, 1fr); align-items: center; gap: 8px; padding: 2px 2px 2px 8px; }
+.am-row { display: grid; grid-template-columns: 74px minmax(0, 1fr); align-items: center; gap: var(--s-2); padding: 2px 2px 2px var(--s-2); }
 .am-lbl { font-size: var(--fs-xs); color: var(--ink-2); white-space: nowrap; }
 .am-row .mn-seg { margin: 0; }
 .am-row .mn-swatches { padding: 0; gap: 3px; }
-.am-row .mn-swatches button { padding: 4px 0; min-height: 30px; }
+.am-row .mn-swatches button { padding: var(--s-1) 0; min-height: 30px; }
 .am-row .mn-swatches i { width: 20px; height: 20px; }
 .app-menu .mn-row { border-radius: var(--r-md); }
 .app-menu kbd { background: transparent; }
@@ -56,15 +56,15 @@ body.am-open .topbar { z-index: 66; }   /* the menu lives in the top bar's stack
 
 /* ------------------------------------------------------------------ phone: a bottom sheet */
 @media (max-width: 760px) {
-  .am-scrim:not([hidden]) { display: block; position: fixed; inset: 0; z-index: 59; background: rgba(0, 0, 0, .46); animation: amFade var(--t-base) var(--ease-out); }
+  .am-scrim:not([hidden]) { display: block; position: fixed; inset: 0; z-index: 59; background: var(--scrim); animation: amFade var(--t-base) var(--ease-out); }
   .app-menu, .app-menu[data-from="pill"] { position: fixed; z-index: 60; left: 0; right: 0; top: auto; bottom: 0; width: auto; border-radius: var(--r-xl) var(--r-xl) 0 0; border-bottom: 0;
-    max-height: min(84vh, 760px); max-height: min(84dvh, 760px); padding-bottom: var(--safe-b); transform-origin: 50% 100%; animation: amUp var(--t-page) var(--ease-out); }
-  .am-grab { display: block; flex: none; width: 36px; height: 4px; margin: 8px auto 2px; border-radius: 2px; background: var(--line-strong); }
+    max-height: min(84vh, 760px); max-height: min(84dvh, 760px); padding-bottom: var(--safe-b); transform-origin: 50% 100%; animation: amUp var(--t-slow) var(--ease-out); }
+  .am-grab { display: block; flex: none; width: 36px; height: 4px; margin: var(--s-2) auto 2px; border-radius: 2px; background: var(--line-strong); }
   .am-body { padding: 2px 10px 14px; }
   .app-menu button[role="menuitem"] { height: 44px; }
   .app-menu .am-it { min-height: 48px; }
   .app-menu .mn-row { min-height: 48px; }
-  .am-row { grid-template-columns: 84px minmax(0, 1fr); padding-block: 4px; }
+  .am-row { grid-template-columns: 84px minmax(0, 1fr); padding-block: var(--s-1); }
   .am-row .mn-seg button { height: 36px; }
   .am-row .mn-swatches button { min-height: 40px; }
   .app-menu kbd { display: none; }   /* no keyboard on a phone: the shortcut hints would only take room */

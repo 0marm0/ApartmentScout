@@ -1,9 +1,9 @@
 /* ApartmentScout empty states: the illustrations from js/features/empty.js. Hairline strokes, flat surface fills, one
    accent detail, gold for stars and --sun for light, so a scene reads in both themes without a single raw colour. */
-.empty.has-ill { gap: 8px; padding: var(--s-8) var(--s-6) var(--s-6); }
-.empty.has-ill .empty-act { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 6px; }
+.empty.has-ill { gap: var(--s-2); padding: var(--s-8) var(--s-6) var(--s-6); }
+.empty.has-ill .empty-act { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--s-2); margin-top: 6px; }
 .empty.has-ill .empty-act .btn { margin-top: 0; }
-.ill { width: 184px; max-width: 100%; height: auto; color: var(--ink-4); overflow: visible; margin-bottom: 4px; }
+.ill { width: 184px; max-width: 100%; height: auto; color: var(--ink-4); overflow: visible; margin-bottom: var(--s-1); }
 .ill * { vector-effect: non-scaling-stroke; }
 .ill .g { fill: color-mix(in srgb, var(--ink) 8%, transparent); }
 .ill .card { fill: var(--surface-2); stroke: var(--line-strong); stroke-width: 1.4; }

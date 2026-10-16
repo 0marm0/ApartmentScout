@@ -770,7 +770,7 @@ function caseGood(it, K, o) {
 }
 const nightstand = (it, K) => caseGood(it, K, { rows: 2, legH: clamp(it.h * 0.2, 3.5, 6) });
 // a flat-front chest of drawers (IKEA Storklinta-style: plain drawer fronts, short legs, a simple bar handle on each)
-const dresser = (it, K) => (it.base?.style === 'malm' ? malm(it, K) : caseGood(it, K, { rows: clamp(Math.round((it.h - 4) / 9), 3, 6), cols: it.w > 44 ? 2 : 1, legH: clamp(it.h * 0.1, 3, 4.5) }));
+const dresser = (it, K) => (it.base?.style === 'storklinta' ? storklinta(it, K) : it.base?.style === 'malm' ? malm(it, K) : caseGood(it, K, { rows: clamp(Math.round((it.h - 4) / 9), 3, 6), cols: it.w > 44 ? 2 : 1, legH: clamp(it.h * 0.1, 3, 4.5) }));
 /** A drawer front, W wide, H high, T thick, with its top edge cut back into a thumb recess (MALM's pull); centred in x, back at z = 0. */
 function malmFrontGeo(W, H, T) {
   const n = 1.15, nd = 0.45, e = 0.05, sh = new THREE.Shape();   // the recess: a 45-degree ramp up to a ledge set back by nd
@@ -801,6 +801,40 @@ function malm(it, K) {
     K.add(fg, front, x, y, hd - fT);
     K.add(slot, dark, x, y + Hf - rec + 0.08, hd - 0.45 - 0.01, { cast: false });   // the dark of the finger recess, at the back of the cut
   }
+}
+/** A STORKLINTA drawer front, W wide, H high, T thick, its top edge cut back into a shallow chamfered recess (the grip, which reads as a shadow gap); centred in x, back at z = 0. */
+function storkFrontGeo(W, H, T) {
+  const n = 0.75, nd = 0.45, e = 0.04, sh = new THREE.Shape();
+  sh.moveTo(0, 0); sh.lineTo(T - e, 0); sh.lineTo(T, e); sh.lineTo(T, H - n - nd); sh.lineTo(T - nd, H - n); sh.lineTo(T - nd, H); sh.lineTo(0, H); sh.closePath();
+  const g = new THREE.ExtrudeGeometry(sh, { depth: W, bevelEnabled: false }); g.rotateY(-Math.PI / 2); g.translate(W / 2, 0, 0); boxUV(g);
+  return g;
+}
+/**
+ * IKEA STORKLINTA 6-drawer dresser (70 x 48 x 120 cm, dark brown oak effect): a thin top, two full-depth side panels, and a face of five
+ * slab rows that run the full width: two small drawers side by side on top, then four full-width drawers, with no handles (the top edge of
+ * each front is cut back a little, the grip, which shows as a shadow gap). A recessed plinth on four small feet. Inside w x d x h to the hair.
+ */
+function storklinta(it, K) {
+  const { w, d, h } = it, hw = w / 2, hd = d / 2;
+  const spec = K.spec({ color: it.base?.color ?? 0x3a2b22, material: 'laminate', finish: 'matte' });
+  const body = K.skin(shade(spec, 0.92)), front = K.skin(spec), top = K.skin(shade(spec, 0.62)), foot =K.skin(shade(spec, 0.7)), dark = K.paint(0x0a0807, 0.95);
+  const footH = 0.6, plinthH = 1.9, topT = 0.85, side = 0.65, fT = 0.75, lip = 0.3, gap = 0.28, fz = hd - lip;   // fz: the plane of the drawer faces
+  const ft = K.geo('stfoot', () => boxGeo(1.5, footH + 0.1, 1.5));
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) K.add(ft, foot, sx * (hw - 1.6), 0, sz * (hd - 2.2), { cast: false });
+  K.add(K.board(w - 2.4, plinthH - footH + 0.1, d - 3.4, 0.1, true), dark, 0, footH, -0.5);   // the recessed plinth, in shadow
+  const ch = h - plinthH - topT + 0.1;
+  K.add(K.soft(w - 2 * side, ch, d - lip - fT - 0.2, { r: 0.1, s: 1 }), body, 0, plinthH, -(lip + fT + 0.2) / 2);   // the carcase behind the drawers
+  for (const sx of [-1, 1]) K.add(K.soft(side, ch, d - lip, { r: 0.12, s: 1 }), body, sx * (hw - side / 2), plinthH, -lip / 2);   // full-depth side panels
+  K.add(K.soft(w, topT, d, { r: 0.22 }), top, 0, h - topT, 0);   // a thin top, a lip over the drawers
+  const fw = w - 0.36, y0 = plinthH + 0.15, y1 = h - topT - 0.12, wts = [69, 74, 74, 75, 71], sum = wts.reduce((a, b) => a + b, 0), H = y1 - y0;
+  const rv = new THREE.Mesh(K.geo(`strev|${w}|${h}`, () => new THREE.PlaneGeometry(fw + 0.2, H + 0.2)), dark); rv.position.set(0, (y0 + y1) / 2, fz - fT + 0.02); K.s.add(rv);
+  let y = y0;
+  wts.forEach((wt, j) => {
+    const rh = (H * wt) / sum, Hf = rh - gap, n = j === wts.length - 1 ? 2 : 1, cw = (fw - (n - 1) * gap) / n;
+    const fg = K.geo(`stfront|${cw.toFixed(3)}|${Hf.toFixed(3)}`, () => storkFrontGeo(cw, Hf, fT));
+    for (let i = 0; i < n; i++) K.add(fg, front, -fw / 2 + cw * (i + 0.5) + i * gap, y + gap / 2, fz - fT);
+    y += rh;
+  });
 }
 const wardrobe = (it, K) => caseGood(it, K, { rows: 1, cols: it.w > 26 ? 2 : 1, doors: true, legH: 3, plinth: true, topT: 1.4 });
 

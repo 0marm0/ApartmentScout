@@ -1,7 +1,7 @@
 // node --test tests/js : the default layout of Paramount Tower 25E is what the renter described, and these tests pin it:
 //   the futon's back against a solid wall, facing the living-room TV on the opposite wall;
 //   the bed's headboard on a side wall with the windows on the right of a person lying in it, the bedroom TV on the opposite wall facing the bed;
-//   nightstands either side, the MALM chest on a free wall (under the TV);
+//   nightstands either side, the tall STORKLINTA dresser on a free wall beside the TV (a 47 in chest under a TV hung at 32 in would block it);
 //   the Bestier rotating desk (straight, about 89 in) with the chair behind its desktop and room to pull it out, beside a window and not blocking it.
 // The plan file and the furniture file are data; no placement is decided in code.
 import { test } from 'node:test';
@@ -10,7 +10,7 @@ import fs from 'node:fs';
 import { normalisePlan } from '../../dashboard/js/plan/model.js';
 import { validateInventory } from '../../dashboard/js/plan/inventory.js';
 import { resolve } from '../../dashboard/js/plan/catalog.js';
-import { evaluate, axes, footprint, toWorld, piecePoly, satDepth } from '../../dashboard/js/plan/checks.js';
+import { evaluate, axes, footprint, toWorld, piecePoly, satDepth, partPolys, overlaps, swingPoly, doorwayPoly } from '../../dashboard/js/plan/checks.js';
 import { accessRoutes } from '../../dashboard/js/plan/route.js';
 import { applyInventory, resolveLayout } from '../../dashboard/js/plan/placement.js';
 import { windowGroups } from '../../dashboard/js/plan/viewpoints.js';
@@ -74,17 +74,30 @@ test('the bed\'s headboard is on a side wall, the windows are on the right of a 
   for (const w of m.windows) { const seg = [[w.a[0], w.a[1]], [w.b[0], w.b[1]]]; assert.ok(![0, 0.25, 0.5, 0.75, 1].some((t) => pointInPoly([seg[0][0] + (seg[1][0] - seg[0][0]) * t, seg[0][1] + (seg[1][1] - seg[0][1]) * t], fp)), 'no window behind the bed'); }
 });
 
-test('a nightstand either side of the bed against the same wall, the MALM chest under the bedroom TV, and the bed and the chest clear', () => {
+test('a nightstand either side of the bed against the same wall, and the bed clear', () => {
   const bed = by.bed, right = personRight(bed), n1 = by['nightstand-1'], n2 = by['nightstand-2'];
   const side = (n) => dot(sub([n.x, n.y], [bed.x, bed.y]), right);
   assert.ok(side(n1) * side(n2) < 0, 'one on each side of the bed');
   for (const n of [n1, n2]) { assert.ok(Math.abs(side(n)) < bed.w / 2 + n.w / 2 + 3 && Math.abs(side(n)) > bed.w / 2, 'beside the mattress'); assert.ok(gapToWall(n) <= 2, 'on the headboard wall'); assert.equal(ev.items[n.id].state, 'clear'); }
-  const d = by.dresser;
-  assert.deepEqual([d.w, d.d, d.h], [63, 18.9, 30.7], 'the IKEA MALM 6-drawer chest');
-  assert.equal(d.ref, 'dresser-malm-6');
-  assert.ok(gapToWall(d) <= 1.5, 'on a free wall'); assert.ok(dot(back(d), back(by['tv-bed'])) > 0.99, 'on the TV wall');
-  assert.ok(Math.abs(d.y - by['tv-bed'].y) < 6 && d.h < by['tv-bed'].elev, 'the TV hangs above the chest');
-  assert.equal(ev.items.dresser.state, 'clear'); assert.equal(ev.items.bed.state, 'clear');
+  assert.equal(ev.items.bed.state, 'clear');
+});
+
+test('the dresser is the IKEA STORKLINTA 6-drawer, 70 x 48 x 120 cm, and stands on a free wall beside the TV, not under it or in front of a door, the closet, the window or the walk', () => {
+  const d = by.dresser, tv = by['tv-bed'], bedroom = m.rooms.find((r) => r.kind === 'bedroom'), sp = inv.pieces.find((p) => p.id === 'dresser');
+  assert.equal(d.ref, 'dresser-storklinta-6');
+  assert.ok(Math.abs(d.w * 2.54 - 70) < 0.3 && Math.abs(d.d * 2.54 - 48) < 0.3 && Math.abs(d.h * 2.54 - 120) < 0.3, `IKEA product page: 70 x 48 x 120 cm (${[d.w, d.d, d.h]} in)`);
+  assert.deepEqual([sp.w, sp.d, sp.h], [27.6, 18.9, 47.2], 'the furniture file holds the maker\'s sizes');
+  assert.equal(sp.look.basis, 'renter'); assert.match(sp.source, /^manufacturer: IKEA US article 705\.592\.78/);
+  assert.ok(pointInPoly([d.x, d.y], bedroom.poly) && gapToWall(d) <= 1.5, 'against a bedroom wall');
+  // it is taller than the TV's lower edge (32 in), so it must not stand under the TV: the two footprints do not overlap, and it keeps off the TV's span along the wall
+  assert.ok(d.h > tv.elev, 'the dresser is taller than the TV hangs');
+  assert.ok(satDepth(footprint(d), footprint(tv)) <= 0.5, 'not under the TV');
+  assert.ok(Math.abs(d.y - tv.y) > tv.w / 2 + d.w / 2, `clear of the TV along the wall (${Math.abs(d.y - tv.y)} in apart)`);
+  // not in a door's swing or doorway, nor in front of the closet
+  for (const door of m.doors) for (const poly of [swingPoly(door), doorwayPoly(door, 30)]) assert.ok(!overlaps(footprint(d), poly, 0.5), `not in the ${door.name}`);
+  for (const w of m.windows) assert.ok(satDepth(footprint(d), [[w.a[0] - 3, w.a[1] - 3], [w.b[0] - 3, w.b[1] - 3], [w.b[0] + 3, w.b[1] + 3], [w.a[0] + 3, w.a[1] + 3]]) <= 0.5, 'not in front of a window');
+  assert.equal(ev.items.dresser.state, 'clear', JSON.stringify(ev.items.dresser.issues));
+  assert.equal(ev.items.dresser.zones.find((z) => z.key === 'drawers' || /drawer/i.test(z.name || '')).grade, 'clear', 'room to open the drawers');
 });
 
 test('the rotating desk is about 89 in straight with the chair behind its desktop and room to pull it out, beside a window and not blocking it', () => {

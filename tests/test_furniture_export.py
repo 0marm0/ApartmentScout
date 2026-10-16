@@ -48,8 +48,9 @@ def test_the_renters_answers_are_in_the_furniture_file_and_the_25e_default_layou
     assert (desk["w"], desk["d"], desk["h"]) == (71, 30, 30) and desk["assumed"] == ["d"] and desk["set"] == {"monitor": 32, "chair": "task"}
     assert desk["look"]["color"] == "brown" and desk["look"]["material"] == "wood" and desk["look"]["basis"] == "renter"
     assert desk["look"]["parts"]["chair"]["color"] == "black" and "chair" in desk["look"]["assumed"]
-    chest = f["dresser"]   # IKEA MALM 6-drawer, the wide one
-    assert chest["ref"] == "dresser-malm-6" and (chest["w"], chest["d"], chest["h"]) == (63, 18.9, 30.7) and chest["look"]["basis"] == "renter"
+    chest = f["dresser"]   # IKEA STORKLINTA 6-drawer, the tall one (the renter corrected it from a MALM)
+    assert chest["ref"] == "dresser-storklinta-6" and (chest["w"], chest["d"], chest["h"]) == (27.6, 18.9, 47.2) and chest["look"]["basis"] == "renter"
+    assert "705.592.78" in chest["source"] and chest["source"].startswith("manufacturer")
     for tv in ("tv", "tv-bed"):
         assert (f[tv]["w"], f[tv]["h"]) == (48.4, 27.8)   # 55-inch class
     plan = json.loads((EXAMPLE / "plans" / "paramount-tower-25e.json").read_text())

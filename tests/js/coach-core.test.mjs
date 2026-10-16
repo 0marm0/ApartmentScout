@@ -1,12 +1,13 @@
 // node --test tests/js : first-run coach marks, the rules without the DOM (dashboard/js/features/coach-core.js)
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { STEPS, shouldAutoStart, nextStep, placeCard } from '../../dashboard/js/features/coach-core.js';
+import { STEPS, JOURNEYS, shouldAutoStart, nextStep, placeCard } from '../../dashboard/js/features/coach-core.js';
 
-test('five steps: filters, weights, star, compare, unit', () => {
-  assert.deepEqual(STEPS.map((s) => s.id), ['filters', 'weights', 'star', 'compare', 'unit']);
-  for (const s of STEPS) { assert.ok(s.title.length < 40, s.title); assert.ok(s.body.length > 40 && s.body.length < 180, s.id); assert.equal(typeof s.target, 'string'); }
-  assert.match(STEPS[2].body, /\{undo\}/);
+test('four steps through the five journeys: find, compare, see inside, decide and set up', () => {
+  assert.deepEqual(STEPS.map((s) => s.id), ['find', 'compare', 'inside', 'decide']);
+  for (const s of STEPS) { assert.ok(s.title.length < 40, s.title); assert.ok(s.body.length > 40 && s.body.length < 200, s.id); assert.equal(typeof s.target, 'string'); }
+  assert.match(STEPS[1].body, /\{undo\}/);
+  assert.deepEqual([...new Set(STEPS.flatMap((s) => s.journeys))].sort(), JOURNEYS.map((_, i) => i), 'every journey is named by a step');
 });
 
 test('the tour starts by itself once, on the Map, in a normal browser with homes loaded', () => {
@@ -58,4 +59,6 @@ test('placeCard: always inside the viewport, even at the edges', () => {
 test('placeCard: on a phone the card docks at the bottom', () => {
   const p = placeCard({ x: 20, y: 100, w: 60, h: 40 }, { w: 300, h: 180 }, { w: 390, h: 844 });
   assert.equal(p.dock, 'bottom'); assert.equal(p.top, 844 - 180 - 12);
+  const low = placeCard({ x: 150, y: 780, w: 60, h: 50 }, { w: 300, h: 180 }, { w: 390, h: 844 });
+  assert.equal(low.dock, 'top', 'a target in the lower half (the tab bar) keeps the card off itself'); assert.equal(low.top, 12);
 });
