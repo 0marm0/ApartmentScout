@@ -262,3 +262,21 @@ def test_on_a_phone_the_control_fits_the_pane_with_short_labels(open_page, webgl
     assert pg.evaluate("() => document.documentElement.scrollWidth <= window.innerWidth + 1")
     assert pg.evaluate("() => [...document.querySelectorAll('#p2dWrap [data-bed-choice]')].every((b) => b.getAttribute('aria-label').length > 4)"), "the full name stays the accessible one"
     assert not s.take()
+
+
+def test_the_choice_works_from_the_keyboard_like_a_radio_group(open_page, webgl: bool) -> None:
+    _need_webgl(webgl)
+    s = open_page("#map")
+    pg = s.page
+    _studio(s)
+    group = pg.locator("#p2dWrap [role=radiogroup]")
+    assert group.get_attribute("aria-label") == "Bed"
+    pg.locator("#p2dWrap [data-bed-choice='mine']").focus()
+    pg.keyboard.press("ArrowRight")
+    pg.wait_for_function("() => window.__plan3d.parts.furn.children.some((g) => g.userData.itemId === 'bed-latitude' && g.visible)")
+    assert pg.evaluate(CHECKED, "#p2dWrap") == ["storage"]
+    assert pg.evaluate("() => document.activeElement.dataset.bedChoice") == "storage", "the keyboard stays on the choice it moved to"
+    pg.keyboard.press("ArrowRight")
+    pg.wait_for_function("() => !window.__plan3d.parts.furn.children.some((g) => g.userData.itemId === 'bed-latitude' && g.visible)")
+    assert pg.evaluate(STUDIO_3D_IDS) == NONE
+    assert not s.take()

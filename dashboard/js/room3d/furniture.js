@@ -511,7 +511,7 @@ export function setLeds(root, level = 0) {
 function towerBed(it, K) {
   const g = dimsOf(it.spec), { w, d } = it, hd = d / 2, f = K.fast, hw = g.W / 2, fw = g.frame.w / 2, H = g.H, tw = g.head.towerW, t = 0.9;
   const spec = K.spec({ color: 0x876f5c, material: 'wood', finish: 'satin' }), oak = K.skin(spec), oakInner = K.skin(shade(spec, 0.74)), oakFront = K.skin(shade(spec, 1.05)), carcass = K.skin(shade(spec, 0.5));
-  const slatM = K.wood(0xc8ad88, 0.7), metal = K.skin(K.part('metal', { color: 0x1b1b1d, material: 'metal', finish: 'satin' })), dark = K.paint(0x0b0908, 0.95);
+  const slatM = K.wood(0xc8ad88, 0.7), metal = K.skin(K.part('metal', { color: 0x1b1b1d, material: 'metal', finish: 'satin' })), dark = K.paint(0x0b0908, 0.95), groove = K.paint(0x2a1f16, 0.9);
   const pspec = K.part('panels', { color: 0xece3d0, material: 'fabric', finish: 'sheen' });
   const velvet = K.mat('velvet', () => {   // short pile with a soft sheen: Visual lets the light slide across the nap, Fast keeps the colour and a low gloss
     if (f) return K.ctx.std(pspec.color, { roughness: 0.78 });
@@ -533,11 +533,11 @@ function towerBed(it, K) {
     box(x0, x1, 0, nB, 0, td, carcass);                                        // the tower continues to the floor under the nightstand
     box(x0, x1, nB, nT, 0, sd - 0.5, oak);                                     // the nightstand body, floating: 17 in out from the wall
     box(x0 + 0.5, x1 - 0.5, nB + 0.55, nT - 0.55, sd - 0.5, sd, oakFront, { plain: f, r: 0.12 });   // the drawer front
-    box(cx - 3.6, cx + 3.6, nT - 1.6, nT - 1.1, sd - 0.02, sd + 0.04, dark, { cast: false });         // its finger groove
+    box(cx - 3.2, cx + 3.2, nT - 1.45, nT - 1.05, sd - 0.02, sd + 0.04, groove, { cast: false });       // its finger groove
     box(x0, x1, nT, lidB, 0, t, oakInner);                                     // the cubby: back, two sides, and the lid above
     for (const wx of [x0, x1 - t]) box(wx, wx + t, nT, lidB, 0, td, wx === x0 ? (sx < 0 ? oak : oakInner) : (sx < 0 ? oakInner : oak));
     box(x0, x1, lidB, H, 0, td, oak, { plain: f, r: 0.3 });
-    if (!f) for (const px of [cx - 2.2, cx + 2.2]) box(px - 0.8, px + 0.8, nT, nT + 0.12, 8.2, 9.2, dark, { cast: false });   // the charging ports on the cubby floor
+    if (!f) { box(cx - 2.4, cx + 2.4, nT, nT + 0.12, 11.2, 12.6, dark, { cast: false }); for (const px of [cx - 1.1, cx + 1.1]) box(px - 0.45, px + 0.45, nT + 0.12, nT + 0.16, 11.6, 12.2, metal, { cast: false }); }   // the charging panel on the cubby floor: one black plate with two ports
     // the reading light: an arm and a head under the lid, its face warm
     box(cx - 0.35, cx + 0.35, lidB - 2.4, lidB, td - 2.2, td - 1.5, metal, { cast: false });
     box(cx - 1.9, cx + 1.9, lidB - 2.9, lidB - 2.4, td - 3.4, td - 0.9, metal, { cast: false });
@@ -566,7 +566,7 @@ function towerBed(it, K) {
     for (let k = 0; k < g.drawers.perSide; k++) {
       const s1 = g.D - k * dl, s0 = s1 - dl + 0.3;
       box(fx0, fx1, y0, y0 + fh, s0, s1, oakFront, { plain: f, r: 0.12 });
-      box(sx < 0 ? fx0 - 0.02 : fx1 - 0.04, sx < 0 ? fx0 + 0.04 : fx1 + 0.02, y0 + fh - 1.3, y0 + fh - 0.7, (s0 + s1) / 2 - 3.6, (s0 + s1) / 2 + 3.6, dark, { cast: false });   // the recessed pull
+      box(sx < 0 ? fx0 - 0.02 : fx1 - 0.04, sx < 0 ? fx0 + 0.04 : fx1 + 0.02, y0 + fh - 1.2, y0 + fh - 0.75, (s0 + s1) / 2 - 3.2, (s0 + s1) / 2 + 3.2, groove, { cast: false });   // the recessed pull
     }
     box(sx < 0 ? -fw : fw - 0.3, sx < 0 ? -fw + 0.3 : fw, cl + 0.6, rim - 0.6, dep, g.drawerStart - 0.1, oakFront, { plain: f, r: 0.12 });   // the fixed side panel under the nightstand
   }
