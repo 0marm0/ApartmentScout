@@ -1105,6 +1105,24 @@
    "width": 1600,
    "height": 1000,
    "note": "ApartmentScout dashboard on the public example data (shot 2026-10-15 from a clean snapshot with scripts/screenshots.py)"
+  },
+  {
+   "file": "docs/images/social-preview.png",
+   "publication_status": "public",
+   "sha256": "2da9850ef708d39487f92776465900ec5705e62f4deb42ba99477e7cd3b5395d",
+   "bytes": 1135584,
+   "width": 1280,
+   "height": 640,
+   "note": "GitHub social preview card (scripts/social_preview.py) from the public example shot inside-skyline-dusk; made 2026-10-15"
+  },
+  {
+   "file": "docs/images/walkthrough.webp",
+   "publication_status": "public",
+   "sha256": "80148f2a1fc4699af045fd348c027eb12cddc23de6287f74a264b6af86acfdb9",
+   "bytes": 2930860,
+   "width": 820,
+   "height": 512,
+   "note": "README walk-through recorded from the public example by scripts/record_walkthrough.py on a clean snapshot, 2026-10-15"
   }
  ],
  "policy": {

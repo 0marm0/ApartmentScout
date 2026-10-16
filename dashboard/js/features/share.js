@@ -45,7 +45,7 @@ async function thumb(url, px, quality) {
 const abs = (u) => { try { return new URL(u, document.baseURI).href; } catch { return null; } };
 /** Up to max_per_home photos per home: an embedded thumbnail of the saved copy while the byte budget lasts (every home's
  *  first photo before anyone's second), else a link to the original. Returns { photos, bytes, embedded, linked }. */
-async function resolvePhotos(homes, schema, mode, progress) {
+export async function resolvePhotos(homes, schema, mode, progress) {
   const cfg = schema.photos, out = {}, budget = cfg.budget_kb * 1024, tally = { bytes: 0, embedded: 0, linked: 0 };
   if (mode === 'none') return { photos: out, ...tally };
   const cands = homes.map((L) => photoCandidates(L).map((c) => ({ ...c })));
