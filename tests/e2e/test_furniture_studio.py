@@ -183,7 +183,7 @@ def test_selecting_a_piece_shows_one_toolbar_in_the_plan_and_one_in_3d(open_page
     for host in ("#p2dWrap", "#pstage"):
         bar = pg.locator(f"{host} .selbar")
         assert [b.get_attribute("data-act") for b in bar.locator(".sb-b").all()] == ["rot", "free", "move", "del", "done"]
-        assert "Desk, chair and monitor" in bar.locator(".sb-name").text_content()
+        assert "rotating desk" in bar.locator(".sb-name").text_content()
         box, pane = bar.bounding_box(), pg.locator(host).bounding_box()
         assert pane["x"] <= box["x"] and box["x"] + box["width"] <= pane["x"] + pane["width"] + 1, f"{host}: the toolbar stays inside its pane"
         assert all(b.bounding_box()["height"] >= 40 for b in bar.locator(".sb-b").all()), "tap targets are at least 40 px"
