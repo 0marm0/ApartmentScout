@@ -267,7 +267,7 @@ def test_the_esri_basemap_keeps_only_what_is_viewed_and_says_so(open_tour) -> No
     url = "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/14/6156/4825"
     page.evaluate("async (u) => { const r = await fetch(u); await r.arrayBuffer(); }", url)
     page.wait_for_function("async (u) => !!(await (await caches.open('as-tiles-viewed')).match(u))", arg=url, timeout=10000)
-    assert tiles.tiles == [] and page.evaluate("async () => (await caches.keys()).includes('as-tiles')") is False
+    assert tiles.tiles == [] and not any(re.search(r"/planet/\d+/", k) for k in cache_keys(page)), "no vector tile was downloaded or saved"
     n = len(tiles.esri)
     tiles.down = True
     ctx.set_offline(True)
