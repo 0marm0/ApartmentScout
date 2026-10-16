@@ -68,6 +68,19 @@ commute:
     max_walk_to_station_m: 1200
     arrival_offsets_min: [0, 3, 6, 9, 12]   # arrive this much before arrive_by; times are averaged
     mode_grids: true             # also write one heat grid per mode (commute-<dest>-subway.json, -bus.json)
+  # Commute by time of day. `apartmentscout commute` also routes midday, the evening way home, late evening and a
+  # Saturday morning, so the dashboard can show "18 min at 9:00, 24 min leaving at 18:00, 37 min leaving at 22:00".
+  # On by default; nothing below changes the score unless you set `score`.
+  # times:
+  #   enabled: true              # false = the arrive_by trip only
+  #   score: am                  # which trip the commute SCORE reads: am (arrive_by, the default), a slot id, or weighted
+  #   weights: {am: 3, pm: 3, mid: 1, late: 1, wknd: 1}    # for score: weighted
+  #   slots:                     # replaces the default list; kind arrive = from home, arriving by `time`; depart = from the destination, back home
+  #     - {id: am,   label: Morning peak,       kind: arrive, time: null}     # null = the destination's arrive_by
+  #     - {id: mid,  label: Midday,             kind: arrive, time: "13:00"}
+  #     - {id: pm,   label: Evening peak, home, kind: depart, time: "18:00"}
+  #     - {id: late, label: Late evening, home, kind: depart, time: "22:00"}
+  #     - {id: wknd, label: Weekend,            kind: arrive, time: "11:00", day: saturday}
 
 # Scoring recipe. Presets (named, versioned weight sets): balanced, biggest-and-nicest,
 # cheapest-good-enough, shortest-commute, or your own under `presets:`. `weights:` below then adjusts

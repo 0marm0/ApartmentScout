@@ -298,6 +298,25 @@ are sampled onto the first grid's cells by nearest centre. The dashboard's per-h
 100 at half the limit, 50 at the limit, 0 at twice the limit, per destination, weight-averaged over the destinations that
 have minutes for the home.
 
+**Times of day.** A commute at 9:00 is not a commute at 22:00. After the arrive_by trip the router answers four more
+questions with the same machinery (`commute.times`, five *slots* by default): to the destination arriving by 13:00 on a
+weekday; **home from the destination leaving at 18:00**; home leaving at 22:00; and to the destination arriving by 11:00 on a
+Saturday. Arrive-by slots run the reverse connection scan as before. Leave-at slots run a **forward** connection scan from
+the destination (the earliest arrival at every stop for each departure), then the same Dijkstra over the walking network
+seeded at every stop's *exits* instead of its entrances. The street-to-platform allowance is charged at the home end and,
+by `egress_access`, at the destination end, in both directions, so the two ways of one trip are priced alike (on a symmetric
+timetable they agree to within the waiting-time noise; a test checks it). Each slot loads the timetable window it needs
+(a different part of the day, or a Saturday's service) and averages over the same eleven departure or arrival times, so a
+home's numbers differ between slots only because the service does. A feed with no service on that kind of day skips the slot.
+
+Per-home minutes sit on the listing (`commute.<dest>.times`, in slot order). The map stores each slot's grid as whole-minute
+differences from the arrive_by grid (about 10 KB per grid after deflate against 30 KB for a full one; the arrive_by layers
+stay byte-for-byte what they were). Whole minutes are enough for a map whose bands are five minutes wide; the drawer's numbers
+are the router's own. The score keeps reading the arrive_by trip unless the renter sets `commute.times.score` to a slot or to
+`weighted` (the weight-average of minutes over the slots, default weights `am` 3, `pm` 3, `mid` 1, `late` 1, `wknd` 1:
+two peaks that carry a working week, three occasional trips): the score is then computed from those minutes with the same
+curve, and its summary says so.
+
 ## Place filters
 
 "East of 3rd Ave", "between 30th and 45th", "near Bryant Park" and "in Murray Hill" are answered in the browser from
@@ -739,6 +758,24 @@ building's own frontages singled out). Closure texts are sorted into classes (du
 no violation observed, gone on arrival, action taken...): a closed request is not a fixed problem.
 The full ledger of requests is written to `research/<id>-noise-ledger.csv`. Comparing with a
 building you know (your current home) is only fair with the same window, filter and denominator.
+
+**Noise by hour of the day.** `apartmentscout layers` keeps the time each 311 noise request was logged and writes
+`layers/noise-hours.json` (about 150 KB for Manhattan, from 336,000 requests of the last twelve months; the raw pages are
+cached, never committed). It is complaints, not decibels: it records when somebody phoned or tapped 311, which follows noise
+but also who lives nearby, whether they trust the service and whether the kind of noise is one people report. Compare
+hours of one place with each other; compare places only roughly. Counts are per 150 m cell, per hour of the day, for two
+kinds of night: **Sun-Thu** and **Fri-Sat**, where a request logged after midnight (before 5 am) counts toward the evening
+before, so 1 am Saturday is a Friday night. Rates are per *night* of each class (Fri-Sat has two nights a week, Sun-Thu five),
+which is why a Fri-Sat hour with the same total as a Sun-Thu hour is the louder one. Each request is also filed under a
+kind of source from its complaint category (bars, clubs and restaurants = Noise - Commercial; street, crowds and parks;
+neighbours = Noise - Residential; vehicles and helicopters; construction; alarms, dogs and building equipment) on 450 m cells
+and four-hour buckets. The drawer's headline is the loudest three consecutive hours by complaints per night in the 450 m
+around the home (3 x 3 cells), the sources named are those that make up at least 15 % of that window, and "no clear loud hour"
+is said when the loudest three hours are less than 1.35 times an average hour. At a single address (a dossier) the same is
+computed from the requests within 150 m over three years, from the building's own 7 x 24 table. Fewer than 25 complaints are
+too few to read a pattern, and the drawer says so. The map's hour slider shows one hour (and one kind of night) shaded as if
+every hour of the day were like it, on the all-day map's own scale: a darker patch than the all-day map is a louder than
+average hour.
 
 ## Data sources
 

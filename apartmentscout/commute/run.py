@@ -268,7 +268,8 @@ def city_profile(crit: dict) -> dict:
 
 def run_commute(ws, listings: list[dict], crit: dict, cell_m: float | None = None, pad_m: float = 1500,
                 log=print, layers_dir: Path | None = None, mode_grids: bool | None = None,
-                only: Iterable[str] | None = None, only_dests: Iterable[str] | None = None) -> list[dict]:
+                only: Iterable[str] | None = None, only_dests: Iterable[str] | None = None,
+                times: bool | None = None) -> list[dict]:
     """Route every destination; write commute-<dest>.json (best of transit) and, per mode,
     commute-<dest>-<mode>.json; set L["commute"][dest] on every geocoded listing.
 
@@ -280,8 +281,23 @@ def run_commute(ws, listings: list[dict], crit: dict, cell_m: float | None = Non
     others keep the grids and per-listing minutes already on disk, and the walking network, entrances and land model
     are still planned around every destination so nothing is fetched twice.
 
+    ``times``: also route the other times of day (times.run_times: midday, the evening way home, late evening, a weekend
+    morning) after the arrive_by trip. None follows ``commute.times`` in criteria.yaml (on unless it says false);
+    False skips them; True forces them on.
+
     The grids hold the router's own answer at every cell centre (grid.surface), so a map that
     interpolates between centres stays within a fraction of a minute of the router anywhere."""
+    layers = _run_arrive_by(ws, listings, crit, cell_m, pad_m, log, layers_dir, mode_grids, only, only_dests)
+    from . import slots as SL
+    if times is True or (times is None and SL.enabled(crit)):
+        from .times import run_times
+        run_times(ws, listings, crit, log, layers_dir=layers_dir, only=None if only is None else list(only),
+                  only_dests=None if only_dests is None else list(only_dests))
+    return layers
+
+
+def _run_arrive_by(ws, listings: list[dict], crit: dict, cell_m: float | None, pad_m: float, log, layers_dir: Path | None,
+                   mode_grids: bool | None, only: Iterable[str] | None, only_dests: Iterable[str] | None) -> list[dict]:
     cm = crit.get("commute") or {}
     dests = cm.get("destinations") or []
     run_dests = dests

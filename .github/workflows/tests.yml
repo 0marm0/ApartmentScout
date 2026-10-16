@@ -44,11 +44,11 @@ jobs:
           - name: 1-of-6
             files: tests/e2e/test_dashboard.py tests/e2e/test_lightbox.py tests/e2e/test_onboarding.py tests/e2e/test_pwa.py tests/e2e/test_results_rail.py tests/e2e/test_tourday.py
           - name: 2-of-6
-            files: tests/e2e/test_device_sync.py tests/e2e/test_landing_page.py tests/e2e/test_map_clusters.py tests/e2e/test_media_tiers.py tests/e2e/test_menu_nav.py tests/e2e/test_pair3d.py tests/e2e/test_placement_walk.py tests/e2e/test_render.py
+            files: tests/e2e/test_device_sync.py tests/e2e/test_landing_page.py tests/e2e/test_map_clusters.py tests/e2e/test_media_tiers.py tests/e2e/test_menu_nav.py tests/e2e/test_pair3d.py tests/e2e/test_placement_walk.py tests/e2e/test_render.py tests/e2e/test_time_of_day.py
           - name: 3-of-6
             files: tests/e2e/test_daycycle.py tests/e2e/test_decision.py tests/e2e/test_decision_report.py tests/e2e/test_furniture_studio.py tests/e2e/test_pdf_tracer.py tests/e2e/test_places_multidest.py tests/e2e/test_wizard.py
           - name: 4-of-6
-            files: tests/e2e/test_interior_view.py tests/e2e/test_office_questions.py tests/e2e/test_one_city.py tests/e2e/test_plan_upload.py tests/e2e/test_quality3d.py tests/e2e/test_shell_extras.py tests/e2e/test_whatsnew.py
+            files: tests/e2e/test_interior_view.py tests/e2e/test_office_questions.py tests/e2e/test_noise_clock.py tests/e2e/test_one_city.py tests/e2e/test_plan_upload.py tests/e2e/test_quality3d.py tests/e2e/test_shell_extras.py tests/e2e/test_whatsnew.py
           - name: 5-of-6
             files: tests/e2e/test_boot_recovery.py tests/e2e/test_buildings3d.py tests/e2e/test_lighting.py tests/e2e/test_model_project.py tests/e2e/test_moves_unknowns.py tests/e2e/test_tour_findings.py tests/e2e/test_view_match.py
           - name: 6-of-6

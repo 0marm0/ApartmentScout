@@ -530,6 +530,37 @@ With two or more `commute.destinations` (your work, a partner's work, a gym) the
 Add a destination in the criteria editor (or `criteria.yaml`), run `apartmentscout geocode` for its coordinates, then
 `apartmentscout commute --dest "Partner"` to route only the new one (the others keep their grids and times), and `build`.
 
+### Commute by time of day
+
+A commute is not one number. Under the commute legend (Map > Commute) a **Time of day** row offers the trips the router also
+answered: the morning arrival you set (`arrive_by`), midday, **leaving the destination at 18:00 and at 22:00 for home**, and a
+Saturday morning. Pick one and the heat map redraws for it (the difference grid is fetched the first time you ask, about 10 KB,
+with a "loading" note), and so does everything else that shows minutes: the pins, the cards, the commute slider and histogram,
+the sort and Compare, exactly as they follow the Best / Subway / Bus mode. Walking never changes with the hour, so the row is
+disabled in Walk. The choice is not remembered across reloads; `?time=pm` (a slot id) opens the map on one.
+
+In a home's drawer, **By time of day** under the commute tabs draws a bar per time for the mode you are looking at, with your
+limit as a dashed line (bars over it turn amber), one sentence with the numbers ("18 min to arrive at 9:00, 24 min to arrive at
+13:00, 31 min to leave at 18:00, 41 min to leave at 22:00") and the fastest and slowest. Click a bar to move the map and the
+cards to that time. The route legs in the same section are for the arrive-by trip. **The ranking score does not change** when you
+pick a time; it reads the arrive_by trip unless `commute.times.score` in criteria.yaml says otherwise (a slot, or `weighted`),
+and the drawer says which. Data and method: [data model](data-model.md#commute-by-time-of-day), [methodology](methodology.md).
+Code: `dashboard/js/features/timeofday.js` (page), `timeofday-model.js` (arithmetic, node-tested), and the lens in
+`criteria.js` `modeMinutes`.
+
+### Noise by hour
+
+The Noise layer has an **Hour** slider and a **Nights** switch (every night, Sun-Thu, Fri-Sat) under its legend. *All hours* is the
+surface that was always there; moving the slider shows the 311 noise complaints logged in that hour of the day, shaded as if every
+hour were like it, so a patch darker than the all-day map is a louder than average hour. A request logged after midnight counts
+toward the evening before. These are complaints, not decibels. In a home's drawer, **Noise by hour** draws a 24-hour clock of
+complaints per night around the home (midnight at the top; the loudest three hours in the accent colour) with a headline such as
+*Loudest Fri-Sat 11 pm-2 am: mostly bars, clubs and restaurants and street crowds and music.*, the quietest hours, and the count
+behind it. A home with a dossier can be read **at this address** (within 150 m over three years) or **around it** (about 450 m on
+the map layer); a home without one gets the area. *See it on the map by hour* opens the noise layer on the loud hour. Fewer than 25
+complaints are said to be too few to read. Data and method: [data model](data-model.md#layers), [methodology](methodology.md#public-records-nyc).
+Code: `features/noise-hours.js`, `noise-hours-model.js`; build the data with `apartmentscout layers` (NYC).
+
 ## First-run tour
 
 On a first visit in a normal browser the Map shows a five-step tour: the filters, live weights, starring a home,
@@ -708,6 +739,8 @@ URL options:
 | `?data=path/to/data` | Load another data folder |
 | `?theme=light` / `?theme=dark` | Start in a theme |
 | `?layer=commute` / `noise` / `rent` / `score` / `sun` / `none` | Start on a map layer |
+| `?time=pm` | Start the commute lens on a time of day (a slot id from `commute.times.slots`: `am`, `mid`, `pm`, `late`, `wknd`) |
+| `?layer=noise&hour=23` | Start the noise layer on an hour of the day |
 | `?basemap=raster` | Use the raster fallback basemap instead of vector tiles |
 | `?density=compact` / `comfortable` | Start in a density (the settings menu remembers the renter's choice) |
 | `?worker=0` | Re-score on the main thread instead of in a Web Worker (for comparing or debugging) |

@@ -344,9 +344,42 @@ and without a `media/` folder beside the file, they are re-keyed by each photo's
 | `modes.<m>.legs` | The median trip: `walk` (`min`, `m` metres, `to`, `from`), rides (`mode`, `route`, `from`, `to`, `board`/`alight` clock times, `min`, `wait` before boarding after a change), `transfer` (`min`, `m`, `at`, `to` when it changes stop). Walking minutes include street-to-platform time. |
 | `modes.<m>.legs_arrive_by` | The arrival time that trip was planned for (arrive_by minus one of the offsets). |
 | `transfers`, `ride_min`, `walk_min`, `wait_min` | Totals over the legs. |
+| `times.<m>` | Minutes at the other times of day, one list per mode (`transit` = best of any transit, `subway`, `bus`), in the order of `commute.times.slots` (`manifest.commute_times.slots` carries the slots in force): `[18.4, 17.9, 22.1, 37.5, 24.0]` for the morning peak, midday, the evening way home, late evening and a Saturday morning. The slot that is the arrive_by trip equals `minutes`. `null` = no answer then (no service, or 120 minutes or more). Walking is the same at every hour and has no list. |
 
 Route text reads `walk N min to <stop>`, `<route> to <stop>` for subway and rail, `bus <route> to
 <stop>` and `ferry <route> to <stop>`, joined by ` → `.
+
+### Commute by time of day
+
+The arrive_by trip is one of the times a commute matters, so `apartmentscout commute` also routes the *slots* in
+`commute.times` (criteria.yaml). A slot is `{id, label, kind, time, day}`: `kind` `arrive` is the way to the destination
+arriving by `time` (the morning direction); `depart` leaves the destination at `time`, the way home. `day` is `weekday` (the
+search's `service_date`), `saturday` or `sunday` (the next such day in the feeds' calendars; a feed without weekend service skips
+that slot and says so). The defaults are `am` (the destination's own arrive_by), `mid` arrive 13:00, `pm` leave 18:00, `late`
+leave 22:00 and `wknd` arrive 11:00 on a Saturday. The heat grids are one file,
+`layers/commute-<destination>-times.json`:
+
+```json
+{"kind": "commute-times", "name": "Office", "slots": [{"id": "am", "label": "Morning peak", "kind": "arrive", "time": "09:00", "day": "weekday", "base": true, "service_date": null}, ...],
+ "bbox": [...], "rows": 416, "cols": 227, "cell_m": 50, "scale": 0.5, "nodata": 255, "modes": ["transit", "subway", "bus"],
+ "grids": {"transit": {"mid": "<zlib+base64>", "pm": "...", "late": "...", "wknd": "..."}, "subway": {...}, "bus": {...}}, ...}
+```
+
+Each grid is the slot's minutes minus the arrive_by grid of the same mode (`commute-<dest>.json`, `-subway`, `-bus`), cell by
+cell: whole minutes in one signed byte (`-128` = blank at this time though the arrive_by grid has a value; a cell blank at
+arrive_by stays blank; differences clamp at 126), deflated with zlib and base64-encoded. Two commutes at different hours are
+mostly the same map, so the differences are small and compress to about 10 KB a grid for the Manhattan example, against 30 KB
+for a full half-minute grid. The arrive_by layers are not rewritten, which is also why the base trip never moves.
+`apartmentscout commute --times-only` adds the slots to an existing run; `--no-times` skips them; `commute.times: false`
+switches them off. The file is listed under `manifest.extra`, not `manifest.layers`: the dashboard fetches it when someone picks
+a time in the map legend. If the arrive_by layer was made with street-network walking and the network cannot be loaded now,
+the slots are skipped rather than made with another walking model (the minutes would not be comparable).
+
+**Scoring.** The commute score reads the arrive_by trip (`minutes`), as it always has. `commute.times.score` in criteria.yaml opts
+in to another: a slot id (`pm`), or `weighted` for the average of the slots weighted by `commute.times.weights` (default `am` 3,
+`pm` 3, `mid` 1, `late` 1, `wknd` 1; a slot with no answer for a home is left out of its average). The score's summary says
+which: `18 min to Office by subway (weighted over the day)`. The dashboard's time selector never changes a score; it changes the
+minutes shown, the map, the filters and the sort order.
 
 ## Score
 
@@ -427,6 +460,25 @@ Each listing's `commute.<dest>.modes.walk.m` is the metres along that network (o
 to any destination at each cell and `weighted_z` the weight-averaged minutes, each as the usual half-minute bytes, deflated
 (zlib) and base64-encoded (inflate with `DecompressionStream("deflate")`). They are listed in `manifest.extra`, not
 `manifest.layers`: the dashboard loads them when someone picks them in the map legend.
+
+**Noise by hour.** `apartmentscout layers` (NYC) also writes `layers/noise-hours.json`, from the same 311 noise requests as
+`noise.json` but keeping *when* each was logged. These are complaints, not decibels. Hours after midnight count toward the evening
+before (the day class of a request is the weekday of `created - 5 hours`), and there are two classes of night: Sun-Thu (class 0)
+and Fri-Sat (class 1).
+
+| Key | Meaning |
+|---|---|
+| `bbox`, `rows`, `cols`, `cell_m` | The cells of `noise.json` (150 m), so the two overlays line up. |
+| `hours_z` | One entry per class: a zlib+base64 byte array [24 hours][rows x cols] of `round(log1p(count) * log_k)`; the count is `expm1(q / log_k)`. |
+| `mix` | The kind of source on 3 x 3 coarser cells (`block`, about 450 m): `z` is [class][bucket][group][cell] in the same log bytes (`log_k`); `buckets` are four hours each from 2 am (`10 pm-2 am` is the last), `groups` are bars/clubs/restaurants (Noise - Commercial), street/crowds/parks, neighbours (Noise - Residential), vehicles and helicopters, construction, and alarms/dogs/equipment. |
+| `days` | How many days of each class the period holds, to turn counts into complaints per night. |
+| `since`, `until`, `months`, `total`, `source` | The period and the number of requests. |
+
+About 150 KB for the Manhattan example (336,000 requests); the raw requests are fetched in pages and cached under
+`cache/noise311/` (git-ignored), never committed. Each dossier's `noise_311` gains `by_week` (7 x 24 clock-hour counts, Monday
+first), `by_hour_group` (groups x 24) and `week_days` for the requests within its radius over its window, for the clock chart at
+a single address. It is listed under `manifest.extra`; the dashboard fetches it when the noise layer's hour slider or a drawer's
+"Noise by hour" asks for it.
 
 ## Places
 

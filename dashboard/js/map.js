@@ -8,6 +8,8 @@ import { $, esc, money, moneyShort, safeUrl, css, scoreColor, unitGlyph, gridIma
 import { contours } from '../vendor/d3-contour.js';
 import * as MF from './features/map-features.js';   // [features] route preview, starred-only lens, sun lens
 import * as MD from './features/multidest.js';   // [multi-destination] worst-of / weighted commute surfaces
+import * as NH from './features/noise-hours.js';   // [noise by hour] the noise surface for one hour of the day
+import * as TOD from './features/timeofday.js';   // [time of day] the surface for midday, the evening way home, late evening, the weekend
 import * as PM from './features/places-map.js';   // [places] the streets and outlines the place filters refer to
 import { pinPlan, buildingId, isBuildingId, lowestCost, unitsLabel, NO_PRICE } from './features/map-pins.js';   // which homes get a pin of their own, which share a building pin
 import { unitPreviewHTML, buildingPreviewHTML, buildingListHTML } from './features/map-preview.js';   // hover / tap cards and a building's unit list
@@ -26,7 +28,7 @@ const reduce = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 const layers = {};          // name -> grid json
 let map, popup, markers = [], destMarkers = [], inited = null, active = null, heat = 'commute', vector = true, offline = false, tileOk = false, show3d = false, showLines = true, picking = false;
 /** The surface for the selected destination and mode (null for walk, or when that grid was never computed). */
-const commuteLayer = () => MD.comboLayer() || (() => { const k = commuteLayerKey(layers, dest(), S.commuteMode); return k ? layers[k] : null; })();   // [multi-destination] a combined surface when one is chosen
+const commuteLayer = () => MD.comboLayer() || (() => { const k = commuteLayerKey(layers, dest(), S.commuteMode); return k ? TOD.layerFor(layers[k], dest(), S.commuteMode) : null; })();   // [multi-destination] a combined surface when one is chosen
 const hasCommute = () => Object.values(layers).some((g) => /^commute/.test(g?.kind || '')) || (S.crit.commute?.destinations || []).some((d) => d.lat != null);
 const walkKmh = () => S.crit.commute?.transit?.walk_speed_kmh || 4.8;
 
@@ -259,13 +261,24 @@ const NOISE = (v) => RAMPS.noise.fn(v);
 function heatImages(k) {
   if (k === 'commute') { const g = commuteLayer(); if (!g) return null; return { g, iso: isochrones(g) }; }
   if (k === 'noise') {
-    const g = layers.noise; if (!g) return null;
+    const g = NH.mapLayer(layers.noise); if (!g) return null;   // [noise by hour] the chosen hour, else the all-day surface
     const per = 12 / (g.months || 12);
     return { g, fill: gridImage(g, NOISE, (v) => Math.min(0.92, 0.25 + Math.log10(v + 1) * 0.3), (v) => (v > 0 ? Math.log10(v * per + 1) : -1)), opacity: 0.75 };
   }
   if (k === 'rent') { const g = rentGrid(); return g && { g, fill: gridImage(g, RAMPS.rent.fn, () => 0.85), opacity: 0.55 }; }
   if (k === 'score') { const g = scoreGrid(); return g && { g, fill: gridImage(g, RAMPS.score.fn, () => 0.85), opacity: 0.5 }; }
   return null;
+}
+const NH_hour = (g) => `${['12 am', ...Array.from({ length: 11 }, (_, i) => `${i + 1} am`), '12 pm', ...Array.from({ length: 11 }, (_, i) => `${i + 1} pm`)][g.hour]}${g.cls === 'all' ? '' : ', ' + (g.cls ? 'Fri–Sat' : 'Sun–Thu')}`;
+/** The hour slider moved: swap the noise image in place (no flicker, no legend rebuild while dragging). */
+function refreshNoise() {
+  const src = map?.getSource('heat');
+  if (heat !== 'noise' || !src?.updateImage) { if (map?.getSource('listings')) setHeat('noise'); return; }
+  const im = heatImages('noise'); if (!im) return;
+  active = im.g;
+  const [lo0, la0, lo1, la1] = im.g.bbox;
+  src.updateImage({ url: im.fill, coordinates: [[lo0, la1], [lo1, la1], [lo1, la0], [lo0, la0]] });
+  const h = document.querySelector('#legend h4 span'); if (h && im.g.hourly) h.textContent = `at ${NH_hour(im.g)}, ${im.g.cell_m} m cells`;
 }
 function setHeat(k) {
   heat = k;
@@ -634,8 +647,9 @@ function renderLegend() {
   if (heat === 'commute') {
     const st = bandStyle(), ds = S.crit.commute?.destinations || [], cb = MD.legendHead();   // [multi-destination] cb: a combined surface is selected
     const what = cb ? cb.what : { best: 'Fastest door-to-door minutes by subway, bus or walking', subway: 'Subway with walking only (no buses)', bus: 'Bus with walking only (no subway)' }[mode];
-    body = `<h4>${ds.length > 1 ? `<select class="sel lg-dest" id="lgDest" aria-label="Commute destination">${MD.destOptions(ds, d)}</select>` : `Door to door to ${esc(d?.name || '')}`} <span>${cb ? esc(cb.sub) : 'arrive ' + esc(d?.arrive_by || '')}</span></h4>
+    body = `<h4>${ds.length > 1 ? `<select class="sel lg-dest" id="lgDest" aria-label="Commute destination">${MD.destOptions(ds, d)}</select>` : `Door to door to ${esc(d?.name || '')}`} <span>${cb ? esc(cb.sub) : TOD.headSub(d)}</span></h4>
       ${modeSegHTML(d, 'lgMode')}
+      ${cb ? '' : TOD.legendHTML()}
       ${g ? `<div class="isogrid" role="list" aria-label="Door-to-door minutes by colour band" style="display:grid;grid-template-columns:repeat(3,1fr);gap:5px 10px;margin:2px 0 2px">${BANDS.map((t, i) => {
         const isLim = (i ? BANDS[i - 1] : 0) < lim && lim <= t;
         return `<span role="listitem" style="display:flex;align-items:center;gap:6px;font:500 var(--fs-2xs) var(--font-mono);font-variant-numeric:tabular-nums;color:${isLim ? 'var(--ink)' : 'var(--ink-2)'};white-space:nowrap"><i style="flex:none;width:18px;height:11px;border-radius:3px;background:${st[i].col};${isLim ? 'box-shadow:0 0 0 1.5px var(--ink)' : 'box-shadow:inset 0 0 0 1px rgba(0,0,0,.18)'}"></i>${isLim ? `<b style="font-weight:650" title="Your ${lim}-minute limit">${bandLabel(i)}</b>` : bandLabel(i)}</span>`;
@@ -646,7 +660,7 @@ function renderLegend() {
       : mode === 'walk' ? `<div class="src">Walking has no timetable surface. The dashed rings are ${ringMinutes().join(', ')} minutes on foot at ${walkKmh()} km/h, straight line with a 1.25 street detour. Cards, filters and columns use the router's walking minutes where it has them, else the same estimate.</div>`
       : `<div class="src">No ${ml} surface for ${esc(d?.name || 'this destination')}${d?._stale ? ' (new or moved in your edited criteria)' : ''}. Run <code>apartmentscout commute</code>${mode === 'bus' ? ' with a bus GTFS feed' : ''} to draw it. Pins, cards and filters use per-listing ${ml} minutes where the router computed them.</div>`}`;
   } else if (heat === 'noise' && g) {
-    body = `<h4>311 noise complaints <span>per year, ${esc(g.cell_m)} m cells</span></h4><div class="bar" style="height:8px;border-radius:2px;background:${RAMPS.noise.css}"></div><div class="ticks"><span>0</span><span>10</span><span>100</span><span>1k</span><span>4k</span></div><div class="src">${(g.total || 0).toLocaleString()} requests since ${esc(g.since || '')}. Calls are reports, not findings.</div>`;
+    body = `<h4>311 noise complaints <span>${g.hourly ? 'at ' + esc(NH_hour(g)) : 'per year'}, ${esc(g.cell_m)} m cells</span></h4><div class="bar" style="height:8px;border-radius:2px;background:${RAMPS.noise.css}"></div><div class="ticks"><span>0</span><span>10</span><span>100</span><span>1k</span><span>4k</span></div>${NH.legendHTML()}<div class="src">${g.hourly ? '' : `${(g.total || 0).toLocaleString()} requests since ${esc(g.since || '')}. `}Calls are reports, not findings; this is complaints, not decibels.</div>`;
   } else if (heat === 'rent') {
     body = `<h4>Monthly cost per ft² <span>from listings</span></h4><div class="bar" style="height:8px;border-radius:2px;background:${RAMPS.rent.css}"></div><div class="ticks"><span>$3</span><span>$5</span><span>$7</span><span>$9</span><span>$12+</span></div>`;
   } else if (heat === 'score') {
@@ -664,6 +678,8 @@ function renderLegend() {
   MF.wireLegend($('legend'));
   $('lgDest')?.addEventListener('change', (e) => MD.pickDest(e.target.value, setCommute));   // [multi-destination] a destination, or a combined surface
   $('legend').querySelectorAll('#lgMode [data-mode]').forEach((b) => b.addEventListener('click', () => setCommute({ mode: b.dataset.mode })));
+  TOD.wireLegend($('legend'));
+  NH.wireLegend($('legend'), (full) => (full ? setHeat('noise') : refreshNoise()));   // [noise by hour]
 }
 function renderCtl() {
   const b = (id, title, svg, on2) => `<button type="button" data-ctl="${id}" title="${title}" aria-label="${title}" class="${on2 ? 'on' : ''}" aria-pressed="${!!on2}">${svg}</button>`;
@@ -697,6 +713,7 @@ function readout(e) {
   if (!r || r.v == null || r.v < 0) { el.hidden = true; return; }
   let t;
   if (heat === 'commute') t = `<i aria-hidden="true" style="display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px;background:${bandStyle()[Math.max(0, BANDS.findIndex((x) => r.v <= x + 1e-3))].col}"></i><b>${Math.round(r.v)} min</b> <span class="faint">${S.commuteMode === 'best' ? 'door to door' : 'by ' + MODE_LABEL[S.commuteMode].toLowerCase()} to ${esc(g.combo || dest()?.name || g.name)}</span>`;
+  else if (heat === 'noise' && g.hourly) t = `<b>${Math.round((r.v / 24 * 12) / (g.months || 12))}</b> <span class="faint">noise complaints a year at ${esc(NH_hour(g))} in this ${esc(g.cell_m)} m cell</span>`;
   else if (heat === 'noise') t = `<b>${Math.round((r.v * 12) / (g.months || 12))}</b> <span class="faint">noise complaints a year in this ${esc(g.cell_m)} m cell${g.night ? ` (${g.night[r.i] ?? 0} at night)` : ''}</span>`;
   else if (heat === 'rent') t = `<b>$${r.v.toFixed(2)}</b> <span class="faint">per ft² a month nearby</span>`;
   else t = `<b>${Math.round(r.v)}</b> <span class="faint">average score nearby</span>`;
@@ -818,6 +835,8 @@ export function init() {
   on('weights-settled', () => { if (!map?.getSource('listings')) return; setPins(); drawTags(); if (heat === 'score') setHeat('score'); });
   on('saved', () => { if (map?.getSource('listings')) { setPins(); drawTags(); } });   // a star added or removed anywhere lands here
   on('sort', () => map && drawTags());
+  on('noise-hours', () => { if (map?.getSource('listings') && heat === 'noise' && NH.hourNow() != null) setHeat('noise'); });
+  on('noise-hours-open', () => { if (map?.getSource('listings')) setHeat('noise'); else heat = 'noise'; });   // from the drawer's "See it on the map by hour"
   on('commute', () => {
     if (!map) return;
     refreshRings(); addDest(); if ($('mapCard') && !$('mapCard').hidden) showCard(lastSel);
@@ -867,7 +886,7 @@ export async function show() {
 async function boot() {
   {
     for (const name of S.manifest.layers || []) {
-      if (name.startsWith('transit')) continue;
+      if (name.startsWith('transit') || /-times\.json$|^noise-hours/.test(name)) continue;   // loaded when asked for (a time of day, an hour)
       const g = await loadJSON(`${S.base}/layers/${name}`, null);
       if (g) layers[name.replace('.json', '')] = /^commute/.test(g.kind || '') ? decodeLayer(g) : g;
     }

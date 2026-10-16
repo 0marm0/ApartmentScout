@@ -39,6 +39,7 @@ from pathlib import Path
 
 import requests
 
+from ..noise_hours import week_profile
 from ..geo.fetch import collect_receipts, make_receipt, note_receipt, rows_updated, sha256_bytes, summarise_receipts
 
 BASE = "https://data.cityofnewyork.us/resource/{}.json"
@@ -293,7 +294,8 @@ def _dossier(L: dict, bbl, bin_, lat, lon, log, years: float, radius_noise_m: in
                 "nearby_per_year": round(per_year, 1),
                 "by_type": dict(collections.Counter(f"{r.get('complaint_type')} | {r.get('descriptor')}" for r in rows).most_common(12)),
                 "at_building_by_type": dict(collections.Counter(r.get("descriptor") for r in at).most_common(10)),
-                "by_hour": hours, "night_share": round(sum(hours[h] for h in (22, 23, 0, 1, 2, 3, 4, 5)) / max(1, len(rows)), 2),
+                "by_hour": hours, **week_profile(rows, dt.date.fromisoformat(since), dt.date.today()),
+                "night_share": round(sum(hours[h] for h in (22, 23, 0, 1, 2, 3, 4, 5)) / max(1, len(rows)), 2),
                 "by_month": _by_month(rows, "created_date"),
                 "metrics": noise_metrics(rows, bbl, years, units, L.get("address")),
                 "_ledger": noise_ledger(rows),
