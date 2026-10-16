@@ -634,7 +634,7 @@
  "options": {
   "bed": {
    "label": "Bed",
-   "default": "mine",
+   "default": "storage",
    "choices": [
     {
      "id": "mine",
