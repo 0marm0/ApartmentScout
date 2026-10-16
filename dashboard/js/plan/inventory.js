@@ -211,8 +211,9 @@ export function pieceItem(p, pos = { x: 0, y: 0, rot: 0 }) {
 }
 
 /** The kit for the auto-placer: resolved items that remember the room kind they live in. */
+export const kitPiece = (p) => ({ ...resolve(pieceItem(p)), roomKind: p.room || (['sleep', 'storage'].includes(CATALOG[p.ref]?.cat) ? 'bedroom' : CATALOG[p.ref]?.cat === 'work' ? 'bedroom' : CATALOG[p.ref]?.cat === 'dining' ? 'living' : 'living') });
 export function kitFromInventory(inv) {
-  return inv.pieces.filter((p) => !offByDefault(inv, p.id)).map((p) => ({ ...resolve(pieceItem(p)), roomKind: p.room || (['sleep', 'storage'].includes(CATALOG[p.ref]?.cat) ? 'bedroom' : CATALOG[p.ref]?.cat === 'work' ? 'bedroom' : CATALOG[p.ref]?.cat === 'dining' ? 'living' : 'living') }));
+  return inv.pieces.filter((p) => !offByDefault(inv, p.id)).map(kitPiece);
 }
 
 /**

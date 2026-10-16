@@ -118,7 +118,7 @@ export function describeLook(look) {
 export function applyLooks(items, inv) {
   const by = new Map((inv?.pieces || []).filter((p) => p.look).map((p) => [p.id, p]));
   if (!by.size) return items;
-  return (items || []).map((it) => { const p = by.get(it.id); return p && p.ref === it.ref && !it.look ? { ...it, look: p.look } : it; });
+  return (items || []).map((it) => { const p = by.get(it.id) || (it.from ? by.get(it.from) : null); return p && p.ref === it.ref && !it.look ? { ...it, look: p.look } : it; });
 }
 
 /** Counts of the inventory's looks by basis: how many pieces have a look from the renter, how many only a stand-in. */
