@@ -162,7 +162,7 @@
   {
    "id": "your-furniture",
    "name": "Your furniture",
-   "note": "Your answers, checked with the studio's fit rules. Bedroom: headboard on the side wall, windows on your right as you lie in bed, the 55-inch TV opposite over the MALM chest, a nightstand each side. Living room: the futon's back flat on the partition facing the TV; the 71-inch desk on the left wall beside the bay window, chair room behind it; the dining table lengthwise so the walk to the desk stays 37 in wide. The TVs read workable, not ideal: the rooms are too narrow to sit closer.",
+   "note": "Your answers, checked with the studio's fit rules. Bedroom: headboard on the side wall, windows on your right as you lie in bed, the 55-inch TV opposite over the MALM chest, a nightstand each side. Living room: the futon's back flat on the partition facing the TV; the Bestier rotating desk, straight (about 89 in, derived), on the left wall with its desktop at the bay window and its shelf running toward the TV, chair room behind the desktop; the dining table lengthwise so the walk to the desk stays 37 in wide. The TVs read workable, not ideal: the rooms are too narrow to sit closer.",
    "replaces": [[{"id": "bed", "x": 230, "y": 238.5, "rot": 270}, {"id": "nightstand-1", "x": 198, "y": 280, "rot": 270}, {"id": "nightstand-2", "x": 198, "y": 197, "rot": 270}, {"id": "tv-bed", "x": 306.75, "y": 238.5, "rot": 90}, {"id": "dresser", "x": 294.2, "y": 159.5, "rot": 180}, {"id": "desk", "x": 33, "y": 306, "rot": 270}, {"id": "futon", "x": 118, "y": 238.5, "rot": 90}, {"id": "coffee", "x": 72, "y": 238.5, "rot": 90}, {"id": "tv", "x": 21.75, "y": 238.5, "rot": 270}, {"id": "dining", "x": 71, "y": 163.5, "rot": 0}]],
    "items": [
     {"id": "bed", "ref": "queen-bed", "x": 266.5, "y": 218, "rot": 90, "placed": true, "w": 64, "d": 84, "h": 40, "label": "Queen bed"},
@@ -171,7 +171,7 @@
     {"id": "nightstand-2", "ref": "nightstand", "x": 300.5, "y": 260, "rot": 90, "placed": true, "w": 18, "d": 16, "h": 24, "label": "Nightstand"},
     {"id": "tv-bed", "ref": "tv-55", "x": 175.75, "y": 218, "rot": 270, "placed": true, "w": 48.4, "d": 3.5, "h": 27.8, "elev": 32, "label": "55-inch TV, bedroom"},
     {"id": "dresser", "ref": "dresser-malm-6", "x": 183.5, "y": 218, "rot": 270, "placed": true, "w": 63, "d": 18.9, "h": 30.7, "label": "IKEA MALM 6-drawer chest"},
-    {"id": "desk", "ref": "desk", "x": 35, "y": 313.5, "rot": 270, "placed": true, "w": 71, "d": 30, "h": 30, "label": "Desk, chair and monitor"},
+    {"id": "desk", "ref": "desk", "x": 30.8, "y": 304.4, "rot": 270, "placed": true, "w": 89.2, "d": 21.6, "h": 29.1, "variant": "rotating", "label": "Bestier rotating desk 51 in, chair and monitor"},
     {"id": "futon", "ref": "futon", "x": 151, "y": 230, "rot": 90, "placed": true, "w": 80, "d": 36, "h": 34, "label": "Futon, 3 seats"},
     {"id": "coffee", "ref": "coffee-table", "x": 106, "y": 230, "rot": 90, "placed": true, "w": 44, "d": 24, "h": 17, "label": "Coffee table"},
     {"id": "tv", "ref": "tv-55", "x": 21.75, "y": 230, "rot": 270, "placed": true, "w": 48.4, "d": 3.5, "h": 27.8, "elev": 32, "label": "55-inch TV, living room"},

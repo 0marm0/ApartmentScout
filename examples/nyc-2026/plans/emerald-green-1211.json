@@ -55,7 +55,7 @@
     {
      "id": "your-furniture",
      "name": "Your furniture",
-     "note": "Your ten pieces, placed with the studio's checks: all ten clear. The bed is pulled 7 in off the left wall so the 55-inch TV is 7.9 ft from the pillows (an ideal view); the futon faces the living-room TV 7.9 ft away; the desk (71 in) sits at the living-room window and the dining table by the kitchen. The 63-inch MALM chest does not fit this narrow bedroom beside the bed, so it stands on the living-room wall beside the TV. No saved positions survived from the earlier tools, so the positions are the checks' work.",
+     "note": "Your ten pieces, placed with the studio's checks: all ten clear. The bed is pulled 7 in off the left wall so the 55-inch TV is 7.9 ft from the pillows (an ideal view); the futon faces the living-room TV 7.9 ft away; the rotating desk (straight, about 89 in) stands on the living room's east wall and the dining table is pulled toward the kitchen to keep the walk to it 37 in wide. The 63-inch MALM chest does not fit this narrow bedroom beside the bed, so it stands on the living-room wall beside the TV. No saved positions survived from the earlier tools, so the positions are the checks' work.",
      "items": [
       {"id": "bed", "ref": "queen-bed", "x": 4.3, "y": 15.9, "rot": 270, "w": 64, "d": 84, "h": 40, "label": "Queen bed"},
       {"id": "nightstand-1", "ref": "nightstand", "x": 1.5, "y": 12.43, "rot": 270, "w": 18, "d": 16, "h": 24, "label": "Nightstand"},
@@ -65,8 +65,8 @@
       {"id": "futon", "ref": "futon", "x": 20.1, "y": 15.5, "rot": 90, "w": 80, "d": 36, "h": 34, "label": "Futon, 3 seats"},
       {"id": "coffee", "ref": "coffee-table", "x": 16.75, "y": 15.5, "rot": 90, "w": 44, "d": 24, "h": 17, "label": "Coffee table"},
       {"id": "tv", "ref": "tv-55", "x": 11.75, "y": 15.5, "rot": 270, "w": 48.4, "d": 3.5, "h": 27.8, "elev": 32, "label": "55-inch TV, living room"},
-      {"id": "dining", "ref": "dining-4", "x": 19.5, "y": 8.0, "rot": 0, "w": 48, "d": 30, "h": 30, "label": "Dining table, 4 seats"},
-      {"id": "desk", "ref": "desk", "x": 15.0, "y": 22.6, "rot": 0, "w": 71, "d": 30, "h": 30, "label": "Desk, chair and monitor"}
+      {"id": "dining", "ref": "dining-4", "x": 19.5, "y": 7.0, "rot": 0, "w": 48, "d": 30, "h": 30, "label": "Dining table, 4 seats"},
+      {"id": "desk", "ref": "desk", "x": 22.53, "y": 12.67, "rot": 90, "w": 89.2, "d": 21.6, "h": 29.1, "variant": "rotating", "label": "Bestier rotating desk 51 in, chair and monitor"}
      ]
     },
     {
