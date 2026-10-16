@@ -107,7 +107,7 @@ def cam(px, py, pn, tx, ty, tn, ray=True):
 PARAMOUNT = "date=2026-10-15&min=780#unit/paramount-tower-25e"
 SHOTS = [
     # ---- the hero, and Find
-    ("hero-map", "?layer=commute&open=paramount-tower-25e#map", DESK, [], 9000, None),
+    ("hero-map", "?layer=commute&open=paramount-tower-25e#map", (2240, 1180), [], 9000, None),   # wider than DESK: the map shows around the drawer
     ("find-commute-map", "?layer=commute#map", DESK, [], 9000, None),
     ("find-walk-map", "?layer=commute&mode=walk#map", DESK, [], 9000, None),
     ("find-route-preview", "?mode=subway#map", DESK,
