@@ -1,0 +1,50 @@
+name: New city
+description: Ask for, or offer, support for a city: its profile, transit feed and public records.
+title: "[city] "
+labels: ["city"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Any city OpenStreetMap knows already works for the map, geocoding and walking. A city profile adds its transit timetable,
+        records sources and landmarks. The how-to is [Adding a city](https://github.com/0marm0/ApartmentScout/blob/main/docs/guides/new-city.md);
+        a profile is a short YAML file in `config/cities/`. Run `apartmentscout city "Your City"` first: it shows what is and is not covered.
+  - type: input
+    id: city
+    attributes:
+      label: City, region and country
+      placeholder: "Chicago, Illinois, USA"
+    validations:
+      required: true
+  - type: dropdown
+    id: role
+    attributes:
+      label: Are you asking or offering?
+      options:
+        - I would like this city supported
+        - I can write the profile (and test it on a real search)
+        - I can help test someone else's profile
+    validations:
+      required: true
+  - type: input
+    id: gtfs
+    attributes:
+      label: Transit timetable (GTFS) feed
+      description: The URL of the agency's static GTFS zip, or the page that publishes it, and its licence if you know it.
+  - type: textarea
+    id: records
+    attributes:
+      label: Open data for buildings and complaints
+      description: Violations, permits, 311 or equivalent datasets, with links and their licence or terms. Leave blank if you do not know of any.
+  - type: textarea
+    id: notes
+    attributes:
+      label: Anything particular to this city
+      description: Time zone, neighbourhood names renters use, landmarks, how listings are published, rent rules (stabilisation, deposit limits, broker fees).
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Data and sites
+      options:
+        - label: Every source I list is public or openly licensed. I am not asking for a portal's bot protection to be bypassed.
+          required: true
