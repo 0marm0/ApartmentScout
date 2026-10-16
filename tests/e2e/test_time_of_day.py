@@ -38,13 +38,13 @@ def test_the_legend_offers_every_time_of_day_and_the_map_follows_the_choice(open
     map_opened(pg)
     pg.wait_for_selector("#lgTime .tod-seg button", timeout=20000)
     chips = pg.locator("#lgTime [data-tod]")
-    labels = chips.all_inner_texts()
-    assert labels == ["9:00", "13:00", "18:00 home", "22:00 home", "Sat 11:00"], labels
-    assert pg.locator("#lgTime [data-tod].on").inner_text() == "9:00"
+    labels = [t.replace("\n", " ") for t in chips.all_inner_texts()]
+    assert labels == ["9:00 Morning", "13:00 Midday", "18:00 Evening ⌂", "22:00 Late ⌂", "11:00 Weekend"], labels
+    assert pg.locator("#lgTime [data-tod].on b").inner_text() == "9:00"
     assert "arrive 09:00" in pg.locator("#legend h4").inner_text()
     pg.wait_for_function("() => !!window.__asMap.getSource('heat-fill')", timeout=20000)
     morning = _heat_signature(pg)
-    first = pg.evaluate(f"async () => {{ const a = {APP}; return a.commuteOf(a.sorted(a.filtered()).find((L) => L.lat != null && L.commute)); }}")
+    first = pg.evaluate(f"async () => {{ const a = {APP}; return a.commuteOf(a.S.listings.find((L) => {{ const t = L.commute?.[a.dest().name]?.times?.transit; return t && Math.abs(t[3] - t[0]) > 1; }})); }}")
 
     pg.locator('#lgTime [data-tod="late"]').click()
     pg.wait_for_function("() => document.querySelector('#lgTime [data-tod=late]').classList.contains('on')", timeout=5000)
@@ -54,17 +54,17 @@ def test_the_legend_offers_every_time_of_day_and_the_map_follows_the_choice(open
                          " return f.map((x) => x.properties.i + ':' + JSON.stringify(x.geometry.coordinates).length).join('|') !== sig; }",
                          arg=morning, timeout=20000)
     assert "leave 22:00" in pg.locator("#legend h4").inner_text()
-    assert "Late evening" in pg.locator("#legend h4").inner_text()
+    assert "Late" in pg.locator("#legend h4").inner_text()
     settled(pg)
     # cards, filters and sorting read the same lens: this home takes longer to get home at 10 pm than it takes to get there at 9 am
-    late = pg.evaluate(f"async () => {{ const a = {APP}; return a.commuteOf(a.sorted(a.filtered()).find((L) => L.lat != null && L.commute)); }}")
+    late = pg.evaluate(f"async () => {{ const a = {APP}; return a.commuteOf(a.S.listings.find((L) => {{ const t = L.commute?.[a.dest().name]?.times?.transit; return t && Math.abs(t[3] - t[0]) > 1; }})); }}")
     assert first is not None and late is not None and late != first
     # back to the arrive-by trip: the surface that was always there
     pg.locator('#lgTime [data-tod="am"]').click()
     pg.wait_for_function("(sig) => { const s = window.__asMap.getSource('heat-fill'); const f = (s && s._data && s._data.features) || [];"
                          " return f.map((x) => x.properties.i + ':' + JSON.stringify(x.geometry.coordinates).length).join('|') === sig; }",
                          arg=morning, timeout=20000)
-    assert pg.locator("#lgTime [data-tod].on").inner_text() == "9:00"
+    assert pg.locator("#lgTime [data-tod].on b").inner_text() == "9:00"
     assert not s.take(), s.take()
 
 
@@ -93,7 +93,7 @@ def test_a_link_can_open_the_map_on_a_time_of_day(open_page, webgl: bool) -> Non
     pg = s.page
     map_opened(pg)
     pg.wait_for_selector("#lgTime [data-tod].on", timeout=20000)
-    assert pg.locator("#lgTime [data-tod].on").inner_text() == "18:00 home"
+    assert pg.locator("#lgTime [data-tod].on b").inner_text() == "18:00"
     assert "leave 18:00" in pg.locator("#legend h4").inner_text()
     assert not s.take(), s.take()
 
