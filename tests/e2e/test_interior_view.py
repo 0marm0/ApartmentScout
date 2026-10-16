@@ -85,7 +85,7 @@ def test_the_studio_opens_on_your_furniture_and_every_piece_fits(open_page, webg
     pg.click("#psTab [data-inv-add=desk]")
     pg.wait_for_function("() => window.__plan3d.items.length === 11")
     desk = pg.evaluate("() => window.__plan3d.items.find((i) => i.id === 'desk')")
-    assert (desk["w"], desk["d"], desk["h"]) == (71, 30, 30)
+    assert (desk["w"], desk["d"], desk["h"]) == (89.2, 21.6, 29.1)
     assert not s.take()
 
 

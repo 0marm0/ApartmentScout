@@ -108,7 +108,7 @@ const firstOf = (R, ...kinds) => R.find((x) => !x.hidden && kinds.includes(x.kin
 
 /** The point and height a person sits at for each kind of piece. */
 export function seatPoint(it) {
-  if (it.kind === 'desk') return { at: toWorld(it, 0, -(it.d / 2 + 14)), h: EYE_SEAT.desk, facing: toWorld(it, 0, 0) };
+  if (it.kind === 'desk') return { at: toWorld(it, it.seatX || 0, -(it.d / 2 + 14)), h: EYE_SEAT.desk, facing: toWorld(it, it.seatX || 0, 0) };
   const s = it.seats?.[0];
   return { at: s ? toWorld(it, s[1], s[2]) : [it.x, it.y], h: it.kind === 'bed' ? EYE_SEAT.bed : EYE_SEAT.sofa, facing: null };
 }

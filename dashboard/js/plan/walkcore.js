@@ -21,7 +21,7 @@ export function walkItems(items) {
     if (it.hidden) continue;
     out.push(it);
     if (it.kind === 'desk' && it.set?.chair !== false) {
-      const [x, y] = toWorld(it, 0, -(it.d / 2 + 11));
+      const [x, y] = toWorld(it, it.seatX || 0, -(it.d / 2 + 11));
       out.push({ id: `${it.id}#chair`, kind: 'chair', name: 'desk chair', x, y, rot: it.rot, w: CHAIR_IN, d: CHAIR_IN, h: 38, elev: 0 });
     }
   }

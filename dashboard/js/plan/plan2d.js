@@ -105,6 +105,10 @@ function glyph(it) {
     if (k === 'sofa' && !flat) for (let i = 1; i < 3; i++) o += L(x + 5.5 + ((w - 11) * i) / 3, y + 9, x + 5.5 + ((w - 11) * i) / 3, y + d);
   } else if (k === 'tv') {
     o = it.mount === 'wall' ? R('g-tv', x, y, w, d, 1) : R('g-base', x, y, w, d, 2) + R('g-tv', -(it.screen || w) / 2, -1.5, it.screen || w, 3, 1);
+  } else if (k === 'desk' && it.deskGeo) {   // the rotating desk: the shelf unit (lighter), the desktop over it, the panel leg, the chair at the desktop
+    const G = it.deskGeo, dk = G.desk, sh = G.shelf, lg = G.boxes.find((b) => b.id === 'leg');
+    o = R('g-lt', sh.x0, sh.z0, sh.x1 - sh.x0, sh.z1 - sh.z0, 1) + L(sh.x0, (sh.z0 + sh.z1) / 2, sh.x1, (sh.z0 + sh.z1) / 2) + R('g-base', dk.x0, dk.z0, dk.x1 - dk.x0, dk.z1 - dk.z0, 1.5) + R('g-dk', lg.x0, lg.z0, lg.x1 - lg.x0, lg.z1 - lg.z0, 0.5)
+      + (it.set?.chair === false ? '' : `<circle class="g-chair" cx="${r1(G.seatX)}" cy="${r1(d / 2 + 9)}" r="9"/>`);
   } else if (k === 'desk') {
     o = `<circle class="g-chair" cx="0" cy="${r1(d / 2 + 9)}" r="9"/>` + R('g-base', x, y, w, d, 2) + R('g-lt', -6.5, y + d * 0.45, 13, 9, 1);
   } else if (k === 'table') {
