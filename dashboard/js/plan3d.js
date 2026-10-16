@@ -61,7 +61,7 @@ import { validateInventory, fitInventory, pieceItem, placedIds } from './plan/in
 import { inventoryHTML } from './plan/inventory-ui.js';
 import { createAr, sectionHTML as arSectionHTML } from './plan/ar-ui.js';   // [ar] View in your room (AR): AR Quick Look on iPhone and iPad, .usdz and .glb downloads elsewhere
 import { mountSelbar } from './plan/selbar.js';   // [furniture] the floating toolbar beside the selected piece
-import { resolveLayout, applyInventory, savedLayoutFor, samePlaces } from './plan/placement.js';   // [placement] one rule for where the pieces stand, shared with Unit 3D
+import { resolveLayout, applyInventory, savedLayoutFor, samePlaces, chooseGroup } from './plan/placement.js';   // [placement] one rule for where the pieces stand, shared with Unit 3D
 import { allViews, stepView, windowGroups } from './plan/viewpoints.js';   // [interior] where to stand to look out of the windows
 import { setLookChips, bindLookChips } from './plan/look-ui.js';
 import { EYE_IN, nearestWindow, windowStands, windowHit, groupOfWindow } from './plan/walkcore.js';   // [walk] click to walk, go to the window
@@ -70,7 +70,7 @@ import { isMetricSearch } from './measure/core.js';
 import { parsePiece, fitReport, pieceFromItem, withPiece, roomKindAt } from './plan/tryfit.js';   // [fit] does it fit?
 import { tryFitHTML, fitCardHTML, parseNote } from './plan/tryfit-ui.js';
 import { followAttached, isAttachable, isAttached, nearestDesk, seatAtDesk } from './plan/attach.js';   // the office chair goes with its desk (layout item `attach`)
-import { choiceState, applyChoice } from './plan/choices.js';   // [bed option] my bed / the storage bed / no bed, saved with the layout
+import { choiceState, applyChoice, groupsOf } from './plan/choices.js';   // [bed option] my bed / the storage bed / no bed, saved with the layout
 import { reportFor } from './plan/bedfit.js';
 import { mountBedControl } from './plan/bed-ui.js';
 
@@ -85,6 +85,7 @@ let routesRes = null, routeT = 0, lastFrame = 0;
 // onSite: the plan placed on its site; winSky: one skyline per plan window (per-window city occlusion)
 let onSite = null, winSky = null, winMin = null, winMinKey = '';
 let winSkyView = null;
+const gone = new Map();   // the pieces of "Your furniture" the renter removed this visit, as they stood: "Add back" and "Shown" put them where they were
 let removed = new Set();   // [placement] pieces of the default layout the renter took out (they are not put back)
 let inventory = null;   // [furniture] "Your furniture": the renter's pieces (furniture.json, or the ones a project carried)
 let MEAS = null;   // [measure]
@@ -384,7 +385,8 @@ function commit() { persist(); markUndo(); recompute({ panels: true }); }
 // mark (plan/choices.js), so it is saved with the layout, undone with it and read by Unit 3D; switching never moves a piece.
 let bedUIs = [], bedCache = { key: '', rep: null }, stamp = '';
 const layoutStamp = () => { try { return JSON.stringify(store.get(key(st.id), null)); } catch { return ''; } };
-const bedState = () => (inventory && model ? choiceState(items, inventory) : null);
+const groupState = (g) => (inventory && model ? choiceState(items, inventory, g, { removed }) : null);   // the Bed / Sim rig / Office chair switches stay while their group exists, even after the piece was hidden or removed
+const bedState = () => groupState('bed');
 function bedReport() {
   if (!inventory || !model) return null;
   const k = `${model.id}|${items.map((x) => `${x.id}:${x.x},${x.y},${x.rot},${x.w || ''},${x.d || ''}`).join(';')}`;
@@ -393,16 +395,16 @@ function bedReport() {
 }
 function setBed(choice, group = 'bed') {   // group 'sim' (the sim rig) or 'chair' (the office chair): shown or hidden, the same way (a piece's hidden mark)
   if (!inventory) return;
-  const next = applyChoice(items, inventory, group, choice);
-  if (next.every((x, i) => x === items[i])) return;
-  checkpoint(); items = next;
+  const r = chooseGroup(items, inventory, group, choice, { model, gone });   // a removed piece comes back at its saved spot (or is fitted)
+  if (!r.changed) return;
+  checkpoint(); items = r.items; for (const id of r.restored) { removed.delete(id); gone.delete(id); }
   if (sel && !items.some((x) => x.id === sel && !x.hidden)) sel = null;
   commit();
 }
 function mountBedUI() {
   const o = { state: bedState, report: bedReport, piece: () => inventory?.pieces.find((p) => p.id === 'bed-latitude') || null, choose: (c) => setBed(c),
-    rig: { state: () => (inventory && model ? choiceState(items, inventory, 'sim') : null), choose: (c) => setBed(c, 'sim') },
-    chair: { state: () => (inventory && model ? choiceState(items, inventory, 'chair') : null), choose: (c) => setBed(c, 'chair') } };
+    rig: { state: () => groupState('sim'), choose: (c) => setBed(c, 'sim') },
+    chair: { state: () => groupState('chair'), choose: (c) => setBed(c, 'chair') } };
   bedUIs = [mountBedControl($('p2dWrap'), { ...o, where: 'in-p2d' }), mountBedControl($('pstage'), { ...o, where: 'in-p3d' })];
 }
 /** The saved layout changed behind this view's back (the Bed control in Unit 3D wrote it): take it up. */
@@ -552,10 +554,10 @@ function toggleAttach() {
   const aside = items.some((x) => x.ref === 'sim-rig' && !x.hidden);
   mutate(() => { Object.assign(it, seatAtDesk(dr, { aside }), { attach: desk.id, placed: true }); }, 'Attached to the desk: it moves and turns with it');
 }
-function removeSel() { const it = items.find((q) => q.id === sel); if (!it) return; const n = resolveOne(it)?.name || it.ref; mutate(() => { removed.add(it.id); items = items.filter((q) => q.id !== sel); for (const q of items) if (q.attach === it.id) delete q.attach; sel = null; }, `Removed ${n.toLowerCase()}`); }
+function removeSel() { const it = items.find((q) => q.id === sel); if (!it) return; const n = resolveOne(it)?.name || it.ref; mutate(() => { removed.add(it.id); gone.set(it.id, { ...it }); items = items.filter((q) => q.id !== sel); for (const q of items) if (q.attach === it.id) delete q.attach; sel = null; }, `Removed ${n.toLowerCase()}`); }
 function duplicateSel() {
   const it = items.find((q) => q.id === sel); if (!it) return;
-  const copy = { ...it, id: newId(it.ref, items), x: it.x + 12, y: it.y - 12, placed: true }; delete copy.attach;   // a copy is a separate piece
+  const copy = { ...it, id: newId(it.ref, items), x: it.x + 12, y: it.y - 12, placed: true, from: it.from || it.id }; delete copy.attach; delete copy.hidden;   // a copy is a separate piece, an exact copy of its source: `from` joins it to the same inventory piece (size, look, set); an attached chair stays with its own desk
   mutate(() => { items.push(copy); place(copy, roomOf(model, [it.x, it.y]), true); sel = copy.id; });
 }
 function addRef(ref) {
@@ -585,12 +587,22 @@ function useOwn() {
   if (!model.layouts.some((l) => l.id === OWN)) { try { model.layouts.unshift(ownLayout()); } catch (e) { toast(`Could not fit your furniture: ${e.message || e}`, 4200); return; } }
   applyPreset(OWN);
 }
+/** [furniture] Bring one of the renter's pieces back or add it: a hidden piece is shown, a removed one returns to the spot it had, a piece never placed is fitted. */
+function showOwn(pid) {
+  const p = inventory?.pieces.find((q) => q.id === pid); if (!p) return;
+  const g = groupsOf(inventory).find((x) => x.choices.some((c) => c.pieces.includes(pid))), c = g?.choices.find((x) => x.pieces.includes(pid));
+  const it = items.find((q) => q.id === pid);
+  if (g && c && (!it || it.hidden)) { setBed(c.id, g.id); st.activePreset = null; toast(`${p.label || p.ref} shown`); return; }   // an option group's piece comes back through its own switch
+  if (it) { if (it.hidden) mutate(() => { delete it.hidden; }, `${p.label || p.ref} shown`); return; }
+  addOwn(pid);
+}
 /** [furniture] Add one of the renter's pieces (its own size) to the layout, placed in the kind of room it lives in. */
 function addOwn(pid) {
   const p = inventory?.pieces.find((q) => q.id === pid); if (!p || items.some((q) => q.id === pid)) return;
   const room = (model.rooms.filter((r) => r.kind === (p.room === 'dining' ? 'living' : p.room)).sort((a, b) => b.area - a.area)[0] || [...model.rooms].sort((a, b) => b.area - a.area)[0]);
-  const it = { id: p.id, ref: p.ref, x: Math.round(room.label[0]), y: Math.round(room.label[1]), rot: 0, placed: true };   // [placement] size, label and look come from the inventory
-  mutate(() => { removed.delete(it.id); items.push(it); const ok = place(it, room.name, true); sel = it.id; st.activePreset = null; toast(ok ? `Added ${(p.label || p.ref).toLowerCase()} to the ${room.name.toLowerCase()}` : `No clear spot in the ${room.name.toLowerCase()}; it is in the middle`); });
+  const was = gone.get(pid), it = was ? { ...was, placed: true } : { id: p.id, ref: p.ref, x: Math.round(room.label[0]), y: Math.round(room.label[1]), rot: 0, placed: true };   // [placement] size, label and look come from the inventory; a piece the renter removed returns to its spot
+  delete it.hidden;
+  mutate(() => { removed.delete(it.id); gone.delete(it.id); items.push(it); const ok = was ? true : place(it, room.name, true); sel = it.id; st.activePreset = null; toast(ok ? `Added ${(p.label || p.ref).toLowerCase()} to the ${room.name.toLowerCase()}` : `No clear spot in the ${room.name.toLowerCase()}; it is in the middle`); });
 }
 function flashPoly(poly) { flash = poly; flashT = performance.now() + 2400; overlays(); setTimeout(() => { if (performance.now() >= flashT) { flash = null; overlays(); } }, 2500); }
 
@@ -818,7 +830,7 @@ async function fileAction(f) {
     Q3.renderImage(f === 'render2' ? 2 : 4, { name: `${st.id}-${st.view}`, caption: `${model.title || st.id} · ${st.date} ${fmtT(st.min)}` });   // [feature J]
   } else if (f === 'csv') {
     saveBlob(new Blob([shoppingCSV(shoppingList(R), model.title || st.id)], { type: 'text/csv' }), `${st.id}-shopping-list.csv`);
-  } else if (f === 'options') openOptions(); else if (f === 'clear') mutate(() => { for (const q of items) removed.add(q.id); items = []; sel = null; }, 'Cleared. Undo brings it back');
+  } else if (f === 'options') openOptions(); else if (f === 'clear') mutate(() => { for (const q of items) { removed.add(q.id); gone.set(q.id, { ...q }); } items = []; sel = null; }, 'Cleared. Undo brings it back');
 }
 function openOptions() {
   const el = $('psCompare'); cancelCompare(); el.hidden = false;
@@ -1088,7 +1100,7 @@ function furnitureTab() {
     return `<div class="ps-item${it.id === sel ? ' on' : ''}${it.hidden ? ' off' : ''}" data-id="${esc(it.id)}"><button type="button" class="ps-ib" data-sel="${esc(it.id)}"><span class="ps-sw" style="--c:#${(it.base.color ?? 0x888888).toString(16).padStart(6, '0')}"></span><span class="t"><b>${esc(it.name)}</b><small>${fmtIn(it.w)} × ${fmtIn(it.d)}${it.hidden ? ' · hidden' : r?.room ? ` · ${esc(r.room)}` : ''}</small></span><i class="dot g-${s}" title="${s === 'off' ? 'hidden' : GRADE_TXT[s]}"></i></button><button type="button" class="icon-btn" data-vis="${esc(it.id)}" aria-label="${it.hidden ? 'Show' : 'Hide'}" title="${it.hidden ? 'Show' : 'Hide'}">${it.hidden ? IC.eyeOff : IC.eye}</button>${it.hidden ? '' : `<span class="ar-row" data-ar="${esc(it.id)}" data-ar-compact></span>`}</div>`;
   }).join('') : '<p class="faint">Nothing placed yet.</p>';
   const cat = CATEGORIES.map(([k, t]) => { const refs = Object.entries(CATALOG).filter(([, c]) => c.cat === k); return refs.length ? `<div class="ps-cat"><span class="ps-cat-h">${t}</span><div class="chips">${refs.map(([r, c]) => `<button type="button" class="chip" data-add="${esc(r)}" title="${esc(c.src)}">${IC.plus}${esc(c.name)}</button>`).join('')}</div></div>` : ''; }).join('');
-  const own = inventory ? inventoryHTML(inventory, { held: placedIds(inventory, items), hasPreset: model.layouts.some((l) => l.id === OWN), active: st.activePreset === OWN }) : '';   // [furniture]
+  const own = inventory ? inventoryHTML(inventory, { held: placedIds(inventory, items), hidden: new Set(items.filter((x) => x.hidden).map((x) => x.id)), removed, hasPreset: model.layouts.some((l) => l.id === OWN), active: st.activePreset === OWN }) : '';   // [furniture]
   return `${tryFitHTML({ rooms: model.rooms.filter((r) => !['bath', 'closet', 'hall'].includes(r.kind)), st: tfState() })}${own}${R.some((x) => !x.hidden) ? arSectionHTML(ar.platform) : ''}${pres}<h3 class="label">In this layout <span>${R.filter((x) => !x.hidden).length} pieces</span></h3><div class="ps-list">${list}</div>
     <h3 class="label">Add furniture <span>real sizes, hover for the source</span></h3>${cat}
     <div class="ps-opts">${[['snap', 'Snap to walls'], ['zonesAll', 'Show every clearance zone'], ['sight', 'Show TV sightlines'], ['swings', 'Shade door swings in 3D']].map(([k, t]) => `<label class="tg ${st[k] ? 'on' : ''}"><input type="checkbox" class="sr" data-opt="${k}" ${st[k] ? 'checked' : ''}><span class="switch"></span><span class="lbl">${t}</span></label>`).join('')}</div>`;
@@ -1155,7 +1167,7 @@ function tabClick(e) {
   if (b.dataset.p) applyPreset(b.dataset.p);
   else if (b.dataset.tf) fitClick(e);
   else if ('invUse' in b.dataset) useOwn();
-  else if (b.dataset.invAdd) addOwn(b.dataset.invAdd);
+  else if (b.dataset.invAdd || b.dataset.invShow) showOwn(b.dataset.invAdd || b.dataset.invShow);
   else if (b.dataset.sel) { select(b.dataset.sel === sel ? null : b.dataset.sel); markList(); }
   else if (b.dataset.vis) { const it = items.find((q) => q.id === b.dataset.vis); if (it) mutate(() => { it.hidden = !it.hidden; if (it.hidden && sel === it.id) sel = null; }); }
   else if (b.dataset.add) addRef(b.dataset.add);

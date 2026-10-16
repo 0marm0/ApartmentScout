@@ -15,7 +15,8 @@
 // layout; a size on a layout item is a deliberate override (a variant, a product, a size typed in the inspector).
 import { applyLooks } from './looks.js';
 import { fitOne } from './fit.js';
-import { fitInventory, kitFromInventory } from './inventory.js';
+import { fitInventory, kitFromInventory, kitPiece } from './inventory.js';
+import { groupsOf, applyChoice } from './choices.js';
 import { suggestLayout } from './suggest.js';
 import { resolve } from './catalog.js';
 import { validateLayout } from './layout.js';
@@ -59,7 +60,7 @@ export function defaultLayout(model, inventory) {
 export function applyInventory(items, inventory) {
   const by = new Map((inventory?.pieces || []).map((p) => [p.id, p]));
   const out = (items || []).map((it) => {
-    const p = by.get(it.id);
+    const p = by.get(it.id) || (it.from ? by.get(it.from) : null);   // a duplicate (`from`) is an exact copy of its source: the same inventory join
     if (!p || p.ref !== it.ref) return it;
     const o = { ...it }, own = !!(it.variant || it.product);
     if (!own) { for (const k of SIZE_KEYS) if (o[k] == null && p[k] != null) o[k] = p[k]; if (!o.variant && p.variant) o.variant = p.variant; if (!o.product && p.product) o.product = p.product; }
@@ -71,6 +72,43 @@ export function applyInventory(items, inventory) {
     return o;
   });
   return applyLooks(out, inventory);
+}
+
+/**
+ * A piece of "Your furniture" that is not in the layout (removed by hand, or never held), as an item to put back: at the spot it had (`was`, the
+ * item as the studio last held it), else at the plan's default spot, else fitted into the free space around the others, else the middle of its room.
+ * Always `placed`: the renter asked for it. Null when the inventory has no such piece.
+ */
+export function restoreItem(model, inventory, items, id, was = null) {
+  const p = (inventory?.pieces || []).find((q) => q.id === id);
+  if (!p) return null;
+  const by = new Map(inventory.pieces.map((q) => [q.id, q]));
+  let base = was ? { ...was } : null;
+  if (!base) { const d = (defaultLayout(model, inventory)?.items || []).find((x) => x.id === id); if (d) base = fromDefault(d, by); }
+  if (base) { delete base.hidden; return { ...base, placed: true }; }
+  let spot = null;
+  try { spot = fitOne(model, applyInventory(items, inventory).filter((x) => !x.hidden).map((x) => resolve(x)).filter(Boolean), kitPiece(p)); } catch { spot = null; }
+  if (spot) return { id, ref: p.ref, x: Math.round(spot.x * 10) / 10, y: Math.round(spot.y * 10) / 10, rot: spot.rot, placed: true };
+  const room = [...(model.rooms || [])].sort((a, b) => b.area - a.area)[0];
+  return { id, ref: p.ref, x: Math.round(room?.label?.[0] ?? 0), y: Math.round(room?.label?.[1] ?? 0), rot: 0, placed: true };
+}
+
+/**
+ * A group's choice applied to the layout, bringing back any piece the choice shows that the layout does not hold (removed, or never placed).
+ * `gone`: a Map of id -> the item as it was when the renter removed it (its saved spot). Nothing else moves.
+ * @returns {{items: object[], restored: string[], changed: boolean}}
+ */
+export function chooseGroup(items, inventory, groupId, choiceId, { model = null, gone = null } = {}) {
+  const g = groupsOf(inventory).find((x) => x.id === groupId), c = g?.choices.find((x) => x.id === choiceId);
+  if (!c) return { items, restored: [], changed: false };
+  let next = applyChoice(items, inventory, groupId, choiceId);
+  const have = new Set(next.map((x) => x.id)), restored = [];
+  for (const id of c.pieces) {
+    if (have.has(id)) continue;
+    const it = model ? restoreItem(model, inventory, next, id, gone?.get?.(id) || null) : null;
+    if (it) { next = [...next, it]; have.add(id); restored.push(id); }
+  }
+  return { items: next, restored, changed: restored.length > 0 || next.some((x, i) => x !== items[i]) };
 }
 
 /** An item as a default layout holds it, without the sizes and label the inventory supplies (the inventory is the one place for those). */
