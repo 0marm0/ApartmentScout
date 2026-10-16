@@ -37,17 +37,17 @@
 .legend .lines { border-top-color: var(--glass-line); }
 
 /* the legend's long "how this is computed" note folds away by default */
-.legend .src-d { margin-top: 8px; }
-.legend .src-d > summary { cursor: pointer; list-style: none; display: inline-flex; align-items: center; gap: 5px; font-size: var(--fs-2xs); font-weight: 500; color: var(--ink-3); border-radius: var(--r-xs); }
+.legend .src-d { margin-top: var(--s-2); }
+.legend .src-d > summary { cursor: pointer; list-style: none; display: inline-flex; align-items: center; gap: 5px; font-size: var(--fs-2xs); font-weight: var(--fw-medium); color: var(--ink-3); border-radius: var(--r-xs); }
 .legend .src-d > summary::-webkit-details-marker { display: none; }
 .legend .src-d > summary::before { content: ""; width: 5px; height: 5px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: rotate(-45deg); transition: transform var(--t-base) var(--ease-out); }
 .legend .src-d[open] > summary::before { transform: rotate(45deg); }
 .legend .src-d > summary:hover { color: var(--ink); }
 .legend .src-d .src { margin-top: 6px; }
-.legend { padding: 10px 12px; width: 312px; }
+.legend { padding: 10px var(--s-3); width: 312px; }
 .legend h4 { margin-bottom: 6px; }
 .legend .lines { margin-top: 7px; padding-top: 7px; }
-.legend .cm-seg { margin: 0 0 8px; }
+.legend .cm-seg { margin: 0 0 var(--s-2); }
 
 /* hover lift on the mini card; panels settle with the same spring as price tags */
 .mcard.on { transition: opacity var(--t-base) var(--ease-out), transform var(--t-slow) var(--ease-out), border-color var(--t-fast), box-shadow var(--t-base); }
@@ -75,11 +75,11 @@
 .tag-anchor:has(.price-tag.fav) { z-index: 3; }
 /* the score hue is a data colour tuned for the dark ground: on the light pill its number is mixed toward ink (AA); the ring keeps the hue */
 :root[data-theme="light"] .price-tag:not(.sel) > i { color: color-mix(in srgb, var(--c) 38%, var(--ink)); }
-.price-tag.fav { border-color: var(--fav); box-shadow: 0 0 10px color-mix(in srgb, var(--fav) 26%, transparent), 0 8px 22px rgba(0, 0, 0, .38), inset 0 1px 0 rgba(255, 255, 255, .08); }
+.price-tag.fav { border-color: var(--fav); box-shadow: 0 0 10px color-mix(in srgb, var(--fav) 26%, transparent), var(--lift); }
 .price-tag.fav::after { border-right-color: var(--fav); border-bottom-color: var(--fav); }
-:root[data-theme="light"] .price-tag.fav { box-shadow: 0 0 8px color-mix(in srgb, var(--fav) 24%, transparent), 0 6px 18px rgba(20, 24, 34, .16); }
-.price-tag.fav:hover, .price-tag.fav.hl { box-shadow: 0 0 14px color-mix(in srgb, var(--fav) 38%, transparent), 0 12px 28px rgba(0, 0, 0, .45); }
-.price-tag.fav.sel { border-color: var(--fav); box-shadow: 0 0 0 4px var(--accent-soft), 0 0 14px color-mix(in srgb, var(--fav) 32%, transparent), 0 14px 30px rgba(0, 0, 0, .5); }
+:root[data-theme="light"] .price-tag.fav { box-shadow: 0 0 8px color-mix(in srgb, var(--fav) 24%, transparent), var(--lift); }
+.price-tag.fav:hover, .price-tag.fav.hl { box-shadow: 0 0 14px color-mix(in srgb, var(--fav) 38%, transparent), var(--shadow-2); }
+.price-tag.fav.sel { border-color: var(--fav); box-shadow: 0 0 0 4px var(--accent-soft), 0 0 14px color-mix(in srgb, var(--fav) 32%, transparent), var(--shadow-3); }
 .price-tag.fav.sel::after { border-right-color: var(--fav); border-bottom-color: var(--fav); }
 .price-tag.fav.sel .st { color: var(--accent-ink); }
 .price-tag .st { filter: drop-shadow(0 0 3px color-mix(in srgb, var(--fav) 60%, transparent)); }

@@ -6,19 +6,18 @@
 .coach-spot { position: fixed; border-radius: var(--r-lg); pointer-events: none;
   box-shadow: 0 0 0 2px var(--accent), 0 0 0 6px var(--accent-soft), 0 0 0 100vmax var(--coach-dim);
   transition: left var(--t-slow) var(--ease-out), top var(--t-slow) var(--ease-out), width var(--t-slow) var(--ease-out), height var(--t-slow) var(--ease-out); }
-:root { --coach-dim: rgba(4, 5, 8, .62); }
-:root[data-theme="light"] { --coach-dim: rgba(20, 24, 34, .46); }
-.coach-card { position: fixed; width: min(340px, calc(100vw - 24px)); padding: 16px 16px 12px; border-radius: var(--r-lg); background: var(--surface-1); color: var(--ink); border: 1px solid var(--line-strong); box-shadow: var(--shadow-3);
+:root { --coach-dim: var(--scrim-strong); }
+.coach-card { position: fixed; width: min(340px, calc(100vw - 24px)); padding: var(--s-4) var(--s-4) var(--s-3); border-radius: var(--r-lg); background: var(--surface-1); color: var(--ink); border: 1px solid var(--line-strong); box-shadow: var(--shadow-3);
   transition: left var(--t-slow) var(--ease-out), top var(--t-slow) var(--ease-out); animation: coachIn var(--t-slow) var(--ease-out); outline: none; }
 @keyframes coachIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
-.coach-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
-.coach-step { font: 500 var(--fs-2xs) var(--font-mono); letter-spacing: .04em; text-transform: uppercase; color: var(--ink-3); }
-.coach-dots { display: inline-flex; gap: 5px; }
-.coach-dots i { width: 6px; height: 6px; border-radius: 50%; background: var(--line-strong); transition: background var(--t-base), transform var(--t-base) var(--ease-spring); }
-.coach-dots i.seen { background: var(--ink-4); }
-.coach-dots i.on { background: var(--accent); transform: scale(1.3); }
-.coach-card h3 { margin: 0 0 6px; font-size: var(--fs-lg); font-weight: 600; letter-spacing: var(--tracking-tight); }
-.coach-card p { margin: 0 0 14px; font-size: var(--fs-sm); line-height: 1.55; color: var(--ink-2); }
+.coach-top { display: flex; align-items: center; justify-content: space-between; gap: var(--s-2); margin-bottom: var(--s-2); }
+.coach-step { font: var(--fw-medium) var(--fs-2xs) var(--font-mono); letter-spacing: .04em; text-transform: uppercase; color: var(--ink-3); }
+.coach-dots { display: flex; flex-wrap: wrap; gap: var(--s-1); margin-bottom: var(--s-3); }   /* the five journeys; the ones this step is about are lit */
+.coach-dots i { padding: 2px var(--s-2); border-radius: var(--r-pill); border: 1px solid var(--line); font: var(--fw-medium) var(--fs-2xs)/1.4 var(--font-sans); font-style: normal; color: var(--ink-3); transition: background var(--t-base), color var(--t-base), border-color var(--t-base); }
+.coach-dots i.seen { color: var(--ink-2); }
+.coach-dots i.on { background: var(--accent-soft); border-color: var(--accent-line); color: var(--accent-strong); }
+.coach-card h3 { margin: 0 0 var(--s-2); font-size: var(--fs-lg); font-weight: var(--fw-semibold); letter-spacing: var(--tracking-tight); }
+.coach-card p { margin: 0 0 var(--s-4); font-size: var(--fs-sm); line-height: var(--lh-body); color: var(--ink-2); }
 .coach-card kbd { margin: 0 1px; }
 .coach-act { display: flex; align-items: center; gap: 6px; }
 .coach-act .sp { flex: 1; }

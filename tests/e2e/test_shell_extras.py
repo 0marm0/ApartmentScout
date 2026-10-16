@@ -309,21 +309,21 @@ def test_x_and_s_act_on_the_focused_card(op) -> None:
 
 
 # ------------------------------------------------------------------ coach marks
-def test_the_tour_walks_five_steps_once_and_restarts_from_the_menu(op) -> None:
+def test_the_tour_walks_four_steps_once_and_restarts_from_the_menu(op) -> None:
     s = op("?coach=1#map")
     pg = s.page
     pg.wait_for_selector(".coach-card", timeout=15000)
     titles = []
-    for i in range(5):
-        assert pg.inner_text("#coachStep") == f"STEP {i + 1} OF 5" or pg.inner_text("#coachStep").lower() == f"step {i + 1} of 5"
+    for i in range(4):
+        assert pg.inner_text("#coachStep") == f"STEP {i + 1} OF 5" or pg.inner_text("#coachStep").lower() == f"step {i + 1} of 4"
         titles.append(pg.inner_text("#coachT"))
         spot = pg.evaluate("() => { const r = document.querySelector('.coach-spot').getBoundingClientRect(); return [r.width, r.height]; }")
         assert spot[0] > 20 and spot[1] > 20
         pg.keyboard.press("ArrowRight")
-        if i < 4:   # the next step's card is up (after the last step the card goes away, which is awaited below)
-            pg.wait_for_function("(n) => document.getElementById('coachStep').textContent.toLowerCase() === `step ${n} of 5`", arg=i + 2, timeout=10000)
+        if i < 3:   # the next step's card is up (after the last step the card goes away, which is awaited below)
+            pg.wait_for_function("(n) => document.getElementById('coachStep').textContent.toLowerCase() === `step ${n} of 4`", arg=i + 2, timeout=10000)
             settled(pg, 20000, ticks=3)
-    assert titles[0].startswith("Start with the filters") and titles[-1].startswith("See the light")
+    assert titles == ["Find a home", "Compare your picks", "See inside", "Decide, then set up"]
     pg.wait_for_selector(".coach-card", state="detached")
     assert pg.evaluate("() => JSON.parse(localStorage.getItem('as:coach')).done") is True
     # restart from the settings menu, skip with Esc
@@ -332,10 +332,10 @@ def test_the_tour_walks_five_steps_once_and_restarts_from_the_menu(op) -> None:
     pg.wait_for_selector(".coach-card", timeout=10000)
     assert pg.evaluate("() => document.activeElement.textContent") == "Next"
     pg.keyboard.press("ArrowRight")
-    pg.wait_for_function("() => document.getElementById('coachStep').textContent.toLowerCase() === 'step 2 of 5'", timeout=10000)
+    pg.wait_for_function("() => document.getElementById('coachStep').textContent.toLowerCase() === 'step 2 of 4'", timeout=10000)
     pg.keyboard.press("ArrowLeft")
-    pg.wait_for_function("() => document.getElementById('coachStep').textContent.toLowerCase() === 'step 1 of 5'", timeout=10000)
-    assert pg.inner_text("#coachT").startswith("Start with the filters")
+    pg.wait_for_function("() => document.getElementById('coachStep').textContent.toLowerCase() === 'step 1 of 4'", timeout=10000)
+    assert pg.inner_text("#coachT") == "Find a home"
     pg.keyboard.press("Escape")
     pg.wait_for_selector(".coach-card", state="detached")
     assert not s.take()
