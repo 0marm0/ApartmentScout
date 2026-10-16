@@ -12,7 +12,7 @@ body { overscroll-behavior: none; }
   .work { grid-template-rows: 46vh minmax(0, 1fr); grid-template-rows: 46dvh minmax(0, 1fr); }
   body:not([data-view="map"]) .work { grid-template-rows: minmax(0, 1fr); }
   /* the top of the page clears the notch when the app draws under it (a home-screen app with a translucent status bar, or landscape) */
-  .topbar { padding-top: max(8px, var(--safe-t)); padding-left: max(var(--s-3), var(--safe-l)); padding-right: max(var(--s-3), var(--safe-r)); }
+  .topbar { padding-top: max(var(--s-2), var(--safe-t)); padding-left: max(var(--s-3), var(--safe-l)); padding-right: max(var(--s-3), var(--safe-r)); }
   .topbar .nav { padding-left: max(6px, var(--safe-l)); padding-right: max(6px, var(--safe-r)); }
   .cards { padding-left: max(var(--s-2), var(--safe-l)); padding-right: max(var(--s-2), var(--safe-r)); overscroll-behavior: contain; }
 }
@@ -34,7 +34,7 @@ body { overscroll-behavior: none; }
   .btn.sm { min-height: 44px; }
   .btn, .seg button, .layer-switch button, .subnav a { padding-top: 0; padding-bottom: 0; }
   .map-ctl button { min-width: 44px; }
-  .d-hero .hero-btns { gap: 8px; top: 48px; }   /* below the grab bar */
+  .d-hero .hero-btns { gap: var(--s-2); top: 48px; }   /* below the grab bar */
   .d-hero .hero-btns button { width: 44px; height: 44px; }
   .save::after { content: ""; position: absolute; inset: -8px; }   /* a 28 px star on the photo, a 44 px target */
   select.sel { width: 124px; padding-left: 10px; text-overflow: ellipsis; }
@@ -47,7 +47,7 @@ body { overscroll-behavior: none; }
   /* a press you can feel: the control sinks and a veil lays over it; on release it springs back. No hover, no vibration. */
   .btn, .icon-btn, .chip, .tier, .seg button, .layer-switch button, .map-ctl button, .hero-btns button, .qa, .save, .mn-seg button, .nav a, .subnav a,
   .tday-btn, .tday-opt, .tday-ask, .srch-row, .d-tabs a, .toast-act, .am-seg button, .menu-pop > button[role="menuitem"], .qa-menu button, .ig-btn {
-    transition: transform 280ms var(--ease-spring), background-color var(--t-fast), border-color var(--t-fast), color var(--t-fast), box-shadow var(--t-fast);
+    transition: transform var(--t-slow) var(--ease-spring), background-color var(--t-fast), border-color var(--t-fast), color var(--t-fast), box-shadow var(--t-fast);
   }
   .btn:active, .icon-btn:active, .chip:active, .tier:active, .seg button:active, .layer-switch button:active, .map-ctl button:active, .hero-btns button:active,
   .qa:active, .save:active, .mn-seg button:active, .subnav a:active, .tday-btn:active, .tday-opt:active, .tday-ask:active, .srch-row:active, .d-tabs a:active,
@@ -77,27 +77,27 @@ body { overscroll-behavior: none; }
    native.js owns the geometry (inline transform in px; --sheet-h is the sheet's full height) so the actions can stay at the bottom edge of
    the screen while the sheet slides under them. Closed, the sheet is off screen and out of the tab order. */
 @media (max-width: 760px) {
-  .drawer { --sheet-h: 88dvh; top: auto; left: 0; right: 0; bottom: 0; width: auto; height: var(--sheet-h); border-radius: 22px 22px 0 0; border-width: 1px 0 0;
+  .drawer { --sheet-h: 88dvh; top: auto; left: 0; right: 0; bottom: 0; width: auto; height: var(--sheet-h); border-radius: var(--r-xl) var(--r-xl) 0 0; border-width: 1px 0 0;
     transform: translate3d(0, 112%, 0); will-change: transform; visibility: hidden; padding-left: var(--safe-l); padding-right: var(--safe-r);
-    transition: transform 440ms var(--ease-spring), visibility 0s linear 440ms;
+    transition: transform var(--t-page) var(--ease-spring), visibility 0s linear 440ms;
     box-shadow: inset 0 1px 0 var(--glass-hi), 0 -14px 44px rgba(0, 0, 0, .4), 0 80px 0 0 var(--surface-1); }
-  .drawer.open { visibility: visible; transition: transform 440ms var(--ease-spring), visibility 0s; }
+  .drawer.open { visibility: visible; transition: transform var(--t-page) var(--ease-spring), visibility 0s; }
   .drawer.pulling, .drawer.dragging { transition: none; }
-  .drawer.settling { transition: transform var(--settle-ms, 420ms) var(--settle-ease, var(--ease-spring)), visibility 0s; }
+  .drawer.settling { transition: transform var(--settle-ms, var(--t-page)) var(--settle-ease, var(--ease-spring)), visibility 0s; }
   .drawer::before { display: none; }
   .drawer[data-detent="peek"] .d-scroll, .drawer[data-detent="half"] .d-scroll { overflow-y: hidden; }
   .drawer .d-actions { will-change: transform; position: relative; z-index: 6; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none; scroll-padding-inline: 14px; }
   .drawer .d-actions::-webkit-scrollbar { display: none; }
-  .drawer .d-actions .btn { flex: 0 0 auto; padding: 0 16px; overflow: visible; text-overflow: clip; white-space: nowrap; }
+  .drawer .d-actions .btn { flex: 0 0 auto; padding: 0 var(--s-4); overflow: visible; text-overflow: clip; white-space: nowrap; }
   .sheet-grab { position: absolute; z-index: 8; top: 0; left: 50%; width: 140px; height: 44px; margin-left: -70px; border: 0; padding: 0; background: none; cursor: grab; touch-action: none; }
   .sheet-grab i { position: absolute; left: 50%; top: 9px; width: 40px; height: 5px; margin-left: -20px; border-radius: 3px; background: rgba(255, 255, 255, .7);
     box-shadow: 0 0 0 1px rgba(0, 0, 0, .18), 0 1px 4px rgba(0, 0, 0, .35); transition: width var(--t-base) var(--ease-spring), background var(--t-fast); }
   .sheet-grab:active i { width: 52px; }
-  .drawer.swap-next .d-scroll { animation: swapNext 300ms var(--ease-out) both; }
-  .drawer.swap-prev .d-scroll { animation: swapPrev 300ms var(--ease-out) both; }
+  .drawer.swap-next .d-scroll { animation: swapNext var(--t-slow) var(--ease-out) both; }
+  .drawer.swap-prev .d-scroll { animation: swapPrev var(--t-slow) var(--ease-out) both; }
   /* the sheet's content slides with the finger; the swipe hint sits above it */
   .drawer .d-scroll { will-change: auto; }
-  .sheet-pos { position: absolute; z-index: 7; left: 14px; top: 11px; padding: 2px 9px; border-radius: var(--r-pill); font: 600 var(--fs-2xs)/1.5 var(--font-sans); font-variant-numeric: tabular-nums;
+  .sheet-pos { position: absolute; z-index: 7; left: 14px; top: 11px; padding: 2px 9px; border-radius: var(--r-pill); font: var(--fw-semibold) var(--fs-2xs)/1.5 var(--font-sans); font-variant-numeric: tabular-nums;
     color: #fff; background: rgba(10, 12, 16, .55); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); pointer-events: none; }
 }
 @keyframes swapNext { from { transform: translate3d(16%, 0, 0); opacity: 0; } to { transform: none; opacity: 1; } }
@@ -110,23 +110,23 @@ body { overscroll-behavior: none; }
   transform: translate3d(0, calc(var(--ptr-y, 0px) - 52px), 0) scale(var(--ptr-s, .6)); }
 .ptr svg { width: 18px; height: 18px; transform: rotate(calc(var(--ptr-r, 0) * 1deg)); }
 .ptr.on { opacity: 1; }
-.ptr.busy { opacity: 1; transform: translate3d(0, 8px, 0) scale(1); transition: transform 260ms var(--ease-spring); }
-.ptr.busy svg { animation: ptrSpin 800ms linear infinite; }
-.ptr.out { opacity: 0; transition: opacity 220ms, transform 260ms var(--ease-out); transform: translate3d(0, -52px, 0) scale(.6); }
-.cards.pulled { transition: transform 300ms var(--ease-spring); }
+.ptr.busy { opacity: 1; transform: translate3d(0, 8px, 0) scale(1); transition: transform var(--t-slow) var(--ease-spring); }
+.ptr.busy svg { animation: ptrSpin var(--t-page) linear infinite; }
+.ptr.out { opacity: 0; transition: opacity var(--t-base), transform var(--t-slow) var(--ease-out); transform: translate3d(0, -52px, 0) scale(.6); }
+.cards.pulled { transition: transform var(--t-slow) var(--ease-spring); }
 @keyframes ptrSpin { to { transform: rotate(360deg); } }
 
 /* ------------------------------------------------------------------ long-press quick actions */
-.card.lp-held { transform: scale(.975); transition: transform 240ms var(--ease-out); }
-.card.lp-lift { position: relative; z-index: 41; transform: scale(1.02); box-shadow: var(--shadow-3), 0 0 0 2px var(--accent-line); background: var(--surface-1); transition: transform 260ms var(--ease-spring), box-shadow 200ms; }
-.qa-scrim { position: fixed; z-index: 40; inset: 0; background: rgba(8, 9, 12, .42); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); animation: fadeIn 160ms ease both; }
+.card.lp-held { transform: scale(.975); transition: transform var(--t-base) var(--ease-out); }
+.card.lp-lift { position: relative; z-index: 41; transform: scale(1.02); box-shadow: var(--shadow-3), 0 0 0 2px var(--accent-line); background: var(--surface-1); transition: transform var(--t-slow) var(--ease-spring), box-shadow var(--t-base); }
+.qa-scrim { position: fixed; z-index: 40; inset: 0; background: rgba(8, 9, 12, .42); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); animation: fadeIn var(--t-base) var(--ease-out) both; }
 :root[data-theme="light"] .qa-scrim { background: rgba(20, 24, 34, .28); }
-.qa-menu { position: fixed; z-index: 42; width: min(300px, calc(100vw - 32px)); padding: 6px; border-radius: 18px; overflow: hidden;
+.qa-menu { position: fixed; z-index: 42; width: min(300px, calc(100vw - 32px)); padding: 6px; border-radius: var(--r-xl); overflow: hidden;
   background: linear-gradient(180deg, var(--glass-tint), transparent 72%), var(--glass-bg); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
-  border: 1px solid var(--glass-line); box-shadow: inset 0 1px 0 var(--glass-hi), var(--glass-shadow); transform-origin: var(--qa-ox, 50%) var(--qa-oy, 0%); animation: qaIn 240ms var(--ease-spring) both; }
-.qa-menu button { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 48px; padding: 0 12px; border: 0; border-radius: 12px; background: none; color: var(--ink);
-  font: 500 var(--fs-lg) var(--font-sans); text-align: left; cursor: pointer; }
-.qa-menu button + button { border-top: 1px solid var(--line); border-radius: 12px; }
+  border: 1px solid var(--glass-line); box-shadow: inset 0 1px 0 var(--glass-hi), var(--glass-shadow); transform-origin: var(--qa-ox, 50%) var(--qa-oy, 0%); animation: qaIn var(--t-base) var(--ease-spring) both; }
+.qa-menu button { display: flex; align-items: center; gap: var(--s-3); width: 100%; min-height: 48px; padding: 0 var(--s-3); border: 0; border-radius: var(--r-lg); background: none; color: var(--ink);
+  font: var(--fw-medium) var(--fs-lg) var(--font-sans); text-align: left; cursor: pointer; }
+.qa-menu button + button { border-top: 1px solid var(--line); border-radius: var(--r-lg); }
 .qa-menu button svg { width: 20px; height: 20px; flex: none; color: var(--ink-2); }
 .qa-menu button[aria-pressed="true"] svg { color: var(--accent); }
 .qa-menu button[aria-pressed="true"] { color: var(--accent-strong); }
@@ -135,60 +135,60 @@ body { overscroll-behavior: none; }
 
 /* ------------------------------------------------------------------ the keyboard is open: the page does not move, the tab bar steps out of the way */
 @media (max-width: 760px) {
-  html.kbd-open .topbar .nav { transform: translate3d(0, 110%, 0); transition: transform 200ms var(--ease-out); pointer-events: none; }
+  html.kbd-open .topbar .nav { transform: translate3d(0, 110%, 0); transition: transform var(--t-base) var(--ease-out); pointer-events: none; }
   html.kbd-open .tray, html.kbd-open .toast, html.kbd-open .chord-hint, html.kbd-open .pwa-update { display: none; }
 }
 
 /* ------------------------------------------------------------------ the install guide (iOS: no install prompt, so show the steps) */
 .ig { position: fixed; z-index: 130; inset: 0; display: flex; align-items: flex-end; justify-content: center; }
-.ig-scrim { position: absolute; inset: 0; background: rgba(8, 9, 12, .5); -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px); animation: fadeIn 200ms ease both; }
-.ig-card { position: relative; width: min(480px, 100%); max-height: calc(100dvh - 24px); overflow-y: auto; overscroll-behavior: contain; padding: 22px 18px calc(16px + var(--safe-b));
+.ig-scrim { position: absolute; inset: 0; background: rgba(8, 9, 12, .5); -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px); animation: fadeIn var(--t-base) var(--ease-out) both; }
+.ig-card { position: relative; width: min(480px, 100%); max-height: calc(100dvh - 24px); overflow-y: auto; overscroll-behavior: contain; padding: 22px 18px calc(var(--s-4) + var(--safe-b));
   padding-left: max(18px, var(--safe-l)); padding-right: max(18px, var(--safe-r));
-  border-radius: 24px 24px 0 0; background: var(--surface-1); color: var(--ink); border: 1px solid var(--line-strong); border-bottom: 0;
-  box-shadow: inset 0 1px 0 var(--glass-hi), 0 -20px 60px rgba(0, 0, 0, .45); transform: translate3d(0, var(--ig-y, 0px), 0); animation: igUp 420ms var(--ease-spring) both; touch-action: pan-y; }
-.ig.closing .ig-card { transition: transform 260ms var(--ease-out); transform: translate3d(0, 105%, 0); }
-.ig.closing .ig-scrim { transition: opacity 240ms; opacity: 0; }
+  border-radius: var(--r-xl) var(--r-xl) 0 0; background: var(--surface-1); color: var(--ink); border: 1px solid var(--line-strong); border-bottom: 0;
+  box-shadow: inset 0 1px 0 var(--glass-hi), 0 -20px 60px rgba(0, 0, 0, .45); transform: translate3d(0, var(--ig-y, 0px), 0); animation: igUp var(--t-page) var(--ease-spring) both; touch-action: pan-y; }
+.ig.closing .ig-card { transition: transform var(--t-slow) var(--ease-out); transform: translate3d(0, 105%, 0); }
+.ig.closing .ig-scrim { transition: opacity var(--t-base); opacity: 0; }
 .ig-card.dragging { animation: none; transition: none; }
 @keyframes igUp { from { transform: translate3d(0, 100%, 0); } }
 .ig-grab { position: absolute; top: 0; left: 50%; width: 120px; height: 28px; margin-left: -60px; border: 0; padding: 0; background: none; cursor: grab; touch-action: none; }
 .ig-grab i { position: absolute; left: 50%; top: 8px; width: 40px; height: 5px; margin-left: -20px; border-radius: 3px; background: var(--line-strong); }
 .ig-head { display: flex; align-items: center; gap: 14px; margin: 6px 0 14px; }
-.ig-icon { flex: none; width: 56px; height: 56px; border-radius: 14px; box-shadow: 0 0 0 1px var(--line-strong), var(--shadow-2); }
-.ig-head h2 { margin: 0; font-size: var(--fs-xl); font-weight: 650; letter-spacing: -.02em; line-height: 1.15; }
+.ig-icon { flex: none; width: 56px; height: 56px; border-radius: var(--r-lg); box-shadow: 0 0 0 1px var(--line-strong), var(--shadow-2); }
+.ig-head h2 { margin: 0; font-size: var(--fs-xl); font-weight: var(--fw-semibold); letter-spacing: -.02em; line-height: 1.15; }
 .ig-head p { margin: 3px 0 0; font-size: var(--fs-sm); color: var(--ink-2); line-height: 1.4; }
 .ig-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
-.ig-step { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 2px 12px; align-items: start; padding: 10px 12px; border-radius: 16px; background: var(--surface-2); border: 1px solid var(--line); }
-.ig-n { grid-row: 1; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); font: 650 var(--fs-md) var(--font-sans); }
-.ig-step h3 { grid-column: 2; margin: 3px 0 0; font-size: var(--fs-lg); font-weight: 600; line-height: 1.3; }
+.ig-step { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 2px var(--s-3); align-items: start; padding: 10px var(--s-3); border-radius: var(--r-xl); background: var(--surface-2); border: 1px solid var(--line); }
+.ig-n { grid-row: 1; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); font: var(--fw-semibold) var(--fs-md) var(--font-sans); }
+.ig-step h3 { grid-column: 2; margin: 3px 0 0; font-size: var(--fs-lg); font-weight: var(--fw-semibold); line-height: 1.3; }
 .ig-step h3 svg { display: inline-block; vertical-align: -3px; width: 18px; height: 18px; margin: 0 2px; color: var(--accent); }
 .ig-pic { grid-column: 1 / -1; margin-top: 6px; }
-.ig-pic svg { display: block; width: 100%; max-width: 330px; max-height: 104px; margin: 0 auto; border-radius: 12px; }
+.ig-pic svg { display: block; width: 100%; max-width: 330px; max-height: 104px; margin: 0 auto; border-radius: var(--r-lg); }
 .ig-head h2:focus { outline: none; }
 .ig-pic .bg { fill: var(--surface-3); } .ig-pic .bar { fill: var(--surface-1); stroke: var(--line-strong); }
 .ig-pic .ln { stroke: var(--ink-3); fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
 .ig-pic .hl { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1.6; }
 .ig-pic .ac { stroke: var(--accent); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-.ig-pic .tx { fill: var(--ink-2); font: 500 9.5px var(--font-sans); } .ig-pic .tx.b { fill: var(--ink); font-weight: 600; } .ig-pic .tx.a { fill: var(--accent); font-weight: 650; }
-.ig-pic .row { fill: var(--surface-1); } .ig-pic .pulse { fill: none; stroke: var(--accent); stroke-width: 1.5; transform-box: fill-box; transform-origin: center; animation: igPulse 1.8s ease-out infinite; }
+.ig-pic .tx { fill: var(--ink-2); font: var(--fw-medium) 9.5px var(--font-sans); } .ig-pic .tx.b { fill: var(--ink); font-weight: var(--fw-semibold); } .ig-pic .tx.a { fill: var(--accent); font-weight: var(--fw-semibold); }
+.ig-pic .row { fill: var(--surface-1); } .ig-pic .pulse { fill: none; stroke: var(--accent); stroke-width: 1.5; transform-box: fill-box; transform-origin: center; animation: igPulse 1.8s var(--ease-out) infinite; }
 @keyframes igPulse { 0% { transform: scale(.7); opacity: .9; } 100% { transform: scale(1.5); opacity: 0; } }
-.ig-foot { display: grid; gap: 8px; margin-top: 16px; }
-.ig-btn { display: flex; align-items: center; justify-content: center; min-height: 50px; border-radius: 14px; border: 1px solid var(--line-strong); background: var(--surface-2); color: var(--ink);
-  font: 600 var(--fs-lg) var(--font-sans); cursor: pointer; }
+.ig-foot { display: grid; gap: var(--s-2); margin-top: var(--s-4); }
+.ig-btn { display: flex; align-items: center; justify-content: center; min-height: 50px; border-radius: var(--r-lg); border: 1px solid var(--line-strong); background: var(--surface-2); color: var(--ink);
+  font: var(--fw-semibold) var(--fs-lg) var(--font-sans); cursor: pointer; }
 .ig-btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
-.ig-btn.text { border-color: transparent; background: none; color: var(--ink-3); font-weight: 500; font-size: var(--fs-md); min-height: 44px; }
-.ig-note { margin: 12px 0 0; font-size: var(--fs-xs); color: var(--ink-3); line-height: 1.5; text-align: center; }
-.ig-warn { margin: 0 0 12px; padding: 10px 12px; border-radius: 12px; background: var(--warn-soft); color: var(--ink); font-size: var(--fs-sm); line-height: 1.45; }
+.ig-btn.text { border-color: transparent; background: none; color: var(--ink-3); font-weight: var(--fw-medium); font-size: var(--fs-md); min-height: 44px; }
+.ig-note { margin: var(--s-3) 0 0; font-size: var(--fs-xs); color: var(--ink-3); line-height: 1.5; text-align: center; }
+.ig-warn { margin: 0 0 var(--s-3); padding: 10px var(--s-3); border-radius: var(--r-lg); background: var(--warn-soft); color: var(--ink); font-size: var(--fs-sm); line-height: 1.45; }
 
 /* ------------------------------------------------------------------ Tour day: the offline map */
 .tday-off { display: grid; gap: 10px; padding: 14px; border-radius: var(--r-lg); background: var(--surface-2); border: 1px solid var(--line); }
-.tday-off h3 { margin: 0; font-size: var(--fs-lg); font-weight: 650; display: flex; align-items: center; gap: 8px; }
+.tday-off h3 { margin: 0; font-size: var(--fs-lg); font-weight: var(--fw-semibold); display: flex; align-items: center; gap: var(--s-2); }
 .tday-off h3 svg { width: 18px; height: 18px; color: var(--accent); flex: none; }
 .tday-off p { margin: 0; font-size: var(--fs-sm); color: var(--ink-2); line-height: 1.5; }
 .tday-off .fine { font-size: var(--fs-xs); color: var(--ink-3); }
-.tday-off-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.tday-off-row { display: flex; flex-wrap: wrap; gap: var(--s-2); align-items: center; }
 .tday-off-row .tday-btn { flex: 1 1 auto; justify-content: center; }
 .tday-off-stat { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: var(--fs-sm); color: var(--ink-2); font-variant-numeric: tabular-nums; }
-.tday-off-stat b { color: var(--ink); font-weight: 650; }
+.tday-off-stat b { color: var(--ink); font-weight: var(--fw-semibold); }
 .tday-off-bar { height: 8px; border-radius: 4px; background: var(--surface-3); overflow: hidden; }
-.tday-off-bar i { display: block; height: 100%; width: 0; border-radius: 4px; background: var(--accent); transition: width 200ms var(--ease-out); }
+.tday-off-bar i { display: block; height: 100%; width: 0; border-radius: var(--r-xs); background: var(--accent); transition: width var(--t-base) var(--ease-out); }
 .tday-off.done .tday-off-bar i { background: var(--good); }

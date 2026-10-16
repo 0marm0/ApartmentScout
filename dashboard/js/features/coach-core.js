@@ -1,14 +1,15 @@
 // First-run coach marks, pure parts: the steps, whether the tour should start by itself, and where the card goes.
 // coach.js owns the DOM; this file has no DOM so node can test the rules.
 
-/** Five steps. `target` names which element to spotlight; coach.js resolves it for the current screen.
+/** Four steps through the five journeys: find, compare, see inside, decide and set up (the last two share the menu and the Shortlist).
+ *  `target` names which element to spotlight; coach.js resolves it for the current screen.
  *  {s}, {x}, {g}, {u} in a body are drawn as key caps and {undo} as the platform's undo shortcut. */
+export const JOURNEYS = ['Find', 'Compare', 'See inside', 'Decide', 'Set up'];
 export const STEPS = [
-  { id: 'filters', target: 'filters', title: 'Start with the filters', body: 'Budget tiers, commute time and must-haves live here. The list and the map follow every change.' },
-  { id: 'weights', target: 'weights', title: 'Weights re-rank live', body: 'Drag a slider and the homes re-order as you go. Raise what matters to you; unknown facts stay neutral.' },
-  { id: 'star', target: 'star', title: 'Star the ones you like', body: 'Press the star, or {s}, to keep a home in your picks. Anything you do here can be undone with {undo}.' },
-  { id: 'compare', target: 'compare', title: 'Line them up in Compare', body: 'Add up to four homes with this button, or press {x}. Compare marks the best value in every row.' },
-  { id: 'unit', target: 'unit', title: 'See the light in the unit', body: 'Home holds Unit 3D, which builds the block around a home and shows when the sun reaches its window, and the Floor plan studio. Press {g} then {u} to jump to Unit 3D.' },
+  { id: 'find', journeys: [0], target: 'filters', title: 'Find a home', body: 'Budget, commute and must-haves live in the filters, and every slider re-ranks the homes live. Unknown facts stay neutral.' },
+  { id: 'compare', journeys: [1], target: 'compare', title: 'Compare your picks', body: 'Star the ones you like with the star or {s}, then add up to four here, or press {x}. Anything can be undone with {undo}.' },
+  { id: 'inside', journeys: [2], target: 'unit', title: 'See inside', body: '3D builds the block around a home and shows when the sun reaches its window; the Floor plan studio tests furniture. Press {g} then {u}.' },
+  { id: 'decide', journeys: [3, 4], target: 'menu', title: 'Decide, then set up', body: 'Your picks gather in the Shortlist and become a decision report. This menu holds your search, criteria, sync between devices and this tour.' },
 ];
 
 /**
@@ -31,10 +32,13 @@ export function nextStep(index, dir, has) {
 
 /**
  * Where the card goes: `rect` is the target, `card` its size, `vp` the viewport. Prefers the right of a tall target
- * (the filter rail), else below, above, left; clamped inside the viewport with a margin. On a phone it docks at the bottom.
+ * (the filter rail), else below, above, left; clamped inside the viewport with a margin. On a phone it docks at the bottom, or at the top when the target is in the lower half.
  */
 export function placeCard(rect, card, vp, { gap = 14, margin = 12 } = {}) {
-  if (vp.w <= 760) return { dock: 'bottom', left: margin, top: Math.max(margin, vp.h - card.h - margin) };
+  if (vp.w <= 760) {   // a phone: the card takes the half of the screen the target is not in, so it never covers what it points at
+    if (rect.y + rect.h / 2 > vp.h / 2) return { dock: 'top', left: margin, top: margin };
+    return { dock: 'bottom', left: margin, top: Math.max(margin, vp.h - card.h - margin) };
+  }
   const clampX = (x) => Math.max(margin, Math.min(vp.w - card.w - margin, x));
   const clampY = (y) => Math.max(margin, Math.min(vp.h - card.h - margin, y));
   const tall = rect.h > vp.h * 0.5;
