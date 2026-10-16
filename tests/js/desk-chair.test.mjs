@@ -30,14 +30,18 @@ test('the office chair is its own piece, not part of the desk set; a rolling cha
   assert.equal(dk.set.chair, false);
 });
 
-test('25E: the chair stands at the desk\'s shelf end, beside the rig, attached to the desk, and nothing is blocked; both are shown by default', () => {
-  const r = build(base), ev = evaluate(m, r), ch = base.find((x) => x.id === 'desk-chair');
+test('25E default: exactly one office chair, attached in front of the desk where the rig\'s seat would be and facing it; the sim rig is hidden; nothing is blocked', () => {
+  const r = build(base), ev = evaluate(m, r), ch = base.find((x) => x.id === 'desk-chair'), dk = r.find((x) => x.id === 'desk');
   assert.equal(ch.attach, 'desk'); assert.equal(isAttached(base, 'desk-chair'), true);
+  const front = seatAtDesk(dk); close(ch.x, front.x); close(ch.y, front.y); assert.equal(ch.rot, front.rot, 'facing the desk');
+  assert.equal(base.filter((x) => x.ref === 'task-chair').length, 1, 'one office chair'); assert.equal(r.filter((x) => x.kind === 'chair' || x.kind === 'taskchair').length, 1);
+  assert.equal(dk.set.chair, false, 'the desk draws no chair of its own');
   assert.equal(ev.counts.blocked, 0, JSON.stringify(Object.values(ev.items).filter((i) => i.state === 'blocked').map((i) => i.issues.map((q) => q.text))));
-  assert.equal(ev.items['desk-chair'].state, 'clear'); assert.equal(ev.items['sim-rig'].state, 'clear');
-  assert.equal(choiceState(base, inv, 'chair').current, 'shown'); assert.equal(choiceState(base, inv, 'sim').current, 'shown');
+  assert.equal(ev.items['desk-chair'].state, 'clear'); assert.equal(ev.items['sim-rig'], undefined, 'the rig is hidden, so not checked');
+  assert.equal(choiceState(base, inv, 'chair').current, 'shown'); assert.equal(choiceState(base, inv, 'sim').current, 'hidden', 'option group default: hidden');
+  assert.equal(inv.options.sim.default, 'hidden'); assert.equal(base.find((x) => x.id === 'sim-rig').hidden, true);
   const off = applyChoice(base, inv, 'chair', 'hidden');
-  assert.equal(off.find((x) => x.id === 'desk-chair').hidden, true); assert.equal(off.find((x) => x.id === 'sim-rig').hidden, undefined, 'the rig is unaffected');
+  assert.equal(off.find((x) => x.id === 'desk-chair').hidden, true); assert.equal(off.find((x) => x.id === 'sim-rig').hidden, true, 'the rig is unaffected');
   assert.equal(evaluate(m, build(off)).items['desk-chair'], undefined, 'a hidden chair is not checked');
 });
 

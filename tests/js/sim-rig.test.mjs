@@ -10,13 +10,16 @@ import { resolve } from '../../dashboard/js/plan/catalog.js';
 import { evaluate, partPolys, overlaps } from '../../dashboard/js/plan/checks.js';
 import { applyInventory, resolveLayout } from '../../dashboard/js/plan/placement.js';
 import { choiceState, applyChoice } from '../../dashboard/js/plan/choices.js';
+import { seatAtDesk } from '../../dashboard/js/plan/attach.js';
 import { layoutOf, tubesOf, backTop, ENVELOPE } from '../../dashboard/js/plan/rigspec.js';
 
 const read = (p) => JSON.parse(fs.readFileSync(new URL(`../../${p}`, import.meta.url), 'utf8'));
 const m = normalisePlan(read('examples/nyc-2026/plans/paramount-tower-25e.json')), inv = validateInventory(read('examples/nyc-2026/furniture.json')).inventory;
 const cm = (v) => Math.round(v * 2.54);
 const build = (layoutItems) => applyInventory(layoutItems, inv).map((x) => resolve(x));
-const base = resolveLayout({ model: m, inventory: inv, saved: null }).items;
+const dflt = resolveLayout({ model: m, inventory: inv, saved: null }).items;   // the rig is hidden by default, the chair stands in front of the desk
+const shown = applyChoice(dflt, inv, 'sim', 'shown'), seat = seatAtDesk(build(dflt).find((x) => x.id === 'desk'), { aside: true });
+const base = shown.map((x) => (x.id === 'desk-chair' ? { ...x, ...seat } : x));   // the rig shown takes the seat at the desk: the chair stands beside the shelf (what Attach does with the rig shown)
 const items = build(base), by = Object.fromEntries(items.map((i) => [i.id, i]));
 
 test('the piece is the 195 x 85 x 130 cm planning envelope, with every published figure kept beside its source and status', () => {
@@ -85,7 +88,7 @@ test('the rig can be shown or hidden like the bed options, without moving anythi
   assert.equal(choiceState(off, inv, 'sim').current, 'hidden');
   assert.equal(applyChoice(off, inv, 'sim', 'shown').find((x) => x.id === 'sim-rig').hidden, undefined);
   assert.equal(by.desk.set.chair, false, 'the desk set no longer draws a chair: the chair is the desk-chair piece');
-  assert.equal(choiceState(base, inv, 'chair').current, 'shown', 'both are shown by default');
+  assert.equal(choiceState(dflt, inv, 'chair').current, 'shown'); assert.equal(choiceState(dflt, inv, 'sim').current, 'hidden', 'the rig is hidden by default');
   assert.equal(build(off).find((x) => x.id === 'desk-chair').hidden, undefined, 'hiding the rig leaves the chair');
   assert.equal(evaluate(m, build(off)).items['sim-rig'], undefined, 'a hidden rig is not checked');
 });

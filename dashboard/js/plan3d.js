@@ -70,7 +70,7 @@ import { isMetricSearch } from './measure/core.js';
 import { parsePiece, fitReport, pieceFromItem, withPiece, roomKindAt } from './plan/tryfit.js';   // [fit] does it fit?
 import { tryFitHTML, fitCardHTML, parseNote } from './plan/tryfit-ui.js';
 import { followAttached, isAttachable, isAttached, nearestDesk, seatAtDesk } from './plan/attach.js';   // the office chair goes with its desk (layout item `attach`)
-import { choiceState, applyChoice, groupsOf } from './plan/choices.js';   // [bed option] my bed / the storage bed / no bed, saved with the layout
+import { choiceState, applyChoice, groupsOf, offPieces, shortName as pieceName } from './plan/choices.js';   // [bed option] my bed / the storage bed / no bed, saved with the layout
 import { reportFor } from './plan/bedfit.js';
 import { mountBedControl } from './plan/bed-ui.js';
 
@@ -404,7 +404,8 @@ function setBed(choice, group = 'bed') {   // group 'sim' (the sim rig) or 'chai
 function mountBedUI() {
   const o = { state: bedState, report: bedReport, piece: () => inventory?.pieces.find((p) => p.id === 'bed-latitude') || null, choose: (c) => setBed(c),
     rig: { state: () => groupState('sim'), choose: (c) => setBed(c, 'sim') },
-    chair: { state: () => groupState('chair'), choose: (c) => setBed(c, 'chair') } };
+    chair: { state: () => groupState('chair'), choose: (c) => setBed(c, 'chair') },
+    off: { list: () => (inventory && model ? offPieces(items, inventory, { removed }) : []), show: (id) => showOwn(id) } };   // every hidden or removed piece, with a Show button, in both panes
   bedUIs = [mountBedControl($('p2dWrap'), { ...o, where: 'in-p2d' }), mountBedControl($('pstage'), { ...o, where: 'in-p3d' })];
 }
 /** The saved layout changed behind this view's back (the Bed control in Unit 3D wrote it): take it up. */
@@ -494,7 +495,7 @@ const gradeRank = (g) => ['clear', 'tight', 'blocked'].indexOf(g);
 // camera moves or the plan is panned or zoomed.
 let bars = null, barLoop = 0;
 function mountBars() {
-  const on = { rot: () => rotateSel(90), free: rotateTo, move: (dx, dy) => nudge(dx, dy), dup: () => duplicateSel(), del: () => removeSel(), done: () => select(null), attach: () => toggleAttach() };
+  const on = { rot: () => rotateSel(90), free: rotateTo, move: (dx, dy) => nudge(dx, dy), dup: () => duplicateSel(), hide: () => hideSel(), del: () => removeSel(), done: () => select(null), attach: () => toggleAttach() };
   bars = { p2: mountSelbar($('p2dWrap'), on), p3: mountSelbar($('pstage'), on) };
 }
 function syncBars() {
@@ -555,10 +556,16 @@ function toggleAttach() {
   mutate(() => { Object.assign(it, seatAtDesk(dr, { aside }), { attach: desk.id, placed: true }); }, 'Attached to the desk: it moves and turns with it');
 }
 function removeSel() { const it = items.find((q) => q.id === sel); if (!it) return; const n = resolveOne(it)?.name || it.ref; mutate(() => { removed.add(it.id); gone.set(it.id, { ...it }); items = items.filter((q) => q.id !== sel); for (const q of items) if (q.attach === it.id) delete q.attach; sel = null; }, `Removed ${n.toLowerCase()}`); }
+/** Hide the selected piece (it stays in "Your furniture"; the Hidden row, the Furniture tab and the option switches show it again). */
+function hideSel(id = sel) {
+  const it = items.find((q) => q.id === id); if (!it) return;
+  const n = pieceName(it.label || resolveOne(it)?.name || it.ref);
+  mutate(() => { it.hidden = true; if (sel === it.id) sel = null; st.activePreset = null; }, `${n} hidden. Show it again from the Hidden row on the plan`);
+}
 function duplicateSel() {
   const it = items.find((q) => q.id === sel); if (!it) return;
   const copy = { ...it, id: newId(it.ref, items), x: it.x + 12, y: it.y - 12, placed: true, from: it.from || it.id }; delete copy.attach; delete copy.hidden;   // a copy is a separate piece, an exact copy of its source: `from` joins it to the same inventory piece (size, look, set); an attached chair stays with its own desk
-  mutate(() => { items.push(copy); place(copy, roomOf(model, [it.x, it.y]), true); sel = copy.id; });
+  mutate(() => { items.push(copy); place(copy, roomOf(model, [it.x, it.y]), true); sel = copy.id; }, `Duplicated ${pieceName(it.label || resolveOne(it)?.name || it.ref).toLowerCase()}. Undo (Ctrl/Cmd+Z) removes the copy`);   // never silent: the D key lands here too, and a quiet copy of the office chair reads as a second chair
 }
 function addRef(ref) {
   const c = CATALOG[ref]; if (!c) return;
@@ -589,7 +596,8 @@ function useOwn() {
 }
 /** [furniture] Bring one of the renter's pieces back or add it: a hidden piece is shown, a removed one returns to the spot it had, a piece never placed is fitted. */
 function showOwn(pid) {
-  const p = inventory?.pieces.find((q) => q.id === pid); if (!p) return;
+  const p = inventory?.pieces.find((q) => q.id === pid);
+  if (!p) { const h = items.find((q) => q.id === pid && q.hidden); if (h) mutate(() => { delete h.hidden; }, `${pieceName(h.label || h.ref)} shown`); return; }   // a piece added from the catalogue (or a copy), hidden
   const g = groupsOf(inventory).find((x) => x.choices.some((c) => c.pieces.includes(pid))), c = g?.choices.find((x) => x.pieces.includes(pid));
   const it = items.find((q) => q.id === pid);
   if (g && c && (!it || it.hidden)) { setBed(c.id, g.id); st.activePreset = null; toast(`${p.label || p.ref} shown`); return; }   // an option group's piece comes back through its own switch
@@ -940,7 +948,7 @@ function inspector() {
       <button class="btn" type="button" data-a="rot" title="Turn 90° (R)">${IC.rot}Turn</button>
       <button class="btn" type="button" data-a="dup" title="Duplicate (D)">${IC.dup}Duplicate</button>
       <div class="ps-place"><select id="psRoom" aria-label="Place in room">${model.rooms.filter((x) => !['bath', 'closet'].includes(x.kind)).map((x) => `<option ${x.name === r.room ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select><button class="btn" type="button" data-a="place" title="Find the best spot in this room">${IC.place}Place</button></div>
-      <button class="icon-btn" type="button" data-a="hide" title="Hide from the layout" aria-label="Hide">${IC.eyeOff}</button>
+      <button class="btn" type="button" data-a="hide" title="Hide from the layout: it stays in your furniture and the Hidden row shows it again">${IC.eyeOff}Hide</button>
       <button class="icon-btn danger" type="button" data-a="del" title="Remove (Del)" aria-label="Remove">${IC.del}</button>
     </div>
     <div class="ps-nudge" aria-label="Nudge">${[['↑', 0, 1, 'up'], ['←', -1, 0, 'left'], ['↓', 0, -1, 'down'], ['→', 1, 0, 'right']].map(([t, x, y, n]) => `<button type="button" data-nx="${x}" data-ny="${y}" aria-label="Nudge ${n}">${t}</button>`).join('')}</div>
@@ -970,7 +978,7 @@ function inspClick(e) {
   else if (a === 'rot') rotateSel(90);
   else if (a === 'dup') duplicateSel();
   else if (a === 'del') removeSel();
-  else if (a === 'hide' && it) mutate(() => { it.hidden = true; sel = null; }, 'Hidden. Show it again from the furniture list');
+  else if (a === 'hide' && it) hideSel(it.id);
   else if (a === 'place' && it) mutate(() => { place(it, $('psRoom').value); });
 }
 function inspChange(e) {
@@ -1097,7 +1105,7 @@ function furnitureTab() {
   const pres = model.layouts.length ? `<h3 class="label">Layouts <span>written for this plan</span></h3><div class="ps-presets">${model.layouts.map((l) => `<button type="button" class="ps-preset${st.activePreset === l.id ? ' on' : ''}" data-p="${esc(l.id)}"><b>${esc(l.name)}</b>${l.note ? `<span>${esc(l.note)}</span>` : ''}</button>`).join('')}</div>` : '';
   const list = R.length ? R.map((it) => {
     const r = ev.items[it.id], s = it.hidden ? 'off' : r?.state || 'clear';
-    return `<div class="ps-item${it.id === sel ? ' on' : ''}${it.hidden ? ' off' : ''}" data-id="${esc(it.id)}"><button type="button" class="ps-ib" data-sel="${esc(it.id)}"><span class="ps-sw" style="--c:#${(it.base.color ?? 0x888888).toString(16).padStart(6, '0')}"></span><span class="t"><b>${esc(it.name)}</b><small>${fmtIn(it.w)} × ${fmtIn(it.d)}${it.hidden ? ' · hidden' : r?.room ? ` · ${esc(r.room)}` : ''}</small></span><i class="dot g-${s}" title="${s === 'off' ? 'hidden' : GRADE_TXT[s]}"></i></button><button type="button" class="icon-btn" data-vis="${esc(it.id)}" aria-label="${it.hidden ? 'Show' : 'Hide'}" title="${it.hidden ? 'Show' : 'Hide'}">${it.hidden ? IC.eyeOff : IC.eye}</button>${it.hidden ? '' : `<span class="ar-row" data-ar="${esc(it.id)}" data-ar-compact></span>`}</div>`;
+    return `<div class="ps-item${it.id === sel ? ' on' : ''}${it.hidden ? ' off' : ''}" data-id="${esc(it.id)}"><button type="button" class="ps-ib" data-sel="${esc(it.id)}"><span class="ps-sw" style="--c:#${(it.base.color ?? 0x888888).toString(16).padStart(6, '0')}"></span><span class="t"><b>${esc(it.name)}</b><small>${fmtIn(it.w)} × ${fmtIn(it.d)}${it.hidden ? ' · hidden' : r?.room ? ` · ${esc(r.room)}` : ''}</small></span><i class="dot g-${s}" title="${s === 'off' ? 'hidden' : GRADE_TXT[s]}"></i></button><button type="button" class="btn sm ps-vis" data-vis="${esc(it.id)}" aria-label="${it.hidden ? 'Show' : 'Hide'} ${esc(it.name)}" title="${it.hidden ? 'Show' : 'Hide'} ${esc(it.name)}">${it.hidden ? IC.eye : IC.eyeOff}${it.hidden ? 'Show' : 'Hide'}</button>${it.hidden ? '' : `<span class="ar-row" data-ar="${esc(it.id)}" data-ar-compact></span>`}</div>`;
   }).join('') : '<p class="faint">Nothing placed yet.</p>';
   const cat = CATEGORIES.map(([k, t]) => { const refs = Object.entries(CATALOG).filter(([, c]) => c.cat === k); return refs.length ? `<div class="ps-cat"><span class="ps-cat-h">${t}</span><div class="chips">${refs.map(([r, c]) => `<button type="button" class="chip" data-add="${esc(r)}" title="${esc(c.src)}">${IC.plus}${esc(c.name)}</button>`).join('')}</div></div>` : ''; }).join('');
   const own = inventory ? inventoryHTML(inventory, { held: placedIds(inventory, items), hidden: new Set(items.filter((x) => x.hidden).map((x) => x.id)), removed, hasPreset: model.layouts.some((l) => l.id === OWN), active: st.activePreset === OWN }) : '';   // [furniture]
@@ -1168,6 +1176,7 @@ function tabClick(e) {
   else if (b.dataset.tf) fitClick(e);
   else if ('invUse' in b.dataset) useOwn();
   else if (b.dataset.invAdd || b.dataset.invShow) showOwn(b.dataset.invAdd || b.dataset.invShow);
+  else if (b.dataset.invHide) hideSel(b.dataset.invHide);
   else if (b.dataset.sel) { select(b.dataset.sel === sel ? null : b.dataset.sel); markList(); }
   else if (b.dataset.vis) { const it = items.find((q) => q.id === b.dataset.vis); if (it) mutate(() => { it.hidden = !it.hidden; if (it.hidden && sel === it.id) sel = null; }); }
   else if (b.dataset.add) addRef(b.dataset.add);
