@@ -13,6 +13,7 @@ import { MAT } from '../plan/catalog.js';
 import { dimsOf } from '../plan/bedspec.js';   // the storage bed with towers: the maker's dimensions by part
 import { tubesOf } from '../plan/rigspec.js';   // the sim rig's tubes (the same numbers the fit checks and the 2D plan read)
 import { lookOf, partLook } from '../plan/looks.js';   // the renter's colour, material and finish for each piece (furniture.json `look`)
+import { paintingInto } from './paintings.js';   // the renter's paintings: gallery-wrapped canvases with their own photo or a painterly stand-in
 
 const TAU = Math.PI * 2, IN = 0.0254, COLOR_CHAIR = 0x35383d;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -1279,16 +1280,16 @@ function simRig(it, K) {
 }
 
 // ------------------------------------------------------------------ entry
-const BUILD = { sofa: seating, chair: seating, bed, nightstand, dresser, wardrobe, bookcase, table, 'table-low': coffeeTable, desk, simrig: simRig, taskchair: (it, K) => taskChair(K, 0, 0, 0), tv, rug, plant };
+const BUILD = { sofa: seating, chair: seating, bed, nightstand, dresser, wardrobe, bookcase, table, 'table-low': coffeeTable, desk, simrig: simRig, taskchair: (it, K) => taskChair(K, 0, 0, 0), tv, rug, plant, art: (it, K) => paintingInto(it, K) };
 
 /**
  * Draw the resolved item `it` into ctx.s and return true, or return false for kinds this module leaves to plan/furniture3d.js
- * (lamps, art, AC units, radiators). `ctx` = {s, std(color, opts), fabric(color, opts), quality: 'fast' | 'visual', texture}.
+ * (lamps, generic wall art, AC units, radiators); a painting (kind art with an `art` key, room3d/paintings.js) is drawn here. `ctx` = {s, std(color, opts), fabric(color, opts), quality: 'fast' | 'visual', texture}.
  * A piece that throws is cleared and handed back (false) so the older model draws it instead.
  */
 export function build(it, ctx) {
   const fn = it && BUILD[it.kind];
-  if (!fn || !ctx?.s || !(it.w > 0) || !(it.d > 0) || !(it.h > 0)) return false;
+  if (!fn || !ctx?.s || !(it.w > 0) || !(it.d > 0) || !(it.h > 0) || (it.kind === 'art' && !it.art)) return false;
   const before = ctx.s.children.length;
   try { fn(it, kit(it, ctx)); return true; } catch (err) {
     while (ctx.s.children.length > before) { const o = ctx.s.children[ctx.s.children.length - 1]; ctx.s.remove(o); o.traverse((x) => x.geometry?.dispose()); }

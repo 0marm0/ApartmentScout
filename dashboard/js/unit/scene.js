@@ -17,7 +17,8 @@ import { decorate } from '../city3d/facade.js';   // [city3d] the shared facade 
 import { RectAreaLightUniformsLib } from 'three/addons/lights/RectAreaLightUniformsLib.js';
 import { roomLightState, applyRoomLight } from '../room3d/lighting.js';   // [room3d] the room's own light, shared with the studio
 import { roomQuality, quality } from '../room3d/quality.js';
-import { setLeds } from '../room3d/furniture.js';   // [bed option] the furniture's own LEDs glow after dark
+import { setLeds } from '../room3d/furniture.js';
+import { setArtLimits } from '../room3d/paintings.js';   // [room3d] the paintings use the GPU's full texture size   // [bed option] the furniture's own LEDs glow after dark
 import { createSky, applySky } from '../city3d/sky.js';   // [city3d] the shared sky
 import { createCity } from '../city3d/city.js';   // [city3d] THE city: buildings, outlines, context and ground, shared with the studio
 import { shapeOf, prism, prismsOf, solidGeo, heightColor, mergeBuildings, edgeGeo, outlineGeo } from '../city3d/buildings.js';   // [city3d] THE building mesher
@@ -41,6 +42,8 @@ export class UnitStage {
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     RectAreaLightUniformsLib.init();   // [room3d] the windows' sky glow
     this.maxTex = this.renderer.capabilities.maxTextureSize || 4096;
+    setArtLimits({ maxTexture: this.maxTex, anisotropy: this.renderer.capabilities.getMaxAnisotropy() });
+    addEventListener('as-art-ready', () => { this.dirty = true; });   // a painting's own photo has loaded
     this.mode = 'orbit'; this.look = { yaw: 0, pitch: 6, fov: 70 }; this.dirty = true; this.tween = null;
     this.opts = { shadows: true, labels: true, streets: true, future: true, green: true, water: true, streetTrees: true, parkTrees: true, cone: false, ray: true, target: 'solid' };   // [park trees] streetTrees / parkTrees switch the two kinds of tree
     this.quality = { visual: false, phone: false };   // [city context] set by unit/quality3d.js (room3d/quality.js cityQualityOf): tree shadows, water glint, tree share, grass detail, texture scale
