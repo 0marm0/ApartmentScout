@@ -66,8 +66,10 @@ not known, 30 in is assumed; the furniture list says "(depth assumed)"). `set`, 
 "chair": "task"}` draws a 32-inch 16:9 monitor (28.0 x 15.8 in screen, thin bezels, on a stand) on the desk and a rolling task chair at
 it; `"monitor": false` or `"chair": false` leaves one out, and a desk with no `set` gets a 24-inch monitor and the chair.
 
+The renter's own office chair is a piece of its own (`"ref": "task-chair"`, `"set": {"chair": false}` on their desk): it has its own "Office chair: Shown / Hidden" switch beside the sim rig's, and a layout item may carry `"attach": "<desk id>"`. An attached chair keeps its own position and turn like any piece, and moves and turns with its desk (a rigid body, its offset kept); a chair without `attach` is a free piece you can drag anywhere or duplicate. The studio's selection bar has an Attach switch for it. A piece the renter placed still never moves by itself: the chair follows its desk only.
+
 ```json
-{"id": "desk", "ref": "desk", "variant": "rotating", "label": "Bestier rotating desk 51 in, chair and monitor", "w": 89.2, "d": 21.6, "h": 29.1,
+{"id": "desk", "ref": "desk", "variant": "rotating", "label": "Bestier rotating desk 51 in and monitor", "w": 89.2, "d": 21.6, "h": 29.1,
  "set": {"monitor": 32, "chair": "task", "config": "straight", "hand": "right"},
  "spec": {"top": {"l": 51.8, "d": 21.6, "t": 1.65, "h": 29.1}, "shelf": {"l": 46.9, "d": 13.4, "h": 27.6, "t": 1.65}, "straight": {"total": 89.2}},
  "spec_basis": {"top.l": "diagram", "shelf.l": "diagram", "straight.total": "derived"},

@@ -69,6 +69,7 @@ import { mountStudioMeasure } from './measure/studio-hook.js';   // [measure] th
 import { isMetricSearch } from './measure/core.js';
 import { parsePiece, fitReport, pieceFromItem, withPiece, roomKindAt } from './plan/tryfit.js';   // [fit] does it fit?
 import { tryFitHTML, fitCardHTML, parseNote } from './plan/tryfit-ui.js';
+import { followAttached, isAttachable, isAttached, nearestDesk, seatAtDesk } from './plan/attach.js';   // the office chair goes with its desk (layout item `attach`)
 import { choiceState, applyChoice } from './plan/choices.js';   // [bed option] my bed / the storage bed / no bed, saved with the layout
 import { reportFor } from './plan/bedfit.js';
 import { mountBedControl } from './plan/bed-ui.js';
@@ -390,7 +391,7 @@ function bedReport() {
   if (bedCache.key !== k) bedCache = { key: k, rep: reportFor(model, items, inventory) };
   return bedCache.rep;
 }
-function setBed(choice, group = 'bed') {   // group 'sim': the sim rig shown or hidden, the same way (a piece's hidden mark)
+function setBed(choice, group = 'bed') {   // group 'sim' (the sim rig) or 'chair' (the office chair): shown or hidden, the same way (a piece's hidden mark)
   if (!inventory) return;
   const next = applyChoice(items, inventory, group, choice);
   if (next.every((x, i) => x === items[i])) return;
@@ -400,7 +401,8 @@ function setBed(choice, group = 'bed') {   // group 'sim': the sim rig shown or 
 }
 function mountBedUI() {
   const o = { state: bedState, report: bedReport, piece: () => inventory?.pieces.find((p) => p.id === 'bed-latitude') || null, choose: (c) => setBed(c),
-    rig: { state: () => (inventory && model ? choiceState(items, inventory, 'sim') : null), choose: (c) => setBed(c, 'sim') } };
+    rig: { state: () => (inventory && model ? choiceState(items, inventory, 'sim') : null), choose: (c) => setBed(c, 'sim') },
+    chair: { state: () => (inventory && model ? choiceState(items, inventory, 'chair') : null), choose: (c) => setBed(c, 'chair') } };
   bedUIs = [mountBedControl($('p2dWrap'), { ...o, where: 'in-p2d' }), mountBedControl($('pstage'), { ...o, where: 'in-p3d' })];
 }
 /** The saved layout changed behind this view's back (the Bed control in Unit 3D wrote it): take it up. */
@@ -440,8 +442,15 @@ function arEntries() {
   return [{ key: 'room', label: `${model?.title || 'Furnished room'}, furnished`, sig: list.map((x) => `${x.id}:${arSig(x, true)}`).join(';') }, ...list.map((x) => ({ key: x.id, label: x.name, sig: arSig(x, false) }))];
 }
 const ar = createAr({ entries: arEntries, build: (ids) => G3.arModel(ids) });
+let attachPrev = [];   // where every piece stood at the last recompute: a desk that moved takes the chairs attached to it along (plan/attach.js)
+function followDesks() {
+  const next = followAttached(attachPrev, items);
+  if (next !== items) { items = next; if (!st.dragging) persist(); }
+  attachPrev = items.map((x) => ({ id: x.id, x: x.x, y: x.y, rot: x.rot, attach: x.attach }));
+}
 function recompute(opts = {}) {
   if (!model) return;
+  followDesks();
   R = applyInventory(items, inventory).map((x) => resolve(x)).filter(Boolean);   // [furniture] the inventory's size, colour, material and desk set ride on each piece
   ev = evaluate(model, R);
   G3.setItems(R); LX.itemsChanged(); Q3.itemsChanged();   // [feature J]
@@ -483,13 +492,13 @@ const gradeRank = (g) => ['clear', 'tight', 'blocked'].indexOf(g);
 // camera moves or the plan is panned or zoomed.
 let bars = null, barLoop = 0;
 function mountBars() {
-  const on = { rot: () => rotateSel(90), free: rotateTo, move: (dx, dy) => nudge(dx, dy), dup: () => duplicateSel(), del: () => removeSel(), done: () => select(null) };
+  const on = { rot: () => rotateSel(90), free: rotateTo, move: (dx, dy) => nudge(dx, dy), dup: () => duplicateSel(), del: () => removeSel(), done: () => select(null), attach: () => toggleAttach() };
   bars = { p2: mountSelbar($('p2dWrap'), on), p3: mountSelbar($('pstage'), on) };
 }
 function syncBars() {
   const it = bars && sel ? R.find((x) => x.id === sel && !x.hidden) : null;
   if (!it) { bars?.p2.hide(); bars?.p3.hide(); return; }
-  const info = { name: it.label || it.name, rot: it.rot }, shown = (id) => $(id).offsetWidth > 0;
+  const info = { name: it.label || it.name, rot: it.rot, attach: isAttachable(it) ? { on: isAttached(items, it.id) } : null }, shown = (id) => $(id).offsetWidth > 0;
   const r2 = shown('p2dWrap') ? P2.screenRect(it) : null, r3 = shown('pstage') && G3.viewMode() === 'orbit' && !st.dragging ? G3.screenRect(it.id) : null;
   if (r2) bars.p2.show(r2, info); else bars.p2.hide();
   if (r3) bars.p3.show(r3, info); else bars.p3.hide();
@@ -534,10 +543,19 @@ function rotateTo(deg, live) {
 }
 function rotateSel(d) { const it = items.find((q) => q.id === sel); if (it) mutate(() => { it.rot = ((Math.round(it.rot || 0) + d) % 360 + 360) % 360; it.placed = true; }); }
 function nudge(dx, dy) { const it = items.find((q) => q.id === sel); if (!it) return; if (!st.nudging) { checkpoint(); st.nudging = true; } it.x += dx; it.y += dy; it.placed = true; persist(); recompute({ panels: false }); clearTimeout(st.nudgeT); st.nudgeT = setTimeout(() => { st.nudging = false; tab(); }, 500); }
-function removeSel() { const it = items.find((q) => q.id === sel); if (!it) return; const n = resolveOne(it)?.name || it.ref; mutate(() => { removed.add(it.id); items = items.filter((q) => q.id !== sel); sel = null; }, `Removed ${n.toLowerCase()}`); }
+/** The office chair: attached to its desk (it moves and turns with it, snapped to the desktop) or free (drag it anywhere, duplicate it). */
+function toggleAttach() {
+  const it = items.find((q) => q.id === sel); if (!it || !isAttachable(it)) return;
+  if (isAttached(items, it.id)) { mutate(() => { delete it.attach; }, 'Separate: the chair is free to drag anywhere'); return; }
+  const desk = nearestDesk(items, it), dr = desk && R.find((x) => x.id === desk.id);
+  if (!dr) { toast('There is no desk in this layout to attach it to'); return; }
+  const aside = items.some((x) => x.ref === 'sim-rig' && !x.hidden);
+  mutate(() => { Object.assign(it, seatAtDesk(dr, { aside }), { attach: desk.id, placed: true }); }, 'Attached to the desk: it moves and turns with it');
+}
+function removeSel() { const it = items.find((q) => q.id === sel); if (!it) return; const n = resolveOne(it)?.name || it.ref; mutate(() => { removed.add(it.id); items = items.filter((q) => q.id !== sel); for (const q of items) if (q.attach === it.id) delete q.attach; sel = null; }, `Removed ${n.toLowerCase()}`); }
 function duplicateSel() {
   const it = items.find((q) => q.id === sel); if (!it) return;
-  const copy = { ...it, id: newId(it.ref, items), x: it.x + 12, y: it.y - 12, placed: true };
+  const copy = { ...it, id: newId(it.ref, items), x: it.x + 12, y: it.y - 12, placed: true }; delete copy.attach;   // a copy is a separate piece
   mutate(() => { items.push(copy); place(copy, roomOf(model, [it.x, it.y]), true); sel = copy.id; });
 }
 function addRef(ref) {
@@ -905,6 +923,7 @@ function inspector() {
       <div class="field"><label for="psFr">Turn <span>°</span></label><input type="number" id="psFr" data-k="rot" step="15" value="${Math.round(it.rot)}"></div>
       ${variants}${product}${it.elev || ['art', 'lamp', 'tv', 'ac'].includes(it.kind) ? `<div class="field"><label for="psFe">Off floor <span>in</span></label><input type="number" id="psFe" data-k="elev" min="0" max="140" step="0.5" value="${+(it.elev || 0).toFixed(1)}"></div>` : ''}
     </div>${prodLine}
+    ${isAttachable(it) ? `<label class="ps-attach"><input type="checkbox" data-k="attach" ${isAttached(items, it.id) ? 'checked' : ''}><span>Attached to desk <small>moves and turns with it</small></span></label>` : ''}
     <div class="ps-acts">
       <button class="btn" type="button" data-a="rot" title="Turn 90° (R)">${IC.rot}Turn</button>
       <button class="btn" type="button" data-a="dup" title="Duplicate (D)">${IC.dup}Duplicate</button>
@@ -944,6 +963,7 @@ function inspClick(e) {
 }
 function inspChange(e) {
   const k = e.target.dataset.k; const it = items.find((q) => q.id === sel); if (!k || !it) return;
+  if (k === 'attach') { toggleAttach(); return; }
   if (k === 'variant') { mutate(() => { it.variant = e.target.value; delete it.d; delete it.h; delete it.w; }); return; }
   if (k === 'product') { useProduct(it, e.target.value); return; }
   if (k === 'elev') { const v = parseFloat(e.target.value); if (Number.isFinite(v)) mutate(() => { it.elev = Math.max(0, Math.min(140, v)); }); return; }

@@ -10,7 +10,7 @@ import { resolve } from '../../dashboard/js/plan/catalog.js';
 import { evaluate, partPolys, overlaps } from '../../dashboard/js/plan/checks.js';
 import { applyInventory, resolveLayout } from '../../dashboard/js/plan/placement.js';
 import { choiceState, applyChoice } from '../../dashboard/js/plan/choices.js';
-import { layoutOf, ENVELOPE } from '../../dashboard/js/plan/rigspec.js';
+import { layoutOf, tubesOf, backTop, ENVELOPE } from '../../dashboard/js/plan/rigspec.js';
 
 const read = (p) => JSON.parse(fs.readFileSync(new URL(`../../${p}`, import.meta.url), 'utf8'));
 const m = normalisePlan(read('examples/nyc-2026/plans/paramount-tower-25e.json')), inv = validateInventory(read('examples/nyc-2026/furniture.json')).inventory;
@@ -76,7 +76,7 @@ test('Formula mode reclines the seat and lowers the wheel and the pedals rise, w
   assert.equal(fm.h, 37); assert.equal(fm.rigGeo.mode, 'formula');
 });
 
-test('the rig can be shown or hidden like the bed options, without moving anything, and a hidden rig brings the desk chair back', () => {
+test('the rig can be shown or hidden like the bed options, without moving anything, and the office chair is its own piece that stays when the rig goes', () => {
   const st = choiceState(base, inv, 'sim');
   assert.equal(st.available, true); assert.equal(st.current, 'shown'); assert.equal(st.exact, true);
   const off = applyChoice(base, inv, 'sim', 'hidden');
@@ -84,7 +84,18 @@ test('the rig can be shown or hidden like the bed options, without moving anythi
   assert.deepEqual(off.filter((x) => x.id !== 'sim-rig').map((x) => [x.id, x.x, x.y, x.rot]), base.filter((x) => x.id !== 'sim-rig').map((x) => [x.id, x.x, x.y, x.rot]), 'nothing else moves');
   assert.equal(choiceState(off, inv, 'sim').current, 'hidden');
   assert.equal(applyChoice(off, inv, 'sim', 'shown').find((x) => x.id === 'sim-rig').hidden, undefined);
-  assert.equal(build(base).find((x) => x.id === 'desk').chairAside, true, 'the shown rig takes the chair\'s place');
-  assert.equal(build(off).find((x) => x.id === 'desk').chairAside, undefined, 'hidden: the desk chair is back');
+  assert.equal(by.desk.set.chair, false, 'the desk set no longer draws a chair: the chair is the desk-chair piece');
+  assert.equal(choiceState(base, inv, 'chair').current, 'shown', 'both are shown by default');
+  assert.equal(build(off).find((x) => x.id === 'desk-chair').hidden, undefined, 'hiding the rig leaves the chair');
   assert.equal(evaluate(m, build(off)).items['sim-rig'], undefined, 'a hidden rig is not checked');
+});
+
+test('the F-GT Lite is a tubular frame with a sling seat, a central deck tube and a pedal plate, in both modes', () => {
+  for (const mode of ['gt', 'formula']) {
+    const g = layoutOf(mode).dims, T = tubesOf(g), bt = backTop(g);
+    assert.ok(T.side.some((q) => q.pair) && T.side.length >= 6 && T.centre && T.cross.length >= 6, `${mode}: side tubes (some in pairs), cross tubes and one central tube`);
+    assert.ok(bt.f <= ENVELOPE.d && bt.z <= ENVELOPE.h, `${mode}: the back's top stays inside the envelope`);
+    assert.ok(g.seat.z1 - g.seat.z0 < 2 && g.deck.z1 - g.deck.z0 < 2, 'a thin sling pan and a thin deck plate: no cushions');
+    assert.ok(T.centre.b[1] >= g.deck.z0 - 1 && T.centre.a[1] < 3, 'the central tube runs from the floor frame up to the wheel deck');
+  }
 });

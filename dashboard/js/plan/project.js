@@ -25,7 +25,7 @@ const FIELDS = {
   trace_check: 'anchors length measured error_pct',
   trace_bearing: 'method faces wall',
   layout: 'schema kind plan units items saved ver removed',
-  item: 'id ref x y rot w d h elev variant label hidden placed product',
+  item: 'id ref x y rot w d h elev variant label hidden placed product attach',
   lighting: 'directSun ambient glazing blinds daylight luminaires',   // [feature J] daylight, luminaires
   inventory: 'schema kind name source pieces options',   // [furniture]
   piece: 'id ref label room w d h elev variant product look set assumed note source spec spec_basis states product_info candidate',
