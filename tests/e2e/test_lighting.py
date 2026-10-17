@@ -330,8 +330,8 @@ def test_unit_3d_annual_summary_quality_and_progressive_render(open_page, webgl:
     pg.click('.rnq-inline [data-rnq="visual"]')
     pg.evaluate("() => window.__quality.setDevice({ maxTexture: 1024 })")   # shadow maps of 1024 px, as test_render does: software GL redraws a 4096 px map for each of the 16 frames
     pg.evaluate(SETTLED_JS, 30000)
-    with pg.expect_download(timeout=300000) as dl:
-        pg.click('[data-hires="2"]')
+    with pg.expect_download(timeout=900000) as dl:   # 16 jittered frames of the whole city, each read back: about a minute on a laptop's
+        pg.click('[data-hires="2"]')                   # software GL, several on a shared CI runner (a smaller stage barely helps)
     d = dl.value
     assert d.suggested_filename.endswith("-2x.png")
     assert Path(d.path()).stat().st_size > 50_000
