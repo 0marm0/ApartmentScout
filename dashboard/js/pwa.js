@@ -9,8 +9,8 @@ const $ = (id) => document.getElementById(id);
 let deferredInstall = null;   // the browser's beforeinstallprompt event, kept for the menu item
 let reloadOnTakeover = false; // only reload for a controller change the renter asked for
 
-/** Show the "new version" prompt once for this waiting worker. */
-function offerUpdate(worker) {
+/** Show the "new version" prompt once; Reload asks the registration's waiting worker of that moment to take over. */
+function offerUpdate(reg, worker) {
   if ($('pwaUpdate')) return;
   const el = document.createElement('div');
   el.id = 'pwaUpdate'; el.className = 'pwa-update'; el.setAttribute('role', 'status');
@@ -19,17 +19,19 @@ function offerUpdate(worker) {
   el.addEventListener('click', (e) => {
     const act = e.target.closest('[data-pwa]')?.dataset.pwa;
     if (act === 'later') el.remove();
-    if (act === 'reload') { reloadOnTakeover = true; worker.postMessage({ type: 'SKIP_WAITING' }); el.querySelector('.pwa-msg').textContent = 'Updating…'; }
+    // the worker waiting now, not the one the prompt was first shown for: the browser may have installed the update again since (an
+    // update check on the next page load), and a message to the replaced worker went nowhere: "Updating…" for ever
+    if (act === 'reload') { reloadOnTakeover = true; (reg.waiting || reg.installing || worker).postMessage({ type: 'SKIP_WAITING' }); el.querySelector('.pwa-msg').textContent = 'Updating…'; }
   });
   document.body.append(el);
 }
 
 function watchUpdates(reg) {
-  const check = () => { if (reg.waiting && navigator.serviceWorker.controller) offerUpdate(reg.waiting); };
+  const check = () => { if (reg.waiting && navigator.serviceWorker.controller) offerUpdate(reg, reg.waiting); };
   check();
   reg.addEventListener('updatefound', () => {
     const w = reg.installing; if (!w) return;
-    w.addEventListener('statechange', () => { if (w.state === 'installed' && navigator.serviceWorker.controller) offerUpdate(w); });
+    w.addEventListener('statechange', () => { if (w.state === 'installed' && navigator.serviceWorker.controller) offerUpdate(reg, w); });
   });
   // a long-lived tab or an installed app that stays open: look for a new deploy when it comes back to the front
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') reg.update().catch(() => {}); });
