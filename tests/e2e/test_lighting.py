@@ -328,6 +328,7 @@ def test_unit_3d_annual_summary_quality_and_progressive_render(open_page, webgl:
     assert "never averaged" in pg.locator("#annualPanel").inner_text()
     assert pg.get_attribute('.rnq-inline [data-rnq="fast"]', "aria-pressed") == "true"
     pg.click('.rnq-inline [data-rnq="visual"]')
+    pg.evaluate("() => window.__quality.setDevice({ maxTexture: 1024 })")   # shadow maps of 1024 px, as test_render does: software GL redraws a 4096 px map for each of the 16 frames
     pg.evaluate(SETTLED_JS, 30000)
     with pg.expect_download(timeout=300000) as dl:
         pg.click('[data-hires="2"]')
