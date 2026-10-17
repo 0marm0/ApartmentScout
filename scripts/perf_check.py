@@ -36,7 +36,8 @@ ROOT = Path(__file__).resolve().parents[1]
 BUDGET = ROOT / "scripts" / "perf_budget.json"
 COMPRESSIBLE = (".html", ".js", ".mjs", ".css", ".json", ".svg", ".webmanifest", ".txt", ".xml")
 GPU_ARGS = (["--use-angle=metal", "--ignore-gpu-blocklist", "--enable-gpu"] if sys.platform == "darwin"
-            else ["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"])
+            else ["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist",
+                  "--disable-gpu-rasterization"])   # page tiles and 2D canvases on the CPU, as tests/e2e/conftest.py does (SwiftShader raster kept the GPU process busy for minutes)
 # a load is "done" for the purpose of TBT when the first result card is on screen and this long has passed
 SETTLE_MS = 2500
 NETWORKS = {   # latency ms, down bytes/s, up bytes/s (None = unthrottled)
