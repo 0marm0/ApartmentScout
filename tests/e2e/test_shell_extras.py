@@ -330,6 +330,7 @@ def test_the_tour_walks_four_steps_once_and_restarts_from_the_menu(op) -> None:
     pg.click("#menuBtn")
     pg.click("#mnTour")
     pg.wait_for_selector(".coach-card", timeout=10000)
+    pg.wait_for_function("() => document.activeElement?.textContent === 'Next'", timeout=30000)   # the card takes the focus once it is drawn
     assert pg.evaluate("() => document.activeElement.textContent") == "Next"
     pg.keyboard.press("ArrowRight")
     pg.wait_for_function("() => document.getElementById('coachStep').textContent.toLowerCase() === 'step 2 of 4'", timeout=10000)
