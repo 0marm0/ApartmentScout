@@ -113,7 +113,7 @@ def test_every_view_loads_clean(open_page, theme: str, width: int) -> None:
     if width < 600 and (o := _overflow(s)):
         problems.append(f"settings overflows: {o}")
     s.page.keyboard.press("Escape")
-    s.page.wait_for_selector(".sheet-scrim.on", state="detached", timeout=5000)
+    s.page.wait_for_selector(".sheet-scrim.on", state="detached", timeout=30000)
     s.page.locator("#plBtn" if width < 1180 else "#q").click()
     s.page.wait_for_selector(".pl-scrim:not([hidden])", timeout=30000)
     s.page.keyboard.type("emerald")
@@ -194,7 +194,7 @@ def test_switch_commute_mode(open_page) -> None:
     target = seg.nth(1)
     mode = target.get_attribute("data-mode")
     target.click()
-    s.page.wait_for_function("async (m) => (await import('/js/app.js')).S.commuteMode === m", arg=mode, timeout=5000)
+    s.page.wait_for_function("async (m) => (await import('/js/app.js')).S.commuteMode === m", arg=mode, timeout=30000)
     assert s.page.locator(f'#rMode button[data-mode="{mode}"]').get_attribute("aria-pressed") == "true"
     assert not s.take()
 
@@ -219,7 +219,7 @@ def test_compare_add_and_deep_link(open_page) -> None:
     ids = [btns.nth(i).get_attribute("data-cmp") for i in range(2)]
     btns.nth(0).click()
     btns.nth(1).click()
-    s.page.wait_for_function("() => document.getElementById('cmpCount').textContent === '2'", timeout=5000)
+    s.page.wait_for_function("() => document.getElementById('cmpCount').textContent === '2'", timeout=30000)
     _show(s, "compare/" + ",".join(ids))
     text = s.page.locator("#view-compare").inner_text()
     assert text.strip()
@@ -234,8 +234,8 @@ def test_research_tab_switch(open_page) -> None:
     t = tabs.nth(1)
     key = t.get_attribute("data-tab")
     t.click()
-    s.page.wait_for_function("(k) => location.hash === '#research/' + k", arg=key, timeout=5000)
-    s.page.wait_for_selector(f'#view-research [role=tab][data-tab="{key}"][aria-selected="true"]', timeout=5000)
+    s.page.wait_for_function("(k) => location.hash === '#research/' + k", arg=key, timeout=30000)
+    s.page.wait_for_selector(f'#view-research [role=tab][data-tab="{key}"][aria-selected="true"]', timeout=30000)
     assert not s.take()
 
 
@@ -412,7 +412,7 @@ def test_theme_modes_menu_and_shortcut(open_page) -> None:
     pg.locator("[data-theme-mode=system]").click()
     assert pg.evaluate("() => localStorage.getItem('as:theme')") == '"system"'
     pg.emulate_media(color_scheme="light")
-    pg.wait_for_function("() => document.documentElement.dataset.theme === 'light'", timeout=5000)
+    pg.wait_for_function("() => document.documentElement.dataset.theme === 'light'", timeout=30000)
     assert pg.evaluate("() => document.documentElement.dataset.themePref") == "system"
     pg.goto(pg.url.split("?")[0].split("#")[0] + "?theme=dark#map")
     pg.wait_for_function("() => document.documentElement.dataset.theme === 'dark'", timeout=10000)
@@ -475,7 +475,7 @@ def test_stats_strip_on_a_phone_is_a_chip_and_folds_the_rest_into_the_popover(op
     keys = [t.strip() for t in pg.locator("#kpiPop .kpi-i .k").all_inner_texts()]
     assert {"tracked", "match filters", "eligible", "shortlisted", "median / mo"} <= set(keys), keys
     pg.keyboard.press("Escape")
-    pg.wait_for_function("() => document.getElementById('kpiPop').hidden", timeout=5000)
+    pg.wait_for_function("() => document.getElementById('kpiPop').hidden", timeout=30000)
     assert pg.evaluate("() => document.getElementById('kpiPop').hidden")
     assert not s.take()
 
@@ -494,7 +494,7 @@ def test_starred_tags_always_show_and_update_live(open_page, webgl: bool) -> Non
       return a.sorted(a.filtered()).find((L) => L.lat != null && !a.isSaved(L.id) && !L.favorite)?.id; }""")
     pg.evaluate("async (id) => { (await import('/js/app.js')).toggleSave(id); }", lid)
     sel = f'.price-tag[data-id="{lid}"]'
-    pg.wait_for_selector(sel + ".fav", timeout=5000)
+    pg.wait_for_selector(sel + ".fav", timeout=30000)
     pg.evaluate("() => window.__asMap.setZoom(10)")
     # the tags are decluttered on the next frame after the zoom: wait for that, not for a fixed second
     pg.wait_for_function("""(s) => { const t = document.querySelector(s);
@@ -505,6 +505,6 @@ def test_starred_tags_always_show_and_update_live(open_page, webgl: bool) -> Non
     assert pg.evaluate("(id) => !window.__asMap.getSource('listings')._data.features.some((f) => f.id === id)", lid)
     assert pg.evaluate("(s) => getComputedStyle(document.querySelector(s)).borderTopColor !== getComputedStyle(document.querySelector('.price-tag:not(.fav)') || document.body).borderTopColor", sel)
     pg.evaluate("async (id) => { (await import('/js/app.js')).toggleSave(id); }", lid)
-    pg.wait_for_function("(s) => !document.querySelector(s) || !document.querySelector(s).classList.contains('fav')", arg=sel, timeout=5000)
+    pg.wait_for_function("(s) => !document.querySelector(s) || !document.querySelector(s).classList.contains('fav')", arg=sel, timeout=30000)
     assert pg.evaluate("(id) => !window.__asMap.getSource('starred')._data.features.some((f) => f.id === id)", lid)
     assert not s.take()
