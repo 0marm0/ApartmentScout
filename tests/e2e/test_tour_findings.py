@@ -91,7 +91,10 @@ def test_a_contradiction_is_flagged_and_changes_no_score_until_it_is_promoted(op
     assert done["wd"] is False and "fails:in_unit_wd" in done["gates"] and done["eligible"] is False and done["parts"]["amenities"] < before["parts"]["amenities"]
     assert "contradicted:in_unit_wd" not in done["gates"] and "contradicted:sqft" in done["gates"], "the one not promoted is still only flagged"
     # the reasons carry the line, dated
-    s.page.locator("#dWhy details", has_text="Amenities").first.evaluate("(el) => { el.open = true; }")
+    # (the reasons are redrawn once the scoring worker has the new facts: open the Amenities section again on each look)
+    s.page.wait_for_function("""() => { const w = document.getElementById('dWhy'); if (!w) return false;
+      for (const d of w.querySelectorAll('details')) if (/Amenities/.test(d.textContent)) d.open = true;
+      return w.innerText.includes('promoted to a fact'); }""", timeout=60000)
     assert "promoted to a fact" in s.page.locator("#dWhy").inner_text()
     # undo: the listing, its score and the gate are as they were, and both steps are in the trail
     s.page.locator("#toast .toast-act").click()
