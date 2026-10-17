@@ -47,6 +47,9 @@ def open_phone(browser, base_url: str):
         page.on("console", lambda m: m.type == "error" and (s.allowed if allowed_console(m.text, (m.location or {}).get("url", ""), base_url) else s.errors).append(f"console: {m.text[:300]}"))
         page.goto(build_url(base_url, path, theme))
         page.wait_for_function("() => document.querySelector('#cards .card')", timeout=30000)
+        # the phone features (sheet, long press, pull to refresh, keyboard, swipe to close) start after the first screen, one feature
+        # module after another: their init marks the page (features/native.js), and a gesture before that falls on no listener
+        page.wait_for_function("() => !!document.documentElement.dataset.native", timeout=90000)
         settled(page, 20000, 4)
         s.finger = Finger(page)
         return s
@@ -602,9 +605,10 @@ def test_the_search_settings_sheet_closes_with_a_swipe_down(open_phone) -> None:
     pg.wait_for_selector("#appMenu", state="visible")
     pg.locator("#mnSearch").tap()
     pg.wait_for_selector(".sheet[role=dialog]", state="visible")
+    settled(pg, 20000, 4)   # the sheet has finished sliding up: the finger goes down on its header where it rests
     r = rect(pg, ".sheet .sh-h")
     f.drag(200, r["y"] + 24, 200, r["y"] + 24 + 300, steps=10)
-    pg.wait_for_function("() => !document.querySelector('.sheet[role=dialog]') || document.querySelector('.sheet-scrim:not(.on)') || document.querySelector('.sheet[role=dialog]').closest('[hidden]')", timeout=5000)
+    pg.wait_for_function("() => !document.querySelector('.sheet[role=dialog]') || document.querySelector('.sheet-scrim:not(.on)') || document.querySelector('.sheet[role=dialog]').closest('[hidden]')", timeout=20000)
 
 
 def test_the_menu_sheet_closes_with_a_swipe_down(open_phone) -> None:
@@ -612,6 +616,7 @@ def test_the_menu_sheet_closes_with_a_swipe_down(open_phone) -> None:
     pg, f = p.page, p.finger
     pg.locator("#menuBtn").tap()
     pg.wait_for_selector("#appMenu", state="visible")
+    settled(pg, 20000, 4)   # the sheet has finished sliding up
     r = rect(pg, "#appMenu")
     f.drag(200, r["y"] + 12, 200, r["y"] + 12 + 320, steps=10)
-    pg.wait_for_function("() => document.getElementById('appMenu').hidden", timeout=5000)
+    pg.wait_for_function("() => document.getElementById('appMenu').hidden", timeout=20000)

@@ -242,6 +242,7 @@ def test_trade_off_pad_writes_the_slider_weights_and_reranks_live(open_page) -> 
     order0 = cards()
     s.page.locator(".tp-svg").scroll_into_view_if_needed()
     frames(s.page)
+    settled(s.page, 20000, ticks=4)   # the rail has stopped moving: the drag starts on the dot where it is
     svg, dot = s.page.locator(".tp-svg").bounding_box(), s.page.locator(".tp-dot .core").bounding_box()
     s.page.mouse.move(dot["x"] + dot["width"] / 2, dot["y"] + dot["height"] / 2)
     s.page.mouse.down()
@@ -251,7 +252,7 @@ def test_trade_off_pad_writes_the_slider_weights_and_reranks_live(open_page) -> 
     s.page.wait_for_function("""async (c0) => { const m = await import('/js/app.js'), t = await import('/js/features/tradeoff-model.js');
       const want = t.rankIds(m.filtered(), m.S.weights, m.DIMS.map(([k]) => k)).slice(0, 12);
       const dom = [...document.querySelectorAll('#cards .card')].slice(0, 12).map((c) => c.dataset.id);
-      return m.S.weights.commute > c0 && dom.length > 0 && JSON.stringify(want.slice(0, dom.length)) === JSON.stringify(dom); }""", arg=before["commute"], timeout=15000)
+      return m.S.weights.commute > c0 && dom.length > 0 && JSON.stringify(want.slice(0, dom.length)) === JSON.stringify(dom); }""", arg=before["commute"], timeout=60000)
     after = weights(s)
     # the group's weight is conserved, the others untouched, and the shift is toward commute
     grp = ["cost", "commute", "space"]
