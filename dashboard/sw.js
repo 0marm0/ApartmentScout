@@ -119,7 +119,7 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('message', (event) => {
   const m = event.data || {};
-  if (m.type === 'SKIP_WAITING') self.skipWaiting();
+  if (m.type === 'SKIP_WAITING') event.waitUntil(self.skipWaiting());   // kept alive until the switch is done: a busy device may stop an idle worker
   else if (m.type === 'SET_PHOTO_CAP' && m.bytes > 0) photoCap = m.bytes;
   else if (m.type === 'WARM' && Array.isArray(m.urls)) event.waitUntil(warm(m.urls));
   else if (m.type === 'STATUS' && event.ports[0]) event.waitUntil(status().then((s) => event.ports[0].postMessage(s)));

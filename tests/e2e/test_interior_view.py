@@ -315,7 +315,8 @@ def test_a_home_with_a_plan_opens_inside_from_the_card_with_big_labelled_camera_
     _opened(pg)
     cam = _cam(pg)
     assert cam["mode"] == "in" and cam["view"] == "seat:sofa-window", cam                      # standing at the main seat, looking out
-    assert "mode=inside" in cam["url"]
+    pg.wait_for_function("() => location.search.includes('mode=inside')", timeout=30000)    # the address follows a moment later
+    assert "mode=inside" in _cam(pg)["url"]
     assert pg.evaluate("() => !!window.__unit3d.interior && !document.getElementById('uLook').hidden")
     # the camera choice is a labelled control: Inside, Window view, Outside, then the small tools and the Floor plan link
     names = pg.evaluate("() => [...document.querySelectorAll('#uModes .um-b')].map((b) => b.textContent.trim())")
