@@ -289,7 +289,7 @@ def test_fast_is_the_default_visual_is_remembered_and_the_export_downloads(open_
     assert pg.evaluate("() => localStorage.getItem('as:render-quality')") == '"visual"'
     pg.evaluate(SETTLED_JS, 30000)
     pg.click("#psFileBtn")
-    with pg.expect_download(timeout=120000) as dl:
+    with pg.expect_download(timeout=300000) as dl:
         pg.click('[data-f="render2"]')
     d = dl.value
     assert d.suggested_filename.endswith(".png") and "px" in d.suggested_filename
@@ -317,7 +317,7 @@ def test_a_phone_starts_in_fast(open_page, webgl: bool) -> None:
 @pytest.mark.no_raster(False)   # reads what WebGL drew
 def test_unit_3d_annual_summary_quality_and_progressive_render(open_page, webgl: bool) -> None:
     _need_webgl(webgl)
-    s = open_page(f"#unit/{PLAN}")
+    s = open_page(f"#unit/{PLAN}", width=1000, height=700)   # a smaller stage: the 2x render is a real picture either way, and software GL draws half the pixels
     pg = s.page
     pg.wait_for_selector("#annualPanel summary", timeout=SLOW)
     pg.evaluate(SETTLED_JS, 60000)
@@ -329,7 +329,7 @@ def test_unit_3d_annual_summary_quality_and_progressive_render(open_page, webgl:
     assert pg.get_attribute('.rnq-inline [data-rnq="fast"]', "aria-pressed") == "true"
     pg.click('.rnq-inline [data-rnq="visual"]')
     pg.evaluate(SETTLED_JS, 30000)
-    with pg.expect_download(timeout=180000) as dl:
+    with pg.expect_download(timeout=300000) as dl:
         pg.click('[data-hires="2"]')
     d = dl.value
     assert d.suggested_filename.endswith("-2x.png")

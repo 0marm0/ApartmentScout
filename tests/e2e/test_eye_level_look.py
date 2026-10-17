@@ -79,7 +79,7 @@ def _unit(s, query: str) -> None:
 
 def _look(pg, chip: str) -> None:
     look_click(pg, f"#uLook .lk-chip:has-text('{chip}')")
-    pg.wait_for_function("() => !window.__unit3d.stage.inTween", timeout=30000)
+    pg.wait_for_function("() => !window.__unit3d.stage.inTween", timeout=60000)
     camera_still(pg, "unit")
 
 

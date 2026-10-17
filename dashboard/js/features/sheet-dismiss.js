@@ -13,7 +13,7 @@ export function swipeToDismiss(panel, { scroller = null, handle = null, close, t
   const start = (e) => {
     if (e.touches.length !== 1 || e.target.closest('textarea, input, select, [data-no-swipe]')) { g = null; return; }
     const t = e.touches[0];
-    g = { x: t.clientX, y: t.clientY, on: false, dy: 0, grab: !!(handle && e.target.closest(handle)), t0: performance.now(), last: [{ t: performance.now(), y: t.clientY }] };
+    g = { x: t.clientX, y: t.clientY, on: false, dy: 0, grab: !!(handle && e.target.closest(handle)), t0: e.timeStamp, last: [{ t: e.timeStamp, y: t.clientY }] };   // event times: a busy page handles the moves late, the finger did not move late
   };
   const move = (e) => {
     if (!g) return;
@@ -27,7 +27,7 @@ export function swipeToDismiss(panel, { scroller = null, handle = null, close, t
     }
     if (e.cancelable) e.preventDefault();
     g.dy = Math.max(0, dy);
-    g.last.push({ t: performance.now(), y: t.clientY }); if (g.last.length > 6) g.last.shift();
+    g.last.push({ t: e.timeStamp, y: t.clientY }); if (g.last.length > 6) g.last.shift();
     panel.style.transform = `translate3d(0, ${g.dy}px, 0)`;
   };
   const end = (cancelled) => {

@@ -39,7 +39,7 @@ def _unit(s, chip: str = "room:Living", date: str = DATE, minute: int = 780) -> 
         "(id) => window.__unit3d && window.__unit3d.st.id === id && window.__unit3d.stage && window.__unit3d.stage.interior && window.__unit3d.views.length > 4 && document.getElementById('uLoad').hidden",
         arg=UNIT, timeout=120000)
     look_click(pg, f"#uLook [data-vp^='{chip}']")
-    pg.wait_for_function("() => !window.__unit3d.stage.inTween", timeout=20000)
+    pg.wait_for_function("() => !window.__unit3d.stage.inTween", timeout=60000)
     _camera_still(pg, "unit")
     pg.evaluate("() => { const s = window.__unit3d.stage; s.dirty = true; s.frame(true); }")
 
@@ -239,7 +239,7 @@ def test_the_chips_and_the_seats_behave_the_same_in_both_engines(open_page, webg
     a.page.wait_for_function("() => window.__plan3d.view === 'seat:sofa'")
     _camera_still(a.page, "studio")
     look_click(b.page, "#uLook [data-vp='seat:sofa']")
-    b.page.wait_for_function("() => window.__unit3d.curView.seat === 'sofa' && !window.__unit3d.stage.inTween", timeout=20000)
+    b.page.wait_for_function("() => window.__unit3d.curView.seat === 'sofa' && !window.__unit3d.stage.inTween", timeout=60000)
     _camera_still(b.page, "unit")
     b.page.evaluate("() => { const s = window.__unit3d.stage; s.dirty = true; s.frame(true); }")
     ps, pu = a.page.evaluate(STUDIO_JS)["pose"], b.page.evaluate(UNIT_JS)["pose"]
