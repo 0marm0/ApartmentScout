@@ -470,7 +470,10 @@ def test_stats_strip_on_a_phone_is_a_chip_and_folds_the_rest_into_the_popover(op
     pg.wait_for_selector("#kpis", state="visible")
     # opened, the secondary figures still fold into the popover, and every figure is in it
     assert pg.locator("#kpis .kpi-more").is_visible()
-    pg.locator("#kpis .kpi-more").click()
+    # opened from the keyboard: a mouse left resting on the button opens the popover again by hover (a phone has no hover), which on
+    # a slow runner raced the Escape below
+    pg.locator("#kpis .kpi-more").focus()
+    pg.keyboard.press("Enter")
     pg.wait_for_selector("#kpiPop:not([hidden])")
     keys = [t.strip() for t in pg.locator("#kpiPop .kpi-i .k").all_inner_texts()]
     assert {"tracked", "match filters", "eligible", "shortlisted", "median / mo"} <= set(keys), keys
