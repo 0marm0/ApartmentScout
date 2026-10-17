@@ -54,7 +54,7 @@ GPU_ARGS = (["--use-angle=metal", "--ignore-gpu-blocklist", "--enable-gpu"] if s
 # buffers and textures uploaded, three's own draw bookkeeping) except the draws themselves, so SwiftShader rasterises nothing. A Unit 3D
 # frame with its 2048 px soft-shadow map over the city takes seconds to rasterise in software, and the GPU process works through the
 # queue long after the page looks idle, stalling the next view's first WebGL call. Opt in with `@pytest.mark.no_raster` on a test or a
-# module (every context the test makes, see _no_raster_contexts); never in a test that looks at a picture.
+# module (every context the test makes, see _contexts); never in a test that looks at a picture.
 NO_RASTER_JS = """(() => { for (const C of [self.WebGL2RenderingContext, self.WebGLRenderingContext]) { if (!C) continue;
   for (const k of ['drawArrays', 'drawElements', 'drawArraysInstanced', 'drawElementsInstanced', 'drawRangeElements']) if (C.prototype[k]) C.prototype[k] = function () {}; } })();"""
 
@@ -187,7 +187,7 @@ def block_foreign(ctx, *allowed: str) -> None:
 @pytest.fixture
 def open_page(browser, base_url: str):
     """open_page(path, theme='dark', width=1440, height=900) -> Session, with the network outside base_url blocked.
-    In a test marked `no_raster` its pages draw no WebGL triangles (see _no_raster_contexts)."""
+    In a test marked `no_raster` its pages draw no WebGL triangles (see _contexts)."""
     contexts = []
 
     def _open(path: str = "#map", theme: str = "dark", width: int = 1440, height: int = 900) -> Session:
@@ -217,20 +217,42 @@ def open_page(browser, base_url: str):
         c.close()
 
 
+# Playwright's own waits (goto, click, fill, an expect_download without a timeout) give up after 30 s. On software GL a page that has
+# just opened Unit 3D or the studio is busy for longer than that on a shared four-core runner, so there they wait up to 90 s: a cap
+# on waiting for the state, which costs nothing when the page is ready sooner. Waits that name their own timeout keep it.
+SOFTWARE_GL_TIMEOUT_MS = 90_000
+
+
+# The render-quality governor (dashboard/js/room3d/quality.js) times the first frames of a 3D view, and a probe every 45 s, and steps
+# the level down when frames are slow: on software GL it did, at a moment that depends on how busy the runner was, and a test that
+# counted trees or lamps at the default level saw half of them. Pages start with the governor on hold (quality.hold, what a
+# high-resolution export uses): the level stays where it starts and nothing is probed. test_quality3d is about the governor itself
+# and marks its module `governor` to keep it running.
+HOLD_GOVERNOR_JS = """(() => { let q; try { Object.defineProperty(window, '__quality', { configurable: true, enumerable: true,
+  get() { return q; }, set(v) { q = v; try { if (v && typeof v.hold === 'function') v.hold(true); } catch (e) { /* not the quality module */ } } }); } catch (e) { /* no window */ } })();"""
+
+
 @pytest.fixture(autouse=True)
-def _no_raster_contexts(request) -> Iterator[None]:
-    """In a test marked `no_raster`, every browser context it makes (open_page's and its own browser.new_context()) draws no WebGL
-    triangles (NO_RASTER_JS). `@pytest.mark.no_raster(False)` on a test undoes its module's mark."""
+def _contexts(request) -> Iterator[None]:
+    """Every browser context a test makes (open_page's and its own browser.new_context()) gets the governor on hold (unless the test is
+    marked `governor`), the software-GL default timeout, and in a test marked `no_raster` no WebGL triangles (NO_RASTER_JS).
+    `@pytest.mark.no_raster(False)` on a test undoes its module's mark."""
     mark = request.node.get_closest_marker("no_raster")
-    if mark is None or (mark.args and not mark.args[0]):
-        yield
-        return
+    skip_draws = mark is not None and (not mark.args or bool(mark.args[0]))
+    hold = request.node.get_closest_marker("governor") is None
+    software = "--use-angle=swiftshader" in GPU_ARGS
     b = request.getfixturevalue("browser")
     make = b.new_context
 
     def new_context(*a, **kw):
         ctx = make(*a, **kw)
-        no_raster(ctx)
+        if software:
+            ctx.set_default_timeout(SOFTWARE_GL_TIMEOUT_MS)
+            ctx.set_default_navigation_timeout(SOFTWARE_GL_TIMEOUT_MS)
+        if hold:
+            ctx.add_init_script(HOLD_GOVERNOR_JS)
+        if skip_draws:
+            no_raster(ctx)
         return ctx
     b.new_context = new_context
     try:
@@ -310,13 +332,14 @@ _await_async_predicates()
 
 
 # Resolves when the camera has not moved for six frames running: the glide to a chip is over (what a fixed sleep stood in for).
+# Gives up after 60 s: six frames take that long on software GL when a runner is busy.
 CAMERA_STILL_JS = """async (getCam) => {
   const get = await (async () => { if (getCam === 'studio') { const G3 = await import('/js/plan/scene3d.js'); return () => G3.getCamera(); } return () => window.__unit3d.stage.winCam; })();
   let last = null, still = 0;
   return await new Promise((resolve) => { const t0 = performance.now(); const tick = () => {
     const c = get(), p = [...c.position.toArray(), c.fov, ...(c.getWorldDirection ? c.getWorldDirection(new c.position.constructor()).toArray() : [])];
     still = last && p.every((v, i) => Math.abs(v - last[i]) < 1e-6) ? still + 1 : 0; last = p;
-    if (still >= 6 || performance.now() - t0 > 20000) resolve(still >= 6); else requestAnimationFrame(tick); }; tick(); });
+    if (still >= 6 || performance.now() - t0 > 60000) resolve(still >= 6); else requestAnimationFrame(tick); }; tick(); });
 }"""
 
 

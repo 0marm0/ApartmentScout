@@ -29,4 +29,5 @@ markers = [
   "e2e: dashboard checks in a real browser (Playwright); see tests/e2e/conftest.py",
   "xdist_group(name): keep these tests on one pytest-xdist worker under --dist loadgroup (set in tests/e2e/conftest.py)",
   "no_raster: the test reads no pixels, so its pages build every WebGL scene but draw no triangles (tests/e2e/conftest.py)",
+  "governor: the test exercises the render-quality governor, which other browser tests hold at its starting level (tests/e2e/conftest.py)",
 ]
