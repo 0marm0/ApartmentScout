@@ -26,7 +26,7 @@ _spec.loader.exec_module(_h)
 ROOT, THROTTLE, Session, allowed_console, build_url, serve = _h.ROOT, _h.THROTTLE, _h.Session, _h.allowed_console, _h.build_url, _h.serve
 sys.path.insert(0, str(ROOT / "tests"))
 
-pytestmark = pytest.mark.e2e
+pytestmark = [pytest.mark.e2e, pytest.mark.no_raster]   # reads no drawn pixels: see conftest.NO_RASTER_JS
 EXAMPLE = ROOT / "examples" / "nyc-2026"
 
 

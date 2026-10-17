@@ -9,7 +9,7 @@ from pathlib import Path
 import pytest
 from conftest import look_click, look_open, settled
 
-pytestmark = pytest.mark.e2e
+pytestmark = [pytest.mark.e2e, pytest.mark.no_raster]   # reads no drawn pixels: see conftest.NO_RASTER_JS
 
 AXE = Path(__file__).parent / "vendor" / "axe.min.js"
 UNIT = "paramount-tower-25e"

@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import pytest
 
-pytestmark = pytest.mark.e2e
+pytestmark = [pytest.mark.e2e, pytest.mark.no_raster]   # reads no drawn pixels: see conftest.NO_RASTER_JS
 
 APP = "(await import('/js/app.js'))"
 SRC = "window.__asMap.getSource('listings')._data.features"

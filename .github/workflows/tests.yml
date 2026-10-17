@@ -29,7 +29,7 @@ jobs:
     # (SwiftShader WebGL; checks that need WebGL skip themselves if it is missing). Tiles and photos are blocked.
     # Software GL makes opening the map, Unit 3D and the floor plan studio block the page for seconds, so tests wait for
     # each heavy view to be drawn and the page to go quiet (conftest.settled, camera_still ...) instead of sleeping or
-    # leaning on long timeouts. 2D canvases and page tiles are drawn on the CPU (conftest.GPU_ARGS), and a test that reads no
+    # leaning on long timeouts. Page tiles and 2D canvases are rasterised on the CPU (conftest.GPU_ARGS), and a test that reads no
     # pixels can skip rasterising WebGL altogether (`@pytest.mark.no_raster`). Reproduce a slow runner locally with
     # CI=1 APARTMENTSCOUT_E2E_CPU_THROTTLE=6.
     # The files are split over a few runners so that each shard takes about the same time (the weights are the files' serial

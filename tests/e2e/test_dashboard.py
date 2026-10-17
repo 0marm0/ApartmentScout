@@ -15,7 +15,6 @@ from pathlib import Path
 
 import pytest
 from conftest import block_foreign
-from conftest import no_raster
 from conftest import settled
 from playwright.sync_api import TimeoutError as PlaywrightTimeout
 
@@ -359,7 +358,6 @@ def test_accessibility_personalised(browser, base_url: str, theme: str, prefs: d
     ctx = browser.new_context(viewport={"width": 1440, "height": 900}, color_scheme=theme, device_scale_factor=1, reduced_motion="reduce")
     try:
         block_foreign(ctx, base_url)
-        no_raster(ctx)
         ctx.add_init_script(f"localStorage.setItem('as:comfort', {json.dumps(json.dumps(prefs))});")
         page = ctx.new_page()
         s = Session(page, base_url)
