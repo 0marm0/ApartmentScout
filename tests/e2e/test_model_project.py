@@ -13,7 +13,7 @@ from pathlib import Path
 import pytest
 from conftest import settled
 
-pytestmark = pytest.mark.e2e
+pytestmark = [pytest.mark.e2e, pytest.mark.no_raster]   # reads no drawn pixels: see conftest.NO_RASTER_JS
 
 AXE = Path(__file__).parent / "vendor" / "axe.min.js"
 UNIT = "paramount-tower-25e"
@@ -203,6 +203,7 @@ def test_assumed_building_parts_feed_the_drawing_and_the_sun_maths(open_page, we
 
 # --------------------------------------------------------------------------- scenario comparison board
 
+@pytest.mark.no_raster(False)   # the board's PNG must be a real picture (its size)
 def test_comparison_board_exports_one_png_and_a_receipt_with_deltas(open_page, webgl: bool) -> None:
     _need_webgl(webgl)
     s = open_page("#map")

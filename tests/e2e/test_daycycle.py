@@ -8,7 +8,7 @@ import re
 import pytest
 from conftest import camera_still, look_open, settled, studio_city_ready
 
-pytestmark = pytest.mark.e2e
+pytestmark = [pytest.mark.e2e, pytest.mark.no_raster]   # reads no drawn pixels: see conftest.NO_RASTER_JS
 
 UNIT = "paramount-tower-25e"
 
@@ -221,18 +221,17 @@ def test_the_studio_plays_the_day_and_the_year_with_the_same_trees_and_night(ope
     assert re.search(r"Sun on the floor", pg.inner_text(".pb-sun"))
     t0 = int(pg.input_value('#pTime'))
     pg.click('#pPlayBar [data-pb=day]')
-    pg.wait_for_timeout(2500)
-    assert int(pg.input_value('#pTime')) != t0
+    pg.wait_for_function("(t0) => +document.getElementById('pTime').value !== t0", arg=t0, timeout=30000)   # the clock moves (at the speed the page draws)
     pg.click('#pPlayBar [data-pb=day]')
     t1 = pg.input_value('#pTime')
     pg.wait_for_timeout(500)
     assert pg.input_value('#pTime') == t1, "paused"
-    # the year: the date walks and the trees follow the same season function as Unit 3D's
+    # the year: the date walks and the trees follow the same season function as Unit 3D's; collected in the page until five dates have
+    # shown (a slow runner draws fewer frames a second, so a fixed number of samples saw fewer dates)
     pg.click('#pPlayBar [data-pb=year]')
-    dates = set()
-    for _ in range(14):
-        pg.wait_for_timeout(450)
-        dates.add(pg.input_value('#pDate'))
+    dates = set(pg.evaluate("""() => new Promise((ok) => { const seen = new Set(), t0 = performance.now();
+      const tick = () => { seen.add(document.getElementById('pDate').value); if (seen.size > 4 || performance.now() - t0 > 60000) ok([...seen]); else setTimeout(tick, 50); };
+      tick(); })"""))
     pg.click('#pPlayBar [data-pb=year]')
     assert len(dates) > 4, dates
     # the night: the same lit windows, lamps and room light

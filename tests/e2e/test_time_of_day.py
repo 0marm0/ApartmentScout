@@ -8,7 +8,7 @@ from __future__ import annotations
 import pytest
 from conftest import map_opened, settled
 
-pytestmark = pytest.mark.e2e
+pytestmark = [pytest.mark.e2e, pytest.mark.no_raster]   # reads no drawn pixels: see conftest.NO_RASTER_JS
 
 APP = "(await import('/js/app.js'))"
 

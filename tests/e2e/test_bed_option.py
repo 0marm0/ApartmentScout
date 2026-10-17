@@ -13,7 +13,7 @@ import json
 
 import pytest
 
-pytestmark = pytest.mark.e2e
+pytestmark = [pytest.mark.e2e, pytest.mark.no_raster]   # reads no drawn pixels: see conftest.NO_RASTER_JS
 
 UNIT = "paramount-tower-25e"
 KEY = f"as:plan.data.{UNIT}"

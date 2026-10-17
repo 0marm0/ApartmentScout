@@ -87,9 +87,10 @@ export async function save(places, { signal } = {}) {
           if (!res.ok) { failed++; consecutive++; if (res.status === 404) continue; if (consecutive >= 8) stop = true; continue; }
           const size = (await res.clone().arrayBuffer()).byteLength;
           if (state.bytes + size > N.PACK.maxBytes) { stop = true; capped = true; continue; }
+          state.bytes += size;   // reserved before the await: the other downloads check the budget while this tile is being stored
           const key = N.normalizeTileUrl(url);
-          await cache.put(key, res); keep.add(key);
-          state.bytes += size; stored++; consecutive = 0;
+          try { await cache.put(key, res); } catch (e) { state.bytes -= size; throw e; }
+          keep.add(key); stored++; consecutive = 0;
         } catch (e) {
           if (e.name === 'AbortError') throw e;
           failed++; consecutive++; if (consecutive >= 8) stop = true;

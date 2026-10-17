@@ -13,7 +13,7 @@ from pathlib import Path
 import pytest
 from conftest import frames, map_opened, poll, settled
 
-pytestmark = pytest.mark.e2e
+pytestmark = [pytest.mark.e2e, pytest.mark.no_raster]   # reads no drawn pixels: see conftest.NO_RASTER_JS
 
 ROOT = Path(__file__).resolve().parents[2]
 LISTINGS = json.loads((ROOT / "dashboard" / "data" / "listings.json").read_text())

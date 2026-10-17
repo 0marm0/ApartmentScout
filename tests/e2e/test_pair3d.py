@@ -8,7 +8,6 @@ from conftest import settled
 pytestmark = pytest.mark.e2e
 
 A, B = "paramount-tower-25e", "paramount-tower-9j"
-SHOTS = "/private/tmp/claude-501/-Users-Omar-1-Developer-ApartmentScout/932198fc-4e74-474c-b7c4-6ec0ead28c53/scratchpad/agent-P"
 READY = "() => window.__pair3d && window.__pair3d.sides.a && window.__pair3d.sides.b && window.__pair3d.sides.a.stage.scene && window.__pair3d.sides.b.stage.scene && document.getElementById('prLoad-a').hidden && document.getElementById('prLoad-b').hidden"
 
 
@@ -39,7 +38,6 @@ def test_compare_opens_two_units_in_one_live_view(open_page, webgl: bool) -> Non
     # both panes drew
     drew = pg.evaluate("() => ['a', 'b'].map((k) => window.__pair3d.sides[k].stage.renderer.info.render.calls > 0)")
     assert drew == [True, True]
-    pg.screenshot(path=f"{SHOTS}/pair-inside.png")
     assert not s.take()
 
 
@@ -79,7 +77,6 @@ def test_one_camera_mode_for_both(open_page, webgl: bool) -> None:
     pg.click("#prModes [data-mode=win]")
     pg.wait_for_function("() => window.__pair3d.sides.a.stage.mode === 'win' && window.__pair3d.sides.b.stage.mode === 'win'")
     settled(pg, 20000, ticks=5)
-    pg.screenshot(path=f"{SHOTS}/pair-window.png")
     pg.click("#prModes [data-mode=in]")
     pg.wait_for_function("() => window.__pair3d.sides.a.stage.mode === 'in' && window.__pair3d.sides.b.stage.mode === 'in'")
     # a drag looks around in that pane only
@@ -119,5 +116,4 @@ def test_on_a_phone_one_pane_at_a_time_with_a_toggle(open_page, webgl: bool) -> 
     pg.click("#prWhich [data-w=b]")
     pg.wait_for_function("() => document.getElementById('prSide-b').offsetParent !== null && document.getElementById('prSide-a').offsetParent === null")
     settled(pg, 20000, ticks=4)
-    pg.screenshot(path=f"{SHOTS}/pair-phone.png")
     assert not s.take()

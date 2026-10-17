@@ -14,7 +14,7 @@ from pathlib import Path
 import pytest
 from conftest import ROOT, settled
 
-pytestmark = pytest.mark.e2e
+pytestmark = [pytest.mark.e2e, pytest.mark.no_raster]   # reads no drawn pixels: see conftest.NO_RASTER_JS
 
 LISTINGS = json.loads((ROOT / "dashboard" / "data" / "listings.json").read_text())
 SEARCH = json.loads((ROOT / "dashboard" / "data" / "criteria.json").read_text())["search"]["name"]
