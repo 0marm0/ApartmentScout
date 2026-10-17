@@ -8,7 +8,7 @@
     "listings_raw": 9000000,
     "data_first_gz": 1000000,
     "transfer": 2600000,
-    "requests": 90,
+    "requests": 91,
     "lcp": 4500,
     "tbt": 1500
   },

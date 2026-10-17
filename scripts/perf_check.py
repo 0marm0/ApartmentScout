@@ -236,7 +236,11 @@ def _open_view(page, origin: str, view: str) -> str:
     page.goto(f"{origin}/#plan/{RENDER_UNIT}")
     page.wait_for_function("() => window.__plan3d && window.__plan3d.items.length > 0 && !!document.querySelector('#psLook .lk-chip')", timeout=240_000)
     page.click('#psMode [data-m="3d"]')
-    page.click("#psLook .lk-chip")   # stand at the living room window: the shared city outside is drawn
+    # stand at the living room window: the shared city outside is drawn. The chips sit behind the view picker (open it first, as
+    # tests/e2e/conftest.look_open does; on a phone they are always shown)
+    page.evaluate("""() => { const h = document.querySelector('#psLook'), b = h && h.querySelector('.lk-pick');
+      if (b && getComputedStyle(b).display !== 'none' && h.dataset.open !== '1') b.click(); }""")
+    page.click("#psLook .lk-chip")
     page.wait_for_function("() => window.__plan3d.eye === 'eye' && window.__plan3d.hasCity", timeout=240_000)
     return "plan"
 
