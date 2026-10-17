@@ -114,7 +114,7 @@ def open_app(browser, server):
         errors: list[str] = []
         page.on("pageerror", lambda e: errors.append(str(e)[:300]))
         page.goto(f"{server.origin}{PREFIX}{query}{hash_}")
-        page.wait_for_selector("#cards .card", timeout=30000)
+        page.wait_for_selector("#cards .card", state="attached", timeout=30000)   # booted: the cards are drawn (shown or not, by the view)
         return page, errors
 
     yield _open
@@ -260,7 +260,8 @@ def test_a_page_outside_the_cached_shell_is_not_served_the_dashboard(open_app, s
 def test_a_new_deploy_shows_the_update_prompt_and_reload_switches_version(open_app, site: Path, server) -> None:
     demo = site / "ApartmentScout" / "demo"
     old = json.loads((demo / "precache.json").read_text())["build"]
-    page, errors = open_app()
+    page, errors = open_app(hash_="#list")   # (not the map: the worker answers every map tile itself, so with the map open the old worker
+    # is never idle, and Chrome hands over to the new one only when the old one has no request in flight)
     st = settle(page)
     assert st["build"] == old
     assert page.locator("#pwaUpdate").count() == 0
@@ -288,7 +289,7 @@ def test_a_new_deploy_shows_the_update_prompt_and_reload_switches_version(open_a
             raise AssertionError(page.evaluate("""async () => { const r = await navigator.serviceWorker.getRegistration(), w = (x) => x && x.state;
               return { active: w(r?.active), waiting: w(r?.waiting), installing: w(r?.installing), controller: w(navigator.serviceWorker.controller),
                 prompt: document.getElementById('pwaUpdate')?.textContent ?? null, caches: await caches.keys() }; }""")) from None
-        page.wait_for_selector("#cards .card", timeout=90000)
+        page.wait_for_selector("#cards .card", state="attached", timeout=90000)
         st2 = settle(page)
         assert st2["build"] == new
         # the previous version's caches go alongside the activation: wait for that, then check
