@@ -256,7 +256,7 @@ def test_unit_3d_click_the_floor_to_walk_a_ring_shows_where_drag_to_look_and_the
     xs = [start["x"], *[m["x"] for m in mid]]
     assert all(abs(b - a) < 70 for a, b in zip(xs, xs[1:])), "no jump between frames"
     assert mid[0]["h"] > start["h"] - 0.01, "the eye rises from the seat to standing height"
-    pg.wait_for_function("() => !window.__unit3d.walk.walking()", timeout=15000)
+    pg.wait_for_function("() => !window.__unit3d.walk.walking()", timeout=60000)
     end = pg.evaluate(STAGE_STATE)
     assert abs(end["x"] - target["x"]) < 8 and abs(end["y"] - target["y"]) < 8 and abs(end["h"] - 63) < 1, "arrived, standing, about 1.6 m up"
     assert pg.evaluate("() => { const m = window.__unit3d.stage.interior.group.getObjectByName('walk-marker'); return !m || !m.visible; }"), "the ring goes when you arrive"

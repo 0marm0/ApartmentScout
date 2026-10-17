@@ -78,7 +78,10 @@ def open_first(p: Phone, n: int = 1) -> str:
             break
         except Exception:
             if attempt == 3:
-                raise
+                raise AssertionError(pg.evaluate("""async ([x, y]) => { const d = document.getElementById('drawer'), e = document.elementFromPoint(x, y);
+                  return { tap: [x, y], drawer: d.className, detent: d.dataset.detent, sel: (await import('/js/app.js')).S.sel, hit: e && (e.tagName + '.' + e.className.toString().slice(0, 50)),
+                    open: [...document.querySelectorAll('dialog[open], [role=dialog]:not([hidden]), .lb.on, .lightbox.on, .qa-menu:not([hidden])')].map((n) => n.id || n.className.toString().slice(0, 30)),
+                    vv: [innerWidth, innerHeight, devicePixelRatio], touch: navigator.maxTouchPoints, phone: matchMedia('(max-width: 760px)').matches }; }""", [x, y]))
     settled(pg, 5000, 2)
     return sel(pg)
 

@@ -209,7 +209,8 @@ def open_page(browser, base_url: str):
             (s.allowed if allowed_console(m.text, url, base_url) else s.errors).append(f"console: {m.text[:300]} [{url}]")
         page.on("console", on_console)
         page.goto(build_url(base_url, path, theme))
-        page.wait_for_function("() => document.querySelector('#cards .card, .view:not([hidden]) > *')", timeout=20000)
+        page.wait_for_function("() => document.querySelector('#cards .card, .view:not([hidden]) > *')",
+                               timeout=SOFTWARE_GL_TIMEOUT_MS if "--use-angle=swiftshader" in GPU_ARGS else 20000)
         return s
 
     yield _open

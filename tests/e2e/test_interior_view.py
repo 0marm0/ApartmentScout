@@ -309,6 +309,7 @@ def test_a_home_with_a_plan_opens_inside_from_the_card_with_big_labelled_camera_
     pg = s.page
     card = pg.locator(f'#cards .card[data-id="{UNIT}"]')
     pill = card.locator("a[data-see-inside]")
+    pill.wait_for(state="attached", timeout=60000)   # the card gets its pill once the plans are known
     assert pill.count() == 1 and "See inside" in pill.inner_text() and pill.get_attribute("href") == f"#unit/{UNIT}"
     pill.evaluate("(e) => e.click()")   # the quick actions show on hover; the click is the same
     _opened(pg)
