@@ -156,9 +156,11 @@ def test_two_edits_made_apart_merge_without_loss(device, github) -> None:
     wait_status(mac, "st.pending && st.phase === 'offline'")
     wait_status(phone, "st.pending && st.phase === 'offline'")
     set_pick(phone, HOME, note="phone note")   # the newest write of the shared field
+    # back online one after the other: the edits were made apart, and that is what must merge. (Two devices writing the gist in the
+    # same moment is a different case: the gist API has no compare-and-set, so the later write can drop the other's edit.)
     mac.page.context.set_offline(False)
-    phone.page.context.set_offline(False)
     wait_status(mac, "st.phase === 'synced' && !st.pending", 20000)
+    phone.page.context.set_offline(False)
     wait_status(phone, "st.phase === 'synced' && !st.pending", 20000)
     sync_now(mac)
     sync_now(phone)

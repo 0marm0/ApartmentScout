@@ -57,7 +57,14 @@ run in parallel as long as they follow a few rules:
 * Block foreign hosts with `block_foreign(ctx, base_url)`, not a Python handler that continues each request: a handler needs the test to be
   inside a Playwright call to answer, so a test busy in Python stalls its own page.
 * A file with an expensive module-scoped fixture (a built site, a temp search) goes into `XDIST_GROUPED` in `conftest.py` so it stays on one worker.
-* A new `tests/e2e/test_*.py` must be added to a shard in `.github/workflows/tests.yml`; the workflow fails when a file is in none.
+* A test that reads no drawn pixels (it checks the DOM, scene state, uniforms, draw counters or exported data) gets
+  `@pytest.mark.no_raster` (or a module-level mark): its pages build every WebGL scene but draw no triangles, which on CI's software GL
+  saves seconds per frame. A test in such a module that does read what WebGL drew says `@pytest.mark.no_raster(False)`.
+* Pages start with the render-quality governor on hold, so a busy runner never steps the 3D level down mid-test. Only a test about the
+  governor itself is marked `@pytest.mark.governor`.
+* A new `tests/e2e/test_*.py` must be added to a shard in `.github/workflows/tests.yml`; the workflow fails when a file is in none. Shards
+  1 and 2 hold the files whose pages build no 3D scene, 3 to 6 the 3D files: put a new file into the lightest shard of its kind (the
+  log's `--durations=0` list gives each file's CI time).
 
 ## Pull requests
 
