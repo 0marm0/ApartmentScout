@@ -125,9 +125,17 @@ self.addEventListener('message', (event) => {
   else if (m.type === 'STATUS' && event.ports[0]) event.waitUntil(status().then((s) => event.ports[0].postMessage(s)));
 });
 
+/** A newer version of this worker is installing, waiting or already active: this one's caches go when it takes over. */
+function superseded() {
+  const reg = self.registration, me = self.serviceWorker;
+  return !!(reg.installing || reg.waiting || (me && reg.active && reg.active !== me));
+}
+
 async function warm(urls) {
   const cache = await caches.open(BUILT ? RUNTIME : SHELL);
   for (const raw of urls) {
+    // warming a cache the next version deletes on activation only holds that activation up (a slow device took minutes)
+    if (superseded()) return;
     try {
       const url = new URL(raw, SCOPE);
       if (url.origin !== new URL(SCOPE).origin || !url.href.startsWith(SCOPE) || isBypass(url) || isPhoto(url)) continue;
