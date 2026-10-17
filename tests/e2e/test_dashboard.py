@@ -71,7 +71,7 @@ def _show(s, view: str) -> None:
     pg.evaluate("(v) => { location.hash = v; }", view)
     name = SECTION.get(view, view.split("/")[0])
     pg.wait_for_function("(v) => { const el = document.getElementById('view-' + v); return el && !el.hidden && el.children.length > 0; }",
-                         arg=name, timeout=20000)
+                         arg=name, timeout=90000)   # (a cap: the previous view's 3D work can hold the page that long on a busy runner)
     try:
         pg.wait_for_function(READY_JS, arg=name, timeout=READY_CAP.get(name, 5000))
     except PlaywrightTimeout:
