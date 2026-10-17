@@ -19,11 +19,17 @@ function offerUpdate(reg, worker) {
   el.addEventListener('click', (e) => {
     const act = e.target.closest('[data-pwa]')?.dataset.pwa;
     if (act === 'later') el.remove();
-    // the worker waiting now, not the one the prompt was first shown for: the browser may have installed the update again since (an
-    // update check on the next page load), and a message to the replaced worker went nowhere: "Updating…" for ever
-    if (act === 'reload') { reloadOnTakeover = true; (reg.waiting || reg.installing || worker).postMessage({ type: 'SKIP_WAITING' }); el.querySelector('.pwa-msg').textContent = 'Updating…'; }
+    if (act === 'reload') { reloadOnTakeover = true; takeOver(reg, worker); el.querySelector('.pwa-msg').textContent = 'Updating…'; }
   });
   document.body.append(el);
+}
+
+/** Ask the worker that is waiting now to take over (controllerchange then reloads the page). Not necessarily the one the prompt was
+ *  shown for: the browser may have installed the update again since (the update check of a page load), and a message to the replaced
+ *  worker went nowhere: "Updating…" for ever. */
+function takeOver(reg, first) {
+  const w = reg.waiting || reg.installing || first;
+  if (w && w.state !== 'redundant') w.postMessage({ type: 'SKIP_WAITING' });
 }
 
 function watchUpdates(reg) {
