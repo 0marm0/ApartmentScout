@@ -52,5 +52,6 @@ def test_landing_images_script_reads_the_page_and_writes_what_it_names(tmp_path:
     out = tmp_path / "images"
     subprocess.run([sys.executable, str(ROOT / "scripts" / "landing_images.py"), str(out), "--html", str(page)], check=True, capture_output=True)
     assert sorted(p.name for p in out.iterdir()) == ["hero-map-800.webp", "og.jpg", "phone-map.webp"]
-    assert Image.open(out / "hero-map-800.webp").size == (800, 500)
+    w, h = Image.open(ROOT / "docs" / "images" / "hero-map.png").size
+    assert Image.open(out / "hero-map-800.webp").size == (800, round(800 * h / w))   # 800 px wide at the screenshot's own shape
     assert Image.open(out / "og.jpg").size == (1200, 630)

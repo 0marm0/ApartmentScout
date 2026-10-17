@@ -15,10 +15,12 @@
 // layout; a size on a layout item is a deliberate override (a variant, a product, a size typed in the inspector).
 import { applyLooks } from './looks.js';
 import { fitOne } from './fit.js';
-import { fitInventory, kitFromInventory } from './inventory.js';
+import { fitInventory, kitFromInventory, kitPiece } from './inventory.js';
+import { groupsOf, applyChoice } from './choices.js';
 import { suggestLayout } from './suggest.js';
 import { resolve } from './catalog.js';
 import { validateLayout } from './layout.js';
+import { followAttached } from './attach.js';
 
 const SIZE_KEYS = ['w', 'd', 'h', 'elev'];
 const near = (a, b, eps = 0.6) => Math.abs(a - b) <= eps;
@@ -58,18 +60,56 @@ export function defaultLayout(model, inventory) {
 export function applyInventory(items, inventory) {
   const by = new Map((inventory?.pieces || []).map((p) => [p.id, p]));
   const out = (items || []).map((it) => {
-    const p = by.get(it.id);
+    const p = by.get(it.id) || (it.from ? by.get(it.from) : null);   // a duplicate (`from`) is an exact copy of its source: the same inventory join
     if (!p || p.ref !== it.ref) return it;
     const o = { ...it }, own = !!(it.variant || it.product);
     if (!own) { for (const k of SIZE_KEYS) if (o[k] == null && p[k] != null) o[k] = p[k]; if (!o.variant && p.variant) o.variant = p.variant; if (!o.product && p.product) o.product = p.product; }
     if (!o.label && p.label) o.label = p.label;
     if (p.set && !o.set) o.set = p.set;
-    if (p.spec && !o.spec) o.spec = p.spec;   // [bed option] the maker's dimensions by part (plan/bedspec.js), joined by id like the size
+    if (p.spec && !o.spec) o.spec = p.spec;
+    if (p.art && !o.art) o.art = p.art;   // a painting: which picture it shows (room3d/paintings.js)   // [bed option] the maker's dimensions by part (plan/bedspec.js), joined by id like the size
     if (p.states && !o.states) o.states = p.states;   // the piece's own sizes per state (a sofa bed: upright, lounger, bed)
     if (p.assumed && !o.assumed) o.assumed = p.assumed;
     return o;
   });
   return applyLooks(out, inventory);
+}
+
+/**
+ * A piece of "Your furniture" that is not in the layout (removed by hand, or never held), as an item to put back: at the spot it had (`was`, the
+ * item as the studio last held it), else at the plan's default spot, else fitted into the free space around the others, else the middle of its room.
+ * Always `placed`: the renter asked for it. Null when the inventory has no such piece.
+ */
+export function restoreItem(model, inventory, items, id, was = null) {
+  const p = (inventory?.pieces || []).find((q) => q.id === id);
+  if (!p) return null;
+  const by = new Map(inventory.pieces.map((q) => [q.id, q]));
+  let base = was ? { ...was } : null;
+  if (!base) { const d = (defaultLayout(model, inventory)?.items || []).find((x) => x.id === id); if (d) base = fromDefault(d, by); }
+  if (base) { delete base.hidden; return { ...base, placed: true }; }
+  let spot = null;
+  try { spot = fitOne(model, applyInventory(items, inventory).filter((x) => !x.hidden).map((x) => resolve(x)).filter(Boolean), kitPiece(p)); } catch { spot = null; }
+  if (spot) return { id, ref: p.ref, x: Math.round(spot.x * 10) / 10, y: Math.round(spot.y * 10) / 10, rot: spot.rot, placed: true };
+  const room = [...(model.rooms || [])].sort((a, b) => b.area - a.area)[0];
+  return { id, ref: p.ref, x: Math.round(room?.label?.[0] ?? 0), y: Math.round(room?.label?.[1] ?? 0), rot: 0, placed: true };
+}
+
+/**
+ * A group's choice applied to the layout, bringing back any piece the choice shows that the layout does not hold (removed, or never placed).
+ * `gone`: a Map of id -> the item as it was when the renter removed it (its saved spot). Nothing else moves.
+ * @returns {{items: object[], restored: string[], changed: boolean}}
+ */
+export function chooseGroup(items, inventory, groupId, choiceId, { model = null, gone = null } = {}) {
+  const g = groupsOf(inventory).find((x) => x.id === groupId), c = g?.choices.find((x) => x.id === choiceId);
+  if (!c) return { items, restored: [], changed: false };
+  let next = applyChoice(items, inventory, groupId, choiceId);
+  const have = new Set(next.map((x) => x.id)), restored = [];
+  for (const id of c.pieces) {
+    if (have.has(id)) continue;
+    const it = model ? restoreItem(model, inventory, next, id, gone?.get?.(id) || null) : null;
+    if (it) { next = [...next, it]; have.add(id); restored.push(id); }
+  }
+  return { items: next, restored, changed: restored.length > 0 || next.some((x, i) => x !== items[i]) };
 }
 
 /** An item as a default layout holds it, without the sizes and label the inventory supplies (the inventory is the one place for those). */
@@ -116,7 +156,14 @@ export function resolveLayout({ model, inventory = null, saved = null }) {
     out.push(it);
   }
   if (!legacy && lay.items.length) {
-    for (const d of defItems) if (!seen.has(d.id) && !removed.has(d.id)) { out.push(fromDefault(d, by)); seen.add(d.id); filled.push(d.id); changed = true; }
+    // A piece an option group governs (the storage bed) is filled hidden when the saved layout already shows another piece of that group (the renter's own bed):
+    // the default's choice must not put a second bed beside the one the renter chose before this piece existed.
+    const heldBack = new Set();
+    for (const g of groupsOf(inventory)) {
+      const ids = [...new Set(g.choices.flatMap((c) => c.pieces))];
+      if (g.choices.every((c) => c.pieces.length) && ids.some((id) => lay.items.some((x) => x.id === id && !x.hidden))) ids.forEach((id) => heldBack.add(id));
+    }
+    for (const d of defItems) if (!seen.has(d.id) && !removed.has(d.id)) { out.push(heldBack.has(d.id) ? { ...fromDefault(d, by), hidden: true } : fromDefault(d, by)); seen.add(d.id); filled.push(d.id); changed = true; }
     if (inventory?.pieces?.length) {   // a piece of "Your furniture" that no layout holds: fitted into the free space around the others, which stay where they are
       const kit = new Map(kitFromInventory(inventory).map((q) => [q.id, q]));
       for (const piece of inventory.pieces) {
@@ -127,7 +174,9 @@ export function resolveLayout({ model, inventory = null, saved = null }) {
       }
     }
   }
-  return { items: out, source: 'saved', changed, filled, followed, removed: [...removed], legacy };
+  const moved = followAttached(lay.items, out);   // an attached piece (the office chair) goes with its desk when the desk followed the default and the piece did not
+  if (moved !== out) changed = true;
+  return { items: moved, source: 'saved', changed, filled, followed, removed: [...removed], legacy };
 }
 
 /** `a` and `b` place every piece at the same spot (position to a tenth of an inch, rotation to a degree). */

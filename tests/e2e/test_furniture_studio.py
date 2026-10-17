@@ -184,7 +184,7 @@ def test_selecting_a_piece_shows_one_toolbar_in_the_plan_and_one_in_3d(open_page
     pg.wait_for_function("() => document.querySelectorAll('.selbar:not([hidden])').length === 2")
     for host in ("#p2dWrap", "#pstage"):
         bar = pg.locator(f"{host} .selbar")
-        assert [b.get_attribute("data-act") for b in bar.locator(".sb-b").all()] == ["rot", "free", "move", "del", "done"]
+        assert [b.get_attribute("data-act") for b in bar.locator(".sb-b").all()] == ["rot", "free", "move", "dup", "attach", "hide", "del", "done"]
         assert "rotating desk" in bar.locator(".sb-name").text_content()
         box, pane = bar.bounding_box(), pg.locator(host).bounding_box()
         assert pane["x"] <= box["x"] and box["x"] + box["width"] <= pane["x"] + pane["width"] + 1, f"{host}: the toolbar stays inside its pane"

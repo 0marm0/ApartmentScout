@@ -18,6 +18,7 @@ import * as I3 from './interior3d.js';   // [interior] reveals, sills, casings, 
 import * as SKY from './sky3d.js';   // [interior] the sky and haze behind the city in eye-level views
 import * as F3 from './furniture3d.js';   // [interior] low-poly furniture models
 import * as R3F from '../room3d/furniture.js';   // [room3d] the shared, refined furniture models (tried first)
+import { setArtLimits } from '../room3d/paintings.js';   // [room3d] the paintings use the GPU's full texture size
 import { roomQuality, onRoomQuality, furnitureQuality, quality } from '../room3d/quality.js';
 import { ROOM_HEX } from '../room3d/palette.js';   // [room3d] one paint and floor for both engines
 import { roomLamps } from '../room3d/roomlamps.js';   // [daycycle] a warm ceiling light for the evening when no lamp is placed
@@ -125,6 +126,8 @@ export function init(canvasEl, stageEl, onChange) {
   renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.15;
+  setArtLimits({ maxTexture: renderer.capabilities.maxTextureSize, anisotropy: renderer.capabilities.getMaxAnisotropy() });
+  addEventListener('as-art-ready', () => { dirty = true; });   // a painting's own photo has loaded
   RectAreaLightUniformsLib.init();
   scene = new THREE.Scene();
   cam = new THREE.PerspectiveCamera(42, 1.6, 0.05, 400);
@@ -451,7 +454,7 @@ export function setItems(items) { lastItems = items; const ids = new Set(items.m
 function disposeGroup(g) { g.traverse((o) => { o.geometry?.dispose(); if (o.material && !o.material.userData?.shared) (Array.isArray(o.material) ? o.material : [o.material]).forEach((m) => { if (m.map && !m.map.userData?.shared) m.map.dispose(); m.dispose(); }); o.dispose?.(); }); }
 onRoomQuality(() => { if (typeof rebuildAllItems === 'function' && groups.size) rebuildAllItems(); });   // [room3d] the furniture models are simpler in Fast, richer in Visual
 function rebuildAllItems() { for (const [, g] of groups) { furn.remove(g); disposeGroup(g); } groups.clear(); setItems(lastItems); }
-const sigOf = (it) => `${it.ref}|${it.w}|${it.d}|${it.h}|${it.elev}|${it.variant || ''}|${it.product || ''}|${it.look ? JSON.stringify(it.look) : ''}`;
+const sigOf = (it) => `${it.ref}|${it.w}|${it.d}|${it.h}|${it.elev}|${it.variant || ''}|${it.product || ''}|${it.look ? JSON.stringify(it.look) : ''}|${it.art || ''}`;
 /** Update an item's transform, rebuilding its meshes when its shape changed. */
 export function syncItem(it, rebuild = false) {
   let g = groups.get(it.id);

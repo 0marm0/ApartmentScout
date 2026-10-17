@@ -13,7 +13,7 @@
    "d": 84,
    "h": 40,
    "look": {
-    "color": "grey",
+    "color": "#55565a",
     "material": "fabric",
     "finish": "matte",
     "basis": "renter",
@@ -21,7 +21,14 @@
      "finish",
      "shade"
     ],
-    "note": "Upholstered grey fabric frame and headboard. The renter gave the colour and the upholstery; the exact shade is a mid grey."
+    "note": "Upholstered grey fabric frame and headboard (the renter's colour), with the renter's black quilted comforter from their room photos.",
+    "parts": {
+     "bedding": {
+      "color": "#1e1e20",
+      "material": "fabric",
+      "finish": "matte"
+     }
+    }
    },
    "note": "Mattress 60 x 80 in on a 64 x 84 in frame with a 40 in headboard.",
    "source": "Fit check; Room to live uses a 62 x 84 in frame; the TV study uses a 60 x 80 in mattress."
@@ -44,6 +51,11 @@
       "color": "#ece8e0",
       "material": "fabric",
       "finish": "sheen"
+     },
+     "bedding": {
+      "color": "#1e1e20",
+      "material": "fabric",
+      "finish": "matte"
      },
      "metal": {
       "color": "#1b1b1d",
@@ -214,14 +226,14 @@
    "d": 18.9,
    "h": 47.2,
    "look": {
-    "color": "#3a2b22",
+    "color": "#1b1918",
     "material": "laminate",
     "finish": "matte",
     "basis": "renter",
     "assumed": [
      "finish"
     ],
-    "note": "IKEA's dark brown oak effect, a printed oak-grain foil. The renter sees it as near black in their room, so it is drawn a little dark; the exact finish is a stand-in."
+    "note": "Black, as the renter has it (IKEA sells this STORKLINTA as dark-brown oak effect; in the renter's room it is black)."
    },
    "note": "IKEA STORKLINTA 6-drawer dresser, dark brown oak effect, 70 x 48 x 120 cm: two small drawers side by side on top, then four full-width ones (inside 61 x 40 x 16 cm), slab fronts with no handles, a thin top, a recessed plinth on small feet. Tall and narrow, with a wall anchor.",
    "source": "manufacturer: IKEA US article 705.592.78, https://www.ikea.com/us/en/p/storklinta-6-drawer-dresser-dark-brown-oak-effect-anchor-unlock-function-70559278/ (product page measurements and drawing). Renter, 2026-10-15: this is their dresser, not the MALM."
@@ -230,14 +242,14 @@
    "id": "desk",
    "ref": "desk",
    "variant": "rotating",
-   "label": "Bestier rotating desk 51 in, chair and monitor",
+   "label": "Bestier rotating desk 51 in and monitor",
    "room": "living",
    "w": 89.2,
    "d": 21.6,
    "h": 29.1,
    "set": {
     "monitor": 32,
-    "chair": "task",
+    "chair": false,
     "config": "straight",
     "hand": "right"
    },
@@ -286,7 +298,6 @@
     "basis": "renter",
     "assumed": [
      "finish",
-     "chair",
      "monitor"
     ],
     "parts": {
@@ -295,21 +306,39 @@
       "material": "metal",
       "finish": "satin"
      },
-     "chair": {
-      "color": "black",
-      "material": "fabric",
-      "finish": "matte"
-     },
      "monitor": {
       "color": "black",
       "material": "plastic",
       "finish": "satin"
      }
     },
-    "note": "Dark brown (espresso) wood-grain boards with silver cylindrical posts, from the renter's photos; it reads nearly black under their lighting. The finish, the chair's black and the monitor's casing are stand-ins."
+    "note": "Dark brown (espresso) wood-grain boards with silver cylindrical posts, from the renter's photos; it reads nearly black under their lighting. The finish and the monitor's casing are stand-ins."
    },
    "note": "Bestier Rotating L-Shaped Computer Desk 51 in with an open 2-tier shelf (Amazon ASIN B07V9QXDSN, bought 2021): a 51.8 x 21.6 in desk on one panel leg and a 46.9 x 13.4 x 27.6 in S shelf that pivots under its inner end. Used straight: about 89.2 in end to end, derived, not published (measure it; spec.straight.total). L option: set.config l_shape, 51.8 x 46.9 in.",
    "source": "Maker's dimension drawing on the Amazon listing: desk 51.8 x 21.6, height 29.1, shelf 46.9 x 13.4 x 27.6, tiers 11.3, panels 1.65 in. Derived: straight length and pivot, from the maker's L box size (51.18 x 46.85) and straight photo. Finish, posts and straight use: renter's photos."
+  },
+  {
+   "id": "desk-chair",
+   "ref": "task-chair",
+   "label": "Office chair (rolling task chair)",
+   "room": "living",
+   "w": 27,
+   "d": 27,
+   "h": 42,
+   "look": {
+    "color": "black",
+    "material": "fabric",
+    "finish": "matte",
+    "basis": "renter",
+    "assumed": [
+     "color",
+     "material",
+     "finish"
+    ],
+    "note": "The renter has a rolling office chair with wheels, the one that goes with the desk; the model is a generic task chair with a mesh back and two armrests, black as a stand-in until the renter says what it is."
+   },
+   "note": "A rolling task chair, about 27 in across at the casters and 42 in tall; its seat and arms (under 25 in) may tuck under the desktop (27.5 in), its back may not. It is its own piece: shown or hidden with the Office chair switch, and either attached to the desk (it moves and turns with it) or free to drag anywhere and to duplicate.",
+   "source": "Renter: they have a rolling office chair with wheels. Size: a typical task chair, an assumption; measure it."
   },
   {
    "id": "futon",
@@ -320,9 +349,21 @@
    "d": 33.5,
    "h": 35.4,
    "states": {
-    "sofa": {"w": 73.2, "d": 33.5, "h": 35.4},
-    "lounger": {"w": 73.2, "d": 39.9, "h": 30},
-    "bed": {"w": 73.2, "d": 41.7, "h": 18.5}
+    "sofa": {
+     "w": 73.2,
+     "d": 33.5,
+     "h": 35.4
+    },
+    "lounger": {
+     "w": 73.2,
+     "d": 39.9,
+     "h": 30
+    },
+    "bed": {
+     "w": 73.2,
+     "d": 41.7,
+     "h": 18.5
+    }
    },
    "product_info": {
     "name": "Serta Billie-Loren Convertible Sleeper Sofa",
@@ -337,9 +378,20 @@
     "dims_basis": "listing (unverified for this variant)"
    },
    "spec": {
-    "overall": {"w": 73.2, "d": 33.5, "h": 35.4, "listed_w": 74},
-    "seat": {"d": 22, "h": 18.5},
-    "bed": {"w": 73.2, "d": 41.7}
+    "overall": {
+     "w": 73.2,
+     "d": 33.5,
+     "h": 35.4,
+     "listed_w": 74
+    },
+    "seat": {
+     "d": 22,
+     "h": 18.5
+    },
+    "bed": {
+     "w": 73.2,
+     "d": 41.7
+    }
    },
    "spec_basis": {
     "overall.w": "listing",
@@ -459,12 +511,250 @@
    },
    "note": "48 x 30 in rectangle with four chairs.",
    "source": "Fit check; Room to live."
+  },
+  {
+   "id": "sim-rig",
+   "ref": "sim-rig",
+   "label": "Sim rig, Next Level Racing F-GT Lite (GT) with Fanatec wheel",
+   "room": "living",
+   "w": 33.5,
+   "d": 76.8,
+   "h": 51.2,
+   "look": {
+    "color": "black",
+    "material": "metal",
+    "finish": "satin",
+    "basis": "renter",
+    "assumed": [
+     "finish",
+     "seat",
+     "wheel",
+     "pedals"
+    ],
+    "parts": {
+     "seat": {
+      "color": "#1b1c1e",
+      "material": "fabric",
+      "finish": "matte"
+     },
+     "accent": {
+      "color": "#b3202a",
+      "material": "plastic",
+      "finish": "satin"
+     },
+     "wheel": {
+      "color": "#17181a",
+      "material": "plastic",
+      "finish": "satin"
+     },
+     "base": {
+      "color": "#25272b",
+      "material": "metal",
+      "finish": "satin"
+     }
+    },
+    "note": "A folding tubular cockpit: black steel tubes with black-and-red pivot caps, a black fabric sling seat, a central tube to a small flat wheel deck, a black finned Fanatec base and a flat Formula wheel. From the renter's photo and the maker's drawings; finishes are stand-ins."
+   },
+   "spec": {
+    "envelope": {
+     "l": 76.8,
+     "w": 33.5,
+     "h": 51.2
+    },
+    "envelope_cm": {
+     "l": 195,
+     "w": 85,
+     "h": 130
+    },
+    "gt_support_cm": {
+     "l": 175,
+     "w": 75,
+     "h": 127
+    },
+    "formula_support_cm": {
+     "l": 164,
+     "w": 75,
+     "h": 94
+    },
+    "space_graphic_cm": {
+     "l": 185,
+     "w": 85,
+     "h": 125
+    },
+    "reseller_cm": {
+     "gt_l": 185.3,
+     "formula_l": 192.4
+    },
+    "folded_cm": {
+     "l": 75,
+     "w": 40,
+     "h": 87
+    },
+    "base_cm": {
+     "w": 15,
+     "h": 13,
+     "l": 20
+    },
+    "wheel_cm": {
+     "w": 28,
+     "h": 17
+    }
+   },
+   "spec_basis": {
+    "envelope.l": "assumed",
+    "envelope.w": "assumed",
+    "envelope.h": "assumed",
+    "envelope_cm.l": "assumed",
+    "envelope_cm.w": "assumed",
+    "envelope_cm.h": "assumed",
+    "gt_support_cm.l": "spec",
+    "gt_support_cm.w": "spec",
+    "gt_support_cm.h": "spec",
+    "formula_support_cm.l": "spec",
+    "formula_support_cm.w": "spec",
+    "formula_support_cm.h": "spec",
+    "space_graphic_cm.l": "diagram",
+    "space_graphic_cm.w": "diagram",
+    "space_graphic_cm.h": "diagram",
+    "reseller_cm.gt_l": "listing",
+    "reseller_cm.formula_l": "listing",
+    "folded_cm.l": "spec",
+    "folded_cm.w": "spec",
+    "folded_cm.h": "spec",
+    "base_cm.w": "assumed",
+    "base_cm.h": "assumed",
+    "base_cm.l": "assumed",
+    "wheel_cm.w": "assumed",
+    "wheel_cm.h": "assumed"
+   },
+   "assumed": [
+    "w",
+    "d",
+    "h"
+   ],
+   "note": "GT mode by default (the back more upright); the Formula variant reclines the whole seat and lowers the wheel deck. Footprint = the conservative planning envelope 195 x 85 x 130 cm, above every published figure. The side view follows the maker's GT and Formula drawings; seat, wheel-deck and pedal-plate sizes are not published and are drawn by eye. The pedal end slides under the desk.",
+   "source": "Renter: product choice, photo, under-desk use. Maker support: GT 175x75x127 cm, Formula 164x75x94 cm; product-space graphic 185x85x125 cm; reseller drawings GT 185.3 cm and Formula 192.4 cm long; folded frame 75x40x87 cm. Envelope: planning value. Fanatec base and wheel sizes: approximate."
+  },
+  {
+   "id": "central-park-triptych",
+   "ref": "canvas-painting",
+   "label": "Central Park triptych",
+   "room": "living",
+   "w": 76,
+   "d": 1.5,
+   "h": 36,
+   "elev": 44,
+   "art": "central-park",
+   "look": {
+    "color": "#5d8a52",
+    "material": "fabric",
+    "finish": "matte",
+    "basis": "renter",
+    "assumed": [
+     "finish"
+    ],
+    "note": "Three stretched canvases that together make one aerial view of Central Park's Lake and the Midtown skyline; the picture is the renter's photo when it is on this computer, otherwise a painted stand-in in its colours."
+   },
+   "spec": {
+    "canvas": {
+     "panels": 3,
+     "panel_w": 24,
+     "gap": 2,
+     "depth": 1.5
+    }
+   },
+   "spec_basis": {
+    "canvas.panel_w": "assumed",
+    "canvas.gap": "assumed",
+    "canvas.depth": "assumed"
+   },
+   "assumed": [
+    "w",
+    "h",
+    "elev"
+   ],
+   "note": "Three portrait canvases, 24 x 36 in each (assumed), hung 2 in apart: 76 x 36 in overall, centred over the futon about 8 in above its back.",
+   "source": "The renter's own paintings (they sent photos of them on 2026-10-16). Their sizes were not given: the canvas sizes, the 1.5 in gallery-wrap depth and the hanging height are assumptions to correct."
+  },
+  {
+   "id": "seascape",
+   "ref": "canvas-painting",
+   "label": "Seascape with a sailboat",
+   "room": "bedroom",
+   "w": 30,
+   "d": 1.5,
+   "h": 25,
+   "elev": 56,
+   "art": "seascape",
+   "look": {
+    "color": "#2c7a7b",
+    "material": "fabric",
+    "finish": "matte",
+    "basis": "renter",
+    "assumed": [
+     "finish"
+    ],
+    "note": "A Van Gogh-style seascape: a sailboat on rolling blue-green waves under white clouds, on one landscape canvas."
+   },
+   "spec": {
+    "canvas": {
+     "panels": 1,
+     "depth": 1.5
+    }
+   },
+   "spec_basis": {
+    "canvas.depth": "assumed"
+   },
+   "assumed": [
+    "w",
+    "h",
+    "elev"
+   ],
+   "note": "One landscape canvas, 30 x 25 in (assumed, 6:5 like the picture), over the bed's headboard.",
+   "source": "The renter's own paintings (they sent photos of them on 2026-10-16). Their sizes were not given: the canvas sizes, the 1.5 in gallery-wrap depth and the hanging height are assumptions to correct."
+  },
+  {
+   "id": "monet-red-boats",
+   "ref": "canvas-painting",
+   "label": "Monet, Red Boats, Argenteuil",
+   "room": "living",
+   "w": 36,
+   "d": 1.5,
+   "h": 26,
+   "elev": 44,
+   "art": "monet-red-boats",
+   "look": {
+    "color": "#6f97c4",
+    "material": "fabric",
+    "finish": "matte",
+    "basis": "renter",
+    "assumed": [
+     "finish"
+    ],
+    "note": "A print of Claude Monet's Red Boats, Argenteuil (1875): a sunny river with a red-orange sailboat, moored masts, poplars and a red-roofed house."
+   },
+   "spec": {
+    "canvas": {
+     "panels": 1,
+     "depth": 1.5
+    }
+   },
+   "spec_basis": {
+    "canvas.depth": "assumed"
+   },
+   "assumed": [
+    "w",
+    "h",
+    "elev"
+   ],
+   "note": "One landscape canvas, 36 x 26 in (assumed, about 4:3 like the picture), on the living room's left wall by the dining table, its centre at eye level (57 in).",
+   "source": "The renter's own paintings (they sent photos of them on 2026-10-16). Their sizes were not given: the canvas sizes, the 1.5 in gallery-wrap depth and the hanging height are assumptions to correct."
   }
  ],
  "options": {
   "bed": {
    "label": "Bed",
-   "default": "mine",
+   "default": "storage",
    "choices": [
     {
      "id": "mine",
@@ -489,6 +779,42 @@
       "nightstand-1",
       "nightstand-2"
      ]
+    }
+   ]
+  },
+  "sim": {
+   "label": "Sim rig",
+   "default": "hidden",
+   "choices": [
+    {
+     "id": "shown",
+     "label": "Shown",
+     "pieces": [
+      "sim-rig"
+     ]
+    },
+    {
+     "id": "hidden",
+     "label": "Hidden",
+     "pieces": []
+    }
+   ]
+  },
+  "chair": {
+   "label": "Office chair",
+   "default": "shown",
+   "choices": [
+    {
+     "id": "shown",
+     "label": "Shown",
+     "pieces": [
+      "desk-chair"
+     ]
+    },
+    {
+     "id": "hidden",
+     "label": "Hidden",
+     "pieces": []
     }
    ]
   }

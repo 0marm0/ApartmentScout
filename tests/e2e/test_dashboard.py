@@ -62,7 +62,12 @@ READY_JS = """(v) => {
   return true;
 }"""
 # how long a WebGL view may take before the sweep goes on anyway (without WebGL the scene never comes; the view's own error is reported)
-READY_CAP = {"map": 20000, "unit": 30000, "plan": 30000}
+READY_CAP = {"map": 20000, "unit": 60000, "plan": 60000}
+# Under software GL the page's one thread is held for tens of seconds while Unit 3D compiles its shaders and uploads the city
+# (about 50 programs and 400k triangles), and the next route cannot even start until that is over. So the heavy views get
+# room both to appear and to go quiet; a quiet page is what the next step needs, and the cap only bounds a view that never does.
+APPEAR_CAP = {"map": 30000, "unit": 60000, "plan": 60000}
+QUIET_CAP = {"map": 30000, "unit": 60000, "plan": 60000}
 
 
 def _show(s, view: str) -> None:
@@ -71,12 +76,12 @@ def _show(s, view: str) -> None:
     pg.evaluate("(v) => { location.hash = v; }", view)
     name = SECTION.get(view, view.split("/")[0])
     pg.wait_for_function("(v) => { const el = document.getElementById('view-' + v); return el && !el.hidden && el.children.length > 0; }",
-                         arg=name, timeout=90000)   # (a cap: the previous view's 3D work can hold the page that long on a busy runner)
+                         arg=name, timeout=max(90000, APPEAR_CAP.get(name, 20000)))   # (a cap: the previous view's 3D work can hold the page that long on a busy runner)
     try:
         pg.wait_for_function(READY_JS, arg=name, timeout=READY_CAP.get(name, 5000))
     except PlaywrightTimeout:
         pass
-    settled(pg, 20000, ticks=6)   # about 0.3 s of idle main thread: late errors from the view's own start-up have surfaced
+    settled(pg, QUIET_CAP.get(name, 20000), ticks=6)   # about 0.3 s of idle main thread: late errors from the view's own start-up have surfaced
     # a view whose module threw is caught by the shell and shown as "This view could not load"
     if err := pg.evaluate("(v) => document.querySelector('#view-' + v + ' .view-err code')?.textContent ?? null", name):
         s.errors.append(f"view #{name} could not load: {err}")
@@ -101,15 +106,15 @@ def test_every_view_loads_clean(open_page, theme: str, width: int) -> None:
     # the drawer, the settings sheet and the command palette
     _show(s, "map")
     s.page.locator("#cards .card").first.click()
-    s.page.wait_for_selector("#drawer.open", timeout=30000)       # (the map flies to the listing first: seconds on software GL)
-    settled(s.page, 20000, ticks=4)                               # the drawer has finished sliding in
+    s.page.wait_for_selector("#drawer.open", timeout=30000)
+    settled(s.page, 30000, ticks=4)                               # the drawer has finished sliding in
     if width < 600 and (o := _overflow(s)):
         problems.append(f"drawer overflows: {o}")
     s.page.keyboard.press("Escape")
     s.page.wait_for_function("() => !document.querySelector('#drawer.open')")
     s.page.evaluate("async () => (await import('/js/app.js')).openSettings()")
     s.page.wait_for_selector(".sheet-scrim.on", timeout=30000)
-    settled(s.page, 20000, ticks=4)
+    settled(s.page, 30000, ticks=4)
     if width < 600 and (o := _overflow(s)):
         problems.append(f"settings overflows: {o}")
     s.page.keyboard.press("Escape")
