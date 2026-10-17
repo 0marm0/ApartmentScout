@@ -156,6 +156,7 @@ def test_the_map_draws_what_a_place_filter_refers_to(op, webgl) -> None:
     pg.keyboard.press("Enter")
     pg.wait_for_function("() => (window.__asMap.getSource('place-filter')?.serialize().data.features || []).some((f) => f.geometry.type === 'Polygon')")
     pg.keyboard.press("Escape")   # a theme switch rebuilds the style: the outline must come back with it
+    pg.wait_for_function("() => { const r = document.querySelector('.pl-scrim'); return (!r || r.hidden) && !document.activeElement?.matches('input, textarea'); }")   # (else `t` is typed into the palette)
     pg.keyboard.press("t")
     pg.wait_for_function("() => document.documentElement.dataset.theme === 'light'")
     pg.wait_for_function("() => ['pf-fill', 'pf-line'].every((id) => !!window.__asMap.getLayer(id)) && !!window.__asMap.getSource('place-filter')", timeout=20000)

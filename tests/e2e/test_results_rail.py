@@ -202,12 +202,13 @@ def test_collapse_shows_a_summary_hides_the_body_and_is_remembered(open_page) ->
 def test_section_height_animates(open_motion) -> None:
     p, errors = open_motion("")
     h0 = p.evaluate("() => document.getElementById('sec-body-status').getBoundingClientRect().height")
-    p.locator("#sec-tg-status").click()
-    p.wait_for_timeout(110)
-    mid = p.evaluate("() => document.getElementById('sec-body-status').getBoundingClientRect().height")
-    p.wait_for_timeout(450)
-    end = p.evaluate("() => document.getElementById('sec-body-status').getBoundingClientRect().height")
-    assert end < 1 and 1 < mid < h0, (h0, mid, end)    # it passes through in-between heights instead of snapping
+    # the height on every frame from the click until the section has closed (a slow runner draws fewer frames, so no fixed sample times)
+    hs = p.evaluate("""() => new Promise((ok) => { const b = document.getElementById('sec-body-status'), out = [], t0 = performance.now();
+      document.getElementById('sec-tg-status').click();
+      const tick = () => { const h = b.getBoundingClientRect().height; out.push(h); if (h < 1 || performance.now() - t0 > 10000) ok(out); else requestAnimationFrame(tick); };
+      requestAnimationFrame(tick); })""")
+    end, mids = hs[-1], [h for h in hs if 1 < h < h0 - 1]
+    assert end < 1 and mids, (h0, hs[:12], end)    # it closes, and passes through in-between heights instead of snapping
     assert not errors
 
 

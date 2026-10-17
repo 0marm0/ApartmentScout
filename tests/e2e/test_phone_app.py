@@ -108,6 +108,17 @@ def test_the_listing_is_a_bottom_sheet_that_opens_at_half_height(open_phone) -> 
     assert p.take() == []
 
 
+def test_a_home_opened_before_the_phone_features_start_gets_the_half_detent(open_phone) -> None:
+    """?open= opens the listing while the page boots, before features/native.js starts: the sheet still takes the half detent (it was
+    drawn half up with no detent, and its gestures did nothing until it was closed and opened again)."""
+    p = open_phone("?open=paramount-tower-25e#map")
+    p.page.wait_for_function("() => document.getElementById('drawer').dataset.detent === 'half'", timeout=30000)
+    assert abs(rect(p.page, "#drawer")["top"] - (H - HALF)) <= 2
+    p.page.locator(".sheet-grab").click()
+    go_to(p.page, "full")
+    assert p.take() == []
+
+
 def test_drag_the_grab_bar_through_the_detents_and_close_below_peek(open_phone) -> None:
     p = open_phone()
     open_first(p)

@@ -83,6 +83,9 @@ function initSheet() {
     else { sheet.detent = 'closed'; delete dw.dataset.detent; dw.style.transform = dw.style.transition = ''; dw.style.removeProperty('--sheet-h'); if (actions) { actions.style.transform = actions.style.transition = ''; } dw.querySelectorAll(':scope > .sheet-grab, :scope > .sheet-pos').forEach((n) => n.remove()); }
   };
   layout();
+  // a home opened before this module started (a quick tap, or ?open= on a slow phone): the sheet is up already, so it takes the half
+  // detent now; the observer below only hears the opens and closes that come later
+  if (phone() && dw.classList.contains('open') && sheet.detent === 'closed') { chrome(); setDetent('half'); }
   addEventListener('resize', layout);
   matchMedia('(max-width: 760px)').addEventListener?.('change', layout);
 

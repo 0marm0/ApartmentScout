@@ -260,7 +260,8 @@ def test_menu_is_a_bottom_sheet_on_a_phone(open_page, theme: str) -> None:
     assert pg.evaluate("""() => [...document.querySelectorAll('#appMenu button')].filter((b) => b.offsetParent && (b.getBoundingClientRect().right > 391 || b.getBoundingClientRect().left < -1)).length""") == 0
     assert pg.evaluate("() => Math.min(...[...document.querySelectorAll('#appMenu button[role=menuitem]')].filter((b) => b.offsetParent).map((b) => b.getBoundingClientRect().height))") >= 40
     pg.locator("#mnTour").scroll_into_view_if_needed()
-    pg.wait_for_function("() => document.getElementById('mnTour').getBoundingClientRect().bottom <= 845", timeout=5000)   # the last row scrolls into the sheet
+    # the last row scrolls into the sheet (scrolled again on each try: the sheet's own opening may reset the first scroll on a slow runner)
+    pg.wait_for_function("() => { const r = document.getElementById('mnTour'); r.scrollIntoView({ block: 'nearest' }); return r.getBoundingClientRect().bottom <= 845; }", timeout=15000)
     assert not [x for x in _axe(pg)], "axe: no serious violations with the sheet open"
     pg.mouse.click(195, 30)     # the scrim above the sheet closes it
     pg.wait_for_function("() => document.getElementById('appMenu').hidden")
