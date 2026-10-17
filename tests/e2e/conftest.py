@@ -131,13 +131,29 @@ def browser(base_url: str):
         _skip_or_fail("playwright is not installed (pip install -e '.[dev]')")
     pw = sync_playwright().start()
     try:
-        b = pw.chromium.launch(args=GPU_ARGS)
+        b = _Browser(pw.chromium.launch(args=GPU_ARGS), lambda: pw.chromium.launch(args=GPU_ARGS))
     except Error as e:
         pw.stop()
         _skip_or_fail(f"Chromium is not installed for Playwright (playwright install chromium): {str(e)[:200]}")
     yield b
     b.close()
     pw.stop()
+
+
+class _Browser:
+    """The session's Chromium. If it has gone away (software GL can bring the whole browser down under load), the next test that asks
+    for it gets a new one: the crash fails the test it happened in, not every test after it on that worker."""
+
+    def __init__(self, b, launch) -> None:
+        self._b, self._launch = b, launch
+
+    def live(self):
+        if not self._b.is_connected():
+            self._b = self._launch()
+        return self._b
+
+    def __getattr__(self, name: str):
+        return getattr(self.live(), name)
 
 
 @dataclass
@@ -243,10 +259,9 @@ def _contexts(request) -> Iterator[None]:
     hold = request.node.get_closest_marker("governor") is None
     software = "--use-angle=swiftshader" in GPU_ARGS
     b = request.getfixturevalue("browser")
-    make = b.new_context
 
     def new_context(*a, **kw):
-        ctx = make(*a, **kw)
+        ctx = b.live().new_context(*a, **kw)
         if software:
             ctx.set_default_timeout(SOFTWARE_GL_TIMEOUT_MS)
             ctx.set_default_navigation_timeout(SOFTWARE_GL_TIMEOUT_MS)

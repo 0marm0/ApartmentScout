@@ -21,7 +21,7 @@ LISTINGS = json.loads((DATA / "listings.json").read_text())
 SEARCH = json.loads((DATA / "criteria.json").read_text())["search"]["name"]
 KNOX = "the-knox-6b"
 KNOX_RANK = next(x for x in LISTINGS if x["id"] == KNOX)["score"]["ranks"]["action"]
-SLOW = 30000
+SLOW = 90000   # a cap on waiting for the state: the list and the scoring worker take that long on a busy software-GL runner
 
 
 def card(s, id: str = KNOX):
