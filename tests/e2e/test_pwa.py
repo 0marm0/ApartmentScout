@@ -287,10 +287,12 @@ def test_a_new_deploy_shows_the_update_prompt_and_reload_switches_version(open_a
         except PlaywrightTimeout:
             raise AssertionError(page.evaluate("""async () => { const r = await navigator.serviceWorker.getRegistration(), w = (x) => x && x.state;
               return { active: w(r?.active), waiting: w(r?.waiting), installing: w(r?.installing), controller: w(navigator.serviceWorker.controller),
-                prompt: document.getElementById('pwaUpdate')?.textContent ?? null }; }""")) from None
+                prompt: document.getElementById('pwaUpdate')?.textContent ?? null, caches: await caches.keys() }; }""")) from None
         page.wait_for_selector("#cards .card", timeout=90000)
         st2 = settle(page)
         assert st2["build"] == new
+        # the previous version's caches go alongside the activation: wait for that, then check
+        page.wait_for_function("async (old) => !(await caches.keys()).includes('as-shell-' + old)", arg=old, timeout=90000)
         names = page.evaluate("async () => (await caches.keys())")
         assert f"as-shell-{new}" in names and f"as-shell-{old}" not in names, names
         assert errors == [], errors

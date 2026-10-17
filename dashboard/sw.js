@@ -109,11 +109,14 @@ self.addEventListener('install', (event) => {
 });
 
 self.addEventListener('activate', (event) => {
+  // take the pages over first: until activation is done every request they make (the Reload after an update) waits for it
+  event.waitUntil(self.clients.claim());
+  // then drop the previous version's caches, alongside rather than in front: deleting a cache the old worker still has open could hold
+  // activation up for minutes on a busy device. Every activation removes whatever is stale, so a cleanup cut short is finished next time.
   event.waitUntil((async () => {
     for (const name of await caches.keys()) {
       if ((name.startsWith('as-shell-') || name.startsWith('as-runtime-')) && name !== SHELL && name !== RUNTIME) await caches.delete(name);
     }
-    await self.clients.claim();
   })());
 });
 
