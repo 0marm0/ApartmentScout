@@ -125,14 +125,14 @@ function initSheetTouch() {
   dw.addEventListener('touchstart', (e) => {
     if (!phone() || sheet.detent === 'closed' || e.touches.length !== 1 || e.target.closest('textarea, input, select')) { g = null; return; }
     const t = e.touches[0], sc = dw.querySelector('.d-scroll');
-    g = { x: t.clientX, y: t.clientY, axis: null, own: null, sc, h: hScrollable(e.target), grab: !!e.target.closest('.sheet-grab'), samples: [{ t: performance.now(), y: t.clientY, x: t.clientX }], base: null, mode: null, dx: 0 };
+    g = { x: t.clientX, y: t.clientY, axis: null, own: null, sc, h: hScrollable(e.target), grab: !!e.target.closest('.sheet-grab'), samples: [{ t: e.timeStamp, y: t.clientY, x: t.clientX }], base: null, mode: null, dx: 0 };
     if (!calm()) { for (const el of [dw, actions]) if (el) el.style.transition = 'none'; sheet.token++; }
   }, { passive: true });
 
   dw.addEventListener('touchmove', (e) => {
     if (!g) return;
     const t = e.touches[0], dx = t.clientX - g.x, dy = t.clientY - g.y;
-    g.samples.push({ t: performance.now(), y: t.clientY, x: t.clientX }); if (g.samples.length > 12) g.samples.shift();
+    g.samples.push({ t: e.timeStamp, y: t.clientY, x: t.clientX }); if (g.samples.length > 12) g.samples.shift();   // when the finger moved, not when a busy page got round to it
     if (!g.axis) {
       // a pull down from the top of a scrolled-out sheet, or any drag of a sheet that is not full, is claimed at once: a touchmove cannot be
       // cancelled after the browser has started to scroll
@@ -162,13 +162,13 @@ function initSheetTouch() {
     }
   }, { passive: false });
 
-  const end = (cancelled) => {
+  const end = (cancelled, at) => {
     if (!g) return;
     const s = g; g = null;
     if (s.own === 'sheet') {
       dw.classList.remove('dragging');
       suppressTap = true; setTimeout(() => { suppressTap = false; }, 250);
-      const last = s.samples[s.samples.length - 1], stale = performance.now() - last.t > 120;
+      const last = s.samples[s.samples.length - 1], stale = at - last.t > 120;   // the finger rested before it lifted
       const v = stale || cancelled ? 0 : velocity(s.samples);
       const to = N.snapDetent(visibleNow(), v, sheet.heights, s.from);
       const flick = Math.abs(v) > 0.4;
@@ -194,8 +194,8 @@ function initSheetTouch() {
       }
     }
   };
-  dw.addEventListener('touchend', () => end(false));
-  dw.addEventListener('touchcancel', () => end(true));
+  dw.addEventListener('touchend', (e) => end(false, e.timeStamp));
+  dw.addEventListener('touchcancel', (e) => end(true, e.timeStamp));
 }
 
 // ------------------------------------------------------------------ pull to refresh

@@ -11,6 +11,7 @@ import re
 from pathlib import Path
 
 import pytest
+from conftest import settled
 
 pytestmark = pytest.mark.e2e
 
@@ -38,6 +39,7 @@ def knox(s) -> dict:
 def open_knox(s):
     card(s)
     s.page.wait_for_selector("#dUnknowns", timeout=SLOW)
+    settled(s.page, 30000, ticks=4)   # the drawer redraws once the scores are in: act on the rows after that
 
 
 def test_the_card_says_the_knox_fell_and_the_drawer_says_why(open_page) -> None:
@@ -157,6 +159,7 @@ def test_a_value_that_is_not_a_number_saves_nothing(open_page) -> None:
 def test_the_unknowns_work_on_a_phone(open_page) -> None:
     s = open_page(f"?open={KNOX}#map", width=390, height=844)
     s.page.wait_for_selector("#dUnknowns", timeout=SLOW)
+    settled(s.page, 30000, ticks=4)   # the drawer redraws once the scores are in: act on the rows after that
     row = s.page.locator('#dUnknowns [data-uk="size"]')
     row.scroll_into_view_if_needed()
     box = row.bounding_box()

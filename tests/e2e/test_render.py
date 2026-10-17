@@ -154,7 +154,6 @@ def test_photo_and_video_in_the_floor_plan_studio(open_page, webgl: bool) -> Non
     assert not s.take()
 
 
-@pytest.mark.no_raster(False)   # reads what WebGL drew
 def test_the_sheet_walks_through_options_progress_result_and_cancel(open_page, webgl: bool) -> None:
     s = open_page("#map", width=1280, height=800)
     pg = s.page

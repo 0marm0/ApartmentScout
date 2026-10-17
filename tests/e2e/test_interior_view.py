@@ -262,7 +262,7 @@ def test_inside_camera_glides_between_rooms_unless_motion_is_reduced(open_page, 
     pg.wait_for_timeout(250)
     mid = pg.evaluate("() => ({ w: window.__unit3d.stage.interior.group.children.filter((o) => o.name === 'wall').every((o) => !o.visible), ceil: window.__unit3d.stage.interior.group.children.find((o) => o.name === 'ceiling').visible })")
     assert mid == {"w": True, "ceil": False}                                          # between rooms the walls step aside, so the camera never cuts through one
-    pg.wait_for_function("() => !window.__unit3d.stage.inTween", timeout=30000)   # a glide ends on a frame; software GL draws a frame in a second or more
+    pg.wait_for_function("() => !window.__unit3d.stage.inTween", timeout=60000)   # a glide ends on a frame; software GL draws a frame in a second or more
     done = pg.evaluate("() => ({ w: window.__unit3d.stage.interior.group.children.filter((o) => o.name === 'wall').every((o) => o.visible), ceil: window.__unit3d.stage.interior.group.children.find((o) => o.name === 'ceiling').visible, yaw: window.__unit3d.stage.look.yaw })")
     assert done == {"w": True, "ceil": True, "yaw": 0}
     pg.emulate_media(reduced_motion="reduce")

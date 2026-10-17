@@ -172,11 +172,13 @@ def test_the_sheet_moves_with_motion_on_and_comes_to_rest_at_the_detent(open_pho
     p = open_phone(motion=True)
     open_first(p)
     pg = p.page
-    pg.wait_for_function("() => document.getElementById('drawer').style.transition === ''", timeout=3000)   # the spring has finished
+    # the spring has finished and the sheet rests at the detent (on a busy runner the drawn motion ends after the spring's own timer)
+    at = "(top) => Math.abs(document.getElementById('drawer').getBoundingClientRect().top - top) <= 2"
+    pg.wait_for_function(at, arg=H - HALF, timeout=10000)
     assert abs(rect(pg, "#drawer")["top"] - (H - HALF)) <= 2
     pg.locator(".sheet-grab").click()
     go_to(pg, "full")
-    pg.wait_for_function("() => document.getElementById('drawer').style.transition === ''", timeout=3000)
+    pg.wait_for_function(at, arg=H - FULL, timeout=10000)
     assert abs(rect(pg, "#drawer")["top"] - (H - FULL)) <= 2
 
 

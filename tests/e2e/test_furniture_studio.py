@@ -158,7 +158,7 @@ def test_from_the_sofa_you_see_the_tv_and_from_the_desk_your_monitor(open_page, 
     for chip, view, target in (("Sofa", "seat:sofa", "tv"), ("Bed", "seat:bed", "tv-bed"), ("Desk", "seat:desk", "desk")):
         look_click(pg, f"#uLook .lk-chip:text-is('{chip}')")
         pg.wait_for_function("(k) => window.__unit3d.curView && window.__unit3d.curView.key === k", arg=view)
-        pg.wait_for_function("() => !window.__unit3d.stage.inTween", timeout=30000)
+        pg.wait_for_function("() => !window.__unit3d.stage.inTween", timeout=60000)
         camera_still(pg, "unit")
         assert pg.evaluate(in_view, target), f"{chip}: the {target} is in front of you"
     # the window view stays one click away

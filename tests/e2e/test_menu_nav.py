@@ -229,8 +229,17 @@ def test_menu_stays_above_the_compare_tray(open_page) -> None:
     pg.locator("#mnTour").scroll_into_view_if_needed()
     settled(pg, 20000, ticks=3)
     # the menu has finished opening and scrolling (a slow runner is still mid-way after a short quiet spell): then the last row is on top
-    pg.wait_for_function("""() => { const r = document.getElementById('mnTour').getBoundingClientRect(), e = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
-      return !!e && !!e.closest('#mnTour'); }""", timeout=10000)
+    on_top = """() => { const r = document.getElementById('mnTour').getBoundingClientRect(), e = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+      return !!e && !!e.closest('#mnTour'); }"""
+    try:
+        pg.wait_for_function(on_top, timeout=10000)
+    except PlaywrightTimeout:
+        pass
+    assert pg.evaluate(on_top), pg.evaluate("""() => { const q = (s) => { const el = document.querySelector(s); if (!el) return null; const r = el.getBoundingClientRect();
+      return [Math.round(r.left), Math.round(r.top), Math.round(r.right), Math.round(r.bottom), getComputedStyle(el).zIndex]; };
+      const r = document.getElementById('mnTour').getBoundingClientRect(), e = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+      return { covered_by: e && (e.tagName + '#' + e.id + '.' + e.className.toString().slice(0, 60)), row: q('#mnTour'), menu: q('#appMenu'), tray: q('.tray'),
+        topbar: q('.topbar'), body: document.body.className }; }""")   # the last row is not covered by the tray
     assert not s.take()
 
 

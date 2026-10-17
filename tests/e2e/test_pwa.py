@@ -280,8 +280,9 @@ def test_a_new_deploy_shows_the_update_prompt_and_reload_switches_version(open_a
         page.wait_for_selector("#pwaUpdate", timeout=20000)
         page.evaluate("() => { window.__marker = 1; }")
         page.locator("#pwaUpdate [data-pwa=reload]").click()
-        page.wait_for_function("() => window.__marker === undefined", timeout=30000)   # a new document: the page reloaded itself
-        page.wait_for_selector("#cards .card", timeout=30000)
+        # a new document: the page reloaded itself (the new worker activates first: up to a minute on a busy software-GL runner)
+        page.wait_for_function("() => window.__marker === undefined", timeout=90000)
+        page.wait_for_selector("#cards .card", timeout=90000)
         st2 = settle(page)
         assert st2["build"] == new
         names = page.evaluate("async () => (await caches.keys())")
