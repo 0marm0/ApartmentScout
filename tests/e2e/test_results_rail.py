@@ -432,11 +432,10 @@ def test_closing_the_drawer_returns_focus_to_a_card_that_was_scrolled_away(open_
     p.wait_for_selector("#drawer.open", timeout=T)
     p.locator("#drawer .d-scroll").focus() if p.locator("#drawer .d-scroll[tabindex]").count() else p.locator("#dClose").focus()
     # scroll far down until the window has moved on and that card is no longer in the DOM (set again on each try: a re-measure of the
-    # list while the drawer opens can put the scroll back)
+    # list while the drawer opens can put the scroll back), and close the drawer at that moment, with the card out of the DOM
     p.wait_for_function("""(id) => { const c = document.getElementById('cards'); c.scrollTop = 20000;
-      return !c.querySelector(`.card[data-id="${id}"]`); }""", arg=lid, timeout=60000)
-    assert p.locator(f'#cards .card[data-id="{lid}"]').count() == 0
-    p.locator("#dClose").click()
+      if (c.querySelector(`.card[data-id="${id}"]`)) return false;
+      document.getElementById('dClose').click(); return true; }""", arg=lid, timeout=60000)
     p.wait_for_function("(id) => document.activeElement?.dataset?.id === id", arg=lid, timeout=T)
     assert not s.take()
 

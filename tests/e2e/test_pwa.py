@@ -23,7 +23,7 @@ from pathlib import Path
 
 import pytest
 from playwright.sync_api import TimeoutError as PlaywrightTimeout
-from conftest import block_foreign
+from conftest import block_foreign, settled
 
 pytestmark = pytest.mark.e2e
 ROOT = Path(__file__).resolve().parents[2]
@@ -260,7 +260,13 @@ def test_a_page_outside_the_cached_shell_is_not_served_the_dashboard(open_app, s
 def test_a_new_deploy_shows_the_update_prompt_and_reload_switches_version(open_app, site: Path, server) -> None:
     demo = site / "ApartmentScout" / "demo"
     old = json.loads((demo / "precache.json").read_text())["build"]
-    page, errors = open_app(hash_="#list")   # (not the map: the worker answers every map tile itself, so with the map open the old worker
+    page, errors = open_app(hash_="#list")
+    sw_log: list = []   # the browser's own account of each worker version (status, running state, errors), for the report below
+    cdp = page.context.new_cdp_session(page)
+    cdp.on("ServiceWorker.workerVersionUpdated", lambda e: sw_log.extend(
+        f"{v['versionId']}:{v['status']}/{v['runningStatus']}" for v in e.get("versions", [])))
+    cdp.on("ServiceWorker.workerErrorReported", lambda e: sw_log.append(f"error {e.get('errorMessage', {}).get('errorMessage')}"))
+    cdp.send("ServiceWorker.enable")   # (not the map: the worker answers every map tile itself, so with the map open the old worker
     # is never idle, and Chrome hands over to the new one only when the old one has no request in flight)
     st = settle(page)
     assert st["build"] == old
@@ -280,6 +286,11 @@ def test_a_new_deploy_shows_the_update_prompt_and_reload_switches_version(open_a
         # the worker is still waiting, so the next visit offers it again
         page.reload()
         page.wait_for_selector("#pwaUpdate", timeout=20000)
+        # the renter reads the prompt first: the page has finished loading (its feature chunks and photos). Pressed in the middle of
+        # that load, Chrome's hand-over to the waiting worker could be dropped for good (the old worker is stopped, woken by a request,
+        # and the activation is not tried again), which no page code can undo
+        page.wait_for_load_state("networkidle")
+        settled(page, 30000, ticks=4)
         page.evaluate("() => { window.__marker = 1; }")
         page.locator("#pwaUpdate [data-pwa=reload]").click(no_wait_after=True)   # the reload is waited for below, as a state
         # a new document: the page reloaded itself (the new worker activates first: up to a minute on a busy software-GL runner)
@@ -290,7 +301,7 @@ def test_a_new_deploy_shows_the_update_prompt_and_reload_switches_version(open_a
               return { active: w(r?.active), waiting: w(r?.waiting), installing: w(r?.installing), controller: w(navigator.serviceWorker.controller),
                 prompt: document.getElementById('pwaUpdate')?.textContent ?? null, caches: await caches.keys(),
                 old: r?.active ? await Promise.race([new Promise((res) => { const ch = new MessageChannel(); ch.port1.onmessage = (e) => res(e.data); r.active.postMessage({ type: 'STATUS' }, [ch.port2]); }),
-                  new Promise((res) => setTimeout(() => res('no answer in 5 s'), 5000))]) : null }; }""")) from None
+                  new Promise((res) => setTimeout(() => res('no answer in 5 s'), 5000))]) : null }; }""") | {"browser": sw_log[-24:]}) from None
         page.wait_for_selector("#cards .card", state="attached", timeout=90000)
         st2 = settle(page)
         assert st2["build"] == new
