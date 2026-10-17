@@ -125,7 +125,7 @@ self.addEventListener('message', (event) => {
   const m = event.data || {};
   if (m.type === 'SKIP_WAITING') event.waitUntil(self.skipWaiting());   // kept alive until the switch is done: a busy device may stop an idle worker
   else if (m.type === 'SET_PHOTO_CAP' && m.bytes > 0) photoCap = m.bytes;
-  else if (m.type === 'WARM' && Array.isArray(m.urls)) event.waitUntil(warm(m.urls));
+  else if (m.type === 'WARM' && Array.isArray(m.urls)) event.waitUntil(tracked('message WARM', warm(m.urls)));
   else if (m.type === 'STATUS' && event.ports[0]) event.waitUntil(status().then((s) => event.ports[0].postMessage(s)));
 });
 
@@ -160,10 +160,20 @@ async function writeIndex(index) {
   await c.put(PHOTO_INDEX, new Response(JSON.stringify(index), { headers: { 'content-type': 'application/json' } }));
 }
 
+// what this worker is answering right now (STATUS reports it): Chrome hands over to a waiting version only once the active one has
+// nothing in flight, so this says what an update that does not take over is waiting for
+const inflight = new Map();
+let inflightSeq = 0;
+function tracked(what, p) {
+  const id = ++inflightSeq; inflight.set(id, what);
+  return Promise.resolve(p).finally(() => inflight.delete(id));
+}
+
 async function status() {
   const index = await readIndex();
   const meta = await loadMeta();
-  return { build: BUILD, built: BUILT, shell: meta ? (meta.shell || []).length : 0, photoBytes: Object.values(index).reduce((n, e) => n + e[0], 0), photoCount: Object.keys(index).length, photoCap };
+  return { build: BUILD, built: BUILT, shell: meta ? (meta.shell || []).length : 0, photoBytes: Object.values(index).reduce((n, e) => n + e[0], 0), photoCount: Object.keys(index).length, photoCap,
+    inflight: inflight.size, busyWith: [...inflight.values()].slice(0, 8) };
 }
 
 async function cachePhoto(request, response) {
@@ -304,13 +314,13 @@ self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET' || req.headers.has('range')) return;
   const url = new URL(req.url);
-  if (url.hostname === TILE_HOST) { event.respondWith(packTile(req, url)); return; }
-  if (VIEWED_HOSTS.includes(url.hostname)) { event.respondWith(viewedTile(req)); return; }
+  if (url.hostname === TILE_HOST) { event.respondWith(tracked(req.url, packTile(req, url))); return; }
+  if (VIEWED_HOSTS.includes(url.hostname)) { event.respondWith(tracked(req.url, viewedTile(req))); return; }
   if (url.searchParams.has('_fresh')) return;   // an explicit "ask the network" (the pull-to-refresh check marks its request); everything else is served as before
   if (url.origin !== new URL(SCOPE).origin || !url.href.startsWith(SCOPE) || isBypass(url)) return;
-  if (req.mode === 'navigate') event.respondWith(navigate(req));
-  else if (isPhoto(url)) event.respondWith(photo(req));
-  else event.respondWith(assets(req));
+  if (req.mode === 'navigate') event.respondWith(tracked(req.url, navigate(req)));
+  else if (isPhoto(url)) event.respondWith(tracked(req.url, photo(req)));
+  else event.respondWith(tracked(req.url, assets(req)));
 });
 
 if (typeof module !== 'undefined') module.exports = { planEviction, isPhoto, isBypass, normalizeTileUrl };

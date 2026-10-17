@@ -288,7 +288,9 @@ def test_a_new_deploy_shows_the_update_prompt_and_reload_switches_version(open_a
         except PlaywrightTimeout:
             raise AssertionError(page.evaluate("""async () => { const r = await navigator.serviceWorker.getRegistration(), w = (x) => x && x.state;
               return { active: w(r?.active), waiting: w(r?.waiting), installing: w(r?.installing), controller: w(navigator.serviceWorker.controller),
-                prompt: document.getElementById('pwaUpdate')?.textContent ?? null, caches: await caches.keys() }; }""")) from None
+                prompt: document.getElementById('pwaUpdate')?.textContent ?? null, caches: await caches.keys(),
+                old: r?.active ? await Promise.race([new Promise((res) => { const ch = new MessageChannel(); ch.port1.onmessage = (e) => res(e.data); r.active.postMessage({ type: 'STATUS' }, [ch.port2]); }),
+                  new Promise((res) => setTimeout(() => res('no answer in 5 s'), 5000))]) : null }; }""")) from None
         page.wait_for_selector("#cards .card", state="attached", timeout=90000)
         st2 = settle(page)
         assert st2["build"] == new
