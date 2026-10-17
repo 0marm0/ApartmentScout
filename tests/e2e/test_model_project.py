@@ -26,7 +26,7 @@ def _need_webgl(webgl: bool) -> None:
 
 
 def _unit(s, uid: str = UNIT, query: str = "") -> None:
-    s.page.goto(f"{s.origin}/{query}#unit/{uid}")
+    s.page.goto(f"{s.origin}/{query}#unit/{uid}", wait_until="domcontentloaded")   # Unit 3D's own readiness is waited for below
     _unit_ready(s, uid)
 
 
