@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import pytest
 
-pytestmark = pytest.mark.e2e
+pytestmark = [pytest.mark.e2e, pytest.mark.no_raster]   # reads no drawn pixels except where a test says so: see conftest.NO_RASTER_JS
 
 
 def one_page_pdf() -> bytes:

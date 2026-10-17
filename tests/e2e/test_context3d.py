@@ -10,7 +10,7 @@ from __future__ import annotations
 import pytest
 from conftest import settled
 
-pytestmark = pytest.mark.e2e
+pytestmark = [pytest.mark.e2e, pytest.mark.no_raster]   # reads no drawn pixels except where a test says so: see conftest.NO_RASTER_JS
 
 UNIT = "paramount-tower-25e"          # the East River is ~250 m east of this tower; 1,300 census trees and 600 Parks inventory trees around it
 SLOW = 90000
@@ -117,6 +117,7 @@ def test_street_trees_and_park_trees_switch_separately_and_are_remembered(open_p
     assert s.take() == []
 
 
+@pytest.mark.no_raster(False)   # reads drawn pixels
 def test_parks_render_as_grass_and_playgrounds_as_paved_ground(open_page, webgl):
     """Look straight down on a planted median (an OpenStreetMap lawn beside the Queens Midtown Tunnel ramp): green, in both themes."""
     _need_webgl(webgl)
@@ -208,6 +209,7 @@ def test_lod_follows_the_camera_and_respects_the_budget(open_page, webgl):
     assert near["calls"] < 90 and near["tris"] < 1_800_000, (near["calls"], near["tris"])
 
 
+@pytest.mark.no_raster(False)   # reads drawn pixels
 def test_water_renders_blue_in_both_themes(open_page, webgl):
     """Look straight down on the East River and read the pixel: blue, clearly different from the ground beside it."""
     _need_webgl(webgl)

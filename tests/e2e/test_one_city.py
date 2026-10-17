@@ -10,7 +10,7 @@ import math
 import pytest
 from conftest import camera_still as _camera_still, look_click, look_open
 
-pytestmark = pytest.mark.e2e
+pytestmark = [pytest.mark.e2e, pytest.mark.no_raster]   # reads no drawn pixels except where a test says so: see conftest.NO_RASTER_JS
 
 UNIT = "paramount-tower-25e"
 DATE = "2026-06-21"
@@ -147,6 +147,7 @@ SKYLINE_JS = """async (mode) => {
 }"""
 
 
+@pytest.mark.no_raster(False)   # reads drawn pixels
 @pytest.mark.parametrize("chip", ["room:Living", "bay:"])
 def test_the_skyline_drawn_by_both_engines_is_the_same(open_page, webgl: bool, chip: str) -> None:
     """Not just the numbers: render the city alone from the same viewpoint at the same size in both engines and compare the skylines (the first non-sky

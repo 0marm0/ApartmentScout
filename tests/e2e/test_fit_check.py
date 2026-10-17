@@ -8,7 +8,7 @@ import json
 import pytest
 from conftest import settled
 
-pytestmark = pytest.mark.e2e
+pytestmark = [pytest.mark.e2e, pytest.mark.no_raster]   # reads no drawn pixels except where a test says so: see conftest.NO_RASTER_JS
 
 UNIT = "paramount-tower-25e"
 SHOTS = "/private/tmp/claude-501/-Users-Omar-1-Developer-ApartmentScout/932198fc-4e74-474c-b7c4-6ec0ead28c53/scratchpad/agent-P"
@@ -30,6 +30,7 @@ def _drop_text(pg, text: str) -> None:
     pg.wait_for_timeout(250)
 
 
+@pytest.mark.no_raster(False)   # reads drawn pixels
 def test_a_typed_piece_is_read_dropped_in_and_judged(open_page, webgl: bool) -> None:
     if not webgl:
         pytest.skip("no WebGL in this browser (SwiftShader unavailable)")

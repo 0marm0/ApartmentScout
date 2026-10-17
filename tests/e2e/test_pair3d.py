@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 from conftest import settled
 
-pytestmark = pytest.mark.e2e
+pytestmark = [pytest.mark.e2e, pytest.mark.no_raster]   # reads no drawn pixels except where a test says so: see conftest.NO_RASTER_JS
 
 A, B = "paramount-tower-25e", "paramount-tower-9j"
 READY = "() => window.__pair3d && window.__pair3d.sides.a && window.__pair3d.sides.b && window.__pair3d.sides.a.stage.scene && window.__pair3d.sides.b.stage.scene && document.getElementById('prLoad-a').hidden && document.getElementById('prLoad-b').hidden"
