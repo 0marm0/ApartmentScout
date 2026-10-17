@@ -136,7 +136,6 @@ def trace(page, file: dict, listing: str, close_to_unit: bool = True) -> None:
     page.click("[data-step=save]")
 
 
-@pytest.mark.no_raster(False)   # reads drawn pixels
 def test_a_png_plan_traced_for_a_lisbon_home_is_saved_into_the_search_and_shows_in_the_studio_and_unit_3d(served) -> None:
     page, base, mine, errors = served
     page.goto(f"{base}/#plan")
@@ -163,7 +162,6 @@ def test_a_png_plan_traced_for_a_lisbon_home_is_saved_into_the_search_and_shows_
     assert not errors, errors
 
 
-@pytest.mark.no_raster(False)   # reads drawn pixels
 def test_replacing_a_saved_plan_needs_a_second_click(served) -> None:
     page, base, mine, errors = served
     (mine / "plans").mkdir(exist_ok=True)

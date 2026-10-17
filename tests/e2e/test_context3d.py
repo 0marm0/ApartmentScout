@@ -8,6 +8,7 @@ that the water really renders blue. Needs WebGL, otherwise skipped."""
 from __future__ import annotations
 
 import pytest
+from conftest import poll
 from conftest import settled
 
 pytestmark = [pytest.mark.e2e, pytest.mark.no_raster]   # reads no drawn pixels except where a test says so: see conftest.NO_RASTER_JS
@@ -94,30 +95,32 @@ def test_street_trees_and_park_trees_switch_separately_and_are_remembered(open_p
     n = lambda: (lambda lod: lod["near"] + lod["far"] + lod["cones"])(_ctx(s)["lod"])   # the trees drawn   # noqa: E731
     both = n()
     base = _ctx(s)["info"]["trees"]
+    # the tree LOD is rebuilt on the next frame after a switch: wait for the count (a slow runner reads it before that frame)
+    shows = lambda want: (poll(lambda: n() == want, s.page, timeout=30), n())[1]   # the count, once it is `want` or the wait is over   # noqa: E731
     s.page.click('#uTools [data-tg="streetTrees"]')
-    street_off = n()
+    street_off = shows(base["parkTrees"])
     assert street_off == base["parkTrees"] and street_off < both                         # only the park trees are left
     assert s.page.locator('#uTools [data-tg="streetTrees"]').get_attribute("aria-pressed") == "false"
     assert s.page.locator('#uTools [data-tg="parkTrees"]').get_attribute("aria-pressed") == "true"
     assert _ctx(s)["layers"]["trees"] and _ctx(s)["layers"]["green"]                       # the grass stays
     s.page.click('#uTools [data-tg="parkTrees"]')
-    assert n() == 0 and not _ctx(s)["layers"]["trees"] and _ctx(s)["layers"]["green"]
+    assert shows(0) == 0 and not _ctx(s)["layers"]["trees"] and _ctx(s)["layers"]["green"]
     s.page.reload()                                                                          # remembered per browser
     _unit(s)
     assert s.page.locator('#uTools [data-tg="streetTrees"]').get_attribute("aria-pressed") == "false"
     assert s.page.locator('#uTools [data-tg="parkTrees"]').get_attribute("aria-pressed") == "false"
-    assert n() == 0
+    assert shows(0) == 0
     s.page.click('#uTools [data-tg="parkTrees"]')
-    assert n() == base["parkTrees"]
+    assert shows(base["parkTrees"]) == base["parkTrees"]
     s.page.click('#uTools [data-tg="streetTrees"]')
-    assert n() == both
+    assert shows(both) == both
     s.page.reload()
     _unit(s)
-    assert n() == both                                                                       # both on again, and that is remembered too
+    assert shows(both) == both                                                                       # both on again, and that is remembered too
     assert s.take() == []
 
 
-@pytest.mark.no_raster(False)   # reads drawn pixels
+@pytest.mark.no_raster(False)   # reads what WebGL drew
 def test_parks_render_as_grass_and_playgrounds_as_paved_ground(open_page, webgl):
     """Look straight down on a planted median (an OpenStreetMap lawn beside the Queens Midtown Tunnel ramp): green, in both themes."""
     _need_webgl(webgl)
@@ -209,7 +212,7 @@ def test_lod_follows_the_camera_and_respects_the_budget(open_page, webgl):
     assert near["calls"] < 90 and near["tris"] < 1_800_000, (near["calls"], near["tris"])
 
 
-@pytest.mark.no_raster(False)   # reads drawn pixels
+@pytest.mark.no_raster(False)   # reads what WebGL drew
 def test_water_renders_blue_in_both_themes(open_page, webgl):
     """Look straight down on the East River and read the pixel: blue, clearly different from the ground beside it."""
     _need_webgl(webgl)

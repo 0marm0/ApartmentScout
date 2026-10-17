@@ -8,6 +8,7 @@ import json
 from pathlib import Path
 
 import pytest
+from conftest import camera_still
 from conftest import settled
 
 pytestmark = [pytest.mark.e2e, pytest.mark.no_raster]   # reads no drawn pixels: see conftest.NO_RASTER_JS
@@ -298,6 +299,7 @@ def test_a_click_in_the_3d_view_names_the_landmark(open_page, webgl: bool) -> No
     _click_photo(pg, {"u": 0.5, "v": 0.5})
     pg.wait_for_selector("#vmLm")
     assert pg.evaluate("() => document.getElementById('stage').classList.contains('vm-picking')") is True
+    camera_still(pg, "unit")   # the view has come to rest (and the canvas has its size): the point found below is still under the same pixel when it is checked
     # find a building under some point of the canvas, then click it
     spot = pg.evaluate("""() => { const cv = document.getElementById('gl'), r = cv.getBoundingClientRect(), st = window.__unit3d.stage;
       for (let fy = 0.2; fy < 0.95; fy += 0.07) for (let fx = 0.1; fx < 0.9; fx += 0.07) { const x = r.x + fx * r.width, y = r.y + fy * r.height; const h = st.pickPoint(x, y); if (h && h.z > 15) return { x, y, h }; }

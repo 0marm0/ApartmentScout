@@ -11,7 +11,6 @@ from conftest import camera_still, frames, settled
 pytestmark = [pytest.mark.e2e, pytest.mark.no_raster]   # reads no drawn pixels except where a test says so: see conftest.NO_RASTER_JS
 
 UNIT = "paramount-tower-25e"
-SHOTS = "/private/tmp/claude-501/-Users-Omar-1-Developer-ApartmentScout/932198fc-4e74-474c-b7c4-6ec0ead28c53/scratchpad/agent-P"
 
 
 def _need_webgl(webgl: bool) -> None:
@@ -52,7 +51,6 @@ def _dist(a, b) -> float:
 
 # --------------------------------------------------------------------------- the studio's 3D view
 
-@pytest.mark.no_raster(False)   # reads drawn pixels
 def test_the_3d_tape_reads_a_pieces_real_size_and_snaps_to_its_corners(open_page, webgl: bool) -> None:
     _need_webgl(webgl)
     s = open_page("#map", height=1000)
@@ -80,7 +78,6 @@ def test_the_3d_tape_reads_a_pieces_real_size_and_snaps_to_its_corners(open_page
     # a click placed points: nothing moved, nothing was selected
     assert pg.evaluate("() => window.__plan3d.items.map(({id, x, y, rot}) => [id, x, y, rot])") == before
     assert pg.inner_text("#studioMeasureClear") == "×1"
-    pg.screenshot(path=f"{SHOTS}/measure-3d.png")
     # Esc finishes the tape but keeps what was measured
     pg.keyboard.press("Escape")
     assert pg.get_attribute("#studioMeasureTool", "aria-pressed") == "false"
@@ -134,7 +131,6 @@ def test_a_click_on_a_piece_with_the_tape_out_measures_and_does_not_drag_it(open
 
 # --------------------------------------------------------------------------- the studio's 2D drawing
 
-@pytest.mark.no_raster(False)   # reads drawn pixels
 def test_the_2d_tape_snaps_to_wall_corners_and_shares_its_list_with_the_3d_view(open_page, webgl: bool) -> None:
     _need_webgl(webgl)
     s = open_page("#map", height=1000)
@@ -158,7 +154,6 @@ def test_the_2d_tape_snaps_to_wall_corners_and_shares_its_list_with_the_3d_view(
     assert [pg.locator("#p2d .ms2-chip.done > text").nth(i).text_content() for i in range(2)] == [m["text"] for m in lst]
     # the same measurements are in the 3D view
     pg.wait_for_function("() => document.querySelectorAll('#pstage .ms-chip.done').length === 2")
-    pg.screenshot(path=f"{SHOTS}/measure-2d.png")
     pg.keyboard.press("Escape")
     assert pg.get_attribute("#studioMeasure2dTool", "aria-pressed") == "false"
     assert pg.locator("#p2d .ms2-chip.done").count() == 2
@@ -187,7 +182,6 @@ def test_measurements_survive_a_reload(open_page, webgl: bool) -> None:
 
 # --------------------------------------------------------------------------- Unit 3D, Inside
 
-@pytest.mark.no_raster(False)   # reads drawn pixels
 def test_the_inside_tape_measures_the_window_and_leaves_with_the_camera(open_page, webgl: bool) -> None:
     _need_webgl(webgl)
     s = open_page("#map", height=1300)
@@ -213,7 +207,6 @@ def test_the_inside_tape_measures_the_window_and_leaves_with_the_camera(open_pag
     lst = pg.evaluate("() => window.__measure.unitList")
     assert len(lst) == 1 and abs(lst[0]["inches"] - _dist(a, b)) < 0.1, (lst, _dist(a, b))
     pg.wait_for_function("() => document.querySelector('#stage .ms-chip.done b')?.textContent.length > 1")
-    pg.screenshot(path=f"{SHOTS}/measure-unit.png")
     # Esc finishes it; the measurement stays and is shared with the studio for the same plan
     pg.keyboard.press("Escape")
     assert pg.get_attribute("#unitMeasureTool", "aria-pressed") == "false"
