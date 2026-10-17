@@ -12,6 +12,7 @@ import warnings
 from pathlib import Path
 
 import pytest
+from playwright.sync_api import TimeoutError as PlaywrightTimeout
 from conftest import block_foreign
 import yaml
 from conftest import settled
@@ -415,6 +416,10 @@ def test_reopening_the_wizard_while_it_fades_out_keeps_it_open(open_page) -> Non
     pg.evaluate("() => { const raf = window.requestAnimationFrame.bind(window); window.requestAnimationFrame = (cb) => setTimeout(() => raf(cb), 450); }")
     pg.keyboard.press("Escape")
     pg.evaluate("async () => (await import('/js/app.js')).openWizard({ mode: 'new' })")
-    pg.wait_for_timeout(700)                      # past both the 200 ms timer and the delayed frame
+    pg.wait_for_timeout(700)                      # past the old 200 ms timer: had it hidden the reopened dialog, it would stay hidden
+    try:                                          # the delayed frame shows it (later than 450 ms on a busy runner)
+        pg.wait_for_selector(WIZARD, state="visible", timeout=10000)
+    except PlaywrightTimeout:
+        pass
     assert pg.is_visible(WIZARD), "the old close timer hid a dialog that had been reopened"
     assert not s.take()

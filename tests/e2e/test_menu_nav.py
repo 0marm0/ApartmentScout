@@ -229,7 +229,10 @@ def test_menu_stays_above_the_compare_tray(open_page) -> None:
     pg.locator("#mnTour").scroll_into_view_if_needed()
     settled(pg, 20000, ticks=3)
     # the menu has finished opening and scrolling (a slow runner is still mid-way after a short quiet spell): then the last row is on top
-    on_top = """() => { const r = document.getElementById('mnTour').getBoundingClientRect(), e = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+    # scrolled into view (again on each try: on a slow runner the menu's own opening, which focuses its first row, resets the scroll
+    # after the first scroll), the last row is the element on top at its centre
+    on_top = """() => { const row = document.getElementById('mnTour'); row.scrollIntoView({ block: 'nearest' });
+      const r = row.getBoundingClientRect(), e = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
       return !!e && !!e.closest('#mnTour'); }"""
     try:
         pg.wait_for_function(on_top, timeout=10000)
