@@ -235,9 +235,10 @@ def open_page(browser, base_url: str):
 
 
 # Playwright's own waits (goto, click, fill, an expect_download without a timeout) give up after 30 s. On software GL a page that has
-# just opened Unit 3D or the studio is busy for longer than that on a shared four-core runner, so there they wait up to 90 s: a cap
-# on waiting for the state, which costs nothing when the page is ready sooner. Waits that name their own timeout keep it.
-SOFTWARE_GL_TIMEOUT_MS = 90_000
+# just opened Unit 3D or the studio is busy for longer than that on a shared four-core runner (now and then a click waited over 90 s for
+# the page to take it), so there they wait up to 3 minutes: a cap on waiting for the state, which costs nothing when the page is ready
+# sooner. Waits that name their own timeout keep it.
+SOFTWARE_GL_TIMEOUT_MS = 180_000
 
 
 # The render-quality governor (dashboard/js/room3d/quality.js) times the first frames of a 3D view, and a probe every 45 s, and steps

@@ -137,7 +137,7 @@ def test_all_view_tabs_reachable_on_a_phone(open_page) -> None:
         box = tab.bounding_box()
         assert box and box["x"] >= 0 and box["x"] + box["width"] <= 390 + 1 and box["width"] >= 60 and box["height"] >= 44, f"tab {v}: {box}"
         tab.click()
-        s.page.wait_for_function("(v) => v === 'home' ? ['unit', 'plan'].includes(document.body.dataset.view) : document.body.dataset.view === v", arg=v, timeout=90000)
+        s.page.wait_for_function("(v) => v === 'home' ? ['unit', 'plan'].includes(document.body.dataset.view) : document.body.dataset.view === v", arg=v, timeout=180000)
         assert _settled(s), f"view {v} kept the page busy for two minutes"
         assert s.page.locator("#tabs a.on").get_attribute("data-view") == v
     assert not s.take()
