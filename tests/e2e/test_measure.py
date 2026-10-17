@@ -8,7 +8,7 @@ import math
 import pytest
 from conftest import camera_still, frames, settled
 
-pytestmark = pytest.mark.e2e
+pytestmark = [pytest.mark.e2e, pytest.mark.no_raster]   # reads no drawn pixels except where a test says so: see conftest.NO_RASTER_JS
 
 UNIT = "paramount-tower-25e"
 SHOTS = "/private/tmp/claude-501/-Users-Omar-1-Developer-ApartmentScout/932198fc-4e74-474c-b7c4-6ec0ead28c53/scratchpad/agent-P"
@@ -52,6 +52,7 @@ def _dist(a, b) -> float:
 
 # --------------------------------------------------------------------------- the studio's 3D view
 
+@pytest.mark.no_raster(False)   # reads drawn pixels
 def test_the_3d_tape_reads_a_pieces_real_size_and_snaps_to_its_corners(open_page, webgl: bool) -> None:
     _need_webgl(webgl)
     s = open_page("#map", height=1000)
@@ -133,6 +134,7 @@ def test_a_click_on_a_piece_with_the_tape_out_measures_and_does_not_drag_it(open
 
 # --------------------------------------------------------------------------- the studio's 2D drawing
 
+@pytest.mark.no_raster(False)   # reads drawn pixels
 def test_the_2d_tape_snaps_to_wall_corners_and_shares_its_list_with_the_3d_view(open_page, webgl: bool) -> None:
     _need_webgl(webgl)
     s = open_page("#map", height=1000)
@@ -185,6 +187,7 @@ def test_measurements_survive_a_reload(open_page, webgl: bool) -> None:
 
 # --------------------------------------------------------------------------- Unit 3D, Inside
 
+@pytest.mark.no_raster(False)   # reads drawn pixels
 def test_the_inside_tape_measures_the_window_and_leaves_with_the_camera(open_page, webgl: bool) -> None:
     _need_webgl(webgl)
     s = open_page("#map", height=1300)

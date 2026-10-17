@@ -91,7 +91,7 @@ def test_iphone_and_ipad_get_a_real_ar_quick_look_link_for_the_room_and_every_pi
         # the selected piece's inspector carries the same link
         pg.click("#psTab [data-sel=desk]")
         pg.wait_for_function("() => !!document.querySelector('#psInsp .ps-ar a[rel=ar]')", timeout=60000)
-        assert pg.locator("#psInsp .ps-ar a[rel=ar]").get_attribute("download") == "desk-chair-and-monitor.usdz"
+        assert pg.locator("#psInsp .ps-ar a[rel=ar]").get_attribute("download") == "bestier-rotating-desk-51-in-chair-and-monitor.usdz"   # the file is named after the piece's label
         # moving a piece makes the room's file stale; a new one is built and the link changes
         before = room.get_attribute("href")
         pg.evaluate("() => { document.activeElement.blur(); }")
@@ -116,7 +116,7 @@ def test_the_ar_model_is_true_scale_visual_whatever_the_screen_draws(browser, ba
         assert abs(s[0] - 27.6 * IN) < 0.01 and abs(s[1] - 47.2 * IN) < 0.01 and abs(s[2] - 18.9 * IN) < 0.012, f"STORKLINTA is 70 x 120 x 48 cm ({[round(v / IN, 1) for v in s]} in)"
         assert abs(info["bed"]["size"][0] - 64 * IN) < 0.02 and abs(info["bed"]["size"][1] - 40 * IN) < 0.02, "the queen frame is 64 in wide and 40 in tall with its headboard"
         assert abs(info["tv"]["size"][0] - 48.4 * IN) < 0.02 and abs(info["tv"]["min"][1] - 32 * IN) < 0.03, "a 55-inch TV 32 in off the floor"
-        assert abs(info["desk"]["size"][0] - 71 * IN) < 0.03
+        assert abs(info["desk"]["size"][0] - 89.2 * IN) < 0.03, "the Bestier desk used straight, its shelf pivoted out: 89.2 in end to end"
         assert abs(info["futon"]["size"][0] - 73.2 * IN) < 0.06
         assert info["room"]["tris"] <= 40000, f"the whole room: {info['room']['tris']} triangles"
         for pid, v in info.items():

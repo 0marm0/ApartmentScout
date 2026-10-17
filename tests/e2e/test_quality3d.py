@@ -13,7 +13,7 @@ from __future__ import annotations
 import pytest
 from conftest import frames, settled
 
-pytestmark = pytest.mark.e2e
+pytestmark = [pytest.mark.e2e, pytest.mark.no_raster]   # reads no drawn pixels except where a test says so: see conftest.NO_RASTER_JS
 
 UNIT = "paramount-tower-25e"
 SLOW = 60000

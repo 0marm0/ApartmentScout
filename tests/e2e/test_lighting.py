@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pytest
 
-pytestmark = pytest.mark.e2e
+pytestmark = [pytest.mark.e2e, pytest.mark.no_raster]   # reads no drawn pixels except where a test says so: see conftest.NO_RASTER_JS
 
 AXE = Path(__file__).parent / "vendor" / "axe.min.js"
 PLAN = "paramount-tower-25e"
@@ -176,6 +176,7 @@ def test_blinds_frame_and_surfaces_feed_the_model_and_sheer_exists(open_page, we
 
 
 # ------------------------------------------------------------------------------------------------ luminaires
+@pytest.mark.no_raster(False)   # reads drawn pixels
 def test_luminaires_add_drag_nudge_delete_and_undo_with_an_estimate(open_page, webgl: bool) -> None:
     _need_webgl(webgl)
     s = _plan(open_page)
@@ -229,6 +230,7 @@ def test_night_preview_lights_the_lamps_and_names_itself_a_preview(open_page, we
     assert not s.take()
 
 
+@pytest.mark.no_raster(False)   # reads drawn pixels
 def test_luminaires_and_inputs_survive_a_complete_project_export_and_import(open_page, webgl: bool) -> None:
     """The saved lighting object (daylight inputs with their source labels, luminaires) passes the project validator."""
     _need_webgl(webgl)
@@ -277,6 +279,7 @@ def test_year_view_shows_three_separate_quantities(open_page, webgl: bool) -> No
 
 
 # ------------------------------------------------------------------------------------------------ render quality
+@pytest.mark.no_raster(False)   # reads drawn pixels
 def test_fast_is_the_default_visual_is_remembered_and_the_export_downloads(open_page, webgl: bool) -> None:
     _need_webgl(webgl)
     s = _plan(open_page)
@@ -313,6 +316,7 @@ def test_a_phone_starts_in_fast(open_page, webgl: bool) -> None:
 
 
 # ------------------------------------------------------------------------------------------------ Unit 3D
+@pytest.mark.no_raster(False)   # reads drawn pixels
 def test_unit_3d_annual_summary_quality_and_progressive_render(open_page, webgl: bool) -> None:
     _need_webgl(webgl)
     s = open_page(f"#unit/{PLAN}")
