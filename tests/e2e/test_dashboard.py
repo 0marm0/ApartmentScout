@@ -474,6 +474,7 @@ def test_stats_strip_on_a_phone_is_a_chip_and_folds_the_rest_into_the_popover(op
     pg.wait_for_selector("#kpiPop:not([hidden])")
     keys = [t.strip() for t in pg.locator("#kpiPop .kpi-i .k").all_inner_texts()]
     assert {"tracked", "match filters", "eligible", "shortlisted", "median / mo"} <= set(keys), keys
+    pg.locator("#kpis .kpi-more").focus()   # Escape is the strip's key: on a slow runner the strip can be redrawn after the click and the focus lost
     pg.keyboard.press("Escape")
     pg.wait_for_function("() => document.getElementById('kpiPop').hidden", timeout=30000)
     assert pg.evaluate("() => document.getElementById('kpiPop').hidden")
