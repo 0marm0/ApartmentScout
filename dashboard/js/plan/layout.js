@@ -4,8 +4,9 @@
 // Saved layout JSON (schema 1):
 //   {"schema": 1, "kind": "apartmentscout-layout", "plan": "<plan id>", "units": "in",
 //    "items": [{"id": "bed", "ref": "queen-bed", "x": 66, "y": 190, "rot": 270, "w"?, "d"?, "h"?,
-//               "variant"?, "label"?, "hidden"?, "product"?, "look"?}]}
+//               "variant"?, "label"?, "hidden"?, "product"?, "attach"?, "from"?, "look"?}]}
 // `look` (optional, plan/looks.js) overrides the look the inventory gives the piece; saved layouts do not store the inventory's looks.
+// `from` (optional) marks a duplicate: the id of the piece it copies, so it joins the inventory through that piece (same size, look, set).
 // `product` (optional) names an entry of plan/products.js: its real dimensions replace the catalogue's.
 // Positions are inches in the plan frame (+x right, +y toward the top of the drawing); w/d/h are inches.
 import { CATALOG } from './catalog.js';
@@ -35,7 +36,9 @@ function checkItem(it, at, catalog) {
   if (it.variant != null && !(typeof it.variant === 'string' && c.variants?.[it.variant])) return { error: `${at}: unknown variant "${String(it.variant).slice(0, 30)}"` };
   if (it.label != null && (typeof it.label !== 'string' || it.label.length > 80 || /[<>]/.test(it.label))) return { error: `${at}: label must be plain text up to 80 characters` };
   if (it.hidden != null && typeof it.hidden !== 'boolean') return { error: `${at}: hidden must be true or false` };
+  if (it.attach != null && !(typeof it.attach === 'string' && ID.test(it.attach))) return { error: `${at}: attach must be the id of the piece it is attached to` };
   if (it.placed != null && typeof it.placed !== 'boolean') return { error: `${at}: placed must be true or false` };
+  if (it.from != null && !(typeof it.from === 'string' && ID.test(it.from))) return { error: `${at}: from must be the id of the piece this is a copy of` };
   if (it.product != null && (typeof it.product !== 'string' || !/^[a-z0-9][a-z0-9-]{0,63}$/.test(it.product))) return { error: `${at}: product must be a product id (lowercase letters, digits and -)` };
   const clean = { id: it.id, ref: it.ref, x: round(it.x), y: round(it.y), rot: round(((it.rot || 0) % 360 + 360) % 360) };
   for (const k of ['w', 'd', 'h', 'elev']) if (it[k] != null) clean[k] = round(it[k]);
@@ -43,6 +46,8 @@ function checkItem(it, at, catalog) {
   if (it.label) clean.label = it.label;
   if (it.hidden) clean.hidden = true;
   if (it.placed) clean.placed = true;
+  if (it.from) clean.from = it.from;   // a duplicate: it takes its size, look, set and spec from this piece (plan/placement.js applyInventory, plan/looks.js applyLooks)
+  if (it.attach) clean.attach = it.attach;   // attached to this piece (an office chair to its desk): it moves and turns with it (plan/attach.js)
   if (it.product) clean.product = it.product;
   if (it.look != null) { const lk = validateLook(it.look, `${at}: look`); if (!lk.ok) return { error: lk.error }; clean.look = lk.look; }
   return { item: clean };
@@ -101,7 +106,7 @@ export function asPreset(items, { k = 12, id = 'my-layout', name = 'My layout', 
 
 function strip(it) {
   const o = { id: it.id, ref: it.ref, x: round(it.x), y: round(it.y), rot: round(it.rot || 0) };
-  for (const k of ['w', 'd', 'h', 'elev', 'variant', 'label', 'hidden', 'placed', 'product']) if (it[k] != null && it[k] !== false) o[k] = typeof it[k] === 'number' ? round(it[k]) : it[k];
+  for (const k of ['w', 'd', 'h', 'elev', 'variant', 'label', 'hidden', 'placed', 'product', 'attach', 'from']) if (it[k] != null && it[k] !== false) o[k] = typeof it[k] === 'number' ? round(it[k]) : it[k];
   return o;
 }
 const round = (v, n = 1) => Math.round(v * 10 ** n) / 10 ** n;

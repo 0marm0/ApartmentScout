@@ -22,14 +22,18 @@ const governed = (g) => [...new Set(g.choices.flatMap((c) => c.pieces))];
  * by hand so no choice matches (the closest one is `current`).
  * @returns {{group: string, label: string, available: boolean, current: string|null, exact: boolean, choices: {id: string, label: string}[]}|null}
  */
-export function choiceState(items, inv, groupId = 'bed') {
+export function choiceState(items, inv, groupId = 'bed', { removed = [] } = {}) {
   const g = groupsOf(inv).find((x) => x.id === groupId);
   if (!g) return null;
-  const by = new Map((items || []).map((it) => [it.id, it])), ids = governed(g);
-  const available = ids.every((id) => by.has(id));
+  const by = new Map((items || []).map((it) => [it.id, it])), ids = governed(g), gone = new Set(removed), have = new Set((inv?.pieces || []).map((p) => p.id));
+  // A Shown / Hidden switch (a choice that lists no piece: the sim rig, the office chair) stays while the group exists in the inventory, whatever the
+  // layout holds: a piece the renter removed, or a layout that never held it, is brought back by choosing "Shown". Any other group (the candidate bed)
+  // needs its pieces in the layout, or removed from it by hand.
+  const toggle = g.choices.some((c) => !c.pieces.length);
+  const available = ids.every((id) => by.has(id) || (have.has(id) && (toggle || gone.has(id))));
   let best = null, bestScore = -1, exact = false;
   for (const c of g.choices) {
-    const score = ids.filter((id) => !by.get(id)?.hidden === c.pieces.includes(id)).length;
+    const score = ids.filter((id) => (by.has(id) && !by.get(id).hidden) === c.pieces.includes(id)).length;   // a piece the layout does not hold counts as hidden
     if (score > bestScore) { best = c; bestScore = score; exact = score === ids.length; }
   }
   return { group: g.id, label: g.label, available, current: available ? best?.id ?? null : null, exact, choices: g.choices.map((c) => ({ id: c.id, label: c.label })) };
@@ -52,3 +56,28 @@ export function applyChoice(items, inv, groupId, choiceId) {
 
 /** The default choice of a group, for a layout that has never been touched. */
 export const defaultChoice = (inv, groupId = 'bed') => groupsOf(inv).find((x) => x.id === groupId)?.default ?? null;
+
+/** A short name for a piece's list and buttons: "Sim rig, Next Level Racing F-GT Lite (GT) with Fanatec wheel" -> "Sim rig", "Office chair (rolling task chair)" -> "Office chair". */
+export const shortName = (label) => String(label || '').replace(/\s*\([^)]*\)/g, '').split(',')[0].trim() || 'piece';
+
+/**
+ * The renter's pieces the layout is not showing, each with the way back: `hidden` (in the layout, hidden: Show), `removed` (taken out by hand: Add back)
+ * or `absent` (a layout that never held it: Add). One list for every view that can hide furniture (the studio's 2D plan and 3D view, Unit 3D's Inside
+ * view), so a piece hidden through any path (a switch, the Hide button, an older build's saved layout) can always be brought back. A candidate purchase
+ * is not the renter's piece and is not listed, and neither are the pieces the Bed control switches as a set (their own bed and its nightstands: showing one
+ * beside the storage bed would make two beds).
+ * @returns {{id: string, name: string, why: 'hidden'|'removed'|'absent'}[]}
+ */
+export function offPieces(items, inv, { removed = [] } = {}) {
+  const by = new Map((items || []).map((it) => [it.id, it])), gone = new Set(removed), out = [], own = new Set((inv?.pieces || []).map((p) => p.id));
+  const nameOf = (id, it) => shortName(inv?.pieces?.find((p) => p.id === id)?.label || it?.label || it?.ref || id);
+  const byControl = new Set(groupsOf(inv).filter((g) => g.choices.every((c) => c.pieces.length)).flatMap(governed));   // the Bed control shows and hides these as a set
+  for (const p of inv?.pieces || []) {
+    if (p.candidate || byControl.has(p.id)) continue;
+    const it = by.get(p.id);
+    if (!it) out.push({ id: p.id, name: nameOf(p.id, null), why: gone.has(p.id) ? 'removed' : 'absent' });
+    else if (it.hidden) out.push({ id: p.id, name: nameOf(p.id, it), why: 'hidden' });
+  }
+  for (const it of items || []) if (it.hidden && !own.has(it.id)) out.push({ id: it.id, name: nameOf(it.from || it.id, it), why: 'hidden' });   // a piece the renter added from the catalogue (or a copy) and hid
+  return out;
+}

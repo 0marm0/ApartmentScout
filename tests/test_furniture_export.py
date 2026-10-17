@@ -31,24 +31,25 @@ def test_build_copies_furniture_json_and_flags_it_in_the_manifest(tmp_path: Path
 
 def test_the_shipped_example_furniture_is_committed_with_the_dashboard_data_and_is_public() -> None:
     f = json.loads((EXAMPLE / "furniture.json").read_text())
-    assert f["kind"] == "apartmentscout-furniture" and f["schema"] == 1 and len(f["pieces"]) == 11   # the renter's ten pieces and the candidate storage bed
+    assert f["kind"] == "apartmentscout-furniture" and f["schema"] == 1 and len(f["pieces"]) == 16   # the renter's eleven pieces (the office chair is one), the candidate storage bed, the sim rig and three paintings
     assert (ROOT / "dashboard" / "data" / "furniture.json").read_text() == (EXAMPLE / "furniture.json").read_text()
     assert json.loads((ROOT / "dashboard" / "data" / "manifest.json").read_text())["furniture"] is True
     assert "/Users/" not in json.dumps(f) and all(p.get("source") for p in f["pieces"])
     for pid in ("paramount-tower-25e", "emerald-green-1211"):   # the default layout of each is the renter's own
         for base in (EXAMPLE / "plans", ROOT / "dashboard" / "data" / "plans"):
             plan = json.loads((base / f"{pid}.json").read_text())
-            owned = [p for p in f["pieces"] if not p.get("candidate")]   # only Paramount 25E holds the candidate bed (hidden until the renter switches to it)
+            owned = [p for p in f["pieces"] if not p.get("candidate") and p["id"] != "sim-rig" and not p.get("art")]   # only Paramount 25E holds the candidate bed, the sim rig (the pedal end slides under its desk) and the hung paintings
             assert plan["layouts"][0]["id"] == "your-furniture" and len(plan["layouts"][0]["items"]) == (len(f["pieces"]) if pid == "paramount-tower-25e" else len(owned))
 
 
 def test_the_renters_answers_are_in_the_furniture_file_and_the_25e_default_layout_is_data() -> None:
     f = {p["id"]: p for p in json.loads((EXAMPLE / "furniture.json").read_text())["pieces"]}
-    desk = f["desk"]   # the Bestier rotating desk, used straight: 51.8 + 46.9 in less the overlap, a task chair and a 32-inch monitor
+    desk = f["desk"]   # the Bestier rotating desk, used straight: 51.8 + 46.9 in less the overlap, a 32-inch monitor (the task chair is its own piece, desk-chair)
     assert (desk["w"], desk["d"], desk["h"]) == (89.2, 21.6, 29.1) and desk["variant"] == "rotating"
-    assert desk["set"]["monitor"] == 32 and desk["set"]["chair"] == "task" and desk["set"]["config"] == "straight"
+    assert desk["set"]["monitor"] == 32 and desk["set"]["chair"] is False and desk["set"]["config"] == "straight"
     assert desk["look"]["material"] == "laminate" and desk["look"]["basis"] == "renter" and desk["look"]["parts"]["posts"]["color"] == "silver"
-    assert desk["look"]["parts"]["chair"]["color"] == "black" and "chair" in desk["look"]["assumed"]
+    chair = f["desk-chair"]   # the rolling office chair is a piece of its own: renter basis for owning it, black assumed
+    assert chair["ref"] == "task-chair" and chair["look"]["basis"] == "renter" and chair["look"]["color"] == "black" and "color" in chair["look"]["assumed"]
     chest = f["dresser"]   # IKEA STORKLINTA 6-drawer, the tall one (the renter corrected it from a MALM)
     assert chest["ref"] == "dresser-storklinta-6" and (chest["w"], chest["d"], chest["h"]) == (27.6, 18.9, 47.2) and chest["look"]["basis"] == "renter"
     assert "705.592.78" in chest["source"] and chest["source"].startswith("manufacturer")
@@ -76,7 +77,9 @@ def test_the_storage_bed_is_recorded_as_a_candidate_with_the_makers_dimensions_a
     assert "price" not in {k.lower() for k in c} and "$" not in json.dumps(bed)
     # the option group switches between the renter's bed, this one and none; nothing in it is a position
     group = f["options"]["bed"]
-    assert group["default"] == "mine" and [x["id"] for x in group["choices"]] == ["mine", "storage", "none"]
+    assert group["default"] == "storage" and [x["id"] for x in group["choices"]] == ["mine", "storage", "none"]
     plan = json.loads((EXAMPLE / "plans" / "paramount-tower-25e.json").read_text())
     item = {i["id"]: i for i in plan["layouts"][0]["items"]}["bed-latitude"]
-    assert item["hidden"] is True and item["placed"] is True, "in the layout, not shown until chosen"
+    assert "hidden" not in item and item["placed"] is True, "the storage bed is the default: shown, placed"
+    own = {i["id"]: i for i in plan["layouts"][0]["items"]}
+    assert all(own[k]["hidden"] is True for k in ("bed", "nightstand-1", "nightstand-2")), "their own bed and its nightstands wait until chosen"

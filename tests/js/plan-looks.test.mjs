@@ -49,10 +49,10 @@ test('looks join onto layout items by piece id; an item with its own look keeps 
   assert.equal(L.applyLooks(items, { pieces: [] }), items);
 });
 
-test('the example furniture holds the renter\'s answers: black leather futon, dark brown laminate desk, dark brown STORKLINTA dresser, black nightstands, grey bed', () => {
+test('the example furniture holds the renter\'s answers: black leather futon, dark brown laminate desk, black STORKLINTA dresser, black nightstands, grey bed with black bedding', () => {
   const want = {
-    futon: ['black', 'leather'], desk: ['#402e23', 'laminate'], dresser: ['#3a2b22', 'laminate'], 'nightstand-1': ['black', 'paint'], 'nightstand-2': ['black', 'paint'],
-    bed: ['grey', 'fabric'], coffee: ['brown', 'wood'], dining: ['brown', 'wood'],
+    futon: ['black', 'leather'], desk: ['#402e23', 'laminate'], dresser: ['#1b1918', 'laminate'], 'nightstand-1': ['black', 'paint'], 'nightstand-2': ['black', 'paint'],
+    bed: ['#55565a', 'fabric'], coffee: ['brown', 'wood'], dining: ['brown', 'wood'],
   };
   for (const [id, [color, material]] of Object.entries(want)) {
     const p = piece(id);
@@ -62,9 +62,9 @@ test('the example furniture holds the renter\'s answers: black leather futon, da
   const f = piece('futon').look;
   assert.equal(f.parts.frame.material, 'metal'); assert.ok(f.assumed.includes('frame') && f.assumed.includes('finish'));
   assert.equal(L.lookBasis(f, 'color'), 'renter'); assert.equal(L.lookBasis(f, 'frame'), 'assumed');
-  // what the renter did not say stays an assumption: the TVs' casing, the desk chair, the dining chairs
+  // what the renter did not say stays an assumption: the TVs' casing, the office chair (its own piece now), the dining chairs
   assert.equal(L.lookBasis(piece('tv').look), 'assumed'); assert.equal(L.lookBasis(piece('tv-bed').look), 'assumed');
-  assert.ok(piece('desk').look.assumed.includes('chair')); assert.ok(piece('dining').look.assumed.includes('chairs'));
+  assert.ok(piece('desk-chair').look.assumed.includes('color')); assert.equal(L.lookBasis(piece('desk-chair').look, 'color'), 'assumed'); assert.ok(piece('dining').look.assumed.includes('chairs'));
   // every piece has a look, and every look resolves to something drawable
   for (const p of inv().pieces) { assert.ok(p.look, p.id); assert.ok(L.resolveLook(p.look)?.color != null, p.id); }
 });
@@ -89,7 +89,7 @@ test('the layout places every piece the renter owns, at their sizes, and each is
   for (const p of i.pieces) {
     const it = L0.items.find((x) => x.id === p.id);
     assert.equal(it.ref, p.ref, p.id); assert.deepEqual([it.w, it.d, it.h], [p.w, p.d, p.h], `${p.id} keeps the renter's size`);
-    assert.ok(!it.hidden || p.candidate, `${p.id} is not hidden (the candidate bed waits until the renter switches to it)`);
+    assert.equal(!!it.hidden, ['sim-rig', 'bed', 'nightstand-1', 'nightstand-2'].includes(p.id), `${p.id}: the storage bed (with its own nightstands) is the default, so the renter's own bed, their nightstands and the sim rig wait until the renter switches to them`);
     assert.ok(resolve(it), `${p.id} is a known catalogue piece (both 3D views draw it)`);
   }
   // Unit 3D reads plans/<id>.json from the dashboard's data folder: the same layout

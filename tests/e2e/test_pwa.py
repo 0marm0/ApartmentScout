@@ -22,8 +22,7 @@ import urllib.parse
 from pathlib import Path
 
 import pytest
-from playwright.sync_api import TimeoutError as PlaywrightTimeout
-from conftest import block_foreign, settled
+from conftest import block_foreign
 
 pytestmark = pytest.mark.e2e
 ROOT = Path(__file__).resolve().parents[2]
@@ -114,7 +113,7 @@ def open_app(browser, server):
         errors: list[str] = []
         page.on("pageerror", lambda e: errors.append(str(e)[:300]))
         page.goto(f"{server.origin}{PREFIX}{query}{hash_}")
-        page.wait_for_selector("#cards .card", state="attached", timeout=30000)   # booted: the cards are drawn (shown or not, by the view)
+        page.wait_for_selector("#cards .card", timeout=30000)
         return page, errors
 
     yield _open
@@ -134,6 +133,23 @@ def settle(page) -> dict:
     page.evaluate("async () => { await navigator.serviceWorker.ready; }")
     page.wait_for_function(CONTROLLED_JS, timeout=20000)
     return page.evaluate(STATUS_JS)
+
+
+def settle_on(page, build: str, timeout_s: float = 45) -> dict:
+    """Follow the page through the reload(s) a version switch causes until the worker in control is `build`; returns its status.
+    A navigation while we look (Execution context was destroyed) is expected: look again."""
+    import time
+    end, last = time.monotonic() + timeout_s, None
+    while time.monotonic() < end:
+        try:
+            page.wait_for_selector("#cards .card", timeout=10000)
+            last = settle(page)
+            if last["build"] == build and not page.evaluate("async () => !!(await navigator.serviceWorker.getRegistration())?.waiting"):
+                return last
+        except Exception:   # the page navigated or has not loaded yet
+            pass
+        page.wait_for_timeout(250)
+    raise AssertionError(f"the app never settled on build {build}: last status {last and last.get('build')}")
 
 
 # ------------------------------------------------------------------ manifest, icons, head tags
@@ -257,18 +273,19 @@ def test_a_page_outside_the_cached_shell_is_not_served_the_dashboard(open_app, s
 
 
 # ------------------------------------------------------------------ update prompt
-def test_a_new_deploy_shows_the_update_prompt_and_reload_switches_version(open_app, site: Path, server) -> None:
+def test_a_new_deploy_is_offered_while_open_and_taken_at_the_next_open(open_app, site: Path, server) -> None:
     demo = site / "ApartmentScout" / "demo"
     old = json.loads((demo / "precache.json").read_text())["build"]
-    page, errors = open_app(hash_="#list")
-    sw_log: list = []   # the browser's own account of each worker version (status, running state, errors), for the report below
-    cdp = page.context.new_cdp_session(page)
-    cdp.on("ServiceWorker.workerVersionUpdated", lambda e: sw_log.extend(
-        f"{v['versionId']}:{v['status']}/{v['runningStatus']}" for v in e.get("versions", [])))
-    cdp.on("ServiceWorker.workerErrorReported", lambda e: sw_log.append(f"error {e.get('errorMessage', {}).get('errorMessage')}"))
-    cdp.send("ServiceWorker.enable")   # (not the map: the worker answers every map tile itself, so with the map open the old worker
-    # is never idle, and Chrome hands over to the new one only when the old one has no request in flight)
-    st = settle(page)
+    page, errors = open_app()
+    # a version an earlier test left waiting is taken over at open (one reload): wait until the app has settled on one
+    for _ in range(3):
+        try:
+            page.wait_for_function("async () => !(await navigator.serviceWorker.getRegistration())?.waiting", timeout=15000)
+            page.wait_for_selector("#cards .card", timeout=30000)
+            st = settle(page)
+            break
+        except Exception:   # the page navigated while we looked: look again
+            page.wait_for_load_state("load")
     assert st["build"] == old
     assert page.locator("#pwaUpdate").count() == 0
     sw_before, pre_before = (demo / "sw.js").read_text(), (demo / "precache.json").read_text()
@@ -283,32 +300,25 @@ def test_a_new_deploy_shows_the_update_prompt_and_reload_switches_version(open_a
         # Later dismisses it without switching
         page.locator("#pwaUpdate [data-pwa=later]").click()
         assert page.locator("#pwaUpdate").count() == 0
-        # the worker is still waiting, so the next visit offers it again
+        # the worker is still waiting, so the next open switches to it at once (one reload), with no prompt
+        # (a new tab session: the one-minute guard against a switch loop is keyed on sessionStorage 'as:sw-applied')
+        page.evaluate("() => { sessionStorage.removeItem('as:sw-applied'); }")
         page.reload()
-        page.wait_for_selector("#pwaUpdate", timeout=20000)
-        # the renter reads the prompt first: the page has finished loading (its feature chunks and photos). Pressed in the middle of
-        # that load, Chrome's hand-over to the waiting worker could be dropped for good (the old worker is stopped, woken by a request,
-        # and the activation is not tried again), which no page code can undo
-        page.wait_for_load_state("networkidle")
-        settled(page, 30000, ticks=4)
-        page.evaluate("() => { window.__marker = 1; }")
-        page.locator("#pwaUpdate [data-pwa=reload]").click(no_wait_after=True)   # the reload is waited for below, as a state
-        # a new document: the page reloaded itself (the new worker activates first: up to a minute on a busy software-GL runner)
-        try:
-            page.wait_for_function("() => window.__marker === undefined", timeout=90000)
-        except PlaywrightTimeout:
-            raise AssertionError(page.evaluate("""async () => { const r = await navigator.serviceWorker.getRegistration(), w = (x) => x && x.state;
-              return { active: w(r?.active), waiting: w(r?.waiting), installing: w(r?.installing), controller: w(navigator.serviceWorker.controller),
-                prompt: document.getElementById('pwaUpdate')?.textContent ?? null, caches: await caches.keys(),
-                old: r?.active ? await Promise.race([new Promise((res) => { const ch = new MessageChannel(); ch.port1.onmessage = (e) => res(e.data); r.active.postMessage({ type: 'STATUS' }, [ch.port2]); }),
-                  new Promise((res) => setTimeout(() => res('no answer in 5 s'), 5000))]) : null }; }""") | {"browser": sw_log[-24:]}) from None
-        page.wait_for_selector("#cards .card", state="attached", timeout=90000)
-        st2 = settle(page)
-        assert st2["build"] == new
-        # the previous version's caches go alongside the activation: wait for that, then check
-        page.wait_for_function("async (old) => !(await caches.keys()).includes('as-shell-' + old)", arg=old, timeout=90000)
+        st2 = settle_on(page, new)
+        assert page.evaluate("() => !!sessionStorage.getItem('as:sw-applied')"), "the open-time switch is stamped so it cannot loop"
+        assert page.locator("#pwaUpdate").count() == 0
+        # the activating worker removes the old version's caches (it may still be doing so when the page settles)
+        page.wait_for_function("async (old) => !(await caches.keys()).includes('as-shell-' + old)", arg=old, timeout=15000)
         names = page.evaluate("async () => (await caches.keys())")
         assert f"as-shell-{new}" in names and f"as-shell-{old}" not in names, names
+        # a deploy that arrives while the app is open is still offered, and Reload switches to it
+        newer = "feedface0002"
+        (demo / "sw.js").write_text(sw_before.replace(f"'{old}'", f"'{newer}'"))
+        (demo / "precache.json").write_text(pre_before.replace(old, newer))
+        page.evaluate("async () => { const r = await navigator.serviceWorker.getRegistration(); await r.update(); }")
+        page.wait_for_selector("#pwaUpdate", timeout=20000)
+        page.locator("#pwaUpdate [data-pwa=reload]").click()
+        assert settle_on(page, newer)["build"] == newer   # the page reloaded itself onto the new version
         assert errors == [], errors
     finally:
         (demo / "sw.js").write_text(sw_before)

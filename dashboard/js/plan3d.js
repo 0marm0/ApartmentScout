@@ -61,7 +61,7 @@ import { validateInventory, fitInventory, pieceItem, placedIds } from './plan/in
 import { inventoryHTML } from './plan/inventory-ui.js';
 import { createAr, sectionHTML as arSectionHTML } from './plan/ar-ui.js';   // [ar] View in your room (AR): AR Quick Look on iPhone and iPad, .usdz and .glb downloads elsewhere
 import { mountSelbar } from './plan/selbar.js';   // [furniture] the floating toolbar beside the selected piece
-import { resolveLayout, applyInventory, savedLayoutFor, samePlaces } from './plan/placement.js';   // [placement] one rule for where the pieces stand, shared with Unit 3D
+import { resolveLayout, applyInventory, savedLayoutFor, samePlaces, chooseGroup } from './plan/placement.js';   // [placement] one rule for where the pieces stand, shared with Unit 3D
 import { allViews, stepView, windowGroups } from './plan/viewpoints.js';   // [interior] where to stand to look out of the windows
 import { setLookChips, bindLookChips } from './plan/look-ui.js';
 import { EYE_IN, nearestWindow, windowStands, windowHit, groupOfWindow } from './plan/walkcore.js';   // [walk] click to walk, go to the window
@@ -69,7 +69,8 @@ import { mountStudioMeasure } from './measure/studio-hook.js';   // [measure] th
 import { isMetricSearch } from './measure/core.js';
 import { parsePiece, fitReport, pieceFromItem, withPiece, roomKindAt } from './plan/tryfit.js';   // [fit] does it fit?
 import { tryFitHTML, fitCardHTML, parseNote } from './plan/tryfit-ui.js';
-import { choiceState, applyChoice } from './plan/choices.js';   // [bed option] my bed / the storage bed / no bed, saved with the layout
+import { followAttached, isAttachable, isAttached, nearestDesk, seatAtDesk } from './plan/attach.js';   // the office chair goes with its desk (layout item `attach`)
+import { choiceState, applyChoice, groupsOf, offPieces, shortName as pieceName } from './plan/choices.js';   // [bed option] my bed / the storage bed / no bed, saved with the layout
 import { reportFor } from './plan/bedfit.js';
 import { mountBedControl } from './plan/bed-ui.js';
 
@@ -84,6 +85,7 @@ let routesRes = null, routeT = 0, lastFrame = 0;
 // onSite: the plan placed on its site; winSky: one skyline per plan window (per-window city occlusion)
 let onSite = null, winSky = null, winMin = null, winMinKey = '';
 let winSkyView = null;
+const gone = new Map();   // the pieces of "Your furniture" the renter removed this visit, as they stood: "Add back" and "Shown" put them where they were
 let removed = new Set();   // [placement] pieces of the default layout the renter took out (they are not put back)
 let inventory = null;   // [furniture] "Your furniture": the renter's pieces (furniture.json, or the ones a project carried)
 let MEAS = null;   // [measure]
@@ -383,23 +385,27 @@ function commit() { persist(); markUndo(); recompute({ panels: true }); }
 // mark (plan/choices.js), so it is saved with the layout, undone with it and read by Unit 3D; switching never moves a piece.
 let bedUIs = [], bedCache = { key: '', rep: null }, stamp = '';
 const layoutStamp = () => { try { return JSON.stringify(store.get(key(st.id), null)); } catch { return ''; } };
-const bedState = () => (inventory && model ? choiceState(items, inventory) : null);
+const groupState = (g) => (inventory && model ? choiceState(items, inventory, g, { removed }) : null);   // the Bed / Sim rig / Office chair switches stay while their group exists, even after the piece was hidden or removed
+const bedState = () => groupState('bed');
 function bedReport() {
   if (!inventory || !model) return null;
   const k = `${model.id}|${items.map((x) => `${x.id}:${x.x},${x.y},${x.rot},${x.w || ''},${x.d || ''}`).join(';')}`;
   if (bedCache.key !== k) bedCache = { key: k, rep: reportFor(model, items, inventory) };
   return bedCache.rep;
 }
-function setBed(choice) {
+function setBed(choice, group = 'bed') {   // group 'sim' (the sim rig) or 'chair' (the office chair): shown or hidden, the same way (a piece's hidden mark)
   if (!inventory) return;
-  const next = applyChoice(items, inventory, 'bed', choice);
-  if (next.every((x, i) => x === items[i])) return;
-  checkpoint(); items = next;
+  const r = chooseGroup(items, inventory, group, choice, { model, gone });   // a removed piece comes back at its saved spot (or is fitted)
+  if (!r.changed) return;
+  checkpoint(); items = r.items; for (const id of r.restored) { removed.delete(id); gone.delete(id); }
   if (sel && !items.some((x) => x.id === sel && !x.hidden)) sel = null;
   commit();
 }
 function mountBedUI() {
-  const o = { state: bedState, report: bedReport, piece: () => inventory?.pieces.find((p) => p.id === 'bed-latitude') || null, choose: setBed };
+  const o = { state: bedState, report: bedReport, piece: () => inventory?.pieces.find((p) => p.id === 'bed-latitude') || null, choose: (c) => setBed(c),
+    rig: { state: () => groupState('sim'), choose: (c) => setBed(c, 'sim') },
+    chair: { state: () => groupState('chair'), choose: (c) => setBed(c, 'chair') },
+    off: { list: () => (inventory && model ? offPieces(items, inventory, { removed }) : []), show: (id) => showOwn(id) } };   // every hidden or removed piece, with a Show button, in both panes
   bedUIs = [mountBedControl($('p2dWrap'), { ...o, where: 'in-p2d' }), mountBedControl($('pstage'), { ...o, where: 'in-p3d' })];
 }
 /** The saved layout changed behind this view's back (the Bed control in Unit 3D wrote it): take it up. */
@@ -439,8 +445,15 @@ function arEntries() {
   return [{ key: 'room', label: `${model?.title || 'Furnished room'}, furnished`, sig: list.map((x) => `${x.id}:${arSig(x, true)}`).join(';') }, ...list.map((x) => ({ key: x.id, label: x.name, sig: arSig(x, false) }))];
 }
 const ar = createAr({ entries: arEntries, build: (ids) => G3.arModel(ids) });
+let attachPrev = [];   // where every piece stood at the last recompute: a desk that moved takes the chairs attached to it along (plan/attach.js)
+function followDesks() {
+  const next = followAttached(attachPrev, items);
+  if (next !== items) { items = next; if (!st.dragging) persist(); }
+  attachPrev = items.map((x) => ({ id: x.id, x: x.x, y: x.y, rot: x.rot, attach: x.attach }));
+}
 function recompute(opts = {}) {
   if (!model) return;
+  followDesks();
   R = applyInventory(items, inventory).map((x) => resolve(x)).filter(Boolean);   // [furniture] the inventory's size, colour, material and desk set ride on each piece
   ev = evaluate(model, R);
   G3.setItems(R); LX.itemsChanged(); Q3.itemsChanged();   // [feature J]
@@ -482,13 +495,13 @@ const gradeRank = (g) => ['clear', 'tight', 'blocked'].indexOf(g);
 // camera moves or the plan is panned or zoomed.
 let bars = null, barLoop = 0;
 function mountBars() {
-  const on = { rot: () => rotateSel(90), free: rotateTo, move: (dx, dy) => nudge(dx, dy), del: () => removeSel(), done: () => select(null) };
+  const on = { rot: () => rotateSel(90), free: rotateTo, move: (dx, dy) => nudge(dx, dy), dup: () => duplicateSel(), hide: () => hideSel(), del: () => removeSel(), done: () => select(null), attach: () => toggleAttach() };
   bars = { p2: mountSelbar($('p2dWrap'), on), p3: mountSelbar($('pstage'), on) };
 }
 function syncBars() {
   const it = bars && sel ? R.find((x) => x.id === sel && !x.hidden) : null;
   if (!it) { bars?.p2.hide(); bars?.p3.hide(); return; }
-  const info = { name: it.label || it.name, rot: it.rot }, shown = (id) => $(id).offsetWidth > 0;
+  const info = { name: it.label || it.name, rot: it.rot, attach: isAttachable(it) ? { on: isAttached(items, it.id) } : null }, shown = (id) => $(id).offsetWidth > 0;
   const r2 = shown('p2dWrap') ? P2.screenRect(it) : null, r3 = shown('pstage') && G3.viewMode() === 'orbit' && !st.dragging ? G3.screenRect(it.id) : null;
   if (r2) bars.p2.show(r2, info); else bars.p2.hide();
   if (r3) bars.p3.show(r3, info); else bars.p3.hide();
@@ -533,11 +546,26 @@ function rotateTo(deg, live) {
 }
 function rotateSel(d) { const it = items.find((q) => q.id === sel); if (it) mutate(() => { it.rot = ((Math.round(it.rot || 0) + d) % 360 + 360) % 360; it.placed = true; }); }
 function nudge(dx, dy) { const it = items.find((q) => q.id === sel); if (!it) return; if (!st.nudging) { checkpoint(); st.nudging = true; } it.x += dx; it.y += dy; it.placed = true; persist(); recompute({ panels: false }); clearTimeout(st.nudgeT); st.nudgeT = setTimeout(() => { st.nudging = false; tab(); }, 500); }
-function removeSel() { const it = items.find((q) => q.id === sel); if (!it) return; const n = resolveOne(it)?.name || it.ref; mutate(() => { removed.add(it.id); items = items.filter((q) => q.id !== sel); sel = null; }, `Removed ${n.toLowerCase()}`); }
+/** The office chair: attached to its desk (it moves and turns with it, snapped to the desktop) or free (drag it anywhere, duplicate it). */
+function toggleAttach() {
+  const it = items.find((q) => q.id === sel); if (!it || !isAttachable(it)) return;
+  if (isAttached(items, it.id)) { mutate(() => { delete it.attach; }, 'Separate: the chair is free to drag anywhere'); return; }
+  const desk = nearestDesk(items, it), dr = desk && R.find((x) => x.id === desk.id);
+  if (!dr) { toast('There is no desk in this layout to attach it to'); return; }
+  const aside = items.some((x) => x.ref === 'sim-rig' && !x.hidden);
+  mutate(() => { Object.assign(it, seatAtDesk(dr, { aside }), { attach: desk.id, placed: true }); }, 'Attached to the desk: it moves and turns with it');
+}
+function removeSel() { const it = items.find((q) => q.id === sel); if (!it) return; const n = resolveOne(it)?.name || it.ref; mutate(() => { removed.add(it.id); gone.set(it.id, { ...it }); items = items.filter((q) => q.id !== sel); for (const q of items) if (q.attach === it.id) delete q.attach; sel = null; }, `Removed ${n.toLowerCase()}`); }
+/** Hide the selected piece (it stays in "Your furniture"; the Hidden row, the Furniture tab and the option switches show it again). */
+function hideSel(id = sel) {
+  const it = items.find((q) => q.id === id); if (!it) return;
+  const n = pieceName(it.label || resolveOne(it)?.name || it.ref);
+  mutate(() => { it.hidden = true; if (sel === it.id) sel = null; st.activePreset = null; }, `${n} hidden. Show it again from the Hidden row on the plan`);
+}
 function duplicateSel() {
   const it = items.find((q) => q.id === sel); if (!it) return;
-  const copy = { ...it, id: newId(it.ref, items), x: it.x + 12, y: it.y - 12, placed: true };
-  mutate(() => { items.push(copy); place(copy, roomOf(model, [it.x, it.y]), true); sel = copy.id; });
+  const copy = { ...it, id: newId(it.ref, items), x: it.x + 12, y: it.y - 12, placed: true, from: it.from || it.id }; delete copy.attach; delete copy.hidden;   // a copy is a separate piece, an exact copy of its source: `from` joins it to the same inventory piece (size, look, set); an attached chair stays with its own desk
+  mutate(() => { items.push(copy); place(copy, roomOf(model, [it.x, it.y]), true); sel = copy.id; }, `Duplicated ${pieceName(it.label || resolveOne(it)?.name || it.ref).toLowerCase()}. Undo (Ctrl/Cmd+Z) removes the copy`);   // never silent: the D key lands here too, and a quiet copy of the office chair reads as a second chair
 }
 function addRef(ref) {
   const c = CATALOG[ref]; if (!c) return;
@@ -566,12 +594,23 @@ function useOwn() {
   if (!model.layouts.some((l) => l.id === OWN)) { try { model.layouts.unshift(ownLayout()); } catch (e) { toast(`Could not fit your furniture: ${e.message || e}`, 4200); return; } }
   applyPreset(OWN);
 }
+/** [furniture] Bring one of the renter's pieces back or add it: a hidden piece is shown, a removed one returns to the spot it had, a piece never placed is fitted. */
+function showOwn(pid) {
+  const p = inventory?.pieces.find((q) => q.id === pid);
+  if (!p) { const h = items.find((q) => q.id === pid && q.hidden); if (h) mutate(() => { delete h.hidden; }, `${pieceName(h.label || h.ref)} shown`); return; }   // a piece added from the catalogue (or a copy), hidden
+  const g = groupsOf(inventory).find((x) => x.choices.some((c) => c.pieces.includes(pid))), c = g?.choices.find((x) => x.pieces.includes(pid));
+  const it = items.find((q) => q.id === pid);
+  if (g && c && (!it || it.hidden)) { setBed(c.id, g.id); st.activePreset = null; toast(`${p.label || p.ref} shown`); return; }   // an option group's piece comes back through its own switch
+  if (it) { if (it.hidden) mutate(() => { delete it.hidden; }, `${p.label || p.ref} shown`); return; }
+  addOwn(pid);
+}
 /** [furniture] Add one of the renter's pieces (its own size) to the layout, placed in the kind of room it lives in. */
 function addOwn(pid) {
   const p = inventory?.pieces.find((q) => q.id === pid); if (!p || items.some((q) => q.id === pid)) return;
   const room = (model.rooms.filter((r) => r.kind === (p.room === 'dining' ? 'living' : p.room)).sort((a, b) => b.area - a.area)[0] || [...model.rooms].sort((a, b) => b.area - a.area)[0]);
-  const it = { id: p.id, ref: p.ref, x: Math.round(room.label[0]), y: Math.round(room.label[1]), rot: 0, placed: true };   // [placement] size, label and look come from the inventory
-  mutate(() => { removed.delete(it.id); items.push(it); const ok = place(it, room.name, true); sel = it.id; st.activePreset = null; toast(ok ? `Added ${(p.label || p.ref).toLowerCase()} to the ${room.name.toLowerCase()}` : `No clear spot in the ${room.name.toLowerCase()}; it is in the middle`); });
+  const was = gone.get(pid), it = was ? { ...was, placed: true } : { id: p.id, ref: p.ref, x: Math.round(room.label[0]), y: Math.round(room.label[1]), rot: 0, placed: true };   // [placement] size, label and look come from the inventory; a piece the renter removed returns to its spot
+  delete it.hidden;
+  mutate(() => { removed.delete(it.id); gone.delete(it.id); items.push(it); const ok = was ? true : place(it, room.name, true); sel = it.id; st.activePreset = null; toast(ok ? `Added ${(p.label || p.ref).toLowerCase()} to the ${room.name.toLowerCase()}` : `No clear spot in the ${room.name.toLowerCase()}; it is in the middle`); });
 }
 function flashPoly(poly) { flash = poly; flashT = performance.now() + 2400; overlays(); setTimeout(() => { if (performance.now() >= flashT) { flash = null; overlays(); } }, 2500); }
 
@@ -799,7 +838,7 @@ async function fileAction(f) {
     Q3.renderImage(f === 'render2' ? 2 : 4, { name: `${st.id}-${st.view}`, caption: `${model.title || st.id} · ${st.date} ${fmtT(st.min)}` });   // [feature J]
   } else if (f === 'csv') {
     saveBlob(new Blob([shoppingCSV(shoppingList(R), model.title || st.id)], { type: 'text/csv' }), `${st.id}-shopping-list.csv`);
-  } else if (f === 'options') openOptions(); else if (f === 'clear') mutate(() => { for (const q of items) removed.add(q.id); items = []; sel = null; }, 'Cleared. Undo brings it back');
+  } else if (f === 'options') openOptions(); else if (f === 'clear') mutate(() => { for (const q of items) { removed.add(q.id); gone.set(q.id, { ...q }); } items = []; sel = null; }, 'Cleared. Undo brings it back');
 }
 function openOptions() {
   const el = $('psCompare'); cancelCompare(); el.hidden = false;
@@ -904,11 +943,12 @@ function inspector() {
       <div class="field"><label for="psFr">Turn <span>°</span></label><input type="number" id="psFr" data-k="rot" step="15" value="${Math.round(it.rot)}"></div>
       ${variants}${product}${it.elev || ['art', 'lamp', 'tv', 'ac'].includes(it.kind) ? `<div class="field"><label for="psFe">Off floor <span>in</span></label><input type="number" id="psFe" data-k="elev" min="0" max="140" step="0.5" value="${+(it.elev || 0).toFixed(1)}"></div>` : ''}
     </div>${prodLine}
+    ${isAttachable(it) ? `<label class="ps-attach"><input type="checkbox" data-k="attach" ${isAttached(items, it.id) ? 'checked' : ''}><span>Attached to desk <small>moves and turns with it</small></span></label>` : ''}
     <div class="ps-acts">
       <button class="btn" type="button" data-a="rot" title="Turn 90° (R)">${IC.rot}Turn</button>
       <button class="btn" type="button" data-a="dup" title="Duplicate (D)">${IC.dup}Duplicate</button>
       <div class="ps-place"><select id="psRoom" aria-label="Place in room">${model.rooms.filter((x) => !['bath', 'closet'].includes(x.kind)).map((x) => `<option ${x.name === r.room ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select><button class="btn" type="button" data-a="place" title="Find the best spot in this room">${IC.place}Place</button></div>
-      <button class="icon-btn" type="button" data-a="hide" title="Hide from the layout" aria-label="Hide">${IC.eyeOff}</button>
+      <button class="btn" type="button" data-a="hide" title="Hide from the layout: it stays in your furniture and the Hidden row shows it again">${IC.eyeOff}Hide</button>
       <button class="icon-btn danger" type="button" data-a="del" title="Remove (Del)" aria-label="Remove">${IC.del}</button>
     </div>
     <div class="ps-nudge" aria-label="Nudge">${[['↑', 0, 1, 'up'], ['←', -1, 0, 'left'], ['↓', 0, -1, 'down'], ['→', 1, 0, 'right']].map(([t, x, y, n]) => `<button type="button" data-nx="${x}" data-ny="${y}" aria-label="Nudge ${n}">${t}</button>`).join('')}</div>
@@ -938,11 +978,12 @@ function inspClick(e) {
   else if (a === 'rot') rotateSel(90);
   else if (a === 'dup') duplicateSel();
   else if (a === 'del') removeSel();
-  else if (a === 'hide' && it) mutate(() => { it.hidden = true; sel = null; }, 'Hidden. Show it again from the furniture list');
+  else if (a === 'hide' && it) hideSel(it.id);
   else if (a === 'place' && it) mutate(() => { place(it, $('psRoom').value); });
 }
 function inspChange(e) {
   const k = e.target.dataset.k; const it = items.find((q) => q.id === sel); if (!k || !it) return;
+  if (k === 'attach') { toggleAttach(); return; }
   if (k === 'variant') { mutate(() => { it.variant = e.target.value; delete it.d; delete it.h; delete it.w; }); return; }
   if (k === 'product') { useProduct(it, e.target.value); return; }
   if (k === 'elev') { const v = parseFloat(e.target.value); if (Number.isFinite(v)) mutate(() => { it.elev = Math.max(0, Math.min(140, v)); }); return; }
@@ -1064,10 +1105,10 @@ function furnitureTab() {
   const pres = model.layouts.length ? `<h3 class="label">Layouts <span>written for this plan</span></h3><div class="ps-presets">${model.layouts.map((l) => `<button type="button" class="ps-preset${st.activePreset === l.id ? ' on' : ''}" data-p="${esc(l.id)}"><b>${esc(l.name)}</b>${l.note ? `<span>${esc(l.note)}</span>` : ''}</button>`).join('')}</div>` : '';
   const list = R.length ? R.map((it) => {
     const r = ev.items[it.id], s = it.hidden ? 'off' : r?.state || 'clear';
-    return `<div class="ps-item${it.id === sel ? ' on' : ''}${it.hidden ? ' off' : ''}" data-id="${esc(it.id)}"><button type="button" class="ps-ib" data-sel="${esc(it.id)}"><span class="ps-sw" style="--c:#${(it.base.color ?? 0x888888).toString(16).padStart(6, '0')}"></span><span class="t"><b>${esc(it.name)}</b><small>${fmtIn(it.w)} × ${fmtIn(it.d)}${it.hidden ? ' · hidden' : r?.room ? ` · ${esc(r.room)}` : ''}</small></span><i class="dot g-${s}" title="${s === 'off' ? 'hidden' : GRADE_TXT[s]}"></i></button><button type="button" class="icon-btn" data-vis="${esc(it.id)}" aria-label="${it.hidden ? 'Show' : 'Hide'}" title="${it.hidden ? 'Show' : 'Hide'}">${it.hidden ? IC.eyeOff : IC.eye}</button>${it.hidden ? '' : `<span class="ar-row" data-ar="${esc(it.id)}" data-ar-compact></span>`}</div>`;
+    return `<div class="ps-item${it.id === sel ? ' on' : ''}${it.hidden ? ' off' : ''}" data-id="${esc(it.id)}"><button type="button" class="ps-ib" data-sel="${esc(it.id)}"><span class="ps-sw" style="--c:#${(it.base.color ?? 0x888888).toString(16).padStart(6, '0')}"></span><span class="t"><b>${esc(it.name)}</b><small>${fmtIn(it.w)} × ${fmtIn(it.d)}${it.hidden ? ' · hidden' : r?.room ? ` · ${esc(r.room)}` : ''}</small></span><i class="dot g-${s}" title="${s === 'off' ? 'hidden' : GRADE_TXT[s]}"></i></button><button type="button" class="btn sm ps-vis" data-vis="${esc(it.id)}" aria-label="${it.hidden ? 'Show' : 'Hide'} ${esc(it.name)}" title="${it.hidden ? 'Show' : 'Hide'} ${esc(it.name)}">${it.hidden ? IC.eye : IC.eyeOff}${it.hidden ? 'Show' : 'Hide'}</button>${it.hidden ? '' : `<span class="ar-row" data-ar="${esc(it.id)}" data-ar-compact></span>`}</div>`;
   }).join('') : '<p class="faint">Nothing placed yet.</p>';
   const cat = CATEGORIES.map(([k, t]) => { const refs = Object.entries(CATALOG).filter(([, c]) => c.cat === k); return refs.length ? `<div class="ps-cat"><span class="ps-cat-h">${t}</span><div class="chips">${refs.map(([r, c]) => `<button type="button" class="chip" data-add="${esc(r)}" title="${esc(c.src)}">${IC.plus}${esc(c.name)}</button>`).join('')}</div></div>` : ''; }).join('');
-  const own = inventory ? inventoryHTML(inventory, { held: placedIds(inventory, items), hasPreset: model.layouts.some((l) => l.id === OWN), active: st.activePreset === OWN }) : '';   // [furniture]
+  const own = inventory ? inventoryHTML(inventory, { held: placedIds(inventory, items), hidden: new Set(items.filter((x) => x.hidden).map((x) => x.id)), removed, hasPreset: model.layouts.some((l) => l.id === OWN), active: st.activePreset === OWN }) : '';   // [furniture]
   return `${tryFitHTML({ rooms: model.rooms.filter((r) => !['bath', 'closet', 'hall'].includes(r.kind)), st: tfState() })}${own}${R.some((x) => !x.hidden) ? arSectionHTML(ar.platform) : ''}${pres}<h3 class="label">In this layout <span>${R.filter((x) => !x.hidden).length} pieces</span></h3><div class="ps-list">${list}</div>
     <h3 class="label">Add furniture <span>real sizes, hover for the source</span></h3>${cat}
     <div class="ps-opts">${[['snap', 'Snap to walls'], ['zonesAll', 'Show every clearance zone'], ['sight', 'Show TV sightlines'], ['swings', 'Shade door swings in 3D']].map(([k, t]) => `<label class="tg ${st[k] ? 'on' : ''}"><input type="checkbox" class="sr" data-opt="${k}" ${st[k] ? 'checked' : ''}><span class="switch"></span><span class="lbl">${t}</span></label>`).join('')}</div>`;
@@ -1134,7 +1175,8 @@ function tabClick(e) {
   if (b.dataset.p) applyPreset(b.dataset.p);
   else if (b.dataset.tf) fitClick(e);
   else if ('invUse' in b.dataset) useOwn();
-  else if (b.dataset.invAdd) addOwn(b.dataset.invAdd);
+  else if (b.dataset.invAdd || b.dataset.invShow) showOwn(b.dataset.invAdd || b.dataset.invShow);
+  else if (b.dataset.invHide) hideSel(b.dataset.invHide);
   else if (b.dataset.sel) { select(b.dataset.sel === sel ? null : b.dataset.sel); markList(); }
   else if (b.dataset.vis) { const it = items.find((q) => q.id === b.dataset.vis); if (it) mutate(() => { it.hidden = !it.hidden; if (it.hidden && sel === it.id) sel = null; }); }
   else if (b.dataset.add) addRef(b.dataset.add);

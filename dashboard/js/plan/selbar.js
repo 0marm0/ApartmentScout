@@ -1,6 +1,6 @@
 // The floating toolbar beside the selected piece in the Floor plan studio, the same in the 2D plan and the 3D view:
 // rotate 90 degrees, rotate freely (a dial: a slider with the four square angles), move (an arrow pad for touch and for fine nudges;
-// dragging the piece works too) and remove, plus a close button. Keys (R, Delete, Esc, arrows) are the studio's own.
+// dragging the piece works too), hide and remove, plus a close button. Keys (R, Delete, Esc, arrows) are the studio's own.
 // DOM only; the studio passes what each button does and where the piece is on screen, so both panes share one component.
 import { esc } from '../util.js';
 
@@ -8,8 +8,11 @@ const ICON = {
   rot: '<path d="M13 8a5 5 0 1 1-1.9-3.9"/><path d="M13 2.6v3.1h-3.1"/>',
   free: '<circle cx="8" cy="8" r="5.6"/><path d="M8 8l3-3.2"/><path d="M8 2.4v1.4M13.6 8h-1.4M8 13.6v-1.4M2.4 8h1.4" class="tk"/>',
   move: '<path d="M8 2v12M2 8h12M8 2L6.2 3.8M8 2l1.8 1.8M8 14l-1.8-1.8M8 14l1.8-1.8M2 8l1.8-1.8M2 8l1.8 1.8M14 8l-1.8-1.8M14 8l-1.8 1.8"/>',
+  dup: '<rect x="5.2" y="5.2" width="8" height="8" rx="1.4"/><path d="M10.8 5.2V3.6a.8.8 0 0 0-.8-.8H3.6a.8.8 0 0 0-.8.8V10a.8.8 0 0 0 .8.8h1.6"/>',
+  hide: '<path d="M1.6 8s2.3-4.4 6.4-4.4S14.4 8 14.4 8s-2.3 4.4-6.4 4.4S1.6 8 1.6 8z"/><circle cx="8" cy="8" r="1.9"/><path d="M2.6 13.4L13.4 2.6" class="tk"/>',
   del: '<path d="M3 4.6h10M6.4 4.6V3h3.2v1.6M4.4 4.6l.6 8.2h6l.6-8.2"/>',
   done: '<path d="M4 4l8 8M12 4l-8 8"/>',
+  attach: '<path d="M6.8 9.2l2.4-2.4"/><path d="M7.4 5.2l.9-.9a2.4 2.4 0 0 1 3.4 3.4l-.9.9"/><path d="M8.6 10.8l-.9.9a2.4 2.4 0 0 1-3.4-3.4l.9-.9"/>',
 };
 const svg = (k) => `<svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON[k]}</svg>`;
 const btn = (act, label, title, extra = '') => `<button type="button" class="sb-b" data-act="${act}" aria-label="${esc(label)}" title="${esc(title)}" ${extra}>${svg(act)}<span>${esc(label)}</span></button>`;
@@ -21,6 +24,9 @@ export function selbarHTML() {
       ${btn('rot', 'Rotate 90°', 'Rotate 90° (R; Shift+R turns the other way)')}
       ${btn('free', 'Rotate', 'Rotate to any angle', 'aria-expanded="false" aria-haspopup="true"')}
       ${btn('move', 'Move', 'Move: drag the piece, press the arrow keys, or use the arrows here', 'aria-expanded="false" aria-haspopup="true"')}
+      ${btn('dup', 'Duplicate', 'Duplicate: a copy beside it that you can drag into another room (D)')}
+      ${btn('attach', 'Attach', 'Attach to the desk: it then moves and turns with the desk. Separate, it is a free piece you can drag anywhere', 'hidden aria-pressed="false"')}
+      ${btn('hide', 'Hide', 'Hide it from the layout, the piece stays in your furniture: show it again from Hidden or the Furniture tab')}
       ${btn('del', 'Remove', 'Remove from the layout (Delete; Undo brings it back)')}
       <i class="sb-sep" aria-hidden="true"></i>
       ${btn('done', 'Done', 'Deselect (Esc)')}
@@ -41,7 +47,7 @@ export function selbarHTML() {
 }
 
 /**
- * Put a toolbar into `host` (a positioned pane). `on` = {rot(), free(deg, live), move(dx, dy), del(), done()}.
+ * Put a toolbar into `host` (a positioned pane). `on` = {rot(), free(deg, live), move(dx, dy), dup(), hide(), del(), done(), attach()}.
  * @returns {{el: HTMLElement, show(rect, info): void, hide(): void, closePops(): void, visible: boolean}}
  */
 export function mountSelbar(host, on) {
@@ -58,7 +64,7 @@ export function mountSelbar(host, on) {
     const b = e.target.closest('button'); if (!b) return;
     if (b.dataset.act) {
       const a = b.dataset.act;
-      if (a === 'rot') on.rot(); else if (a === 'free') toggle('free'); else if (a === 'move') toggle('move'); else if (a === 'del') on.del(); else if (a === 'done') on.done();
+      if (a === 'rot') on.rot(); else if (a === 'free') toggle('free'); else if (a === 'move') toggle('move'); else if (a === 'dup') on.dup?.(); else if (a === 'attach') on.attach?.(); else if (a === 'hide') on.hide?.(); else if (a === 'del') on.del(); else if (a === 'done') on.done();
     } else if (b.dataset.nx != null) on.move(+b.dataset.nx * step, +b.dataset.ny * step);
     else if (b.dataset.step) { step = +b.dataset.step; el.querySelectorAll('[data-step]').forEach((x) => x.classList.toggle('on', x === b)); }
     else if (b.dataset.snap != null) { const v = +b.dataset.snap; $('[data-sb=angle]').value = v; $('[data-sb=deg]').textContent = `${v}°`; on.free(v, true); on.free(v, false); }
@@ -69,10 +75,11 @@ export function mountSelbar(host, on) {
   el.addEventListener('keydown', (e) => { if (e.key === 'Escape') { e.stopPropagation(); if (pops.free.hidden && pops.move.hidden) on.done(); else closePops(); } });
   const api = {
     el, closePops, visible: false,
-    /** `rect` = the piece's box in the host's pixels ({x0, y0, x1, y1}); `info` = {name, rot}. */
+    /** `rect` = the piece's box in the host's pixels ({x0, y0, x1, y1}); `info` = {name, rot, attach?: {on}} (attach: the office chair's attached-to-desk switch). */
     show(rect, info = {}) {
       el.hidden = false; api.visible = true;
       $('[data-sb=name]').textContent = info.name || '';
+      const at = $('[data-act=attach]'); at.hidden = !info.attach; if (info.attach) { at.setAttribute('aria-pressed', String(info.attach.on)); at.classList.toggle('on', info.attach.on); at.querySelector('span').textContent = info.attach.on ? 'Attached' : 'Attach'; }
       if (!rotating && info.rot != null) { const r = Math.round(((info.rot % 360) + 360) % 360); if (+dial.value !== r) dial.value = r; $('[data-sb=deg]').textContent = `${r}°`; }
       const W = host.clientWidth, H = host.clientHeight, bw = el.offsetWidth, bh = el.offsetHeight;
       let x = (rect.x0 + rect.x1) / 2 - bw / 2, y = rect.y0 - bh - 12;

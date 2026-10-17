@@ -639,6 +639,24 @@
    "note": "named unit or traced owner plan; review before publishing Cleared by the owner on 2026-10-13 (private repository, permission obtained)."
   },
   {
+   "file": "docs/images/city-building-models.png",
+   "publication_status": "public",
+   "sha256": "a91bfb6e1a9fa3353b2a62325edd43739c13a0eeb8f2f53a93880c6817c05643",
+   "bytes": 2381771,
+   "width": 1560,
+   "height": 953,
+   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-16 from a clean snapshot with scripts/screenshots.py)"
+  },
+  {
+   "file": "docs/images/city-map-3d.png",
+   "publication_status": "public",
+   "sha256": "799ebad6cc2d22bac2f71d5338e4f6c937e29a5e93aa3c11cf2667e1e189577f",
+   "bytes": 1145432,
+   "width": 1600,
+   "height": 1000,
+   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-16 from a clean snapshot with scripts/screenshots.py)"
+  },
+  {
    "file": "docs/images/compare-four.png",
    "publication_status": "public",
    "sha256": "77d0334bd8c42e2bcec6f107382d9bf420365d8b3638ee4c460fc2a6f0e1c113",
@@ -650,11 +668,11 @@
   {
    "file": "docs/images/compare-side-by-side-3d.png",
    "publication_status": "public",
-   "sha256": "0c72cee2d0275bdb83e2979b0cdbb5bd990c626ea9c405845c49a31b9274cbfd",
-   "bytes": 335084,
+   "sha256": "4b4eee833a584af4bddd0fb4bc3daf99860c185a386a3170008003738e11e414",
+   "bytes": 636122,
    "width": 1600,
    "height": 1000,
-   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-15 from a clean snapshot with scripts/screenshots.py)"
+   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-16 from a clean snapshot with scripts/screenshots.py)"
   },
   {
    "file": "docs/images/compare-split-view.png",
@@ -673,6 +691,15 @@
    "width": 1600,
    "height": 1000,
    "note": "ApartmentScout dashboard on the public example data (shot 2026-10-15 from a clean snapshot with scripts/screenshots.py)"
+  },
+  {
+   "file": "docs/images/decide-gone-fast.png",
+   "publication_status": "public",
+   "sha256": "7be7fa89b5a27d4754ed06ab11942910e917b6bd010417d42cf901b161c072ed",
+   "bytes": 174557,
+   "width": 1600,
+   "height": 1000,
+   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-16 from a clean snapshot with scripts/screenshots.py)"
   },
   {
    "file": "docs/images/decide-memo.png",
@@ -729,6 +756,15 @@
    "note": "ApartmentScout dashboard on the public example data (shot 2026-10-15 from a clean snapshot with scripts/screenshots.py)"
   },
   {
+   "file": "docs/images/decide-tours-board.png",
+   "publication_status": "public",
+   "sha256": "a72f48d29b554c318f43710262ab2aec3e622099cd52bf9343c7ce49a73d7064",
+   "bytes": 202362,
+   "width": 1600,
+   "height": 1000,
+   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-16 from a clean snapshot with scripts/screenshots.py)"
+  },
+  {
    "file": "docs/images/decide-visit-history.png",
    "publication_status": "public",
    "sha256": "2c85695152ee3c20d8911a0ae756dce4169c97fefb49b2001f96acd4e2dabcba",
@@ -754,6 +790,15 @@
    "width": 1600,
    "height": 1000,
    "note": "ApartmentScout dashboard on the public example data (shot 2026-10-15 from a clean snapshot with scripts/screenshots.py)"
+  },
+  {
+   "file": "docs/images/find-drawer-commute.png",
+   "publication_status": "public",
+   "sha256": "38d1136ce51014006eb4510723c93f8275471dc1bca1ce2d319d1aa12f55742b",
+   "bytes": 824069,
+   "width": 1600,
+   "height": 1000,
+   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-16 from a clean snapshot with scripts/screenshots.py)"
   },
   {
    "file": "docs/images/find-light-theme.png",
@@ -846,103 +891,121 @@
    "note": "ApartmentScout dashboard on the public example data (shot 2026-10-15 from a clean snapshot with scripts/screenshots.py)"
   },
   {
-   "file": "docs/images/hero-map.png",
+   "file": "docs/images/find-walk-map.png",
    "publication_status": "public",
-   "sha256": "4c02f6c824275d471a61a45bf757cebd60feeae440ccb6c5b22eaaf069772a99",
-   "bytes": 418629,
+   "sha256": "e4e8055890c144ebea754de26e5f716af4b992b85f40dfde3ba2561d674be669",
+   "bytes": 916268,
    "width": 1600,
    "height": 1000,
+   "note": "Current dashboard, worked example (2026-10-16); OCR shows no unit label of the renter."
+  },
+  {
+   "file": "docs/images/hero-map.png",
+   "publication_status": "public",
+   "sha256": "23cee0580c62446730a1138ddb51ff425ae92219ba3a87adc6964955c5f7d784",
+   "bytes": 1684430,
+   "width": 2240,
+   "height": 1180,
    "note": "ApartmentScout dashboard on the public example data (shot 2026-10-15 from a clean snapshot with scripts/screenshots.py)"
   },
   {
    "file": "docs/images/inside-bay.png",
    "publication_status": "public",
-   "sha256": "f155e6cc0d80def8753429e86fa9dd06409d55a936af7f64df0ce9d5d76e4c2b",
-   "bytes": 456505,
+   "sha256": "40b793c7deefe2eea5a1c2ebbec14dd992d0fd0b94d784c7a6f3f4628d89d089",
+   "bytes": 685418,
    "width": 1560,
-   "height": 954,
-   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-15 from a clean snapshot with scripts/screenshots.py)"
+   "height": 953,
+   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-16 from a clean snapshot with scripts/screenshots.py)"
   },
   {
    "file": "docs/images/inside-bedroom.png",
    "publication_status": "public",
-   "sha256": "089dd3c79bb732b10cf2d9842d77efe2cbdd7844c7acd35ebc31ca2a79542427",
-   "bytes": 408285,
+   "sha256": "a7eb044ef059188abb28496a53ef95d18acd42867766a959060ca54940266ebd",
+   "bytes": 686161,
    "width": 1560,
-   "height": 954,
-   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-15 from a clean snapshot with scripts/screenshots.py)"
+   "height": 953,
+   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-16 from a clean snapshot with scripts/screenshots.py)"
   },
   {
    "file": "docs/images/inside-fits.png",
    "publication_status": "public",
-   "sha256": "4189901f36904ae022e40ca811893b933f54302d6402929b492139e00cf54b05",
-   "bytes": 330212,
+   "sha256": "3a0f0fffd60d0a3275c37d358391a9b21e3a57aae1d7e23848707a7ba48d931b",
+   "bytes": 515296,
    "width": 1600,
    "height": 1240,
-   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-15 from a clean snapshot with scripts/screenshots.py)"
+   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-16 from a clean snapshot with scripts/screenshots.py)"
   },
   {
    "file": "docs/images/inside-floor-plan.png",
    "publication_status": "public",
-   "sha256": "2be2b2cfe245824d1f19bb94d3fb1bbeb166a22a0c79dfda4c36e5e2c12df558",
-   "bytes": 276419,
+   "sha256": "a9ea867b5f5c03e7ffc328501c482408d33f70b5a0b5245437ba359452e740be",
+   "bytes": 471876,
    "width": 1600,
    "height": 1000,
-   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-15 from a clean snapshot with scripts/screenshots.py)"
+   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-16 from a clean snapshot with scripts/screenshots.py)"
   },
   {
    "file": "docs/images/inside-furniture.png",
    "publication_status": "public",
-   "sha256": "2ccc44e7c3772537a1b4b8f7ebcbb5cf7d8d94445ec1e66107e079f7f70d634b",
-   "bytes": 310603,
+   "sha256": "af7e627d95dbeffcd5f2a961e4d8e24c3e9620ccf2356ed9fefd5bcc15e045b5",
+   "bytes": 828059,
    "width": 1560,
-   "height": 954,
-   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-15 from a clean snapshot with scripts/screenshots.py)"
+   "height": 953,
+   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-16 from a clean snapshot with scripts/screenshots.py)"
   },
   {
    "file": "docs/images/inside-light-theme.png",
    "publication_status": "public",
-   "sha256": "a65cfe05ca633f5da2ee7b8b176d99e42b7783a0c337bce11456105eb02c3c6b",
-   "bytes": 580085,
+   "sha256": "57df2f8bb20e3aadf8b0591a257246f2ce5e6291263d7d04a545c6ca36927278",
+   "bytes": 1543191,
    "width": 1560,
-   "height": 954,
+   "height": 953,
    "note": "ApartmentScout dashboard on the public example data (shot 2026-10-15 from a clean snapshot with scripts/screenshots.py)"
+  },
+  {
+   "file": "docs/images/inside-living-room.png",
+   "publication_status": "public",
+   "sha256": "d004775cb30be15a6b6b6f590d48b55b9a32f92a39c0f106025484d7178222b8",
+   "bytes": 754810,
+   "width": 1560,
+   "height": 953,
+   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-16 from a clean snapshot with scripts/screenshots.py)"
   },
   {
    "file": "docs/images/inside-match-photo.png",
    "publication_status": "public",
-   "sha256": "cda3ae14730520c354cb4cf428a1560c5785e225fc03cc8af0e8c9bdfcfd52d0",
-   "bytes": 485348,
+   "sha256": "2a6e2f29b7fc14d0ccc85c692968938e8790ac3ddd956a0e71d864a52363fdeb",
+   "bytes": 949049,
    "width": 1600,
    "height": 1000,
-   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-15 from a clean snapshot with scripts/screenshots.py)"
+   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-16 from a clean snapshot with scripts/screenshots.py)"
   },
   {
    "file": "docs/images/inside-measure-tape.png",
    "publication_status": "public",
-   "sha256": "2777007c2ca24bb9a3f481a0fe196eb22949d1631a762916b18878e4ade7ad83",
-   "bytes": 465119,
+   "sha256": "eb3752b0bb9df9ddbb5eb3a067a4be36b1894d8dd1077f2d82ba877934a47db2",
+   "bytes": 784379,
    "width": 1560,
-   "height": 954,
-   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-15 from a clean snapshot with scripts/screenshots.py)"
+   "height": 953,
+   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-16 from a clean snapshot with scripts/screenshots.py)"
   },
   {
    "file": "docs/images/inside-measured-chip.png",
    "publication_status": "public",
-   "sha256": "45eb4187b7d63afc3b4aeacf6558fe8428dbde28a49cf1a44c21ae351abab226",
-   "bytes": 426230,
+   "sha256": "d47b82b8e1208a55f6726c6dd749a4ea0f7973dcf8ded9698c36147e2bd7eb6e",
+   "bytes": 737816,
    "width": 1560,
    "height": 954,
-   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-15 from a clean snapshot with scripts/screenshots.py)"
+   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-16 from a clean snapshot with scripts/screenshots.py)"
   },
   {
    "file": "docs/images/inside-night-window.png",
    "publication_status": "public",
-   "sha256": "cfda81a115f7b845ee11cc039945f84ec619ae50872895417ae5cc0e29c5d928",
-   "bytes": 435903,
+   "sha256": "ee0497bb2cb90034cfd59085c1bdc8fa8d73bb52e629ea89b558313432518bbe",
+   "bytes": 784213,
    "width": 1560,
-   "height": 954,
-   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-15 from a clean snapshot with scripts/screenshots.py)"
+   "height": 953,
+   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-16 from a clean snapshot with scripts/screenshots.py)"
   },
   {
    "file": "docs/images/inside-orbit-day.png",
@@ -965,28 +1028,28 @@
   {
    "file": "docs/images/inside-park-trees.png",
    "publication_status": "public",
-   "sha256": "bf2de773c65305959e168398a7248b03f33c63172f86163c6e6b2905c596478e",
-   "bytes": 516549,
+   "sha256": "0edcdd1ab3257646ec3d97bc020d0656372527505338f6402b1b43b80d19fa3b",
+   "bytes": 1083959,
    "width": 1560,
-   "height": 954,
+   "height": 953,
    "note": "ApartmentScout dashboard on the public example data (shot 2026-10-15 from a clean snapshot with scripts/screenshots.py)"
   },
   {
    "file": "docs/images/inside-play-year.png",
    "publication_status": "public",
-   "sha256": "a6b3cc0dc2b1b188c76946cc37c291e9902560fb11ea91102a52de99fbcc5de7",
-   "bytes": 396509,
+   "sha256": "6dc6158576a312e5654be1e2fe6a760b82e3ea64819747c6f747ce3a53b7776d",
+   "bytes": 731518,
    "width": 1600,
    "height": 1000,
-   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-15 from a clean snapshot with scripts/screenshots.py)"
+   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-16 from a clean snapshot with scripts/screenshots.py)"
   },
   {
    "file": "docs/images/inside-river.png",
    "publication_status": "public",
-   "sha256": "a01db94623335e83aac553429d1db9994cae21790622938ad366fa5a7cc3e56f",
-   "bytes": 498027,
+   "sha256": "ad0801540d063dbf78ded8f0afd876865560e9277acff19ac466cb5531b3edb6",
+   "bytes": 958988,
    "width": 1560,
-   "height": 954,
+   "height": 953,
    "note": "ApartmentScout dashboard on the public example data (shot 2026-10-15 from a clean snapshot with scripts/screenshots.py)"
   },
   {
@@ -1010,20 +1073,29 @@
   {
    "file": "docs/images/inside-unit-3d.png",
    "publication_status": "public",
-   "sha256": "46880883c0c483e2f2f589d036a571847f6833fbc19a9a0339cae304b0c1aad9",
-   "bytes": 350248,
+   "sha256": "cc87b9089cf0b28389e69ccb2c49cf6ddd4573b57b0b728f61a3046fac3d38c0",
+   "bytes": 806710,
    "width": 1600,
    "height": 1000,
-   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-15 from a clean snapshot with scripts/screenshots.py)"
+   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-16 from a clean snapshot with scripts/screenshots.py)"
   },
   {
    "file": "docs/images/inside-walk-window.png",
    "publication_status": "public",
-   "sha256": "7922fd6ee17125b4b4a0db1e8b1ed59b374daf0d5773a782024084f60d87c935",
-   "bytes": 486324,
+   "sha256": "249bb9ee639953a9286eeb1ea494fbda57b32e960f3a8b1b8a2581ff180db6e4",
+   "bytes": 823216,
    "width": 1560,
-   "height": 954,
-   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-15 from a clean snapshot with scripts/screenshots.py)"
+   "height": 953,
+   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-16 from a clean snapshot with scripts/screenshots.py)"
+  },
+  {
+   "file": "docs/images/phone-drawer.png",
+   "publication_status": "public",
+   "sha256": "dafe2ad090524e6da28680bdc512d21b4da90d4415ce7c6d84c678a5411bae15",
+   "bytes": 514539,
+   "width": 585,
+   "height": 1266,
+   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-16 from a clean snapshot with scripts/screenshots.py)"
   },
   {
    "file": "docs/images/phone-map.png",
@@ -1055,11 +1127,11 @@
   {
    "file": "docs/images/phone-unit-3d.png",
    "publication_status": "public",
-   "sha256": "66c987cde3a46403c537f36901de89f83e071af01351e084bb930938a490d7c6",
-   "bytes": 209254,
+   "sha256": "a0454b9454449570bab43a6ec68c3b9d381a470d595ca5e6d0028ea784f1ed70",
+   "bytes": 355012,
    "width": 585,
    "height": 1266,
-   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-15 from a clean snapshot with scripts/screenshots.py)"
+   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-16 from a clean snapshot with scripts/screenshots.py)"
   },
   {
    "file": "docs/images/phone-visit-notes.png",
@@ -1116,13 +1188,103 @@
    "note": "GitHub social preview card (scripts/social_preview.py) from the public example shot inside-skyline-dusk; made 2026-10-15"
   },
   {
+   "file": "docs/images/studio-light.png",
+   "publication_status": "public",
+   "sha256": "dfc950e4bcdd659e99f1f90539133577841200dc110c43b99651ba68fe545156",
+   "bytes": 480785,
+   "width": 1600,
+   "height": 1000,
+   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-16 from a clean snapshot with scripts/screenshots.py)"
+  },
+  {
+   "file": "docs/images/studio-top.png",
+   "publication_status": "public",
+   "sha256": "4d89c3a0dccf2aea3a8205c802859c0fad74f09095a8ba95cb1f3902c10dbd8f",
+   "bytes": 429364,
+   "width": 1600,
+   "height": 1000,
+   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-16 from a clean snapshot with scripts/screenshots.py)"
+  },
+  {
+   "file": "docs/images/studio-tracer.png",
+   "publication_status": "public",
+   "sha256": "d501e9ea3bd104b4fb78a7844bc351b93dc1d34247f4d167149a647f0f2943da",
+   "bytes": 142576,
+   "width": 1600,
+   "height": 1000,
+   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-16 from a clean snapshot with scripts/screenshots.py)"
+  },
+  {
+   "file": "docs/images/sun-floor-compare.png",
+   "publication_status": "public",
+   "sha256": "43049d38e90c0b070204f105f38e0cd0eeeb01e47484edcab56e43d94f237bc5",
+   "bytes": 1151006,
+   "width": 2414,
+   "height": 733,
+   "note": "Current dashboard, worked example (2026-10-16); OCR shows no unit label of the renter."
+  },
+  {
+   "file": "docs/images/sun-high-floor.png",
+   "publication_status": "public",
+   "sha256": "f6dc4f6d21599528b9296591a6d224786d16fcaab100e2e1cd626ccb3864e91d",
+   "bytes": 801565,
+   "width": 1560,
+   "height": 953,
+   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-16 from a clean snapshot with scripts/screenshots.py)"
+  },
+  {
+   "file": "docs/images/sun-low-floor.png",
+   "publication_status": "public",
+   "sha256": "864358c6a34c132b0d3bb7d446ae717e6eb153218b5e74939253c0d6cd2a1ece",
+   "bytes": 470113,
+   "width": 1560,
+   "height": 953,
+   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-16 from a clean snapshot with scripts/screenshots.py)"
+  },
+  {
+   "file": "docs/images/sun-path-chart.png",
+   "publication_status": "public",
+   "sha256": "72c5b25867e62ec7b4cad234e7f1469f59bc6db224ad77d39aa8029d801422aa",
+   "bytes": 101965,
+   "width": 1024,
+   "height": 842,
+   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-16 from a clean snapshot with scripts/screenshots.py)"
+  },
+  {
+   "file": "docs/images/sun-plan-view.png",
+   "publication_status": "public",
+   "sha256": "d138715feea564b20370c5111225195c106b03a796a7248cfd9380d681819417",
+   "bytes": 996293,
+   "width": 1560,
+   "height": 953,
+   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-16 from a clean snapshot with scripts/screenshots.py)"
+  },
+  {
+   "file": "docs/images/sun-summer-shadows.png",
+   "publication_status": "public",
+   "sha256": "112f3702afdeaa19d50ffcda7be61d54b35c88eec49efae6beb3341fc34a4ff5",
+   "bytes": 2182664,
+   "width": 1560,
+   "height": 953,
+   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-16 from a clean snapshot with scripts/screenshots.py)"
+  },
+  {
+   "file": "docs/images/sun-winter-shadows.png",
+   "publication_status": "public",
+   "sha256": "52848acefc1c53a020c3381e196d94adc0d5b721a8fddf05d7a8b22bb383788e",
+   "bytes": 2263331,
+   "width": 1560,
+   "height": 953,
+   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-16 from a clean snapshot with scripts/screenshots.py)"
+  },
+  {
    "file": "docs/images/walkthrough.webp",
    "publication_status": "public",
-   "sha256": "80148f2a1fc4699af045fd348c027eb12cddc23de6287f74a264b6af86acfdb9",
-   "bytes": 2930860,
-   "width": 820,
-   "height": 512,
-   "note": "README walk-through recorded from the public example by scripts/record_walkthrough.py on a clean snapshot, 2026-10-15"
+   "sha256": "f5076cd048fbbd8a3d1d3855e2b9d36aaa79ebb235024fb3f05302284a4f7f9d",
+   "bytes": 7038562,
+   "width": 760,
+   "height": 428,
+   "note": "README walk-through (about 70 s: map, noise, plain-words search, trade-off pad, 3D map, Unit 3D, match a photo, floor-plan studio, decision report, move planner, a phone) recorded from the public example by scripts/record_walkthrough.py on a clean snapshot, 2026-10-16; docs/images/walkthrough.mp4 is the same recording at full quality"
   }
  ],
  "policy": {

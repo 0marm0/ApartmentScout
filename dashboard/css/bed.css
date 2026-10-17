@@ -7,6 +7,7 @@
 .ps-panes[data-mode="both"] .bed-ctl.in-p3d { top: 92px; }
 .bed-ctl.in-unit { position: relative; top: auto; left: auto; right: auto; bottom: auto; order: 5; align-self: flex-start; }
 .bd-bar { display: flex; align-items: center; gap: var(--s-1); flex-wrap: nowrap; }
+.bd-bar[hidden] { display: none; }   /* the sim rig's Shown / Hidden row (bd-rig) sits under the bed row; either shows alone */
 .bd-l { font-size: var(--fs-2xs); font-weight: var(--fw-semibold); letter-spacing: .05em; text-transform: uppercase; color: var(--ink-2); padding: 0 var(--s-1) 0 6px; flex: none; }
 .bd-seg { display: flex; gap: 2px; min-width: 0; }
 .bd-seg button, .bd-fit { border: 0; background: none; height: 26px; padding: 0 10px; border-radius: var(--r-sm); font: var(--fw-medium) var(--fs-xs) var(--font-sans, inherit); color: var(--ink-2); cursor: pointer; white-space: nowrap; transition: color var(--t-fast), background var(--t-fast); }
@@ -20,6 +21,12 @@
 .bd-dot.g-tight { background: var(--warn); }
 .bd-dot.g-blocked { background: var(--bad); }
 .bd-short { display: none; }
+.bd-off-bar { flex-wrap: wrap; }   /* the hidden-pieces row: one Show button per piece the layout is not showing */
+.bd-offs { display: flex; flex-wrap: wrap; gap: 4px; min-width: 0; }
+.bd-off { border: 1px solid var(--line-strong); background: var(--surface-2); height: 26px; padding: 0 10px; border-radius: var(--r-sm); font: var(--fw-medium) var(--fs-xs) var(--font-sans, inherit); color: var(--ink); cursor: pointer; white-space: nowrap; }
+.bd-off b { color: var(--accent); font-weight: var(--fw-semibold); }
+.bd-off:hover { background: var(--surface-3); }
+.bd-off:focus-visible { outline: var(--focus-w) solid var(--accent); outline-offset: 1px; }
 
 .bd-pop { width: min(430px, calc(100vw - 48px)); max-height: min(62vh, 480px); overflow-y: auto; overscroll-behavior: contain; padding: var(--s-3) 14px; border: 1px solid var(--line-strong); border-radius: var(--r-md); background: var(--surface-1); color: var(--ink); box-shadow: var(--shadow-2, var(--shadow-1)); font-size: var(--fs-xs); line-height: var(--lh-snug, 1.4); text-align: left; }
 .bd-pop[hidden] { display: none; }
@@ -47,6 +54,6 @@
   .bed-ctl.in-p2d, .bed-ctl.in-p3d { max-width: calc(100% - 16px); }
   .bed-ctl { padding: 2px; gap: var(--s-1); }
   .bd-seg button, .bd-fit { height: 24px; }
-  .bd-l { display: none; }
+  .bd-bar:not(.bd-rig):not(.bd-off-bar) .bd-l { display: none; }   /* the rig and chair rows keep their name: two Shown / Hidden rows are ambiguous without it */
 }
 @media (prefers-reduced-motion: reduce) { .bd-seg button, .bd-fit { transition: none; } }

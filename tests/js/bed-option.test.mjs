@@ -83,28 +83,28 @@ test('the catalogue and the renter\'s data agree: the storage bed is a bed with 
 });
 
 // ------------------------------------------------------------------ the toggle
-test('the Bed control shows exactly the pieces its choice lists: the storage bed brings its own nightstands, "No bed" keeps the separate ones', () => {
+test('the Bed control shows exactly the pieces its choice lists: the storage bed brings its own nightstands, "My bed" and "No bed" keep the separate ones', () => {
   const items = raw();
-  assert.equal(defaultChoice(inv()), 'mine');
-  assert.deepEqual(ids(items), ['bed', 'coffee', 'desk', 'dining', 'dresser', 'futon', 'nightstand-1', 'nightstand-2', 'tv', 'tv-bed'], 'my bed is what loads');
-  assert.deepEqual(choiceState(items, inv()), { group: 'bed', label: 'Bed', available: true, current: 'mine', exact: true, choices: [{ id: 'mine', label: 'My bed' }, { id: 'storage', label: 'Latitude Run storage bed' }, { id: 'none', label: 'No bed' }] });
-  const st = applyChoice(items, inv(), 'bed', 'storage');
-  assert.deepEqual(ids(st), ['bed-latitude', 'coffee', 'desk', 'dining', 'dresser', 'futon', 'tv', 'tv-bed'], 'the separate nightstands are hidden with it: it has its own');
-  assert.equal(choiceState(st, inv()).current, 'storage');
-  const none = applyChoice(st, inv(), 'bed', 'none');
-  assert.deepEqual(ids(none), ['coffee', 'desk', 'dining', 'dresser', 'futon', 'nightstand-1', 'nightstand-2', 'tv', 'tv-bed'], 'no bed: both beds hidden, the nightstands stand on their own');
+  assert.equal(defaultChoice(inv()), 'storage');
+  assert.deepEqual(ids(items), ['bed-latitude', 'central-park-triptych', 'coffee', 'desk', 'desk-chair', 'dining', 'dresser', 'futon', 'monet-red-boats', 'seascape', 'tv', 'tv-bed'], 'the storage bed is what loads, with its own nightstands (the office chair and the three paintings are shown by default, the sim rig hidden)');
+  assert.deepEqual(choiceState(items, inv()), { group: 'bed', label: 'Bed', available: true, current: 'storage', exact: true, choices: [{ id: 'mine', label: 'My bed' }, { id: 'storage', label: 'Latitude Run storage bed' }, { id: 'none', label: 'No bed' }] });
+  const mine = applyChoice(items, inv(), 'bed', 'mine');
+  assert.deepEqual(ids(mine), ['bed', 'central-park-triptych', 'coffee', 'desk', 'desk-chair', 'dining', 'dresser', 'futon', 'monet-red-boats', 'nightstand-1', 'nightstand-2', 'seascape', 'tv', 'tv-bed'], 'my bed brings the separate nightstands back');
+  assert.equal(choiceState(mine, inv()).current, 'mine');
+  const none = applyChoice(mine, inv(), 'bed', 'none');
+  assert.deepEqual(ids(none), ['central-park-triptych', 'coffee', 'desk', 'desk-chair', 'dining', 'dresser', 'futon', 'monet-red-boats', 'nightstand-1', 'nightstand-2', 'seascape', 'tv', 'tv-bed'], 'no bed: both beds hidden, the nightstands stand on their own');
   assert.equal(choiceState(none, inv()).current, 'none');
-  assert.deepEqual(ids(applyChoice(none, inv(), 'bed', 'mine')), ids(items), 'and back: nothing is lost on the way');
-  assert.ok(applyChoice(items, inv(), 'bed', 'mine').every((x, i) => x === items[i]), 'choosing what is shown changes nothing (every piece comes back as the same object)');
+  assert.deepEqual(ids(applyChoice(none, inv(), 'bed', 'storage')), ids(items), 'and back: nothing is lost on the way');
+  assert.ok(applyChoice(items, inv(), 'bed', 'storage').every((x, i) => x === items[i]), 'choosing what is shown changes nothing (every piece comes back as the same object)');
   assert.equal(applyChoice(items, inv(), 'bed', 'nonsense'), items);
   // a piece shown or hidden by hand is "closest match", never a surprise
-  const odd = items.map((x) => (x.id === 'nightstand-2' ? { ...x, hidden: true } : x));
-  const s = choiceState(odd, inv()); assert.equal(s.current, 'mine'); assert.equal(s.exact, false);
+  const odd = items.map((x) => (x.id === 'nightstand-2' ? { ...x, hidden: false } : x));
+  const s = choiceState(odd, inv()); assert.equal(s.current, 'storage'); assert.equal(s.exact, false);
 });
 
 test('choosing a bed moves nothing: every position, turn, size and mark of every piece is what it was', () => {
   const items = raw(), strip = (list) => list.map(({ hidden, ...rest }) => rest);
-  for (const c of ['storage', 'none', 'mine']) {
+  for (const c of ['mine', 'none', 'storage']) {
     const next = applyChoice(items, inv(), 'bed', c);
     assert.deepEqual(strip(next), strip(items), `${c}: the same pieces in the same order at the same places`);
     assert.ok(next.every((x) => x.placed === true), 'still all placed by the renter');
@@ -119,21 +119,21 @@ test('choosing a bed moves nothing: every position, turn, size and mark of every
 });
 
 test('the choice is saved with the layout, comes back from it, and a layout saved before the bed existed still loads', () => {
-  const m = model(), items = applyChoice(raw(), inv(), 'bed', 'storage');
+  const m = model(), items = applyChoice(raw(), inv(), 'bed', 'mine');
   const saved = serialiseLayout(PLAN.id, items, { removed: [] }), v = validateLayout(JSON.parse(JSON.stringify(saved)), { planId: PLAN.id, lenient: true });
-  assert.ok(v.ok); assert.equal(v.layout.items.find((x) => x.id === 'bed').hidden, true); assert.ok(!v.layout.items.find((x) => x.id === 'bed-latitude').hidden);
+  assert.ok(v.ok); assert.equal(v.layout.items.find((x) => x.id === 'bed-latitude').hidden, true); assert.ok(!v.layout.items.find((x) => x.id === 'bed').hidden);
   const back = resolveLayout({ model: m, inventory: inv(), saved: v });
-  assert.equal(back.source, 'saved'); assert.equal(choiceState(back.items, inv()).current, 'storage', 'remembered');
+  assert.equal(back.source, 'saved'); assert.equal(choiceState(back.items, inv()).current, 'mine', 'remembered');
   assert.equal(back.changed, false, 'nothing needs rewriting');
   // a layout saved by the studio before the bed was a piece: the missing piece is filled from the default (hidden), the rest keep their places
-  const old = { schema: 1, kind: 'apartmentscout-layout', plan: PLAN.id, units: 'in', ver: 2, items: raw().filter((x) => x.id !== 'bed-latitude').map((x) => ({ ...x, x: x.x + 1 })) };
+  const old = { schema: 1, kind: 'apartmentscout-layout', plan: PLAN.id, units: 'in', ver: 2, items: items.filter((x) => x.id !== 'bed-latitude').map((x) => ({ ...x, x: x.x + 1 })) };
   const r = resolveLayout({ model: m, inventory: inv(), saved: validateLayout(old, { planId: PLAN.id, lenient: true }) });
-  assert.deepEqual(r.filled, ['bed-latitude']); assert.equal(storage(r.items).hidden, true, 'my bed stays the choice');
+  assert.deepEqual(r.filled, ['bed-latitude']); assert.equal(storage(r.items).hidden, true, 'my bed stays the choice: the storage bed is filled hidden beside it, never a second bed');
   assert.ok(near(r.items.find((x) => x.id === 'tv').x, raw().find((x) => x.id === 'tv').x + 1, 0.1), 'the pieces the renter placed do not move');
   assert.equal(choiceState(r.items, inv()).current, 'mine');
   // storage lookup uses the same key the studio writes
   const store = { get: (k, d) => (k === layoutKey('data', PLAN.id) ? JSON.parse(JSON.stringify(saved)) : d) };
-  assert.equal(savedLayoutFor(store, 'data', PLAN.id).layout.items.find((x) => x.id === 'bed').hidden, true);
+  assert.equal(savedLayoutFor(store, 'data', PLAN.id).layout.items.find((x) => x.id === 'bed-latitude').hidden, true);
 });
 
 test('a plan whose layout has no storage bed has nothing to switch to, and the bed is never fitted beside the renter\'s own', () => {
@@ -143,10 +143,10 @@ test('a plan whose layout has no storage bed has nothing to switch to, and the b
   // nor does an automatic fit invent one for a saved layout that lacks it
   const s = validateLayout({ schema: 1, kind: 'apartmentscout-layout', plan: m.id, units: 'in', ver: 2, items: r.items.filter((x) => x.id !== 'coffee') }, { planId: m.id, lenient: true });
   assert.equal(resolveLayout({ model: m, inventory: inv(), saved: s }).items.some((x) => x.id === 'bed-latitude'), false);
-  assert.equal(offByDefault(inv(), 'bed-latitude'), true); assert.equal(offByDefault(inv(), 'bed'), false);
+  assert.equal(offByDefault(inv(), 'bed-latitude'), true); assert.equal(offByDefault(inv(), 'bed'), false);   // a candidate purchase is never auto-fitted; the renter's own bed always is
   assert.ok(!kitFromInventory(inv()).some((k) => k.id === 'bed-latitude'));
   const j = fitInventory(normalisePlan(read('examples/nyc-2026/plans/paramount-tower-9j.json')), inv(), { step: 10 });
-  assert.ok(!j.items.some((x) => x.id === 'bed-latitude') && /^Your 10 pieces/.test(j.note));
+  assert.ok(!j.items.some((x) => x.id === 'bed-latitude') && /^Your 11 pieces/.test(j.note));
 });
 
 // ------------------------------------------------------------------ the checks see the bed's real shape
@@ -228,7 +228,7 @@ test('when the wall is too short the report says so plainly, says by how much, a
 // ------------------------------------------------------------------ the words in the control
 test('the control lists the three choices with the right one on, and the card prints every question once', () => {
   const st = choiceState(raw(), inv()), html = bedControlHTML(st, { fit: 'tight' });
-  assert.match(html, /aria-checked="true" data-bed-choice="mine"/); assert.match(html, /aria-checked="false" data-bed-choice="storage"/);
+  assert.match(html, /aria-checked="true" data-bed-choice="storage"/); assert.match(html, /aria-checked="false" data-bed-choice="mine"/);
   assert.match(html, />Latitude Run storage bed</); assert.match(html, />My bed</); assert.match(html, />No bed</); assert.match(html, /bd-dot g-tight/);
   assert.equal(bedControlHTML({ ...st, available: false }), '', 'no storage bed in this layout: no control');
   const rep = reportFor(model(), raw(), inv()), card = bedFitHTML(rep, inv().pieces.find((p) => p.id === 'bed-latitude'));

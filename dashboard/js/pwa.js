@@ -9,8 +9,8 @@ const $ = (id) => document.getElementById(id);
 let deferredInstall = null;   // the browser's beforeinstallprompt event, kept for the menu item
 let reloadOnTakeover = false; // only reload for a controller change the renter asked for
 
-/** Show the "new version" prompt once; Reload asks the registration's waiting worker of that moment to take over. */
-function offerUpdate(reg, worker) {
+/** Show the "new version" prompt once for this waiting worker. */
+function offerUpdate(worker) {
   if ($('pwaUpdate')) return;
   const el = document.createElement('div');
   el.id = 'pwaUpdate'; el.className = 'pwa-update'; el.setAttribute('role', 'status');
@@ -19,25 +19,39 @@ function offerUpdate(reg, worker) {
   el.addEventListener('click', (e) => {
     const act = e.target.closest('[data-pwa]')?.dataset.pwa;
     if (act === 'later') el.remove();
-    if (act === 'reload') { reloadOnTakeover = true; takeOver(reg, worker); el.querySelector('.pwa-msg').textContent = 'Updating…'; }
+    if (act === 'reload') {
+      reloadOnTakeover = true;
+      el.querySelector('.pwa-msg').textContent = 'Updating…';
+      // the version waiting now: a later deploy may have replaced the one this prompt was made for (that one is gone)
+      navigator.serviceWorker.getRegistration().then((r) => (r?.waiting || worker).postMessage({ type: 'SKIP_WAITING' }))
+        .catch(() => worker.postMessage({ type: 'SKIP_WAITING' }));
+      setTimeout(() => { if (reloadOnTakeover) location.reload(); }, 8000);   // never leave the renter on "Updating…"
+    }
   });
   document.body.append(el);
 }
 
-/** Ask the worker that is waiting now to take over (controllerchange then reloads the page). Not necessarily the one the prompt was
- *  shown for: the browser may have installed the update again since (the update check of a page load), and a message to the replaced
- *  worker went nowhere: "Updating…" for ever. */
-function takeOver(reg, first) {
-  const w = reg.waiting || reg.installing || first;
-  if (w && w.state !== 'redundant') w.postMessage({ type: 'SKIP_WAITING' });
+/** A newer version that was already downloaded when the app opened: switch to it now (one reload), instead of running an old
+ *  copy until someone notices the prompt. A switch tried in the last minute is not tried again, so a worker that fails to take
+ *  over cannot loop (the prompt shows instead). */
+function applyAtOpen(worker) {
+  try {
+    const last = Number(sessionStorage.getItem('as:sw-applied')) || 0;
+    if (Date.now() - last < 60000) return false;
+    sessionStorage.setItem('as:sw-applied', String(Date.now()));
+  } catch { return false; }
+  reloadOnTakeover = true;
+  worker.postMessage({ type: 'SKIP_WAITING' });
+  setTimeout(() => { if (reloadOnTakeover) location.reload(); }, 8000);
+  return true;
 }
 
 function watchUpdates(reg) {
-  const check = () => { if (reg.waiting && navigator.serviceWorker.controller) offerUpdate(reg, reg.waiting); };
+  const check = () => { if (reg.waiting && navigator.serviceWorker.controller && !applyAtOpen(reg.waiting)) offerUpdate(reg.waiting); };
   check();
   reg.addEventListener('updatefound', () => {
     const w = reg.installing; if (!w) return;
-    w.addEventListener('statechange', () => { if (w.state === 'installed' && navigator.serviceWorker.controller) offerUpdate(reg, w); });
+    w.addEventListener('statechange', () => { if (w.state === 'installed' && navigator.serviceWorker.controller) offerUpdate(w); });
   });
   // a long-lived tab or an installed app that stays open: look for a new deploy when it comes back to the front
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') reg.update().catch(() => {}); });

@@ -6,6 +6,22 @@ import { esc } from '../util.js';
 const GRADE = { clear: ['good', 'Fits'], tight: ['warn', 'Tight'], blocked: ['bad', 'Blocked'] };
 const SHORT = { mine: 'My bed', storage: 'Storage bed', none: 'No bed' };
 
+/** A piece's Shown / Hidden buttons (`rig` = plan/choices.js choiceState(items, inv, 'sim' or 'chair'); `attr` the data attribute the buttons carry), or ''. */
+export function rigControlHTML(rig, attr = 'data-rig-choice', fallback = 'Sim rig') {
+  if (!rig?.available) return '';
+  const label = rig.label || fallback;
+  return `<span class="bd-l" aria-hidden="true">${esc(label)}</span>
+    <div class="bd-seg" role="radiogroup" aria-label="${esc(label)}">${rig.choices.map((c) => `<button type="button" role="radio" class="${rig.current === c.id ? 'on' : ''}" aria-checked="${rig.current === c.id}" ${attr}="${esc(c.id)}" title="${esc(c.label)}">${esc(c.label)}</button>`).join('')}</div>`;
+}
+
+/** The hidden-pieces row: every piece the layout is not showing, each with a plain Show / Add back button (`off` = plan/choices.js offPieces), or ''. */
+export function offControlHTML(off) {
+  if (!off?.length) return '';
+  const verb = { hidden: 'Show', removed: 'Add back', absent: 'Add' };
+  return `<span class="bd-l" aria-hidden="true">Hidden</span>
+    <div class="bd-offs" role="group" aria-label="Hidden furniture">${off.map((q) => `<button type="button" class="bd-off" data-show-piece="${esc(q.id)}" title="${esc(verb[q.why] || 'Show')} ${esc(q.name)}${q.why === 'hidden' ? ', where it was' : ''}" aria-label="${esc(verb[q.why] || 'Show')} ${esc(q.name)}"><b>${esc(verb[q.why] || 'Show')}</b> ${esc(q.name)}</button>`).join('')}</div>`;
+}
+
 /** The button row. `state` is plan/choices.js choiceState(); `fit` the fit report's grade (or null). */
 export function bedControlHTML(state, { fit = null, open = false } = {}) {
   if (!state?.available) return '';
@@ -29,7 +45,7 @@ export function bedFitHTML(rep, piece) {
 /**
  * Put the control into `host` (a stage element with a `position: relative` box) and keep it in step with the state.
  * @param {HTMLElement} host
- * @param {{where?: string, state: () => object|null, report: () => object|null, piece: () => object|null, choose: (id: string) => void}} o
+ * @param {{where?: string, state: () => object|null, report: () => object|null, piece: () => object|null, choose: (id: string) => void, rig?: {state: () => object|null, choose: (id: string) => void}, chair?: {state: () => object|null, choose: (id: string) => void}, off?: {list: () => object[], show: (id: string) => void}}} o   `rig` and `chair`: the sim rig's and the office chair's Shown / Hidden rows, when the layout holds them; `off`: the hidden-pieces row (every piece not shown, each with a Show button)
  * @returns {{el: HTMLElement, update: () => void, close: () => void}}
  */
 export function mountBedControl(host, o) {
@@ -37,13 +53,29 @@ export function mountBedControl(host, o) {
   el.className = `float bed-ctl ${o.where || ''}`.trim(); el.setAttribute('data-bed-ctl', o.where || ''); el.setAttribute('role', 'group'); el.setAttribute('aria-label', 'Bed');
   const pop = document.createElement('div'); pop.className = 'bd-pop'; pop.hidden = true; pop.setAttribute('role', 'region'); pop.setAttribute('aria-label', 'Does the storage bed fit?');
   const bar = document.createElement('div'); bar.className = 'bd-bar';
-  el.append(bar, pop); host.append(el);
-  let open = false, cache = null, barSig = '';
+  const rigBar = document.createElement('div'); rigBar.className = 'bd-bar bd-rig'; rigBar.setAttribute('data-rig-ctl', '');
+  const chairBar = document.createElement('div'); chairBar.className = 'bd-bar bd-rig'; chairBar.setAttribute('data-chair-ctl', '');
+  const offBar = document.createElement('div'); offBar.className = 'bd-bar bd-off-bar'; offBar.setAttribute('data-off-ctl', ''); offBar.hidden = true;
+  el.append(bar, rigBar, chairBar, offBar, pop); host.append(el);
+  let open = false, cache = null, barSig = '', offSig = '';
   const verdict = () => { try { cache = o.report(); } catch { cache = null; } return cache; };
+  let rigSig = '', chairSig = '';
   function render() {
-    const st = o.state();
-    el.hidden = !st?.available;
-    if (!st?.available) return;
+    const st = o.state(), rg = o.rig?.state?.() || null, ch = o.chair?.state?.() || null, hasBed = !!st?.available, hasRig = !!rg?.available, hasChair = !!ch?.available;
+    let off = []; try { off = o.off?.list?.() || []; } catch { off = []; }
+    el.hidden = !hasBed && !hasRig && !hasChair && !off.length;
+    if (el.hidden) return;
+    const os = JSON.stringify(off.map((q) => [q.id, q.why, q.name]));
+    if (os !== offSig) { offBar.innerHTML = offControlHTML(off); offSig = os; }
+    offBar.hidden = !off.length;
+    const rs = hasRig ? JSON.stringify([rg.current, rg.choices.map((c) => c.id)]) : '';
+    if (rs !== rigSig) { rigBar.innerHTML = rigControlHTML(rg); rigSig = rs; }
+    rigBar.hidden = !hasRig;
+    const cs = hasChair ? JSON.stringify([ch.current, ch.choices.map((c) => c.id)]) : '';
+    if (cs !== chairSig) { chairBar.innerHTML = rigControlHTML(ch, 'data-chair-choice', 'Office chair'); chairSig = cs; }
+    chairBar.hidden = !hasChair;
+    if (!hasBed) { if (barSig !== '') { bar.innerHTML = ''; barSig = ''; } bar.hidden = true; pop.hidden = true; return; }
+    bar.hidden = false;
     const grade = verdict()?.grade ?? null, sig = JSON.stringify([st.current, st.exact, grade, st.choices.map((c) => c.id)]);
     if (sig !== barSig) {   // redraw the buttons only when they changed, and keep the keyboard where it was
       const had = el.contains(document.activeElement) ? document.activeElement.dataset?.bedChoice || (document.activeElement.matches?.('[data-bed-fit]') ? '#fit' : '') : '';
@@ -56,6 +88,12 @@ export function mountBedControl(host, o) {
   }
   const setOpen = (v) => { open = v; render(); };
   el.addEventListener('click', (e) => {
+    const sh = e.target.closest('[data-show-piece]');
+    if (sh) { o.off?.show(sh.dataset.showPiece); return; }
+    const r = e.target.closest('[data-rig-choice]');
+    if (r) { o.rig?.choose(r.dataset.rigChoice); return; }
+    const q = e.target.closest('[data-chair-choice]');
+    if (q) { o.chair?.choose(q.dataset.chairChoice); return; }
     const c = e.target.closest('[data-bed-choice]'), f = e.target.closest('[data-bed-fit]');
     if (c) { o.choose(c.dataset.bedChoice); return; }
     if (f) setOpen(!open);
