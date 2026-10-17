@@ -22,6 +22,7 @@ import urllib.parse
 from pathlib import Path
 
 import pytest
+from playwright.sync_api import TimeoutError as PlaywrightTimeout
 from conftest import block_foreign
 
 pytestmark = pytest.mark.e2e
@@ -281,7 +282,12 @@ def test_a_new_deploy_shows_the_update_prompt_and_reload_switches_version(open_a
         page.evaluate("() => { window.__marker = 1; }")
         page.locator("#pwaUpdate [data-pwa=reload]").click(no_wait_after=True)   # the reload is waited for below, as a state
         # a new document: the page reloaded itself (the new worker activates first: up to a minute on a busy software-GL runner)
-        page.wait_for_function("() => window.__marker === undefined", timeout=90000)
+        try:
+            page.wait_for_function("() => window.__marker === undefined", timeout=90000)
+        except PlaywrightTimeout:
+            raise AssertionError(page.evaluate("""async () => { const r = await navigator.serviceWorker.getRegistration(), w = (x) => x && x.state;
+              return { active: w(r?.active), waiting: w(r?.waiting), installing: w(r?.installing), controller: w(navigator.serviceWorker.controller),
+                prompt: document.getElementById('pwaUpdate')?.textContent ?? null }; }""")) from None
         page.wait_for_selector("#cards .card", timeout=90000)
         st2 = settle(page)
         assert st2["build"] == new
