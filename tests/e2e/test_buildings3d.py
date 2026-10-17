@@ -103,7 +103,7 @@ def test_fast_is_simple_and_visual_gets_the_full_facades(open_page, webgl):
     assert _city(s)["qual"] == 0
 
 
-@pytest.mark.no_raster(False)   # reads drawn pixels
+@pytest.mark.no_raster(False)   # reads what WebGL drew
 def test_windows_light_at_night_and_not_by_day(open_page, webgl):
     _need_webgl(webgl)
     s = open_page("#unit/" + UNIT)

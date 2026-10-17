@@ -9,7 +9,7 @@ from pathlib import Path
 import pytest
 from conftest import look_click, settled, studio_city_ready
 
-pytestmark = pytest.mark.e2e
+pytestmark = [pytest.mark.e2e, pytest.mark.no_raster]   # reads the finishes' textures and materials, not drawn pixels: see conftest.NO_RASTER_JS
 
 ROOT = Path(__file__).resolve().parents[2]
 PLANS = ROOT / "dashboard" / "data" / "plans"

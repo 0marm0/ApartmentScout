@@ -54,7 +54,7 @@ def _assert_a_picture(st: dict, w: int, h: int) -> None:
     assert st["dark"] < 0.5 and st["bright"] < 0.7, f"mostly black or white: {st}"
 
 
-@pytest.mark.no_raster(False)   # reads drawn pixels
+@pytest.mark.no_raster(False)   # reads what WebGL drew
 def test_a_photo_in_unit_3d_is_the_size_asked_for_and_a_real_picture(open_page, webgl: bool) -> None:
     _need(webgl)
     s = open_page("#map", width=1280, height=800)
@@ -72,7 +72,7 @@ def test_a_photo_in_unit_3d_is_the_size_asked_for_and_a_real_picture(open_page, 
     assert not s.take()
 
 
-@pytest.mark.no_raster(False)   # reads drawn pixels
+@pytest.mark.no_raster(False)   # reads what WebGL drew
 def test_a_second_photo_differs_when_the_light_does(open_page, webgl: bool) -> None:
     """Accumulation is of the view's own light: at night, with the lamps on, the same room is a warmer picture."""
     _need(webgl)
@@ -87,7 +87,7 @@ def test_a_second_photo_differs_when_the_light_does(open_page, webgl: bool) -> N
     assert not s.take()
 
 
-@pytest.mark.no_raster(False)   # reads drawn pixels
+@pytest.mark.no_raster(False)   # reads what WebGL drew
 def test_a_video_of_the_tour_records_with_its_type_length_and_distinct_frames(open_page, webgl: bool) -> None:
     s = open_page("#map", width=1280, height=800)
     pg = s.page
@@ -134,7 +134,7 @@ def test_the_day_from_a_window_runs_the_sun_across_the_sky(open_page, webgl: boo
     assert not s.take()
 
 
-@pytest.mark.no_raster(False)   # reads drawn pixels
+@pytest.mark.no_raster(False)   # reads what WebGL drew
 def test_photo_and_video_in_the_floor_plan_studio(open_page, webgl: bool) -> None:
     s = open_page("#map", width=1440, height=900)
     pg = s.page
@@ -154,7 +154,7 @@ def test_photo_and_video_in_the_floor_plan_studio(open_page, webgl: bool) -> Non
     assert not s.take()
 
 
-@pytest.mark.no_raster(False)   # reads drawn pixels
+@pytest.mark.no_raster(False)   # reads what WebGL drew
 def test_the_sheet_walks_through_options_progress_result_and_cancel(open_page, webgl: bool) -> None:
     s = open_page("#map", width=1280, height=800)
     pg = s.page

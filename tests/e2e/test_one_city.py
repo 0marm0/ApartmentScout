@@ -147,7 +147,7 @@ SKYLINE_JS = """async (mode) => {
 }"""
 
 
-@pytest.mark.no_raster(False)   # reads drawn pixels
+@pytest.mark.no_raster(False)   # reads what WebGL drew
 @pytest.mark.parametrize("chip", ["room:Living", "bay:"])
 def test_the_skyline_drawn_by_both_engines_is_the_same(open_page, webgl: bool, chip: str) -> None:
     """Not just the numbers: render the city alone from the same viewpoint at the same size in both engines and compare the skylines (the first non-sky

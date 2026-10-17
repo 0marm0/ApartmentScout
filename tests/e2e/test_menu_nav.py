@@ -228,8 +228,9 @@ def test_menu_stays_above_the_compare_tray(open_page) -> None:
     _open_menu(pg)
     pg.locator("#mnTour").scroll_into_view_if_needed()
     settled(pg, 20000, ticks=3)
-    assert pg.evaluate("""() => { const r = document.getElementById('mnTour').getBoundingClientRect(), e = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
-      return !!e && !!e.closest('#mnTour'); }"""), "the last row is not covered by the tray"
+    # the menu has finished opening and scrolling (a slow runner is still mid-way after a short quiet spell): then the last row is on top
+    pg.wait_for_function("""() => { const r = document.getElementById('mnTour').getBoundingClientRect(), e = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+      return !!e && !!e.closest('#mnTour'); }""", timeout=10000)
     assert not s.take()
 
 

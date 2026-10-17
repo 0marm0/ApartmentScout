@@ -99,10 +99,11 @@ def test_play_day_advances_the_time_the_sun_and_the_readout_and_stops(open_page,
     sun0 = pg.evaluate("() => window.__unit3d.stage.sunDir.toArray()")
     pg.click('#uPlayBar [data-pb=day]')
     assert pg.get_attribute('#uPlayBar [data-pb=day]', "aria-pressed") == "true"
-    pg.wait_for_timeout(2500)
+    # the clock runs on: well over an hour (a day takes ~14 s where frames come at the display's rate; a software-GL runner draws fewer)
+    pg.wait_for_function("(t0) => window.__unit3d.st.min > t0 + 60", arg=t0, timeout=30000)
     t1 = pg.evaluate("() => window.__unit3d.st.min")
     sun1 = pg.evaluate("() => window.__unit3d.stage.sunDir.toArray()")
-    assert t1 > t0 + 60, (t0, t1)                                                          # a day in ~14 s: well over an hour in 2.5 s
+    assert t1 > t0 + 60, (t0, t1)
     assert max(abs(a - b) for a, b in zip(sun0, sun1)) > 0.05                              # the sun moved, so its patches did
     assert pg.evaluate("() => window.__unit3d.st.playing") is True
     pg.click('#uPlayBar [data-pb=day]')                                                    # pause
@@ -139,11 +140,14 @@ def test_play_year_walks_the_months_and_shows_the_month_and_the_trees(open_page,
     pg = s.page
     _unit(s, "date=2026-10-15&min=720&mode=inside")
     pg.click('#uPlayBar [data-pb=year]')
-    dates, trees = [], set()
-    for _ in range(30):
-        pg.wait_for_timeout(400)
-        dates.append(pg.evaluate("() => window.__unit3d.st.date"))
-        trees.add(pg.inner_text('.pb-tree'))
+    # collected in the page until the year has walked through more than twelve dates and the trees through their seasons (the play
+    # advances per drawn frame, so a software-GL runner needs longer than a fixed 12 s of samples)
+    seen = pg.evaluate("""() => new Promise((ok) => { const dates = [], trees = new Set(), t0 = performance.now();
+      const done = () => new Set(dates).size > 12 && ((trees.has('Bare branches') && (trees.has('Leaves on') || trees.has('Leafing out'))) || trees.size >= 3);
+      const tick = () => { dates.push(window.__unit3d.st.date); trees.add(document.querySelector('.pb-tree').innerText);
+        if (done() || performance.now() - t0 > 120000) ok({ dates, trees: [...trees] }); else setTimeout(tick, 100); };
+      tick(); })""")
+    dates, trees = seen["dates"], set(seen["trees"])
     assert pg.evaluate("() => window.__unit3d.st.min") == 720, "the same time of day throughout"
     assert len(set(dates)) > 12 and re.match(r"2026-\d\d-\d\d", dates[-1]), dates
     assert {"Bare branches", "Leaves on"} <= trees or {"Bare branches", "Leafing out"} <= trees or len(trees) >= 3, trees
@@ -163,8 +167,7 @@ def test_the_month_chart_has_twelve_bars_and_a_click_jumps_to_that_month(open_pa
     hours = pg.evaluate("() => [...document.querySelectorAll('.pb-chart .pb-bar')].map((r) => r.querySelector('title').textContent)")
     assert all(re.search(r"\d+\.\d h of direct sun", h) for h in hours)
     pg.locator('.pb-chart .pb-bar').nth(5).dispatch_event("pointerdown", {"pointerId": 1})
-    pg.wait_for_timeout(500)
-    assert pg.evaluate("() => window.__unit3d.st.date") == "2026-06-15"
+    pg.wait_for_function("() => window.__unit3d.st.date === '2026-06-15'", timeout=30000)
     assert not s.take()
 
 

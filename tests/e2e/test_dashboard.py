@@ -101,7 +101,7 @@ def test_every_view_loads_clean(open_page, theme: str, width: int) -> None:
     # the drawer, the settings sheet and the command palette
     _show(s, "map")
     s.page.locator("#cards .card").first.click()
-    s.page.wait_for_selector("#drawer.open", timeout=10000)
+    s.page.wait_for_selector("#drawer.open", timeout=30000)       # (the map flies to the listing first: seconds on software GL)
     settled(s.page, 20000, ticks=4)                               # the drawer has finished sliding in
     if width < 600 and (o := _overflow(s)):
         problems.append(f"drawer overflows: {o}")

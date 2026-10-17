@@ -92,7 +92,7 @@ def _studio(s) -> None:
 
 # ------------------------------------------------------------------------------------------------ the Inside camera shows the outdoors
 
-@pytest.mark.no_raster(False)   # reads drawn pixels
+@pytest.mark.no_raster(False)   # reads what WebGL drew
 @pytest.mark.parametrize("query", ["date=2026-10-15&min=720&mode=inside", "date=2026-10-15&min=1110&mode=inside", "date=2026-10-15&min=1260&mode=inside"])
 def test_inside_camera_renders_the_city_through_the_windows(open_page, webgl: bool, query: str) -> None:
     _need_webgl(webgl)
@@ -110,7 +110,7 @@ def test_inside_camera_renders_the_city_through_the_windows(open_page, webgl: bo
     assert not s.take()
 
 
-@pytest.mark.no_raster(False)   # reads drawn pixels
+@pytest.mark.no_raster(False)   # reads what WebGL drew
 def test_inside_camera_sees_the_city_in_visual_quality_too(open_page, webgl: bool) -> None:
     _need_webgl(webgl)
     s = open_page("#map", width=1600, height=1000)
@@ -174,7 +174,6 @@ def test_the_studio_and_unit_3d_draw_the_same_buildings_from_one_builder(open_pa
     assert not s.take()
 
 
-@pytest.mark.no_raster(False)   # reads drawn pixels
 def test_the_floor_is_textured_honey_parquet_in_both_engines_and_both_qualities(open_page, webgl: bool) -> None:
     _need_webgl(webgl)
     s = open_page("#map", width=1600, height=1000)
@@ -214,7 +213,7 @@ def test_no_window_has_a_horizontal_bar_across_the_glass_in_either_engine(open_p
     assert not s.take()
 
 
-@pytest.mark.no_raster(False)   # reads drawn pixels
+@pytest.mark.no_raster(False)   # reads what WebGL drew
 def test_inside_camera_always_stands_in_the_room_or_at_the_window(open_page, webgl: bool) -> None:
     """Whatever state the camera was left in (no standing point yet, no room built), Inside never sits at the ground with no view out."""
     _need_webgl(webgl)
