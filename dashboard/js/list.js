@@ -63,9 +63,15 @@ function actCell(L) {
   return `<span class="acts"><button type="button" class="ib star ${sv ? 'on' : ''}" data-save="${esc(L.id)}" tabindex="-1" aria-pressed="${sv}" aria-label="${sv ? 'Remove from picks' : 'Save to picks'}" title="${sv ? 'Saved (s)' : 'Save (s)'}">${sv ? ICONS.star : ICONS.starO}</button>`
     + `<button type="button" class="ib cmp ${cp ? 'on' : ''}" data-cmp="${esc(L.id)}" tabindex="-1" aria-pressed="${cp}" aria-label="${cp ? 'Remove from compare' : 'Add to compare'}" title="${cp ? 'Comparing (c)' : 'Compare (c)'}">${cp ? ICONS.check : ICONS.plus}</button></span>`;
 }
+/** The move-in date short enough for a row: a date or "now"; a researcher's note ("Active Corcoran search card; ...") stays in the drawer. */
+const availShort = (a) => {
+  const t = String(a ?? '').trim();
+  if (/^(available now|now|immediate(ly)?|immediate move-in)\b/i.test(t) && !/conflict|unconfirmed/i.test(t)) return 'now';
+  return /^(\d{4}-\d{2}-\d{2}|\d{1,2}\/\d{1,2}\/\d{2,4}|[A-Z][a-z]{2,8}\.? \d{1,2}(, \d{4})?)$/.test(t) ? t : null;
+};
 function nameCell(L) {
-  const fails = gateFails(L);
-  const sub = [L.beds != null ? (L.beds ? `${L.beds} bd` : 'Studio') : null, L.available ? `avail ${esc(L.available)}` : null].filter(Boolean).join(' · ');
+  const fails = gateFails(L), av = availShort(L.available);
+  const sub = [L.beds != null ? (L.beds ? `${L.beds} bd` : 'Studio') : null, av ? `avail ${esc(av)}` : null].filter(Boolean).join(' · ');
   const hood = st.hidden.has('hood') && L.neighborhood ? `<span>${esc(L.neighborhood)}</span>` : '';
   return `<div class="nm">${fails.length ? '<i class="fail-dot" aria-hidden="true"></i>' : ''}<b>${name(L)}</b>${myTierPill(L.id)}</div>`
     + `<div class="sub">${hood}${hood && sub ? '<span class="dot">·</span>' : ''}${sub ? `<span>${sub}</span>` : ''}`
