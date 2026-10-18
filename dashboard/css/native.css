@@ -37,6 +37,9 @@ body { overscroll-behavior: none; }
   .d-hero .hero-btns { gap: var(--s-2); top: 48px; }   /* below the grab bar */
   .d-hero .hero-btns button { width: 44px; height: 44px; }
   .save::after { content: ""; position: absolute; inset: -8px; }   /* a 28 px star on the photo, a 44 px target */
+  .ch-btns button, .d-mini .mt-x { width: 40px; height: 40px; }   /* Compare's save / remove on the photo, the mini drawer's close */
+  .tp2-step, .tp2-opts .tp2-step { height: 44px; }   /* the tour planner's - 25 min + steppers */
+  .tp2-step button { width: 40px; }
   select.sel { width: 124px; padding-left: 10px; text-overflow: ellipsis; }
   .results-h h2 { white-space: nowrap; }
   /* the hover row of tiny buttons on a card (compare, see inside ...) gives way to the long-press menu: a finger cannot hit 22 px */
