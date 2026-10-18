@@ -68,7 +68,7 @@ def test_east_of_an_avenue_is_a_chip_a_count_and_one_undo_step(op) -> None:
     _palette(pg, "east of 3rd ave")
     row = _first_row(pg)
     assert row.startswith("Apply:") and "East of 3rd Avenue" in row, row
-    assert re.search(r"\d+ of \d+ active homes", row), row
+    assert re.search(r"\d+ tracked · \d+ active · \d+ would match", row), row
     pg.keyboard.press("Enter")
     pg.wait_for_selector("#nlChips:not([hidden])")
     assert _nl_chips(pg) == ["East of 3rd Avenue"]

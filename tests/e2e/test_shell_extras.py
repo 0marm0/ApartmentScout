@@ -8,6 +8,7 @@ here (they would cover the page): the coach tests ask for them with ?coach=1.
 from __future__ import annotations
 
 import json
+import re
 
 import pytest
 from conftest import block_foreign
@@ -149,7 +150,7 @@ def test_a_sentence_becomes_a_preview_row_and_applies_as_one_undoable_step(op) -
     assert text.startswith("Apply:"), text
     for part in ("1 bd", "≤ $5,000", "≤ 25 min subway", "Doorman", "Gym"):
         assert part in text, (part, text)
-    assert "of" in text and "active homes" in text, "the row says how many homes it would show"
+    assert re.search(r"\d+ tracked · \d+ active · \d+ would match", text), "the row says how many homes it would show"
     pg.keyboard.press("Enter")
     pg.wait_for_selector("#nlChips:not([hidden])")
     f = pg.evaluate("() => JSON.parse(localStorage.getItem('as:filters2'))")

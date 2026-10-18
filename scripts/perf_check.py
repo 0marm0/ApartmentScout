@@ -225,6 +225,9 @@ def _render_context(browser, pw, origin: str, dev: str, cpu: float, store_visual
         ctx.add_init_script("try { localStorage.setItem('as:render-quality', '\"visual\"'); } catch {}")
     if no_raster:
         ctx.add_init_script(NO_RASTER_JS)
+        # the paintings' weave maps (and the museum scans) arrive a few at a time after the scene is up, each announced by `as-art-ready`;
+        # the table is measured once they have all landed, or the first levels would miss their memory and the ladder would look as if it rose
+        ctx.add_init_script("window.__artAt = performance.now(); addEventListener('as-art-ready', () => { window.__artAt = performance.now(); });")
     ctx.route("**/*", lambda r: r.continue_() if r.request.url.startswith((origin, "data:", "blob:")) else r.abort())
     page = ctx.new_page()
     errors: list[str] = []
@@ -268,6 +271,7 @@ def render_budget_table(origin: str, devices: list[str], mobile_cpu: float, fram
                 print(f"  opening {view} on {dev} ...", flush=True)
                 name = _open_view(page, origin, view)
                 print(f"  {view} on {dev} is open; measuring {len(LEVEL_CONFIGS)} levels", flush=True)
+                page.wait_for_function("() => performance.now() - (window.__artAt || 0) > 4000", timeout=120_000, polling=500)
                 page.wait_for_timeout(1500)
                 rows: dict = {}
                 for mode, level in LEVEL_CONFIGS:

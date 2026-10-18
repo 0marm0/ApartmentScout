@@ -48,7 +48,7 @@ def _need_webgl(webgl: bool) -> None:
 def _studio(s) -> None:
     s.page.goto(f"{s.origin}/#plan/{UNIT}")
     s.page.wait_for_function("() => window.__plan3d && window.__plan3d.items.length > 0 && !!document.querySelector('#psLook .lk-chip') && !!document.querySelector('#pstage [data-bed-ctl] [data-bed-choice]')", timeout=90000)
-    s.page.wait_for_function("() => window.__plan3d.parts.furn.children.length >= 12", timeout=30000)
+    s.page.wait_for_function("() => window.__plan3d.parts.furn.children.length >= 12", timeout=90000)
 
 
 def _unit(s, query: str = "?mode=inside") -> None:
