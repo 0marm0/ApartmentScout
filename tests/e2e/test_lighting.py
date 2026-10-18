@@ -283,9 +283,10 @@ def test_fast_is_the_default_visual_is_remembered_and_the_export_downloads(open_
     s = _plan(open_page)
     pg = s.page
     assert pg.get_attribute('[data-rnq="fast"]', "aria-pressed") == "true"
+    # the note is up for seven seconds; a page busy drawing Visual in software can be blocked for longer, so what it said is recorded as it appears
+    pg.evaluate("""() => { window.__rnqSaid = ''; const n = document.querySelector('.rnq-note'); new MutationObserver(() => { if (!n.hidden) window.__rnqSaid = n.textContent; }).observe(n, { attributes: true, childList: true, characterData: true, subtree: true }); }""")
     pg.click('[data-rnq="visual"]')
-    pg.wait_for_selector(".rnq-note:not([hidden])", timeout=3 * SLOW)   # Visual redraws every piece and the paintings at full size, rasterised in software
-    assert "not extra evidence" in pg.locator(".rnq-note").inner_text()
+    pg.wait_for_function("() => window.__rnqSaid.includes('not extra evidence')", timeout=3 * SLOW)
     assert pg.evaluate("() => localStorage.getItem('as:render-quality')") == '"visual"'
     pg.evaluate(SETTLED_JS, 30000)
     pg.click("#psFileBtn")
