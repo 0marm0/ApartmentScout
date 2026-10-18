@@ -4,7 +4,7 @@
 //   applyParsed()   put the parsed filters on S.filters, the commute lens and the sort, as one undo step
 //   initNL()        registers the filter predicate for the filters the rail has no control for, and draws the
 //                   chips that show (and clear) them above the results
-import { S, ACTIVE, EXTRA_FILTERS, filtered, budgetAmt, setFilter, setCommute, loadJSON, on } from '../app.js';
+import { S, ACTIVE, EXTRA_FILTERS, filtered, homeCounts, budgetAmt, setFilter, setCommute, loadJSON, on } from '../app.js';
 import { syncTrigger } from '../palette.js';
 import { $, esc, toast } from '../util.js';
 import { group, announceLast } from './undo.js';
@@ -73,9 +73,8 @@ export function nlItem(query) {
   if (!parsed.found || (!real.length && parsed.chips.length < 2)) return null;
   if (parsed.f.priceDrops) ensureDrops();
   const n = parsed.f.priceDrops && dropsState !== 'ready' ? null : previewCount(parsed);
-  const total = S.listings.filter((L) => ACTIVE.includes(L.status || 'new')).length;
   const notes = [];
-  notes.push(n == null ? 'Counting…' : n === 0 ? 'No home matches' : `${n} of ${total} active homes`);
+  notes.push(n == null ? 'Counting…' : n === 0 ? 'No home matches' : `${homeCounts(n).text.replace('match your filters', 'would match')}`);
   if (parsed.unsupported.length) notes.push(`can’t filter by “${parsed.unsupported.join(', ')}” yet`);
   if (parsed.unknown.length) notes.push(`no place “${parsed.unknown.join(', ')}” in the map data`);   // [places]
   if (parsed.rest) notes.push(`not understood: “${parsed.rest}”`);

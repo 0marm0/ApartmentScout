@@ -75,21 +75,30 @@ test('a duplicate survives a save/load round trip (layout and project) and looks
   assert.equal(ch.length, 1, 'duplicating the desk does not duplicate the chair'); assert.equal(ch[0].attach, 'desk');
 });
 
-test('every hidden, removed or never-placed piece is listed with a Show / Add back button (also for a layout saved by an older build), and the selection bar has a Hide button', async () => {
+test('every hidden, removed or never-placed piece has exactly one way back: its option switch where it has one, else a Show / Add back button (also for a layout saved by an older build)', async () => {
   const { offPieces } = await import('../../dashboard/js/plan/choices.js');
   const { offControlHTML } = await import('../../dashboard/js/plan/bed-ui.js');
   const { selbarHTML } = await import('../../dashboard/js/plan/selbar.js');
   assert.equal(inv.options.sim.default, 'hidden'); assert.equal(base.find((x) => x.id === 'sim-rig').hidden, true, 'the rig loads hidden');
-  const off = offPieces(base, inv);
-  assert.deepEqual(off.map((q) => [q.id, q.name, q.why]), [['sim-rig', 'Sim rig', 'hidden']], 'the default lists the rig, not the beds (the Bed control has them)');
-  assert.ok(offControlHTML(off).includes('data-show-piece="sim-rig"') && offControlHTML(off).includes('<b>Show</b> Sim rig'));
-  // an older build saved the rig removed (not hidden), or never held it, or hid the office chair: each has the way back
+  // the rig and the chair have Shown / Hidden switches, so the Hidden row does not list them a second time (the beds have the Bed control)
+  assert.deepEqual(offPieces(base, inv), [], 'the default: the Sim rig switch is the way back, the Hidden row is empty');
+  const wayBack = (items, id, group, removed = []) =>   // how many controls bring piece `id` back: its group's switch + its Hidden-row button
+    (choiceState(items, inv, group, { removed }).available ? 1 : 0) + offPieces(items, inv, { removed }).filter((q) => q.id === id).length;
+  // an older build saved the rig removed (not hidden), or never held it, or hid the office chair: each still has exactly one way back
   const saved = (items, removed) => resolveLayout({ model: m, inventory: inv, saved: validateLayout(serialiseLayout('paramount-tower-25e', items, { removed }), { planId: 'paramount-tower-25e', lenient: true }) }).items;
   const noRig = base.filter((x) => x.id !== 'sim-rig');
-  assert.equal(offPieces(noRig, inv, { removed: ['sim-rig'] }).find((q) => q.id === 'sim-rig').why, 'removed');
-  assert.equal(offPieces(noRig, inv).find((q) => q.id === 'sim-rig').why, 'absent');
   const chairOff = saved(applyChoice(base, inv, 'chair', 'hidden'), []);
-  assert.deepEqual(offPieces(chairOff, inv).map((q) => q.id).sort(), ['desk-chair', 'sim-rig']);
+  assert.equal(wayBack(base, 'sim-rig', 'sim'), 1); assert.equal(wayBack(noRig, 'sim-rig', 'sim', ['sim-rig']), 1); assert.equal(wayBack(noRig, 'sim-rig', 'sim'), 1);
+  assert.equal(wayBack(chairOff, 'desk-chair', 'chair'), 1); assert.equal(choiceState(chairOff, inv, 'chair').current, 'hidden');
+  assert.deepEqual(offPieces(chairOff, inv), []); assert.deepEqual(offPieces(noRig, inv, { removed: ['sim-rig'] }), []);
+  // a piece with no switch (a plain inventory piece, or one copied from the catalogue) is listed, with Show or Add back
+  const lamp = base.find((x) => x.id === 'desk'), hid = base.map((x) => (x.id === lamp.id ? { ...x, hidden: true } : x));
+  assert.deepEqual(offPieces(hid, inv).map((q) => [q.id, q.why]), [['desk', 'hidden']]);
+  assert.deepEqual(offPieces(base.filter((x) => x.id !== 'desk'), inv, { removed: ['desk'] }).map((q) => [q.id, q.why]), [['desk', 'removed']]);
+  const copy = { ...lamp, id: newId(lamp.ref, base), placed: true, from: 'desk', hidden: true };
+  assert.equal(offPieces([...base, copy], inv).filter((q) => q.id === copy.id).length, 1, 'a hidden copy has the Hidden row');
+  assert.ok(offControlHTML(offPieces(hid, inv)).includes('data-show-piece="desk"') && offControlHTML(offPieces(hid, inv)).includes('<b>Show</b>'));
+  assert.equal(offControlHTML(offPieces(base, inv)), '', 'nothing left to list: no row');
   assert.equal(offPieces(applyChoice(base, inv, 'sim', 'shown'), inv).length, 0, 'nothing hidden: no row');
   assert.ok(selbarHTML().includes('data-act="hide"') && /Hide<\/span>/.test(selbarHTML()), 'the selection toolbar has an obvious Hide');
 });
