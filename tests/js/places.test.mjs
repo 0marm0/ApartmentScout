@@ -326,6 +326,8 @@ test('Manhattan: parks and neighbourhoods', () => {
   assert.ok(holds('in hell\'s kitchen', LAND['Hell\'s Kitchen']));
   assert.ok(holds('in the upper west side', LAND['Lincoln Center']) && holds('uws', LAND['Lincoln Center']));
   assert.ok(P('in hell\'s kitchen').chips[0].label.startsWith('In Hell'));
+  assert.ok(!(P('quiet 1br near park').f.where || []).length, '"near park" is not Park Avenue');
+  assert.ok(holds('near park avenue', LAND['Grand Central']), 'the avenue by its full name still is');
 });
 
 test('Manhattan: unknown streets are reported', () => {
