@@ -44,7 +44,7 @@ body { overscroll-behavior: none; }
   .results-h h2 { white-space: nowrap; }
   /* the hover row of tiny buttons on a card (compare, see inside ...) gives way to the long-press menu: a finger cannot hit 22 px */
   .card .c-acts { display: none !important; }
-  .chip { min-height: 36px; }
+  .chip { min-height: 40px; }   /* a filter row stays compact, but never under 40 px for a thumb */
   .d-tabs a { display: inline-flex; align-items: center; }
 
   /* a press you can feel: the control sinks and a veil lays over it; on release it springs back. No hover, no vibration. */
