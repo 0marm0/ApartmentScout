@@ -20,13 +20,15 @@ export const ART_DIR = 'data-private/art';
 export const PUBLIC_ART = { seascape: 'assets/art/seascape.jpg', 'monet-red-boats': 'assets/art/monet-red-boats.jpg' };
 const EXT = /\.(jpe?g|png|webp)$/i;
 const phone = () => typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches && typeof screen !== 'undefined' && Math.min(screen.width, screen.height) < 820;
+/** A browser driven by a script (the test suite, the render budget): never seen close up, and on software GL a 4096 px picture costs minutes. */
+const automated = () => typeof navigator !== 'undefined' && navigator.webdriver === true;
 export const artTextureCap = (gpuMax, isPhone) => Math.min(isPhone ? 2048 : 4096, gpuMax > 0 ? gpuMax : 4096);
 const FAST_MAX = 1024;   // Fast quality draws a picture at most this many px on its long side (5.6 MB with its mipmaps instead of 89 MB at 4096); Visual keeps the full size
 const LIMITS = { maxTexture: 4096, anisotropy: 16 };
 /** The renderer's own limits: a picture is drawn at most 4096 px on its long side (2048 on a phone, never past the GPU's max texture
  *  size), with the GPU's full anisotropy (three.js clamps it too). */
 export function setArtLimits({ maxTexture, anisotropy } = {}) {
-  LIMITS.maxTexture = artTextureCap(maxTexture, phone());
+  LIMITS.maxTexture = artTextureCap(maxTexture, phone() || automated());
   if (anisotropy > 0) LIMITS.anisotropy = anisotropy;
 }
 

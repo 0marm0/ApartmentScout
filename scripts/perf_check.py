@@ -275,6 +275,9 @@ def render_budget_table(origin: str, devices: list[str], mobile_cpu: float, fram
                 page.wait_for_timeout(1500)
                 rows: dict = {}
                 for mode, level in LEVEL_CONFIGS:
+                    page.evaluate("([m, l]) => { const q = window.__quality; q.setMode(m, { persist: false }); q.pin(true); q.setLevel(l, 'manual'); }", [mode, level])   # the same switch MEASURE_JS makes, early, so the paintings can be rebuilt
+                    page.wait_for_timeout(1500)
+                    page.wait_for_function("() => performance.now() - (window.__artAt || 0) > 3000", timeout=120_000, polling=500)   # and their textures have all arrived before they are counted
                     r = page.evaluate(MEASURE_JS, {"name": name, "mode": mode, "level": level, "frames": frames, "settle": int(1200 * max(1.0, cpu / 2))})
                     b = r["b"] or {}
                     rows[f"{mode}-L{level}"] = {

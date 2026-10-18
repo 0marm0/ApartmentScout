@@ -95,7 +95,7 @@ def test_a_contradiction_is_flagged_and_changes_no_score_until_it_is_promoted(op
     s.page.wait_for_function("""() => { const w = document.getElementById('dWhy'); if (!w) return false;
       for (const d of w.querySelectorAll('details')) if (/Amenities/.test(d.textContent)) d.open = true;
       return w.innerText.includes('promoted to a fact'); }""", timeout=60000)
-    assert "promoted to a fact" in s.page.locator("#dWhy").inner_text()
+    # (the wait above is the check: the reasons redraw again after it, and a later read can land between two draws)
     # undo: the listing, its score and the gate are as they were, and both steps are in the trail
     s.page.locator("#toast .toast-act").click()
     back = listing(s)
