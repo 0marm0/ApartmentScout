@@ -54,6 +54,7 @@
   .bed-ctl.in-p2d, .bed-ctl.in-p3d { max-width: calc(100% - 16px); }
   .bed-ctl { padding: 2px; gap: var(--s-1); }
   .bd-seg button, .bd-fit { height: 24px; }
+  .bed-ctl.in-unit .bd-rig, .bed-ctl.in-unit .bd-off-bar { display: none; }   /* Unit 3D on a phone keeps the one Bed row: three rows would cover the middle of the picture; the sim rig, the chair and Show live in the studio */
   .bd-bar:not(.bd-rig):not(.bd-off-bar) .bd-l { display: none; }   /* the rig and chair rows keep their name: two Shown / Hidden rows are ambiguous without it */
 }
 @media (prefers-reduced-motion: reduce) { .bd-seg button, .bd-fit { transition: none; } }
