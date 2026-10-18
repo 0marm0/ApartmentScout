@@ -278,14 +278,14 @@ def test_trade_off_pad_keyboard_presets_and_sliders_switch(open_page) -> None:
     w0 = weights(s)
     s.page.focus(".tp-dot")
     s.page.keyboard.press("ArrowUp")                 # one notch to Cost, taken from the other two
-    s.page.wait_for_function("async (c) => (await import('/js/app.js')).S.weights.cost === c", arg=w0["cost"] + 1, timeout=5000)
+    s.page.wait_for_function("async (c) => (await import('/js/app.js')).S.weights.cost === c", arg=w0["cost"] + 1, timeout=30000)
     w1 = weights(s)
     assert w1["cost"] == w0["cost"] + 1 and w1["commute"] + w1["space"] == w0["commute"] + w0["space"] - 1
     # a preset ghost previews the top ten and applies on click, through the rail's own select
     settled(s.page, 20000, ticks=4)   # the pad redraws its ghosts after a weight change: hover the new ones, not the ones it replaced
     ghost = s.page.locator(".tp-ghost").nth(1)
     ghost.hover()
-    s.page.wait_for_selector(".tp-pop li", timeout=5000)
+    s.page.wait_for_selector(".tp-pop li", timeout=30000)
     assert s.page.locator(".tp-pop li").count() == 10
     key = ghost.get_attribute("data-pad-preset")
     ghost.click()

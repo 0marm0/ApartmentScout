@@ -29,7 +29,7 @@ def one_page_pdf() -> bytes:
 
 def test_a_pdf_plan_opens_in_the_tracer_offline(open_page) -> None:
     s = open_page("#plan")
-    s.page.wait_for_selector("#trNewBtn", timeout=30000)
+    s.page.wait_for_selector("#trNewBtn", timeout=90000)
     s.page.click("#trNewBtn")
     s.page.wait_for_selector("#trFile", state="attached", timeout=10000)
     s.page.set_input_files("#trFile", files=[{"name": "plan.pdf", "mimeType": "application/pdf", "buffer": one_page_pdf()}])

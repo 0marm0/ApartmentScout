@@ -17,7 +17,7 @@ pytestmark = [pytest.mark.e2e, pytest.mark.no_raster]   # reads no drawn pixels 
 
 AXE = Path(__file__).parent / "vendor" / "axe.min.js"
 PLAN = "paramount-tower-25e"
-SLOW = 30000
+SLOW = 90000   # the studio builds its 3D scene before its panels appear: seconds on a busy software-GL runner
 
 SETTLED_JS = """(capMs) => new Promise((resolve) => {
   const t0 = performance.now(); let quiet = 0, last = t0;
