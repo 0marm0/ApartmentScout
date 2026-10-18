@@ -70,7 +70,7 @@ Unit 3D puts you in the exact unit with the furniture you own and the real city 
 <td width="50%" valign="top" align="center"><a href="docs/images/inside-unit-3d.png"><img src="docs/images/inside-unit-3d.png" alt="Unit 3D inside Paramount Tower 25E: the desk, monitor and office chair by the bay window, a painting, the TV and the dining table"></a><br><sub><b>Your desk and chair by the window</b></sub></td>
 </tr>
 <tr>
-<td width="50%" valign="top" align="center"><a href="docs/images/inside-bay.png"><img src="docs/images/inside-bay.png" alt="The bedroom bay at wide angle, looking out of the angled windows at towers, a park and the river with the bed's headboard at the edge"></a><br><sub><b>Through the angled windows</b></sub></td>
+<td width="50%" valign="top" align="center"><a href="docs/images/inside-bay.png"><img src="docs/images/inside-bay.png" alt="The bedroom bay at wide angle: the angled corner windows beside the storage bed and the Van Gogh seascape over its headboard"></a><br><sub><b>Through the angled windows</b></sub></td>
 <td width="50%" valign="top" align="center"><a href="docs/images/inside-bedroom.png"><img src="docs/images/inside-bedroom.png" alt="The bedroom from the window end: the whole bed, the seascape painting over it, the dresser and the window"></a><br><sub><b>The bedroom</b></sub></td>
 </tr>
 <tr>
