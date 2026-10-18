@@ -80,7 +80,7 @@
   #view-unit .bed-ctl.in-unit { align-self: stretch; padding: 3px; }
   #view-unit .bed-ctl .bd-bar { overflow-x: auto; scrollbar-width: none; }
   #view-unit .bed-ctl .bd-bar::-webkit-scrollbar { display: none; }
-  #view-unit .bed-ctl .bd-seg button, #view-unit .bed-ctl .bd-fit { height: 40px; padding: 0 12px; }
+  #view-unit .bed-ctl .bd-seg button, #view-unit .bed-ctl .bd-fit, #view-unit .bed-ctl .bd-off { height: 40px; padding: 0 12px; }
   #view-unit .acc-chip { align-self: flex-start; }
 
   /* the tool rail: one button, then the column */

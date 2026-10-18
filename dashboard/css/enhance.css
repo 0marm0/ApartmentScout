@@ -233,6 +233,7 @@ img.err { opacity: 0 !important; }
 .legend .lg-tog:hover { background: var(--surface-3); color: var(--ink); }
 .legend .lg-tog svg { width: 13px; height: 13px; transition: transform var(--t-base) var(--ease-out); }
 .legend.min .lg-tog svg { transform: rotate(180deg); }
+@media (pointer: coarse) { .legend .lg-tog { top: 2px; right: 2px; width: 40px; height: 40px; } }   /* a thumb-sized target on a phone; the arrow stays where it was */
 .legend h4 { padding-right: 26px; }
 .legend.min { width: 248px; padding: 10px var(--s-3); }
 .legend.min .cm-seg, .legend.min .src, .legend.min .lines, .legend.min h4 > span { display: none; }

@@ -95,7 +95,7 @@ export function parsePlaces(text, geo, { destinations = [] } = {}) {
     const r = longest(j, (p, _t, next) => {
       const a = lookupArea(p, { parkFirst: true });
       if (a) return { area: a };
-      const s = STREET_TYPES[next] ? null : lookupStreet(p, ['avenue', 'street']);
+      const s = STREET_TYPES[next] || PARKISH.has(p) ? null : lookupStreet(p, ['avenue', 'street']);   // "near park" is any park, not Park Avenue
       return s ? { street: s } : null;
     });
     if (!r || isDest(toks.slice(r.start, r.end).map((t) => areaKey(t.w)).filter(Boolean))) return null;
