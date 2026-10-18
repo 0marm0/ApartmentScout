@@ -126,7 +126,7 @@ export function bakeForAR(source, opts = {}) {
   const tints = new Map();
   const bakeMat = (m, tint) => {
     const arM = m.userData?.arMetalness, metal = arM != null ? arM : (m.metalness ?? 0), tintHex = tint ? tint.getHex() : -1;
-    const nm = m.normalMap || (m.bumpMap ? normalOf(m.bumpMap) : null);
+    const nm = (m.normalMap && !m.normalMap.isDataTexture ? m.normalMap : null) || (m.bumpMap ? normalOf(m.bumpMap) : null);   // a 1 px flat normal (a painting before its weave is made) has no image the exporter can read
     const key = [m.color?.getHex(), tintHex, +(m.roughness ?? 0.8).toFixed(3), +metal.toFixed(3), texKey(m.map), texKey(nm), m.emissive?.getHex(), +(m.opacity ?? 1).toFixed(2), m.clearcoat || 0, m.side === THREE.DoubleSide ? 2 : 1].join('|');
     if (mats.has(key)) return mats.get(key);
     const o = { color: (m.color || new THREE.Color(0xffffff)).clone(), roughness: THREE.MathUtils.clamp(m.roughness ?? 0.8, 0.04, 1), metalness: THREE.MathUtils.clamp(metal, 0, 1), map: m.map || null, normalMap: nm, emissive: m.emissive ? m.emissive.clone() : new THREE.Color(0), opacity: m.opacity ?? 1 };

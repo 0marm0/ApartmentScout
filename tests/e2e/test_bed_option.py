@@ -47,7 +47,7 @@ def _need_webgl(webgl: bool) -> None:
 
 def _studio(s) -> None:
     s.page.goto(f"{s.origin}/#plan/{UNIT}")
-    s.page.wait_for_function("() => window.__plan3d && window.__plan3d.items.length > 0 && !!document.querySelector('#psLook .lk-chip') && !!document.querySelector('#p2dWrap [data-bed-ctl] [data-bed-choice]')", timeout=90000)
+    s.page.wait_for_function("() => window.__plan3d && window.__plan3d.items.length > 0 && !!document.querySelector('#psLook .lk-chip') && !!document.querySelector('#pstage [data-bed-ctl] [data-bed-choice]')", timeout=90000)
     s.page.wait_for_function("() => window.__plan3d.parts.furn.children.length >= 12", timeout=30000)
 
 
@@ -75,27 +75,27 @@ def test_the_studio_has_one_bed_control_in_the_2d_plan_and_one_in_the_3d_view_an
     s = open_page("#map")
     pg = s.page
     _studio(s)
-    assert pg.locator(f"#p2dWrap {CTL}").is_visible() and pg.locator(f"#pstage {CTL}").is_visible(), "a control in each pane"
-    labels = pg.locator(f"#p2dWrap {CTL} .bd-seg .bd-long").all_inner_texts()
+    assert pg.locator(f"#pstage {CTL}").is_visible() and not pg.locator(f"#p2dWrap {CTL}").is_visible(), "one control, in the 3D pane, while both panes show"
+    labels = pg.locator(f"#pstage {CTL} .bd-seg .bd-long").all_inner_texts()
     assert labels == ["My bed", "Latitude Run storage bed", "No bed"]
     # the storage bed is what loads, in every pane
     assert pg.evaluate(STUDIO_3D_IDS) == STORAGE and pg.evaluate(STUDIO_2D_IDS) == STORAGE
-    assert pg.evaluate(CHECKED, "#p2dWrap") == ["storage"] and pg.evaluate(CHECKED, "#pstage") == ["storage"]
+    assert pg.evaluate(CHECKED, "#pstage") == ["storage"]
     box = pg.evaluate("() => { const b = document.querySelector('#p2furn [data-id=bed-latitude]').getBBox(); return [b.width, b.height]; }")
     assert 90 <= max(box) <= 98 and 80 <= min(box) <= 86, f"the 2D glyph is the 94 x 83 in outline ({box})"
     before = pg.evaluate(STUDIO_PLACES)
 
-    pg.locator("#p2dWrap [data-bed-choice='mine']").click()
+    pg.locator("#pstage [data-bed-choice='mine']").click()
     pg.wait_for_function("() => window.__plan3d.parts.furn.children.some((g) => g.userData.itemId === 'bed' && g.visible)")
     assert pg.evaluate(STUDIO_3D_IDS) == MINE, "the 3D view changed at once: the renter's own bed and its nightstands, and the storage bed is gone"
     assert pg.evaluate(STUDIO_2D_IDS) == MINE
-    assert pg.evaluate(CHECKED, "#p2dWrap") == ["mine"] and pg.evaluate(CHECKED, "#pstage") == ["mine"], "both controls follow"
+    assert pg.evaluate(CHECKED, "#pstage") == ["mine"], "the control follows"
     assert pg.evaluate(STUDIO_PLACES) == before, "no piece moved, was turned or was resized"
 
     pg.locator("#pstage [data-bed-choice='none']").click()
     pg.wait_for_function("() => !window.__plan3d.parts.furn.children.some((g) => g.userData.itemId === 'bed' && g.visible)")
     assert pg.evaluate(STUDIO_3D_IDS) == NONE and pg.evaluate(STUDIO_2D_IDS) == NONE, "no bed: the nightstands stand on their own"
-    assert pg.evaluate(CHECKED, "#p2dWrap") == ["none"]
+    assert pg.evaluate(CHECKED, "#pstage") == ["none"]
     assert pg.evaluate(STUDIO_PLACES) == before
 
     pg.locator("#psUndo").click()
@@ -116,8 +116,8 @@ def test_the_choice_is_saved_with_the_layout_and_comes_back_after_a_reload(open_
     assert all(i.get("placed") for i in layout["items"]), "every piece is still the renter's placement"
     pg.reload()
     _studio(s)
-    assert pg.evaluate(STUDIO_3D_IDS) == MINE and pg.evaluate(CHECKED, "#p2dWrap") == ["mine"], "remembered"
-    pg.locator("#p2dWrap [data-bed-choice='storage']").click()
+    assert pg.evaluate(STUDIO_3D_IDS) == MINE and pg.evaluate(CHECKED, "#pstage") == ["mine"], "remembered"
+    pg.locator("#pstage [data-bed-choice='storage']").click()
     pg.wait_for_function("() => window.__plan3d.parts.furn.children.some((g) => g.userData.itemId === 'bed-latitude' && g.visible)")
     assert pg.evaluate(STUDIO_3D_IDS) == STORAGE and _hidden(_stored(pg)) == ["bed", "nightstand-1", "nightstand-2", RIG]
     assert not s.take()
@@ -135,7 +135,7 @@ def test_a_layout_saved_before_the_bed_existed_still_loads_with_the_renters_own_
     _studio(s)
     ids = pg.evaluate(STUDIO_3D_IDS)
     assert {"bed", "nightstand-1", "nightstand-2"} <= set(ids) and "bed-latitude" not in ids and RIG not in ids, "the missing bed is filled in hidden: their bed stays the choice"
-    assert pg.evaluate(CHECKED, "#p2dWrap") == ["mine"]
+    assert pg.evaluate(CHECKED, "#pstage") == ["mine"]
     assert not s.take()
 
 
@@ -147,8 +147,8 @@ def test_the_fit_card_answers_each_question_for_the_94_inch_unit_in_plain_words(
     s = open_page("#map")
     pg = s.page
     _studio(s)
-    pg.locator("#p2dWrap [data-bed-fit]").click()
-    pop = pg.locator("#p2dWrap .bd-pop")
+    pg.locator("#pstage [data-bed-fit]").click()
+    pop = pg.locator("#pstage .bd-pop")
     pop.wait_for(state="visible")
     rows = {k: pop.locator(f"[data-bed-row='{k}']").inner_text() for k in ("wall", "walk", "drawers", "doors", "windows", "heat")}
     assert "22 in to spare on the left" in rows["wall"] and "8 in to spare on the right" in rows["wall"] and "94 in headboard unit" in rows["wall"]
@@ -161,7 +161,7 @@ def test_the_fit_card_answers_each_question_for_the_94_inch_unit_in_plain_words(
     assert pop.locator("[data-bed-alt]").count() == 0, "it fits, so no other wall is proposed"
     pg.keyboard.press("Escape")
     pop.wait_for(state="hidden")
-    assert pg.evaluate(CHECKED, "#p2dWrap") == ["storage"], "looking at the fit does not switch the bed"
+    assert pg.evaluate(CHECKED, "#pstage") == ["storage"], "looking at the fit does not switch the bed"
     assert not s.take()
 
 
@@ -210,7 +210,7 @@ def test_a_choice_made_in_unit_3d_is_there_when_you_go_to_the_studio_and_back_wi
     pg.wait_for_function("() => window.__unit3d.stage.interior.furniture.group.children.some((g) => g.userData.itemId === 'bed')")
     pg.evaluate("(u) => { location.hash = '#plan/' + u; }", UNIT)
     pg.wait_for_function("() => window.__plan3d.parts.furn.children.some((g) => g.userData.itemId === 'bed' && g.visible)", timeout=30000)
-    assert pg.evaluate(STUDIO_3D_IDS) == MINE and pg.evaluate(CHECKED, "#p2dWrap") == ["mine"], "the studio took up what Unit 3D saved"
+    assert pg.evaluate(STUDIO_3D_IDS) == MINE and pg.evaluate(CHECKED, "#pstage") == ["mine"], "the studio took up what Unit 3D saved"
     assert not s.take()
 
 
@@ -263,6 +263,9 @@ def test_on_a_phone_the_control_fits_the_pane_with_short_labels(open_page, webgl
     _studio(s)
     ctl = pg.locator(f"#p2dWrap {CTL}")
     ctl.wait_for(state="visible")
+    tog = pg.locator(f"#p2dWrap {CTL} .bd-tog")
+    assert tog.is_visible() and not pg.locator(f"#p2dWrap {CTL} .bd-short").first.is_visible(), "a phone shows one Furniture button; the rows are folded away"
+    tog.click()   # the rows open as a sheet under it
     assert pg.locator(f"#p2dWrap {CTL} .bd-short").first.is_visible() and not pg.locator(f"#p2dWrap {CTL} .bd-long").first.is_visible()
     box, pane = ctl.bounding_box(), pg.locator("#p2dWrap").bounding_box()
     assert box["x"] >= pane["x"] - 1 and box["x"] + box["width"] <= pane["x"] + pane["width"] + 1, "inside the pane, nothing runs off the screen"
@@ -276,11 +279,11 @@ def test_the_choice_works_from_the_keyboard_like_a_radio_group(open_page, webgl:
     s = open_page("#map")
     pg = s.page
     _studio(s)
-    assert pg.locator("#p2dWrap [role=radiogroup][aria-label=Bed]").count() == 1
-    pg.locator("#p2dWrap [data-bed-choice='mine']").focus()
+    assert pg.locator("#pstage [role=radiogroup][aria-label=Bed]").count() == 1
+    pg.locator("#pstage [data-bed-choice='mine']").focus()
     pg.keyboard.press("ArrowRight")
     pg.wait_for_function("() => window.__plan3d.parts.furn.children.some((g) => g.userData.itemId === 'bed-latitude' && g.visible)")
-    assert pg.evaluate(CHECKED, "#p2dWrap") == ["storage"]
+    assert pg.evaluate(CHECKED, "#pstage") == ["storage"]
     assert pg.evaluate("() => document.activeElement.dataset.bedChoice") == "storage", "the keyboard stays on the choice it moved to"
     pg.keyboard.press("ArrowRight")
     pg.wait_for_function("() => !window.__plan3d.parts.furn.children.some((g) => g.userData.itemId === 'bed-latitude' && g.visible)")

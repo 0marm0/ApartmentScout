@@ -56,7 +56,7 @@ def test_the_3d_tape_reads_a_pieces_real_size_and_snaps_to_its_corners(open_page
     s = open_page("#map", height=1000)
     pg = s.page
     _studio(s)
-    pg.click("#p2dWrap [data-bed-choice='mine']")   # the studio opens on the Latitude Run storage bed; the renter's own queen bed waits hidden
+    pg.click("#pstage [data-bed-choice='mine']")   # the studio opens on the Latitude Run storage bed; the renter's own queen bed waits hidden
     pg.wait_for_function("() => window.__plan3d.parts.furn.children.some((g) => g.userData.itemId === 'bed' && g.visible)")
     pg.click("#psCams [data-v=top]")
     camera_still(pg, "studio")

@@ -107,7 +107,7 @@ def test_the_ar_model_is_true_scale_visual_whatever_the_screen_draws(browser, ba
     ctx, pg = _studio(browser, base_url)
     try:
         pg.evaluate("""async () => { const Q = await import('/js/room3d/quality.js'); Q.quality.setMode('fast'); }""")
-        pg.locator("#p2dWrap [data-bed-choice='mine']").click()   # the studio opens on the storage bed; the queen frame and the nightstands are hidden until they are chosen
+        pg.locator("#pstage [data-bed-choice='mine']").click()   # the studio opens on the storage bed; the queen frame and the nightstands are hidden until they are chosen
         pg.wait_for_function("() => window.__plan3d.parts.furn.children.some((g) => g.userData.itemId === 'bed' && g.visible)")
         info = pg.evaluate("""async () => { const S = await import('/js/plan/scene3d.js'), out = {};
           for (const id of ['dresser', 'futon', 'bed', 'tv', 'desk', 'nightstand-1', 'coffee', 'dining']) { const g = await S.arModel([id]); out[id] = { size: g.userData.ar.size, tris: g.userData.ar.triangles, mats: g.userData.ar.materials, tex: g.userData.ar.textures, min: g.userData.ar.min,
