@@ -16,7 +16,8 @@ from typing import Any, Iterable
 
 READY_JS = "document.body && document.body.dataset.ready === '1'"
 GPU_ARGS = (["--use-angle=metal", "--ignore-gpu-blocklist", "--enable-gpu"] if sys.platform == "darwin"
-            else ["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"])
+            else ["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist",
+                  "--disable-gpu-rasterization"])   # tiles and 2D canvases on the CPU: SwiftShader raster kept the GPU process busy for minutes (tests/e2e/conftest.py)
 SYSTEM_BROWSERS = (
     "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome", "/Applications/Chromium.app/Contents/MacOS/Chromium",
     "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge", "google-chrome", "google-chrome-stable", "chromium", "chromium-browser", "microsoft-edge",

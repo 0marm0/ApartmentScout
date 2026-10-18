@@ -21,6 +21,7 @@ export const PUBLIC_ART = { seascape: 'assets/art/seascape.jpg', 'monet-red-boat
 const EXT = /\.(jpe?g|png|webp)$/i;
 const phone = () => typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches && typeof screen !== 'undefined' && Math.min(screen.width, screen.height) < 820;
 export const artTextureCap = (gpuMax, isPhone) => Math.min(isPhone ? 2048 : 4096, gpuMax > 0 ? gpuMax : 4096);
+const NORMAL_MAX = 1024;   // the longest side of a painting's normal map
 const LIMITS = { maxTexture: 4096, anisotropy: 16 };
 /** The renderer's own limits: a picture is drawn at most 4096 px on its long side (2048 on a phone, never past the GPU's max texture
  *  size), with the GPU's full anisotropy (three.js clamps it too). */
@@ -138,10 +139,10 @@ function realSet(key, panels, w, h) {
 
 /**
  * A tangent-space normal map from a painting's luminance: the high-pass of the luminance (a brush stroke's edges and ridges, not the
- * picture's light and dark) plus a fine plain-weave canvas, so the strokes and the cloth catch a raking light. At most 2048 px across.
+ * picture's light and dark) plus a fine plain-weave canvas, so the strokes and the cloth catch a raking light. At most 1024 px across (the cloth and the strokes are fine detail on a normal map; a 2048 px one cost seconds of main-thread time per picture on a slow machine).
  */
 function normalFrom(src, inW) {
-  const k = Math.min(1, 2048 / Math.max(src.width, src.height)), W = Math.max(2, Math.round(src.width * k)), H = Math.max(2, Math.round(src.height * k));
+  const k = Math.min(1, NORMAL_MAX / Math.max(src.width, src.height)), W = Math.max(2, Math.round(src.width * k)), H = Math.max(2, Math.round(src.height * k));
   const c = canvasOf(W, H), g = c.getContext('2d', { willReadFrequently: true }); g.drawImage(src, 0, 0, W, H);
   const D = g.getImageData(0, 0, W, H), px = D.data, N = W * H, L = new Float32Array(N);
   for (let i = 0; i < N; i++) L[i] = (0.2126 * px[i * 4] + 0.7152 * px[i * 4 + 1] + 0.0722 * px[i * 4 + 2]) / 255;

@@ -197,6 +197,12 @@ RENDER_DEVICES = {
 RENDER_VIEWS = ("unit", "studio")
 RENDER_KEYS = ("draws", "triangles", "texture_mb")   # what scripts/perf_budget.json limits; the rest is logged
 
+# The budget table counts draw calls, triangles and texture memory, which three.js tallies itself, so nothing needs to be rasterised: every WebGL
+# call runs (contexts, shaders, buffers, textures) except the draws, which SwiftShader would spend seconds on per frame at 1440 x 900 x 2 (the step
+# hung for 12 minutes on a CI runner). Same stub as tests/e2e/conftest.NO_RASTER_JS. The automatic step-down reads frame times and keeps real draws.
+NO_RASTER_JS = """(() => { for (const C of [self.WebGL2RenderingContext, self.WebGLRenderingContext]) { if (!C) continue;
+  for (const k of ['drawArrays', 'drawElements', 'drawArraysInstanced', 'drawElementsInstanced', 'drawRangeElements']) if (C.prototype[k]) C.prototype[k] = function () {}; } })();"""
+
 MEASURE_JS = """async ({ name, mode, level, frames, settle }) => {
   const q = window.__quality;
   q.setMode(mode, { persist: false }); q.pin(true); q.setLevel(level, 'manual');
@@ -208,7 +214,7 @@ MEASURE_JS = """async ({ name, mode, level, frames, settle }) => {
 }"""
 
 
-def _render_context(browser, pw, origin: str, dev: str, cpu: float, store_visual: bool = False):
+def _render_context(browser, pw, origin: str, dev: str, cpu: float, store_visual: bool = False, no_raster: bool = False):
     desc, (w, h), dpr, _ = RENDER_DEVICES[dev]
     kw: dict = {}
     if desc:
@@ -217,6 +223,8 @@ def _render_context(browser, pw, origin: str, dev: str, cpu: float, store_visual
     ctx = browser.new_context(**kw)
     if store_visual:   # a renter who chose Visual: the step-down has something to take away
         ctx.add_init_script("try { localStorage.setItem('as:render-quality', '\"visual\"'); } catch {}")
+    if no_raster:
+        ctx.add_init_script(NO_RASTER_JS)
     ctx.route("**/*", lambda r: r.continue_() if r.request.url.startswith((origin, "data:", "blob:")) else r.abort())
     page = ctx.new_page()
     errors: list[str] = []
@@ -256,8 +264,10 @@ def render_budget_table(origin: str, devices: list[str], mobile_cpu: float, fram
             cpu = mobile_cpu if dev == "mobile" else RENDER_DEVICES[dev][3]
             out[dev] = {"cpu": cpu}
             for view in RENDER_VIEWS:
-                ctx, page, errors = _render_context(browser, pw, origin, dev, cpu)
+                ctx, page, errors = _render_context(browser, pw, origin, dev, cpu, no_raster=True)
+                print(f"  opening {view} on {dev} ...", flush=True)
                 name = _open_view(page, origin, view)
+                print(f"  {view} on {dev} is open; measuring {len(LEVEL_CONFIGS)} levels", flush=True)
                 page.wait_for_timeout(1500)
                 rows: dict = {}
                 for mode, level in LEVEL_CONFIGS:

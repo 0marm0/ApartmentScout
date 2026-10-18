@@ -12,6 +12,13 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const read = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
 const write = (k, v) => { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch { /* storage unavailable */ } };
 
+let webgl = null;
+/** Whether this browser can make a WebGL context (asked once: a context is a scarce thing). */
+function hasWebGL() {
+  if (webgl === null) { try { const c = document.createElement('canvas'); webgl = !!(c.getContext('webgl2') || c.getContext('webgl')); } catch { webgl = false; } }
+  return webgl;
+}
+
 /** "Oct 28, 12:00 pm" for an ISO day and minutes after midnight. */
 export function whenLabel(date, min) {
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(date || '');
@@ -29,7 +36,8 @@ export function whenLabel(date, min) {
  * @returns {Promise<{src: string, floor: number|null, face: number|null, when: string}|null>}
  */
 export async function captureStill(id, o = {}) {
-  const { min = 720, width = 1000, height = 500, timeout = 45000 } = o;
+  const { min = 720, width = 1000, height = 500, timeout = 120000 } = o;   // a software-GL machine (a CI runner, a PC without a GPU) takes over a minute to build the city
+  if (!hasWebGL()) return null;   // say so now, not after the wait
   const keep = Object.fromEntries(REMEMBERED.map((k) => [k, read(k)]));
   const qs = new URLSearchParams({ mode: 'window', min: String(min), ...(o.date ? { date: o.date } : {}), theme: 'light' });
   const f = document.createElement('iframe');
