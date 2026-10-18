@@ -285,8 +285,8 @@ def test_trade_off_pad_keyboard_presets_and_sliders_switch(open_page) -> None:
     settled(s.page, 20000, ticks=4)   # the pad redraws its ghosts after a weight change: hover the new ones, not the ones it replaced
     ghost = s.page.locator(".tp-ghost").nth(1)
     ghost.hover()
-    s.page.wait_for_selector(".tp-pop li", timeout=30000)
-    assert s.page.locator(".tp-pop li").count() == 10
+    # the preview fills in after the pad's redraw settles (a redraw can replace the popover once): wait for the whole top ten
+    s.page.wait_for_function("() => document.querySelectorAll('.tp-pop li').length === 10", timeout=30000, polling=100)
     key = ghost.get_attribute("data-pad-preset")
     ghost.click()
     s.page.wait_for_function("(k) => document.getElementById('presetSel')?.value === k", arg=key, timeout=SLOW)
