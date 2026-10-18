@@ -47,7 +47,7 @@
 .cg-head { padding: var(--s-3); border-left: 1px solid var(--line); display: flex; flex-direction: column; gap: 10px; animation: cmpIn var(--t-slow) var(--ease-out) both; }
 @keyframes cmpIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 .ch-media { position: relative; aspect-ratio: 16 / 9; border-radius: var(--r-md); overflow: hidden; background: var(--surface-3); }
-.ch-media img, .ch-media svg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+.ch-media > img, .ch-media > svg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
 .ch-let { position: absolute; left: 8px; top: 8px; width: 24px; height: 24px; border-radius: var(--r-inner); display: grid; place-items: center; font: var(--fw-semibold) var(--fs-sm)/1 var(--font-sans); background: var(--ink); color: var(--ground); box-shadow: var(--shadow-2); }
 .ch-btns { position: absolute; right: 8px; top: 8px; display: flex; gap: 5px; }
 .ch-btns button { width: 28px; height: 28px; border-radius: 50%; border: 0; display: grid; place-items: center; cursor: pointer; background: var(--overlay); backdrop-filter: var(--glass); -webkit-backdrop-filter: var(--glass); color: var(--ink-2); transition: color var(--t-fast), transform var(--t-base) var(--ease-spring); }
