@@ -57,3 +57,40 @@
   /* the measured-vs-assumed dots flow with the camera buttons and the room chips instead of being shifted up by the old bottom offset */
   #view-unit #uViews > .acc-chip[data-host="unit"] { bottom: auto; top: auto; left: auto; }
 }
+
+/* ------------------------------------------------------------------ Unit 3D stage controls on a phone, kept inside the stage
+   Two faults made the screen look cluttered: the page header is sticky on a phone and the stage controls (z-index 6) floated over it as the
+   stage scrolled beneath, and the controls themselves were big (three wrapped rows of small targets, an 11-button rail down the right edge).
+   Now: the header scrolls away with the page (the stage is the screen), the stage is its own stacking context so nothing in it can rise
+   above the app bar, the header or the bottom nav, the camera modes, the view picker and the bed switch are single rows that scroll
+   sideways with 40 px targets, and the tool rail is one 44 px button that opens the column. */
+@media (max-width: 760px) {
+  #view-unit .u-head { position: static; }
+  #view-unit .u-stage { isolation: isolate; }
+  #view-unit .u-views { top: 8px; left: 8px; right: 60px; flex-direction: column; flex-wrap: nowrap; align-items: stretch; gap: 6px; }
+  #view-unit .u-views > * { max-width: 100%; min-width: 0; }
+  #view-unit .u-modes { flex-wrap: nowrap; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none; padding: 3px; }
+  #view-unit .u-modes::-webkit-scrollbar, #view-unit .u-look::-webkit-scrollbar { display: none; }
+  #view-unit .u-modes > * { flex: none; }
+  #view-unit .u-modes .um-b { height: 40px; }
+  #view-unit .u-modes .um-s, #view-unit .u-modes .um-fp { height: 40px; padding: 0 12px; }
+  #view-unit .u-modes .um-sep { flex-basis: auto; width: 1px; height: 22px; margin: 0 2px; background: var(--line-strong); }
+  #view-unit .u-views > .u-look { top: auto; left: auto; right: auto; padding: 3px var(--s-2); }   /* in the column's flow (the older absolute offsets above would shift it) */
+  #view-unit .u-look .lk-chip { height: 40px; padding: 0 14px; }
+  #view-unit .bed-ctl.in-unit { align-self: stretch; padding: 3px; }
+  #view-unit .bed-ctl .bd-bar { overflow-x: auto; scrollbar-width: none; }
+  #view-unit .bed-ctl .bd-bar::-webkit-scrollbar { display: none; }
+  #view-unit .bed-ctl .bd-seg button, #view-unit .bed-ctl .bd-fit { height: 40px; padding: 0 12px; }
+  #view-unit .acc-chip { align-self: flex-start; }
+
+  /* the tool rail: one button, then the column */
+  #view-unit .u-tools { top: 8px; right: 8px; gap: 2px; padding: 2px; }
+  #view-unit .u-tools .u-tools-tog { display: grid; width: 44px; height: 44px; color: var(--ink-2); }
+  #view-unit .u-tools .u-tools-tog svg { width: 20px; height: 20px; }
+  #view-unit .u-tools[data-open="1"] .u-tools-tog { color: var(--accent); background: var(--accent-soft); }
+  #view-unit .u-tools:not([data-open="1"]) > :not(.u-tools-tog) { display: none; }
+  #view-unit .u-tools button { width: 44px; height: 40px; }
+  #view-unit .u-tools { max-height: calc(100% - 128px); }
+  #view-unit .u-lens, #view-unit .u-card { right: 62px; }   /* never under the tool rail */
+}
+.u-tools .u-tools-tog { display: none; }
