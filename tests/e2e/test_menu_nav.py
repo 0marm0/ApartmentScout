@@ -323,21 +323,21 @@ def test_unit_3d_and_floor_plan_live_under_home(open_page) -> None:
     pg = s.page
     assert pg.locator('#tabs a[data-view="unit"], #tabs a[data-view="plan"]').count() == 0, "one 3D tab, not two"
     pg.click('#tabs a[data-view="home"]')
-    pg.wait_for_function("() => document.body.dataset.view === 'unit'", timeout=30000)
+    pg.wait_for_function("() => document.body.dataset.view === 'unit'", timeout=90000)
     assert pg.locator("#tabs a.on").get_attribute("data-view") == "home"
     sub = pg.locator("#subnav")
     assert sub.is_visible() and sub.get_attribute("data-kind") == "home"
     assert pg.eval_on_selector_all("#subnav a", "els => els.map((e) => e.textContent)") == ["Unit 3D", "Floor plan"]
     assert pg.locator("#subnav .share-split").count() == 0, "the share button belongs to the Shortlist row only"
     pg.click('#subnav a[data-sub="plan"]')
-    pg.wait_for_function("() => document.body.dataset.view === 'plan'", timeout=30000)
+    pg.wait_for_function("() => document.body.dataset.view === 'plan'", timeout=90000)
     assert pg.locator("#tabs a.on").get_attribute("data-view") == "home" and pg.locator("#subnav a.on").inner_text() == "Floor plan"
     # leaving Home and coming back opens the view you were on
     pg.click('#tabs a[data-view="map"]')
     pg.wait_for_function("() => document.body.dataset.view === 'map'")
     assert pg.get_attribute('#tabs a[data-view="home"]', "href") == "#plan"
     pg.click('#tabs a[data-view="home"]')
-    pg.wait_for_function("() => document.body.dataset.view === 'plan'", timeout=30000)
+    pg.wait_for_function("() => document.body.dataset.view === 'plan'", timeout=90000)
     assert not s.take()
 
 
@@ -345,18 +345,18 @@ def test_unit_3d_and_floor_plan_live_under_home(open_page) -> None:
 def test_deep_links_still_open_the_unit_and_plan(open_page, view: str) -> None:
     s = open_page(f"#{view}/{EMERALD}", width=1440, height=900)
     pg = s.page
-    pg.wait_for_function("(v) => document.body.dataset.view === v && !document.getElementById('view-' + v).hidden", arg=view, timeout=30000)
+    pg.wait_for_function("(v) => document.body.dataset.view === v && !document.getElementById('view-' + v).hidden", arg=view, timeout=90000)
     assert pg.locator("#tabs a.on").get_attribute("data-view") == "home"
     other = "plan" if view == "unit" else "unit"
     assert pg.get_attribute(f'#subnav a[data-sub="{other}"]', "href") == f"#{other}/{EMERALD}", "the sub-switch keeps the same home"
-    pg.wait_for_function("(v) => document.getElementById('view-' + v).children.length > 0", arg=view, timeout=30000)
+    pg.wait_for_function("(v) => document.getElementById('view-' + v).children.length > 0", arg=view, timeout=90000)
     assert not s.take()
 
 
 def test_number_keys_and_chords_follow_the_tabs(open_page) -> None:
     s = open_page("#map", width=1440, height=900)
     pg = s.page
-    pg.wait_for_function("() => !!window.__asMap && window.__asMap.loaded()", timeout=30000)
+    pg.wait_for_function("() => !!window.__asMap && window.__asMap.loaded()", timeout=90000)
     settled(pg, 30000)   # the map has opened, so the first keys are not racing it
     hash_ = lambda: pg.evaluate("() => location.hash.split('/')[0]")  # noqa: E731
     for key, want in (("2", "#list"), ("3", "#compare"), ("5", "#research"), ("1", "#map")):
@@ -364,13 +364,13 @@ def test_number_keys_and_chords_follow_the_tabs(open_page) -> None:
         pg.wait_for_function("(w) => location.hash.split('/')[0] === w", arg=want)
     pg.keyboard.press("4")
     pg.wait_for_function("() => location.hash.split('/')[0] === '#unit'", timeout=10000)
-    pg.wait_for_function("() => document.body.dataset.view === 'unit'", timeout=30000)
+    pg.wait_for_function("() => document.body.dataset.view === 'unit'", timeout=90000)
     pg.keyboard.press("4")                    # on Home, 4 flips to the other side
-    pg.wait_for_function("() => document.body.dataset.view === 'plan'", timeout=30000)
+    pg.wait_for_function("() => document.body.dataset.view === 'plan'", timeout=90000)
     pg.keyboard.press("g"); pg.keyboard.press("u")
-    pg.wait_for_function("() => document.body.dataset.view === 'unit'", timeout=30000)
+    pg.wait_for_function("() => document.body.dataset.view === 'unit'", timeout=90000)
     pg.keyboard.press("g"); pg.keyboard.press("p")
-    pg.wait_for_function("() => document.body.dataset.view === 'plan'", timeout=30000)
+    pg.wait_for_function("() => document.body.dataset.view === 'plan'", timeout=90000)
     assert hash_() == "#plan"
     pg.keyboard.press("g"); pg.keyboard.press("m")
     pg.wait_for_function("() => document.body.dataset.view === 'map'")

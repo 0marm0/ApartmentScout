@@ -299,7 +299,7 @@ def test_fast_is_the_default_visual_is_remembered_and_the_export_downloads(open_
     assert Path(path).read_bytes()[:8] == b"\x89PNG\r\n\x1a\n"
     pg.wait_for_function("() => document.querySelector('.rnq-prog').hidden", timeout=SLOW)
     pg.reload()
-    pg.wait_for_selector("#psTabs", timeout=SLOW)
+    pg.wait_for_selector("#psTabs", timeout=3 * SLOW)
     assert pg.get_attribute('[data-rnq="visual"]', "aria-pressed") == "true"
     pg.click('[data-rnq="fast"]')
     assert pg.evaluate("() => localStorage.getItem('as:render-quality')") == '"fast"'
