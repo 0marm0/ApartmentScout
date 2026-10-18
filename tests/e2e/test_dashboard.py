@@ -141,8 +141,19 @@ def test_all_view_tabs_reachable_on_a_phone(open_page) -> None:
         tab = s.page.locator(f'#tabs a[data-view="{v}"]')
         box = tab.bounding_box()
         assert box and box["x"] >= 0 and box["x"] + box["width"] <= 390 + 1 and box["width"] >= 60 and box["height"] >= 44, f"tab {v}: {box}"
+        # nothing may sit over the tab (a sheet, a toast, a popover): the click must land on the tab itself
+        top = s.page.evaluate("""([x, y]) => { const e = document.elementFromPoint(x, y); return e ? e.closest('#tabs a') ? '' : (e.id ? '#' + e.id : '') + '.' + String(e.className).split(' ')[0] + ' <' + e.tagName.toLowerCase() + '>' : 'nothing'; }""",
+                              [box["x"] + box["width"] / 2, box["y"] + box["height"] / 2])
+        assert not top, f"tab {v} is covered by {top}"
         tab.click()
-        s.page.wait_for_function("(v) => v === 'home' ? ['unit', 'plan'].includes(document.body.dataset.view) : document.body.dataset.view === v", arg=v, timeout=180000)
+        # Poll on a timer, not on animation frames (Playwright's default): the route changes on the hashchange event, which needs only the
+        # main thread, while a frame under software GL can be held for minutes behind the GPU work the 3D view queued before it was left.
+        try:
+            s.page.wait_for_function("(v) => v === 'home' ? ['unit', 'plan'].includes(document.body.dataset.view) : document.body.dataset.view === v",
+                                     arg=v, polling=100, timeout=60000)
+        except Exception as e:
+            state = s.page.evaluate("() => ({ hash: location.hash, view: document.body.dataset.view, on: document.querySelector('#tabs a.on')?.dataset.view })")
+            raise AssertionError(f"clicking the {v!r} tab did not open that view within 60 s: {state}") from e
         assert _settled(s), f"view {v} kept the page busy for two minutes"
         assert s.page.locator("#tabs a.on").get_attribute("data-view") == v
     assert not s.take()
