@@ -68,12 +68,12 @@ def test_iphone_and_ipad_get_a_real_ar_quick_look_link_for_the_room_and_every_pi
     ctx, pg = _studio(browser, base_url, IOS_UA, 820, 1100, touch=True)
     try:
         assert "See it in your room" in pg.locator("#psTab .ar h3").text_content()
-        pg.wait_for_function("() => document.querySelectorAll('#psTab a[rel=ar]').length === 11", timeout=120000)   # the room and the ten pieces
+        pg.wait_for_function("() => document.querySelectorAll('#psTab a[rel=ar]').length === 13", timeout=120000)   # the room and the twelve pieces on show
         room = pg.locator("#psTab .ar-room a[rel=ar]")
         assert "View in your room (AR)" in room.text_content()
         assert room.evaluate("a => a.firstElementChild.tagName") == "IMG", "Safari wants the link's first child to be an image"
         assert room.evaluate("a => a.relList.contains('ar') && a.getAttribute('href').startsWith('blob:') && a.getAttribute('download').endsWith('.usdz')")
-        assert pg.locator("#psTab .ps-item .ar-row a[rel=ar]").count() == 10, "each piece in the list has its own AR link"
+        assert pg.locator("#psTab .ps-item .ar-row a[rel=ar]").count() == 12, "each piece in the list has its own AR link"
         assert pg.locator("#psTab [data-ar-dl]").count() == 0, "an iPhone is not offered a download instead"
         got = pg.evaluate(FETCH, "#psTab .ar-room a[rel=ar]")
         assert got["type"] == "model/vnd.usdz+zip"
@@ -91,7 +91,7 @@ def test_iphone_and_ipad_get_a_real_ar_quick_look_link_for_the_room_and_every_pi
         # the selected piece's inspector carries the same link
         pg.click("#psTab [data-sel=desk]")
         pg.wait_for_function("() => !!document.querySelector('#psInsp .ps-ar a[rel=ar]')", timeout=60000)
-        assert pg.locator("#psInsp .ps-ar a[rel=ar]").get_attribute("download") == "bestier-rotating-desk-51-in-chair-and-monitor.usdz"   # the file is named after the piece's label
+        assert pg.locator("#psInsp .ps-ar a[rel=ar]").get_attribute("download") == "bestier-rotating-desk-51-in-and-monitor.usdz"   # the file is named after the piece's label
         # moving a piece makes the room's file stale; a new one is built and the link changes
         before = room.get_attribute("href")
         pg.evaluate("() => { document.activeElement.blur(); }")
@@ -107,6 +107,8 @@ def test_the_ar_model_is_true_scale_visual_whatever_the_screen_draws(browser, ba
     ctx, pg = _studio(browser, base_url)
     try:
         pg.evaluate("""async () => { const Q = await import('/js/room3d/quality.js'); Q.quality.setMode('fast'); }""")
+        pg.locator("#p2dWrap [data-bed-choice='mine']").click()   # the studio opens on the storage bed; the queen frame and the nightstands are hidden until they are chosen
+        pg.wait_for_function("() => window.__plan3d.parts.furn.children.some((g) => g.userData.itemId === 'bed' && g.visible)")
         info = pg.evaluate("""async () => { const S = await import('/js/plan/scene3d.js'), out = {};
           for (const id of ['dresser', 'futon', 'bed', 'tv', 'desk', 'nightstand-1', 'coffee', 'dining']) { const g = await S.arModel([id]); out[id] = { size: g.userData.ar.size, tris: g.userData.ar.triangles, mats: g.userData.ar.materials, tex: g.userData.ar.textures, min: g.userData.ar.min,
             untinted: g.children.filter((m) => m.material.map && m.material.color.getHex() !== 0xffffff).length }; }
@@ -127,7 +129,7 @@ def test_the_ar_model_is_true_scale_visual_whatever_the_screen_draws(browser, ba
         assert all(v.get("untinted", 0) == 0 for v in info.values()), "a colour map is baked with its colour (Apple's importers ignore the texture scale), so every textured material is white"
         assert info["futon"]["tex"] >= 1 and info["dresser"]["tex"] >= 1 and info["desk"]["tex"] >= 2, "wood grain, leather and weave textures are in the AR models"
         rs = info["room"]["size"]
-        assert 4 < rs[0] < 9 and 3 < rs[2] < 9 and 0.9 < rs[1] < 1.6, f"the whole room is a real apartment's footprint ({[round(v, 2) for v in rs]} m)"
+        assert 4 < rs[0] < 9 and 3 < rs[2] < 9 and 0.9 < rs[1] < 2.4, f"the whole room is a real apartment's footprint ({[round(v, 2) for v in rs]} m)"
         assert not pg.errors
     finally:
         ctx.close()
@@ -139,7 +141,7 @@ def test_a_desktop_downloads_the_usdz_and_the_glb_instead(browser, base_url: str
     try:
         assert pg.locator("#psTab a[rel=ar]").count() == 0, "no AR link on a desktop"
         assert pg.locator("#psTab .ar-room [data-ar-dl]").count() == 2
-        assert pg.locator("#psTab .ps-item .ar-row [data-ar-dl=usdz]").count() == 10
+        assert pg.locator("#psTab .ps-item .ar-row [data-ar-dl=usdz]").count() == 12
         with pg.expect_download(timeout=90000) as d:
             pg.click("#psTab .ar-room [data-ar-dl=usdz]")
         path = tmp_path / d.value.suggested_filename

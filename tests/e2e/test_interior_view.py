@@ -61,12 +61,12 @@ def test_the_studio_opens_on_your_furniture_and_every_piece_fits(open_page, webg
     pg = s.page
     _studio(s)
     inv = json.loads((Path(__file__).resolve().parents[2] / "examples" / "nyc-2026" / "furniture.json").read_text())
-    # the unit's default layout is the renter's own, at their sizes, and the checks grade all ten clear
+    # the unit's default layout is the renter's own, at their sizes, and the checks grade all fifteen clear
     rows = pg.evaluate("() => [...document.querySelectorAll('#psTab .iv-row')].map((r) => r.querySelector('b').textContent)")
-    assert len(rows) == 11 and rows[0] == "Queen bed" and rows[1] == "Latitude Run bed", "the ten pieces and the candidate bed, listed apart"
-    assert pg.locator("#psTab .iv-row .pill", has_text="Candidate").count() == 1 and pg.locator("#psTab .iv h3 span").inner_text().startswith("10 pieces")
+    assert len(rows) == 16 and rows[0] == "Queen bed" and rows[1] == "Latitude Run bed", "the fifteen pieces and the candidate bed, listed apart"
+    assert pg.locator("#psTab .iv-row .pill", has_text="Candidate").count() == 1 and pg.locator("#psTab .iv h3 span").inner_text().startswith("15 pieces")
     assert pg.locator("#psTab [data-inv-use]").get_attribute("aria-pressed") == "true"
-    assert pg.evaluate("() => [...document.querySelectorAll('#psInsp .metric .v')].map((e) => e.textContent.trim())") == ["0", "2", "8"]   # all ten placed, none blocked; the two TVs read "workable" (9 to 10 ft), the best these rooms allow
+    assert pg.evaluate("() => [...document.querySelectorAll('#psInsp .metric .v')].map((e) => e.textContent.trim())") == ["0", "2", "10"]   # all twelve shown pieces placed, none blocked; the two TVs read "workable" (9 to 10 ft), the best these rooms allow
     items = pg.evaluate("() => window.__plan3d.items.map(({id, ref, w, d, h, elev}) => ({id, ref, w, d, h, elev}))")
     by = {i["id"]: i for i in items}
     for p in inv["pieces"]:
@@ -75,15 +75,15 @@ def test_the_studio_opens_on_your_furniture_and_every_piece_fits(open_page, webg
     # a piece taken out can be put back at its own size; undo brings it back too
     pg.click("#psTab [data-sel=desk]")
     pg.keyboard.press("Delete")
-    pg.wait_for_function("() => window.__plan3d.items.length === 10")
+    pg.wait_for_function("() => window.__plan3d.items.length === 15")
     assert pg.locator("#psTab [data-inv-add=desk]").count() == 1
     pg.keyboard.press("Control+z")
-    pg.wait_for_function("() => window.__plan3d.items.length === 11")
+    pg.wait_for_function("() => window.__plan3d.items.length === 16")
     pg.click("#psTab [data-sel=desk]")
     pg.keyboard.press("Delete")
-    pg.wait_for_function("() => window.__plan3d.items.length === 10")
+    pg.wait_for_function("() => window.__plan3d.items.length === 15")
     pg.click("#psTab [data-inv-add=desk]")
-    pg.wait_for_function("() => window.__plan3d.items.length === 11")
+    pg.wait_for_function("() => window.__plan3d.items.length === 16")
     desk = pg.evaluate("() => window.__plan3d.items.find((i) => i.id === 'desk')")
     assert (desk["w"], desk["d"], desk["h"]) == (89.2, 21.6, 29.1)
     assert not s.take()
@@ -98,7 +98,7 @@ def test_a_project_carries_the_renters_furniture_out_and_back_in(open_page, webg
     with pg.expect_download() as dl:
         pg.click("#psMenu [data-f=project-save]")
     proj = json.loads(Path(dl.value.path()).read_text())
-    assert proj["kind"] == "apartmentscout-project" and len(proj["layout"]["items"]) == 11
+    assert proj["kind"] == "apartmentscout-project" and len(proj["layout"]["items"]) == 16
     assert [p["id"] for p in proj["inventory"]["pieces"]][:3] == ["bed", "bed-latitude", "nightstand-1"] and "bed" in proj["inventory"]["options"]
     assert proj["inventory"]["pieces"][0]["w"] == 64 and "/Users/" not in json.dumps(proj)
     # the inventory a project brings is the one the studio shows, not the search's
@@ -107,7 +107,7 @@ def test_a_project_carries_the_renters_furniture_out_and_back_in(open_page, webg
     f.write_text(json.dumps(proj))
     pg.set_input_files("#psProjectFile", str(f))
     pg.wait_for_function("() => document.querySelector('#psTab .iv-row b')?.textContent === 'Our queen bed'", timeout=30000)
-    assert pg.evaluate("() => window.__plan3d.inventory.pieces.length") == 11
+    assert pg.evaluate("() => window.__plan3d.inventory.pieces.length") == 16
     assert not s.take()
 
 
@@ -222,7 +222,7 @@ def test_inside_view_has_room_chips_with_the_renters_furniture_and_switches_by_k
     pg.wait_for_function("() => window.__unit3d.curView.key.startsWith('room:Living')")
     assert _on(pg, "#uLook") == "Living room"
     info = pg.evaluate("() => ({ src: window.__unit3d.planInfo.source, name: window.__unit3d.planInfo.layoutName, n: window.__unit3d.stage.interior.furniture.count })")
-    assert info == {"src": "file", "name": "Your furniture", "n": 10}                # the source plan's default layout, in the real city
+    assert info == {"src": "file", "name": "Your furniture", "n": 12}                # the source plan's default layout, in the real city
     assert pg.evaluate("() => document.querySelector('#hud').textContent").count("Living room") == 1
     living = pg.evaluate("() => ({ off: window.__unit3d.stage.inEye.off, win: window.__unit3d.st.inWin })")
     look_click(pg, "#uLook [data-vp^='room:Bedroom']")
