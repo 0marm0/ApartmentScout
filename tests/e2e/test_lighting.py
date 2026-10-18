@@ -284,7 +284,7 @@ def test_fast_is_the_default_visual_is_remembered_and_the_export_downloads(open_
     pg = s.page
     assert pg.get_attribute('[data-rnq="fast"]', "aria-pressed") == "true"
     pg.click('[data-rnq="visual"]')
-    pg.wait_for_selector(".rnq-note:not([hidden])", timeout=SLOW)
+    pg.wait_for_selector(".rnq-note:not([hidden])", timeout=3 * SLOW)   # Visual redraws every piece and the paintings at full size, rasterised in software
     assert "not extra evidence" in pg.locator(".rnq-note").inner_text()
     assert pg.evaluate("() => localStorage.getItem('as:render-quality')") == '"visual"'
     pg.evaluate(SETTLED_JS, 30000)
