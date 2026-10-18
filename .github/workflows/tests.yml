@@ -32,30 +32,34 @@ jobs:
     # 2D canvases are rasterised on the CPU (conftest.GPU_ARGS), a test that reads no pixels skips rasterising WebGL altogether
     # (`@pytest.mark.no_raster`), and the render-quality governor is held at its starting level except in test_quality3d.
     # Reproduce a slow runner locally with CI=1 APARTMENTSCOUT_E2E_CPU_THROTTLE=6.
-    # Shards: the files whose pages build no 3D scene (1 and 2) run apart from the 3D files (3 to 6), so a gesture or layout test
+    # Shards: the files whose pages build no 3D scene (1 and 2) run apart from the 3D files (3 to 8), so a gesture or layout test
     # never shares a four-core runner with SwiftShader building a city; within each kind the files are packed by their measured
     # serial CI time (`--durations=0` lists every test; sum a file's setup, call and teardown). A new file goes into the lightest
     # shard of its kind. Each shard runs its files in parallel with pytest-xdist: one Chromium, one static server and one set of temp
     # folders per worker (tests/e2e/conftest.py). `-n auto` is three workers per four cores, 2 to 8 (tests/conftest.py).
     # `--dist loadgroup` keeps the tests that share a module-scoped fixture (a built site, a temp search) on one worker.
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 35
     strategy:
       fail-fast: false
       matrix:
         shard:
-          - name: 1-of-6
+          - name: 1-of-8
             files: tests/e2e/test_boot_recovery.py tests/e2e/test_decision_report.py tests/e2e/test_map_features.py tests/e2e/test_menu_nav.py tests/e2e/test_move_planner.py tests/e2e/test_office_questions.py tests/e2e/test_onboarding.py tests/e2e/test_phone_app.py tests/e2e/test_pwa.py tests/e2e/test_tour_findings.py tests/e2e/test_tourday.py tests/e2e/test_wizard.py
-          - name: 2-of-6
+          - name: 2-of-8
             files: tests/e2e/test_decision.py tests/e2e/test_device_sync.py tests/e2e/test_landing_page.py tests/e2e/test_lightbox.py tests/e2e/test_media_tiers.py tests/e2e/test_moves_unknowns.py tests/e2e/test_noise_clock.py tests/e2e/test_pdf_tracer.py tests/e2e/test_phone_offline.py tests/e2e/test_places_multidest.py tests/e2e/test_results_rail.py tests/e2e/test_shell_extras.py tests/e2e/test_time_of_day.py tests/e2e/test_whatsnew.py
-          - name: 3-of-6
-            files: tests/e2e/test_ar_view.py tests/e2e/test_bed_option.py tests/e2e/test_eye_level_look.py tests/e2e/test_placement_walk.py tests/e2e/test_view_match.py
-          - name: 4-of-6
-            files: tests/e2e/test_buildings3d.py tests/e2e/test_fit_check.py tests/e2e/test_furniture_studio.py tests/e2e/test_interior_view.py tests/e2e/test_render.py
-          - name: 5-of-6
-            files: tests/e2e/test_context3d.py tests/e2e/test_lighting.py tests/e2e/test_model_project.py tests/e2e/test_quality3d.py
-          - name: 6-of-6
-            files: tests/e2e/test_dashboard.py tests/e2e/test_daycycle.py tests/e2e/test_finishes_render.py tests/e2e/test_map_clusters.py tests/e2e/test_measure.py tests/e2e/test_one_city.py tests/e2e/test_pair3d.py tests/e2e/test_plan_upload.py
+          - name: 3-of-8
+            files: tests/e2e/test_eye_level_look.py tests/e2e/test_pair3d.py tests/e2e/test_view_match.py
+          - name: 4-of-8
+            files: tests/e2e/test_one_city.py tests/e2e/test_measure.py tests/e2e/test_plan_upload.py tests/e2e/test_map_clusters.py tests/e2e/test_ar_view.py
+          - name: 5-of-8
+            files: tests/e2e/test_placement_walk.py tests/e2e/test_render.py tests/e2e/test_quality3d.py tests/e2e/test_fit_check.py
+          - name: 6-of-8
+            files: tests/e2e/test_dashboard.py tests/e2e/test_daycycle.py tests/e2e/test_finishes_render.py tests/e2e/test_furniture_studio.py
+          - name: 7-of-8
+            files: tests/e2e/test_bed_option.py tests/e2e/test_lighting.py tests/e2e/test_model_project.py tests/e2e/test_interior_view.py
+          - name: 8-of-8
+            files: tests/e2e/test_context3d.py tests/e2e/test_buildings3d.py
     name: e2e (${{ matrix.shard.name }})
     steps:
       - uses: actions/checkout@v4
