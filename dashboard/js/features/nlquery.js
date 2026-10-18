@@ -27,6 +27,7 @@ const MODE_WORD = { subway: 'subway', train: 'subway', metro: 'subway', bus: 'bu
 const MODE_LABEL = { subway: 'subway', bus: 'bus', walk: 'walking', best: 'transit' };
 const NUM = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6 };
 const SORT_LABEL = { cost: 'Cheapest first', commute: 'Closest first', size: 'Largest first', ppsf: 'Best $/ft\u00b2 first', match: 'Best match first' };
+const GENERIC_PLACE = new Set(['park', 'parks', 'square', 'plaza', 'garden', 'gardens', 'river', 'street', 'avenue']);   // a kind of place, never read as part of one name
 const FILLER = new Set(['with', 'and', 'the', 'a', 'an', 'in', 'at', 'near', 'by', 'within', 'for', 'that', 'has', 'have', 'having', 'w', 'i', 'want', 'looking', 'find', 'show', 'me', 'my',
   'home', 'homes', 'apartment', 'apartments', 'apt', 'apts', 'place', 'places', 'listing', 'listings', 'unit', 'units', 'please', 'only', 'just', 'of', 'to', 'from', 'around', 'on', 'is',
   'are', 'it', 'its', 'get', 'give', 'need', 'prefer', 'ideally', 'also', 'plus', 'or', 'some', 'any', 'all', 'but', 'close', 'next', 'than', 'less', 'more', 'then', 'be', 'so']);
@@ -199,7 +200,7 @@ export function parseQuery(text, ctx = {}) {
   eat(new RegExp(String.raw`\b${BY}(largest|biggest|roomiest|most space|most spacious)\b`), () => { f.sort ||= 'size'; });
   eat(new RegExp(String.raw`\b${BY}(best match)\b`), () => { f.sort ||= 'match'; });
 
-  // 10. a place that exists in the data: the longest run of left-over words that is part of a known name
+  // 10. a place that exists in the data: the longest run of left-over words that is part of a known name ("park" alone is any park, not Park Avenue or Gramercy Park)
   let words = t.replace(/[,;.!?()]/g, ' ').split(/\s+/).filter(Boolean);
   const places = (ctx.places || []).map((p) => ({ raw: String(p), key: noApos(norm(p)) }));
   const content = words.map((w, i) => (FILLER.has(w) ? -1 : i)).filter((i) => i >= 0);
@@ -209,7 +210,7 @@ export function parseQuery(text, ctx = {}) {
       const idx = content.slice(s, s + n);
       if (idx[n - 1] - idx[0] > n - 1 + (n > 1 ? 1 : 0)) continue;   // the words must sit together as typed (one filler word may sit between)
       const phrase = noApos(idx.map((i) => words[i]).join(' '));
-      if (phrase.length < 4 || /^[\d\s]+$/.test(phrase)) continue;
+      if (phrase.length < 4 || /^[\d\s]+$/.test(phrase) || GENERIC_PLACE.has(phrase)) continue;
       const re = new RegExp(`(^|[^a-z0-9])${esc(phrase)}`);
       const place = places.find((p) => re.test(p.key));
       if (place) { hit = { phrase, idx, place }; break outer; }

@@ -157,7 +157,7 @@
   /* the ring svg has no viewBox, so scale the whole ring instead of resizing the svg (which cropped the arc) */
   .cg-head .ring.lg { zoom: .75; }
   .cmp-search { width: 100%; }
-  .cmp-picker { flex: 1; min-width: 0; }
+  .cmp-picker { flex: 1 1 100%; min-width: 0; }   /* its own row: squeezed beside three buttons it shrank to an empty pill */
   #view-compare .page-h .actions { width: 100%; }
   .cmp-list { left: 0; right: 0; width: auto; }
   .cg-add { min-height: 140px; margin: var(--s-2); }
