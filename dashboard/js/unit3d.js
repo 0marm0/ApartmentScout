@@ -287,6 +287,7 @@ function fitGrid() {
 }
 
 // ------------------------------------------------------------------ load
+const nextTask = () => new Promise((r) => setTimeout(r, 0));
 async function load(id) {
   const prevId = st.id;
   $('uLoad').hidden = false;
@@ -397,6 +398,8 @@ async function load(id) {
   stage.resize();
   $('uSnap').disabled = $('uGlb').disabled = !hasWindow();
   unitsRow(); fitGrid();
+  await nextTask();   // the city, the apartment and its panels are built in three tasks, so none holds the page up for long
+  if (st.id !== id) return;   // another home was opened meanwhile
   if (!FACES[st.face] || FACES[st.face].shared) {
     st.mode = 'orbit'; player.stop(); st.playing = false; ++heatTok;
     profA = profB = profF = statesA = statesB = null; interior = null;
@@ -405,6 +408,8 @@ async function load(id) {
     stage.resetOrbit(false); closeCard(); $('uLoad').hidden = true; return;
   }
   buildApartment();
+  await nextTask();
+  if (st.id !== id) return;
   $('studyPanel').hidden = $('ifPanel').hidden = false;
   buildTimePanel(); buildWindowPanel(); buildStudies(); evidencePanel(); syncTools();
   setMode(st.mode, true);

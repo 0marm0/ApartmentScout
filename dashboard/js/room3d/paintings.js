@@ -83,10 +83,17 @@ function slice(src, p) {
   const sx = p.u0 * src.width, sw = (p.u1 - p.u0) * src.width, c = canvasOf(sw, src.height);
   c.getContext('2d').drawImage(src, sx, 0, sw, src.height, 0, 0, c.width, c.height); return c;
 }
-/** A map and a normal map for each panel, from one canvas per panel. `inW` is a panel's width in inches (for the weave's scale). */
-const texSet = (canvases, inW) => canvases.map((c) => ({ map: texOf(c), normal: texOf(normalFrom(c, inW), true), w: c.width, h: c.height }));
-/** The same, one panel a task, so a triptych's three normal maps do not hold up a frame together. */
-async function texSetSoon(canvases, inW) { const out = []; for (const c of canvases) { await new Promise((r) => setTimeout(r, 0)); out.push(...texSet([c], inW)); } return out; }
+const tick = () => new Promise((r) => setTimeout(r, 0));
+/** A map and a normal map for each panel, from one canvas per panel. `inW` is a panel's width in inches (for the weave's scale). The
+ *  normal maps are made in slices of a few tens of ms (normalSoon), so a 2048 px map never holds the page up for a long task. */
+async function texSetSoon(canvases, inW) {
+  const out = [];
+  for (const c of canvases) { await tick(); out.push({ map: texOf(c), normal: texOf(await normalSoon(c, inW), true), w: c.width, h: c.height }); }
+  return out;
+}
+/** A flat (straight-out) normal map: the placeholder's material is made with it, so the real one later swaps in without a new shader. */
+let FLAT = null;
+const flatNormal = () => { if (!FLAT) { FLAT = new THREE.DataTexture(new Uint8Array([128, 128, 255, 255]), 1, 1); FLAT.needsUpdate = true; FLAT.userData.shared = true; } return FLAT; };
 
 /** The placeholder textures of `key` (drawn once per page and shape). */
 function placeholder(key, panels, w, h) {
@@ -96,7 +103,9 @@ function placeholder(key, panels, w, h) {
   const P = PAINTINGS[key] || PAINTINGS.seascape, long = panels.length > 1 ? 3072 : 2048;
   const W = w >= h ? long : Math.round(long * w / h), H = w >= h ? Math.round(long * h / w) : long, c = canvasOf(W, H);
   P.paint(c.getContext('2d'), W, H, rng(hash(key)));
-  const set = texSet(panels.length > 1 ? panels.map((p) => slice(c, p)) : [c], panels[0].w);
+  const canvases = panels.length > 1 ? panels.map((p) => slice(c, p)) : [c];
+  const set = canvases.map((cv) => ({ map: texOf(cv), normal: null, w: cv.width, h: cv.height }));   // the picture now, its weave a moment later
+  set.ready = (async () => { for (const [i, cv] of canvases.entries()) { await tick(); set[i].normal = texOf(await normalSoon(cv, panels[0].w), true); } return set; })();
   PLACE.set(id, set); return set;
 }
 
@@ -138,27 +147,46 @@ function realSet(key, panels, w, h) {
 
 /**
  * A tangent-space normal map from a painting's luminance: the high-pass of the luminance (a brush stroke's edges and ridges, not the
- * picture's light and dark) plus a fine plain-weave canvas, so the strokes and the cloth catch a raking light. At most 2048 px across.
+ * picture's light and dark) plus a fine plain-weave canvas, so the strokes and the cloth catch a raking light. At most 2048 px across
+ * (1024 on a phone, where the canvas is never seen close enough to tell). A generator: it yields every few rows, so `normalSoon` can
+ * hand the main thread back between slices.
  */
-function normalFrom(src, inW) {
-  const k = Math.min(1, 2048 / Math.max(src.width, src.height)), W = Math.max(2, Math.round(src.width * k)), H = Math.max(2, Math.round(src.height * k));
+export const normalCap = (isPhone) => (isPhone ? 1024 : 2048);
+function* normalSteps(src, inW) {
+  const k = Math.min(1, normalCap(phone()) / Math.max(src.width, src.height)), W = Math.max(2, Math.round(src.width * k)), H = Math.max(2, Math.round(src.height * k));
   const c = canvasOf(W, H), g = c.getContext('2d', { willReadFrequently: true }); g.drawImage(src, 0, 0, W, H);
   const D = g.getImageData(0, 0, W, H), px = D.data, N = W * H, L = new Float32Array(N);
-  for (let i = 0; i < N; i++) L[i] = (0.2126 * px[i * 4] + 0.7152 * px[i * 4 + 1] + 0.0722 * px[i * 4 + 2]) / 255;
+  yield;
+  for (let i = 0; i < N; i++) { L[i] = (0.2126 * px[i * 4] + 0.7152 * px[i * 4 + 1] + 0.0722 * px[i * 4 + 2]) / 255; if (i % (W * 256) === 0) yield; }
   const B = boxBlur(L, W, H, Math.max(2, Math.round(W / 220))), Hh = new Float32Array(N);
+  yield;
   const per = clamp(W / (inW * 9), 3, 9);   // about 9 threads an inch, never finer than 3 px a thread (no moire in the mipmaps)
-  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-    const i = y * W + x, tx = x / per, ty = y / per, over = ((Math.floor(tx) + Math.floor(ty)) & 1) === 0;
-    const weave = 0.5 * (over ? Math.sin(Math.PI * (tx % 1)) : Math.sin(Math.PI * (ty % 1)));
-    Hh[i] = clamp((L[i] - B[i]) * 2.6, -0.5, 0.5) + 0.12 * weave;
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      const i = y * W + x, tx = x / per, ty = y / per, over = ((Math.floor(tx) + Math.floor(ty)) & 1) === 0;
+      const weave = 0.5 * (over ? Math.sin(Math.PI * (tx % 1)) : Math.sin(Math.PI * (ty % 1)));
+      Hh[i] = clamp((L[i] - B[i]) * 2.6, -0.5, 0.5) + 0.12 * weave;
+    }
+    if ((y & 63) === 63) yield;
   }
   const s = 2.2;
-  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-    const i = y * W + x, dx = Hh[y * W + Math.min(W - 1, x + 1)] - Hh[y * W + Math.max(0, x - 1)], dy = Hh[Math.min(H - 1, y + 1) * W + x] - Hh[Math.max(0, y - 1) * W + x];
-    let nx = -dx * s, ny = dy * s, nz = 1; const l = Math.hypot(nx, ny, nz); nx /= l; ny /= l; nz /= l;   // image rows run down, v runs up
-    px[i * 4] = (nx * 0.5 + 0.5) * 255; px[i * 4 + 1] = (ny * 0.5 + 0.5) * 255; px[i * 4 + 2] = (nz * 0.5 + 0.5) * 255; px[i * 4 + 3] = 255;
+  for (let y = 0; y < H; y++) {
+    if ((y & 63) === 63) yield;
+    for (let x = 0; x < W; x++) {
+      const i = y * W + x, dx = Hh[y * W + Math.min(W - 1, x + 1)] - Hh[y * W + Math.max(0, x - 1)], dy = Hh[Math.min(H - 1, y + 1) * W + x] - Hh[Math.max(0, y - 1) * W + x];
+      let nx = -dx * s, ny = dy * s, nz = 1; const l = Math.hypot(nx, ny, nz); nx /= l; ny /= l; nz /= l;   // image rows run down, v runs up
+      px[i * 4] = (nx * 0.5 + 0.5) * 255; px[i * 4 + 1] = (ny * 0.5 + 0.5) * 255; px[i * 4 + 2] = (nz * 0.5 + 0.5) * 255; px[i * 4 + 3] = 255;
+    }
   }
   g.putImageData(D, 0, 0); return c;
+}
+/** Run normalSteps, giving the main thread back whenever a slice has run past ~30 ms. */
+async function normalSoon(src, inW) {
+  const it = normalSteps(src, inW); let t = performance.now();
+  for (;;) {
+    const r = it.next(); if (r.done) return r.value;
+    if (performance.now() - t > 30) { await tick(); t = performance.now(); }
+  }
 }
 function boxBlur(src, W, H, r) {
   const tmp = new Float32Array(W * H), out = new Float32Array(W * H), n = 2 * r + 1;
@@ -204,7 +232,7 @@ export function paintingInto(it, K) {
   const panels = panelLayout(it.spec, it.w, it.h), cy = e + it.h / 2, fast = K.fast;
   const ph = known && artSources(key, known, panels.length) ? null : placeholder(key, panels, it.w, it.h), wait = new THREE.Color(it.look?.color || 0x8fa7a8).getHex();   // the renter's photo is coming: its main colour until then
   const mats = panels.map((p, i) => {
-    const tx = ph?.[i], o = { roughness: 0.6, ...(tx ? { map: tx.map, normalMap: tx.normal, normalScale: new THREE.Vector2(0.25, 0.25) } : {}) };
+    const tx = ph?.[i], o = { roughness: 0.6, ...(tx ? { map: tx.map, normalMap: tx.normal || flatNormal(), normalScale: new THREE.Vector2(0.25, 0.25) } : {}) };
     const m = fast ? K.ctx.std(tx ? 0xffffff : wait, o) : new THREE.MeshPhysicalMaterial({ color: tx ? 0xffffff : wait, ...o, metalness: 0, specularIntensity: 0.45, clearcoat: 0.12, clearcoatRoughness: 0.55 });   // a matte varnish: a faint, broad sheen
     m.userData.painting = key; return m;
   });
@@ -214,6 +242,10 @@ export function paintingInto(it, K) {
     const am = shadowMap(p.w, it.h), shadow = K.mat(`art-shadow|${p.w.toFixed(1)}|${it.h.toFixed(1)}`, () => new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: am ? 0.38 : 0, depthWrite: false, toneMapped: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2, ...(am ? { alphaMap: am } : {}) }));
     const sh = K.add(K.geo(`art-sh|${p.w.toFixed(2)}|${it.h.toFixed(2)}`, () => new THREE.PlaneGeometry(p.w + 2 * SHADOW_M, it.h + 2 * SHADOW_M)), shadow, p.x + 0.2, cy - 0.35, back + 0.06, { cast: false });   // lit from above: a little low and to one side
     sh.receiveShadow = false; sh.renderOrder = 1; sh.name = 'art-shadow';
+  });
+  if (ph?.some((tx) => !tx.normal)) ph.ready.then(() => {   // the placeholder's weave, once made (the same textures for every build)
+    mats.forEach((m, i) => { if (!m.userData.real && ph[i]?.normal) { m.normalMap = ph[i].normal; m.needsUpdate = true; } });
+    if (typeof window !== 'undefined' && window.dispatchEvent) window.dispatchEvent(new Event('as-art-ready'));
   });
   realSet(key, panels, it.w, it.h).then((set) => {
     if (!set) return;
