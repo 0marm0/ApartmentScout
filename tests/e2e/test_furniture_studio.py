@@ -15,6 +15,8 @@ pytestmark = [pytest.mark.e2e, pytest.mark.no_raster]   # reads no drawn pixels 
 UNIT = "paramount-tower-25e"
 ROOT = Path(__file__).resolve().parents[2]
 INV = json.loads((ROOT / "examples" / "nyc-2026" / "furniture.json").read_text())
+PAINTINGS = {"central-park-triptych", "seascape", "monet-red-boats"}   # a canvas and its frame: two meshes, not a furniture model
+HIDDEN_AT_OPEN = {"bed", "nightstand-1", "nightstand-2", "sim-rig"}   # the storage bed is the default, so the grey bed, its nightstands and the sim rig start hidden
 IDS = [p["id"] for p in INV["pieces"] if not p.get("candidate")]   # the renter's own pieces: the candidate bed is drawn only when they switch to it (tests/e2e/test_bed_option.py)
 
 # what each placed piece is made of, as the studio's 3D scene holds it: the group's meshes, their materials and the piece's box in metres
@@ -66,7 +68,8 @@ def _lum(hexs: str) -> float:
 def _check_looks(scene: dict) -> None:
     """The renter's answers, as drawn: black leather futon, brown wood desk and tables, black chest and nightstands, a grey bed, black TVs."""
     for pid in IDS:
-        assert scene[pid]["visible"] and scene[pid]["meshes"] > 3, f"{pid} is drawn"
+        if pid not in HIDDEN_AT_OPEN:   # the renter's own bed and its nightstands and the sim rig load hidden (Show brings them back); Unit 3D does not build them
+            assert scene[pid]["visible"] and scene[pid]["meshes"] > (0 if pid in PAINTINGS else 3), f"{pid} is drawn"
     futon = scene["futon"]["mats"]
     leather = [m for m in futon if m["bump"]]          # the leather carries a pebbled grain
     assert leather and all(_lum(m["color"]) < 0.14 for m in leather), "the futon's mattress is black leather"
@@ -77,13 +80,13 @@ def _check_looks(scene: dict) -> None:
     for pid in ("desk", "coffee", "dining"):
         wood = [m for m in scene[pid]["mats"] if m["map"]]   # wood is drawn with a grain texture
         assert wood and any(_rgb(m["color"])[0] > _rgb(m["color"])[2] * 1.4 and 0.05 < _lum(m["color"]) < 0.45 for m in wood), f"the {pid} is brown wood"
-    for pid in ("nightstand-1", "nightstand-2"):
+    for pid in [q for q in ("nightstand-1", "nightstand-2") if q in scene]:
         body = scene[pid]["mats"][0]   # the first material is the carcase
         assert _lum(body["color"]) < 0.14, f"the {pid} is black"
     chest = scene["dresser"]
     assert _lum(chest["mats"][0]["color"]) < 0.2 and _rgb(chest["mats"][0]["color"])[0] > _rgb(chest["mats"][0]["color"])[2], "the dresser is IKEA's dark brown oak effect, close to black"
     assert abs((chest["max"][0] - chest["min"][0]) - 27.6 * 0.0254) < 0.005 and abs((chest["max"][1] - chest["min"][1]) - 47.2 * 0.0254) < 0.005, "70 cm wide and 120 cm tall"
-    assert any(0.3 < _lum(m["color"]) < 0.65 and abs(_rgb(m["color"])[0] - _rgb(m["color"])[2]) < 0.1 for m in scene["bed"]["mats"]), "the bed is upholstered in grey"
+    assert "bed" not in scene or any(0.3 < _lum(m["color"]) < 0.65 and abs(_rgb(m["color"])[0] - _rgb(m["color"])[2]) < 0.1 for m in scene["bed"]["mats"]), "the bed is upholstered in grey"
     for tv in ("tv", "tv-bed"):
         lo, hi = scene[tv]["min"], scene[tv]["max"]
         depth, bottom = hi[2] - lo[2], lo[1]
@@ -97,7 +100,7 @@ def test_the_studio_draws_every_piece_in_the_renters_colours_and_the_tvs_on_thei
     _studio(s)
     scene = s.page.evaluate(SCENE_JS)
     assert sorted(scene) == sorted(IDS + ["bed-latitude"]), "every piece of furniture.json is placed, and the candidate bed waits in the scene, hidden"
-    assert not scene["bed-latitude"]["visible"], "my bed is what the studio opens on"
+    assert scene["bed-latitude"]["visible"] and not scene["bed"]["visible"], "the storage bed is what the studio opens on, the grey one waits hidden"
     _check_looks(scene)
     items = s.page.evaluate("() => window.__plan3d.items.map(({id, ref, x, y, rot, w, d, h, elev}) => ({id, ref, x, y, rot, w, d, h, elev}))")
     by = {i["id"]: i for i in items}
@@ -113,7 +116,7 @@ def test_unit_3d_draws_the_same_pieces_in_the_same_places(open_page, webgl: bool
     s = open_page("#map")
     _unit(s)
     scene = s.page.evaluate(UNIT_JS)
-    assert sorted(scene) == sorted(IDS), "every piece is drawn in Unit 3D's Inside view too"
+    assert sorted(scene) == sorted([i for i in IDS if i not in HIDDEN_AT_OPEN] + ["bed-latitude"]), "every shown piece is drawn in Unit 3D's Inside view too"
     _check_looks(scene)
     unit_items = s.page.evaluate("() => window.__unit3d.planInfo.layout.items.map(({id, ref, x, y, rot, w, d, h, elev, look}) => ({id, ref, x, y, rot, w, d, h, elev, look: !!look}))")
     assert all(i["look"] for i in unit_items), "each item carries the look joined from furniture.json"
@@ -188,7 +191,7 @@ def test_selecting_a_piece_shows_one_toolbar_in_the_plan_and_one_in_3d(open_page
         assert "rotating desk" in bar.locator(".sb-name").text_content()
         box, pane = bar.bounding_box(), pg.locator(host).bounding_box()
         assert pane["x"] <= box["x"] and box["x"] + box["width"] <= pane["x"] + pane["width"] + 1, f"{host}: the toolbar stays inside its pane"
-        assert all(b.bounding_box()["height"] >= 40 for b in bar.locator(".sb-b").all()), "tap targets are at least 40 px"
+        assert all(b.bounding_box()["height"] >= 40 for b in bar.locator(".sb-b:visible").all()), "tap targets are at least 40 px"
     # the 2D plan marks the selected piece
     assert pg.evaluate("() => document.querySelector('#p2d .p2-it.sel')?.dataset.id") == "desk"
     # Escape deselects and takes the toolbars away
@@ -269,15 +272,15 @@ def test_the_toolbar_works_by_touch(browser, base_url: str, webgl: bool) -> None
         pg.goto(f"{base_url}/#plan/{UNIT}")
         pg.wait_for_function("() => window.__plan3d && window.__plan3d.items.length > 0 && !!document.querySelector('#psLook .lk-chip')", timeout=90000)
         settled(pg, 20000, ticks=5)
-        pg.tap("#psTab [data-sel=nightstand-1]")
+        pg.tap("#psTab [data-sel=dresser]")
         pg.wait_for_function("() => document.querySelectorAll('.selbar:not([hidden])').length >= 1")
         bar = pg.locator(".selbar:visible").first
-        before = _item(pg, "nightstand-1")
+        before = _item(pg, "dresser")
         bar.locator("[data-act=rot]").tap()
-        pg.wait_for_function("([r]) => (window.__plan3d.items.find((q) => q.id === 'nightstand-1').rot || 0) === r", arg=[(before["rot"] + 90) % 360])
+        pg.wait_for_function("([r]) => (window.__plan3d.items.find((q) => q.id === 'dresser').rot || 0) === r", arg=[(before["rot"] + 90) % 360])
         bar.locator("[data-act=move]").tap()
         bar.locator("[data-nx='-1'][data-ny='0']").tap()
-        pg.wait_for_function("([x]) => window.__plan3d.items.find((q) => q.id === 'nightstand-1').x === x", arg=[before["x"] - 6])
+        pg.wait_for_function("([x]) => window.__plan3d.items.find((q) => q.id === 'dresser').x === x", arg=[before["x"] - 6])
         bar.locator("[data-act=done]").tap()
         pg.wait_for_function("() => document.querySelectorAll('.selbar:not([hidden])').length === 0")
     finally:
