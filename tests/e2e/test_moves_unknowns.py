@@ -26,8 +26,12 @@ SLOW = 90000   # a cap on waiting for the state: the list and the scoring worker
 
 def card(s, id: str = KNOX):
     """The card for a home, scrolled into the windowed list by opening its drawer."""
-    s.page.evaluate("async (id) => { const m = await import('/js/app.js'); m.openDrawer(id, { instant: true }); }", id)
-    s.page.wait_for_selector(f'#cards .card[data-id="{id}"]', timeout=SLOW)
+    # asked again until the card is there: the first ask is lost when the list has not been built yet (a busy software-GL runner), and a drawer
+    # that is already open for this home is only redrawn, not scrolled to, so the next ask closes it first
+    s.page.evaluate("() => { window.__askedCard = 0; }")
+    s.page.wait_for_function("""async (id) => { const has = () => !!document.querySelector(`#cards .card[data-id="${id}"]`), n = (window.__askedCard = (window.__askedCard || 0) + 1);
+      try { const m = await import('/js/app.js'); if (n > 1 && !has()) m.closeDrawer(); if (n === 1 || !has()) m.openDrawer(id, { instant: true }); } catch {}
+      return has(); }""", arg=id, timeout=SLOW, polling=1000)
     return s.page.locator(f'#cards .card[data-id="{id}"]')
 
 

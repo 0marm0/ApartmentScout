@@ -56,6 +56,8 @@ def test_the_3d_tape_reads_a_pieces_real_size_and_snaps_to_its_corners(open_page
     s = open_page("#map", height=1000)
     pg = s.page
     _studio(s)
+    pg.click("#p2dWrap [data-bed-choice='mine']")   # the studio opens on the Latitude Run storage bed; the renter's own queen bed waits hidden
+    pg.wait_for_function("() => window.__plan3d.parts.furn.children.some((g) => g.userData.itemId === 'bed' && g.visible)")
     pg.click("#psCams [data-v=top]")
     camera_still(pg, "studio")
     before = pg.evaluate("() => window.__plan3d.items.map(({id, x, y, rot}) => [id, x, y, rot])")
@@ -63,7 +65,7 @@ def test_the_3d_tape_reads_a_pieces_real_size_and_snaps_to_its_corners(open_page
     assert pg.get_attribute("#studioMeasureTool", "aria-pressed") == "true"
     # the queen bed is 64 in wide: two of its top corners across the width
     corners = pg.evaluate("""() => { const b = window.__plan3d.items.find((i) => i.id === 'bed');
-      return window.__measure.studioTargets.points.filter((q) => q.kind === 'furniture' && q.p[2] > 30 && Math.abs(q.p[0] - b.x) < 50 && Math.abs(q.p[1] - b.y) < 50).map((q) => q.p); }""")
+      return window.__measure.studioTargets.points.filter((q) => q.kind === 'furniture' && Math.abs(q.p[2] - 40) < 1 && Math.abs(q.p[0] - b.x) < 50 && Math.abs(q.p[1] - b.y) < 50).map((q) => q.p); }""")
     assert len(corners) == 4
     a = corners[0]
     b = next(c for c in corners[1:] if abs(_dist(a, c) - 64) < 0.01)

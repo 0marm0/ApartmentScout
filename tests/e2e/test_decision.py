@@ -6,6 +6,8 @@ file) through the page's own storage and routes, and checks what the renter woul
 """
 from __future__ import annotations
 
+from datetime import date, timedelta
+
 import json
 import re
 from pathlib import Path
@@ -22,8 +24,9 @@ LIVE = sorted((x for x in LISTINGS if x.get("status") in ("new", "researching", 
               key=lambda x: -(x["score"].get("overall") or 0))
 IDS = [x["id"] for x in LIVE[:12]]
 GONE = next(x["id"] for x in LISTINGS if x.get("status") == "gone")
+TOUR = f"{date.today() + timedelta(days=4):%Y-%m-%d}T10:30"   # a tour in the coming days: the planner shows the next booked day, so a fixed date goes stale
 PICKS = {
-    IDS[0]: {"saved": True, "tier": "S", "note": "PRIVATE-NOTE-ONE", "tour": "2026-10-17T10:30"},
+    IDS[0]: {"saved": True, "tier": "S", "note": "PRIVATE-NOTE-ONE", "tour": TOUR},
     IDS[1]: {"saved": True, "tier": "A", "note": "PRIVATE-NOTE-TWO"},
     IDS[2]: {"saved": True, "tier": "B"},
     IDS[3]: {"saved": True},
@@ -317,7 +320,7 @@ def test_share_shortlist_downloads_a_read_only_page_without_the_notes(open_page,
     p = payload_of(html)
     assert [h["id"] for h in p["homes"]] and set(h["id"] for h in p["homes"]) == set(PICKS)
     assert p["homes"][0]["score"]["overall"] >= p["homes"][-1]["score"]["overall"]
-    assert "PRIVATE-NOTE" not in html and "2026-10-17T10:30" not in html and p["notes"] is False
+    assert "PRIVATE-NOTE" not in html and TOUR not in html and p["notes"] is False
     assert all(h["reasons"] for h in p["homes"]) and p["dest"] and p["map"]["lines"]
     assert not re.search(r'<(script|link)[^>]+(src|href)="https?://', html)
     # the saved file opens by itself
@@ -346,7 +349,7 @@ def test_share_includes_notes_only_when_ticked_and_the_memo_opens_for_printing(o
     s.page.keyboard.press("Escape")
     html = share_download(s, tmp_path, ".share-split .share-main")
     p = payload_of(html)
-    assert p["notes"] is True and "PRIVATE-NOTE-ONE" in html and "2026-10-17T10:30" not in html
+    assert p["notes"] is True and "PRIVATE-NOTE-ONE" in html and TOUR not in html
     assert not any(h.get("photos") for h in p["homes"])
     # the memo opens in its own tab on the print layout
     s.page.locator(".share-split .share-more").click()

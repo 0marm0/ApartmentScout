@@ -5,6 +5,8 @@ The saved file is opened in a clean context with no network, exactly as a renter
 """
 from __future__ import annotations
 
+from datetime import date, timedelta
+
 import json
 import re
 import subprocess
@@ -20,7 +22,8 @@ LISTINGS = json.loads((ROOT / "dashboard" / "data" / "listings.json").read_text(
 SEARCH = json.loads((ROOT / "dashboard" / "data" / "criteria.json").read_text())["search"]["name"]
 IDS = ["paramount-tower-25e", "the-greywood-4b", "paramount-tower-41a"]
 SLOW = 60000
-PICKS = {"paramount-tower-25e": {"saved": True, "tier": "S", "note": "PRIVATE-PICK-NOTE", "tour": "2026-10-17T10:30"},
+TOUR = f"{date.today() + timedelta(days=4):%Y-%m-%d}T10:30"   # a tour in the coming days: the planner shows the next booked day, so a fixed date goes stale
+PICKS = {"paramount-tower-25e": {"saved": True, "tier": "S", "note": "PRIVATE-PICK-NOTE", "tour": TOUR},
          "the-greywood-4b": {"saved": True, "tier": "A"}, "paramount-tower-41a": {"saved": True, "tier": "B"}, "orion-condominium-23a": {"saved": True}}
 LETTER_PX = (816, 1056)   # 8.5 x 11 in at 96 dpi
 
@@ -172,7 +175,7 @@ def test_notes_are_in_the_report_only_when_ticked_and_can_be_hidden_again(open_p
     s.page.wait_for_selector("#mnReport", state="attached", timeout=SLOW)
     out = download_report(s, tmp_path, stills=False, photos=False, notes=True)
     html = out.read_text(encoding="utf-8")
-    assert payload_of(html)["notes"] is True and "PRIVATE-PICK-NOTE" in html and "2026-10-17T10:30" not in html
+    assert payload_of(html)["notes"] is True and "PRIVATE-PICK-NOTE" in html and TOUR not in html
     ctx, page, errs = open_file(browser, out)
     assert page.locator("#notesTog").is_visible() and page.locator(".note").first.is_visible()
     assert "PRIVATE-PICK-NOTE" in page.locator(".sheet[data-kind=home]").first.inner_text()
