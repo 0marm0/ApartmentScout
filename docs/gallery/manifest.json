@@ -911,11 +911,11 @@
   {
    "file": "docs/images/inside-bay.png",
    "publication_status": "public",
-   "sha256": "40b793c7deefe2eea5a1c2ebbec14dd992d0fd0b94d784c7a6f3f4628d89d089",
-   "bytes": 685418,
+   "sha256": "730c4a08c65d735d333448ab9c83e5b3eb08d9d3e320ba7c6fe6a8a3c569570f",
+   "bytes": 707331,
    "width": 1560,
    "height": 953,
-   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-16 from a clean snapshot with scripts/screenshots.py)"
+   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-18 from a clean snapshot with scripts/screenshots.py)"
   },
   {
    "file": "docs/images/inside-bedroom.png",

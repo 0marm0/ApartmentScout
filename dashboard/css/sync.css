@@ -114,7 +114,7 @@ label.btn[data-sy-pick] { cursor: pointer; }
   .sy-target { min-height: 56px; padding: var(--s-2) 10px; }
   .sy-target b { font-size: var(--fs-sm); }
   .sy-actions .btn { flex: 1 1 100%; justify-content: center; height: 42px; }
-  .sy-actions .btn.sm { height: 36px; }
+  .sy-actions .btn.sm { height: 44px; }
   .sync-sheet .sh-body { padding-bottom: max(var(--s-6), var(--safe-b)); }
   .sy-form input[type="password"], .sy-form input[type="text"] { font-size: 16px; height: 42px; }   /* 16 px: iOS does not zoom the page into the field */
 }
