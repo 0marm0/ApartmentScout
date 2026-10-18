@@ -1,5 +1,5 @@
 {
-  "_about": "Limits enforced by `scripts/perf_check.py --check` (the perf job in .github/workflows/tests.yml). Sizes are bytes on the wire (gzip), times are milliseconds on a cold load with no CPU throttle on a GitHub-hosted runner (set 2026-10 from a measured 0.8 s LCP / 150 ms TBT on a laptop, about three times looser). Tighten them when the numbers fall; raise one only with a reason in the commit. Standalone file_bytes 27.0 -> 27.4 MB (2026-10): the file now keeps each photo's saved path (+0.15 MB) so its photos come from the published copy instead of the listing sites' links.",
+  "_about": "Limits enforced by `scripts/perf_check.py --check` (the perf job in .github/workflows/tests.yml). Sizes are bytes on the wire (gzip), times are milliseconds on a cold load with no CPU throttle on a GitHub-hosted runner (set 2026-10 from a measured 0.8 s LCP / 150 ms TBT on a laptop, about three times looser). Tighten them when the numbers fall; raise one only with a reason in the commit. 2026-10 (second set): raised 15 % over the measured numbers for the renter's three paintings, the office chair and the 25E layout of twelve shown pieces (about +25 draws, +20k triangles, and the painting textures: Fast draws them at most 1024 px, Visual up to 4096). Standalone file_bytes 27.0 -> 27.4 MB (2026-10): the file now keeps each photo's saved path (+0.15 MB) so its photos come from the published copy instead of the listing sites' links.",
   "site": {
     "first_js_gz": 120000,
     "all_js_gz": 880000,
@@ -17,176 +17,176 @@
     "lcp": 4500
   },
   "render": {
-    "_about": "Limits enforced by `scripts/perf_check.py --render --check` (the 3D render budget step of the perf job), per device, view and quality config (fast-L0 ... visual-L5, the levels of dashboard/js/room3d/quality.js). draws and triangles are those of one frame including the shadow pass; texture_mb is an ESTIMATE of the scene's textures plus shadow maps (room3d/budget.js), not a GPU reading. Set 2026-10 from measured numbers on the Paramount Tower 25E example (Unit 3D Inside; the studio's eye view with the city), 15-20 % looser; counts do not depend on the GPU. The ladder itself is also checked: a lighter level must not cost more than the one above it. Tighten them when the numbers fall; raise one only with a reason in the commit.",
+    "_about": "Limits enforced by `scripts/perf_check.py --render --check` (the 3D render budget step of the perf job), per device, view and quality config (fast-L0 ... visual-L5, the levels of dashboard/js/room3d/quality.js). draws and triangles are those of one frame including the shadow pass; texture_mb is an ESTIMATE of the scene's textures plus shadow maps (room3d/budget.js), not a GPU reading. Set 2026-10 from measured numbers on the Paramount Tower 25E example (Unit 3D Inside; the studio's eye view with the city), 15-20 % looser; counts do not depend on the GPU. The ladder itself is also checked: a lighter level must not cost more than the one above it. Tighten them when the numbers fall; raise one only with a reason in the commit. 2026-10 (second set): raised 15 % over the measured numbers for the renter's three paintings, the office chair and the 25E layout of twelve shown pieces (about +25 draws, +20k triangles, and the painting textures: Fast draws them at most 1024 px, Visual up to 4096).",
     "desktop": {
       "unit": {
         "fast-L0": {
-          "draws": 154,
-          "triangles": 407000,
-          "texture_mb": 90.2
+          "draws": 206,
+          "triangles": 490000,
+          "texture_mb": 193.7
         },
         "fast-L5": {
-          "draws": 154,
-          "triangles": 193000,
-          "texture_mb": 29.5
+          "draws": 206,
+          "triangles": 278000,
+          "texture_mb": 133.0
         },
         "visual-L0": {
-          "draws": 159,
-          "triangles": 408000,
-          "texture_mb": 425.0
+          "draws": 225,
+          "triangles": 498000,
+          "texture_mb": 636.3
         },
         "visual-L1": {
-          "draws": 159,
-          "triangles": 408000,
-          "texture_mb": 425.0
+          "draws": 225,
+          "triangles": 498000,
+          "texture_mb": 636.3
         },
         "visual-L2": {
-          "draws": 159,
-          "triangles": 408000,
-          "texture_mb": 76.5
+          "draws": 225,
+          "triangles": 498000,
+          "texture_mb": 287.9
         },
         "visual-L3": {
-          "draws": 154,
-          "triangles": 265000,
-          "texture_mb": 76.4
+          "draws": 206,
+          "triangles": 349000,
+          "texture_mb": 179.9
         },
         "visual-L4": {
-          "draws": 154,
-          "triangles": 265000,
-          "texture_mb": 76.4
+          "draws": 206,
+          "triangles": 349000,
+          "texture_mb": 124.7
         },
         "visual-L5": {
-          "draws": 154,
-          "triangles": 193000,
-          "texture_mb": 32.9
+          "draws": 206,
+          "triangles": 278000,
+          "texture_mb": 81.2
         }
       },
       "studio": {
         "fast-L0": {
-          "draws": 138,
-          "triangles": 405000,
-          "texture_mb": 95.3
+          "draws": 143,
+          "triangles": 486000,
+          "texture_mb": 199.2
         },
         "fast-L5": {
-          "draws": 138,
-          "triangles": 191000,
-          "texture_mb": 34.7
+          "draws": 143,
+          "triangles": 273000,
+          "texture_mb": 138.5
         },
         "visual-L0": {
-          "draws": 148,
-          "triangles": 406000,
-          "texture_mb": 430.3
+          "draws": 157,
+          "triangles": 488000,
+          "texture_mb": 642.2
         },
         "visual-L1": {
-          "draws": 148,
-          "triangles": 406000,
-          "texture_mb": 430.3
+          "draws": 157,
+          "triangles": 488000,
+          "texture_mb": 642.2
         },
         "visual-L2": {
-          "draws": 143,
-          "triangles": 406000,
-          "texture_mb": 81.7
+          "draws": 151,
+          "triangles": 488000,
+          "texture_mb": 293.6
         },
         "visual-L3": {
-          "draws": 138,
-          "triangles": 263000,
-          "texture_mb": 81.5
+          "draws": 143,
+          "triangles": 344000,
+          "texture_mb": 185.4
         },
         "visual-L4": {
-          "draws": 138,
-          "triangles": 263000,
-          "texture_mb": 81.5
+          "draws": 143,
+          "triangles": 344000,
+          "texture_mb": 185.4
         },
         "visual-L5": {
-          "draws": 138,
-          "triangles": 191000,
-          "texture_mb": 38.1
+          "draws": 143,
+          "triangles": 273000,
+          "texture_mb": 142.0
         }
       }
     },
     "mobile": {
       "unit": {
         "fast-L0": {
-          "draws": 100,
-          "triangles": 362000,
-          "texture_mb": 71.3
+          "draws": 130,
+          "triangles": 445000,
+          "texture_mb": 119.6
         },
         "fast-L5": {
-          "draws": 100,
-          "triangles": 182000,
-          "texture_mb": 23.5
+          "draws": 130,
+          "triangles": 265000,
+          "texture_mb": 71.8
         },
         "visual-L0": {
-          "draws": 100,
-          "triangles": 362000,
-          "texture_mb": 130.2
+          "draws": 137,
+          "triangles": 449000,
+          "texture_mb": 238.6
         },
         "visual-L1": {
-          "draws": 100,
-          "triangles": 362000,
-          "texture_mb": 130.2
+          "draws": 137,
+          "triangles": 449000,
+          "texture_mb": 238.6
         },
         "visual-L2": {
-          "draws": 100,
-          "triangles": 362000,
-          "texture_mb": 57.8
+          "draws": 137,
+          "triangles": 449000,
+          "texture_mb": 166.1
         },
         "visual-L3": {
-          "draws": 100,
-          "triangles": 242000,
-          "texture_mb": 57.5
+          "draws": 130,
+          "triangles": 325000,
+          "texture_mb": 105.8
         },
         "visual-L4": {
-          "draws": 100,
-          "triangles": 242000,
-          "texture_mb": 57.5
+          "draws": 130,
+          "triangles": 325000,
+          "texture_mb": 105.8
         },
         "visual-L5": {
-          "draws": 100,
-          "triangles": 182000,
-          "texture_mb": 27.0
+          "draws": 130,
+          "triangles": 265000,
+          "texture_mb": 75.3
         }
       },
       "studio": {
         "fast-L0": {
-          "draws": 99,
-          "triangles": 360000,
-          "texture_mb": 76.5
+          "draws": 96,
+          "triangles": 441000,
+          "texture_mb": 125.3
         },
         "fast-L5": {
-          "draws": 99,
-          "triangles": 180000,
-          "texture_mb": 28.7
+          "draws": 96,
+          "triangles": 261000,
+          "texture_mb": 77.3
         },
         "visual-L0": {
-          "draws": 99,
-          "triangles": 360000,
-          "texture_mb": 135.3
+          "draws": 96,
+          "triangles": 441000,
+          "texture_mb": 244.4
         },
         "visual-L1": {
-          "draws": 99,
-          "triangles": 360000,
-          "texture_mb": 135.3
+          "draws": 96,
+          "triangles": 441000,
+          "texture_mb": 244.4
         },
         "visual-L2": {
-          "draws": 99,
-          "triangles": 360000,
-          "texture_mb": 62.8
+          "draws": 96,
+          "triangles": 441000,
+          "texture_mb": 172.0
         },
         "visual-L3": {
-          "draws": 99,
-          "triangles": 239000,
-          "texture_mb": 62.7
+          "draws": 96,
+          "triangles": 321000,
+          "texture_mb": 111.5
         },
         "visual-L4": {
-          "draws": 99,
-          "triangles": 239000,
-          "texture_mb": 62.7
+          "draws": 96,
+          "triangles": 321000,
+          "texture_mb": 111.5
         },
         "visual-L5": {
-          "draws": 99,
-          "triangles": 180000,
-          "texture_mb": 32.1
+          "draws": 96,
+          "triangles": 261000,
+          "texture_mb": 80.8
         }
       }
     }

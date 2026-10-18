@@ -21,6 +21,7 @@ export const PUBLIC_ART = { seascape: 'assets/art/seascape.jpg', 'monet-red-boat
 const EXT = /\.(jpe?g|png|webp)$/i;
 const phone = () => typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches && typeof screen !== 'undefined' && Math.min(screen.width, screen.height) < 820;
 export const artTextureCap = (gpuMax, isPhone) => Math.min(isPhone ? 2048 : 4096, gpuMax > 0 ? gpuMax : 4096);
+const FAST_MAX = 1024;   // Fast quality draws a picture at most this many px on its long side (5.6 MB with its mipmaps instead of 89 MB at 4096); Visual keeps the full size
 const NORMAL_MAX = 1024;   // the longest side of a painting's normal map
 const LIMITS = { maxTexture: 4096, anisotropy: 16 };
 /** The renderer's own limits: a picture is drawn at most 4096 px on its long side (2048 on a phone, never past the GPU's max texture
@@ -90,11 +91,11 @@ const texSet = (canvases, inW) => canvases.map((c) => ({ map: texOf(c), normal: 
 async function texSetSoon(canvases, inW) { const out = []; for (const c of canvases) { await new Promise((r) => setTimeout(r, 0)); out.push(...texSet([c], inW)); } return out; }
 
 /** The placeholder textures of `key` (drawn once per page and shape). */
-function placeholder(key, panels, w, h) {
-  const id = `${key}|${panels.length}|${w.toFixed(1)}|${h.toFixed(1)}`;
+function placeholder(key, panels, w, h, fast = false) {
+  const id = `${key}|${panels.length}|${w.toFixed(1)}|${h.toFixed(1)}|${fast ? 'f' : 'v'}`;
   if (PLACE.has(id)) return PLACE.get(id);
   if (!browser()) { PLACE.set(id, null); return null; }
-  const P = PAINTINGS[key] || PAINTINGS.seascape, long = panels.length > 1 ? 3072 : 2048;
+  const P = PAINTINGS[key] || PAINTINGS.seascape, long = Math.min(fast ? FAST_MAX : 4096, panels.length > 1 ? 3072 : 2048);
   const W = w >= h ? long : Math.round(long * w / h), H = w >= h ? Math.round(long * h / w) : long, c = canvasOf(W, H);
   P.paint(c.getContext('2d'), W, H, rng(hash(key)));
   const set = texSet(panels.length > 1 ? panels.map((p) => slice(c, p)) : [c], panels[0].w);
@@ -113,8 +114,8 @@ async function loadImage(url) {
   await img.decode(); return img;
 }
 /** Draw `img` cropped to `aspect` at its own resolution (at most the GPU's texture limit). */
-function cropped(img, aspect) {
-  const k = coverCrop(img.naturalWidth, img.naturalHeight, aspect); let s = Math.min(1, LIMITS.maxTexture / Math.max(k.sw, k.sh));
+function cropped(img, aspect, cap = LIMITS.maxTexture) {
+  const k = coverCrop(img.naturalWidth, img.naturalHeight, aspect); let s = Math.min(1, cap / Math.max(k.sw, k.sh));
   let src = img, sx = k.sx, sy = k.sy, sw = k.sw, sh = k.sh;
   while (sw * s < sw / 2.2) {   // a large scan comes down in halves, so the filtering stays clean (no shimmer in fine brushwork)
     const h = canvasOf(sw / 2, sh / 2), hg = h.getContext('2d'); hg.imageSmoothingQuality = 'high'; hg.drawImage(src, sx, sy, sw, sh, 0, 0, h.width, h.height);
@@ -124,14 +125,14 @@ function cropped(img, aspect) {
   g.drawImage(src, sx, sy, sw, sh, 0, 0, c.width, c.height); return c;
 }
 /** The renter's own picture of `key` as textures per panel, or null when there is none (then the placeholder stays). */
-function realSet(key, panels, w, h) {
-  const id = `${key}|${panels.length}|${w.toFixed(1)}|${h.toFixed(1)}`;
+function realSet(key, panels, w, h, fast = false) {
+  const id = `${key}|${panels.length}|${w.toFixed(1)}|${h.toFixed(1)}|${fast ? 'f' : 'v'}`, cap = fast ? Math.min(FAST_MAX, LIMITS.maxTexture) : LIMITS.maxTexture;
   if (REAL.has(id)) return REAL.get(id);
   const p = browser() ? privateNames().then(async (names) => {
     const src = artSources(key, names, panels.length);
     if (!src) return null;
-    if (src.panels) { const imgs = await Promise.all(src.panels.map(loadImage)); return texSetSoon(imgs.map((im, i) => cropped(im, panels[i].w / h)), panels[0].w); }
-    const whole = cropped(await loadImage(src.whole), w / h);
+    if (src.panels) { const imgs = await Promise.all(src.panels.map(loadImage)); return texSetSoon(imgs.map((im, i) => cropped(im, panels[i].w / h, cap)), panels[0].w); }
+    const whole = cropped(await loadImage(src.whole), w / h, cap);
     return texSetSoon(panels.length > 1 ? panels.map((q) => slice(whole, q)) : [whole], panels[0].w);
   }).catch((err) => { if (typeof console !== 'undefined') console.warn('[room3d] painting image not used', key, err?.message || err); return null; }) : Promise.resolve(null);
   REAL.set(id, p); return p;
@@ -203,7 +204,7 @@ function shadowMap(w, h) {
 export function paintingInto(it, K) {
   const key = it.art, d = it.d || 1.5, t = clamp(it.spec?.canvas?.depth ?? d, 0.5, 4), e = it.elev || 0, back = -d / 2;
   const panels = panelLayout(it.spec, it.w, it.h), cy = e + it.h / 2, fast = K.fast;
-  const ph = known && artSources(key, known, panels.length) ? null : placeholder(key, panels, it.w, it.h), wait = new THREE.Color(it.look?.color || 0x8fa7a8).getHex();   // the renter's photo is coming: its main colour until then
+  const ph = known && artSources(key, known, panels.length) ? null : placeholder(key, panels, it.w, it.h, fast), wait = new THREE.Color(it.look?.color || 0x8fa7a8).getHex();   // the renter's photo is coming: its main colour until then
   const mats = panels.map((p, i) => {
     const tx = ph?.[i], o = { roughness: 0.6, ...(tx ? { map: tx.map, normalMap: tx.normal, normalScale: new THREE.Vector2(0.25, 0.25) } : {}) };
     const m = fast ? K.ctx.std(tx ? 0xffffff : wait, o) : new THREE.MeshPhysicalMaterial({ color: tx ? 0xffffff : wait, ...o, metalness: 0, specularIntensity: 0.45, clearcoat: 0.12, clearcoatRoughness: 0.55 });   // a matte varnish: a faint, broad sheen
@@ -216,7 +217,7 @@ export function paintingInto(it, K) {
     const sh = K.add(K.geo(`art-sh|${p.w.toFixed(2)}|${it.h.toFixed(2)}`, () => new THREE.PlaneGeometry(p.w + 2 * SHADOW_M, it.h + 2 * SHADOW_M)), shadow, p.x + 0.2, cy - 0.35, back + 0.06, { cast: false });   // lit from above: a little low and to one side
     sh.receiveShadow = false; sh.renderOrder = 1; sh.name = 'art-shadow';
   });
-  realSet(key, panels, it.w, it.h).then((set) => {
+  realSet(key, panels, it.w, it.h, fast).then((set) => {
     if (!set) return;
     mats.forEach((m, i) => { if (!set[i]) return; m.map = set[i].map; m.normalMap = set[i].normal; m.normalScale = new THREE.Vector2(0.45, 0.45); m.color.set(0xffffff); m.needsUpdate = true; m.userData.real = true; });
     if (typeof window !== 'undefined' && window.dispatchEvent) window.dispatchEvent(new Event('as-art-ready'));
