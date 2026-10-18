@@ -103,3 +103,5 @@
 }
 @media (prefers-reduced-motion: reduce) { .tp2-item { transition: none; } }
 @media print { .tp2 { display: none !important; } }
+
+@media (max-width: 760px) { .tp2-ctl input[type="date"], .tp2-ctl input[type="time"], .tp2-opts input[type="time"] { height: 40px; } }   /* the day, start and booked-time fields */

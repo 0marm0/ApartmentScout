@@ -929,11 +929,11 @@
   {
    "file": "docs/images/inside-fits.png",
    "publication_status": "public",
-   "sha256": "3a0f0fffd60d0a3275c37d358391a9b21e3a57aae1d7e23848707a7ba48d931b",
-   "bytes": 515296,
+   "sha256": "ab0f9911ea58215f2e01be426c7ed7647298c952212438dab6b4198728c80413",
+   "bytes": 509305,
    "width": 1600,
    "height": 1240,
-   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-16 from a clean snapshot with scripts/screenshots.py)"
+   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-18 from a clean snapshot with scripts/screenshots.py)"
   },
   {
    "file": "docs/images/inside-floor-plan.png",
@@ -1100,11 +1100,11 @@
   {
    "file": "docs/images/phone-map.png",
    "publication_status": "public",
-   "sha256": "5a1aa2b1ed9a076025b3f2f3e1b2104f6867923da9e65da9ad20c811f3cfeda2",
-   "bytes": 217163,
+   "sha256": "107efaabc7ac27343d059fbba397cf48fbb1bc4d98585bf22119f5b3b5253589",
+   "bytes": 547693,
    "width": 585,
    "height": 1266,
-   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-15 from a clean snapshot with scripts/screenshots.py)"
+   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-18 from a clean snapshot with scripts/screenshots.py)"
   },
   {
    "file": "docs/images/phone-tour-checklist.png",
@@ -1127,8 +1127,8 @@
   {
    "file": "docs/images/phone-unit-3d.png",
    "publication_status": "public",
-   "sha256": "5f4291cbf5fde52754e9af3c8774ea1a09011e09a2af22acd16ebcf88e601bc4",
-   "bytes": 374654,
+   "sha256": "c054befa8467bb210921ec19ca113b4ed9ef2dff63d282bebc1bb6277806c438",
+   "bytes": 377831,
    "width": 585,
    "height": 1266,
    "note": "ApartmentScout dashboard on the public example data (shot 2026-10-18 from a clean snapshot with scripts/screenshots.py)"
@@ -1199,11 +1199,11 @@
   {
    "file": "docs/images/studio-top.png",
    "publication_status": "public",
-   "sha256": "4d89c3a0dccf2aea3a8205c802859c0fad74f09095a8ba95cb1f3902c10dbd8f",
-   "bytes": 429364,
+   "sha256": "5f7cba33f55d799205b4de54786027f77d355347562f701415aebfee083ddcbf",
+   "bytes": 425598,
    "width": 1600,
    "height": 1000,
-   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-16 from a clean snapshot with scripts/screenshots.py)"
+   "note": "ApartmentScout dashboard on the public example data (shot 2026-10-18 from a clean snapshot with scripts/screenshots.py)"
   },
   {
    "file": "docs/images/studio-tracer.png",

@@ -306,6 +306,11 @@ async function getJSON(p, fallback) {
 export const loadJSON = getJSON;
 
 // ------------------------------------------------------------------ KPI strip
+/** The three home counts in one wording, wherever they appear: every listing tracked, the ones still active, and the ones matching the filters now ("738 tracked · 434 active · 289 match your filters"). `match` overrides the filtered count (a preview). */
+export function homeCounts(match = filtered().length) {
+  const tracked = S.listings.length, active = S.listings.filter((L) => ACTIVE.includes(L.status || 'new')).length;
+  return { tracked, active, match, text: `${tracked} tracked · ${active} active · ${match} match your filters` };
+}
 function median(a) { const s = a.filter((v) => v != null).sort((x, y) => x - y); return s.length ? s[Math.floor(s.length / 2)] : null; }
 function renderKPIs() {
   const act = S.listings.filter((L) => ACTIVE.includes(L.status)), F = filtered();
@@ -348,8 +353,9 @@ function syncStatsChip(n) {
   const open = statsOpen();
   b.hidden = false; b.setAttribute('aria-expanded', String(open));
   $('kpiChipN').textContent = String(n);
-  b.setAttribute('aria-label', `${n} homes match your filters. ${open ? 'Hide' : 'Show'} the search summary`);
-  b.title = open ? 'Hide the search summary' : 'Show the search summary: tracked, eligible, shortlisted, median rent and commute';
+  const c = homeCounts(n).text;
+  b.setAttribute('aria-label', `${c}. ${open ? 'Hide' : 'Show'} the search summary`);
+  b.title = `${c}. ${open ? 'Hide' : 'Show'} the search summary: tracked, eligible, shortlisted, median rent and commute`;
 }
 function syncStatsRow() {
   const strip = $('kpis'); if (!strip) return;

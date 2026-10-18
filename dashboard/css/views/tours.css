@@ -160,3 +160,5 @@
   body.tr-printing #view-tours .sheet:not(.print-me) { display: none; }
   #view-tours .sh-open { border-color: #ccc; }
 }
+
+@media (max-width: 760px) { .tc-when input { height: 40px; } }   /* a finger-sized date and time field */
