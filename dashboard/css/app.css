@@ -572,7 +572,9 @@ button.price-tag { font-family: var(--font-sans); }
 .results-h .sp { display: none; }
 .results-h .seg { flex-wrap: nowrap; flex: none; }
 .results-h .seg button { padding: 0 9px; }
-.d-actions .btn { flex: 1 1 0; min-width: 0; padding: 0 var(--s-2); overflow: hidden; text-overflow: ellipsis; justify-content: center; }
+.d-actions .btn { flex: 1 1 auto; min-width: 0; padding: 0 var(--s-2); overflow: hidden; text-overflow: ellipsis; justify-content: center; }   /* a longer label (See inside) keeps its width */
+.d-actions .btn svg { flex: none; }   /* an icon never squeezed to a dot */
+@media (pointer: fine) { .d-actions { flex-wrap: wrap; } }   /* six labelled buttons need two rows in a 446 px drawer (a phone scrolls the row instead) */
 .isobar { display: flex; height: 10px; border-radius: var(--r-xs); overflow: hidden; gap: 1px; }
 .isobar i { flex: 1; }
 .isobar i.lim { box-shadow: inset -2px 0 0 var(--ink); }
