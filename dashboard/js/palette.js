@@ -1,7 +1,7 @@
 // Command palette (⌘K, Ctrl+K or "/"): jump to any listing by name, address or neighbourhood, filter the
 // results, switch view, and run the shell's actions (theme, search settings, export, shortcuts, the open
 // listing's save / compare / share). One modal; the query input keeps focus and the options are a listbox.
-import { S, on, store, openDrawer, label, cost, score, isSaved, toggleSave, toggleCompare, setFilter, openSettings, filtered, openWizard, byId, dest, commuteOf } from './app.js';
+import { S, on, store, openDrawer, label, cost, score, isSaved, toggleSave, toggleCompare, setFilter, openSettings, filtered, homeCounts, openWizard, byId, dest, commuteOf } from './app.js';
 import { flipTheme } from './shell.js';
 import { $, esc, money, ICONS, imagesOf, mediaSrc, scoreColor, toast } from './util.js';
 import { nlItem } from './features/nlsearch.js';   // [feature C] plain-language search row
@@ -162,7 +162,7 @@ export function openPalette(initial = '') {
     root.innerHTML = `<div class="pl" role="dialog" aria-modal="true" aria-label="Command menu">
       <div class="pl-in">${IC.search}<input id="plQ" type="text" role="combobox" aria-expanded="true" aria-controls="plList" aria-autocomplete="list" autocomplete="off" spellcheck="false" placeholder="Search homes, or ask: 2 bd under 5k by subway"><kbd>esc</kbd></div>
       <div class="pl-list" id="plList" role="listbox" aria-label="Results"></div>
-      <div class="pl-foot"><span><kbd>↑</kbd><kbd>↓</kbd> move</span><span><kbd>↵</kbd> open</span><span><kbd>esc</kbd> close</span><span class="sp"></span><span>${S.listings.length} homes</span></div></div>`;
+      <div class="pl-foot"><span><kbd>↑</kbd><kbd>↓</kbd> move</span><span><kbd>↵</kbd> open</span><span><kbd>esc</kbd> close</span><span class="sp"></span><span>${homeCounts().text}</span></div></div>`;
     document.body.append(root);
     const inp = root.querySelector('#plQ');
     inp.addEventListener('input', () => { act = 0; render(inp.value); });

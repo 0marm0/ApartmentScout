@@ -151,6 +151,7 @@ const ICON = {
   panels: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="2.5" width="12" height="11" rx="1.5"/><path d="M10 2.5v11"/></svg>',
   lens: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M2.5 4.5h6M11.5 4.5h2M2.5 11.5h2M7.5 11.5h6"/><circle cx="10" cy="4.5" r="1.5"/><circle cx="6" cy="11.5" r="1.5"/></svg>',
   reset: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 8a5 5 0 109-3M12 2v3H9"/></svg>',
+  layers: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" aria-hidden="true"><path d="M8 2.5l6 3-6 3-6-3zM2 8.5l6 3 6-3M2 11.5l6 3 6-3"/></svg>',
   heights: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M2.5 13.5V8h3v5.5M6.5 13.5V3h3v10.5M10.5 13.5V6h3v7.5M1.5 13.5h13"/></svg>',
 };
 
@@ -182,6 +183,7 @@ export function init() {
           </div>
           <button type="button" class="u-compass" id="uCompass" title="North. Click to face north" aria-label="Compass, click to face north"><svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="18.5"/><g id="uNeedle"><path d="M20 5l4 15h-8z" class="n"/><path d="M20 35l4-15h-8z" class="s"/><text x="20" y="4.2" text-anchor="middle">N</text></g></svg></button>
           <div class="float u-tools" id="uTools" role="group" aria-label="Layers">
+            <button type="button" class="u-tools-tog" id="uToolsTog" title="Layers and tools" aria-label="Layers and tools" aria-expanded="false" aria-controls="uTools">${ICON.layers}</button>
             ${[['shadows', 'Shadows'], ['labels', 'Labels'], ['heights', 'Heights: colour by height class, label roofs, 150 m and 300 m rings'], ['streets', 'Street names and centrelines'], ['future', 'Proposed buildings'], ['green', 'Parks, lawns and trees: grass from NYC Parks Properties, Greenstreets and OpenStreetMap. Context only: trees are never counted as shade in the sun hours'], ['streetTrees', STREET_TREES_TITLE], ['parkTrees', PARK_TREES_TITLE], ['water', 'Water and ground: rivers, streets and sidewalks. Context only'], ['ray', 'Sun ray'], ['cone', 'View cone']].map(([k, t]) => `<button type="button" data-tg="${k}" title="${t}" aria-label="${t}" aria-pressed="false">${ICON[k]}</button>`).join('')}
             <hr><button type="button" id="uFull" title="Full screen" aria-label="Full screen" aria-pressed="false">${ICON.full}</button>
             <button type="button" id="uWide" title="Show the panels beside the model" aria-label="Show the panels beside the model" aria-pressed="false">${ICON.panels}</button>
@@ -228,6 +230,7 @@ export function init() {
   sel.innerHTML = ids.length ? ids.map((id) => { const L = byId(id); return `<option value="${esc(id)}">${esc(L ? label(L) : id)}${L?.floor ? ' · floor ' + Math.round(L.floor) : ''}</option>`; }).join('') : '<option>No site models yet</option>';
   sel.addEventListener('change', () => { location.hash = '#unit/' + encodeURIComponent(sel.value); });
   $('uSnap').addEventListener('click', () => snapshot());
+  $('uToolsTog').addEventListener('click', () => { const t = $('uTools'), open = t.dataset.open !== '1'; t.dataset.open = open ? '1' : '0'; $('uToolsTog').setAttribute('aria-expanded', String(open)); });   // [phone] the tool rail is one button until it is opened
   UQ.mount({ host: root.querySelector('.u-head .actions'), stageEl: $('stage'), store, toast, render: (scale) => snapshot({ hires: scale }) });   // [feature J]
   RUI.mountRender({ id: 'unit', container: root.querySelector('.u-head .rnq-inline'), store, host: renderHost, info: renderInfo, video: renderVideoBridge() });   // [render]
   mountDock($('stage'), { min: STRIP_FROM, max: STRIP_TO - STRIP_STEP, step: STRIP_STEP, get: () => st.min, set: (v) => setTime(v), text: () => fmtT(st.min), playing: () => !!st.playing, toggle: () => togglePlay() });   // [phone]
@@ -284,6 +287,7 @@ function fitGrid() {
 }
 
 // ------------------------------------------------------------------ load
+const nextTask = () => new Promise((r) => setTimeout(r, 0));
 async function load(id) {
   const prevId = st.id;
   $('uLoad').hidden = false;
@@ -394,6 +398,8 @@ async function load(id) {
   stage.resize();
   $('uSnap').disabled = $('uGlb').disabled = !hasWindow();
   unitsRow(); fitGrid();
+  await nextTask();   // the city, the apartment and its panels are built in three tasks, so none holds the page up for long
+  if (st.id !== id) return;   // another home was opened meanwhile
   if (!FACES[st.face] || FACES[st.face].shared) {
     st.mode = 'orbit'; player.stop(); st.playing = false; ++heatTok;
     profA = profB = profF = statesA = statesB = null; interior = null;
@@ -402,6 +408,8 @@ async function load(id) {
     stage.resetOrbit(false); closeCard(); $('uLoad').hidden = true; return;
   }
   buildApartment();
+  await nextTask();
+  if (st.id !== id) return;
   $('studyPanel').hidden = $('ifPanel').hidden = false;
   buildTimePanel(); buildWindowPanel(); buildStudies(); evidencePanel(); syncTools();
   setMode(st.mode, true);

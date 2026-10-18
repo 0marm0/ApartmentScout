@@ -233,6 +233,7 @@ img.err { opacity: 0 !important; }
 .legend .lg-tog:hover { background: var(--surface-3); color: var(--ink); }
 .legend .lg-tog svg { width: 13px; height: 13px; transition: transform var(--t-base) var(--ease-out); }
 .legend.min .lg-tog svg { transform: rotate(180deg); }
+@media (pointer: coarse) { .legend .lg-tog { top: 2px; right: 2px; width: 40px; height: 40px; } }   /* a thumb-sized target on a phone; the arrow stays where it was */
 .legend h4 { padding-right: 26px; }
 .legend.min { width: 248px; padding: 10px var(--s-3); }
 .legend.min .cm-seg, .legend.min .src, .legend.min .lines, .legend.min h4 > span { display: none; }
@@ -241,7 +242,11 @@ img.err { opacity: 0 !important; }
 .legend.min .lg-dest { max-width: 190px; }
 @media (max-width: 760px) {
   .legend { display: block; left: 8px; bottom: 8px; width: min(300px, calc(100% - 16px)); max-height: calc(100% - 64px); overflow-y: auto; }
-  .legend.min { width: min(220px, calc(100% - 16px)); }
+  /* folded on a phone: a small chip (the title and the fold button), the colour bands and the rest open with it */
+  .legend.min { width: auto; max-width: min(260px, calc(100% - 16px)); padding: 0 40px 0 var(--s-3); min-height: 40px; display: flex; align-items: center; overflow: hidden; }
+  .legend.min > :not(.lg-tog):not(h4) { display: none !important; }   /* !important: the colour bands carry an inline display */
+  .legend.min h4 { margin: 0; font-size: var(--fs-xs); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 0; }
+  .legend.min h4 .lg-dest { max-width: 170px; }
   .layer-switch { max-width: calc(100% - 64px); overflow-x: auto; scrollbar-width: none; }
   .layer-switch::-webkit-scrollbar { display: none; }
   .layer-switch button { flex: none; }

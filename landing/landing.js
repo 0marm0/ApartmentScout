@@ -11,10 +11,10 @@
     if (!els.length) return;
     const host = location.hostname;
     const seg = location.pathname.split('/').filter(Boolean)[0];
-    const repo = host.endsWith('.github.io') && seg
-      ? `https://github.com/${host.split('.')[0]}/${seg}`
-      : 'https://github.com/search?q=ApartmentScout&type=repositories';
-    els.forEach((a) => { a.href = a.getAttribute('href').replace('__REPO__', repo); });
+    const known = host.endsWith('.github.io') && seg;
+    const repo = known ? `https://github.com/${host.split('.')[0]}/${seg}` : 'https://github.com/search?q=ApartmentScout&type=repositories';
+    // a file in the repository (__REPO__/blob/main/LICENSE) cannot hang off a search address: without the repository, every link is the search
+    els.forEach((a) => { a.href = known ? a.getAttribute('href').replace('__REPO__', repo) : repo; });
     document.querySelectorAll('pre code').forEach((c) => {
       if (c.textContent.includes('__REPO__')) c.innerHTML = c.innerHTML.replace('__REPO__.git', host.endsWith('.github.io') && seg ? `${repo}.git` : '&lt;repository-url&gt;');
     });

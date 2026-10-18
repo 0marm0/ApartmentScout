@@ -6,6 +6,9 @@
 .bed-ctl.in-p3d { right: 10px; top: 50px; align-items: flex-end; }
 .ps-panes[data-mode="both"] .bed-ctl.in-p3d { top: 92px; }
 .bed-ctl.in-unit { position: relative; top: auto; left: auto; right: auto; bottom: auto; order: 5; align-self: flex-start; }
+.bd-sheet { display: contents; }   /* the rows' holder: transparent to layout on a wide screen, a sheet behind the Furniture button on a phone (below) */
+.bd-tog { display: none; }
+.ps-panes[data-mode="both"] .bed-ctl.in-p2d { display: none; }   /* both panes showing: the furniture controls live once, in the 3D pane (the same state either way) */
 .bd-bar { display: flex; align-items: center; gap: var(--s-1); flex-wrap: nowrap; }
 .bd-bar[hidden] { display: none; }   /* the sim rig's Shown / Hidden row (bd-rig) sits under the bed row; either shows alone */
 .bd-l { font-size: var(--fs-2xs); font-weight: var(--fw-semibold); letter-spacing: .05em; text-transform: uppercase; color: var(--ink-2); padding: 0 var(--s-1) 0 6px; flex: none; }
@@ -53,8 +56,21 @@
   .bd-seg button, .bd-fit { padding: 0 var(--s-2); }
   .bed-ctl.in-p2d, .bed-ctl.in-p3d { max-width: calc(100% - 16px); }
   .bed-ctl { padding: 2px; gap: var(--s-1); }
-  .bd-seg button, .bd-fit { height: 24px; }
-  .bed-ctl.in-unit .bd-rig, .bed-ctl.in-unit .bd-off-bar { display: none; }   /* Unit 3D on a phone keeps the one Bed row: three rows would cover the middle of the picture; the sim rig, the chair and Show live in the studio */
   .bd-bar:not(.bd-rig):not(.bd-off-bar) .bd-l { display: none; }   /* the rig and chair rows keep their name: two Shown / Hidden rows are ambiguous without it */
+  /* One compact "Furniture" button (40 px) keeps the picture clear; the rows open as a sheet under it, with 40 px targets. */
+  .bed-ctl { padding: 0; background: none; backdrop-filter: none; -webkit-backdrop-filter: none; border: 0; box-shadow: none; align-self: flex-start; }
+  .bd-tog { display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 0 14px; border: 1px solid var(--line-strong); border-radius: var(--r-md); background: var(--overlay); backdrop-filter: var(--glass); -webkit-backdrop-filter: var(--glass); color: var(--ink); font: var(--fw-medium) var(--fs-sm) var(--font-sans, inherit); cursor: pointer; }
+  .bd-tog svg { width: 16px; height: 16px; flex: none; }
+  .bd-tog:focus-visible { outline: var(--focus-w) solid var(--accent); outline-offset: 1px; }
+  .bed-ctl.fold-open .bd-tog { background: color-mix(in srgb, var(--accent) 22%, var(--surface-1)); color: var(--ink); border-color: var(--accent-line); }
+  .bd-sheet { display: none; }
+  .bed-ctl.fold-open .bd-sheet { display: flex; flex-direction: column; gap: var(--s-1); position: absolute; top: calc(100% + 6px); left: 0; z-index: 8; width: min(360px, calc(100vw - 56px)); max-height: min(62vh, 420px); overflow-y: auto; overscroll-behavior: contain; padding: var(--s-2); border: 1px solid var(--line-strong); border-radius: var(--r-md); background: var(--surface-1); box-shadow: var(--shadow-2, var(--shadow-1)); }
+  .bed-ctl.in-p3d.fold-open .bd-sheet { left: auto; right: 0; }
+  .bed-ctl .bd-bar { flex-wrap: wrap; row-gap: 2px; }
+  .bed-ctl .bd-seg button, .bed-ctl .bd-fit, .bed-ctl .bd-off { height: 40px; }
+  .bed-ctl .bd-sheet > .bd-pop { position: static; width: auto; max-height: none; box-shadow: none; }
+  .bed-ctl.in-p2d, .bed-ctl.in-p3d, .ps-panes[data-mode="both"] .bed-ctl.in-p3d { top: 56px; right: 8px; left: auto; align-items: flex-end; }   /* under the tool row, in the corner the plan leaves free */
+  .bed-ctl.in-p2d.fold-open .bd-sheet { left: auto; right: 0; }
+  .ps-panes[data-mode="3d"] .bed-ctl.in-p3d, .ps-panes[data-mode="both"] .bed-ctl.in-p3d { top: 104px; }   /* the 3D pane's Cut / Full / Outline group takes the corner above */
 }
 @media (prefers-reduced-motion: reduce) { .bd-seg button, .bd-fit { transition: none; } }

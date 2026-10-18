@@ -346,3 +346,5 @@ button.gf-t:focus-visible { outline: var(--focus-w) solid var(--accent); outline
 .rs-gap.more { border-style: solid; border-color: var(--line); color: var(--ink-3); }
 .rs-gap.stale.more { color: var(--warn); border-color: transparent; }
 .rs-code { font-family: var(--font-mono); font-size: .92em; background: var(--surface-3); padding: 1px 5px; border-radius: var(--r-xs); color: var(--ink-2); }
+
+@media (max-width: 760px) { .rs-tabs button { height: 40px; } }   /* 40 px targets for the Research and Records tabs */

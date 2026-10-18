@@ -4,6 +4,7 @@
 import { esc } from '../util.js';
 
 const GRADE = { clear: ['good', 'Fits'], tight: ['warn', 'Tight'], blocked: ['bad', 'Blocked'] };
+const FURN_ICON = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12V7.5A1.5 1.5 0 013.5 6h9A1.5 1.5 0 0114 7.5V12M2 12h12M2 9.5h12M4 12v1.5M12 12v1.5M4.5 6V4.5h7V6"/></svg>';
 const SHORT = { mine: 'My bed', storage: 'Storage bed', none: 'No bed' };
 
 /** A piece's Shown / Hidden buttons (`rig` = plan/choices.js choiceState(items, inv, 'sim' or 'chair'); `attr` the data attribute the buttons carry), or ''. */
@@ -56,7 +57,14 @@ export function mountBedControl(host, o) {
   const rigBar = document.createElement('div'); rigBar.className = 'bd-bar bd-rig'; rigBar.setAttribute('data-rig-ctl', '');
   const chairBar = document.createElement('div'); chairBar.className = 'bd-bar bd-rig'; chairBar.setAttribute('data-chair-ctl', '');
   const offBar = document.createElement('div'); offBar.className = 'bd-bar bd-off-bar'; offBar.setAttribute('data-off-ctl', ''); offBar.hidden = true;
-  el.append(bar, rigBar, chairBar, offBar, pop); host.append(el);
+  // On a phone the rows fold behind one "Furniture" button and open as a sheet (css/bed.css); on a wide screen the sheet is transparent to layout.
+  const tog = document.createElement('button'); tog.type = 'button'; tog.className = 'bd-tog'; tog.setAttribute('aria-expanded', 'false'); tog.title = 'Bed, sim rig, office chair and hidden pieces';
+  tog.innerHTML = `${FURN_ICON}<span>Furniture</span>`;
+  const sheet = document.createElement('div'); sheet.className = 'bd-sheet';
+  sheet.append(bar, rigBar, chairBar, offBar, pop); el.append(tog, sheet); host.append(el);
+  const setFold = (v) => { el.classList.toggle('fold-open', v); tog.setAttribute('aria-expanded', String(v)); };
+  tog.addEventListener('click', () => setFold(!el.classList.contains('fold-open')));
+  document.addEventListener('pointerdown', (e) => { if (el.classList.contains('fold-open') && !el.contains(e.target)) setFold(false); });
   let open = false, cache = null, barSig = '', offSig = '';
   const verdict = () => { try { cache = o.report(); } catch { cache = null; } return cache; };
   let rigSig = '', chairSig = '';
@@ -105,7 +113,11 @@ export function mountBedControl(host, o) {
       e.preventDefault(); o.choose(next.dataset.bedChoice); bar.querySelector(`[data-bed-choice="${next.dataset.bedChoice}"]`)?.focus(); return;
     }
   });
-  el.addEventListener('keydown', (e) => { if (e.key === 'Escape' && open) { e.stopPropagation(); setOpen(false); bar.querySelector('[data-bed-fit]')?.focus(); } });
+  el.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    if (open) { e.stopPropagation(); setOpen(false); bar.querySelector('[data-bed-fit]')?.focus(); }
+    else if (el.classList.contains('fold-open')) { e.stopPropagation(); setFold(false); tog.focus(); }
+  });
   render();
   return { el, update: render, close: () => setOpen(false) };
 }

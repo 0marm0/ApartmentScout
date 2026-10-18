@@ -306,6 +306,11 @@ async function getJSON(p, fallback) {
 export const loadJSON = getJSON;
 
 // ------------------------------------------------------------------ KPI strip
+/** The three home counts in one wording, wherever they appear: every listing tracked, the ones still active, and the ones matching the filters now ("738 tracked · 434 active · 289 match your filters"). `match` overrides the filtered count (a preview). */
+export function homeCounts(match = filtered().length) {
+  const tracked = S.listings.length, active = S.listings.filter((L) => ACTIVE.includes(L.status || 'new')).length;
+  return { tracked, active, match, text: `${tracked} tracked · ${active} active · ${match} match your filters` };
+}
 function median(a) { const s = a.filter((v) => v != null).sort((x, y) => x - y); return s.length ? s[Math.floor(s.length / 2)] : null; }
 function renderKPIs() {
   const act = S.listings.filter((L) => ACTIVE.includes(L.status)), F = filtered();
@@ -348,8 +353,9 @@ function syncStatsChip(n) {
   const open = statsOpen();
   b.hidden = false; b.setAttribute('aria-expanded', String(open));
   $('kpiChipN').textContent = String(n);
-  b.setAttribute('aria-label', `${n} homes match your filters. ${open ? 'Hide' : 'Show'} the search summary`);
-  b.title = open ? 'Hide the search summary' : 'Show the search summary: tracked, eligible, shortlisted, median rent and commute';
+  const c = homeCounts(n).text;
+  b.setAttribute('aria-label', `${c}. ${open ? 'Hide' : 'Show'} the search summary`);
+  b.title = `${c}. ${open ? 'Hide' : 'Show'} the search summary: tracked, eligible, shortlisted, median rent and commute`;
 }
 function syncStatsRow() {
   const strip = $('kpis'); if (!strip) return;
@@ -767,7 +773,7 @@ ${whySection(L)}
     ${hooks.drawer?.(L) ?? ''}
     <p class="faint" style="font-size:var(--fs-xs);padding:0 20px 18px;margin:0">Last checked ${esc(L.checked || '?')} · <span class="mono">${esc(L.id)}</span>${links.length ? ' · ' + links.map(([k, u]) => `<a href="${esc(u)}" target="_blank" rel="noopener">${esc(k)}</a>`).join(' · ') : ''}</p>
     </div>
-    <div class="d-actions">${hasSite && hasPlan ? seeInsideLink(L.id, { cls: 'btn primary', icon: ICONS.inside }) : ''}${hasSite ? `<a class="btn${hasPlan ? '' : ' primary'}" href="#unit/${esc(L.id)}">${ICONS.cube}Unit 3D</a>` : ''}${hasPlan ? `<a class="btn" href="#plan/${esc(L.id)}">${ICONS.plan}Plan</a>` : ''}${hasDos ? `<a class="btn" href="#research/records/${esc(L.id)}">${ICONS.doc}Records</a>` : ''}<button class="btn ${S.compare.includes(L.id) ? 'primary' : ''}" type="button" id="dCmp">${S.compare.includes(L.id) ? ICONS.check + 'Comparing' : ICONS.plus + 'Compare'}</button>${safeUrl(L.links?.listing) ? `<a class="btn" href="${esc(safeUrl(L.links.listing))}" target="_blank" rel="noopener">Listing ${ICONS.ext}</a>` : ''}</div>`;
+    <div class="d-actions">${hasSite && hasPlan ? seeInsideLink(L.id, { cls: 'btn primary', icon: ICONS.inside }) : ''}${hasSite ? `<a class="btn${hasPlan ? '' : ' primary'}" href="#unit/${esc(L.id)}">${ICONS.cube}Unit 3D</a>` : ''}${hasPlan ? `<a class="btn" href="#plan/${esc(L.id)}">${ICONS.plan}Plan</a>` : ''}${hasDos ? `<a class="btn" href="#research/records/${esc(L.id)}">${ICONS.doc}Records</a>` : ''}<button class="btn ${S.compare.includes(L.id) ? 'primary' : ''}" type="button" id="dCmp" aria-pressed="${S.compare.includes(L.id)}" title="${S.compare.includes(L.id) ? 'In Compare: click to remove' : 'Add to Compare'}">${S.compare.includes(L.id) ? ICONS.check : ICONS.plus}Compare</button>${safeUrl(L.links?.listing) ? `<a class="btn" href="${esc(safeUrl(L.links.listing))}" target="_blank" rel="noopener">Listing ${ICONS.ext}</a>` : ''}</div>`;
   TOD.wireDrawer($('drawer'));
   NH.mount(L, $('drawer'));
   $('dCommute')?.querySelectorAll('[data-mode]').forEach((b) => b.addEventListener('click', () => { drawerMode = b.dataset.mode; const y = $('drawer').querySelector('.d-scroll').scrollTop; openDrawer(L.id); $('drawer').querySelector('.d-scroll').scrollTop = y; }));
